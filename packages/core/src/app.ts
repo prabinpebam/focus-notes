@@ -533,6 +533,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
 
   let opening: number | undefined;
+  let rewriteRevision: string | undefined;
   const slashed = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
   /** Whether a path is in the workspace's Public root (`notes/`). */
   const publicInWorkspace = (path: string, folder: string) => slashed(path).startsWith(`${slashed(folder)}/notes/`);
@@ -542,6 +543,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   }
   async function openNote(path: string, opts: { accept?: (markdown: string) => boolean } = {}): Promise<boolean> {
     opening = timing.mark("fn:note.open.start");
+    if (bridge.rewriteAuthority) {
+      rewriteRevision = undefined;
+      await bridge.rewriteAuthority("activate", { path: null });
+    }
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
     editorAction(FLUSH_EDITOR);
     if (!(await flush())) return false;
@@ -558,6 +563,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     try {
       const md = await bridge.readNote(path);
       if (opts.accept && !opts.accept(md)) return false;
+      if (bridge.rewriteAuthority) rewriteRevision = await bridge.rewriteAuthority("activate", { path, expected: md }).catch(() => undefined);
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.sawOnDisk(path, md);
       workspace.loaded(path, md);
@@ -1501,7 +1507,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     }),
   });
 
-  registerRewriteDemo({ store, commands, viewModels, messages: catalog }, editorAction, bridge.rewriteConnection);
+  registerRewriteDemo({ store, commands, viewModels, messages: catalog }, editorAction, bridge.rewriteConnection,
+    bridge.rewriteAuthority ? {
+      prepare: (source, target) => afterWrites(async () => {
+        if (!rewriteRevision) throw new Error("rewrite-unavailable");
+        return bridge.rewriteAuthority!("prepare", { revision: rewriteRevision, source, target });
+      }),
+      accept: (token) => bridge.rewriteAuthority!("accept", { token }),
+      cancel: () => { if (rewriteRevision) void bridge.rewriteAuthority!("cancel", { revision: rewriteRevision }).catch(() => {}); },
+    } : undefined);
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),

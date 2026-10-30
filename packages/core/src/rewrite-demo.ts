@@ -25,6 +25,8 @@ export class RewriteDemo {
   useConnection = false;
   connectionStatus = "";
   provider: RewriteProvider | undefined;
+  token: string | undefined;
+  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; accept(token: string): Promise<void>; cancel(): void } | undefined;
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -39,6 +41,8 @@ export class RewriteDemo {
   async send(): Promise<void> {
     if (!this.target || !this.instruction.trim()) return;
     this.session?.stop();
+    this.authority?.cancel();
+    this.token = undefined;
     const fail = this.fail;
     // Same typed provider seam as the real adapter; this adapter has no network capability.
     const provider: RewriteProvider = async function* (request) {
@@ -57,12 +61,18 @@ export class RewriteDemo {
     this.session = new RewriteSession({
       sessionId: "disposable-demo", source: this.source, target: this.target, provider: this.useConnection ? this.provider ?? (async function* () { throw new Error("connection-unavailable"); }) : provider,
       // Honest demo-only acknowledgements, NOT durable real-note checkpoints.
-      checkpoints: { original: async () => "demo-original", variation: async () => "demo-variation" },
+      checkpoints: { original: async () => {
+        if (!this.authority) return "demo-original";
+        const token = await this.authority.prepare(this.source, this.target!);
+        this.token = token;
+        return token;
+      }, variation: async () => "demo-variation" },
     });
+    const active = this.session;
     const began = performance.now();
     const timer = setInterval(this.changed, 40);
     try { const work = this.session.send(crypto.randomUUID(), this.instruction); this.changed(); await work; }
-    finally { clearInterval(timer); performance.measure("rewrite-demo:generation", { start: began }); this.changed(); }
+    finally { if (this.session === active && active.state !== "review") this.authority?.cancel(); clearInterval(timer); performance.measure("rewrite-demo:generation", { start: began }); this.changed(); }
   }
   accept(): void {
     if (this.session?.state !== "review") return;
@@ -72,22 +82,23 @@ export class RewriteDemo {
     this.openPanel = false;
     this.changed();
   }
-  discard(): void { this.session?.stop(); this.session = undefined; this.key = ""; this.openPanel = false; this.menu = false; this.changed(); }
+  discard(): void { this.session?.stop(); this.authority?.cancel(); this.token = undefined; this.session = undefined; this.key = ""; this.openPanel = false; this.menu = false; this.changed(); }
   undo(): void {
     if (this.previous === undefined) return;
     this.discard(); this.source = this.previous; this.previous = undefined; this.revision++; this.changed();
   }
 }
 
-export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewModels" | "messages">, editorAction: (id: string, args?: Record<string, unknown>) => void, connection?: import("./bridge.ts").PlatformBridge["rewriteConnection"]): void {
+export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewModels" | "messages">, editorAction: (id: string, args?: Record<string, unknown>) => void, connection?: import("./bridge.ts").PlatformBridge["rewriteConnection"], authority?: RewriteDemo["authority"]): void {
   const text = (key: string) => app.messages.format(`rewrite.${key}`);
   const demo = new RewriteDemo(() => app.store.update((s) => ({ ...s })));
+  demo.authority = authority;
   if (connection) demo.provider = async function* (request) {
     let id: string | undefined;
     const cancel = () => { if (id) void connection("cancel", { id }).catch(() => {}); };
     request.signal.addEventListener("abort", cancel, { once: true });
     try {
-      id = await connection("start", { target: request.target, instruction: request.instruction });
+      id = await connection("start", { target: request.target, instruction: request.instruction, token: demo.token });
       while (!request.signal.aborted) {
         const next = await connection("next", { id });
         if (request.signal.aborted || next.done) return;
@@ -127,9 +138,14 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("instruction", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("preset", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("send", () => demo.send());
-  command("accept", () => {
+  command("accept", async () => {
     if (!demo.enabled) { demo.accept(); return; }
     if (demo.session?.state !== "review" || demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown) { demo.discard(); return; }
+    if (authority) {
+      try { if (!demo.token) throw new Error(); await authority.accept(demo.token); }
+      catch { demo.discard(); return; }
+      if (demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown) { demo.discard(); return; }
+    }
     const replacement = demo.session.projection.slice(demo.target!.from, demo.session.projection.length - (demo.source.length - demo.target!.to));
     editorAction("rewrite.accept", { key: demo.noteKey, source: demo.source, replacement });
     demo.discard();
@@ -147,9 +163,9 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     demo.changed();
   });
   for (const field of ["address", "model", "key"] as const) command(field, (a) => { demo[field] = String(a.value); });
-  command("provider", () => { demo.session?.stop(); demo.session = undefined; demo.useConnection = !demo.useConnection; demo.changed(); });
+  command("provider", () => { demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined; demo.useConnection = !demo.useConnection; demo.changed(); });
   command("saveConnection", async () => {
-    demo.session?.stop(); demo.session = undefined; demo.connectionStatus = text("connectionSaving"); demo.changed();
+    demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined; demo.connectionStatus = text("connectionSaving"); demo.changed();
     try {
       if (!connection) throw new Error();
       const saved = await connection("configure", { address: demo.address, model: demo.model, key: demo.key });
@@ -158,7 +174,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     finally { demo.key = ""; demo.changed(); }
   });
   command("removeConnection", async () => {
-    demo.session?.stop(); demo.session = undefined;
+    demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined;
     try { await connection?.("remove"); demo.connected = false; demo.useConnection = false; demo.key = ""; demo.connectionStatus = text("connectionRemoved"); }
     catch { demo.connectionStatus = text("connectionError"); }
     demo.changed();

@@ -19,11 +19,17 @@ import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.t
  * tests implement it in memory. The app never talks to Node or the network directly.
  */
 export interface PlatformBridge {
+  rewriteAuthority?: {
+    (action: "activate", input: { path: string | null; expected?: string }): Promise<string | undefined>;
+    (action: "prepare", input: { revision: string; source: string; target: import("@focus-notes/markdown").RewriteTarget }): Promise<string>;
+    (action: "cancel", input: { revision: string }): Promise<void>;
+    (action: "accept" | "release", input: { token: string }): Promise<void>;
+  };
   /** Isolated Rewrite candidate only. Keys cross once; never returned or put in app state. */
   rewriteConnection?: {
     (action: "configure", input: { address: string; model: string; key: string }): Promise<{ address: string; model: string; configured: boolean }>;
     (action: "settings" | "remove"): Promise<{ address: string; model: string; configured: boolean }>;
-    (action: "start", input: { target: string; instruction: string }): Promise<string>;
+    (action: "start", input: { target: string; instruction: string; token?: string }): Promise<string>;
     (action: "next", input: { id: string }): Promise<IteratorResult<import("./rewrite.ts").RewriteEvent>>;
     (action: "cancel", input: { id: string }): Promise<void>;
   };

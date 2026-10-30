@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures.ts";
 import { launch, tempDirs, caret, onDisk } from "./helpers.ts";
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createServer } from "node:http";
 
@@ -15,6 +15,9 @@ test("configured loopback connection: inert incremental proposal, cancel, error,
   const bodies: string[] = [];
   const server = createServer(async (req, res) => {
     requests++;
+    // The local note's encrypted durable original ref exists BEFORE any provider request.
+    const history = readdirSync(join(dirs.userData, "rewrite-history"), { recursive: true }).map(String);
+    expect(history.some((p) => p.includes("refs") && p.includes("focus-notes"))).toBe(true);
     expect(req.url).toBe("/v1/chat/completions");
     expect(req.headers.authorization).toBe("Bearer fixture-only-token");
     let body = ""; for await (const part of req) body += part; bodies.push(body);

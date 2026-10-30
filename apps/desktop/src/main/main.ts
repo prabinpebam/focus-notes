@@ -6,6 +6,8 @@
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { RewriteConnection } from "./rewrite-connection.ts";
+import { RewriteAuthority } from "./rewrite-authority.ts";
+import { RewriteOriginalStore } from "./rewrite-original.ts";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -24,7 +26,7 @@ import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { release as osRelease } from "node:os";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
@@ -544,6 +546,7 @@ const saveRecord = (r: WorkspaceRecord) => {
  * (D-212). From the recovery view, writing opens again here (FRE-11).
  */
 async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kind" | "repository">): Promise<void> {
+  rewriteAuthority.closeAll();
   if (workspaceIdentity) {
     await applyLocalIdentity(setupRunner, folder, workspaceIdentity);
     workspaceIdentity = undefined;
@@ -850,6 +853,7 @@ function notePath(p: unknown): string {
  * before the rename: another program's change is never written over (D-92, DEF-26).
  */
 const writer = new NoteWriter({
+  rewriteIdentity: resolveRewriteNote,
   ready: async (path) => {
     await assertWritable(path);
     // A pull rewriting files finishes first, so a save never lands in the middle of it.
@@ -860,6 +864,30 @@ const writer = new NoteWriter({
     if (!isMarkdown(path)) return;
     const st = await stat(path).catch(() => undefined);
     if (st) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
+  },
+});
+async function resolveRewriteNote(input: string) {
+  const path = await realpath(notePath(input));
+  const workspace = await realpath(notesHome());
+  const canonicalRoots = await Promise.all(roots().map(async (r) => ({ ...r, path: await realpath(r.path) })));
+  const root = canonicalRoots.find((r) => inside(r.path, path));
+  if (!root || !inside(workspace, path)) throw new Error("rewrite-identity");
+  await assertWritable(path);
+  const text = await readFile(path, "utf8");
+  return { path, workspace, domain: root.id as "public" | "private" | "local",
+    noteKey: createHash("sha256").update(relative(workspace, path)).digest("hex"),
+    conflict: /^(?:<<<<<<< |=======|>>>>>>> )/m.test(text) };
+}
+const rewriteAuthority = new RewriteAuthority({
+  writer, resolve: resolveRewriteNote,
+  original: async (input, note) => {
+    const store = new RewriteOriginalStore({
+      workspace: note.workspace, dataDir: app.getPath("userData"),
+      crypt: { available: () => safeStorage.isEncryptionAvailable(),
+        encrypt: (text) => safeStorage.encryptString(text), decrypt: (data) => safeStorage.decryptString(data) },
+    });
+    const ack = await store.original(input);
+    return ack.commitId;
   },
 });
 const writeQueues = writer.queues;
@@ -1198,6 +1226,20 @@ async function slowSeam(channel: string): Promise<void> {
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
+  handleFrom("rewrite:authority", async (e, action, input = {}) => {
+    const owner = e.sender.id;
+    if (action === "activate") {
+      e.sender.once("destroyed", () => rewriteAuthority.close(owner));
+      return rewriteAuthority.activate(owner, input.path === null ? null : notePath(input.path), input.expected);
+    }
+    // Narrow candidate only. Ordinary launches can navigate but cannot generate or Accept.
+    if (!process.argv.includes("--rewrite-editor-demo") || !process.env.FOCUS_NOTES_USER_DATA || !process.env.FOCUS_NOTES_DOCS) throw new Error("candidate-only");
+    if (action === "prepare") return rewriteAuthority.prepare(owner, input.revision, input.source, input.target);
+    if (action === "cancel") return rewriteAuthority.cancel(owner, input.revision);
+    if (action === "accept") return rewriteAuthority.accept(owner, input.token);
+    if (action === "release") return rewriteAuthority.release(owner, input.token);
+    throw new Error("rewrite-unavailable");
+  });
   const connection = new RewriteConnection({
     available: () => safeStorage.isEncryptionAvailable(),
     encrypt: (text) => safeStorage.encryptString(text),
@@ -1232,7 +1274,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         if (typeof a.target !== "string" || a.target.length > 32768 || typeof a.instruction !== "string" || a.instruction.length > 4000) throw new Error();
         const abort = new AbortController();
         const id = randomUUID();
-        const stream = connection.stream({ sessionId: id, requestId: id, instruction: a.instruction, target: a.target, signal: abort.signal });
+        const target = rewriteAuthority.target(owner, String(a.token));
+        if (target !== a.target) throw new Error();
+        rewriteAuthority.signal(owner, String(a.token)).addEventListener("abort", () => abort.abort(), { once: true });
+        const stream = connection.stream({ sessionId: id, requestId: id, instruction: a.instruction, target, signal: abort.signal });
         requests.set(owner, { id, abort, stream });
         e.sender.once("destroyed", () => { requests.get(owner)?.abort.abort(); requests.delete(owner); });
         return id;
@@ -1364,7 +1409,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return out;
   });
   // A save: written only over the text the window expects on disk (D-92, DEF-26).
-  handle("note:write", noteSave({
+  const saveNote = noteSave({
     path: notePath,
     write: atomicWrite,
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
@@ -1374,7 +1419,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       withGit((g) => g.written(path, changedChars(before, content)));
     },
     landed: async (path) => drafts?.written(path),
-  }));
+  });
+  handleFrom("note:write", async (e, path, content, expected) => {
+    const result = await saveNote(path, content, expected);
+    if (!result) rewriteAuthority.written(e.sender.id, await realpath(notePath(path)), content);
+    return result;
+  });
   handle("note:choose", async () => {
     const w = win();
     const opts = { properties: ["openFile" as const], defaultPath: notesHome(), filters: [{ name: "Markdown", extensions: ["md", "markdown"] }] };
@@ -2200,6 +2250,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   let allowClose = false;
   win.on("session-end", () => (quitting = true));
   win.on("close", (e) => {
+    rewriteAuthority.close(win.webContents.id);
     if (allowClose) return;
     e.preventDefault();
     if (closing) return;

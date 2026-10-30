@@ -1,0 +1,123 @@
+import { createHash, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import type { NoteWriter, RewriteSaveLease } from "./note-write.ts";
+import type { OriginalInput } from "./rewrite-original.ts";
+
+export interface CurrentRewriteNote {
+  path: string;
+  workspace: string;
+  domain: "public" | "private" | "local";
+  noteKey: string;
+  conflict: boolean;
+}
+interface Current {
+  revision: string;
+  note: CurrentRewriteNote;
+  diskExpectedHash?: string;
+  abort: AbortController;
+  operation?: { token: string; lease: RewriteSaveLease; target: string };
+}
+const hash = (text: string) => createHash("sha256").update(text).digest("hex");
+const refused = () => new Error("rewrite-stale");
+interface Options {
+  writer: NoteWriter;
+  resolve(path: string): Promise<CurrentRewriteNote>;
+  original(input: OriginalInput, note: CurrentRewriteNote): Promise<string>;
+}
+
+/** Explicit navigation, not reads, establishes authority. No renderer domain/key is accepted. */
+export class RewriteAuthority {
+  readonly #windows = new Map<number, Current>();
+  readonly #options: Options;
+  constructor(options: Options) { this.#options = options; }
+  written(owner: number, path: string, content: string): void {
+    const current = this.#windows.get(owner);
+    if (current?.note?.path === path) current.diskExpectedHash = hash(content);
+  }
+  cancel(owner: number, revision: string): void {
+    const current = this.#live(owner, revision);
+    current.abort.abort();
+    current.operation?.lease.release();
+    current.operation = undefined;
+    current.abort = new AbortController();
+  }
+  close(owner: number): void {
+    const current = this.#windows.get(owner);
+    this.#windows.delete(owner);
+    current?.abort.abort();
+    current?.operation?.lease.release();
+  }
+  closeAll(): void { for (const owner of this.#windows.keys()) this.close(owner); }
+  async activate(owner: number, path: string | null, expected?: string): Promise<string | undefined> {
+    this.close(owner);
+    if (path === null) return;
+    // Reserve BEFORE awaiting resolution so late navigation cannot overwrite a newer one.
+    const current: Current = { revision: randomUUID(), note: undefined!, abort: new AbortController() };
+    this.#windows.set(owner, current);
+    try {
+      current.note = await this.#options.resolve(path);
+      const disk = await readFile(current.note.path, "utf8");
+      if (expected !== undefined && disk !== expected) throw refused();
+      current.diskExpectedHash = hash(disk);
+      this.#live(owner, current.revision);
+      if (current.note.conflict) throw refused();
+      return current.revision;
+    } catch (error) {
+      if (this.#windows.get(owner) === current) this.close(owner);
+      throw error;
+    }
+  }
+  #live(owner: number, revision: string): Current {
+    const current = this.#windows.get(owner);
+    if (!current || current.revision !== revision || current.abort.signal.aborted) throw refused();
+    return current;
+  }
+  async prepare(owner: number, revision: string, source: string, target: OriginalInput["target"]): Promise<string> {
+    const current = this.#live(owner, revision);
+    const signal = current.abort.signal;
+    if (!current.note || current.operation || typeof source !== "string" || source.length > 32 * 1024 * 1024) throw refused();
+    const note = current.note;
+    // Only the source/coordinates are editor input. Path, domain, key and baseline are main-owned.
+    const diskExpectedHash = current.diskExpectedHash!;
+    this.#live(owner, revision);
+    const lease = await this.#options.writer.prepareRewrite(note.path, {
+      domain: note.domain, noteKey: note.noteKey, baselineHash: diskExpectedHash, signal,
+    });
+    const operation = { token: randomUUID(), lease, target: target.original };
+    try {
+      if (signal.aborted) throw refused();
+      this.#live(owner, revision);
+      current.operation = operation;
+      const ack = await this.#options.original({
+        domain: note.domain === "public" ? "public" : "private",
+        noteKey: note.noteKey, sessionId: randomUUID(), diskExpectedHash, source, target,
+      }, note);
+      if (!ack || this.#live(owner, revision).operation !== operation) throw refused();
+      return operation.token;
+    } catch (error) {
+      lease.release();
+      if (current.operation === operation) current.operation = undefined;
+      throw error;
+    }
+  }
+  #operation(owner: number, token: string): { current: Current; operation: NonNullable<Current["operation"]> } {
+    const current = this.#windows.get(owner);
+    if (!current || current.abort.signal.aborted || !current.operation || current.operation.token !== token) throw refused();
+    return { current, operation: current.operation };
+  }
+  target(owner: number, token: string): string { return this.#operation(owner, token).operation.target; }
+  signal(owner: number, token: string): AbortSignal { return this.#operation(owner, token).current.abort.signal; }
+  async accept(owner: number, token: string): Promise<void> {
+    const { current, operation } = this.#operation(owner, token);
+    const note = await this.#options.resolve(current.note.path);
+    if (note.workspace !== current.note.workspace || note.noteKey !== current.note.noteKey || note.domain !== current.note.domain
+      || note.conflict || hash(await readFile(note.path, "utf8")) !== operation.lease.baselineHash) throw refused();
+    this.#operation(owner, token);
+    this.release(owner, token);
+  }
+  release(owner: number, token: string): void {
+    const { current, operation } = this.#operation(owner, token);
+    current.operation = undefined;
+    operation.lease.release();
+  }
+}

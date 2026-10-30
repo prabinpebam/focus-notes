@@ -154,7 +154,8 @@ export class RewriteOriginalStore {
         const content = (await this.#git(repo, ["hash-object", "-w", "--stdin"], this.#encode(snapshot.domain, snapshot.source))).trim();
         const index = (await this.#git(repo, ["hash-object", "-w", "--stdin"], this.#encode(snapshot.domain, record))).trim();
         if (!oid.test(content) || !oid.test(index)) throw unavailable();
-        const tree = (await this.#git(repo, ["mktree", "-z"], `100644 blob ${content}\tcontent\0` + `100644 blob ${index}\trecord.json\0`)).trim();
+        const entries = [`100644 blob ${content}\tcontent`, `100644 blob ${index}\trecord.json`, ""].join("\0");
+        const tree = (await this.#git(repo, ["mktree", "-z"], entries)).trim();
         if (!oid.test(tree)) throw unavailable();
         const commitId = (await this.#git(repo, ["commit-tree", tree], "Rewrite checkpoint\n")).trim();
         if (!oid.test(commitId)) throw unavailable();
