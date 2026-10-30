@@ -16,6 +16,7 @@
   "rewrite.connectionError": "Connection could not be saved. Check the address and model. Secure OS storage must be available; no plaintext key is saved.",
   "rewrite.connectionGenerationError": "The connection could not finish this rewrite. Check connection settings, then choose Try again. Your text is unchanged.",
   "rewrite.connectionStreaming": "Rewriting with your connection…",
+  "rewrite.historyError": "The rewrite could not be saved to local history. Your text is unchanged. Free disk space or make local history writable, then choose Try again.",
   "rewrite.unsupported": "This target can’t be rewritten. Select text within one paragraph or place the caret in a paragraph. Headings and tables aren’t supported yet.",
   "rewrite.candidateOnly": "Available only in the disposable Rewrite candidate.",
   "rewrite.close": "Close rewrite",

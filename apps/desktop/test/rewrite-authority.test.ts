@@ -7,6 +7,34 @@ import { NoteWriter } from "../src/main/note-write.ts";
 import { RewriteAuthority } from "../src/main/rewrite-authority.ts";
 
 describe("main current-note authority", () => {
+  it("refuses incomplete, mismatched and foreign completions and Accept until durable completion", async () => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-authority-")));
+    const path = join(dir, "a.md"); await writeFile(path, "original");
+    const identity = async () => ({ path, workspace: dir, domain: "local" as const, noteKey: "note", conflict: false });
+    const writer = new NoteWriter({ rewriteIdentity: identity });
+    const saved: string[] = [];
+    const authority = new RewriteAuthority({ writer, resolve: identity, original: async () => "checkpoint",
+      variation: async (input, checkpointId, replacement) => {
+        expect(input.source).toBe("original"); expect(checkpointId).toBe("checkpoint");
+        saved.push(replacement); return "durable-complete";
+      } });
+    try {
+      const revision = await authority.activate(1, path);
+      const token = await authority.prepare(1, revision!, "original", { from: 0, to: 8, original: "original", startByte: 0, endByte: 8, expanded: false });
+      authority.streamStart(1, token);
+      authority.streamEvent(1, token, { type: "delta", text: "complete" });
+      await expect(authority.complete(1, token, "complete")).rejects.toThrow();
+      await expect(authority.accept(1, token)).rejects.toThrow();
+      authority.streamEvent(1, token, { type: "complete" });
+      await expect(authority.complete(2, token, "complete")).rejects.toThrow();
+      await expect(authority.complete(1, token, "modified")).rejects.toThrow();
+      expect(saved).toEqual([]);
+      expect(await authority.complete(1, token, "complete")).toBe("durable-complete");
+      await authority.accept(1, token);
+      expect(saved).toEqual(["complete"]);
+      expect(await readFile(path, "utf8")).toBe("original");
+    } finally { authority.closeAll(); await rm(dir, { recursive: true, force: true }); }
+  });
   it("binds opaque revisions to window/navigation and checkpoints dirty source before permission", async () => {
     const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-authority-")));
     const path = join(dir, "a.md"), other = join(dir, "b.md");

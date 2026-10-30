@@ -26,7 +26,7 @@ export class RewriteDemo {
   connectionStatus = "";
   provider: RewriteProvider | undefined;
   token: string | undefined;
-  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; accept(token: string): Promise<void>; cancel(): void } | undefined;
+  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void } | undefined;
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -60,13 +60,14 @@ export class RewriteDemo {
     };
     this.session = new RewriteSession({
       sessionId: "disposable-demo", source: this.source, target: this.target, provider: this.useConnection ? this.provider ?? (async function* () { throw new Error("connection-unavailable"); }) : provider,
-      // Honest demo-only acknowledgements, NOT durable real-note checkpoints.
+      // Only the standalone in-memory demo uses acknowledgements without storage.
       checkpoints: { original: async () => {
         if (!this.authority) return "demo-original";
         const token = await this.authority.prepare(this.source, this.target!);
         this.token = token;
         return token;
-      }, variation: async () => "demo-variation" },
+      }, variation: async ({ checkpointId, replacement }) => this.authority
+        ? this.authority.complete(checkpointId, replacement) : "demo-variation" },
     });
     const active = this.session;
     const began = performance.now();
@@ -202,7 +203,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
         generateLabel: text(state === "review" || state === "error" ? "generate" : "start"),
         discardLabel: text(state === "sending" || state === "streaming" ? "cancel" : "discard"),
         busy: state === "sending" || state === "streaming", review: state === "review", undo: demo.previous !== undefined,
-        status: text(state === "error" ? (demo.useConnection ? "connectionGenerationError" : demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? (demo.useConnection ? "connectionStreaming" : "streaming") : state === "review" ? "ready" : "compose"),
+        status: text(state === "error" ? (demo.session?.error === "checkpoint-failed" ? "historyError" : demo.useConnection ? "connectionGenerationError" : demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? (demo.useConnection ? "connectionStreaming" : "streaming") : state === "review" ? "ready" : "compose"),
       };
     },
   });

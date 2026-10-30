@@ -1514,6 +1514,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         return bridge.rewriteAuthority!("prepare", { revision: rewriteRevision, source, target });
       }),
       accept: (token) => bridge.rewriteAuthority!("accept", { token }),
+      complete: (token, replacement) => bridge.rewriteAuthority!("complete", { token, replacement }),
       cancel: () => { if (rewriteRevision) void bridge.rewriteAuthority!("cancel", { revision: rewriteRevision }).catch(() => {}); },
     } : undefined);
   return {

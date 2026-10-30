@@ -23,6 +23,7 @@ export interface PlatformBridge {
     (action: "activate", input: { path: string | null; expected?: string }): Promise<string | undefined>;
     (action: "prepare", input: { revision: string; source: string; target: import("@focus-notes/markdown").RewriteTarget }): Promise<string>;
     (action: "cancel", input: { revision: string }): Promise<void>;
+    (action: "complete", input: { token: string; replacement: string }): Promise<string>;
     (action: "accept" | "release", input: { token: string }): Promise<void>;
   };
   /** Isolated Rewrite candidate only. Keys cross once; never returned or put in app state. */

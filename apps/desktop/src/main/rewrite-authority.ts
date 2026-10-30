@@ -15,7 +15,7 @@ interface Current {
   note: CurrentRewriteNote;
   diskExpectedHash?: string;
   abort: AbortController;
-  operation?: { token: string; lease: RewriteSaveLease; target: string };
+  operation?: { token: string; lease: RewriteSaveLease; target: string; input: OriginalInput; checkpointId?: string; variationId?: string; output?: string; streaming?: boolean; complete?: boolean };
 }
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 const refused = () => new Error("rewrite-stale");
@@ -23,6 +23,7 @@ interface Options {
   writer: NoteWriter;
   resolve(path: string): Promise<CurrentRewriteNote>;
   original(input: OriginalInput, note: CurrentRewriteNote): Promise<string>;
+  variation?(input: OriginalInput, checkpointId: string, replacement: string, note: CurrentRewriteNote): Promise<string>;
 }
 
 /** Explicit navigation, not reads, establishes authority. No renderer domain/key is accepted. */
@@ -83,16 +84,16 @@ export class RewriteAuthority {
     const lease = await this.#options.writer.prepareRewrite(note.path, {
       domain: note.domain, noteKey: note.noteKey, baselineHash: diskExpectedHash, signal,
     });
-    const operation = { token: randomUUID(), lease, target: target.original };
+    const input: OriginalInput = { domain: note.domain === "public" ? "public" : "private",
+      noteKey: note.noteKey, sessionId: randomUUID(), diskExpectedHash, source, target: { ...target } };
+    const operation: NonNullable<Current["operation"]> = { token: randomUUID(), lease, target: target.original, input };
     try {
       if (signal.aborted) throw refused();
       this.#live(owner, revision);
       current.operation = operation;
-      const ack = await this.#options.original({
-        domain: note.domain === "public" ? "public" : "private",
-        noteKey: note.noteKey, sessionId: randomUUID(), diskExpectedHash, source, target,
-      }, note);
+      const ack = await this.#options.original(input, note);
       if (!ack || this.#live(owner, revision).operation !== operation) throw refused();
+      operation.checkpointId = ack;
       return operation.token;
     } catch (error) {
       lease.release();
@@ -107,8 +108,30 @@ export class RewriteAuthority {
   }
   target(owner: number, token: string): string { return this.#operation(owner, token).operation.target; }
   signal(owner: number, token: string): AbortSignal { return this.#operation(owner, token).current.abort.signal; }
+  streamStart(owner: number, token: string): void {
+    const { operation } = this.#operation(owner, token);
+    if (operation.streaming) throw refused();
+    operation.streaming = true; operation.output = ""; operation.complete = false;
+  }
+  streamEvent(owner: number, token: string, event: { type: string; text?: string }): void {
+    const { operation } = this.#operation(owner, token);
+    if (event.type === "delta") {
+      operation.output += event.text ?? "";
+      if (Buffer.byteLength(operation.output!) > 32768) throw refused();
+    } else if (event.type === "complete") operation.complete = true;
+  }
+  async complete(owner: number, token: string, replacement: string): Promise<string> {
+    const { current, operation } = this.#operation(owner, token);
+    if (!operation.checkpointId || operation.variationId || typeof replacement !== "string"
+      || (operation.streaming && (!operation.complete || operation.output !== replacement))) throw refused();
+    const id = await this.#options.variation?.(operation.input, operation.checkpointId, replacement, current.note);
+    if (!id || this.#operation(owner, token).operation !== operation) throw refused();
+    operation.variationId = id;
+    return id;
+  }
   async accept(owner: number, token: string): Promise<void> {
     const { current, operation } = this.#operation(owner, token);
+    if (this.#options.variation && !operation.variationId) throw refused();
     const note = await this.#options.resolve(current.note.path);
     if (note.workspace !== current.note.workspace || note.noteKey !== current.note.noteKey || note.domain !== current.note.domain
       || note.conflict || hash(await readFile(note.path, "utf8")) !== operation.lease.baselineHash) throw refused();

@@ -878,17 +878,18 @@ async function resolveRewriteNote(input: string) {
     noteKey: createHash("sha256").update(relative(workspace, path)).digest("hex"),
     conflict: /^(?:<<<<<<< |=======|>>>>>>> )/m.test(text) };
 }
-const rewriteAuthority = new RewriteAuthority({
-  writer, resolve: resolveRewriteNote,
-  original: async (input, note) => {
-    const store = new RewriteOriginalStore({
+const rewriteStore = (note: { workspace: string }) => new RewriteOriginalStore({
       workspace: note.workspace, dataDir: app.getPath("userData"),
       crypt: { available: () => safeStorage.isEncryptionAvailable(),
         encrypt: (text) => safeStorage.encryptString(text), decrypt: (data) => safeStorage.decryptString(data) },
     });
-    const ack = await store.original(input);
+const rewriteAuthority = new RewriteAuthority({
+  writer, resolve: resolveRewriteNote,
+  original: async (input, note) => {
+    const ack = await rewriteStore(note).original(input);
     return ack.commitId;
   },
+  variation: (input, checkpointId, replacement, note) => rewriteStore(note).variation(input, checkpointId, replacement),
 });
 const writeQueues = writer.queues;
 const atomicWrite = (path: string, content: string, expected?: string) => writer.write(path, content, expected);
@@ -1237,6 +1238,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (action === "prepare") return rewriteAuthority.prepare(owner, input.revision, input.source, input.target);
     if (action === "cancel") return rewriteAuthority.cancel(owner, input.revision);
     if (action === "accept") return rewriteAuthority.accept(owner, input.token);
+    if (action === "complete") return rewriteAuthority.complete(owner, input.token, input.replacement);
     if (action === "release") return rewriteAuthority.release(owner, input.token);
     throw new Error("rewrite-unavailable");
   });
@@ -1245,7 +1247,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     encrypt: (text) => safeStorage.encryptString(text),
     decrypt: (data) => safeStorage.decryptString(data),
   });
-  const requests = new Map<number, { id: string; abort: AbortController; stream: ReturnType<RewriteConnection["stream"]> }>();
+  const requests = new Map<number, { id: string; token: string; abort: AbortController; stream: ReturnType<RewriteConnection["stream"]> }>();
   const profile = () => join(app.getPath("userData"), "rewrite-connection.json");
   handleFrom("rewrite:connection", async (e, action: unknown, input: unknown = {}) => {
     // Not production activation: same explicit disposable-profile/file-workspace gate as the editor.
@@ -1276,9 +1278,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         const id = randomUUID();
         const target = rewriteAuthority.target(owner, String(a.token));
         if (target !== a.target) throw new Error();
+        rewriteAuthority.streamStart(owner, String(a.token));
         rewriteAuthority.signal(owner, String(a.token)).addEventListener("abort", () => abort.abort(), { once: true });
         const stream = connection.stream({ sessionId: id, requestId: id, instruction: a.instruction, target, signal: abort.signal });
-        requests.set(owner, { id, abort, stream });
+        requests.set(owner, { id, token: String(a.token), abort, stream });
         e.sender.once("destroyed", () => { requests.get(owner)?.abort.abort(); requests.delete(owner); });
         return id;
       }
@@ -1287,6 +1290,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         if (!request || request.id !== a.id) throw new Error();
         const next = await request.stream.next();
         if (request.abort.signal.aborted) throw new Error();
+        if (!next.done) rewriteAuthority.streamEvent(owner, request.token, next.value);
         if (next.done || next.value.type === "complete") { await request.stream.return(undefined); requests.delete(owner); }
         return next;
       }

@@ -35,6 +35,20 @@ async function fixture() {
   return { options, input, store: new RewriteOriginalStore(options) };
 }
 describe("D-247 original prerequisite (no generation integration)", () => {
+  it("persists distinct complete variations bound to the original and recovers after reconstruction", async () => {
+    const { options, input, store } = await fixture();
+    input.domain = "private";
+    const original = await store.original(input);
+    const first = await store.variation(input, original.commitId, "First complete.");
+    const second = await store.variation(input, original.commitId, "Second complete.");
+    expect(first).not.toBe(second);
+    const recovered = await new RewriteOriginalStore(options).variations(input);
+    expect(recovered.map((r) => r.replacement).sort()).toEqual(["First complete.", "Second complete."]);
+    expect(recovered.every((r) => r.checkpointId === original.commitId)).toBe(true);
+    expect(await store.recoverSession(input)).toEqual(input);
+    await expect(store.variation(input, "0".repeat(40), "Wrong checkpoint")).rejects.toThrow();
+    await expect(store.variation(input, original.commitId, "")).rejects.toThrow();
+  });
   it.each(["public", "private"] as const)("recovers exact %s canonical source after reconstruction, never writes workspace", async (domain) => {
     const { options, input, store } = await fixture();
     input.domain = domain;

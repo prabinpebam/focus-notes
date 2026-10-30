@@ -1,6 +1,5 @@
 /**
- * D-247's original-only prerequisite. Not installed in main, IPC or RewriteSession:
- * trusted identity, dirty-source ownership and durable variations are still prerequisites.
+ * Candidate rewrite originals and complete variations, in the same isolated Git store.
  * The Git tree IS the index: no draft, plaintext private index or second storage format.
  */
 import { createHash, randomUUID } from "node:crypto";
@@ -184,6 +183,54 @@ export class RewriteOriginalStore {
   async recover(ack: OriginalAck, identity: Pick<OriginalInput, "domain" | "noteKey">): Promise<OriginalInput> {
     try { return await this.#store(ack.domain, false, (repo) => this.#read(repo, ack, identity)); }
     catch { throw unavailable(); }
+  }
+  async variation(input: OriginalInput, checkpointId: string, replacement: string): Promise<string> {
+    try {
+      valid(input);
+      if (!replacement.trim() || Buffer.byteLength(replacement) > 32768
+        || Buffer.from(replacement).toString("utf8") !== replacement) throw unavailable();
+      return await this.#store(input.domain, false, async (repo) => {
+        const refs = (await this.#git(repo, ["for-each-ref", "--format=%(objectname) %(refname)", "refs/focus-notes/rewrite/v1/"]))
+          .trim().split("\n").filter((line) => line.endsWith(`/${input.sessionId}`));
+        if (refs.length !== 1) throw unavailable();
+        const [commitId, ref] = refs[0]!.split(" ");
+        if (commitId !== checkpointId) throw unavailable();
+        const original = await this.#read(repo, { workspaceKey: this.#key, domain: input.domain, commitId: commitId!, ref: ref! }, input);
+        if (original.source !== input.source || original.diskExpectedHash !== input.diskExpectedHash
+          || JSON.stringify(original.target) !== JSON.stringify(input.target)) throw unavailable();
+        const source = input.source.slice(0, input.target.from) + replacement + input.source.slice(input.target.to);
+        const record = JSON.stringify({ version: 1, kind: "complete", workspaceKey: this.#key,
+          domain: input.domain, noteKey: input.noteKey, sessionId: input.sessionId, checkpointId,
+          replacement, contentHash: hash(source) });
+        const content = (await this.#git(repo, ["hash-object", "-w", "--stdin"], this.#encode(input.domain, source))).trim();
+        const index = (await this.#git(repo, ["hash-object", "-w", "--stdin"], this.#encode(input.domain, record))).trim();
+        const tree = (await this.#git(repo, ["mktree", "-z"], [`100644 blob ${content}\tcontent`, `100644 blob ${index}\trecord.json`, ""].join("\0"))).trim();
+        const id = (await this.#git(repo, ["commit-tree", tree, "-p", checkpointId], "Rewrite complete\n")).trim();
+        if (!oid.test(id)) throw unavailable();
+        const variationRef = `refs/focus-notes/variations/v1/${randomUUID()}`;
+        await this.#git(repo, ["update-ref", variationRef, id, "0".repeat(id.length)]);
+        if ((await this.#git(repo, ["rev-parse", "--verify", variationRef])).trim() !== id) throw unavailable();
+        return id;
+      });
+    } catch { throw unavailable(); }
+  }
+  /** Reconstruct completed history from durable refs; never includes partial stream tokens. */
+  async variations(identity: Pick<OriginalInput, "domain" | "noteKey">): Promise<{ checkpointId: string; replacement: string; source: string }[]> {
+    try {
+      return await this.#store(identity.domain, false, async (repo) => {
+        const ids = (await this.#git(repo, ["for-each-ref", "--format=%(objectname)", "refs/focus-notes/variations/v1/"])).trim().split("\n").filter(Boolean);
+        const results = [];
+        for (const id of ids) {
+          const record = JSON.parse(this.#decode(identity.domain, await this.#git(repo, ["cat-file", "blob", `${id}:record.json`])));
+          if (record.noteKey !== identity.noteKey) continue;
+          const source = this.#decode(identity.domain, await this.#git(repo, ["cat-file", "blob", `${id}:content`]));
+          if (record.version !== 1 || record.kind !== "complete" || record.domain !== identity.domain
+            || record.workspaceKey !== this.#key || record.contentHash !== hash(source)) throw unavailable();
+          results.push({ checkpointId: record.checkpointId as string, replacement: record.replacement as string, source });
+        }
+        return results;
+      });
+    } catch { throw unavailable(); }
   }
   /** Reconstruct from the durable refs alone; an in-memory acknowledgement is not required. */
   async recoverSession(identity: Pick<OriginalInput, "domain" | "noteKey" | "sessionId">): Promise<OriginalInput> {

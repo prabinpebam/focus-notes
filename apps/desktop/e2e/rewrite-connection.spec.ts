@@ -1,8 +1,9 @@
 import { test, expect } from "./fixtures.ts";
 import { launch, tempDirs, caret, onDisk } from "./helpers.ts";
-import { mkdirSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createServer } from "node:http";
+import { execFileSync } from "node:child_process";
 
 test("configured loopback connection: inert incremental proposal, cancel, error, retry, Accept and native Undo", async () => {
   const dirs = tempDirs();
@@ -34,9 +35,28 @@ test("configured loopback connection: inert incremental proposal, cancel, error,
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("fixture");
-  const { app, page } = await launch(dirs, {}, { args: ["--rewrite-editor-demo"] });
+  let { app, page } = await launch(dirs, {}, { args: ["--rewrite-editor-demo"] });
   const captures = resolve("../../test-results/rewrite-connection");
   mkdirSync(captures, { recursive: true });
+  const completed = () => {
+    const root = join(dirs.userData, "rewrite-history");
+    return readdirSync(root, { recursive: true }).map(String).filter((p) => p.includes("variations") && !p.includes(".lock") && !p.endsWith("v1") && !p.endsWith("variations"));
+  };
+  const git = (...args: string[]) => {
+    const root = join(dirs.userData, "rewrite-history");
+    const repo = join(root, readdirSync(root)[0]!, "private.git");
+    return execFileSync("git", ["--no-pager", `--git-dir=${repo}`, ...args], { encoding: "utf8" }).trim();
+  };
+  const readComplete = async () => {
+    const refs = git("for-each-ref", "--format=%(refname)", "refs/focus-notes/variations/v1/").split("\n");
+    const results = [];
+    for (const ref of refs) {
+      const envelope = git("show", `${ref}:content`);
+      results.push(await app.evaluate(({ safeStorage }, envelope) =>
+        safeStorage.decryptString(Buffer.from(JSON.parse(envelope).data, "base64")), envelope));
+    }
+    return results;
+  };
   try {
     await app.evaluate(() => {
       const originalFetch = globalThis.fetch;
@@ -68,6 +88,7 @@ test("configured loopback connection: inert incremental proposal, cancel, error,
     await panel.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect.poll(() => closed).toBe(1);
     await expect(page.locator("[data-rewrite-proposal]")).toHaveCount(0);
+    expect(completed()).toHaveLength(0);
     expect(readFileSync(file, "utf8")).toBe(original);
     await editor.press("Control+Shift+r");
     mode = "error";
@@ -75,15 +96,48 @@ test("configured loopback connection: inert incremental proposal, cancel, error,
     await expect(panel.getByText(/The connection could not finish this rewrite/).last()).toBeVisible();
     await page.screenshot({ path: `${captures}/03-error.png` });
     mode = "stream";
+    // Fail actual Git storage AFTER the original checkpoint, while tokens are arriving.
+    await panel.getByRole("button", { name: "Try again", exact: true }).click();
+    await expect(page.locator("[data-rewrite-proposal]")).toContainText("Plan");
+    const historyRoot = join(dirs.userData, "rewrite-history");
+    const lock = join(historyRoot, readdirSync(historyRoot)[0]!, "private.lock");
+    writeFileSync(lock, "synthetic storage failure");
+    await expect(panel.getByText(/back.*up|checkpoint|history/i).last()).toBeVisible();
+    await expect(panel.getByRole("button", { name: "Accept", exact: true })).toBeDisabled();
+    await page.screenshot({ path: `${captures}/05-history-error.png` });
+    expect(completed()).toHaveLength(0);
+    expect(readFileSync(file, "utf8")).toBe(original);
+    unlinkSync(lock);
     await panel.getByRole("button", { name: "Try again", exact: true }).click();
     await expect(panel.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+    const first = completed();
+    expect(first).toHaveLength(1);
+    await panel.getByRole("button", { name: "Try again", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+    expect(completed()).toHaveLength(2);
+    expect(completed()).toContain(first[0]);
+    expect(await readComplete()).toEqual([original.replace("We are planning a community garden.", "Plan a garden."), original.replace("We are planning a community garden.", "Plan a garden.")]);
     await page.screenshot({ path: `${captures}/04-review.png` });
     expect(readFileSync(file, "utf8")).toBe(original);
     await panel.getByRole("button", { name: "Accept", exact: true }).click();
     await onDisk(file, "Plan a garden.\n\nKeep this paragraph unchanged.");
     await editor.press("Control+z");
     await expect.poll(() => readFileSync(file, "utf8")).toBe(original);
-    expect(requests).toBe(3);
+    await editor.press(caret.docStart); await editor.press("Control+Shift+r");
+    await panel.getByRole("button", { name: "Rewrite", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+    await panel.getByRole("button", { name: "Discard", exact: true }).click();
+    const retained = completed();
+    expect(retained).toHaveLength(3);
+    const originals = git("for-each-ref", "--format=%(refname)", "refs/focus-notes/rewrite/v1/");
+    await app.close();
+    ({ app, page } = await launch(dirs, {}, { args: ["--rewrite-editor-demo"] }));
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("We are planning");
+    expect(readFileSync(file, "utf8")).toBe(original);
+    expect(completed()).toEqual(retained);
+    expect(await readComplete()).toHaveLength(3);
+    expect(git("for-each-ref", "--format=%(refname)", "refs/focus-notes/rewrite/v1/")).toBe(originals);
+    expect(requests).toBe(6);
     expect(bodies.every((body) => JSON.parse(body).stream === true)).toBe(true);
   } finally {
     await app.close();
