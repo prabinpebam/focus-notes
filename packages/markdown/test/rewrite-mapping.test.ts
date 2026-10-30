@@ -110,6 +110,7 @@ describe("RWR-22/RWR-27: outside-byte identity and untrusted output", () => {
     ["- [x] done\n- [ ] later", "- [ ] done\n- [ ] later"],
     ["3. one\n4. two", "1. one\n2. two"],
     ["```js\none\n```", "```sh\ntwo\n```"],
+    ["```js\none\n```", "~~~js\ntwo\n~~~"],
   ])("retains immutable structural markers", (s, output) => {
     expect(() => spliceRewriteTarget(s, resolve(s, 1, 2), output)).toThrow("invalid-output");
   });

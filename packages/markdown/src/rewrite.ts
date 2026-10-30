@@ -1,4 +1,4 @@
-import { fingerprint, parseMarkdown, type PMNode } from "./index.ts";
+import { fingerprint, parseMarkdown, type Parsed, type PMNode } from "./index.ts";
 import { isSafeHref } from "./href.ts";
 
 export class RewriteTargetError extends Error {
@@ -81,6 +81,16 @@ function inventory(nodes: PMNode[]): string[] {
   return result;
 }
 
+function codeSyntax(parsed: Parsed): string {
+  return JSON.stringify(parsed.blocks.flatMap((block, i) => {
+    if (parsed.doc.content?.[i]?.type !== "codeBlock") return [];
+    const source = parsed.source.slice(block.start, block.end);
+    const opening = /^[ \t]*(?:`{3,}|~{3,})[^\r\n]*/.exec(source)?.[0] ?? null;
+    const closing = /(?:^|\r?\n)([ \t]*(?:`{3,}|~{3,})[ \t]*)$/.exec(source)?.[1] ?? null;
+    return [[opening, closing]];
+  }));
+}
+
 function links(nodes: PMNode[], allowChanges: boolean): string[] {
   const result: string[] = [];
   let previous: string | undefined;
@@ -115,7 +125,7 @@ export function spliceRewriteTarget(source: string, target: RewriteTarget, repla
   const output = parseMarkdown(normalized);
   walk(output.doc.content ?? [], (n) => { if (n.type === "rawMarkdown") fail("invalid-output"); });
   const old = parseMarkdown(target.original);
-  if (JSON.stringify(inventory(old.doc.content ?? [])) !== JSON.stringify(inventory(output.doc.content ?? []))
+  if (codeSyntax(old) !== codeSyntax(output) || JSON.stringify(inventory(old.doc.content ?? [])) !== JSON.stringify(inventory(output.doc.content ?? []))
     || JSON.stringify(links(old.doc.content ?? [], policy.allowLinkChanges)) !== JSON.stringify(links(output.doc.content ?? [], policy.allowLinkChanges))) return fail("invalid-output");
   const result = source.slice(0, target.from) + normalized + source.slice(target.to);
   const after = parseMarkdown(result);
