@@ -22,6 +22,8 @@ import { CREDENTIAL_QUERY, githubToken } from "../setup/credential.ts";
 import { findProgram, gitProgramDirs, isGcmHelper, isGhHelper, type ToolProcess, type ToolRunner } from "./tools.ts";
 
 export interface AccountDeps {
+  /** Synthetic offline E2E only: never discover native credentials or start their helpers. */
+  discovery?: "disabled";
   git: GitRunner;
   tools: ToolRunner;
   /** Requests to api.github.com (the shell's allowlisted fetch, or a fake). */
@@ -60,6 +62,12 @@ export class Account {
   #previous: { token: string; account: GitHubAccount } | undefined;
 
   constructor(deps: AccountDeps) {
+    if (deps.discovery === "disabled") {
+      // No native account command, even if an E2E accidentally invokes a sign-in action.
+      const denied = () => { throw Error("synthetic-account-disabled"); };
+      this.#d = { ...deps, git: denied, tools: denied, fetch: denied, avatar: denied };
+      return;
+    }
     // Every Git and helper call says when it was slow or stopped by its timeout, with its first two
     // arguments only (never a token, SEC-03): a stalled helper on a runner names itself (DEF-18).
     const log = deps.log;
@@ -138,6 +146,7 @@ export class Account {
 
   /** Where signing in stands: Git's credential first (FRE-04), then a GitHub CLI session Git doesn't use yet. */
   async status(): Promise<AccountStatus> {
+    if (this.#d.discovery === "disabled") return { gcm: false, gh: false, via: "helper" };
     const helpers = await this.#helpers();
     const ghProgram = await this.#ghProgram();
     const via = helpers.some(isGcmHelper) ? "gcm" as const : helpers.some(isGhHelper) ? "gh" as const : "helper" as const;

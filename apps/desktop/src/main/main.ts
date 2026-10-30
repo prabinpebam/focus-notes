@@ -81,6 +81,16 @@ import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window
 import { watchCompositing } from "./window/compositing.ts";
 import { AppTray, trayMode } from "./window/tray.ts";
 import { allowedRequest, HARDENED_WEB_PREFERENCES, isAppPage, isWebLink } from "./hardening.ts";
+import { syntheticStartup, loopbackFetch } from "./synthetic-startup.ts";
+
+// Before armGit, Account construction, app readiness, windows or renderer requests.
+const syntheticOffline = syntheticStartup(process.env);
+const startupDenied: string[] = [];
+if (syntheticOffline) {
+  globalThis.fetch = loopbackFetch(globalThis.fetch, startupDenied);
+  Object.assign(globalThis, { __airStartupDenied: startupDenied });
+  process.stdout.write("[focus-notes] synthetic startup: account discovery disabled; fetch numeric127-only\n");
+}
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 /** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
@@ -148,7 +158,7 @@ const fakeApi = devEnv("FOCUS_NOTES_GITHUB_API");
 const localRemotes = devEnv("FOCUS_NOTES_GIT_REMOTES");
 const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
 /** Journeys and the bench: windows never take the computer's focus (D-104 (7)). */
-const journey = devEnv("FOCUS_NOTES_E2E") === "1";
+const journey = syntheticOffline || devEnv("FOCUS_NOTES_E2E") === "1";
 /** Journeys print to this PDF instead of showing the system's print dialog (SHR-12, D-230). */
 const printToPdf = devEnv("FOCUS_NOTES_E2E_PRINT_PDF");
 // Software rendering, as on a CI runner with no GPU, to reproduce it on any computer (D-121).
@@ -359,6 +369,7 @@ const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && 
 // Signing in goes through Git's own helpers; the token is read from them when needed and kept only
 // in memory (SEC-03). The folder a workspace goes in is chosen here, with the system's dialog (D-98).
 const account = new Account({
+  ...(syntheticOffline ? { discovery: "disabled" as const } : {}),
   git: createRunner(onSpawn ? { onSpawn: (args) => onSpawn("git", args) } : {}),
   tools: createToolRunner(onSpawn ? { onSpawn } : {}),
   fetch: apiFetch,
@@ -2022,6 +2033,7 @@ function hardenSession(): void {
   // No network: only the app's own files and DevTools may load (PRV-01, PKG-06).
   session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
     const ok = allowedRequest(details.url);
+    if (syntheticOffline && /^https?:/.test(details.url)) startupDenied.push(`blocked:${details.url}`);
     if (!ok) process.stdout.write(`[focus-notes] blocked request to ${new URL(details.url).origin}\n`);
     cb({ cancel: !ok });
   });

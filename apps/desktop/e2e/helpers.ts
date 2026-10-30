@@ -2,7 +2,7 @@ import { _electron as electron, expect, type ElectronApplication, type Page } fr
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { flipFuses, FuseV1Options, FuseVersion } from "@electron/fuses";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export interface Launched {
   app: ElectronApplication;
@@ -138,6 +138,13 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   }
   // FOCUS_NOTES_E2E_EXE runs the packaged app (release\win-unpacked\focus-notes.exe) instead of the build.
   const exe = process.env.FOCUS_NOTES_E2E_EXE ? await harnessExe(process.env.FOCUS_NOTES_E2E_EXE) : undefined;
+  if (extraEnv.FOCUS_NOTES_E2E_OFFLINE === "1") {
+    // Fail BEFORE launching an older package which would silently ignore the isolation flag.
+    const bytes = readFileSync(exe ? join(dirname(exe), "resources", "app.asar") : join(import.meta.dirname, "..", "out", "main", "main.mjs"));
+    if (!bytes.includes(Buffer.from("synthetic startup: account discovery disabled; fetch numeric127-only"))) {
+      throw Error("Synthetic startup boundary absent: rebuild this exact package before launch");
+    }
+  }
   const app = await electron.launch({
     // Extra arguments: a deep link the app is opened with (D-165).
     ...(exe ? { executablePath: exe, args: [...(opts.args ?? [])] } : { args: [join(import.meta.dirname, "..", "out", "main", "main.mjs"), ...(opts.args ?? [])] }),

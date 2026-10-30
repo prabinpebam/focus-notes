@@ -73,5 +73,8 @@ export async function observeEgress(app: ElectronApplication) {
       callback({ cancel: /^https?:/.test(details.url) && new URL(details.url).hostname !== "127.0.0.1" });
     });
   });
-  return () => app.evaluate(() => (globalThis as any).__airSafeBEgress as string[]);
+  return () => app.evaluate(() => [
+    ...((globalThis as any).__airStartupDenied ?? []),
+    ...(globalThis as any).__airSafeBEgress,
+  ] as string[]);
 }

@@ -11,7 +11,7 @@ const source = "Synthetic garden sentence.\n";
 function isolatedAccount(dirs: { userData: string }) {
   const gh = join(dirs.userData, "empty-gh-config");
   mkdirSync(gh, { recursive: true });
-  return { GH_CONFIG_DIR: gh, GH_TOKEN: "", GITHUB_TOKEN: "", GH_ENTERPRISE_TOKEN: "", GITHUB_ENTERPRISE_TOKEN: "" };
+  return { FOCUS_NOTES_E2E_OFFLINE: "1", GH_CONFIG_DIR: gh, GH_TOKEN: "", GITHUB_TOKEN: "", GH_ENTERPRISE_TOKEN: "", GITHUB_ENTERPRISE_TOKEN: "" };
 }
 function profile(gitWorkspace = false) {
   const dirs = tempDirs();
@@ -191,16 +191,17 @@ test("AIR-SAFE-B corrupt envelope and unavailable safeStorage refuse without sen
   scan(dirs.docs); scan(dirs.userData); scanGit(dirs.docs); scanGit(dirs.userData);
 });
 
-test("AIR-SAFE-B fresh normal Git workspace launch/open/switch/idle/restart has no default send (frozen activation gate)", async () => {
+test("AIR-SAFE-B fresh normal Git workspace launch/open/switch/idle/restart has no default send", async () => {
   const dirs = profile(true), endpoints = await egressEndpoints();
   try { for (let restart = 0; restart < 2; restart++) {
     const run = await launch(dirs, isolatedAccount(dirs));
     try {
       const attempts = await observeEgress(run.app);
+      expect(await run.page.evaluate(() => (window as any).focusNotes.firstRun.account())).toEqual({ gcm: false, gh: false, via: "helper" });
       const editor = run.page.getByRole("textbox", { name: "Note", exact: true });
       await expect(editor).toContainText("Synthetic garden");
       await editor.press("Control+Shift+r");
-      await expect(panel(run.page)).toHaveCount(0); // f991 normal activation is gated.
+      await expect(panel(run.page)).toBeVisible(); // Current normal preview is available; opening must not send.
       await run.page.evaluate(async (file) => (window as any).focusNotes.windows.open(file), join(dirs.docs, "public", "other.md"));
       await expect.poll(() => run.app.windows().length).toBe(2);
       await run.page.waitForTimeout(500);
