@@ -122,6 +122,8 @@ While the [find bar](find-and-replace.md#highlights-and-focus-mode) is open, the
 
 ## Accessibility
 
+**Planned rewrite interaction (FOC-07).** [Fresh-text decorations](../design/rewrite-with-ai.md#fresh-text) never replace the D-232 paragraph band or move its selection/caret. Selection, find, links/code and spelling retain priority. Outside the active band, or anywhere composed contrast cannot be proved ≥4.5:1, suppress the gradient and keep ordinary text plus the review status/variation announcement. Reduced motion, forced colors and effect-off show ordinary text immediately. All integration fixtures and contrast measurements remain future work.
+
 - Focus mode is purely visual. The DOM, reading order, and screen-reader output stay the same.
 - Dimmed text deliberately falls below normal contrast ratios. This is an opt-out mode the user controls, the dim strength is adjustable, and the shortcut toggles it instantly.
 - No animation when reduced motion is requested.

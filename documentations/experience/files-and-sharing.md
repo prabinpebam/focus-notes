@@ -29,6 +29,7 @@ Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>
 | Move between Public and Private | Drag across sections, Move to…, or *Make public* / *Make private* (Share, from M5; today the ⋯ menu for the open note and the Files header for a selection), always confirmed | Delete in one repository and add in the other, private first, plus a submodule pointer update (see below) | FIL-06, SHR-02 |
 | Restore | *Recently deleted* → Restore or Restore to… | Re-adds the file from Git history in a new commit | FIL-10 |
 | Recover a draft (desktop) | *Recovered* (shown only when a crash left text that couldn't go back in its note) → open one → *Save as a new note…*, *Copy text* or *Discard* | Save creates a new note in the chosen folder of the same section, then deletes the draft; nothing else is written (D-221) | QLT-06 |
+| Rewrite with AI… (planned desktop only) | One Markdown file's context menu, ellipsis, Shift+F10/Menu, or Spotlight note action | [Whole-file prompt](rewrite-with-ai.md#file-rewrite), New file default or Same file; only accepted complete output writes; no private-to-public destination or partial save | FIL-16, RWR-07, RWR-28, RWR-29 |
 
 The full interaction design (anatomy, states, naming rules, multi-select, and the reasoning behind each choice) is in [Files panel](../design/views/files.html).
 

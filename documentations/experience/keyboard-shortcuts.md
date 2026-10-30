@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-A full keymap, from the shortcuts everyone knows to niche ones for heavy users. Each binding copies the most widely used app that already has it, so existing muscle memory works on day one.
+A full keymap, from the shortcuts everyone knows to niche ones for heavy users. Each binding normally copies a widely used app; explicit departures are recorded so existing muscle memory has a discoverable migration.
 
 > [!NOTE]
 > **TL;DR.** Every action is a named **command**. Shortcuts are bindings from keys to commands, scoped by **context** (editor, table, find bar, Spotlight, files, global), and each one follows a well-known precedent (VS Code, Notion, Google Docs, Word, Typora, macOS, Windows). **Mod** means <kbd>⌘</kbd> on macOS and iPadOS and <kbd>Ctrl</kbd> on Windows and Linux. The keymap is in four layers: **Basic**, **Writer**, **Power**, and **Pro**. Every command is also reachable from [Spotlight](spotlight.html) (<kbd>Mod</kbd>+<kbd>/</kbd>), which shows its shortcut. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> opens a searchable cheat sheet. Custom keybindings follow in P1. Covers KEY-01 to KEY-07 in the [requirements](../product/requirements.md).
@@ -112,7 +112,9 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | Italic | <kbd>⌘I</kbd> | <kbd>Ctrl+I</kbd> | Basic | Universal |
 | Strikethrough | <kbd>⇧⌘X</kbd> | <kbd>Ctrl+Shift+X</kbd> | Writer | Slack, Teams |
 | Inline code | <kbd>⌘E</kbd> | <kbd>Ctrl+E</kbd> | Writer | Notion, Tiptap |
-| Add or edit link | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, Word |
+| Add or edit link (shipped; web retains this) | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, Word |
+| Add or edit link (planned desktop rewrite release only) | <kbd>⇧⌘J</kbd> | <kbd>Ctrl+Shift+J</kbd> | Writer | D-237 owner-requested migration; never bind browser Console |
+| Rewrite with AI… (planned desktop editor only) | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Owner request; [rewrite flow](rewrite-with-ai.md#entry-points); absent on web |
 | Clear formatting | <kbd>⌘\</kbd> | <kbd>Ctrl+\</kbd> | Writer | Google Docs, Notion |
 | Move focus into the [formatting toolbar](../design/components/text-formatting.html) | <kbd>⌥F10</kbd> | <kbd>Alt+F10</kbd> | Power | Web rich-text editors |
 | Leave the formatting toolbar, back to the text with the selection kept | <kbd>Esc</kbd> (in the toolbar) | <kbd>Esc</kbd> (in the toolbar) | Power | Web rich-text editors |
@@ -120,6 +122,10 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | Underline | <kbd>⌘U</kbd> shows a one-time hint that Markdown has no underline | <kbd>Ctrl+U</kbd>, same | Basic | Not supported ([D-12](../plan/decisions.md)) |
 
 Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](editing.md#blocks-and-their-markdown).
+
+**Planned desktop migration, not a current key change (KEY-08).** At rewrite release, `link.edit` moves only on desktop; web keeps Mod+K because rewriting is excluded there. Spotlight's scoped Mod+K stays quick actions on both platforms. Menus, toolbar, native accelerators, cheat sheet, Help, captures and assertions use effective registry keys; custom bindings and IME rules retain priority. A one-time desktop hint names the new link key (or toolbar if unbound). The web matcher and custom-binding validator must leave Ctrl+Shift+J unhandled: [Chrome](https://developer.chrome.com/docs/devtools/open) and [Edge](https://learn.microsoft.com/en-us/microsoft-edge/devtools/shortcuts/) reserve it for Console (verified 2026-10-30). Source absence from the current reserved list is not proof of browser availability.
+
+Future migration census: `packages/core/src/format.ts`, `commands.ts` browser reservations, editor link comment/keymap, registry-derived menu hints; `packages/core/test/format.test.ts`, `spotlight-app.test.ts`, keymap/layer/override tests; desktop `m1-formatting`, `m1-demo`, `m1-a11y`, `docking`, `surfaces` link-opening fixtures; web link and Console-preservation journey. Retain unrelated Mod+K validation fixtures and Spotlight action keys. Feature code and these tests are planned, not changed by this spec.
 
 ## Blocks
 

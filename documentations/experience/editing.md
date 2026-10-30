@@ -49,11 +49,13 @@ Lists nest with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. Pressing <kb
 | Italic | <kbd>Ctrl/Cmd</kbd>+<kbd>I</kbd> | `*text*` or `_text_` | `*text*` |
 | Strikethrough | <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> | `~~text~~` | `~~text~~` |
 | Inline code | <kbd>Ctrl/Cmd</kbd>+<kbd>E</kbd> | `` `code` `` | `` `code` `` |
-| Link | <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> (with nothing selected, it inserts a new link at the caret) | `[text](url)`, or paste a URL over selected text | `[text](url)` |
+| Link | Shipped and web: <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd>; planned desktop rewrite release: <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>. With nothing selected, inserts a link at the caret | `[text](url)`, or paste a URL over selected text | `[text](url)` |
 
 Underline, text color, and highlight aren't offered because CommonMark/GFM can't represent them. Adding them would break the "Markdown is the source of truth" principle (see [Vision](../product/vision.md)). The full keymap, including block, table, and pro shortcuts, is on [Keyboard shortcuts](keyboard-shortcuts.md).
 
 ## Contextual controls
+
+**Planned desktop only:** [Rewrite with AI…](rewrite-with-ai.md#entry-points) joins selected-text and keyboard block/table context menus; Mod+K opens its instruction box, with the current supported block explicitly highlighted for a collapsed caret. Opening never sends text. The [desktop-only link-key migration](keyboard-shortcuts.md#inline-formatting) leaves web Mod+K links and browser Ctrl+Shift+J Console untouched. Focus Notes is an external-app/API client, not a model host; all rewrite code/tests remain planned.
 
 - **Contextual formatting toolbar.** Appears just above any non-empty selection with *Turn into ▾*, Bold, Italic, Strikethrough, Code, and Link. It never covers the selection, hides when typing resumes, and is reachable with <kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> (EDT-12).
 - **Slash menu.** Typing `/` at the start of a block or after a space opens a filterable list of the registered blocks that are valid at the caret (EDT-06). The list comes from the block registry, so new components show up on their own. Arrows, <kbd>Enter</kbd>, and <kbd>Tab</kbd> work while you keep typing, and <kbd>Esc</kbd> keeps what you typed. It never opens in code.
@@ -91,6 +93,8 @@ Pasting and dropping text work the same way (EDT-09, SEC-02):
 7. **Copying within Focus Notes** keeps the exact structure.
 
 ## Undo, redo, and saving
+
+**Planned rewrite exception:** [protected preview](rewrite-with-ai.md#lifecycle) holds this note's autosave/normal commits through review. Accept releases one complete guarded replacement; Discard/Stop/leave restores original and outside edits. No generated fragment enters disk or ordinary recovery. Complete variations stay in isolated [local history](../architecture/rewrite-history.md), never the workspace's pushable objects. This does not change ordinary editing below.
 
 - **Undo and redo** (<kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd>, <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>) cover typing, formatting, structural edits, and table operations. Typing is grouped into word-sized steps (EDT-08).
 - **Saving** is automatic (EDT-11, D-133). The note is written to disk within a second of the last change. It's backed up (committed and pushed) on *Save to cloud*, on quit, and on its own by how much changed: after a minute's pause once 200 characters changed, after 10 s for big changes, and never more than about 30 minutes late; switching notes backs up only when that much changed. That way history stays readable instead of having a commit for every pause. In the browser, a note written there is saved to that browser within a second, and nothing is committed (D-90). Saves don't interrupt: the bottom-left pill's icon shows whether the note is saved here or backed up (D-132), and failures also surface through the trigger's save-problem state (see [Main UI](main-ui.html#states)). <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> is *Save to cloud*, like <kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd>. The mechanics are in [Desktop and Git](../architecture/desktop-and-git.md#save-and-sync).

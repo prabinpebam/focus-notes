@@ -153,6 +153,7 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 
 <h2 data-reader-personas="design product">Words</h2>
 
+- **Planned rewrite vocabulary:** *instruction* is what the person asks; *preset* is a deliberately saved instruction; *variation* is a complete candidate, not a streamed fragment; *Accept* releases the selected result to normal saving, not “commit”; *Local* is the person's service-location attestation, not a verified inference guarantee. [Rewrite copy](rewrite-with-ai.md#message-keys) is the canonical planned message register. Say “connect an external app or API,” never “install/start a model in Focus Notes.” The owner's exact tone preset labels are retained.
 - **Sentence case** everywhere ("Move to…", not "Move To…"). An ellipsis means the action opens something before acting.
 - **Buttons say what they do.** "Delete 3 notes", not "OK". "Make public", not "Confirm".
 - **Name the thing.** "Delete “On focus”?" says which note. Dialogs never ask "Are you sure?" on their own.

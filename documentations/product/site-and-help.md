@@ -92,6 +92,8 @@ The app links into the help centre wherever a setting, a step or a message needs
 
 <h2 id="the-demo">The demo</h2>
 
+**Planned rewrite Help (HLP-10):** [the article plan](../experience/rewrite-with-ai.md#help-plan) covers selection/presets, New/Same file, externally managed provider setup/private consent, review/undo/history and repair. Future `packages/views/help-links.json` entries and manifest articles ship with the actual feature, including desktop-only key migration; web Help retains Mod+K links. Do not publish current privacy/Store claims or advise installing/hosting a model inside Focus Notes. This spec changes no product site claims.
+
 - **What it is:** the web app built for the demo: the template's starting notes plus about ten sample notes that show focus mode, formatting, a table, folders, a public and a private note, and links between notes.
 - **Kept in the browser:** everything stays in the visitor's browser. Nothing is sent anywhere, and nothing needs signing in. *Save to GitHub*, sharing and the vault are shown as they are in the desktop app, but they explain what they'd do there instead of acting.
 - **Clearly a demo:** a quiet banner says it's a demo, with *Download* and *Reset demo*. *Reset demo* restores the sample notes.

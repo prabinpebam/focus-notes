@@ -238,6 +238,25 @@ Every operation that can take longer than 100 ms, with its class, pattern and wo
 
 ## Where it stands
 
+### Planned rewrite waits
+
+PRF-15 / RWR-05 / RWR-09, [rewrite lifecycle](../experience/rewrite-with-ai.md#lifecycle). These rows are future instrumentation and fixtures, **not measured results**. Existing `packages/core/src/tasks.ts` supports named tasks/elapsed time but has **no step/progress update API today**: WP-AI.2/8 must explicitly extend the typed task model/events for rewrite steps, bounded progress and cancellation. Align current `focus-notes:<target>` tracker measures with these `fn:` spans rather than assuming they already match.
+
+| Operation | Class | Pattern and place | Exact words / key | Planned measure / target | Status |
+| --- | --- | --- | --- | --- | --- |
+| Open prompt/resolve target | Instant, responsive if mapping exceeds 100 ms | Direct echo then named status at target; original stays visible | Rewrite with AI; target chip | `fn:rewrite.open`, acknowledgement ≤100 ms | Planned WP-AI.2 |
+| Read file / estimate / checkpoint | Responsive to waiting | Named steps in same prompt status; no send before durable checkpoint | Preparing rewrite…; Checking estimate…; Saving original… | `fn:rewrite.prepare`, `.estimate`, `.checkpoint`; status after 300 ms, minimum 500 ms once shown | Planned WP-AI.1/5/6 |
+| Wait for connection/first text | Waiting to long | Starting step, Stop; elapsed after 3 s, no fake percentage | Starting rewrite… (`rewrite.status.starting`) | `fn:rewrite.firstToken`; fixture p95 <1 s, real-service 5 s goal measured separately, not guaranteed; engine deadlines win | Planned WP-AI.8 |
+| Stream and validate | Waiting to long | In-place protected projection, one status/step, elapsed/Stop; section progress only for known plan | Rewriting…; Checking rewrite…; Completed {done} of {total} sections | `fn:rewrite.stream`, `.validate`; batches ≤50 ms cadence; no blocked outside typing | Planned WP-AI.1/8 |
+| Stop / discard / leave | Instant response, responsive cleanup | Acknowledge now; original restored; release save hold before leaving | Rewrite stopped. Your original text is unchanged. | `fn:rewrite.stop`; acknowledge/cease visible deltas ≤100 ms; late events ignored | Planned WP-AI.1/2 |
+| Persist completed variation / browse history | Responsive to waiting | Same status until local durable acknowledgement; old result/list stays visible | Saving variation…; Opening rewrite history… | `fn:rewrite.history.write`, `.read`; no Review success on failure | Planned WP-AI.4 |
+| Accept / atomic new file | Responsive to waiting | Existing save state plus target-specific busy action; no “Saved” before ack | Saving rewrite…; Creating file… | `fn:rewrite.accept`, `.create`; exact guarded acknowledgement | Planned WP-AI.5 |
+| Explicit external connection check | Waiting | Setup profile row, Cancel, no model inference, no note data | Checking connection… | `fn:rewrite.connection`; provider deadlines; behind owner gate | Planned WP-AI.8 |
+
+Wait message keys `rewrite.wait.prepare/estimate/checkpoint/validate/variation/history/accept/create/connection` use the exact corresponding words above in the [copy register](../design/rewrite-with-ai.md#message-keys). One status line, not task-tracker and rewrite duplicate announcements; announce after 1 s, at most every 5 s for section progress and once at completion/error. No per-token chatter. No model launch/download/setup wait exists: Focus Notes is a client of an already separately managed service. No app, provider or performance test runs in this documentation task.
+
+Future benchmark definitions: open is invocation key/pointer-down → prompt painted and field usable; prepare/estimate/checkpoint are their step dispatch → validated/durable acknowledgement; firstToken is Send pointer/key → first generated glyph painted (also record dispatch → first text separately); stream is first → last projected glyph; validate/history are full response → validated/durable variation; accept/create are action → exact guarded note/create acknowledgement; Stop is action → last possible projected delta and restored target. Record cold/warm fixture runs, machine/commit/input bytes, medians/p95 and noise-aware baseline comparisons through the existing `pnpm bench --check` harness when implemented. No real-service latency goal is a release-time promise and no field telemetry is introduced (PRV-01).
+
 **Built:**
 - the task tracker, its timing tokens and the busy states (WP-1.4, D-77);
 - the optimistic structural changes (PRF-09);

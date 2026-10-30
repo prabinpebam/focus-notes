@@ -19,15 +19,15 @@ Tiers: **unit** isolates mapping/state/policy, **fixture** drives scripted adapt
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| RWR-01 | Selection, collapsed caret, read-only/conflict/unsupported/oversize/private/busy/offline and missing-profile fixtures | Invoke each menu, key and Spotlight entry | Same eligible target opens; each ineligible case explains why; no unintended send | journey | `rewrite-entry.spec.ts: entry-and-enablement-matrix` |
-| RWR-02 | Selection near every edge at default and 480 x 360 | Open, type, Tab, Enter/Shift+Enter/Escape with and without IME | Prompt remains inside window, keys act as specified and focus returns to target | journey | `rewrite-prompt.spec.ts: geometry-keys-focus` |
-| RWR-03 | Each named preset and a 4,000-point custom instruction | Inspect generated instruction, translate without/with language | Templates match versioned fixtures; language is required and oversized instructions are blocked | unit | `rewrite-presets.test.ts: exact-instructions` |
-| RWR-04 | 20 saved presets, no history opt-in, export destination chosen | Add, rename, delete, export, restart, dismiss prompt | Limits enforced; export warns/includes only selected presets; no prompt/preset in Git or logs | fixture | `rewrite-presets.test.ts: local-limits-export-retention` |
-| RWR-05 | Six scripted lifecycle states and a slow stream | Stop/Escape, retry, switch note or close | Legal transitions only; original restored on interruption, outside edits preserved, old events ignored | journey | `rewrite-lifecycle.spec.ts: transitions-stop-and-leave` |
-| RWR-06 | Two completed variations and a checkpoint with outside edits | Previous/next, Accept, Discard, Try again, Edit prompt, undo/redo | Controls select the intended result; one undo step/result or restore; no implied cloud save | journey | `rewrite-review.spec.ts: review-actions-and-undo` |
-| RWR-07 | Whole Markdown file, near/over size limit | Open chooser and start a long fixture | New file default and destination shown; oversize blocked before send; Stop/progress honest, no partial apply | journey | `rewrite-files.spec.ts: target-choice-and-size` |
-| RWR-08 | Every theme, effect setting, reduced motion and forced colors | Complete result and advance fake time through hold/fade | 1.5 s hold/2.5 s fade, at least 4.5:1 every frame; no persistence/clipboard styling; review signal remains | unit, review | `rewrite-fresh-text.test.ts: timed-decoration-contrast` |
-| RWR-09 | No provider, configured profile and every error fixture | Open setup/settings, change values, fail a send | No implicit enablement; named status/repair copy preserves prompt; controls use message keys | journey | `rewrite-settings.spec.ts: setup-status-and-errors` |
+| RWR-01 | Supported selection/collapsed block, all explained states, file multiselection and desktop/web fixtures | Invoke pointer menu, editor/block/table key menus, Mod+K, Spotlight command/note action and file Shift+F10/Menu | Same captured target is highlighted; collapsed caret says Whole block, never whole note; all disabled reasons match copy; opening never sends; web has no rewrite and retains Mod+K links | journey | `rewrite-entry.spec.ts: entry-and-enablement-matrix` |
+| RWR-02 | Targets at all edges in 960 x 640, custom 480 x 360 and native-floor 360 x 320 with 200% text | Open, resize, scroll, Tab and use Enter/Shift+Enter/Mod+Enter/Escape, including IME | 420 px cap/12 px inset/8 px gap or documented top dock; controls remain inside drawn boundary, IME not submitted, nested Escape first, original selection/file-row focus restored | journey | `rewrite-prompt.spec.ts: geometry-keys-focus` |
+| RWR-03 | Nine version-1 templates, custom whitespace/4,000/4,001 code points, Translate without/with language | Choose preset, edit instruction and Send | Preset only fills field; exact templates/framing match register; no send without language/nonempty bounded instruction; no hidden target context | unit, journey | `rewrite-presets.test.ts: exact-instructions` |
+| RWR-04 | 19/20 presets, 60/61-point names, duplicate trimmed case, 4,000/4,001-point instruction | Add/rename/delete/cancel/export selected presets/restart/close session | 20/60/4,000 limits; duplicate rejected; explicit export warning and destination; no secrets/notes/history included; device-only no Git/log/automatic prompt history, no v1 opt-in | fixture | `rewrite-presets.test.ts: local-limits-export-retention` |
+| RWR-05 | Six states, late events, checkpoint/storage failure, outside edits and scripted slow stream | Stop/Escape/retry/leave/close/explicit Save in review | Original durable before send; no fragment reaches canonical note/disk/Git/drafts; save hold through review explains itself; leave cancels/discards; outside edits preserved; no queued/automatic resend | journey, fixture | `rewrite-lifecycle.spec.ts: transitions-stop-and-leave` |
+| RWR-06 | Three complete variations, original toggle and independent outside edits | Navigate boundaries, Try again, Edit prompt, Accept/Discard then undo/redo/restart history | Counter excludes original/no wrap/no request on navigation; original disables Accept; Try again uses original target; protected preview cannot be edited; Accept one undo event, no token history; restart explicit guarded restore, no overwrite of newer writing | journey | `rewrite-review.spec.ts: review-actions-and-undo` |
+| RWR-07 | Whole-file fixtures at exact engine byte/token/block/section limits, dirty other-window owner, collision/private roots | Open chooser, choose sections/New/Same and run long fixture then Stop or accept | New file default/source/destination visible; chunking explicit, ≤4 sequential sections, no oversized block split; all sections provisional; no private-public choice/partial save; filename/identity rechecked on create | journey | `rewrite-files.spec.ts: target-choice-and-size` |
+| RWR-08 | All actual theme pairs/custom themes, masks/selection/find/code/link/spelling and motion/effect settings | Complete result, change variations/Accept, copy/export/undo and advance clock at 0/1499/1500/2750/3999/4000 ms | Hold/fade 1500/2500 ms ≤1 frame tolerance; continuous space/time contrast lower bound ≥4.5:1 or ordinary-text fallback; reduced motion/forced colors ordinary immediately; no Markdown/clipboard/history styling, status stays | unit, review | `rewrite-fresh-text.test.ts: timed-decoration-contrast` |
+| RWR-09 | No profile, fixture/local/remote/private policy and every sanitized error | Open setup/settings/consent, change target/profile, revoke and fail requests | External-app/API only, no install/download/embed/launch/host/inference action; Not checked honest; named target/destination/estimate; private per-use consent; no fallback, prompt retained, exact key/action from register | journey | `rewrite-settings.spec.ts: setup-status-and-errors` |
 
 ## Engine
 
@@ -75,14 +75,14 @@ One table per existing requirement area keeps ownership visible. EDT-13 already 
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| KEY-08 | Editor/table/Spotlight scopes, IME and custom-binding fixtures | Press Mod+K and Mod+Shift+J; inspect all key hints and restart | Rewrite/link/scoped Spotlight agree with registry; one-time hint once; IME/custom bindings retain precedence | journey | `rewrite-keys.spec.ts: scope-and-link-migration` |
-| EDT-13 (amended key only) | Existing link create/edit/hover cases | Invoke moved binding and pointer actions after feature enablement | Existing link behavior preserved; key assertions updated, not removed | journey | `m1-formatting.spec.ts: migrated-link-edit` |
+| KEY-08 | Desktop editor/table/Spotlight, web Chrome/Edge, IME, custom overrides and unbound link fixtures | Press Mod+K/Mod+Shift+J, inspect hints and restart | Desktop rewrite/link migration only; Spotlight Mod+K actions unchanged; web Mod+K links and Ctrl+Shift+J Console unhandled even under invalid override; hint once desktop-only using effective key/toolbar fallback | journey | `rewrite-keys.spec.ts: scope-and-link-migration`; `web-link-keys.spec.ts: console-reserved` |
+| EDT-13 (amended key only) | Desktop feature on/off and web existing link create/edit/hover cases | Use desktop migrated key or web Mod+K plus pointer actions | Existing link behavior preserved on both platforms; desktop assertions migrated, web key unchanged, no browser Ctrl+Shift+J interception | journey | `m1-formatting.spec.ts: migrated-link-edit`; `web-link-keys.spec.ts: retained-link-key` |
 
 ### Spotlight
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| SPT-09 | Selection/file captured before Spotlight | Run each rewrite result or Spotlight Mod+K | Original target retained, effective key/reason shown; Spotlight action key never rewrites | journey | `rewrite-spotlight.spec.ts: captured-target` |
+| SPT-09 | Desktop selection/file captured before Spotlight plus web scope | Run each rewrite result/note quick action or Spotlight Mod+K | Target identity retained, effective platform key/reason shown; Spotlight action key never rewrites; web has no rewrite result and retains Mod+K links outside Spotlight | journey | `rewrite-spotlight.spec.ts: captured-target` |
 
 ### Files
 
@@ -106,13 +106,13 @@ One table per existing requirement area keeps ownership visible. EDT-13 already 
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| FOC-07 | D-232 paragraph band, selection/caret/spelling marks | Stream/fade fresh text and move between paragraphs | Band unchanged; all editing marks readable, no persisted focus/fresh style | journey, review | `rewrite-focus.spec.ts: decoration-priority` |
+| FOC-07 | D-232 band with multi-paragraph/list/table targets, selection/find/link/code/caret/spelling | Stream, complete, fade, move caret and resize | Same endpoint-paragraph band, no fresh mask/selection changes; gradient suppressed outside active band/unproved composition; readable semantic marks and no persisted style | journey, review | `rewrite-focus.spec.ts: decoration-priority` |
 
 ### Help
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| HLP-10 | Feature disabled/enabled and each error Help link | Open Help from app and follow setup/recovery/key articles | Version/scope accurate, stable IDs resolve, unpublished feature never advertised as shipped | review, journey | `rewrite-help.spec.ts: feature-gated-articles` |
+| HLP-10 | Feature disabled/enabled, every error/entry and six planned Help anchors | Follow setup/private/file/review/recovery/key links | IDs and anchors resolve; desktop-only key migration/web exclusions accurate; no model-host/install instructions; publication gated on feature and approved privacy claims | review, journey | `rewrite-help.spec.ts: feature-gated-articles` |
 
 ### Privacy
 
@@ -130,7 +130,7 @@ One table per existing requirement area keeps ownership visible. EDT-13 already 
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| PRF-15 | Approved rollout fixture and reference hardware | Measure open/first-token/Stop while typing | Acknowledgement/Stop within 100 ms, fixture first-token p95 under 1 s; real 5 s target measured separately; no frozen input/reload | fixture | `rewrite-performance.test.ts: response-and-stop-budgets` |
+| PRF-15 | Scripted fixture/reference hardware and planned TaskTracker step/progress extension | Measure open/preparation/first token/stream/history/Accept/Stop with outside typing | fn spans match wait inventory, ack/Stop ≤100 ms, fixture first-token p95 <1 s; real 5 s goal measured separately after gate; delayed/minimum signs honest, no fake percentage/input freeze/reload | fixture | `rewrite-performance.test.ts: response-and-stop-budgets` |
 
 ### Quality
 
@@ -142,13 +142,13 @@ One table per existing requirement area keeps ownership visible. EDT-13 already 
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| A11Y-03 | 480 x 360, screen reader, motion/contrast contexts | Complete selection/file/setup/review solely by keyboard | Names/focus correct, stage announcements at most once/2 s, no token chatter, contrast at least 4.5:1 | journey, review | `rewrite-a11y.spec.ts: keyboard-and-announcements` |
+| A11Y-03 | Default/480 x 360/360 x 320, 200% text, NVDA/Narrator and every contrast/motion context | Complete selection/file/setup/consent/review/history by keyboard, including nested Escape/IME | All controls named/reachable, focus returns correctly, one stage announcement after 1 s/progress ≤once per 5 s/completion once, no token chatter; text ≥4.5:1, focus/non-text ≥3:1 or documented ordinary-text fallback | journey, review | `rewrite-a11y.spec.ts: keyboard-and-announcements` |
 
 ### Internationalization
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| I18N-04 | All rewrite messages and 30% expanded pseudo-locale | Render every state and preset | No literal/concatenated copy, correct plurals and no clipped action at minimum size | unit, journey | `rewrite-copy.test.ts: message-completeness-and-expansion` |
+| I18N-04 | Every copy/error/repair/preset key, plural boundary and 40% expanded pseudo-locale | Render every state at minimum size/200% text | Exact registered templates, escaped interpolations/locale amounts, no literal/concatenated copy or clipped primary/privacy/destination information | unit, journey | `rewrite-copy.test.ts: message-completeness-and-expansion` |
 
 ### Design system
 
