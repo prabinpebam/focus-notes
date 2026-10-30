@@ -48,6 +48,10 @@ interface Ctx {
   announce: (text: string) => void;
   /** Runs after pending edits are written, with saves held until it finishes. */
   exclusive: <T>(fn: () => Promise<T>) => Promise<T>;
+  /** Shares the save lane without trying to save the held note first. */
+  afterWrites: <T>(fn: () => Promise<T>) => Promise<T>;
+  /** Hands over any typing still held by the editor before comparing or preserving it. */
+  handOver: () => void;
   setNote: (patch: Partial<AppState["note"]>) => void;
   /** The open note was loaded again with this text. */
   loaded: (path: string, markdown: string) => void;
@@ -115,7 +119,10 @@ export function registerConflicts(ctx: Ctx) {
   function outside(path: string, mine: string, theirs: string): void {
     // The watcher can report one change more than once: it's offered once.
     const held = conflict();
-    if (held.held === path && held.kind === "outside" && held.notes[0]?.theirs === theirs) return;
+    if (held.held === path && held.kind === "outside" && held.notes[0]?.theirs === theirs) {
+      if (held.notes[0]?.mine !== mine) set({ notes: [{ ...held.notes[0]!, mine }] });
+      return;
+    }
     const n: NoteConflict = { path, mine, theirs, theirsAt: now() };
     set({ kind: "outside", notes: [n], index: 0, choices: [], held: path, busy: false });
     toast(catalog.format("toast.changedOutside", { note: titleOf(n) }), { action: resolveAction() });
@@ -129,48 +136,79 @@ export function registerConflicts(ctx: Ctx) {
     set({ open: true, kind: "recovered", notes: [n], index: 0, choices: [], held: path, busy: false, focus: conflict().focus + 1 });
   }
   /** Siblings' names, so a copy's name is free next to the note. */
-  const siblings = (path: string) => {
+  const siblings = async (path: string) => {
     const dir = dirOf(path);
     const out: string[] = [];
-    for (const { path: p } of walk(store.state.workspace.tree)) if (dirOf(p) === dir) out.push(nameOf(p));
+    // A previous attempt can already have made a copy before its watcher event arrives.
+    const entries = bridge.workspace ? (await bridge.workspace.scan()).entries : walk(store.state.workspace.tree);
+    for (const { path: p } of entries) if (dirOf(p) === dir) out.push(nameOf(p));
     return out;
   };
   /** A copy of one version next to the note; `recoverable` deletes it at once, so it's in Recently deleted (or the trash). */
   async function keepCopy(n: NoteConflict, text: string, title: string, recoverable: boolean): Promise<void> {
-    const copy = conflictCopy({ path: n.path, text, title, taken: siblings(n.path) });
+    const copy = conflictCopy({ path: n.path, text, title, taken: await siblings(n.path) });
     const ws = bridge.workspace;
     if (!ws?.apply) return void (await bridge.writeNote(copy.path, copy.text));
     await ws.apply([{ op: "create", path: copy.path, text: copy.text }]);
     if (recoverable) await ws.apply([{ op: "delete", path: copy.path }]);
   }
+  const currentMine = () => {
+    ctx.handOver();
+    const c = conflict();
+    const n = c.notes[0];
+    if (c.kind !== "sync" && n && store.state.note.path === n.path && n.mine !== store.state.note.markdown) {
+      set({ notes: [{ ...n, mine: store.state.note.markdown }] });
+    }
+  };
   async function chooseOutside(choice: ConflictChoiceKind): Promise<void> {
+    currentMine();
     const n = conflict().notes[0];
     if (!n || n.mine === undefined || n.theirs === undefined) return;
     const kind = conflict().kind;
     set({ busy: true });
     try {
-      await ctx.tracker.run("conflict", "task.resolving", async () => {
-        // Whichever version isn't kept at the note is kept as a copy (DD-FB-04).
+      const ready = await ctx.tracker.run("conflict", "task.resolving", () => ctx.afterWrites(async () => {
+        const stillCurrent = async () => {
+          const disk = await bridge.readNote(n.path);
+          ctx.handOver();
+          const open = store.state.note;
+          if (open.path !== n.path || disk !== n.theirs || (choice !== "mine" && open.markdown !== n.mine)) {
+            if (open.path === n.path) {
+              set({ open: true, busy: false, notes: [{ ...n, mine: open.markdown, theirs: disk, theirsAt: now() }], held: n.path });
+              toast(catalog.format("conflict.changedAgain"));
+            } else set({ busy: false });
+            return false;
+          }
+          return true;
+        };
+        if (!(await stillCurrent())) return false;
+        // Whichever version isn't kept at the note is preserved before anything is replaced.
         if (choice === "mine") await keepCopy(n, n.theirs!, copyTitle(n, "theirs", "other"), true);
         else await keepCopy(n, n.mine!, copyTitle(n, choice), choice === "theirs");
-      });
+        if (!(await stillCurrent())) return false;
+        ctx.sawOnDisk?.(n.path, n.theirs!);
+        if (choice !== "mine") {
+          ctx.setNote({ key: `${n.path}#conflict-${now()}`, initialMarkdown: n.theirs, markdown: n.theirs, saveState: "saved" });
+          ctx.loaded(n.path, n.theirs!);
+          ctx.dropped?.();
+        }
+        store.update((s) => ({ ...s, ui: { ...s.ui, conflict: { ...CONFLICT_CLOSED, focus: s.ui.conflict.focus } } }));
+        return true;
+      }));
+      if (!ready) return;
     } catch {
-      set({ busy: false });
+      set({ busy: false, open: true });
       toast(catalog.format("conflict.copyFailed"), { tone: "error" });
       return;
     }
-    store.update((s) => ({ ...s, ui: { ...s.ui, conflict: { ...CONFLICT_CLOSED, focus: s.ui.conflict.focus } } }));
-    const open = store.state.note;
-    if (open.path === n.path) {
-      // The other program's text is what's on disk now, seen and chosen over: the save may replace it.
-      ctx.sawOnDisk?.(n.path, n.theirs);
-      if (choice === "mine") await ctx.flush();
-      else {
-        // The other version replaces the text here; what was typed is in the copy.
-        ctx.setNote({ key: `${n.path}#conflict-${now()}`, initialMarkdown: n.theirs, markdown: n.theirs, saveState: "saved" });
-        ctx.loaded(n.path, n.theirs);
-        ctx.dropped?.();
+    if (choice === "mine" && !(await ctx.flush())) {
+      // Typing may have advanced during a successful write. Leave those edits on the ordinary
+      // save lane, rather than holding them against the obsolete pre-resolution disk version.
+      if (!conflict().held && store.state.note.saveState === "error") {
+        set({ open: true, kind, notes: [{ ...n, mine: store.state.note.markdown }], held: n.path, busy: false });
+        toast(catalog.format("toast.saveFailed"), { tone: "error" });
       }
+      return;
     }
     const done = catalog.format(`conflict.${kind === "recovered" ? "settledRecovered" : "settled"}.${choice}`, { what: quoted(n) });
     toast(done);
@@ -182,7 +220,10 @@ export function registerConflicts(ctx: Ctx) {
     id: "conflict.open", title: "command.conflict.open",
     enabled: (s) => s.sync.problem === "conflict" || Boolean(s.ui.conflict.held),
     run: async () => {
-      if (conflict().held && conflict().kind !== "sync") return set({ open: true, focus: conflict().focus + 1 });
+      if (conflict().held && conflict().kind !== "sync") {
+        currentMine();
+        return set({ open: true, focus: conflict().focus + 1 });
+      }
       await openSync();
     },
   });
@@ -201,7 +242,7 @@ export function registerConflicts(ctx: Ctx) {
     },
   });
   // Esc or Decide later: your text stays, and nothing changes until a choice is made.
-  commands.register({ id: "conflict.later", title: "command.conflict.later", run: () => set({ open: false, choices: [], index: 0 }) });
+  commands.register({ id: "conflict.later", title: "command.conflict.later", run: () => { if (!conflict().busy) set({ open: false, choices: [], index: 0 }); } });
   commands.register<{ open: boolean }>({ id: "conflict.setOpen", title: "command.conflict.later", run: ({ open }) => { if (!open && !conflict().busy) set({ open: false, choices: [], index: 0 }); } });
 
   // ---- the view model ----
@@ -263,7 +304,10 @@ export function registerConflicts(ctx: Ctx) {
     /** Opens the resolver for a held note, or for a note sync found in conflict when it's opened. */
     offer(path: string | undefined): void {
       if (path === undefined) return;
-      if (conflict().held === path && !conflict().open) set({ open: true, focus: conflict().focus + 1 });
+      if (conflict().held === path && !conflict().open) {
+        currentMine();
+        set({ open: true, focus: conflict().focus + 1 });
+      }
       else if (known.includes(path) && !conflict().open) void openSync();
     },
     /** The app moved a note waiting for a choice (Files): the choice waits at its new path, saves still held (DEF-26). */

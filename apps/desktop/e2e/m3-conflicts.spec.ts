@@ -190,6 +190,67 @@ test("D-92, FIL-12: a file changed outside while this window has unsaved edits i
   await quit(l);
 });
 
+test("D-92: continuous typing does not conflict with its own save while acknowledgement is delayed", async () => {
+  const { dirs } = instance();
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  const { page, app } = l;
+  const note = join(dirs.docs, "private", "notes", "welcome.md");
+  await expect(page.getByRole("textbox", { name: "Note" })).toContainText("First line.");
+  await app.evaluate(({ ipcMain }) => {
+    const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+    if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
+    const original: unknown = handlers.get("note:write");
+    if (typeof original !== "function") throw new Error("The note writer is unavailable");
+    ipcMain.removeHandler("note:write");
+    ipcMain.handle("note:write", async (event, ...args: unknown[]) => {
+      const result: unknown = await original(event, ...args);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return result;
+    });
+  });
+  await typeAtEnd(page, " Saved first.");
+  await expect.poll(() => readFileSync(note, "utf8")).toContain("Saved first.");
+  await page.keyboard.type(" More while the save is finishing.", { delay: 35 });
+  await page.keyboard.press(`${mod}+S`);
+  await expect.poll(() => readFileSync(note, "utf8")).toContain("More while the save is finishing.");
+  await expect(page.getByRole("dialog", { name: /changed outside Focus Notes/ })).toHaveCount(0);
+  await expect(page.locator("#toasts")).not.toContainText("changed outside Focus Notes");
+  await page.screenshot({ path: "../../test-results/screens/own-save-no-conflict.png" });
+  await quit(l);
+});
+
+for (const choice of ["Keep this computer's version", "Take the version on disk", "Keep both"]) {
+  test(`D-92: ${choice} by pointer finishes an outside conflict and the next edit saves normally`, async () => {
+    const { dirs } = instance();
+    const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+    const { page } = l;
+    const note = join(dirs.docs, "private", "notes", "welcome.md");
+    await typeAtEnd(page, " Typed here.");
+    writeFileSync(note, "# Welcome\n\nFirst line.\n\nChanged outside.\n");
+    await expect(page.locator("#toasts")).toContainText("changed outside Focus Notes");
+    await page.keyboard.press(`${mod}+S`);
+    const dialog = page.getByRole("dialog", { name: "“Welcome” changed outside Focus Notes" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Decide later", exact: true }).click();
+    await typeAtEnd(page, " More while deciding.");
+    await page.keyboard.press(`${mod}+S`);
+    await expect(dialog.getByRole("region", { name: "This computer" })).toContainText("More while deciding.");
+    await dialog.getByRole("button", { name: choice, exact: true }).click();
+    await expect(dialog).toBeHidden({ timeout: 15_000 });
+    const mine = choice === "Keep this computer's version";
+    await expect(page.getByRole("textbox", { name: "Note" })).toContainText(mine ? "More while deciding." : "Changed outside.");
+    await typeAtEnd(page, " Saved after resolving.");
+    await page.keyboard.press(`${mod}+S`);
+    await expect.poll(() => readFileSync(note, "utf8")).toContain("Saved after resolving.");
+    await expect(dialog).toBeHidden();
+    const priv = join(dirs.docs, "private");
+    if (mine) expect(everything(priv)).toContain("+Changed outside.");
+    else if (choice === "Keep both") expect(readFileSync(join(priv, "notes", "welcome-conflict-copy.md"), "utf8")).toContain("More while deciding.");
+    else expect(everything(priv)).toContain("More while deciding.");
+    await quit(l);
+  });
+}
+
 // M3 demo, step 7: delete a note and restore it.
 test("FIL-10, DD-FB-01: a delete's toast offers Undo, which restores the note from history", async () => {
   const { dirs, notesRemote } = instance();

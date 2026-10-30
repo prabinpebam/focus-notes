@@ -1358,6 +1358,7 @@
   "conflict.settledMany": "Settled {count, plural, one {# conflict} other {# conflicts}}.",
   "conflict.combined": "Synced the changes from elsewhere.",
   "conflict.copyFailed": "Couldn't keep a copy, so nothing changed. Your text is still here.",
+  "conflict.changedAgain": "The versions changed while you were deciding. Review them and choose again. Your text is still here.",
   "conflict.deletedHere": "Deleted on this computer.",
   "conflict.deletedThere": "Deleted in the other version.",
   "conflict.emptyNote": "This version is empty.",

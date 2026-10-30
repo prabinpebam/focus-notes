@@ -55,8 +55,12 @@ interface Ctx {
   format?: WorkspaceFormatOptions;
   /** The open note changed outside while it has unsaved edits: both versions go to the resolver (FIL-12). */
   outside?: (path: string, mine: string, theirs: string) => void;
+  /** Both versions now agree: an old conflict no longer needs a choice. */
+  matched?: (path: string) => void;
   /** Asks the editor for text it hasn't handed over yet, at once (QLT-03). */
   handOver?: () => void;
+  /** Serializes disk reads with saves and their acknowledgements, so own writes aren't outside edits. */
+  afterWrites: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
 export function registerWorkspaceFeatures(ctx: Ctx) {
@@ -126,15 +130,23 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   let lastWritten: { path: string; text: string } | undefined;
   const onDisk = (path: string) => (lastWritten?.path === path ? lastWritten.text : store.state.note.path === path ? store.state.note.initialMarkdown : undefined);
   let outside = 0;
+  let reconciliation = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
 
-  async function reconcile(path: string): Promise<void> {
+  async function reconcile(path: string, key: string, revision: number): Promise<void> {
+    if (revision !== reconciliation || store.state.note.path !== path || store.state.note.key !== key) return;
     const text = await bridge.readNote(path).catch(() => undefined);
     if (text === undefined) return;
+    if (revision !== reconciliation || store.state.note.path !== path || store.state.note.key !== key) return;
     // Typing the editor hasn't handed over yet is unsaved too: it must never be replaced (D-92).
     ctx.handOver?.();
     const n = store.state.note;
-    if (n.path !== path || text === n.markdown) return;
+    if (n.path !== path) return;
+    if (text === n.markdown) {
+      lastWritten = { path, text };
+      ctx.matched?.(path);
+      return;
+    }
     // What the app knows is on disk: its last save of the note, or the text it opened. The watcher
     // reports the app's own writes too (a save, or a new note's empty file): those changed nothing.
     if (text === onDisk(path)) return;
@@ -157,7 +169,11 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     const notes: Content[] = changes.filter((c) => c.kind === "note" && c.exists).map((c) => ({ kind: "note", path: c.path }));
     if (!notes.length || !viewModels.showing(notes, store.state).length) return;
     const open = store.state.note.path;
-    if (open && notes.some((c) => c.kind === "note" && c.path === open)) void reconcile(open);
+    if (open && notes.some((c) => c.kind === "note" && c.path === open)) {
+      const revision = ++reconciliation;
+      const key = store.state.note.key;
+      void ctx.afterWrites(() => reconcile(open, key, revision));
+    }
   }
 
   // ---- file names that follow titles (FIL-07) ----

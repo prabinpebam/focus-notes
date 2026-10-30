@@ -426,9 +426,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({
-    store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
+    store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
     outside: (path, mine, theirs) => conflicts.outside(path, mine, theirs),
+    matched: (path) => conflicts.release(path),
     handOver: () => editorAction(FLUSH_EDITOR),
   });
 
@@ -468,12 +469,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       setNote({ saveState: "error" });
     }
   }
-  /** Runs a file operation after pending edits are written, holding later saves until it's done. */
-  const exclusive = async <T,>(fn: () => Promise<T>): Promise<T> => {
-    await flush();
+  /** Disk observations and mutations share one lane, including the save's acknowledgement. */
+  function afterWrites<T>(fn: () => Promise<T>): Promise<T> {
     const run = saving.then(fn);
     saving = run.then(() => {}, () => {});
     return run;
+  }
+  /** Runs a file operation after pending edits are written, holding later saves until it's done. */
+  const exclusive = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    await flush();
+    return afterWrites(fn);
   };
   const schedule = () => {
     clearTimeout(saveTimer);
@@ -1113,7 +1118,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerPublicLink({ store, commands, catalog, bridge, toast });
   registerPrint({ store, commands, viewModels, catalog, bridge, tracker, toast, handOver: () => editorAction(FLUSH_EDITOR), afterPaint, persistAppState });
   const conflicts = registerConflicts({
-    store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
+    store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, afterWrites, setNote, flush,
+    handOver: () => editorAction(FLUSH_EDITOR),
     loaded: (path, md) => workspace.loaded(path, md),
     sawOnDisk: (path, text) => workspace.sawOnDisk(path, text),
     dropped: () => drafts.dropped(),

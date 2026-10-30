@@ -89,6 +89,11 @@ function setup(opts: { files?: Record<string, string>; folders?: string[]; open?
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => { resolve = done; });
+  return { promise, resolve };
+}
 async function started(f: ReturnType<typeof setup>) {
   const app = createApp(f.bridge, messages);
   await app.start();
@@ -428,6 +433,283 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(f.files[`${PRIV}/welcome-conflict-copy.md`]).toBe("# Welcome (conflict copy)\n\nTyped here.\n");
     expect(f.batches).toHaveLength(1);
     expect(app.store.state.note.markdown).toBe("# Welcome\n\nWritten elsewhere.\n");
+  });
+
+  it("does not mistake an own save for an outside edit while its acknowledgement is delayed and typing continues", async () => {
+    const f = setup();
+    const app = await started(f);
+    const landed = deferred();
+    const ack = deferred();
+    const write = f.bridge.writeNote;
+    let first = true;
+    f.bridge.writeNote = async (...args) => {
+      const result = await write(...args);
+      if (first) { first = false; landed.resolve(); await ack.promise; }
+      return result;
+    };
+    const saved = "# Welcome\n\nFirst saved edit.\n";
+    const latest = "# Welcome\n\nFirst saved edit. Still typing.\n";
+    await app.commands.run("note.setContent", { value: saved });
+    const saving = app.flush();
+    await landed.promise;
+    await app.commands.run("note.setContent", { value: latest });
+    f.outside(welcome, saved);
+    await settle();
+    const prematurelyHeld = app.store.state.ui.conflict.held;
+    ack.resolve();
+    await saving;
+    expect(await app.flush()).toBe(true);
+    await done(app);
+    expect(prematurelyHeld).toBeUndefined();
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+    expect(app.store.state.note.markdown).toBe(latest);
+    expect(f.files[welcome]).toBe(latest);
+    expect(toasts(app).some((t) => t.action?.command === "conflict.open")).toBe(false);
+  });
+
+  it("a delayed watcher read cannot roll the editor back after a newer own save", async () => {
+    const f = setup();
+    const app = await started(f);
+    const read = f.bridge.readNote;
+    const gate = deferred();
+    const reading = deferred();
+    let first = true;
+    f.bridge.readNote = async (path) => {
+      const text = await read(path);
+      if (first) { first = false; reading.resolve(); await gate.promise; }
+      return text;
+    };
+    f.outside(welcome, f.files[welcome]!);
+    await reading.promise;
+    const latest = "# Welcome\n\nNewer words.\n";
+    await app.commands.run("note.setContent", { value: latest });
+    const saving = app.flush();
+    await settle();
+    gate.resolve();
+    await saving;
+    await done(app);
+    expect(app.store.state.note.markdown).toBe(latest);
+    expect(f.files[welcome]).toBe(latest);
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+  });
+
+  it("coalesces overlapping watcher reads so an older outside version cannot replace the newest one", async () => {
+    const f = setup();
+    const app = await started(f);
+    const read = f.bridge.readNote;
+    const gate = deferred();
+    const reading = deferred();
+    let first = true;
+    f.bridge.readNote = async (path) => {
+      const text = await read(path);
+      if (first) { first = false; reading.resolve(); await gate.promise; }
+      return text;
+    };
+    f.outside(welcome, "# Welcome\n\nEarlier outside edit.\n");
+    await reading.promise;
+    f.outside(welcome, "# Welcome\n\nLatest outside edit.\n");
+    await settle();
+    gate.resolve();
+    await done(app);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nLatest outside edit.\n");
+  });
+
+  it("remembers a disk version that already matches the unsaved editor before the next edit", async () => {
+    const f = setup();
+    const app = await started(f);
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nSame words.\n" });
+    f.outside(welcome, "# Welcome\n\nSame words.\n");
+    await settle();
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nSame words. More.\n" });
+    expect(await app.flush()).toBe(true);
+    expect(f.files[welcome]).toBe("# Welcome\n\nSame words. More.\n");
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+  });
+
+  it("still detects a real outside edit made during an own save's delayed acknowledgement", async () => {
+    const f = setup();
+    const app = await started(f);
+    const landed = deferred();
+    const ack = deferred();
+    const write = f.bridge.writeNote;
+    f.bridge.writeNote = async (...args) => {
+      const result = await write(...args);
+      landed.resolve();
+      await ack.promise;
+      return result;
+    };
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nSaved here.\n" });
+    const saving = app.flush();
+    await landed.promise;
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nStill typing here.\n" });
+    f.outside(welcome, "# Welcome\n\nGenuine outside edit.\n");
+    ack.resolve();
+    await saving;
+    await done(app);
+    expect(await app.flush()).toBe(false);
+    expect(f.files[welcome]).toBe("# Welcome\n\nGenuine outside edit.\n");
+    expect(app.store.state.ui.conflict.notes[0]).toMatchObject({ mine: "# Welcome\n\nStill typing here.\n", theirs: "# Welcome\n\nGenuine outside edit.\n" });
+  });
+
+  it.each(["theirs", "both"] as const)("%s preserves edits made after Decide later, not the old conflict snapshot", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    await app.commands.run("conflict.open");
+    await app.commands.run("conflict.later");
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here. More while deciding.\n" });
+    await app.commands.run("conflict.open");
+    expect(vm(app).mine.map((b) => b.text).join("\n")).toContain("More while deciding.");
+    await app.commands.run("conflict.choose", { choice });
+    await done(app);
+    expect((f.batches[0]![0] as { text: string }).text).toContain("More while deciding.");
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nWritten elsewhere.\n");
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+  });
+
+  it("Keep this computer's version never claims success when its save fails, and can be retried", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    const write = f.bridge.writeNote;
+    f.bridge.writeNote = async () => { throw new Error("disk full"); };
+    await app.commands.run("conflict.open");
+    await app.commands.run("conflict.choose", { choice: "mine" });
+    await done(app);
+    expect(toasts(app).some((t) => t.message.startsWith("Kept this computer's version"))).toBe(false);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
+    expect(vm(app).open).toBe(true);
+    f.bridge.writeNote = write;
+    await app.commands.run("conflict.choose", { choice: "mine" });
+    await done(app);
+    expect(f.files[welcome]).toBe("# Welcome\n\nTyped here.\n");
+    expect(vm(app).open).toBe(false);
+  });
+
+  it.each(["mine", "theirs", "both"] as const)("%s refreshes the choice if disk changed again before it was clicked", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    await app.commands.run("conflict.open");
+    f.files[welcome] = "# Welcome\n\nChanged again without a watcher event.\n";
+    await app.commands.run("conflict.choose", { choice });
+    await done(app);
+    expect(vm(app).open).toBe(true);
+    expect(app.store.state.ui.conflict.notes[0]?.theirs).toBe(f.files[welcome]);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(toasts(app).some((t) => /^(Kept this computer|Took the other|Kept both)/.test(t.message))).toBe(false);
+  });
+
+  it.each(["theirs", "both"] as const)("%s does not discard typing that arrives while its recovery copy is being written", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    const apply = f.bridge.workspace!.apply!;
+    const copying = deferred();
+    const gate = deferred();
+    f.bridge.workspace!.apply = async (ops) => {
+      await apply(ops);
+      if (ops.some((op) => op.op === "create")) { copying.resolve(); await gate.promise; }
+    };
+    await app.commands.run("conflict.open");
+    const choosing = app.commands.run("conflict.choose", { choice });
+    await copying.promise;
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here. Latest words.\n" });
+    gate.resolve();
+    await choosing;
+    await done(app);
+    expect(app.store.state.note.markdown).toContain("Latest words.");
+    expect(vm(app).open).toBe(true);
+    expect(app.store.state.ui.conflict.held).toBe(welcome);
+    await app.commands.run("conflict.choose", { choice });
+    expect(vm(app).open).toBe(false);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nWritten elsewhere.\n");
+    const copies = f.batches.flat().filter((op) => op.op === "create");
+    expect(copies.at(-1)?.text).toContain("Latest words.");
+    if (choice === "both") expect(new Set(copies.map((op) => op.path)).size).toBe(2);
+  });
+
+  it("Keep this computer's version is not undone by its own watcher event before acknowledgement", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    const write = f.bridge.writeNote;
+    const landed = deferred();
+    const ack = deferred();
+    f.bridge.writeNote = async (...args) => {
+      const result = await write(...args);
+      landed.resolve();
+      await ack.promise;
+      return result;
+    };
+    await app.commands.run("conflict.open");
+    const choosing = app.commands.run("conflict.choose", { choice: "mine" });
+    await landed.promise;
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here. Still writing.\n" });
+    f.outside(welcome, f.files[welcome]!);
+    await settle();
+    ack.resolve();
+    await choosing;
+    expect(await app.flush()).toBe(true);
+    await done(app);
+    expect(f.files[welcome]).toContain("Still writing.");
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+    expect(vm(app).open).toBe(false);
+  });
+
+  it.each(["mine", "theirs", "both"] as const)("%s keeps a real new disk version arriving while a copy is being preserved", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    const apply = f.bridge.workspace!.apply!;
+    let first = true;
+    f.bridge.workspace!.apply = async (ops) => {
+      await apply(ops);
+      if (first) { first = false; f.outside(welcome, "# Welcome\n\nNew outside words.\n"); }
+    };
+    await app.commands.run("conflict.open");
+    await app.commands.run("conflict.choose", { choice });
+    await done(app);
+    expect(f.files[welcome]).toBe("# Welcome\n\nNew outside words.\n");
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(vm(app).open).toBe(true);
+    expect(app.store.state.ui.conflict.notes[0]?.theirs).toBe(f.files[welcome]);
+  });
+
+  it("a refused recovery copy leaves both originals and a retryable choice, with no success message", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    const apply = f.bridge.workspace!.apply!;
+    f.bridge.workspace!.apply = async () => { throw new Error("locked"); };
+    await app.commands.run("conflict.open");
+    await app.commands.run("conflict.choose", { choice: "theirs" });
+    expect(vm(app).open).toBe(true);
+    expect(app.store.state.ui.conflict.busy).toBe(false);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
+    expect(lastToast(app)?.message).toBe(messages["conflict.copyFailed"]);
+    f.bridge.workspace!.apply = apply;
+    await app.commands.run("conflict.choose", { choice: "theirs" });
+    expect(vm(app).open).toBe(false);
+  });
+
+  it("duplicate choices and Decide later cannot interrupt a choice already preserving a copy", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    const apply = f.bridge.workspace!.apply!;
+    const copying = deferred();
+    const gate = deferred();
+    f.bridge.workspace!.apply = async (ops) => {
+      await apply(ops);
+      if (ops.some((op) => op.op === "create")) { copying.resolve(); await gate.promise; }
+    };
+    await app.commands.run("conflict.open");
+    const choosing = app.commands.run("conflict.choose", { choice: "theirs" });
+    await copying.promise;
+    await app.commands.run("conflict.choose", { choice: "mine" });
+    await app.commands.run("conflict.later");
+    expect(vm(app).open).toBe(true);
+    expect(f.batches).toHaveLength(1);
+    gate.resolve();
+    await choosing;
+    expect(f.batches).toHaveLength(2);
+    expect(vm(app).open).toBe(false);
+    expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
+  });
+
+  it("a held conflict is released when the disk and latest editor text agree again", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    f.outside(welcome, app.store.state.note.markdown);
+    await done(app);
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+    expect(await app.flush()).toBe(true);
   });
 });
 
