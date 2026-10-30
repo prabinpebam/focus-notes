@@ -7,7 +7,7 @@
  * only: nothing touches the network.
  */
 import { test, expect, type Locator, type Page } from "./fixtures.ts";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
@@ -219,8 +219,8 @@ test("D-92: continuous typing does not conflict with its own save while acknowle
   await quit(l);
 });
 
-for (const choice of ["Keep this computer's version", "Take the version on disk", "Keep both"]) {
-  test(`D-92: ${choice} by pointer finishes an outside conflict and the next edit saves normally`, async () => {
+for (const missing of [false, true]) for (const choice of ["Keep this computer's version", "Take the version on disk", "Keep both"]) {
+  test(`D-92: ${choice} by pointer ${missing ? "restores a removed note" : "finishes an outside conflict"} and the next edit saves normally`, async () => {
     const { dirs } = instance();
     const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
     const { page } = l;
@@ -235,6 +235,7 @@ for (const choice of ["Keep this computer's version", "Take the version on disk"
     await typeAtEnd(page, " More while deciding.");
     await page.keyboard.press(`${mod}+S`);
     await expect(dialog.getByRole("region", { name: "This computer" })).toContainText("More while deciding.");
+    if (missing) unlinkSync(note);
     await dialog.getByRole("button", { name: choice, exact: true }).click();
     await expect(dialog).toBeHidden({ timeout: 15_000 });
     const mine = choice === "Keep this computer's version";

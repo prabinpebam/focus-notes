@@ -711,6 +711,100 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(app.store.state.ui.conflict.held).toBeUndefined();
     expect(await app.flush()).toBe(true);
   });
+
+  it.each(["theirs", "both"] as const)("%s reconciles an external event that arrives during its last disk read", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    const read = f.bridge.readNote;
+    const reading = deferred();
+    const gate = deferred();
+    let reads = 0;
+    f.bridge.readNote = async (path) => {
+      const text = await read(path);
+      if (path === welcome && ++reads === 2) { reading.resolve(); await gate.promise; }
+      return text;
+    };
+    await app.commands.run("conflict.open");
+    const choosing = app.commands.run("conflict.choose", { choice });
+    await reading.promise;
+    f.outside(welcome, "# Welcome\n\nThe newest outside version.\n");
+    gate.resolve();
+    await choosing;
+    await done(app);
+    expect(app.store.state.note.markdown).toBe(f.files[welcome]);
+    expect(app.store.state.note.markdown).toContain("The newest outside version.");
+    expect(app.store.state.note.saveState).toBe("saved");
+  });
+
+  for (const when of ["before choosing", "while preserving"]) it.each(["mine", "theirs", "both"] as const)(`%s can safely restore a conflicted note removed ${when}`, async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    f.bridge.readNoteIfExists = async (path) => f.files[path] ?? null;
+    await app.commands.run("conflict.open");
+    if (when === "before choosing") delete f.files[welcome];
+    else {
+      const apply = f.bridge.workspace!.apply!;
+      f.bridge.workspace!.apply = async (ops) => {
+        await apply(ops);
+        delete f.files[welcome];
+      };
+    }
+    await app.commands.run("conflict.choose", { choice });
+    expect(f.files[welcome]).toBe(choice === "mine" ? "# Welcome\n\nTyped here.\n" : "# Welcome\n\nWritten elsewhere.\n");
+    expect(vm(app).open).toBe(false);
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+    expect(f.batches.flat().find((op) => op.op === "create")?.text).toContain(choice === "mine" ? "Written elsewhere." : "Typed here.");
+  });
+
+  it.each(["mine", "theirs", "both"] as const)("%s never overwrites a different version recreated after a missing-file check", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    f.bridge.readNoteIfExists = async (path) => f.files[path] ?? null;
+    const write = f.bridge.writeNote;
+    f.bridge.writeNote = async (...args) => {
+      f.files[welcome] = "# Welcome\n\nRecreated elsewhere.\n";
+      return write(...args);
+    };
+    await app.commands.run("conflict.open");
+    delete f.files[welcome];
+    await app.commands.run("conflict.choose", { choice });
+    expect(f.files[welcome]).toBe("# Welcome\n\nRecreated elsewhere.\n");
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(app.store.state.ui.conflict.held).toBe(welcome);
+    expect(app.store.state.ui.conflict.notes[0]?.theirs).toBe(f.files[welcome]);
+  });
+
+  it("a read permission failure is not treated as a missing file or a copy failure", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    f.bridge.readNoteIfExists = async () => { throw new Error("permission denied"); };
+    await app.commands.run("conflict.open");
+    await app.commands.run("conflict.choose", { choice: "theirs" });
+    expect(f.batches).toHaveLength(0);
+    expect(vm(app).open).toBe(true);
+    expect(lastToast(app)?.message).toBe(messages["conflict.readFailed"]);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+  });
+
+  it.each(["theirs", "both"] as const)("%s preserves text typed while restoring a missing file", async (choice) => {
+    const { f, app } = await typedThenChangedOutside();
+    f.bridge.readNoteIfExists = async (path) => f.files[path] ?? null;
+    const write = f.bridge.writeNote;
+    const restoring = deferred();
+    const gate = deferred();
+    f.bridge.writeNote = async (...args) => {
+      const result = await write(...args);
+      restoring.resolve();
+      await gate.promise;
+      return result;
+    };
+    await app.commands.run("conflict.open");
+    delete f.files[welcome];
+    const choosing = app.commands.run("conflict.choose", { choice });
+    await restoring.promise;
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here. Latest words.\n" });
+    gate.resolve();
+    await choosing;
+    expect(app.store.state.note.markdown).toContain("Latest words.");
+    expect(vm(app).open).toBe(true);
+    expect(app.store.state.ui.conflict.held).toBe(welcome);
+  });
 });
 
 describe("FIL-10: Recently deleted in the Files sheet", () => {

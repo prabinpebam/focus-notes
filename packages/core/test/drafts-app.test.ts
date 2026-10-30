@@ -251,6 +251,25 @@ describe("QLT-06: what the last session left, at launch", () => {
     expect(f.calls.at(-1)).toEqual(["saved", d.draft, 1]);
   });
 
+  it.each(["mine", "theirs", "both"] as const)("%s restores a deleted conflicted note without prematurely dropping its recovered draft", async (choice) => {
+    const text = "# Welcome\n\nFirst.\n\nMine.\n";
+    const d = found(WELCOME, text, { disk: "# Welcome\n\nFirst.\n" });
+    const f = setup({ found: { matched: [], changed: [d], recovered: 0 } });
+    f.bridge.readNoteIfExists = async (path) => f.files[path] ?? null;
+    const { app } = await started(f);
+    delete f.files[WELCOME];
+    f.failWrites(true);
+    await app.commands.run("conflict.choose", { choice });
+    expect(conflict(app).open).toBe(true);
+    expect(f.calls.some((c) => c[0] === "discard")).toBe(false);
+    expect(app.store.state.note.markdown).toBe(text);
+    f.failWrites(false);
+    await app.commands.run("conflict.choose", { choice });
+    expect(conflict(app).open).toBe(false);
+    expect(f.files[WELCOME]).toBe(choice === "mine" ? text : "# Welcome\n\nFirst.\n");
+    expect(f.calls.at(-1)?.[0]).toBe(choice === "mine" ? "saved" : "discard");
+  });
+
   it("typed before the answer came (D-220): what was typed is saved first, then compared with the recovered text", async () => {
     let answer!: (r: RecoveryFound) => void;
     const text = "# Welcome\n\nFirst.\n\nFrom before.\n";

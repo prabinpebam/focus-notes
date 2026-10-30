@@ -21,6 +21,8 @@ import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.t
 export interface PlatformBridge {
   platform: Platform;
   readNote(path: string): Promise<string>;
+  /** As readNote, but only a missing file is null; permission and other read failures still reject. */
+  readNoteIfExists?(path: string): Promise<string | null>;
   /**
    * Several notes' text at once, for the search index (D-107): `null` for one that can't be read.
    * Reads past the note snapshot, which is for notes people open (PRF-10). Optional: without it the

@@ -1197,7 +1197,14 @@ async function slowSeam(channel: string): Promise<void> {
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
-  handle("note:read", async (p) => (await readParsed(notePath(p))).text);
+  handle("note:read", async (p) => {
+    try {
+      return (await readParsed(notePath(p))).text;
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return null;
+      throw error;
+    }
+  });
   // keybindings.json (KEY-07, D-170): read as text, checked in the window; at most 256 KB.
   const keybindingsFile = () => dataFile(DATA_FILES.keybindings);
   handle("keybindings:load", async () => {

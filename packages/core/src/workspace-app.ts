@@ -133,8 +133,9 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   let reconciliation = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
 
-  async function reconcile(path: string, key: string, revision: number): Promise<void> {
-    if (revision !== reconciliation || store.state.note.path !== path || store.state.note.key !== key) return;
+  async function reconcile(path: string, revision: number): Promise<void> {
+    if (revision !== reconciliation || store.state.note.path !== path) return;
+    const key = store.state.note.key;
     const text = await bridge.readNote(path).catch(() => undefined);
     if (text === undefined) return;
     if (revision !== reconciliation || store.state.note.path !== path || store.state.note.key !== key) return;
@@ -171,8 +172,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     const open = store.state.note.path;
     if (open && notes.some((c) => c.kind === "note" && c.path === open)) {
       const revision = ++reconciliation;
-      const key = store.state.note.key;
-      void ctx.afterWrites(() => reconcile(open, key, revision));
+      void ctx.afterWrites(() => reconcile(open, revision));
     }
   }
 

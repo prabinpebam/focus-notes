@@ -165,27 +165,51 @@ export function registerConflicts(ctx: Ctx) {
     const n = conflict().notes[0];
     if (!n || n.mine === undefined || n.theirs === undefined) return;
     const kind = conflict().kind;
+    const key = store.state.note.key;
+    let failure = "conflict.readFailed";
     set({ busy: true });
     try {
       const ready = await ctx.tracker.run("conflict", "task.resolving", () => ctx.afterWrites(async () => {
-        const stillCurrent = async () => {
-          const disk = await bridge.readNote(n.path);
+        let missing = false;
+        const changedAgain = (disk: string) => {
           ctx.handOver();
           const open = store.state.note;
-          if (open.path !== n.path || disk !== n.theirs || (choice !== "mine" && open.markdown !== n.mine)) {
-            if (open.path === n.path) {
-              set({ open: true, busy: false, notes: [{ ...n, mine: open.markdown, theirs: disk, theirsAt: now() }], held: n.path });
-              toast(catalog.format("conflict.changedAgain"));
-            } else set({ busy: false });
+          if (open.path === n.path) {
+            set({ open: true, busy: false, notes: [{ ...n, mine: open.markdown, theirs: disk, theirsAt: now() }], held: n.path });
+            toast(catalog.format("conflict.changedAgain"));
+          } else set({ busy: false });
+        };
+        const stillCurrent = async () => {
+          failure = "conflict.readFailed";
+          const disk = bridge.readNoteIfExists ? await bridge.readNoteIfExists(n.path) : await bridge.readNote(n.path);
+          missing = disk === null;
+          ctx.handOver();
+          const open = store.state.note;
+          if (open.path !== n.path || open.key !== key || (disk !== null && disk !== n.theirs) || (choice !== "mine" && open.markdown !== n.mine)) {
+            changedAgain(disk ?? n.theirs!);
             return false;
           }
           return true;
         };
         if (!(await stillCurrent())) return false;
         // Whichever version isn't kept at the note is preserved before anything is replaced.
+        failure = "conflict.copyFailed";
         if (choice === "mine") await keepCopy(n, n.theirs!, copyTitle(n, "theirs", "other"), true);
         else await keepCopy(n, n.mine!, copyTitle(n, choice), choice === "theirs");
         if (!(await stillCurrent())) return false;
+        if (choice !== "mine" && missing) {
+          failure = "toast.saveFailed";
+          const found = await bridge.writeNote(n.path, n.theirs!, n.theirs);
+          if (found) {
+            changedAgain(found.outside);
+            return false;
+          }
+          if (!(await stillCurrent())) return false;
+          if (missing) {
+            changedAgain(n.theirs!);
+            return false;
+          }
+        }
         ctx.sawOnDisk?.(n.path, n.theirs!);
         if (choice !== "mine") {
           ctx.setNote({ key: `${n.path}#conflict-${now()}`, initialMarkdown: n.theirs, markdown: n.theirs, saveState: "saved" });
@@ -198,7 +222,7 @@ export function registerConflicts(ctx: Ctx) {
       if (!ready) return;
     } catch {
       set({ busy: false, open: true });
-      toast(catalog.format("conflict.copyFailed"), { tone: "error" });
+      toast(catalog.format(failure), { tone: "error" });
       return;
     }
     if (choice === "mine" && !(await ctx.flush())) {

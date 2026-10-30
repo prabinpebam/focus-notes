@@ -109,7 +109,12 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   // Off only when the main process says so: end-to-end tests (PRF-10).
   warmUp: params.get("warmup") !== "0",
-  readNote: (path: string) => ipcRenderer.invoke("note:read", path),
+  readNote: async (path: string): Promise<string> => {
+    const text: string | null = await ipcRenderer.invoke("note:read", path);
+    if (text === null) throw new Error("note:missing");
+    return text;
+  },
+  readNoteIfExists: (path: string): Promise<string | null> => ipcRenderer.invoke("note:read", path),
   readNotes: (paths: readonly string[]) => ipcRenderer.invoke("notes:read", paths),
   writeNote: (path: string, content: string, expected?: string) => ipcRenderer.invoke("note:write", path, content, expected),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
