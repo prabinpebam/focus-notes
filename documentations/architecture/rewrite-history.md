@@ -19,7 +19,7 @@ The planned local Git record of original text, complete variations and explicit 
 | Record | Durable before | What it contains |
 | --- | --- | --- |
 | Pre-rewrite checkpoint | Any provider send or projected token | Exact full canonical original source, mapped target and baseline identity |
-| Variation | Review becomes available | Complete validated replacement, target base hash and immutable opaque metadata |
+| Variation | Review becomes available | Complete source snapshot assembled by main from checkpoint plus validated run replacements; exact snapshot replacement offsets, target base hash and immutable opaque metadata |
 | State event | Accept/Discard/history restore/undo/redo finishes | Opaque event kind, selected variation ID and content hash; no prompt, path or note text in messages |
 | Ordinary note save | Saved indicator | Accepted/undone/redone canonical note through existing expected-content writer |
 
@@ -34,7 +34,7 @@ RWR-61. Recommended safety refinement D-247: use app-local, **no-remote bare Git
 | Root commit | Empty tree except one fixed-name `content` blob and `record.json`; no parent, independent of workspace HEAD |
 | Later commit | Same fixed tree shape; one parent: current side-ref tip. Variations/states append to this session chain. |
 | `content` | Exact UTF-8 canonical original or complete candidate; private store uses OS-encrypted envelope bytes, never plaintext Git blobs |
-| `record.json` | `{version:1,kind,sessionId,variationId?,baseHash,contentHash,target:{startByte,endByte,replacementEndByte,targetHash,prefixHash,suffixHash},at,encoding:"utf8"|"os-encrypted"}`; offsets describe this record's source snapshot, not future live-editor positions. Private domain encrypts this entire record before writing the blob, leaving only envelope version/encoding outside. No path, title, prompt, endpoint, model response metadata or credential |
+| `record.json` | `{version:1,kind,sessionId,variationId?,baseHash,contentHash,target:{planHash,runs:[{runId,startByte,endByte,replacementEndByte,targetHash,prefixHash,suffixHash}]},sourceSessionKey?,createdNoteKey?,at,encoding:"utf8"|"os-encrypted"}`; single-selection is one run. Offsets describe this record's assembled source snapshot, never future editor positions. Optional identity keys are opaque, not paths. Private domain encrypts the entire record before writing the blob, leaving only envelope version/encoding outside. No title, prompt, endpoint, response metadata or credential |
 | Message | Exactly `Rewrite checkpoint`, `Rewrite variation`, `Rewrite accept`, `Rewrite discard`, `Rewrite undo`, `Rewrite redo` or `Rewrite restore`; optional body `Version: 1` only |
 | Author/committer | Fixed local identity `Focus Notes <local@focus-notes.invalid>`; never inherit account identity or sign/contact a signing service |
 | Reflog | Disabled for these stores (`core.logAllRefUpdates=false`); immutable commit chain is the record, not reflog retention |
@@ -59,11 +59,14 @@ No `git add`, checkout, stash, amend, reset, rebase, cherry-pick or force-push o
 
 RWR-62. Accept inserts one complete replacement into the editor's undo stack; streaming and preview navigation do not enter it.
 
+For New file, that stack belongs to the acknowledged created note, not the source. Its seeded undo baseline is the original source in the new destination context with the same fresh ID, metadata and rebased links; no intermediate original-copy file is written. Undo/redo save new states in that destination, never delete it or touch source dirty edits/undo. History acceptance records bind opaque source-session and created-note identities. Main builds historical snapshots/offsets from checkpoint plus replacement-only run data; replay never copies historical surrounding bytes over newer independent typing.
+
 | Person's action | Editor effect | Local history | Workspace Git |
 | --- | --- | --- | --- |
 | Try again | Restore original target in projection, generate a new sibling variation semantically | Append complete variation to session chain, preserve all previous ones | None |
 | Previous/next | Change complete preview only; no provider call | Selection metadata changes; no duplicate content commit necessary | None |
-| Accept | One undoable canonical range replacement | Append `Rewrite accept` after guarded save acknowledgement; pending marker until then | Normal existing cadence saves/commits/pushes accepted content |
+| Accept, selection/Same file | One undoable canonical range replacement, preserving current outside edits | Append `Rewrite accept` after guarded save acknowledgement; pending marker until then | Normal existing cadence saves/commits/pushes accepted content |
+| Accept, New file | Exclusive complete-file create, then destination editor owns one seeded undo event; source text/dirty state/undo unchanged | Pending event binds opaque source-session and new-note identities; append success only after create acknowledgement | New note uses ordinary save/commit flow |
 | Undo accepted rewrite | Replace accepted range with original, preserving independent edits | Append `Rewrite undo` containing resulting canonical source | New normal save/commit; never remove accepted commit |
 | Redo | Reapply exact accepted replacement if editor redo is still valid | Append `Rewrite redo` | New normal save/commit |
 | Discard before Accept | Remove projection, retain original and independent edits | Append `Rewrite discard`; complete variations stay for retention | No generated content enters branch |
@@ -105,6 +108,8 @@ RWR-64. Retain at most **30 days**, **20 complete variations per note**, **100 M
 
 At 20 live variations, Try again is disabled with `rewrite.history.limit`: "Keep or discard this rewrite before starting another." Storage accounting includes encrypted envelopes and Git overhead, not only generated characters.
 
+If inactive whole-session cleanup cannot admit a new attempt within the per-note/domain/workspace budgets, use the distinct `rewrite.history.capacity`: "Rewrite history is full. Review or clear older history before trying again." Closing/reopening alone never promises a reset; protected unsaved originals/recovery cannot be cleared or evicted.
+
 ## Private isolation
 
 RWR-66. Private originals, variations and identity metadata never enter a public Git object database, public note, public export, diagnostics or published page. A private note shared with an audience remains private for rewriting; share grants confer no model-provider consent.
@@ -129,9 +134,9 @@ RWR-65. The normal note folder is never initialized or committed just to rewrite
 | Workspace Git with commits | Same isolated-store contract; no dependency on HEAD's object graph |
 | Unborn workspace repository | Same; root side commit has no parent, note branch remains unborn until ordinary save policy creates its first commit |
 | Non-Git folder, Git installed | Same no-remote app-local Git store; note folder untouched |
-| Git absent/unsupported | Atomic app-local checkpoint/variation files with the same hashes, privacy, retention and review semantics; label local versions rather than claiming commits. Installation is not required for fake-only/ordinary rewriting. |
+| Git absent/unsupported | Generation unavailable without app-supported Git; explain repair, never install/download it. Ordinary writing and existing recovery remain available. No second history format, including fake-generation paths. |
 
-Fallback storage is `<userData>/rewrite-history/<workspaceKey>/fallback/<domain>/<sessionUuid>/` with fixed `original`, numbered complete `variation-0001` files and atomic index. Private files are encrypted envelopes. This is a declared capability fallback, not a success-shaped Git failure: a failed available Git store raises a history error and does not silently switch formats. Later migration imports checksummed complete records as new local commits without deleting the fallback until verification succeeds.
+There is no fallback-directory format or migration path. Non-Git and unborn note folders still use the same isolated bare store when supported Git is available; neither environment initializes the note folder. Missing Git and a failed available store are explicit unavailable/history-error states, not alternate success paths.
 
 ## Decisions
 

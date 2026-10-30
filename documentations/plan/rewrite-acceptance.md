@@ -144,19 +144,19 @@ One table per existing requirement area keeps ownership visible. EDT-13 already 
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| A11Y-03 | Default/480 x 360/360 x 320, 200% text, NVDA/Narrator and every contrast/motion context | Complete selection/file/setup/consent/review/history by keyboard, including nested Escape/IME | All controls named/reachable, focus returns correctly, one stage announcement after 1 s/progress ≤once per 5 s/completion once, no token chatter; text ≥4.5:1, focus/non-text ≥3:1 or documented ordinary-text fallback | journey, review | `rewrite-a11y.spec.ts: keyboard-and-announcements` |
+| A11Y-03 | Default/480 x 360/360 x 320 and 320 CSS px reflow, 200% text, 400% zoom, NVDA/Narrator and light/dark/contrast states | Run named preset/settings/history/file/cycle keyboard journeys and axe, including nested widgets, errors and transition focus | Zero axe violations; every action named/reachable, no body/removed-node focus or async theft; APG menu/editable combobox/toggle states; no horizontal control/disclosure scroll or sticky-row obscuring; exact bounded announcements/contrast fallback | journey, review | `rewrite-a11y.spec.ts: keyboard-and-announcements`; named journeys in design gallery plan |
 
 ### Internationalization
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| I18N-04 | Every copy/error/repair/preset key, plural boundary and 40% expanded pseudo-locale | Render every state at minimum size/200% text | Exact registered templates, escaped interpolations/locale amounts, no literal/concatenated copy or clipped primary/privacy/destination information | unit, journey | `rewrite-copy.test.ts: message-completeness-and-expansion` |
+| I18N-04 | Closed fragment/VM control inventory, every field validation/error/repair/preset key, plurals and 40% pseudo-locale expansion | Render every action/label/validation branch at minimum/reflow sizes and 200% text | Every branch resolves a canonical key, including required instruction/language, profiles/caps/pricing/preset/history capacity; exact templates, escaped locale amounts, no invented strings or clipped primary/privacy/destination | unit, journey | `rewrite-copy.test.ts: message-completeness-and-expansion` |
 
 ### Design system
 
 | Requirement | Given | When | Then | Tier | Planned test |
 | --- | --- | --- | --- | --- | --- |
-| DSY-14 | Gallery states across light/dark/contrast themes | Validate tokens/contracts and score screenshots | All states covered, tokens only, VVS at least 70/80 setup, no criterion below 10 | review, unit | `rewrite-gallery.test.ts: theme-state-contract` |
+| DSY-14 | Closed compositions/contracts, actual44px controls and full per-surface score/capture matrix across fine/coarse/light/dark/contrast | Reject invalid props/slots/styles/bindings, measure actionable nodes and score lower-theme captures | Single Positioner owner, no fragment styles/tokens; every state covered; all criteria≥10, total≥70 and every first-run/empty state≥80; canonical per-type word budgets/five reasons, pending evidence not provisional-score pass | review, unit | `rewrite-gallery.test.ts: theme-state-contract`; `rewrite-contracts.test.ts: closed-compositions-and-targets` |
 
 ### Documentation
 
@@ -181,12 +181,32 @@ One table per existing requirement area keeps ownership visible. EDT-13 already 
 | Security review item | Required proof before real enablement |
 | --- | --- |
 | Egress | Allowlist, normalized endpoint, credentials-in-URL rejection, redirect/DNS-change handling, no fallback or output-triggered fetch |
-| Credentials | safeStorage failure explicit; references only in profiles; no keys in renderer, logs, Git, crash metadata or exports |
+| Credentials | Stored keys never return to renderer/events; entered key text is transient and cleared after acknowledgement. No keys in logs/Git/crash metadata/exports; safeStorage failure blocks persistence/keyed requests; planned clear-input/no-read-or-reveal-IPC assertions |
 | IPC | Operation authorization, payload/size validation, sender/workspace scope, cancellation and late-event rejection |
 | Privacy | Private/shared policy matrix; no prompts in commits; isolated private stores and mirror-push object/sentinel inspection |
 | Injection | Content framed as data, no tools, supported Markdown only, refusal/malformed/HTML/huge-output scripts |
 | Save/recovery | Durable original before token, review save hold, exact guards, no autosaved partial output, restart never writes notes |
 | Cost/rollout | Owner approvals, cap boundary tests, no hidden retries, versioned Store/privacy claim review, disable-new-sends rollback |
+
+### Additional binding acceptance
+
+These are mandatory **planned** fixture/journey outcomes refining the rows above, not executed tests or extra requirement IDs.
+
+| Existing coverage | Future fixture and exact observable outcome |
+| --- | --- |
+| RWR-01 | `caret-current-block`: supported nonempty caret opens highlighted Whole block without asking for selection; empty/raw/ambiguous cannot Send |
+| RWR-25, RWR-43, RWR-44 | `operation-binding-and-one-use`: change instruction/renderer counts/preset/link flag/plan/profile after estimate/consent, and replay Start; reject substitution with zero sends/extra reservations. Main computes counts; a fresh attempt needs fresh required approval |
+| RWR-22, RWR-25 | `replacement-only-completion`: >32KiB source with small selected replacement succeeds; over-limit replacement fails; outside prefix/suffix typing survives completion, navigation and Accept; historical snapshot offsets never replace live outside bytes |
+| RWR-21, RWR-28, RWR-29 | `disjoint-file-sentinels`: eligible text on both sides of front matter/raw/image sentinel islands; inspect every outbound body (no excluded sentinel), Accept/Discard/crash preserve immutable byte positions; >4-run/request plan refuses before egress |
+| RWR-03, RWR-27, UI-14 | `link-policy-binding`: default-off/new session/preset reset; custom Checkbox on permits only safe href/title changes; identical answer off rejects, unsafe schemes always reject; policy edit invalidates estimate/consent |
+| RWR-06, RWR-29 | `new-file-create-undo-restart`: Create→Undo→Redo→restart leaves source bytes/dirty state/undo unchanged; destination ID stable/content reversible, no deletion/intermediate copy/source overwrite. Exact filename preview matches created suffix, including create-time collision |
+| RWR-64, RWR-65 | `cross-session-cap-and-no-git`: two sessions reach same-note20 cap; reopen cannot bypass it; whole inactive-session eviction respects protected originals/200MiB total. Registered limit/capacity reasons differ. Unsupported Git disables generation, no fallback format/install; ordinary writing/recovery work |
+| RWR-02, A11Y-03 | `geometry-keys-focus`: command-opened companion without synthetic trigger; below/above/neither-fits/docked cases, actual44px controls, 320CSS/400%-zoom reflow, whole-panel scroll fallback, F6 route preserves outside edits/session and toast fallback, transitions never lose or steal focus |
+| RWR-03, I18N-04 | `required-field-copy-and-patterns`: whitespace-only instruction and Translate language absent bind per-field keys/guard precedence; APG Menu Button, editable Combobox commit/Escape/Tab and original toggle aria-pressed; preset add/edit have canonical actions |
+| DSY-14 | `closed-compositions-and-targets`: reject unknown parameters/children/raw strings/styles/bindings; Positioner-only geometry and primitive-owned44px aliases; all-surface lower-theme VVS/word-budget/capture/owner rows recorded, first-run/empty≥80 |
+| RWR-09, RWR-42, RWR-46 | `named-api-evidence`: eight named APIs trace to dated official sources; distinguish documented API/conditional exact v1/future adapter, never tested support. Unverified privacy/pricing/capabilities remain gated; no API call or installation as spec evidence |
+
+WP-AI.1 freezes operation/completion and isolated history-record fixture shapes offline; AI.2 owns closed UI/checkbox/focus/primitive contract fixtures; AI.4 rechecks durable history/retention; AI.5 owns ordered file plans/new-file undo; AI.6 integrates policy/IPC/UI; AI.9 closes combined evidence. No fixture closes AI.7 owner approval or real-provider conformance.
 
 ## Stage gate
 

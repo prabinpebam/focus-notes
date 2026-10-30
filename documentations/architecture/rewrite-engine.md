@@ -89,24 +89,35 @@ Accept is enabled only after output validation **and** the complete variation ch
 
 Discard/Try again/Edit prompt restore only the mapped original target; outside edits and their undo history remain. Variations always derive from the session's original target, not from the last answer. To rewrite an answer recursively, Accept it, then open a new session. While a target is protected, Ctrl+Z outside it retains normal behavior; an undo that would cross the range asks to discard the preview first. No fragment-sized undo entries exist.
 
+**New-file Accept is a separate lane.** The table's canonical replacement applies only to selection/Same file. New file leaves source bytes, dirty state and undo stack untouched. Revalidate/reserve destination, allocate its fresh ID and exclusively create the complete candidate; open the created note only after acknowledgement. Seed one rewrite undo event in that destination editor, whose baseline is the original source copied into the destination context with the **same new ID**, preserved metadata and correctly rebased links. Do not write an intermediate original-copy file. Undo/redo update the new note through ordinary guarded saves and new states; neither deletes the file nor changes the source. The pending history event binds opaque source-session and created-note identities; restart never interprets destination acceptance as permission to overwrite the source. Creation failure retains source preview/recoverable candidate and has no success marker.
+
 ## IPC contract
 
 RWR-25. Extend the existing typed `PlatformBridge` with `rewrite.*`; preload never exposes Node, arbitrary channels, fetch or Git. Main verifies `fromApp`, top frame, owning webContents and workspace on every operation. Schemas reject unknown keys and oversized payloads.
 
 | Channel / direction | Payload → result |
 | --- | --- |
-| `rewrite:prepare` renderer → main | `{sessionId,path,noteKey,revision,canonicalMarkdown,target:{startByte,endByte,targetHash,prefixHash,suffixHash},expectedDisk}` → `{checkpointId,leaseId,sourceHash}` or typed error |
-| `rewrite:estimate` renderer → main | `{sessionId,leaseId,profileId,instruction,inputBytes,maxOutputTokens}` → `{estimateId,inputTokensUpper,outputTokensMax,costUpper?,currency?,confirmationRequired,expiresAt}` |
-| `rewrite:start` renderer → main | `{sessionId,leaseId,requestId,estimateId,consentId?,presetId?,instruction}` → `{requestId}`; target text comes from the prepared checkpoint, not a second renderer-supplied target |
+| `rewrite:prepare` renderer → main | `{sessionId,path,noteKey,revision,canonicalMarkdown,target,expectedDisk}` → `{checkpointId,leaseId,sourceHash,plan}` or typed error; target is a selection range or proposed whole-file range plan, independently recomputed by main |
+| `rewrite:estimate` renderer → main | `{sessionId,leaseId,profileId,instruction,presetId?,allowLinkChanges,maxOutputTokens}` → `{operationId,inputBytes,inputTokensUpper,outputTokensMax,costUpper?,currency?,confirmationRequired,expiresAt}`; all counts computed by main |
+| `rewrite:consent` renderer → main | `{operationId,decision:"approve"|"cancel"}` → `{approved:boolean}`; validates owning sender and records only this immutable operation's required approval, never blanket private approval |
+| `rewrite:start` renderer → main | `{operationId}` → `{requestId}`; consumes authorization/reservation once before dispatch; no second instruction, route, policy or target payload |
 | `rewrite:event` main → owning renderer | `{sessionId,requestId,seq,event}`; discriminated event union is in the [adapter contract](rewrite-providers.md#adapter-contract) |
 | `rewrite:cancel` renderer → main | `{sessionId,requestId}` → `{cancelled:true}`; idempotent, abort socket and queue immediately |
-| `rewrite:complete` renderer → main | `{sessionId,requestId,candidateMarkdown,targetHash}` → `{variationId,contentHash}` after independent main validation and durable history acknowledgement; candidate capped by output limit |
+| `rewrite:complete` renderer → main | `{operationId,requestId,replacements:[{runId,replacementMarkdown}]}` → `{variationId,contentHash}` after independent main validation and durable history acknowledgement; replacement Markdown only, never a renderer-assembled whole note |
 | `rewrite:finish` renderer → main | `{sessionId,leaseId,outcome:"accepted"|"discarded"}` → `{released:true}`; accepted status follows guarded-save acknowledgement, never starts a write itself |
 | `rewrite:history` renderer → main | `{operation:"list"|"read"|"remove",noteIdentity,sessionId?,variationId?}` → bounded metadata/content; owner/workspace/privacy checks apply |
 
 `rewrite:prepare` accepts at most 1 MiB canonical UTF-8 plus bounded metadata. `instruction` is at most 4,000 Unicode code points and 16 KiB UTF-8, matching RWR-03/RWR-04 rather than imposing a second, smaller hidden prompt limit. Its verified token upper bound counts fully toward context, reservation and confirmation, in addition to the target and framing. IDs are fixed-format random UUIDs; hashes exactly 64 lowercase hex characters; indices nonnegative integers within the encoded source. Main recomputes all hashes, UTF-8 boundaries and supported-block classification. Renderer cannot choose a credential, URL, shell command, ref name, repository path or arbitrary header on a request.
 
 Paths resolve through the existing authorized Markdown workspace-path helper, refusing symlinks/escape and deriving privacy from the resolved workspace root, never an IPC boolean. Main binds `expectedDisk` to its own last-read/written baseline for the requesting window and re-reads on preparation/Accept; a renderer-supplied expected string is not authority to replace another window's newer save. Checkpoint identity and lease are revoked on workspace change or renderer death.
+
+### Immutable operation and completion
+
+The planned main-owned operation binds session/lease/checkpoint identity; source/target/plan hashes; exact instruction hash; preset/template revision; `outputPolicy:{allowLinkChanges:boolean}` and its revision; destination/model/capability/pricing revisions; ordered run/chunk plan; and output/token/cost bounds. Main derives actual bytes and verified token bounds from its own checkpoint and exact instruction, never renderer counts. Estimate, threshold confirmation and private per-use consent reference this same immutable record. Any instruction, policy, source, plan or profile change invalidates it and requires a fresh estimate/required consent. Start accepts only its opaque ID, atomically consumes authorization and reserves the full operation before the first request. Duplicate/replayed Start sends nothing and cannot reserve or charge twice. Manual Retry creates a fresh attempt and required consent; subsequent frozen-plan chunks are not independent authorization replays.
+
+`allowLinkChanges` starts false in every new session and every built-in preset. Only a deliberate custom-instruction checkbox can enable safe href/title changes; instruction prose cannot grant capability. The flag never permits unsafe schemes, tools, HTML, new unsupported images or another forbidden output type. Completion validates against the exact frozen policy.
+
+Each completion entry is replacement Markdown for an expected run ID, with no duplicate/unknown/missing run. Per-call and whole-operation generated-output limits apply to replacement bytes/tokens, **not** unchanged source around them. Main validates replacements against checkpoint ranges and builds one historical complete-source snapshot using exact checkpoint immutable bytes; its recorded offsets describe that historical snapshot. Renderer separately splices the same validated replacements into the transaction-mapped **current** canonical source for preview/Accept, preserving authorized newer outside edits. Historical prefix/suffix bytes never overwrite those edits. A source over 32 KiB can therefore accept a small selected replacement; an over-limit replacement still fails.
 
 ## Output validation
 
@@ -118,7 +129,7 @@ RWR-27. The system frame says: "Rewrite the supplied Markdown data according to 
 | Refusal | Structured provider refusal maps to `refused`; do not apply refusal prose. Empty/whitespace output is `invalid-output` (deletion is a normal editor action, not an implicit rewrite). |
 | Markdown | Parse with the repository parser, never render model HTML. Reject any new `rawMarkdown` node, front matter, executable HTML, directive, unsupported image, footnote or reference definition. Do not silently strip content into apparent success. |
 | Link safety | Existing sanitizer permits only safe href schemes; reject unsafe schemes. No remote image fetch, link preview, tool execution, import or filesystem operation triggered by output. Opening an accepted link still requires the person's existing explicit action. |
-| Preservation | Compare original/answer inventories of link destinations/titles and immutable structural markers unless the selected instruction's explicit capability permits that change. Custom prompts require a visible link-change toggle; the model cannot authorize itself. |
+| Preservation | Compare original/answer inventories of link destinations/titles and immutable structural markers. Only frozen `outputPolicy.allowLinkChanges=true`, explicitly chosen for a custom instruction, permits safe href/title changes; built-in presets and new sessions are false. Every other prohibition remains; model prose cannot authorize itself. |
 | Range | Splice and reparse, confirm prefix/suffix SHA-256 and exact bytes, unchanged front matter and valid neighboring boundaries; failure → `invalid-output` |
 
 Injection can change the quality of an answer; framing cannot prove semantic obedience. The security boundary is zero tools, zero output-triggered egress, no secret access, narrow IPC, validation and human Accept. Do not label prompt framing as sanitization.
@@ -136,6 +147,14 @@ RWR-28, RWR-29. A file-browser action resolves the **current file identity**, no
 | New identity | Preserve original non-`id` front-matter keys, remove old ID with the existing `withoutNoteId` behavior and insert a fresh 26-character ULID matching `front-matter.schema.json`. Reuse/extract the draft ULID generator rather than inventing another format. With no front matter, create only `id`. Source file, its ID and incoming links stay unchanged. |
 | Links | Default sibling preserves relative destinations. If person chooses another folder within the same privacy root, rebase relative outgoing links using existing link-update helpers before preview; never add backlinks or rewrite incoming links to the original. |
 | Privacy | Private source can create only in the same private repository's notes root; no Public choice, drag bypass or output export. Public source stays in its current visibility root. A visibility change is a separate existing explicit workflow. |
+
+### Ordered file plan
+
+Prepare computes an ordered plan `{version:1,sourceHash,planHash,runs,immutableSpans}` from the canonical checkpoint. Each eligible run has main-assigned `runId`, half-open UTF-8 `startByte/endByte`, exact source hash and legal top-level block boundaries; immutable spans identify exact front matter, raw/image blocks and intervening excluded bytes. Ranges are disjoint, ordered and cover the source together with preserved gaps. Main verifies all boundaries/hashes, not renderer classification.
+
+Never concatenate eligible text across an excluded span as one replaceable range. A request rewrites one contiguous eligible run; a long run may split only at legal top-level boundaries into separately identified run/chunk entries. The whole operation is at most four requests, all explicitly shown/consented even when fragmentation rather than size requires several. If this plan cannot map safely or fit four requests, refuse before egress with `too-large`; never silently transmit exclusions to reduce requests. Outbound bodies contain only that run and instruction, never excluded sentinels or neighboring runs as hidden context.
+
+Prepare, operation estimate/consent, dispatch and completion carry the same plan hash and ordered run IDs. Assemble one whole-file variation by replacing eligible ranges in source order and copying immutable spans byte-for-byte; no partial apply. For current preview/Accept, map every range through authorized independent edits and preserve their current outside bytes; an unmappable/cross-boundary edit makes the target stale. Completion/history store the checkpoint-derived snapshot separately, never using it to erase later typing.
 
 ### Long files and limits
 

@@ -268,7 +268,7 @@ These are the deliberate trade-offs. Each one is the choice the most popular pre
 
 | Keys | Meaning here | Gives up | Why |
 | --- | --- | --- | --- |
-| <kbd>Mod</kbd>+<kbd>/</kbd> | Spotlight | The key often used for a cheat sheet, so the cheat sheet moves to <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> | Owner decision ([D-16](../plan/decisions.md)). <kbd>Mod</kbd>+<kbd>K</kbd> stays the universal link key. |
+| <kbd>Mod</kbd>+<kbd>/</kbd> | Spotlight | The key often used for a cheat sheet, so the cheat sheet moves to <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> | Owner decision ([D-16](../plan/decisions.md)). Mod+K remains the link key until desktop rewrite ships; web retains it thereafter (D-237). |
 | <kbd>Mod</kbd>+<kbd>/</kbd> on layouts where <kbd>/</kbd> needs <kbd>Shift</kbd> (for example German, <kbd>Shift</kbd>+<kbd>7</kbd>) | Spotlight wins | The numbered-list key (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>7</kbd>) on those layouts | Shortcuts match the character produced. Numbered lists stay available through `1. `, the formatting toolbar, and Spotlight. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> opens Spotlight on every layout. |
 | <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> | Find in all notes | Focus mode on this key | VS Code convention. Focus moved to <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> / <kbd>F8</kbd> ([D-17](../plan/decisions.md)). |
 | <kbd>⌘E</kbd> (macOS) | Inline code | macOS "use selection for find" | Notion and Tiptap. The find bar fills in the selected text anyway. |
@@ -277,3 +277,4 @@ These are the deliberate trade-offs. Each one is the choice the most popular pre
 | <kbd>⇧⌘↑</kbd> / <kbd>⇧⌘↓</kbd> (macOS) | Move block | Select to start or end of the note | Notion. <kbd>⌘A</kbd> still selects the whole note. |
 | <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Content font size | Whole-page zoom | VS Code. UI scale is a separate setting. |
 | <kbd>Ctrl</kbd>+wheel, trackpad pinch | Content font size, one step a notch | Whole-page zoom | Browsers. The page never zooms; the text size is the only zoom. <kbd>⌘</kbd>+wheel on macOS scrolls, as it does everywhere there ([D-130](../plan/decisions.md)). |
+| F6 / Shift+F6, planned active desktop rewrite only | Move between editor and rewrite companion | Existing toast F6 only while rewrite owns this scope | Modal/nested widgets first, active rewrite second, toast otherwise; explicit toast.focus remains available through commands. No outside-click dismissal. [Planned rewrite focus](../design/rewrite-with-ai.md#accessibility), D-251; no web interception. |
