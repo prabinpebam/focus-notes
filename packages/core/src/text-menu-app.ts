@@ -79,7 +79,7 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
       items.push({ id, label: catalog.format(`textMenu.${e.role}`), ...(chord ? { shortcut: formatChord(chord, platform) } : {}), ...(enabled ? {} : { disabled: true }) });
     } else if (e.kind === "rewrite") {
       const chord = commands?.has("rewrite.open") ? commands.describe("rewrite.open").shortcut : undefined;
-      items.push({ id, label: catalog.format("textMenu.rewrite"), ...(chord ? { shortcut: chord } : {}) });
+      items.push({ id, label: catalog.format("textMenu.rewrite"), ...(chord ? { shortcut: formatChord(chord, platform) } : {}) });
     } else if (e.kind === "emoji") items.push({ id, label: catalog.format("textMenu.emoji"), ...(platform === "windows" ? { shortcut: formatChord(EMOJI_CHORD, platform) } : {}) });
     else if (e.kind === "copyLink" || e.kind === "openLink") items.push({ id, label: catalog.format(`textMenu.${e.kind}`) });
     // lookUp and speech are macOS's, and macOS shows its own menu.

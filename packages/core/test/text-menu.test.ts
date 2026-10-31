@@ -8,6 +8,7 @@ import { spokenChord } from "../src/commands.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, type PlatformBridge } from "../src/index.ts";
+import { textMenuSections } from "../src/text-menu-app.ts";
 import { parseTextMenu, textMenuChoice, textMenuEntries, textMenuItemId, type TextMenuEntry, type TextMenuParams, type TextMenuPlatform } from "../src/text-menu.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
@@ -110,6 +111,16 @@ describe("the drawn menu in the page", () => {
     expect(items.find((i) => i.id === "delete")!.disabled).toBe(true);
     // The emoji panel's key comes from the shared key names, and so does its spoken name.
     expect(spokenChord("Meta+.", "windows")).toBe("Win Period");
+  });
+
+  it("names Rewrite…'s key with the platform's modifiers, never the registry's Mod (KEY-03)", () => {
+    const commands = { has: (id: string) => id === "rewrite.open", describe: () => ({ id: "rewrite.open", title: "command.rewrite.open", enabled: true, shortcut: "Mod+Shift+R" }), shortcut: () => undefined };
+    const catalog = { format: (k: string) => k } as unknown as Parameters<typeof textMenuSections>[1];
+    const model = { id: 1, x: 0, y: 0, entries: [{ kind: "rewrite" } as TextMenuEntry] };
+    const key = (platform: "windows" | "linux" | "macos") => textMenuSections(model, catalog, platform, commands).flatMap((s) => s.items).find((i) => i.id === "rewrite")?.shortcut;
+    expect(key("windows")).toBe("Ctrl+Shift+R");
+    expect(key("linux")).toBe("Ctrl+Shift+R");
+    expect(key("macos")).toBe("⇧⌘R");
   });
 
   it("leaves out a suggestion the page would refuse, so the menu still shows (S3)", () => {
