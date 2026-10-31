@@ -18,15 +18,15 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
-### MAI: Rewrite with AI (planned)
+### MAI: Rewrite with AI (building)
 
-This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 48 new requirements, ten planned packages, no implementation/test results. The [acceptance matrix](rewrite-acceptance.md) supplies planned checks and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define required evidence.
+This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 46 requirements in four packages (D-256, D-257). WP-AI.11 is built on `fix-ai-rewrite-simple` and in the owner's review build, with `pnpm check`, typechecks and unit tests; no journey, measure or security review yet. The [acceptance matrix](rewrite-acceptance.md) has the evidence row by row and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define what's required.
 
 | Gate part | Status | What must supply evidence |
 | --- | --- | --- |
-| Offline UX and safety | Planned | WP-AI.1 to WP-AI.6: fake provider, checkpoint/save hold, variations, file targets, private isolation and accessible fresh text |
-| Provider/privacy/consent/cost approval | Owner | WP-AI.7: explicit recorded scope for D-236, D-238, D-239, retention and Store/privacy claims; no real egress before approval |
-| Approved rollout and final acceptance | Planned | WP-AI.8 to WP-AI.10: security/Windows checks, actual approved adapter, feature-gated Help, browser boundary and owner acceptance |
+| Rewrite and Settings → AI as built | Owner reviewing | WP-AI.11: unit tests on the branch; the owner's review build |
+| Live Markdown, key names, private notes, consent | In progress / planned | WP-AI.12 (in progress), WP-AI.13 (planned) |
+| Evidence and acceptance | Planned | WP-AI.9: Windows journey with a fake local service, security review, measures, screen reader, contrast, Help; the owner's acceptance |
 
 | Stage | Requirements traced | Untraced | Work packages | Demo automated | Blocking the gate |
 | --- | ---: | ---: | --- | --- | --- |

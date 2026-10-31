@@ -19,7 +19,7 @@ IPC sender checks compare the decoded file path of the renderer with the app's e
 
 ### Planned rewrite boundary
 
-The draft [rewrite engine IPC](rewrite-engine.md#ipc-contract) adds narrow main-owned operations, not a generic network/exec bridge or renderer CSP exception. [Provider setup](rewrite-providers.md#policy-first) remains default-off and client-only: external services are separately supplied/running, never installed or launched by Focus Notes. [Variation Git history](rewrite-history.md#refs-and-commits) uses isolated no-remote userData stores, not workspace refs/objects, so an external workspace mirror push cannot publish suggestions. Accepted text alone returns through the existing guarded save and private-first sync lane; current ordinary Git sync behavior remains unchanged. This is planned work, not a claim that providers are presently enabled.
+Rewrite's [IPC](rewrite-providers.md#ipc) adds narrow main-owned operations (`ai:*`), not a generic network or exec bridge, and no renderer CSP exception: the main process makes every request to the AI service the person chose and keeps its sealed key (D-257). Focus Notes never installs or launches a model or a server (D-233). A finished rewrite returns through the ordinary guarded save and private-first sync; there is no rewrite history in Git (D-256).
 
 ## Nothing hosted by the project
 

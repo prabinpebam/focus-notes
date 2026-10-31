@@ -112,9 +112,8 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | Italic | <kbd>⌘I</kbd> | <kbd>Ctrl+I</kbd> | Basic | Universal |
 | Strikethrough | <kbd>⇧⌘X</kbd> | <kbd>Ctrl+Shift+X</kbd> | Writer | Slack, Teams |
 | Inline code | <kbd>⌘E</kbd> | <kbd>Ctrl+E</kbd> | Writer | Notion, Tiptap |
-| Add or edit link (shipped; web retains this) | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, Word |
-| Add or edit link (planned desktop rewrite release only) | <kbd>⇧⌘J</kbd> | <kbd>Ctrl+Shift+J</kbd> | Writer | D-237 owner-requested migration; never bind browser Console |
-| Rewrite with AI… (planned desktop editor only) | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Owner request; [rewrite flow](rewrite-with-ai.md#entry-points); absent on web |
+| Add or edit link | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, Word |
+| Rewrite with AI… (desktop) | <kbd>⇧⌘R</kbd> | <kbd>Ctrl+Shift+R</kbd> | Writer | Owner request, 31 Oct: select text, then the key opens the Rewrite dialog; [rewrite flow](rewrite-with-ai.md#entry-points); absent on web |
 | Clear formatting | <kbd>⌘\</kbd> | <kbd>Ctrl+\</kbd> | Writer | Google Docs, Notion |
 | Move focus into the [formatting toolbar](../design/components/text-formatting.html) | <kbd>⌥F10</kbd> | <kbd>Alt+F10</kbd> | Power | Web rich-text editors |
 | Leave the formatting toolbar, back to the text with the selection kept | <kbd>Esc</kbd> (in the toolbar) | <kbd>Esc</kbd> (in the toolbar) | Power | Web rich-text editors |
@@ -277,4 +276,3 @@ These are the deliberate trade-offs. Each one is the choice the most popular pre
 | <kbd>⇧⌘↑</kbd> / <kbd>⇧⌘↓</kbd> (macOS) | Move block | Select to start or end of the note | Notion. <kbd>⌘A</kbd> still selects the whole note. |
 | <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Content font size | Whole-page zoom | VS Code. UI scale is a separate setting. |
 | <kbd>Ctrl</kbd>+wheel, trackpad pinch | Content font size, one step a notch | Whole-page zoom | Browsers. The page never zooms; the text size is the only zoom. <kbd>⌘</kbd>+wheel on macOS scrolls, as it does everywhere there ([D-130](../plan/decisions.md)). |
-| F6 / Shift+F6, planned active desktop rewrite only | Move between editor and rewrite companion | Existing toast F6 only while rewrite owns this scope | Modal/nested widgets first, active rewrite second, toast otherwise; explicit toast.focus remains available through commands. No outside-click dismissal. [Planned rewrite focus](../design/rewrite-with-ai.md#accessibility), D-251; no web interception. |

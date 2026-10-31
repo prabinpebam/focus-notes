@@ -133,32 +133,32 @@
   </tbody>
 </table>
 
-<h2 id="rewrite-with-ai">Rewrite with AI (planned)</h2>
-<p>Optional desktop rewriting serves CP-RWR-01. These surfaces are specified, not built; see <a href="rewrite-with-ai.md">Rewrite design</a> and <a href="../experience/rewrite-with-ai.md">Rewrite experience</a>.</p>
+<h2 id="rewrite-with-ai">Rewrite with AI</h2>
+<p>Desktop rewriting serves CP-RWR-01: built on 31 October and in the owner's review build (D-256, D-257), except where a row says planned. See <a href="rewrite-with-ai.md">Rewrite design</a>, <a href="../experience/rewrite-with-ai.md">Rewrite experience</a> and <a href="../experience/ai-settings.md">Settings → AI</a>.</p>
 <table>
   <thead><tr><th>IA ID</th><th>Surface</th><th>Opens from</th><th>Serves</th></tr></thead>
   <tbody>
-    <tr><td>IA-VIEW-REWRITESETUP</td><td>Setup dialog, provider profile and policy</td><td>First rewrite without a profile; Settings</td><td>UC-RWR-05</td></tr>
-    <tr><td>IA-VIEW-REWRITECONSENT</td><td>Named-destination confirmation dialog</td><td>Before an unapproved send</td><td>UC-RWR-05</td></tr>
-    <tr><td>IA-VIEW-REWRITESETTINGS</td><td>Rewrite category in Settings</td><td>Settings or provider status</td><td>UC-RWR-05</td></tr>
-    <tr><td>IA-CMP-REWRITEPROMPT</td><td>Anchored prompt, presets and primary action</td><td>rewrite.selection or rewrite.file</td><td>UC-RWR-01</td></tr>
-    <tr><td>IA-CMP-REWRITEREVIEW</td><td>Inline review bar, status and fresh-text signal</td><td>Generation lifecycle</td><td>UC-RWR-02, UC-RWR-06</td></tr>
-    <tr><td>IA-CMP-REWRITEVARIATIONS</td><td>Previous/next and earlier-session picker</td><td>Review bar and note history</td><td>UC-RWR-04</td></tr>
-    <tr><td>IA-CMP-REWRITETARGET</td><td>Same/New file target chooser</td><td>rewrite.file before sending</td><td>UC-RWR-03</td></tr>
-    <tr><td>IA-CMP-REWRITESTATUS</td><td>Provider, limits and repair status</td><td>Prompt and Settings</td><td>UC-RWR-05</td></tr>
+    <tr><td>IA-CMP-REWRITEPROMPT</td><td>Rewrite dialog: the selected passage, the Writer, the prompt, three presets, Cancel and Generate (view <code>rewrite</code>)</td><td>Ctrl+Shift+R, Rewrite… in the text menu or Edit menu, Spotlight</td><td>UC-RWR-01</td></tr>
+    <tr><td>IA-CMP-REWRITEREVIEW</td><td>The in-place stream in the note: shimmer on the selection, the answer in the rainbow, the fade, and the toast with Stop</td><td>Generate</td><td>UC-RWR-02, UC-RWR-06, UC-RWR-07</td></tr>
+    <tr><td>IA-VIEW-REWRITESETTINGS</td><td>The AI section in Settings: the Writer, the connections, Find on this computer, Add connection</td><td>Settings; Set up AI in the Rewrite dialog</td><td>UC-RWR-05, UC-RWR-09</td></tr>
+    <tr><td>IA-CMP-REWRITESTATUS</td><td>A connection row: name, service, model, On this computer or Cloud, Writer badge, key state, last Test, and its actions</td><td>Settings → AI</td><td>UC-RWR-05</td></tr>
+    <tr><td>IA-CMP-AIKEY</td><td>The API key field (SecureKeyField): typed, saved once, sealed, never shown again</td><td>Add connection or Change</td><td>UC-RWR-05</td></tr>
+    <tr><td>IA-CMP-AIDISCOVER</td><td>Find on this computer: the servers found, their models, and Set up</td><td>Settings → AI</td><td>UC-RWR-08</td></tr>
+    <tr><td>IA-VIEW-REWRITECONSENT</td><td>First-send confirmation naming the service, its address and On this computer or Cloud (planned)</td><td>The first Generate to a connection</td><td>UC-RWR-09</td></tr>
   </tbody>
 </table>
 <table>
   <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Reason</th></tr></thead>
   <tbody>
-    <tr><td>DD-RWR-01</td><td>Prompt stays next to the target, fitting the minimum window.</td><td>UC-RWR-01</td><td>Instructions should not lose the selection's context.</td></tr>
-    <tr><td>DD-RWR-02</td><td>In-place protected stream, durable original and explicit Accept/Discard.</td><td>UC-RWR-02</td><td>A suggestion cannot silently replace the person's durable note.</td></tr>
-    <tr><td>DD-RWR-03</td><td>Completed variations remain in isolated local-only history.</td><td>UC-RWR-04</td><td>Experimenting must survive restart without publishing drafts.</td></tr>
-    <tr><td>DD-RWR-04</td><td>File targets default to New file and keep the source visibility.</td><td>UC-RWR-03</td><td>Whole-file operations need a safe default and no privacy side effect.</td></tr>
-    <tr><td>DD-RWR-05</td><td>Setup enables no provider until the person chooses one.</td><td>UC-RWR-05</td><td>Optional assistance is not permission for new egress.</td></tr>
-    <tr><td>DD-RWR-06</td><td>Consent names destination, model, scope and private policy.</td><td>UC-RWR-05</td><td>A generic consent switch cannot communicate where words go.</td></tr>
-    <tr><td>DD-RWR-07</td><td>Rare provider and preset choices live in Settings.</td><td>UC-RWR-05</td><td>The prompt keeps only the choices needed for the current rewrite.</td></tr>
-    <tr><td>DD-RWR-08</td><td>Ephemeral fresh-text decorations have a non-color review signal.</td><td>UC-RWR-06</td><td>Suggestions stay readable and are not encoded in Markdown.</td></tr>
+    <tr><td>DD-RWR-01</td><td>The prompt is a small dialog that takes a prompt only; Generate closes it (D-256).</td><td>UC-RWR-01</td><td>The owner wanted one step between the words and the result, with nothing to compare or accept.</td></tr>
+    <tr><td>DD-RWR-02</td><td>The answer streams in place over the selection, and the note is read-only until it's done.</td><td>UC-RWR-02</td><td>Seeing the words arrive where they belong is the review; locking the note keeps typing from mixing with the answer.</td></tr>
+    <tr><td>DD-RWR-03</td><td>The finished rewrite is one undo step; Stop and errors restore the original outside the history.</td><td>UC-RWR-07</td><td>Undo is the one way back people already know, so no Accept or Discard is needed.</td></tr>
+    <tr><td>DD-RWR-04</td><td>The rainbow is a decoration that holds 1 s and fades over 3 s, never written to the Markdown; reduced motion gets a still gradient.</td><td>UC-RWR-06</td><td>New words are easy to spot, then become ordinary text without a step.</td></tr>
+    <tr><td>DD-RWR-05</td><td>Nothing is connected until the person adds a connection; the Rewrite dialog offers Set up AI instead of Generate.</td><td>UC-RWR-05</td><td>Optional assistance is not permission for new traffic.</td></tr>
+    <tr><td>DD-RWR-06</td><td>Every connection, model and the form say On this computer or Cloud, and where selected text goes.</td><td>UC-RWR-05</td><td>A person decides about their words by knowing where they go, not by a generic switch.</td></tr>
+    <tr><td>DD-RWR-07</td><td>Choices about services live in Settings → AI; the dialog shows only the Writer's name.</td><td>UC-RWR-05</td><td>The prompt keeps only what this rewrite needs.</td></tr>
+    <tr><td>DD-RWR-08</td><td>Local servers are found by asking their usual ports, never by scanning the network.</td><td>UC-RWR-08</td><td>Finding is fast and nothing leaves the computer.</td></tr>
+    <tr><td>DD-RWR-09</td><td>Private notes stay unsent by default, and the first send to a connection is confirmed (planned).</td><td>UC-RWR-09</td><td>Private means private unless the person changes it on purpose.</td></tr>
   </tbody>
 </table>
 

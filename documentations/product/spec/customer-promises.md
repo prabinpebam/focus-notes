@@ -21,7 +21,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
 | `CP-KNOW-01` | Know what you're getting, and get help when you need it | Owner: product site, support articles, demo (2026-10-16) | SC-HELP-01 to SC-HELP-04 |
-| `CP-RWR-01` | Rewrite my words without giving up control | Owner: Rewrite with AI spec request (2026-10-30) | SC-RWR-01 to SC-RWR-04 |
+| `CP-RWR-01` | Rewrite my words without giving up control | Owner: Rewrite with AI (2026-10-30; as built 2026-10-31, D-256, D-257) | SC-RWR-01, SC-RWR-03, SC-RWR-04 |
 
 <h2 data-reader-personas="product">The promises</h2>
 
@@ -29,11 +29,11 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 
 | Field | Value |
 | --- | --- |
-| Customer promise | I can ask for another way to say something, compare it with my original, and keep only what I choose, without sending my words anywhere I did not approve. |
-| Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged. |
-| Breaks when | A rewrite loses the original, changes unrelated text, silently sends text elsewhere, or makes unaccepted partial text the only durable copy. |
-| Signals | Fixture checks preserve the original and untouched bytes; every non-fixture destination is approved before egress. No telemetry is collected to measure use. |
-| Scenarios | SC-RWR-01, SC-RWR-02, SC-RWR-03, SC-RWR-04 |
+| Customer promise | I can ask an AI service I chose to rewrite words I've selected, watch the new words arrive in place, and get my exact original back with one undo, without Focus Notes running a model or sending my words anywhere else. |
+| Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged, and the person decides which service, on this computer or in the cloud, sees their words. |
+| Breaks when | A rewrite loses the original or changes text outside the selection; Stop or an error leaves half-written text; text goes to any service other than the chosen Writer, or anything beyond the prompt and the selection is sent; a key shows in the window, a file in the notes or a log; Focus Notes installs, downloads or runs a model. |
+| Signals | Unit tests prove one undo step, an exact restore on Stop and errors, each service's request shape and that keys stay in the main process; the owner tries it on their own notes with their own service. No telemetry is collected to measure use. |
+| Scenarios | SC-RWR-01, SC-RWR-03, SC-RWR-04 |
 
 ### CP-CALM-01 — Calm canvas
 
