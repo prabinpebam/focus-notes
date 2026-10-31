@@ -296,6 +296,16 @@ describe("RewriteStream hardening", () => {
     expect(count(REWRITE_MEASURES.stream)).toBe(1);
   });
 
+  it("an answer's images and raw HTML never become elements that fetch, and unsafe links are dropped", () => {
+    const { editor, target } = open("Alpha beta gamma.\n", "beta");
+    const stream = new RewriteStream(editor, target, classes, now);
+    stream.push("![x](https://example.com/x.png) <img src=\"https://example.com/y.png\"> [bad](javascript:alert(1))\n\n<iframe src=\"https://example.com\"></iframe>");
+    stream.finish();
+    const dom = editor.view.dom;
+    expect(dom.querySelector("img, iframe, script, video, audio, source, object, embed")).toBeNull();
+    expect([...dom.querySelectorAll("a")].map((a) => a.getAttribute("href"))).not.toContain("javascript:alert(1)");
+  });
+
   it("an answer that hasn't rendered yet still finishes, and a stream after the editor is gone does nothing", () => {
     const { editor, target, md } = open("Alpha beta.\n", "beta");
     const stream = new RewriteStream(editor, target, classes, { frame: 1000 });

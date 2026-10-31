@@ -18,7 +18,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 30 |
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
-| **MAI: Rewrite with AI** (before Later) | Optional rewriting under the writer's control; fixture UX first, real provider owner-gated. | Owner, then desktop writers | Planned desktop 1.x | 48 |
+| **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
 | **Later: Components** | Rich components. | Anyone | Later releases | 2 |
 
 ## Where we are
@@ -34,6 +34,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
   - **WP-8.4 workspace pro:** last-changed time on rows, replace across notes (FND-05), Spotlight filters and a preview pane (SPT-06).
   - **WP-8.5 multiple windows:** <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>, reopening the same windows at launch, the macOS Window menu.
   - **WP-8.8 document minimap (D-185, D-186):** built on the `fix-state-note` branch (17 October) with its code, accessibility and design-system reviews addressed, and the owner's docking added: Files and the contents dock flush to the window's edges, resizable, Files undocking first as the window narrows (*Dock contents*, D-186, D-187). Waiting for its Windows CI run and the owner's look. It stays in focus mode, which is on by default. Follow-ups: a setting to turn it off, an exit fade for the card, PopoverPanel's own hover-close delay reading `wait.hoverClose`, and, on Linux only (D-112, report-only), an axe `label-content-name-mismatch` in the ⋯ menu that's new on this branch (m1-toolbar and m1-a11y; Windows and macOS pass).
+  - **WP-AI.11 Rewrite with AI and Settings → AI (31 October, D-256, D-257):** built on `fix-ai-rewrite-simple` and open in the owner's review build, not yet on `main`. WP-AI.12 (live Markdown while streaming, platform key names) is in progress on the same branch; WP-AI.13 (private notes, first-send consent, leaving mid-rewrite) and WP-AI.9 (journey, security review, measures, Help) are next. See [Rewrite with AI](../experience/rewrite-with-ai.md).
   - **WP-8.10 backup by repository (D-191):** Private and Public in Files each show their repository's backup icon and card, counting what waits there (empty folders too), with *Back up to GitHub* for that repository. Built on `wp-repo-backup` (18 October); waiting for its Windows CI run and the owner's look.
   - **WP-5.6, WP-5.7, WP-6.2:** loose ends.
 - **Not started:**
@@ -121,8 +122,8 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 <p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, printing, signed builds with automatic updates and channels, store listings, more interface languages, and isolated crash recovery. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FIL-14, FIL-15, FND-03, FND-05, I18N-03, KEY-04, KEY-07, QLT-06, SHR-12, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
 </li>
 <li class="slate-step">
-<p class="slate-step__title">MAI: Rewrite with AI (planned)</p>
-<p>Optional desktop rewriting with a protected inline preview, explicit Accept/Discard, safe Same/New file targets, recoverable local variations and no unapproved egress. First slices run against an offline fake provider; real transport waits for WP-AI.7 owner approval. Browser rewriting is not included. <a href="implementation-plan.md#mai">Details</a>; <a href="rewrite-acceptance.md#stage-gate">GATE-MAI</a>. RWR-01 to RWR-09, RWR-21 to RWR-29, RWR-41 to RWR-48, RWR-61 to RWR-66, KEY-08, SPT-09, FIL-16, EDT-15, UI-14, FOC-07, HLP-10, PRV-05, SEC-09, PRF-15, QLT-08, A11Y-03, I18N-04, DSY-14, DOC-03, LIC-03.</p>
+<p class="slate-step__title">MAI: Rewrite with AI (building)</p>
+<p>Desktop rewriting in place: select text, then <kbd>Ctrl+Shift+R</kbd> or Rewrite… in the text menu, give a prompt, and the answer streams over the selection as one undo step; <kbd>Esc</kbd>, Stop and errors put the original back. Settings → AI connects 26 kinds of service on this computer or in the cloud, with sealed keys, Find on this computer and Test. Focus Notes never runs a model. Browser rewriting is not included. <a href="implementation-plan.md#mai">Details</a>; <a href="rewrite-acceptance.md#stage-gate">GATE-MAI</a>. RWR-70 to RWR-86, AIS-01 to AIS-15, KEY-08, SPT-09, UI-14, FOC-07, HLP-10, PRV-05, SEC-09, PRF-15, QLT-08, A11Y-03, I18N-04, DSY-14, DOC-03, LIC-03.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

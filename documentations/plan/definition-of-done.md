@@ -3,71 +3,57 @@
 What "done" means at every level: a work package, a stage, a release, and the whole project. Each level has measurable criteria and named evidence, so a person or an agent can tell without judgment calls whether something is done.
 
 > [!NOTE]
-> **TL;DR.** Five nested production levels remain unchanged below. The separate **OWNER-TESTABLE Rewrite UX stage** is the owner's 30 October review cutoff: the complete Rewrite flow on their own notes in a normal packaged Windows build, with data safety and privacy mandatory, but without claiming production readiness. It is **OPEN**: packaged synthetic checks are not proof that ordinary real-note activation works. MAI and the release/project bars remain separate gates.
+> **TL;DR.** Five nested production levels remain unchanged below. The **OWNER-TESTABLE Rewrite UX stage** is the owner trying Rewrite and Settings → AI in the review build, on their own notes with their own AI service (D-255, D-256, D-257): open as of 31 October, with the built flow in front of the owner. The **MAI** rows add CP-RWR-01 to the production bar.
 
 ## OWNER-TESTABLE Rewrite UX stage
 
-**Mode:** show me the UX sooner · work with me. **Status: OPEN, not owner-ready.** This is the owner-requested 18:06 review stage, beside MAI, not a replacement for MAI or a public release. It delivers the desktop slice of [CP-RWR-01](../product/spec/customer-promises.md) through [UC-RWR-01 to UC-RWR-06](../product/spec/user-can.md). It succeeds only when the owner can judge the complete flow on real owner notes in the **normal packaged Windows build**, without demo flags, fixture-only note binding, a development console or agents handling their credentials.
+**Mode:** show me the UX sooner · work with me (D-255). **Status: OPEN, in the owner's hands.** The review build of `fix-ai-rewrite-simple` (452e44ba plus the dialog scroll fix, 59fb5449) is open on the owner's review profile with their Ollama Writer. The 30 October version of this stage (Ctrl+K, three variations, Accept and Discard, whole-file New file, restart recovery of variations) was dropped with D-256.
 
-### Done when and evidence named in advance
+### Done when
 
-Every row traces to CP-RWR-01. Evidence names below are required proof to collect, **not claims that new tests already exist**. Record the exact source SHA, packaged executable, profile/restart identity, command and result for automated checks; record only pass/fail and redacted observations for owner checks, never note text or keys. Each row must pass on the delivered candidate; the owner accepts the stage after the timed walkthrough.
+Every row traces to CP-RWR-01.
 
-| Row | Trace | Done when | Named advance evidence |
+| Row | Trace | Done when | Evidence |
 | --- | --- | --- | --- |
-| UX-RWR.1 | UC-RWR-01, UC-RWR-05 | The owner opens their own note in a normal package, selects text, opens Rewrite by context menu and Ctrl+K, chooses a preset, edits a custom prompt and can cancel before sending. No selection, unsupported selection, read-only and conflict states explain the refusal without changing the note. Setup is reachable in-app, not via a launcher configuration. | **Owner normal-package entry walkthrough**; exact-package `rewrite-editor.spec.ts` plus **normal-activation journey** with no demo flag, trusted current-note/window binding and note-switch checks. |
-| UX-RWR.2 | UC-RWR-01, UC-RWR-02, UC-RWR-06 | The owner sees distinguishable original/suggestion and streaming progress, Stops an incomplete result, regenerates, compares at least two completed variations, then Accepts one and Discards another. Stop/error leaves an editable prompt and an explicit retry; incomplete output cannot be accepted or silently saved. Review controls are readable in light/dark, keyboard reachable, with focus return and a non-color state signal. | **Owner stream/Stop/regenerate/compare walkthrough**; exact-package `rewrite-connection.spec.ts` and `rewrite-editor.spec.ts`, including slow stream, cancel, error/retry and stale-generation refusal; **light/dark keyboard review**. |
-| UX-RWR.3 | UC-RWR-02, UC-RWR-04 | Accept uses the ordinary acknowledged save lane; one native Undo restores the prior wording, and Discard leaves the original and unrelated edits intact. Completed variations and original survive closing/reopening the **same profile/workspace**; browsing does not apply or send, explicit restoration is undoable, and stale restoration refuses. | **Owner Accept/Discard/Undo/restart walkthrough**; exact-package `rewrite-connection.spec.ts` and `rewrite-lifecycle.spec.ts`: persisted encrypted refs read after same-profile restart, restore/save acknowledgement/native Undo and request-count assertions. A fresh-profile launcher is not restart evidence. |
-| UX-RWR.4 | UC-RWR-03 | Files context menu and Shift+F10 open whole-file Rewrite. The owner chooses **New file**, reviews the output and creates a separate Markdown note with a fresh ID in the same visibility section; source bytes/ID remain unchanged. A colliding name, dirty source, stale disk or another window cannot be overwritten. | **Owner new-file walkthrough**; planned exact-package `rewrite-files.spec.ts` for atomic creation, distinct ID, collision, dirty/stale/other-window refusal and unchanged source hashes. Existing selection tests do not prove this row. |
-| UX-RWR.5 | UC-RWR-02, UC-RWR-03, UC-RWR-04 | **Mandatory safety, not deferred:** original is durable before requests; no note loss or overwrite of outside edits, another note/window or external changes, including crashes/forced close during checkpoint, stream, review and save. Unaccepted/partial output never becomes the only durable copy. Unsupported mapping safely refuses. | **Exact-package safety matrix**: `rewrite-authority.spec.ts`, `rewrite-editor.spec.ts`, `rewrite-lifecycle.spec.ts`, plus crash/fault-injection and new-file fixtures covering every named phase; before/after byte/ID checks and checkpoint recovery. Owner notes are never fault-injection fixtures. |
-| UX-RWR.6 | UC-RWR-03, UC-RWR-04, UC-RWR-05 | **Mandatory privacy:** no Private → Public crossing through new files, variations, normal/mirror push, logs or commit messages. Rewrite network traffic goes only to the explicitly configured endpoint, with no redirects/fallback/extra fetches; keys stay in the existing secret store, never logs, Git or commits. No default provider or background send. | **Synthetic private/public sentinel and egress matrix**: numeric `127.0.0.1` streaming stand-in request capture, denied-destination/redirect checks, public Git-object inspection (including mirror push), redacted log/commit secret scan and credential-reference storage check. Never copy real private notes into evidence. |
-| UX-RWR.7 | UC-RWR-05 | **Depends on the owner:** they enter their own compatible endpoint, model and key **in the app**, see the named destination/consent before sending and personally exercise the complete flow with that service. Wrong key, offline/timeout/refusal are recoverable without note loss or automatic fallback. Owner-only live-service consent/decision dependencies (D-236/D-238/D-239 where applicable) are explicit, not treated as fixture approvals. | **Owner live-provider session and approval**, recording only build, nonsecret service identity and pass/fail. Agents test **only a numeric `127.0.0.1` streaming stand-in**, with synthetic data and no real key, account or external inference. A stand-in pass cannot close this row. |
+| UX-RWR.1 | UC-RWR-05, UC-RWR-08 | The owner connects their own service in Settings → AI (Find on this computer, or Add connection with a key), tests it, and it's the Writer. | The owner, in the review build |
+| UX-RWR.2 | UC-RWR-01 | The owner selects text, opens Rewrite with <kbd>Ctrl+Shift+R</kbd> and the text menu, uses a preset and their own prompt. | The owner |
+| UX-RWR.3 | UC-RWR-02, UC-RWR-06 | Generate locks the note, the selection shimmers, the answer streams in place in the rainbow and fades. | The owner; `rewrite-stream.test.ts` |
+| UX-RWR.4 | UC-RWR-07 | One <kbd>Ctrl+Z</kbd> gives back the exact original, <kbd>Ctrl+Y</kbd> the rewrite; <kbd>Esc</kbd> mid-stream and a stopped server both leave the original. | The owner; `rewrite-stream.test.ts`, `ai-rewrite.test.ts` |
+| UX-RWR.5 | UC-RWR-02 | **Safety, not deferred:** no note is lost or half-written, text outside the selection never changes, and the saved note holds the original until a rewrite finishes. | Unit tests; the owner on their own notes |
+| UX-RWR.6 | UC-RWR-05 | **Privacy, not deferred:** text goes only to the Writer's address; keys never show in the window, a log or the notes. | `ai-rewrite.test.ts` (sealed keys); code review |
+| UX-RWR.7 | UC-RWR-01, UC-RWR-02 | The owner says the UX is right, or names what to change. | The owner's words, in the progress log |
 
-### Try it — ten minutes, by the owner
-
-**Prerequisites:** a candidate explicitly marked normal-note enabled after UX-RWR.5/.6 safety evidence, a recoverable copy of the owner's chosen note and their independently available compatible service. The owner alone handles endpoint/model/key and any live send. If activation remains gated, stop and record **blocked**, not pass. Use the same profile when restarting. Do not disturb the owner's running candidate to perform this check.
+### Try it: five minutes, by the owner
 
 <ol class="slate-steps">
-  <li class="slate-step"><p class="slate-step__title">0–2 minutes · Open and configure</p><p>Open the normal package and an owner-chosen real note. In app settings enter endpoint, model and key, review destination/consent, then select a paragraph and open Rewrite. Confirm the original remains identifiable.</p></li>
-  <li class="slate-step"><p class="slate-step__title">2–4 minutes · Prompt and interrupt</p><p>Choose Shorten, edit a custom instruction before sending, watch streaming, then Stop. Confirm writing and the original remain available; regenerate and compare two completed variations without silently applying either.</p></li>
-  <li class="slate-step"><p class="slate-step__title">4–6 minutes · Decide and undo</p><p>Accept a completed variation, wait for the ordinary saved acknowledgement and Undo once. Try another variation and Discard; confirm the original and unrelated text remain. Reopen with Ctrl+K and use the keyboard to reach the review actions.</p></li>
-  <li class="slate-step"><p class="slate-step__title">6–8 minutes · Restart and recover</p><p>Close and reopen the same profile/workspace. Browse saved variations and original without applying; explicitly restore one, verify save and Undo. No new request should result from browsing/restoration.</p></li>
-  <li class="slate-step"><p class="slate-step__title">8–10 minutes · Create, do not overwrite</p><p>In Files use Shift+F10, Rewrite and New file. Confirm a separate same-visibility note, unchanged source and no overwrite on a name collision. Record pass/fail for each row and whether the UX is acceptable; never include note contents or credentials.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Connect</p><p>Settings → AI → <strong>Find on this computer</strong> → <strong>Set up</strong> on Ollama → <strong>Save connection</strong> → <strong>Test connection</strong>. Or <strong>Add connection</strong> with a cloud service and your key.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Rewrite</p><p>Select a paragraph, press <kbd>Ctrl+Shift+R</kbd>, choose <strong>Make concise</strong>, then <strong>Generate</strong>. Watch the shimmer, the stream and the fade.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Undo and redo</p><p><kbd>Ctrl+Z</kbd>: the exact original. <kbd>Ctrl+Y</kbd>: the rewrite.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Stop and fail</p><p>Rewrite again and press <kbd>Esc</kbd> halfway. Stop Ollama and rewrite once more: the error, and your original.</p></li>
 </ol>
 
-The ten-minute owner script evaluates the UX; it does not replace automated fault/egress evidence or certify production performance.
+### What's left after the owner accepts
 
-### Actual evidence and remaining blockers
-
-**As of 30 October, 18:09 handoff:** source `2beb8a9bde46f756fff06c32d24bec2ff49a1d90` has a reported **8/8 packaged synthetic journey pass** across `rewrite-connection.spec.ts`, `rewrite-authority.spec.ts`, `rewrite-editor.spec.ts` and `rewrite-lifecycle.spec.ts`. The run used the existing inspector-enabled packaged harness, synthetic notes and numeric `127.0.0.1` streaming stand-in. It exercised persisted variation/original retrieval, explicit restore, native Undo and guarded stale/foreign-note/outside-edit refusals. It is **not** an uninstrumented ordinary-owner-launch proof, full safety-matrix proof or live-provider proof. Durable run details: `focus-notes-work/scratch/air-ux10-package.md` (local worker evidence); [source commit](https://github.com/prabinpebam/focus-notes/commit/2beb8a9bde46f756fff06c32d24bec2ff49a1d90).
-
-**Against the promise — blockers in order:**
-
-1. **Ordinary real-note activation is GATED.** Trusted note/window binding and safe activation must be proved and delivered in a normal package; the synthetic candidate cannot satisfy UX-RWR.1 or make the stage owner-ready.
-2. **Safety/privacy coverage is incomplete.** Narrow packaged refusal/restart checks do not prove all crash phases, outside-edit preservation, private/public isolation, new-file collisions, egress and secret-handling rows. Close UX-RWR.5/.6 before inviting real-note use; do not remove a guard merely to expose the UX.
-3. **The complete normal-package flow remains unproved.** File → New file and the combined entry/prompt/Stop/regenerate/compare/Accept/Discard/Undo/same-profile-restart path need exact-candidate evidence, not inherited component passes.
-4. **Live service and owner acceptance depend on the owner.** No real-provider result, owner ten-minute completion or UX approval is recorded. Do not substitute agent stand-in results or request the owner's key.
-
-**Explicitly deferred to MAI/production:** the full MAI.5–MAI.7 bar (production provider/consent/cost matrix, Store capabilities and published privacy-policy changes, benchmark/performance budgets and the full accessibility/screen-reader/forced-colors matrix), production soak and release hardening, browser support/parity. Mandatory safety/privacy in UX-RWR.5/.6, readable controls/basic keyboard access, honest stream/Stop/error feedback and owner consent are **not deferred**. No Store/privacy publication or production-ready/full-feature completion is claimed. MAI.8, the work graph and all production stages stay open until their own gates pass.
+The owner's next changes (live Markdown while streaming, platform key names: WP-AI.12), then WP-AI.13 (private notes, first-send consent, leaving mid-rewrite) and WP-AI.9's evidence below, then the desktop gate before `main`.
 
 ## MAI rewrite definition of done
 
-**Production gate remains open.** This adds CP-RWR-01 to the project Definition of Done and UC-RWR-01 to UC-RWR-06 to the MAI stage. The owner-testable slice above has limited synthetic execution evidence, not MAI completion. All existing release safety, accessibility and design-system bars still apply.
+**Production gate open.** This adds CP-RWR-01 to the project Definition of Done and UC-RWR-01, UC-RWR-02 and UC-RWR-05 to UC-RWR-09 to the MAI stage.
 
-**Try it:** in the future fixture gallery/candidate preview, select a paragraph, open Rewrite with AI, Shorten, stop once, regenerate, compare two variations, Discard, undo and restart. From Files, use Shift+F10 to rewrite to a new file. No account or real provider is needed for this first demonstration.
+**Try it:** the owner's five minutes above, in a release build.
 
-| Row | Done when | Planned evidence |
+| Row | Done when | Evidence |
 | --- | --- | --- |
-| MAI.1 | UC-RWR-01: every entry point and disabled reason is observable, the key move is taught, and a prompt/preset is editable without sending. | `rewrite-entry.spec.ts` and `rewrite-prompt.spec.ts`; KEY-08 migration inventory |
-| MAI.2 | UC-RWR-02: complete target mapping corpus preserves outside bytes and IDs; unaccepted streams/review never enter note disk, normal commits or sync; original survives crash at every state. | `rewrite-mapping.test.ts`, `rewrite-save-lane.test.ts`, `rewrite-crash.spec.ts` |
-| MAI.3 | UC-RWR-03: Same/New paths cannot overwrite another window, stale disk or colliding path, or cross Private to Public. | `rewrite-files.spec.ts`, atomic-create and changed-baseline fixtures |
-| MAI.4 | UC-RWR-04: compare, undo/redo and restart retrieval work without rewriting history or exposing variations even through workspace mirror push. | `rewrite-history.test.ts`, `rewrite-restart.spec.ts`, mirror-push sentinel fixture |
-| MAI.5 | UC-RWR-05: offline fixture profiles demonstrate consent, caps, error repairs and zero unauthorized egress. Real sends remain blocked until the owner records D-236, D-238 and D-239 approval and Store/privacy scope. | `rewrite-policy.test.ts`, `rewrite-egress.test.ts`; WP-AI.7 signed-off decision record, then security review |
-| MAI.6 | UC-RWR-06: fresh text is ephemeral, every frame is at least 4.5:1, and keyboard/screen-reader/reduced-motion/forced-colors paths convey the same state. | `rewrite-fresh-text.test.ts`, `rewrite-a11y.spec.ts`; theme and 480 x 360 review |
-| MAI.7 | Every requirement in the [acceptance matrix](rewrite-acceptance.md) has recorded evidence; fixture p95 first token under 1 s, acknowledgement and Stop within 100 ms; no claim that fixtures prove live latency. | `rewrite-performance.test.ts`, named `fn:rewrite.*` measures, acceptance evidence links |
-| MAI.8 | GATE-MAI: required reviews approve, Windows app CI is green, Help and approved claims match what ships, rollback disables only sends, and owner accepts the feature. | WP-AI.9 gate record, release/version-specific Help review and owner acceptance |
+| MAI.1 | UC-RWR-01: every entry opens the dialog on the selection, with the key named for the platform; no selection explains why; presets never send. | Journey (QLT-08); `text-menu.test.ts`, `keymap-layers.test.ts` |
+| MAI.2 | UC-RWR-02: the answer streams in place, formatted, with the note read-only; only the selection changes; only the prompt and selection are sent. | `rewrite-stream.test.ts`, `ai-rewrite.test.ts`; journey |
+| MAI.3 | UC-RWR-07: one undo step; <kbd>Esc</kbd>, Stop, every error and switching notes restore the exact original and stop the request. | `rewrite-stream.test.ts`; journey with a failing fake |
+| MAI.4 | UC-RWR-05, UC-RWR-08: every service kind's request shape, key sealing, address rules, discovery and Test behave as specified. | `ai-rewrite.test.ts`; security review (SEC-09) |
+| MAI.5 | UC-RWR-09: private notes aren't sent while the switch is on; the first send to a connection is confirmed. | Unit and journey tests (WP-AI.13) |
+| MAI.6 | UC-RWR-06: the rainbow is at least 4.5:1 in every frame in light and dark, never hides the focus band, and reduced motion and forced colours show ordinary text. | Look in the gallery; contrast check |
+| MAI.7 | Every row of the [acceptance matrix](rewrite-acceptance.md) has evidence; the [wait rows](../architecture/perceived-performance.md#rewrite-waits) are measured (open and Stop within 100 ms). | Acceptance matrix; `fn:rewrite.*` |
+| MAI.8 | GATE-MAI: the owner accepts the feature; reviews approve; Windows app CI is green; Help matches what ships. | WP-AI.9 |
 
-**Against the promise:** a packaged synthetic Rewrite slice now exists, but ordinary real-note activation, complete owner UX acceptance and the production acceptance matrix remain unproved. See the ordered blockers above. The owner alone resolves live-provider/privacy/consent/cost approvals; browser support remains a named gap, not implied parity.
+**Against the promise:** the flow the owner asked for is built and in their hands. What would still break the promise today: private notes that can be sent (AIS-13), and no security review yet (SEC-09).
 
 ## The levels
 

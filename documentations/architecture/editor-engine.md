@@ -64,7 +64,7 @@ The full allow-list and deny-list are in [Decisions → Licensing policy](../pla
 
 ### Planned rewrite projection
 
-The [rewrite mapping contract](rewrite-engine.md#selection-mapping) adds source-aware inline spans to the existing top-level source map; where exact partial mapping cannot be proven, show the complete top-level expansion before Send. Streaming/review use a protected projection and paired canonical/projection StepMaps so outside typing survives. [Accept alone](rewrite-engine.md#save-and-checkpoints) creates one ordinary undo event; no preview navigation/token enters canonical Markdown, ordinary recovery or saves. The splice is re-adopted into the Markdown session without reserializing unchanged source bytes (RWR-21 through RWR-24, EDT-15). All are planned additions, not existing editor behavior.
+Rewrite (D-256) adds `RewriteStream` and `RewriteDecoration` (`packages/editor/src/rewrite-stream.ts`): the note is read-only while the answer streams; each piece replaces the selected range outside the undo history; the finished answer goes in as one closed undo step; Stop and errors put the original slice back exactly. The decoration's classes come from the host. See [Rewrite engine](rewrite-engine.md#in-the-editor).
 
 ## Block registry contract
 
