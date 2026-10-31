@@ -1235,6 +1235,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   }, (path, content) => atomicWrite(path, content));
   handle("ai:settings", () => ai.settings());
   handle("ai:save", (input: unknown) => ai.save(input));
+  handle("ai:remove", (id: unknown) => ai.remove(id));
+  handle("ai:writer", (id: unknown) => ai.writer(id));
+  handle("ai:test", (id: unknown) => ai.test(id));
+  handle("ai:discover", () => ai.discover());
+  handle("ai:models", (input: unknown) => ai.models(input));
   handle("ai:rewrite", (input: unknown) => ai.rewrite(input));
   // ---- Settings → Agents (WP-7.4, AGT-02, D-166) ----
   // The main process reads and writes agents.json and builds every command line; the window only
