@@ -54,8 +54,8 @@ That the rows marked built work in the app they're using, that the original is n
 | AIS-10 | One Writer; the first saved becomes it; the dialog names it | Owner | Unit test |
 | AIS-11 | Each error code has its words | `en.json` keys; `ui:check`; `packages/core/test/ai-app.test.ts` (the words for each code, Retry-After's seconds) | — |
 | AIS-12 | The first build's service carries over | `ai-rewrite.test.ts` (moves the first version's single service into a connection) | — |
-| AIS-13 | Don't send private notes | `apps/desktop/test/ai-contract.test.ts` (main refuses a private selection while it's on; sends once it's off); `packages/core/test/ai-app.test.ts` (Private root, shared and `private:` notes; the dialog's private case) | The dialog's case and the Settings switch (view, integrating) |
-| AIS-14 | First-send confirmation | `apps/desktop/test/ai-contract.test.ts` (nothing sent before consent; a new model, address or key asks again; a new name doesn't); `packages/core/test/ai-app.test.ts` (the dialog names the service, address and where; Send records it first) | The dialog's consent case (view, integrating) |
+| AIS-13 | Don't send private notes | `apps/desktop/test/ai-contract.test.ts` (main refuses a private selection while it's on; sends once it's off); `packages/core/test/ai-app.test.ts` (Private root, shared and `private:` notes; the dialog's private case) | `apps/desktop/e2e/air-safeguards.spec.ts` (a private note offers Change in Settings and sends nothing; the switch turns it off) |
+| AIS-14 | First-send confirmation | `apps/desktop/test/ai-contract.test.ts` (nothing sent before consent; a new model, address or key asks again; a new name doesn't); `packages/core/test/ai-app.test.ts` (the dialog names the service, address and where; Send records it first) | `apps/desktop/e2e/air-safeguards.spec.ts` (Cancel sends nothing; Send saves consent and streams; the next rewrite just generates) |
 | AIS-15 | `ai.json` on the data inventory | `packages/core/test/inventory.test.ts` | — |
 
 Test titles in brackets are the tests' own, on the branch at bb50e208; the file list is in [Rewrite engine → Tests](../architecture/rewrite-engine.md#tests).
@@ -70,7 +70,7 @@ Test titles in brackets are the tests' own, on the branch at bb50e208; the file 
 | FOC-07 | The rainbow never hides the focus band | — | Look (WP-AI.9) |
 | HLP-10 | Help articles exist and say desktop only | [Rewrite selected text](../help/rewrite-with-ai.md), [Connect an AI service](../help/connect-an-ai-service.md) | Screenshots |
 | PRV-05 | Nothing logs or keeps prompts, text or answers | Code review | Security review |
-| SEC-09 | Threat review of `ai:*`, addresses, keys, framing, answer handling | — | WP-AI.9 |
+| SEC-09 | Threat review of `ai:*`, addresses, keys, framing, answer handling | First review, 31 October (AIR-SECREVIEW): four findings fixed on `fix-ai-sec` (D-259, D-260): main decides private notes from the note's path, a key stays with its address, whole answers are capped, a cloud-routed Ollama model says "Cloud"; each with a test in `ai-contract.test.ts` or `ai-app.test.ts` | Review again after the dialog's cases land (WP-AI.9) |
 | PRF-15 | Wait rows measured | — | WP-AI.9 ([wait inventory](../architecture/perceived-performance.md#rewrite-waits)) |
 | QLT-08 | A Windows journey against a fake local service | — | WP-AI.9 |
 | A11Y-03 | Keyboard, focus, announcements, contrast of every frame | Announcements in code | Screen-reader pass; contrast |

@@ -19,8 +19,8 @@ const conn = (over: Partial<AiSettingsView["connections"][number]> = {}) => ({
   id: "w", provider: "openai", name: "OpenAI", endpoint: "", model: "gpt-x", deployment: "", apiVersion: "", account: "", hasKey: true, consented: false, ...over,
 });
 
-function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string; tree?: WorkspaceTree; startError?: string } = {}) {
-  let settings: AiSettingsView = { writer: "w", keepPrivate: opts.keepPrivate ?? true, connections: [conn({ consented: opts.consented ?? true })] };
+function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string; tree?: WorkspaceTree; startError?: string; connection?: Partial<AiSettingsView["connections"][number]> } = {}) {
+  let settings: AiSettingsView = { writer: "w", keepPrivate: opts.keepPrivate ?? true, connections: [conn({ consented: opts.consented ?? true, ...opts.connection })] };
   const calls: string[] = [];
   let listener: ((e: unknown) => void) | undefined;
   const ai: AiBridge = {
@@ -53,6 +53,7 @@ function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string
     toast: (m) => (toasts.push(m), toasts.length),
   });
   const vm = () => viewModels.select("vm.rewrite", store.state) as Record<string, unknown>;
+  const settingsVm = () => viewModels.select("vm.ai", store.state) as Record<string, unknown>;
   const rewriteId = () => /start:([^:]+):/.exec(calls.find((c) => c.startsWith("start:")) ?? "")?.[1] ?? "";
   /** Select text, open the dialog, choose a preset, Generate, and the editor says it began. */
   const begin = async (generate: Record<string, unknown> = {}) => {
@@ -62,14 +63,14 @@ function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string
     if (editor.at(-1) === "rewrite.begin") await commands.run("rewrite.began", { ok: true });
     await settle();
   };
-  return { store, commands, calls, editor, toasts, said, vm, begin, rewriteId, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
+  return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
 }
 
 describe("Rewrite in the window", () => {
   it("streams deltas into the editor and finishes as one step", async () => {
     const t = setup();
     await t.begin();
-    expect(t.calls[0]).toMatch(/^start:rw-[\w-]+:\{"text":"Old words.","instruction":"Make it warmer","private":false\}$/);
+    expect(t.calls[0]).toMatch(/^start:rw-[\w-]+:\{"text":"Old words.","instruction":"Make it warmer","path":"C:\/ws\/notes\/a.md"\}$/);
     t.emit({ type: "delta", text: "New " });
     t.emit({ type: "delta", text: "words." });
     t.emit({ type: "done" });
@@ -206,12 +207,13 @@ describe("private notes kept off AI", () => {
     await settle();
     expect(p.vm().actions).toBe("compose");
   });
-  it("with the setting off, it sends and tells the shell the note is private", async () => {
+  it("with the setting off, it sends the note's path, and the shell decides whether it's private (D-259)", async () => {
     const t = setup({ path: "C:/ws/private/notes/diary.md", tree, keepPrivate: true });
     await t.commands.run("ai.privacy", { value: false });
     expect(t.calls).toEqual(["privacy:false"]);
     await t.begin();
-    expect(t.calls.at(-1)).toContain("\"private\":true");
+    expect(t.calls.at(-1)).toContain("\"path\":\"C:/ws/private/notes/diary.md\"");
+    expect(t.calls.at(-1)).not.toContain("\"private\"");
   });
   it("the Settings switch flips it when pressed without a value", async () => {
     const t = setup({ keepPrivate: true });
@@ -219,5 +221,39 @@ describe("private notes kept off AI", () => {
     await t.commands.run("ai.privacy");
     await t.commands.run("ai.privacy");
     expect(t.calls).toEqual(["privacy:false", "privacy:true"]);
+  });
+});
+
+describe("where text goes and which key goes with it (D-259)", () => {
+  const ollama = { provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "gpt-oss:120b-cloud", hasKey: false };
+  it("a local server's model that may be cloud-routed is named as the cloud, in consent and in Settings", async () => {
+    const t = setup({ consented: false, connection: { ...ollama, modelCloud: true } });
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await settle();
+    expect(t.vm().consentText).toContain("127.0.0.1:11434 · Cloud.");
+    expect((t.settingsVm().connections as { detail: string }[])[0]!.detail).toBe("Ollama · gpt-oss:120b-cloud · Cloud");
+    const local = setup({ consented: false, connection: { ...ollama, model: "llama3.2" } });
+    await local.commands.run("rewrite.captured", { text: "Old words." });
+    await settle();
+    expect(local.vm().consentText).toContain("127.0.0.1:11434 · On this computer.");
+  });
+  it("a draft's Ollama model is the cloud unless its list or the saved connection says it's local", async () => {
+    const t = setup({ connection: { ...ollama, model: "llama3.2" } });
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.change", { value: "w" });
+    expect(t.settingsVm().destination).toBe("Selected text goes to 127.0.0.1:11434 · On this computer");
+    await t.commands.run("ai.edit", { field: "model", value: "typed-model" });
+    expect(t.settingsVm().destination).toBe("Selected text goes to 127.0.0.1:11434 · Cloud");
+  });
+  it("asks for the key again when a saved connection's address changes", async () => {
+    const t = setup({ connection: { provider: "compatible", name: "Mine", endpoint: "https://llm.example.com/v1", model: "m" } });
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.change", { value: "w" });
+    expect(t.settingsVm().keyState).toBe(en["ai.key.keep"]);
+    await t.commands.run("ai.edit", { field: "endpoint", value: "https://other.example.com/v1" });
+    expect(t.settingsVm().keyState).toBe(en["ai.key.reenter"]);
+    await t.commands.run("ai.edit", { field: "endpoint", value: "https://llm.example.com/v1/" });
+    expect(t.settingsVm().keyState).toBe(en["ai.key.keep"]);
+    expect(reasonCode("Error invoking remote method 'ai:save': Error: key-new-address")).toEqual({ code: "key-new-address" });
   });
 });

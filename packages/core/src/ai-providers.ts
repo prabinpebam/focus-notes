@@ -79,6 +79,8 @@ export interface AiConnectionView {
   consented: boolean;
   /** The last Test: when, and whether it passed. */
   lastTest?: { ok: boolean; at: string };
+  /** The model may run in the cloud though the server is on this computer (an Ollama model not seen as local in Ollama's own list). */
+  modelCloud?: boolean;
 }
 
 export interface AiFound {

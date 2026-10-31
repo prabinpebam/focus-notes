@@ -10,8 +10,9 @@
  * for at most `idle`, and the whole exchange ends at `total`. A failure is one reason code
  * (`AiError`), never the service's own text, so nothing it echoes (a key, a note) reaches the window.
  */
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
+import { isAbsolute, relative, resolve } from "node:path";
 import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, type AiConnectionView, type AiFound, type AiProvider } from "@focus-notes/core/ai-providers";
 
 export interface AiCrypt {
@@ -25,13 +26,15 @@ interface Connection {
   key?: string; lastTest?: { ok: boolean; at: string };
   /** What the person agreed to send note text to: the provider, destination and model (`consentScope`). */
   consent?: string;
+  /** This process saw the model in the server's own list as a model on this computer (an Ollama model may be cloud-routed). */
+  modelLocal?: true;
 }
 interface Stored { version: 2; writer: string; keepPrivate: boolean; connections: Connection[] }
 export interface AiSettings { writer: string; keepPrivate: boolean; connections: AiConnectionView[] }
 
 /** The reasons a request can fail with; the window turns each into one plain sentence. */
 export type AiErrorCode =
-  | "not-configured" | "consent-required" | "private-note" | "secure-storage-unavailable" | "key-required"
+  | "not-configured" | "consent-required" | "private-note" | "secure-storage-unavailable" | "key-required" | "key-new-address"
   | "unauthorized" | "model-missing" | "not-found" | "rate-limited" | "server-error" | "bad-request" | "too-long"
   | "timeout" | "refused" | "dns" | "tls" | "redirected" | "network"
   | "provider-format" | "provider-error" | "provider-empty" | "cancelled" | "connection-unavailable";
@@ -67,6 +70,8 @@ const MAX_TEXT = 32 * 1024;
 const MAX_INSTRUCTION = 4000;
 /** The most a rewrite may send back: twice the longest selection. */
 const MAX_ANSWER = 2 * MAX_TEXT;
+/** The most a whole JSON answer may be, in bytes: a Test or a probe, a model list (OpenRouter's is large), and a generation answered in one piece. */
+const MAX_JSON = { test: 2 * 1024 * 1024, list: 4 * 1024 * 1024, answer: 8 * MAX_ANSWER } as const;
 const MAX_CONNECTIONS = 30;
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const SYSTEM = "You rewrite text for a writer. Rewrite the text the user gives, following their instruction. Reply with only the rewritten text: no preamble, no quotes, no commentary. Keep the language of the text.";
@@ -110,6 +115,30 @@ export function baseOf(p: AiProvider, c: Pick<Connection, "endpoint" | "account"
   }
   return p.endpoint;
 }
+const baseOrEmpty = (p: AiProvider, c: Pick<Connection, "endpoint" | "account">) => {
+  try {
+    return baseOf(p, c);
+  } catch {
+    return "";
+  }
+};
+/**
+ * Whether a note is kept off AI: under the workspace's `private/` (private and shared notes alike),
+ * decided here from the note's own path, never from the window's say-so (RWR-43, D-259). Both the
+ * path as given and its real path are checked, so a link can't hide it. With a private folder, a
+ * missing or relative path counts as private.
+ */
+export async function isPrivateNote(privateDir: string | undefined, path: unknown): Promise<boolean> {
+  if (!privateDir) return false;
+  if (typeof path !== "string" || !path || !isAbsolute(path)) return true;
+  const under = (base: string, p: string) => {
+    const r = relative(base, p);
+    return r === "" || (!r.startsWith("..") && !isAbsolute(r));
+  };
+  const real = (p: string) => realpath(p).catch(() => resolve(p));
+  const [dir, note] = await Promise.all([real(privateDir), real(path)]);
+  return under(resolve(privateDir), resolve(path)) || under(dir, note);
+}
 /** What consent covers: a change of provider, address, model or key needs it again (AIS-14, RWR-43). The key enters only as a hash of its sealed form. */
 export function consentScope(c: Connection): string {
   const p = aiProvider(c.provider);
@@ -125,6 +154,8 @@ const view = (c: Connection): AiConnectionView => ({
   id: c.id, provider: c.provider, name: c.name, endpoint: c.endpoint, model: c.model, deployment: c.deployment,
   apiVersion: c.apiVersion, account: c.account, hasKey: Boolean(c.key), consented: Boolean(c.consent) && c.consent === consentScope(c),
   ...(c.lastTest ? { lastTest: c.lastTest } : {}),
+  // An Ollama model not seen as local in Ollama's own list may go to the cloud (Ollama routes `-cloud` models).
+  ...(aiProvider(c.provider)?.shape === "ollama" && !c.modelLocal ? { modelCloud: true } : {}),
 });
 
 interface Call { url: string; headers: Record<string, string>; body?: unknown }
@@ -298,6 +329,38 @@ function exchange(fetcher: typeof fetch, call: Call, limits: AiLimits, local: bo
   return { response, kick, close, reason };
 }
 
+/**
+ * A whole answer's JSON, read at most `max` bytes: a longer one is `too-long` (a declared length is
+ * checked first), and anything that isn't JSON is `provider-format`. Each chunk restarts the idle clock.
+ */
+export async function readJson(r: Response, max: number, kick: () => void = () => {}): Promise<unknown> {
+  if (Number(r.headers.get("content-length")) > max) {
+    await r.body?.cancel().catch(() => {});
+    throw new AiError("too-long");
+  }
+  if (!r.body) throw new AiError("provider-format");
+  const reader = r.body.getReader();
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      kick();
+      size += value.byteLength;
+      if (size > max) throw new AiError("too-long");
+      parts.push(value);
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+  try {
+    return JSON.parse(Buffer.concat(parts).toString("utf8"));
+  } catch {
+    throw new AiError("provider-format");
+  }
+}
+
 export class AiService {
   readonly #file: string;
   readonly #crypt: AiCrypt;
@@ -305,6 +368,8 @@ export class AiService {
   readonly #fetch: typeof fetch;
   readonly #limits: Partial<Record<AiLimitKind, AiLimits>>;
   #tail: Promise<unknown> = Promise.resolve();
+  /** Each server's last model list this process fetched itself: base → model → on this computer. */
+  readonly #listed = new Map<string, Map<string, boolean>>();
   /** `limits` replaces the defaults for both local and cloud connections (tests). */
   constructor(file: string, crypt: AiCrypt, write: (path: string, content: string) => Promise<unknown>, fetcher: typeof fetch = fetch, limits: Partial<Record<AiLimitKind, AiLimits>> = {}) {
     this.#file = file;
@@ -327,6 +392,7 @@ export class AiService {
           ...(typeof c.key === "string" && c.key ? { key: c.key } : {}),
           ...(c.lastTest && typeof c.lastTest.at === "string" ? { lastTest: { ok: c.lastTest.ok === true, at: c.lastTest.at } } : {}),
           ...(typeof c.consent === "string" && c.consent ? { consent: c.consent } : {}),
+          ...(c.modelLocal === true ? { modelLocal: true as const } : {}),
         }));
         return { version: 2, writer: typeof v.writer === "string" ? v.writer : "", keepPrivate: v.keepPrivate !== false, connections };
       }
@@ -377,14 +443,17 @@ export class AiService {
       id: old?.id ?? randomUUID(), provider: p.id, name: str(a.name, 100) || p.label,
       endpoint: p.endpointEditable ? normalizeUrl(str(a.endpoint) || p.endpoint) : "",
       model: str(a.model, 200), deployment: str(a.deployment, 100), apiVersion: str(a.apiVersion, 40), account: str(a.account, 64),
-      // A key is never carried over to another provider's connection.
-      ...(old?.key && old.provider === p.id ? { key: old.key } : {}),
-      ...(old?.lastTest && old.provider === p.id ? { lastTest: old.lastTest } : {}),
     };
-    baseOf(p, c);
+    const base = baseOf(p, c);
+    // A saved key, and its Test, stay only with the same provider at the same address: a key never follows an edited endpoint (D-259).
+    const same = Boolean(old && old.provider === p.id && baseOrEmpty(p, old) === base);
+    if (same && old?.key) c.key = old.key;
+    if (same && old?.lastTest) c.lastTest = old.lastTest;
+    const listed = this.#listed.get(base)?.get(c.model);
+    if (listed === true || (listed === undefined && same && old?.modelLocal && old.model === c.model)) c.modelLocal = true;
     if (p.shape === "azure" ? !/^[\w.-]{1,100}$/.test(c.deployment) : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
     if (typeof a.key === "string" && a.key) c.key = this.#seal(a.key);
-    if (p.key === "required" && !c.key) throw new AiError("key-required");
+    if (p.key === "required" && !c.key) throw new AiError(old?.key && old.provider === p.id ? "key-new-address" : "key-required");
     // Consent stays only while it covers the same provider, destination and model.
     if (old?.consent && old.consent === consentScope(c)) c.consent = old.consent;
     return c;
@@ -428,21 +497,38 @@ export class AiService {
     return this.#change((s) => { s.keepPrivate = keepPrivate !== false; });
   }
 
-  /** One JSON answer (Test, model lists, discovery) under its limits. */
-  async #json(call: Call, limits: AiLimits, local: boolean): Promise<unknown> {
+  /** One JSON answer (Test, model lists, discovery) under its limits, read at most `max` bytes. */
+  async #json(call: Call, limits: AiLimits, local: boolean, max: number): Promise<unknown> {
     const x = exchange(this.#fetch, call, limits, local);
     try {
       const r = await x.response;
       try {
-        return await r.json();
+        return await readJson(r, max, x.kick);
       } catch (error) {
-        // Not JSON, unless the body stopped because of a timeout.
-        const why = x.reason(error);
-        throw why.code === "timeout" || why.code === "cancelled" ? why : new AiError("provider-format");
+        // A timeout or a stop wins over the error it caused.
+        throw x.reason(error);
       }
     } finally {
       x.close();
     }
+  }
+  /**
+   * Remembers which of a server's models are on this computer, from a list this process fetched,
+   * and marks the saved connections there (Settings and consent say where text goes, D-259).
+   */
+  async #learn(p: AiProvider, base: string, list: { id: string; cloud: boolean }[]): Promise<void> {
+    if (p.shape !== "ollama" || !base) return;
+    const known = new Map(list.map((m) => [m.id, !m.cloud]));
+    this.#listed.set(base, known);
+    const at = (c: Connection) => c.provider === p.id && known.has(c.model) && baseOrEmpty(p, c) === base;
+    if (!(await this.#read()).connections.some((c) => at(c) && Boolean(c.modelLocal) !== known.get(c.model))) return;
+    await this.#change((s) => {
+      for (const c of s.connections) {
+        if (!at(c)) continue;
+        if (known.get(c.model)) c.modelLocal = true;
+        else delete c.modelLocal;
+      }
+    });
   }
 
   /** Test: one synthetic request for a few tokens to the saved connection, never note text. Settings disclosed it first. */
@@ -457,7 +543,13 @@ export class AiService {
       if (p.key === "required" && !key) throw new AiError("key-required");
       const call = generateCall(p, c, key, "Reply with the single word OK.", "Connection test.", 16);
       const local = isLoopback(call.url);
-      if (!answered(p, await this.#json(call, this.#limit("test", local), local))) throw new AiError("provider-format");
+      if (!answered(p, await this.#json(call, this.#limit("test", local), local, MAX_JSON.test))) throw new AiError("provider-format");
+      // Ollama: the Test also learns whether the model runs here or is routed to the cloud.
+      const listCall = p.shape === "ollama" ? modelsCall(p, c, key) : undefined;
+      if (listCall) {
+        const list = await this.#json(listCall, this.#limit("list", local), local, MAX_JSON.list).then((j) => modelList(p, j), () => undefined);
+        if (list) await this.#learn(p, baseOf(p, c), list);
+      }
     } catch (e) {
       failure = e;
     }
@@ -477,14 +569,18 @@ export class AiService {
     const p = aiProvider(a.provider ?? saved?.provider);
     if (!p) throw new Error("invalid-provider");
     const c = { endpoint: p.endpointEditable ? str(a.endpoint) || saved?.endpoint || p.endpoint : "", account: str(a.account, 64) || saved?.account || "" };
-    const key = typeof a.key === "string" && a.key ? a.key : saved && saved.provider === p.id ? this.#open(saved) : "";
+    // The saved key goes only to the saved address: a draft with another endpoint or account lists without it (D-259).
+    const base = baseOf(p, c);
+    const savedHere = saved && saved.provider === p.id && baseOrEmpty(p, saved) === base;
+    const key = typeof a.key === "string" && a.key ? a.key : savedHere ? this.#open(saved) : "";
     const call = modelsCall(p, c, key);
     if (!call) return [];
     const local = isLoopback(call.url);
     const started = performance.now();
-    const list = modelList(p, await this.#json(call, this.#limit("list", local), local));
+    const list = modelList(p, await this.#json(call, this.#limit("list", local), local, MAX_JSON.list));
     measure("fn:ai.models", started);
     if (!list) throw new AiError("provider-format");
+    await this.#learn(p, base, list);
     return list.slice(0, 500);
   }
 
@@ -495,7 +591,8 @@ export class AiService {
       const endpoint = p.discover!.url;
       try {
         // Only a server that answers in its provider's own list shape counts: any other program on the port doesn't.
-        const models = modelList(p, await this.#json({ url: `${endpoint}${p.discover!.models}`, headers: {} }, this.#limit("probe", true), true));
+        const models = modelList(p, await this.#json({ url: `${endpoint}${p.discover!.models}`, headers: {} }, this.#limit("probe", true), true, MAX_JSON.list));
+        if (models) await this.#learn(p, endpoint, models).catch(() => {});
         return models ? { provider: p.id, endpoint, models } : undefined;
       } catch (e) {
         // A server that asks for a token is still there.
@@ -510,16 +607,17 @@ export class AiService {
    * Rewrite: the Writer's answer as it streams, chunk by chunk, in its own streaming shape (SSE for
    * Chat Completions, Azure, Anthropic, Gemini and Cohere; NDJSON for Ollama). A service that
    * answers in one piece yields it once. The key stays here; only text goes back to the window.
-   * Nothing is sent before consent for this connection, or from a private note while those are kept off AI.
+   * Nothing is sent before consent for this connection, or from a private note while those are kept off AI:
+   * `privateNote` decides that here from the note's path (`input.path`); the window's own view never counts.
    */
-  async *stream(input: unknown, signal: AbortSignal): AsyncGenerator<string> {
+  async *stream(input: unknown, signal: AbortSignal, privateNote: (path: unknown) => Promise<boolean>): AsyncGenerator<string> {
     const a = (input ?? {}) as Record<string, unknown>;
     if (typeof a.text !== "string" || !a.text.trim() || a.text.length > MAX_TEXT) throw new Error("invalid-text");
     if (typeof a.instruction !== "string" || !a.instruction.trim() || a.instruction.length > MAX_INSTRUCTION) throw new Error("invalid-instruction");
     const s = await this.#read();
     const c = s.connections.find((x) => x.id === s.writer);
     if (!c) throw new AiError("not-configured");
-    if (a.private === true && s.keepPrivate) throw new AiError("private-note");
+    if (s.keepPrivate && (await privateNote(a.path))) throw new AiError("private-note");
     if (!c.consent || c.consent !== consentScope(c)) throw new AiError("consent-required");
     const p = aiProvider(c.provider)!;
     const key = this.#open(c);
@@ -541,10 +639,11 @@ export class AiService {
       const type = response.headers.get("content-type") ?? "";
       if (/text\/html/.test(type)) throw new AiError("provider-format");
       if (/application\/json/.test(type) && !/ndjson/.test(type)) {
-        const whole = answerText(p, await response.json().catch(() => { throw new AiError("provider-format"); }));
+        const whole = answerText(p, await readJson(response, MAX_JSON.answer, x.kick));
         if (typeof whole !== "string") throw new AiError("provider-format");
         const text = whole.replace(/^\s*<think>[\s\S]*?<\/think>\s*/, "");
         if (!text.trim()) throw new AiError("provider-empty");
+        if (text.length > MAX_ANSWER) throw new AiError("too-long");
         yield out(text);
         measure("fn:ai.stream", started);
         return;
