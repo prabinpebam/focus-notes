@@ -7,7 +7,7 @@
 | --- | --- | --- | --- | --- |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-05 | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY | AIS-01 to AIS-06, AIS-08 to AIS-12, AIS-15, PRV-05; DD-RWR-05 to DD-RWR-07 |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-08 | IA-CMP-AIDISCOVER | AIS-07; DD-RWR-08 |
-| CP-RWR-01 | SC-RWR-04 | UC-RWR-09 | IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS | AIS-13, AIS-14 (in progress); DD-RWR-09 |
+| CP-RWR-01 | SC-RWR-04 | UC-RWR-09 | IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS | AIS-13, AIS-14; DD-RWR-09 |
 
 Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is called, and the ones not offered, are in [Rewrite providers](../architecture/rewrite-providers.md). The kit behind the catalogue is [ai-integration](https://prabinpebam.github.io/loushing/items/ai-integration/), pinned at 1613a55.
 
@@ -130,7 +130,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 
 ## Private notes and consent
 
-The logic is built in the main process and the window; the dialog's two cases and the switch below are view changes being integrated (WP-AI.13):
+Built (WP-AI.13, D-259), and proven in the app by the `air-safeguards` journey:
 
 - **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private or shared note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**. The main process refuses such text too.
 - **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "The first time, check where your text goes: Rewrite sends the selected text and your prompt to {service} at {address} · On this computer" (or "· Cloud"). **Send** goes ahead and is remembered for that connection; **Cancel** sends nothing. The main process refuses to send without it.
