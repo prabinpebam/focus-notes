@@ -213,4 +213,11 @@ describe("private notes kept off AI", () => {
     await t.begin();
     expect(t.calls.at(-1)).toContain("\"private\":true");
   });
+  it("the Settings switch flips it when pressed without a value", async () => {
+    const t = setup({ keepPrivate: true });
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.privacy");
+    await t.commands.run("ai.privacy");
+    expect(t.calls).toEqual(["privacy:false", "privacy:true"]);
+  });
 });

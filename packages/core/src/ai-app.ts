@@ -298,7 +298,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   reg("ai.privacy", async (a) => {
     if (!ai) return;
     try {
-      apply(await ai.privacy(a.value !== false));
+      apply(await ai.privacy(a.value === undefined ? !keepPrivate : a.value !== false));
       status = t(keepPrivate ? "ai.private.kept" : "ai.private.allowed");
     } catch (e) {
       status = reason(e, "ai.error.save");
