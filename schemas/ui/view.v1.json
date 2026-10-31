@@ -8842,7 +8842,10 @@
             "rewriteCapture": {
               "$ref": "#/$defs/actions"
             },
-            "rewriteApplied": {
+            "rewriteBegan": {
+              "$ref": "#/$defs/actions"
+            },
+            "rewriteCancel": {
               "$ref": "#/$defs/actions"
             },
             "format": {

@@ -3948,11 +3948,12 @@
             "text": "text"
           }
         },
-        "rewriteApplied": {
+        "rewriteBegan": {
           "payload": {
             "ok": "boolean"
           }
         },
+        "rewriteCancel": {},
         "format": {
           "payload": {
             "toolbar": "boolean",

@@ -9,7 +9,7 @@
     "children": [
       {
         "type": "Dialog", "id": "rewrite", "when": { "get": "vm.rewrite.open" },
-        "props": { "title": { "t": "rewrite.title" }, "closeLabel": { "t": "rewrite.close" }, "open": { "get": "vm.rewrite.open" }, "size": "m", "height": "stable" },
+        "props": { "title": { "t": "rewrite.title" }, "closeLabel": { "t": "rewrite.close" }, "open": { "get": "vm.rewrite.open" }, "size": "m", "height": "content" },
         "on": { "openChange": { "run": "rewrite.dismiss", "args": { "open": { "get": "event.open" } } } },
         "children": [{
           "type": "Stack", "props": { "gap": "l" },
@@ -29,29 +29,14 @@
               { "type": "Button", "props": { "label": { "t": "rewrite.preset.warmer" }, "size": "s", "variant": "subtle", "toggle": true, "pressed": { "get": "vm.rewrite.warmer" } }, "on": { "press": { "run": "rewrite.preset", "args": { "value": "warmer" } } } },
               { "type": "Button", "props": { "label": { "t": "rewrite.preset.grammar" }, "size": "s", "variant": "subtle", "toggle": true, "pressed": { "get": "vm.rewrite.grammar" } }, "on": { "press": { "run": "rewrite.preset", "args": { "value": "grammar" } } } }
             ] },
-            { "type": "Inline", "when": { "get": "vm.rewrite.generating" }, "props": { "gap": "s" }, "children": [
-              { "type": "Spinner", "props": { "label": { "t": "rewrite.generating" } } },
-              { "type": "Text", "props": { "value": { "t": "rewrite.generating" }, "announce": true, "tone": "muted" } }
-            ] },
-            { "type": "Stack", "when": { "get": "vm.rewrite.error" }, "props": { "gap": "s" }, "children": [
-              { "type": "Text", "props": { "value": { "get": "vm.rewrite.errorText" }, "tone": "danger", "announce": true } }
-            ] },
-            { "type": "Tabs", "when": { "get": "vm.rewrite.results" }, "props": { "label": { "t": "rewrite.options" }, "items": { "get": "vm.rewrite.options" }, "value": { "get": "vm.rewrite.tab" }, "segmented": true },
-              "on": { "change": { "run": "rewrite.tab", "args": { "value": { "get": "event.value" } } } },
-              "children": [{ "type": "Surface", "props": { "variant": "sunken", "padding": "m", "shape": "control" }, "children": [
-                { "type": "Text", "props": { "value": { "get": "vm.rewrite.result" }, "role": "emphasis" } }
-              ] }] },
             { "switch": { "get": "vm.rewrite.actions" }, "cases": {
               "setup": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+                { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
                 { "type": "Button", "props": { "label": { "t": "rewrite.setup" }, "icon": "settings", "variant": "primary" }, "on": { "press": { "run": "ai.openSettings" } } }
               ] },
               "compose": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
-                { "type": "Button", "props": { "label": { "get": "vm.rewrite.generateLabel" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate" } } }
-              ] },
-              "results": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
-                { "type": "Button", "props": { "label": { "t": "rewrite.discard" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
-                { "type": "Button", "props": { "label": { "t": "rewrite.regenerate" }, "icon": "redo" }, "on": { "press": { "run": "rewrite.generate" } } },
-                { "type": "Button", "props": { "label": { "t": "rewrite.accept" }, "icon": "check", "variant": "primary" }, "on": { "press": { "run": "rewrite.accept" } } }
+                { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
+                { "type": "Button", "props": { "label": { "t": "rewrite.generate" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate" } } }
               ] }
             } }
           ]

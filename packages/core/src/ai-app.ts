@@ -26,12 +26,12 @@ interface Ctx<St extends S> {
   viewModels: ViewModelRegistry<St>;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   announce: (text: string) => void;
+  toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }) => unknown;
 }
 
 const PRESETS = ["concise", "warmer", "grammar"] as const;
-type Phase = "empty" | "generating" | "results" | "error";
 const GROUPS: readonly AiGroup[] = ["local", "cloud", "gateway"];
-const ERRORS = ["not-configured", "secure-storage-unavailable", "unauthorized", "key-required", "timeout", "network", "model-missing", "not-found", "rate-limited", "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many"] as const;
+const ERRORS = ["not-configured", "secure-storage-unavailable", "unauthorized", "key-required", "timeout", "network", "model-missing", "not-found", "rate-limited", "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many", "provider-empty"] as const;
 const DRAFT_FIELDS = ["name", "endpoint", "model", "deployment", "apiVersion", "account"] as const;
 type Draft = { id?: string; provider: string; name: string; endpoint: string; model: string; deployment: string; apiVersion: string; account: string };
 const blankDraft = (provider = "ollama"): Draft => {
@@ -39,7 +39,7 @@ const blankDraft = (provider = "ollama"): Draft => {
   return { provider, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: "", deployment: "", apiVersion: p.shape === "azure" ? AZURE_API_VERSION : "", account: "" };
 };
 
-export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, editorAction, announce }: Ctx<St>) {
+export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, editorAction, announce, toast }: Ctx<St>) {
   const ai = bridge.ai;
   const changed = () => store.update((s) => ({ ...s }));
   const t = (key: string, args?: Record<string, unknown>) => catalog.format(key, args);
@@ -280,39 +280,61 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     await commands.run("settings.setSection", { value: "ai" });
   });
 
-  // ---- the Rewrite modal ----
-  let open = false, selection = "", prompt = "", tab = "0", phase: Phase = "empty", errorText = "";
-  let options: string[] = [];
-  let request = 0;
+  // ---- Rewrite: the dialog takes the prompt; the answer streams into the note ----
+  let open = false, selection = "", prompt = "", instruction = "";
+  /** The rewrite streaming into the note: its id, whether any text came, and the toast that says so. */
+  let running: { id: string; got: boolean; off: () => void; toast: unknown } | undefined;
   const presetText = (p: (typeof PRESETS)[number]) => t(`rewrite.preset.${p}.prompt`);
-  const closeModal = () => { request++; open = false; options = []; phase = "empty"; changed(); };
-  const itemSchema = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const } } };
+  const closeModal = () => { open = false; changed(); };
   viewModels.register({
     id: "vm.rewrite",
     schema: { type: "object", properties: {
-      ...Object.fromEntries(["selection", "prompt", "tab", "result", "generateLabel", "errorText", "actions", "writerLabel"].map((k) => [k, { type: "string" as const }])),
-      ...Object.fromEntries(["open", "generating", "results", "error", "empty", "needsSetup", "hasWriter", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
-      options: { type: "array", items: itemSchema },
+      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel"].map((k) => [k, { type: "string" as const }])),
+      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
     } },
     select: () => {
       const w = writerConnection();
       return {
-        open, selection, prompt, tab, errorText,
+        open, selection, prompt,
         writerLabel: w ? t("rewrite.writer", { name: w.name, detail: describe(w) }) : "",
-        result: options[Number(tab)] ?? "",
-        generating: phase === "generating", results: phase === "results", error: phase === "error",
         needsSetup: !w, hasWriter: Boolean(w),
-        actions: !w ? "setup" : phase === "results" ? "results" : phase === "generating" ? "busy" : "compose",
+        actions: w ? "compose" : "setup",
         empty: !prompt.trim(),
         concise: prompt === presetText("concise"), warmer: prompt === presetText("warmer"), grammar: prompt === presetText("grammar"),
-        generateLabel: t(phase === "error" ? "rewrite.retry" : "rewrite.generate"),
-        options: options.map((_, i) => ({ id: String(i), label: t("rewrite.option", { n: i + 1 }) })),
       };
     },
   });
 
+  const end = () => {
+    const r = running;
+    running = undefined;
+    if (!r) return;
+    r.off();
+    if (typeof r.toast === "number") void commands.run("toast.dismiss", { id: r.toast }).catch(() => {});
+  };
+  /** A failure or a stop: the editor puts the original back and unlocks the note. */
+  const fail = (code: string) => {
+    editorAction("rewrite.abort");
+    end();
+    if (code === "cancelled") announce(t("rewrite.stopped"));
+    else toast(reason(new Error(code), "ai.error.provider"), { tone: "error" });
+  };
+  const onEvent = (raw: unknown) => {
+    const e = raw as { id?: unknown; type?: unknown; text?: unknown; code?: unknown } | null;
+    if (!running || !e || e.id !== running.id) return;
+    if (e.type === "delta" && typeof e.text === "string") {
+      running.got ||= e.text.trim().length > 0;
+      editorAction("rewrite.chunk", { text: e.text });
+    } else if (e.type === "done") {
+      if (!running.got) return fail("provider-empty");
+      editorAction("rewrite.finish");
+      end();
+      announce(t("rewrite.replaced"));
+    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider");
+  };
+
   reg("rewrite.open", () => {
-    if (open) return;
+    if (open || running) return;
     // The editor answers with the selection (rewrite.captured).
     editorAction("rewrite.capture");
   }, { icon: "rename", shortcut: { default: "Mod+Shift+R" }, layer: "writer", group: "editing", enabled: (s) => Boolean(ai) && s.note.status === "ready" });
@@ -322,8 +344,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       announce(t("rewrite.selectFirst"));
       return;
     }
-    request++;
-    open = true; selection = text; prompt = ""; tab = "0"; phase = "empty"; options = []; errorText = "";
+    open = true; selection = text; prompt = "";
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
     await load();
   });
@@ -333,39 +354,30 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const p = PRESETS.find((x) => x === a.value);
     if (p) { prompt = presetText(p); changed(); }
   });
-  reg("rewrite.tab", (a) => { tab = String(a.value ?? "0"); changed(); });
-  reg("rewrite.generate", async () => {
-    if (!ai || !prompt.trim() || phase === "generating") return;
-    const current = ++request;
-    phase = "generating";
-    changed();
-    try {
-      const result = await ai.rewrite({ text: selection, instruction: prompt.trim() });
-      if (current !== request) return;
-      options = result.options.filter((o) => typeof o === "string" && o.trim()).slice(0, 3);
-      if (!options.length) throw new Error("empty");
-      phase = "results"; tab = "0";
-      announce(t("rewrite.ready"));
-    } catch (e) {
-      if (current !== request) return;
-      phase = "error";
-      errorText = reason(e, "ai.error.provider");
-    }
-    changed();
+  // Generate: the dialog closes, and the note locks and shimmers (rewrite.began) while the answer comes.
+  reg("rewrite.generate", () => {
+    if (!ai || !prompt.trim() || running || !writerConnection()) return;
+    instruction = prompt.trim();
+    closeModal();
+    editorAction("rewrite.begin");
   });
-  reg("rewrite.accept", () => {
-    const text = options[Number(tab)];
-    if (!text) return;
-    editorAction("rewrite.apply", { text });
-  });
-  reg("rewrite.applied", (a) => {
-    if (a.ok === true) {
-      closeModal();
-      announce(t("rewrite.replaced"));
+  reg("rewrite.began", (a) => {
+    if (!ai) return;
+    if (a.ok !== true) {
+      toast(t("rewrite.error.stale"), { tone: "error" });
       return;
     }
-    phase = "error";
-    errorText = t("rewrite.error.stale");
-    changed();
+    const id = `rw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const off = ai.onRewriteEvent(onEvent);
+    const name = writerConnection()?.name ?? "";
+    running = { id, got: false, off, toast: toast(t("rewrite.running", { name }), { action: { command: "rewrite.cancel", label: t("rewrite.stop") } }) };
+    announce(t("rewrite.started"));
+    ai.rewriteStart(id, { text: selection, instruction }).catch((e: unknown) => { if (running?.id === id) fail(String((e as Error)?.message ?? "provider")); });
+  });
+  // Esc or Stop while it streams: the request is stopped and the original comes back at once.
+  reg("rewrite.cancel", () => {
+    if (!running || !ai) return;
+    void ai.rewriteCancel(running.id).catch(() => {});
+    fail("cancelled");
   });
 }

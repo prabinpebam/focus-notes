@@ -841,7 +841,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const setFind = (patch: Partial<FindState>) => store.update((s) => ({ ...s, ui: { ...s.ui, find: { ...s.ui.find, ...patch } } }));
   const editorAction = (id: string, args?: Record<string, unknown>) => { for (const l of editorListeners) l(id, args); };
   // AI Rewrite and Settings → AI: on every note, with no switch to turn them on.
-  registerAi({ store, bridge, catalog, commands, viewModels, editorAction, announce });
+  registerAi({ store, bridge, catalog, commands, viewModels, editorAction, announce, toast });
   const findHistory: string[] = [];
   let historyAt = -1;
   const remember = () => {

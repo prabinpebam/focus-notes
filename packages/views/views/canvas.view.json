@@ -939,13 +939,16 @@
               }
             }
           },
-          "rewriteApplied": {
-            "run": "rewrite.applied",
+          "rewriteBegan": {
+            "run": "rewrite.began",
             "args": {
               "ok": {
                 "get": "event.ok"
               }
             }
+          },
+          "rewriteCancel": {
+            "run": "rewrite.cancel"
           },
           "format": {
             "run": "format.setState",
