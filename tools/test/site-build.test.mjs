@@ -33,7 +33,7 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
   it("renders the landing page, the demo and privacy; the old download page sends visitors to the landing page's downloads (D-184); help is in the Slate docs, and its old addresses send visitors there (D-181)", async () => {
     for (const f of ["index.html", "demo/index.html", "download/index.html", "privacy/index.html"]) expect((await read(out, f)).length, f).toBeGreaterThan(0);
     expect(await read(out, "download/index.html")).toMatch(/<meta http-equiv="refresh" content="0; url=\.\.\/#download" \/>/);
-    expect(helpPages).toEqual(["get-started", "write", "organize", "save-and-back-up", "private-and-sharing", "fix-a-problem", "reference", "developers"]);
+    expect(helpPages).toEqual(["get-started", "write", "rewrite-with-ai", "connect-an-ai-service", "organize", "save-and-back-up", "private-and-sharing", "fix-a-problem", "reference", "developers"]);
     const home = await read(out, "help/index.html");
     expect(home).toMatch(/<meta http-equiv="refresh" content="0; url=\.\.\/documentations\/#help\/index\.md" \/>/);
     expect(home).toMatch(/<a href="\.\.\/documentations\/#help\/index\.md">Help is in the Focus Notes docs\. Go to Help<\/a>/);
@@ -195,6 +195,6 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
   it("the content's folders: the landing page and plain pages; the help pages come from the docs", async () => {
     const c = await readContent(content);
     expect(c.pages.map((p) => p.path)).toEqual(["privacy/", "demo/"]);
-    expect(c.helpPages).toHaveLength(8);
+    expect(c.helpPages).toHaveLength(10);
   });
 });
