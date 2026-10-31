@@ -3,7 +3,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **70 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **16 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **3 compound components** (Trigger, Toolbar, Dialog). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **71 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **16 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="inventory" data-reader-personas="design engineering">Implemented inventory</h2>
 
@@ -19,7 +19,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**70 registered contracts:** 45 primitives, 5 host components, 16 layouts, 1 block component, 3 compound components.
+**71 registered contracts:** 45 primitives, 5 host components, 16 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -90,6 +90,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SiteSection | layout | `rest` | 5 | None |
 | SiteGrid | layout | `rest` | 1 | None |
 | NoteContent | block component | `rest` | 1 | None |
+| SecureKeyField | compound component | `empty` | 1 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
 | Dialog | compound component | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
@@ -264,6 +265,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **Popover** | Composed | Layer, Positioner, Surface, Stack, Heading | IA-VIEW-SHARE, IA-CMP-LINK | A titled, anchored panel. As built, the PopoverPanel primitive placed in the view document. |
 | **HoverCard** | Composed | Popover | IA-CMP-LINK | Opens on hover or focus after a delay, never on its own. The link hover card is composed in the canvas view document (D-91). |
 | **Dialog** | Implemented | DialogPanel, Heading, IconButton (close), Inline | IA-VIEW-SETTINGS, IA-VIEW-SHORTCUTS | `title` and `closeLabel` are required. `size` s, l, or xl. A `toolbar` slot holds controls that stay put above the scrolling body. Full-screen in the compact size class. |
+| **SecureKeyField** | Implemented | TextField (password), Button | IA-VIEW-SETTINGS (AI) | `label` and `saveLabel`. The key stays in the field until Save, goes out once in the `save` event and the field clears; it's never bound to a view model. |
 | **ConfirmDialog** | Composed | Dialog | IA-CMP-DIALOG | Takes the object's name and a verb. The confirm button names the action (Foundations → Words). Composed in the canvas view document from Dialog and Buttons (`vm.confirm`). |
 | **Sheet** | Implemented as a layout | Its own frosted surface (D-94) | IA-VIEW-FILES, IA-VIEW-THEME, IA-VIEW-HISTORY | `label`, `side` start or end, `width` files, theme, or find (a `layout.sheet*` token; find is Find in all notes', D-110), `keyScope` (`files`, `findAll`); slots `header`, the body (which scrolls), and `footer` (Files' Recently deleted, D-102); event `close` (<kbd>Esc</kbd>, or a click on the note). A complementary landmark, not modal. Tokens `cmp.sheet.*`. |
 | **CommandPalette** | Composed | Layer, Surface, SearchField, ResultList, Inline, Shortcut | IA-VIEW-SPOTLIGHT | Modes and prefixes come from a view model. As built (WP-4.2, D-109): Spotlight is composed in the canvas view from a frosted `DialogPanel` (size m, placement top), a `SearchField` with its mode chip, a `ResultList`, and caption `Text` in the footer, like Move to… (D-94). |

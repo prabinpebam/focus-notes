@@ -10,6 +10,7 @@ export const contract = defineContract({
     value: { kind: "text", bindable: true },
     orientation: { kind: "enum", values: ["horizontal", "vertical"], default: "horizontal", description: "vertical puts the list on the inline start, as Settings' categories." },
     autoFocus: { kind: "boolean", default: false, description: "The selected tab takes focus when the tabs appear: Settings opens on its categories, so the arrow keys move between them at once." },
+    segmented: { kind: "boolean", default: false, description: "Temporary options in a shared segmented track." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" } },
   // footer: an action that belongs to the whole set rather than one tab, right under the list on every tab (Settings' Send feedback, D-203).

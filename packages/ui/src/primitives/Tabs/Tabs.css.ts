@@ -1,5 +1,9 @@
 import { createVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { track, segment as segments } from "../SegmentedControl/SegmentedControl.css.ts";
+
+export const segmentTrack = track.horizontal;
+export const segment = segments.horizontal;
 
 const t = tokens.cmp.tabs;
 

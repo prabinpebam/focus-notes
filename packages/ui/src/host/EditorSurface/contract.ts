@@ -40,6 +40,8 @@ export const contract = defineContract({
     findResult: { payload: { count: "number", current: "number", invalid: "boolean", wrapped: "boolean", replaced: "number" } },
     findPrefill: { payload: { value: "text" } },
     findScope: { payload: { scoped: "boolean" } },
+    rewriteCapture: { payload: { text: "text" } },
+    rewriteApplied: { payload: { ok: "boolean" } },
     format: { payload: {
       toolbar: "boolean", card: "boolean", bold: "text", italic: "text", strike: "text", code: "text",
       block: "text", codeBlock: "boolean", inlineCode: "boolean", oneBlock: "boolean", href: "text", table: "boolean",

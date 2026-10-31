@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  focusAtEnd, ghostRange, replaceDocument, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  acceptRewrite, focusAtEnd, ghostRange, replaceDocument, type RewriteCapture, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -72,6 +72,10 @@ export interface EditorSurfaceProps {
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
   onFindPrefill?: (payload: { value: string }) => void;
+  /** Rewrite's capture: the selected text (empty when nothing is selected or the note is read-only). */
+  onRewriteCapture?: (payload: { text: string }) => void;
+  /** Rewrite's Accept: whether the captured selection was replaced (false when the note changed since). */
+  onRewriteApplied?: (payload: { ok: boolean }) => void;
   /** Whether text was selected as the find bar opened: find in selection's scope (FND-03). */
   onFindScope?: (payload: { scoped: boolean }) => void;
   onReady?: () => void;
@@ -153,7 +157,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteApplied, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -166,6 +170,9 @@ export function EditorSurface({
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, onFindScope, findOpen });
   findRef.current = { onFindResult, onFindPrefill, onFindScope, findOpen };
+  const rewriteRef = useRef({ onRewriteCapture, onRewriteApplied });
+  rewriteRef.current = { onRewriteCapture, onRewriteApplied };
+  const rewriteTarget = useRef<RewriteCapture | undefined>(undefined);
   const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
   formatRef.current = { onFormat, onLinkEdit, onOpenLink, onPasteNotice };
   const tableRef = useRef({ onTable, onTableChange, onTableCopy, onTableMenu });
@@ -501,6 +508,22 @@ export function EditorSurface({
           last.current = args.markdown;
           replaceDocument(editor, session, args.markdown);
         }
+        return;
+      }
+      // Rewrite: the selection is captured as the dialog opens, and Accept replaces exactly it.
+      if (id === "rewrite.capture") {
+        const { from, to, empty } = editor.state.selection;
+        const text = empty || !editor.isEditable ? "" : editor.state.doc.textBetween(from, to, "\n\n");
+        rewriteTarget.current = text.trim() ? { doc: editor.state.doc, from, to } : undefined;
+        rewriteRef.current.onRewriteCapture?.({ text: rewriteTarget.current ? text : "" });
+        return;
+      }
+      if (id === "rewrite.apply") {
+        const target = rewriteTarget.current;
+        const ok = Boolean(target && typeof args.text === "string" && acceptRewrite(editor, target, args.text));
+        if (ok) rewriteTarget.current = undefined;
+        rewriteRef.current.onRewriteApplied?.({ ok });
+        if (ok) editor.view.focus();
         return;
       }
       syncSelection(editor);

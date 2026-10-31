@@ -6,6 +6,7 @@
 import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor } from "@tiptap/core";
 import { Selection, TextSelection } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
+import { Fragment, Slice, type Node as DocNode } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import Strike from "@tiptap/extension-strike";
 import HardBreak from "@tiptap/extension-hard-break";
@@ -422,6 +423,28 @@ export class MarkdownSession {
     this.#parsed = parseMarkdown(markdown);
     return this.#parsed.doc;
   }
+}
+
+/** The selection Rewrite captured: the document it was taken from and its range. */
+export interface RewriteCapture { doc: DocNode; from: number; to: number }
+
+/**
+ * Accepts a rewrite: the captured range becomes `text` as one undo step, so Ctrl+Z puts the original
+ * back. Paragraphs split at blank lines. False, with nothing changed, when the note moved on since.
+ */
+export function acceptRewrite(editor: Editor, target: RewriteCapture, text: string): boolean {
+  const { state } = editor;
+  if (!editor.isEditable || !state.doc.eq(target.doc)) return false;
+  const paragraph = state.schema.nodes.paragraph;
+  const parts = text.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+  if (!parts.length || !paragraph) return false;
+  const nodes = parts.map((p) => paragraph.create(null, state.schema.text(p)));
+  const tr = closeHistory(state.tr).replace(target.from, target.to, new Slice(Fragment.fromArray(nodes), 1, 1));
+  const end = tr.mapping.map(target.to);
+  tr.setSelection(TextSelection.create(tr.doc, Math.min(target.from, end), end)).scrollIntoView();
+  editor.view.dispatch(tr);
+  editor.view.dispatch(closeHistory(editor.state.tr));
+  return true;
 }
 
 /** Replaces the whole document with `markdown` as one undo step (QLT-06: recovered text, one undo from the disk). */

@@ -11,6 +11,8 @@ export interface TabsProps {
   orientation?: "horizontal" | "vertical";
   /** The selected tab takes focus when the tabs appear (Settings opens on its categories, D-103). */
   autoFocus?: boolean;
+  /** Gallery modal: temporary options share the design system's segmented track. */
+  segmented?: boolean;
   id?: string;
   /** Under the list, on every tab: an action for the whole set (Settings' Send feedback, D-203). */
   footer?: ReactNode;
@@ -26,7 +28,7 @@ export interface TabsProps {
  * resting on the panel then, within React's commit; the dialog around it moves focus on to that
  * control (DialogPanel, DEF-12).
  */
-export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, id, footer, children, onChange }: TabsProps) {
+export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, segmented, id, footer, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
   // Vertical tabs need room for the list and the panel side by side; without it (a narrow window,
   // 320 px reflow) they lay out across, over the panel, and the arrow keys go left and right.
@@ -50,8 +52,8 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     el.focus();
   };
   const tabList = (className: string) => (
-    <TabList className={className} aria-label={label}>
-      {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[laid]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
+    <TabList className={segmented ? s.segmentTrack : className} aria-label={label}>
+      {items.map((o) => <Tab key={o.id} id={o.id} className={segmented ? s.segment : s.tab[laid]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
     </TabList>
   );
   return (

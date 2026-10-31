@@ -197,6 +197,9 @@
       },
       "oneOf": [
         {
+          "$ref": "#/$defs/c_SecureKeyField"
+        },
+        {
           "$ref": "#/$defs/c_Text"
         },
         {
@@ -522,6 +525,82 @@
             "$ref": "#/$defs/slotOutlet"
           }
         ]
+      }
+    },
+    "c_SecureKeyField": {
+      "type": "object",
+      "description": "One-shot secure credential entry. Never bind secrets to app state.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SecureKeyField"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "saveLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "saveLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "save": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
       }
     },
     "c_Text": {
@@ -3360,6 +3439,19 @@
               ]
             },
             "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "segmented": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -8745,6 +8837,12 @@
               "$ref": "#/$defs/actions"
             },
             "findScope": {
+              "$ref": "#/$defs/actions"
+            },
+            "rewriteCapture": {
+              "$ref": "#/$defs/actions"
+            },
+            "rewriteApplied": {
               "$ref": "#/$defs/actions"
             },
             "format": {
