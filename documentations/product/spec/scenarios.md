@@ -3,18 +3,17 @@
 The situations in which each [customer promise](customer-promises.md) matters, written as jobs to be done. Each scenario names the behavior people should see and the user-can capabilities that deliver it.
 
 > [!NOTE]
-> **TL;DR.** 55 scenarios in eleven areas (writing, tables, files, sharing, find, theme, agents, setup, safety, ownership, discovering and getting help), plus 13 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
+> **TL;DR.** 54 scenarios in eleven areas (writing, tables, files, sharing, find, theme, agents, setup, safety, ownership, discovering and getting help), plus 13 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
 
 ## Optional rewriting
 
-Planned desktop capability, not available today. See [Rewrite with AI](../../experience/rewrite-with-ai.md).
+Desktop only. Built on 31 October and in the owner's review build, not yet released. See [Rewrite with AI](../../experience/rewrite-with-ai.md) and [Settings → AI](../../experience/ai-settings.md). The whole-file scenario was dropped with D-256.
 
 | ID | Promise | Situation | Persona | Expected behavior | User can | Views |
 | --- | --- | --- | --- | --- | --- | --- |
-| SC-RWR-01 | CP-RWR-01 | When a passage is hard to express, I want to ask for a different version, so I can improve it without losing my train of thought. | Writer | Select, instruct, stream in place, review; untouched text stays identical. | UC-RWR-01, UC-RWR-02, UC-RWR-06 | IA-CMP-REWRITEPROMPT, IA-CMP-REWRITEREVIEW |
-| SC-RWR-02 | CP-RWR-01 | When a whole note needs another tone or length, I want to rewrite it to the same or a new file, so I control what survives. | Writer, Power user | The file action uses the same prompt and a safe target choice; privacy never changes as a side effect. | UC-RWR-03 | IA-CMP-REWRITETARGET |
-| SC-RWR-03 | CP-RWR-01 | When a suggestion is wrong or interrupted, I want my original and previous versions back, so experimenting is safe. | Writer | Original checkpoint, local variations, undo and restart recovery never rewrite published history. | UC-RWR-02, UC-RWR-04 | IA-CMP-REWRITEREVIEW, IA-CMP-REWRITEVARIATIONS |
-| SC-RWR-04 | CP-RWR-01 | When I choose optional rewriting, I want to know its destination and limits, so I can decide whether my words may leave this device. | Writer, Comfort | Disabled until setup; named consent, private-note policy, no silent fallback. | UC-RWR-05 | IA-VIEW-REWRITESETUP, IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS |
+| SC-RWR-01 | CP-RWR-01 | When a passage is hard to express, I want to ask an AI service I chose for another version and see it in place, so I can improve it without losing my train of thought. | Writer | Select, Ctrl+Shift+R, a prompt or preset, Generate. The answer streams in over the selection while the note is locked; text outside the selection never changes. | UC-RWR-01, UC-RWR-02, UC-RWR-06 | IA-CMP-REWRITEPROMPT, IA-CMP-REWRITEREVIEW |
+| SC-RWR-03 | CP-RWR-01 | When a rewrite is wrong or I stop it, I want my exact original back at once, so trying costs nothing. | Writer | Ctrl+Z gives back the original in one step and Ctrl+Y the rewrite; Esc, Stop or an error puts the original back. | UC-RWR-02, UC-RWR-07 | IA-CMP-REWRITEREVIEW |
+| SC-RWR-04 | CP-RWR-01 | When I set up rewriting, I want to connect the service I trust, on this computer or in the cloud, and know where my words go, so I decide whether they leave this device. | Writer, Comfort | Nothing is connected by default. Settings → AI finds local servers and offers 26 kinds of service; keys are sealed; each connection says On this computer or Cloud; Test sends no note text. A private-notes switch and a first-send confirmation are planned. | UC-RWR-05, UC-RWR-08, UC-RWR-09 | IA-VIEW-REWRITESETTINGS, IA-VIEW-REWRITECONSENT, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY, IA-CMP-AIDISCOVER |
 
 <h2 data-reader-personas="product design">Writing</h2>
 

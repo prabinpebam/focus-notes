@@ -199,7 +199,7 @@ As built, all of these pass locally on Windows (`crash-recovery.spec.ts`, `fault
 
 ### Planned rewrite recovery
 
-[Rewrite checkpoints](rewrite-engine.md#save-and-checkpoints) must keep canonical original plus independent edits separate from the in-place suggestion projection. Target autosave/ordinary commits are held through review; complete variations live in [isolated history](rewrite-history.md#restart-and-recovery), never ordinary draft fragments. Leave/switch/quit defaults to Discard, retains outside edits and observes the five-second flush handshake; failure keeps the window open rather than accepting silently. After a crash, reopen canonical/recovered writing and offer the complete variation for explicit review. No replay writes or note recreation at launch; the isolation rule above remains unchanged. Private rewrite records require OS encryption without plaintext fallback. These are planned extensions, not new recovery-test results.
+While a rewrite streams, the editor doesn't hand the note over for saving, so the saved note and any crash draft hold the original; a crash mid-rewrite loses only the half-written answer. A finished rewrite is ordinary edited text, saved and recovered like any other. There's no separate rewrite history (D-256). See [Rewrite engine → Failure and recovery](rewrite-engine.md#failure-and-recovery).
 
 ### Related
 

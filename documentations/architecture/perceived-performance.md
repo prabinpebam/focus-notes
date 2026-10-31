@@ -238,24 +238,24 @@ Every operation that can take longer than 100 ms, with its class, pattern and wo
 
 ## Where it stands
 
-### Planned rewrite waits
+### Rewrite waits
 
-PRF-15 / RWR-05 / RWR-09, [rewrite lifecycle](../experience/rewrite-with-ai.md#lifecycle). These rows are future instrumentation and fixtures, **not measured results**. Existing `packages/core/src/tasks.ts` supports named tasks/elapsed time but has **no step/progress update API today**: WP-AI.2/8 must explicitly extend the typed task model/events for rewrite steps, bounded progress and cancellation. Align current `focus-notes:<target>` tracker measures with these `fn:` spans rather than assuming they already match.
+The waits of [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md), as built on 31 October (D-256, D-257; PRF-15). None is measured yet: the `fn:rewrite.*` and `fn:ai.*` spans are planned with WP-AI.9, and no real-service latency is ever a promise, since it depends on the service the person chose. None of these waits is a model starting: Focus Notes runs no model.
 
-| Operation | Class | Pattern and place | Exact words / key | Planned measure / target | Status |
+| Operation | Class | Pattern and place | Words on the main path | Measure | Status |
 | --- | --- | --- | --- | --- | --- |
-| Open prompt/resolve target | Instant, responsive if mapping exceeds 100 ms | Direct echo then named status at target; original stays visible | Rewrite with AI; target chip | `fn:rewrite.open`, acknowledgement ≤100 ms | Planned WP-AI.2 |
-| Read file / estimate / checkpoint | Responsive to waiting | Named steps in same prompt status; no send before durable checkpoint | Preparing rewrite…; Checking estimate…; Saving original… | `fn:rewrite.prepare`, `.estimate`, `.checkpoint`; status after 300 ms, minimum 500 ms once shown | Planned WP-AI.1/5/6 |
-| Wait for connection/first text | Waiting to long | Starting step, Stop; elapsed after 3 s, no fake percentage | Starting rewrite… (`rewrite.status.starting`) | `fn:rewrite.firstToken`; fixture p95 <1 s, real-service 5 s goal measured separately, not guaranteed; engine deadlines win | Planned WP-AI.8 |
-| Stream and validate | Waiting to long | In-place protected projection, one status/step, elapsed/Stop; section progress only for known plan | Rewriting…; Checking rewrite…; Completed {done} of {total} sections | `fn:rewrite.stream`, `.validate`; batches ≤50 ms cadence; no blocked outside typing | Planned WP-AI.1/8 |
-| Stop / discard / leave | Instant response, responsive cleanup | Acknowledge now; original restored; release save hold before leaving | Rewrite stopped. Your original text is unchanged. | `fn:rewrite.stop`; acknowledge/cease visible deltas ≤100 ms; late events ignored | Planned WP-AI.1/2 |
-| Persist completed variation / browse history | Responsive to waiting | Same status until local durable acknowledgement; old result/list stays visible | Saving variation…; Opening rewrite history… | `fn:rewrite.history.write`, `.read`; no Review success on failure | Planned WP-AI.4 |
-| Accept / atomic new file | Responsive to waiting | Existing save state plus target-specific busy action; no “Saved” before ack | Saving rewrite…; Creating file… | `fn:rewrite.accept`, `.create`; exact guarded acknowledgement | Planned WP-AI.5 |
-| Explicit external connection check | Waiting | Setup profile row, Cancel, no model inference, no note data | Checking connection… | `fn:rewrite.connection`; provider deadlines; behind owner gate | Planned WP-AI.8 |
+| Open the Rewrite dialog | Instant | The dialog opens on the captured selection with the prompt focused; settings load behind it | (the dialog) | `fn:rewrite.open`, ≤ 100 ms | Built; not measured |
+| Generate → first words | Waiting to long (up to 90 s) | The selection shimmers in place and the note is read-only; a toast names the Writer and offers **Stop**; announced once | "Rewriting with {name}… Press Esc to stop." · "Rewriting the selection. The note is locked until it's done." | `fn:rewrite.firstText` (Generate → first glyph painted) | Built; not measured |
+| Streaming | Long, the person watching | The answer grows in place in the rainbow; the same toast and **Stop**; no per-piece announcements, no fake percentage | (the text itself) | `fn:rewrite.stream` (first → last glyph); the window stays responsive | Built; not measured |
+| Finish | Instant | One undo step; the rainbow holds 1 s and fades over 3 s; announced | "Rewrite finished. Ctrl+Z puts the original back." | `fn:rewrite.finish` | Built; not measured |
+| Stop (Esc or **Stop**) | Instant | The original back and the note unlocked at once; the request aborted in main | "Rewrite stopped. The original text is back." | `fn:rewrite.stop`, ≤ 100 ms; late pieces ignored | Built; not measured |
+| Rewrite error | Instant | The original back; an error toast with the reason | e.g. "The service took too long to answer. Try again." | none | Built |
+| Test connection | Waiting (up to 20 s) | The row's Test line says "Testing…" and the button can't start a second test; the rest of Settings stays usable | "Testing…" → "Checked {time}: it answered." | `fn:ai.test` | Built; not measured |
+| Find on this computer | Responsive (≤ 800 ms per port, all at once) | The section's status line; the earlier list stays until the new one is ready; announced | "Looking for AI servers on this computer…" → "Found 2 servers on this computer." | `fn:ai.discover` | Built; not measured |
+| Find models | Waiting (up to 8 s) | The model status line under the field; the earlier list stays | "Finding available models…" → "12 models available." | `fn:ai.models` | Built; not measured |
+| Save connection | Responsive | **Save connection** is busy; the form stays until saved | "Saving connection…" → "Connection saved. Test it to check it answers." | `fn:ai.save` | Built; not measured |
 
-Wait message keys `rewrite.wait.prepare/estimate/checkpoint/validate/variation/history/accept/create/connection` use the exact corresponding words above in the [copy register](../design/rewrite-with-ai.md#message-keys). One status line, not task-tracker and rewrite duplicate announcements; announce after 1 s, at most every 5 s for section progress and once at completion/error. No per-token chatter. No model launch/download/setup wait exists: Focus Notes is a client of an already separately managed service. No app, provider or performance test runs in this documentation task.
-
-Future benchmark definitions: open is invocation key/pointer-down → prompt painted and field usable; prepare/estimate/checkpoint are their step dispatch → validated/durable acknowledgement; firstToken is Send pointer/key → first generated glyph painted (also record dispatch → first text separately); stream is first → last projected glyph; validate/history are full response → validated/durable variation; accept/create are action → exact guarded note/create acknowledgement; Stop is action → last possible projected delta and restored target. Record cold/warm fixture runs, machine/commit/input bytes, medians/p95 and noise-aware baseline comparisons through the existing `pnpm bench --check` harness when implemented. No real-service latency goal is a release-time promise and no field telemetry is introduced (PRV-01).
+Rewrite's long wait doesn't use the task tracker's busy state: the shimmer at the selection and the toast are its sign, and **Stop** is always there. Switching notes mid-rewrite leaves the toast up until the request ends (RWR-86, not built).
 
 **Built:**
 - the task tracker, its timing tokens and the busy states (WP-1.4, D-77);
