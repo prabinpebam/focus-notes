@@ -10,7 +10,9 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const desktop = join(root, "apps", "desktop");
 const head = execFileSync("git", ["rev-parse", "--short=8", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true }).trim();
-const base = join(root, "scratch", "owner-review", head);
+// `node launch-owner-review.mjs <folder>` reuses an earlier review folder (its profile and saved AI connections).
+const folder = /^[0-9a-f]{7,40}$/.test(process.argv[2] ?? "") ? process.argv[2] : head;
+const base = join(root, "scratch", "owner-review", folder);
 const profile = join(base, "profile");
 const workspace = join(base, "workspace");
 const note = join(workspace, "Sample.md");
