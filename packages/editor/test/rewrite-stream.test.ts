@@ -306,6 +306,14 @@ describe("RewriteStream hardening", () => {
     expect([...dom.querySelectorAll("a")].map((a) => a.getAttribute("href"))).not.toContain("javascript:alert(1)");
   });
 
+  it("an answer in another Markdown style is saved in the note's canonical style, with the same content (RWR-84)", () => {
+    const { editor, target, md } = open("Old.\n", "Old.");
+    const stream = new RewriteStream(editor, target, classes, now);
+    stream.push("Some __bold__ and _it_.\n\n* one\n* two");
+    stream.finish();
+    expect(md()).toBe("Some **bold** and *it*.\n\n- one\n- two");
+  });
+
   it("an answer that hasn't rendered yet still finishes, and a stream after the editor is gone does nothing", () => {
     const { editor, target, md } = open("Alpha beta.\n", "beta");
     const stream = new RewriteStream(editor, target, classes, { frame: 1000 });
