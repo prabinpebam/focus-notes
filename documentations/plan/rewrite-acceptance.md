@@ -70,7 +70,7 @@ Test titles in brackets are the tests' own, on the branch at bb50e208; the file 
 | FOC-07 | The rainbow never hides the focus band | — | Look (WP-AI.9) |
 | HLP-10 | Help articles exist and say desktop only | [Rewrite selected text](../help/rewrite-with-ai.md), [Connect an AI service](../help/connect-an-ai-service.md) | Screenshots |
 | PRV-05 | Nothing logs or keeps prompts, text or answers | Code review | Security review |
-| SEC-09 | Threat review of `ai:*`, addresses, keys, framing, answer handling | — | WP-AI.9 |
+| SEC-09 | Threat review of `ai:*`, addresses, keys, framing, answer handling | First review, 31 October (AIR-SECREVIEW): four findings fixed on `fix-ai-sec` (D-259, D-260): main decides private notes from the note's path, a key stays with its address, whole answers are capped, a cloud-routed Ollama model says "Cloud"; each with a test in `ai-contract.test.ts` or `ai-app.test.ts` | Review again after the dialog's cases land (WP-AI.9) |
 | PRF-15 | Wait rows measured | — | WP-AI.9 ([wait inventory](../architecture/perceived-performance.md#rewrite-waits)) |
 | QLT-08 | A Windows journey against a fake local service | — | WP-AI.9 |
 | A11Y-03 | Keyboard, focus, announcements, contrast of every frame | Announcements in code | Screen-reader pass; contrast |

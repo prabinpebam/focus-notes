@@ -6,6 +6,8 @@ import { aiProvider } from "@focus-notes/core/ai-providers";
 import { AiService, answerText, deltaText, generateCall, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
+/** Every note here is public: the private-note check is tested on its own. */
+const notPrivate = async () => false;
 const file = () => join(mkdtempSync(join(tmpdir(), "fn-ai-")), "ai.json");
 const write = async (p: string, c: string) => writeFileSync(p, c);
 const conn = { id: "c", provider: "", name: "n", endpoint: "", model: "m", deployment: "", apiVersion: "", account: "" };
@@ -16,7 +18,7 @@ const answering = (seen: Seen[], body: (url: string) => unknown) =>
     return new Response(JSON.stringify(body(url)), { status: 200 });
   }) as unknown as typeof fetch;
 
-const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
+const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal, notPrivate)) out.push(c); return out; };
 
 describe("AI connections (main process)", () => {
   it("accepts https and this computer's http only", () => {

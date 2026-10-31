@@ -65,21 +65,22 @@ A service that ignores streaming and answers with one JSON body is read with the
 - **Every request** uses `redirect: "error"`, so a service can't send the text somewhere else.
 - **Timeouts** (`AI_LIMITS`): each request has a response limit (until the answer starts), an idle limit (a started answer going quiet) and a total. Rewrite: 30 s, 30 s, 5 min to a cloud service; 120 s, 60 s, 10 min to a server on this computer, which may be loading a model. Test: 20 s (90 s on this computer); a model list: 8 s to answer, 10 s in all; Find on this computer: 800 ms per port, 1.5 s in all. Each closes the request.
 - **Status codes** (`statusError`): 401 and 403 → `unauthorized`; 404 → `model-missing` for a local server, `not-found` for others; 408 and 504 → `timeout`; 413 → `too-long`; 429 → `rate-limited` with Retry-After's seconds (a number or an HTTP date, or `retry-after-ms`); other 5xx → `server-error`; other 4xx → `bad-request`. A body that isn't the expected JSON → `provider-format`.
+- **Whole answers are capped** (`readJson`, D-260): an answer read in one piece is read only so far, by its declared length first and then as it arrives: 2 MiB for Test and Find on this computer, 4 MiB for a model list (OpenRouter's is large), 512 KiB for a rewrite answered in one piece, whose text may then be at most 64 KiB, like a stream. Past that → `too-long`, and the request closes.
 - **Connection failures** (`transportError`, from fetch's cause): `ECONNREFUSED` → `refused`; `ENOTFOUND` and `EAI_*` → `dns`; certificate and TLS errors → `tls`; a redirect → `redirected`; anything else → `network`. The window turns each code into words ([Settings → AI → Errors](../experience/ai-settings.md#errors)); only these codes leave main, never the service's text (`reasonOf`).
 - **Thinking models:** Ollama gets `think: false` (else a thinking model's words go only to `message.thinking`, found against Ollama 0.35 on 31 October); OpenAI's own API gets `max_completion_tokens` (its reasoning models refuse `max_tokens`), and it and Gemini get four times the token limit, since thinking counts in it; Rewrite leaves out a leading `<think>…</think>` block.
 - **Proof:** `apps/desktop/test/ai-contract.test.ts` runs all 26 kinds against protocol-faithful fakes on 127.0.0.1 (`ai-fakes.ts`, each citing its provider's docs): the documented URL and auth header, streamed deltas cut at every byte including inside UTF-8 characters and SSE lines, the end events, Test, model lists, discovery, every error above, Stop and each timeout closing the socket, and keys that never leave main. `ai-ollama.live.test.ts` runs the same path against a real local Ollama with `FOCUS_NOTES_LIVE_AI=1` and skips otherwise.
 - **No retries, no fallback:** a failed request is reported, never repeated or sent to another connection.
-- **Local isn't proof of local:** a server on `127.0.0.1` may still pass text to the cloud. Ollama's models with a `remote_host` or `remote_model` are marked "· Cloud" in the model list.
+- **Local isn't proof of local** (D-259): a server on `127.0.0.1` may still pass text to the cloud. Ollama's models with a `remote_host` or `remote_model` are marked "· Cloud" in the model list. A saved Ollama connection counts as on this computer only once main has seen its model in Ollama's own list as local (Find on this computer, *Find models*, or *Test connection*, which also lists the models) and records `modelLocal`; until then, or after a change of address or to a model the list hasn't shown, its row, the form and the consent say "Cloud" (`modelCloud` in the connection's view).
 
 ## Keys and storage
 
 `ai.json` in the app's data folder, written atomically (AIS-05, AIS-15):
 
-- each connection: `id`, service, name, address, model, deployment, API version, account ID, the key sealed with `safeStorage.encryptString`, the last Test (`ok`, `at`), and `consent`: what the person agreed to send selected text to (the service, address, model and a hash of the sealed key, `consentScope`);
+- each connection: `id`, service, name, address, model, deployment, API version, account ID, the key sealed with `safeStorage.encryptString`, the last Test (`ok`, `at`), `modelLocal` (an Ollama model main saw listed as local), and `consent`: what the person agreed to send selected text to (the service, address, model and a hash of the sealed key, `consentScope`);
 - `writer`: the Writer's ID;
 - `keepPrivate`: *Don't send private notes*, true unless switched off.
 
-The window sends a key only inside `ai:save`, from SecureKeyField's `save` event; core deletes it from the command's arguments as soon as it's read. Main seals it at once and returns the connections' views, which say only `hasKey`. A key is never carried to another service's connection. If `safeStorage` isn't available, saving a key fails with `secure-storage-unavailable`. Up to 30 connections. The first build's single service (one OpenAI-compatible address, model and key) is read as the connection `first`, the Writer if it was (AIS-12).
+The window sends a key only inside `ai:save`, from SecureKeyField's `save` event; core deletes it from the command's arguments as soon as it's read. Main seals it at once and returns the connections' views, which say only `hasKey`. A key is never carried to another service's connection, nor to another address (D-259): changing a connection's address or account drops its saved key and last Test, so a service that needs a key refuses to save until one is typed (`key-new-address`: "Enter the key again for the new address."), and the form says so as soon as the address changes. *Find models* for a draft uses the saved key only when the draft's address is the saved one. If `safeStorage` isn't available, saving a key fails with `secure-storage-unavailable`. Up to 30 connections. The first build's single service (one OpenAI-compatible address, model and key) is read as the connection `first`, the Writer if it was (AIS-12).
 
 ## Find on this computer
 
@@ -91,24 +92,24 @@ The window sends a key only inside `ai:save`, from SecureKeyField's `save` event
 
 ## IPC
 
-The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `privacy(keepPrivate)`, `rewriteStart(id, { text, instruction, private })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. Main's handlers are `ai:settings`, `ai:save`, `ai:remove`, `ai:writer`, `ai:test`, `ai:discover`, `ai:models`, `ai:consent`, `ai:privacy`, `ai:rewriteStart`, `ai:rewriteCancel`; events go out on `ai:rewriteEvent` as `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }`, only to the window that started the rewrite. An invoke that fails carries only a reason code (with ` retry-after={s}` for a rate limit). The browser app has no `ai` bridge, so the commands are disabled there (RWR-71).
+The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `privacy(keepPrivate)`, `rewriteStart(id, { text, instruction, path })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. Main's handlers are `ai:settings`, `ai:save`, `ai:remove`, `ai:writer`, `ai:test`, `ai:discover`, `ai:models`, `ai:consent`, `ai:privacy`, `ai:rewriteStart`, `ai:rewriteCancel`; events go out on `ai:rewriteEvent` as `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }`, only to the window that started the rewrite. An invoke that fails carries only a reason code (with ` retry-after={s}` for a rate limit). The browser app has no `ai` bridge, so the commands are disabled there (RWR-71).
 
 ## Consent and private notes
 
 Built in main and core (AIS-13, AIS-14, D-238); the dialog's consent and private cases and the Settings switch are view changes being integrated:
 
-- **Don't send private notes** (AIS-13): on by default. Core marks the selection private when the note is under the Private root (shared notes too) or is a `private:` note, and the dialog offers *Change in Settings* instead of *Generate*; main refuses a private selection too (`private-note`).
+- **Don't send private notes** (AIS-13): on by default. Core shows the dialog's private case when the note is under the Private root (shared notes too) or is a `private:` note, offering *Change in Settings* instead of *Generate*. That only picks the dialog's step: `ai:rewriteStart` carries the note's path, and main decides for itself (`isPrivateNote`, D-259) that a note under the workspace's `private/` folder, by the path as given or its real path (so a link into `private/` counts), is private, and refuses it (`private-note`). With a private folder, a missing or relative path counts as private.
 - **First-send confirmation** (AIS-14): the dialog names the service, its address and On this computer or Cloud, and *Send* records consent (`ai:consent`) before the rewrite starts. Main refuses to stream without consent that matches the connection's current service, address, model and key (`consent-required`), so a change of any of them asks again.
 
-## Security review (to do)
+## Security review
 
-SEC-09, WP-AI.9: the `ai:*` handlers' input checks and sender, address and redirect rules, DNS rebinding of a loopback name, `safeStorage` use, the prompt framing against injection in the selected text, and that the answer is only ever inserted as text (no HTML, no tools, no fetches).
+SEC-09, WP-AI.9: the `ai:*` handlers' input checks and sender, address and redirect rules, DNS rebinding of a loopback name, `safeStorage` use, the prompt framing against injection in the selected text, and that the answer is only ever inserted as text (no HTML, no tools, no fetches). The first review (31 October) found four things, all fixed (D-259, D-260): the private-note decision rested on the window's word (main now decides from the path); a saved key followed an edited address; whole answers were read without a size cap; and a cloud-routed Ollama model was called "On this computer".
 
 ## Decisions
 
 - **D-257:** every text service kind in the kit; supersedes D-236 and D-249's single OpenAI-compatible contract, and D-242's owner gate.
 - **D-233:** an integration client only; kept.
-- **D-259:** consent per connection and *Don't send private notes*, enforced in main; builds D-238 (AIS-13, AIS-14).
-- **D-260:** the three request clocks, one reason code per failure, thinking models, and the 26 built kinds only.
+- **D-259:** consent per connection and *Don't send private notes*, enforced in main from the note's path; a key stays with its address; where an Ollama model runs; builds D-238 (AIS-05, AIS-08, AIS-13, AIS-14).
+- **D-260:** the three request clocks, capped whole answers, one reason code per failure, thinking models, and the 26 built kinds only.
 - **D-238:** consent names the destination; built as D-259.
 - **D-239:** cost caps; superseded by D-256's limits (RWR-82). There's no daily or money cap: the service's own billing applies.

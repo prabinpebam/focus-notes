@@ -29,7 +29,7 @@ Settings on the desktop always lists **AI** (AIS-01). From top to bottom:
 Each row (IA-CMP-REWRITESTATUS, AIS-03) has:
 
 - the name you gave it;
-- "{service} · {model} · On this computer" or "· Cloud";
+- "{service} · {model} · On this computer" or "· Cloud". An Ollama model says "On this computer" only once Focus Notes has seen it in Ollama's own list as a model that runs here (after **Find on this computer**, **Find models** or **Test connection**); until then it says "Cloud", since Ollama can pass a model to the cloud (D-259);
 - a **Writer** or **Saved** badge;
 - the key: "Key saved in the system keychain", "No key saved" or "No key needed";
 - the last Test: "Saved. Connection not checked.", "Testing…", "Checked {time}: it answered.", "Last check {time} failed." or "Test failed: {reason}".
@@ -73,7 +73,7 @@ The group's note says what that means for your words: "Runs on this computer. Ch
 
 ## Keys
 
-You type a key into the **API key** field (IA-CMP-AIKEY). It leaves the field once, when you choose **Save connection**: the main process seals it with the system key store (Electron `safeStorage`), the field clears, and the key is never sent back to the window, written to a log or put in your notes (AIS-05). When you change a connection, leave the field empty to keep the saved key ("A key is saved in the system keychain. Leave this empty to keep it, or enter a new one to replace it."). If the key store can't be used: "Couldn't use the system keychain on this computer. Enter the key again." A key is never copied to a connection of another service. **Remove** deletes the connection and its sealed key.
+You type a key into the **API key** field (IA-CMP-AIKEY). It leaves the field once, when you choose **Save connection**: the main process seals it with the system key store (Electron `safeStorage`), the field clears, and the key is never sent back to the window, written to a log or put in your notes (AIS-05). When you change a connection, leave the field empty to keep the saved key ("A key is saved in the system keychain. Leave this empty to keep it, or enter a new one to replace it."). If the key store can't be used: "Couldn't use the system keychain on this computer. Enter the key again." A key is never copied to a connection of another service, or to another address: when you change a saved connection's address, the key field says "Enter the key again for the new address. The saved key is never sent to it.", and saving without a new key drops the old one (a service that needs a key says "Enter the key again for the new address."; D-259). **Remove** deletes the connection and its sealed key.
 
 ## Find on this computer
 
@@ -81,7 +81,7 @@ You type a key into the **API key** field (IA-CMP-AIKEY). It leaves the field on
 
 ## Models
 
-**Find models** lists what the service offers, up to 500, within 8 seconds: for a saved connection, or for the form you're filling in, with the key you typed (AIS-08). "Finding available models…", then "12 models available." or "No models are available. Install or load one, or type a model you have access to." Ollama models that run in the cloud show "· Cloud", so a local server can't quietly send text away. Azure lists none: its deployment is the model.
+**Find models** lists what the service offers, up to 500, within 8 seconds: for a saved connection, or for the form you're filling in, with the key you typed, or the saved key only while the address is still the saved one (AIS-08). "Finding available models…", then "12 models available." or "No models are available. Install or load one, or type a model you have access to." Ollama models that run in the cloud show "· Cloud", so a local server can't quietly send text away. Azure lists none: its deployment is the model.
 
 ## Test connection
 
@@ -101,6 +101,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 | Key store | "Couldn't use the system keychain on this computer. Enter the key again." |
 | Key refused | "The service refused the key. Check it in Settings → AI." |
 | Key missing | "This service needs an API key." |
+| Key for a new address | "Enter the key again for the new address." |
 | Too slow | "The service took too long to answer. Try again." |
 | Nothing listening | "Nothing is answering at that address. Start the server, or check the address in Settings → AI." |
 | Address not found | "Couldn't find the service's address. Check your internet connection and the address." |
@@ -112,7 +113,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 | Busy | "The service is busy or out of quota. Try again in {n} seconds." when it says how long, else "Wait a moment, then try again." |
 | Service fault | "The service had a problem. Wait a moment, then try again." |
 | Request refused | "The service turned the request down. Check the model in Settings → AI." |
-| Too long | "The text is too long for this service. Select less and try again." |
+| Too long | "The text is too long for this service. Select less and try again." Also when an answer is longer than Focus Notes reads (D-260). |
 | Unreadable answer | "The service's answer couldn't be read. Check the address and the service in Settings → AI." |
 | Error mid-answer | "The service stopped with an error. Try again." |
 | No consent | "Rewrite needs your OK before it sends text to this connection." |
@@ -132,7 +133,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 
 The logic is built in the main process and the window; the dialog's two cases and the switch below are view changes being integrated (WP-AI.13):
 
-- **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private or shared note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**. The main process refuses such text too.
+- **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private or shared note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**. The main process decides for itself from the note's location, under the workspace's `private/` folder, and refuses such text too (D-259).
 - **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "The first time, check where your text goes: Rewrite sends the selected text and your prompt to {service} at {address} · On this computer" (or "· Cloud"). **Send** goes ahead and is remembered for that connection; **Cancel** sends nothing. The main process refuses to send without it.
 
 These follow D-259, which builds D-238 (consent names the destination).
@@ -141,6 +142,6 @@ These follow D-259, which builds D-238 (consent names the destination).
 
 - **D-257:** every text service kind in the ai-integration kit; supersedes D-236 and D-249.
 - **D-233:** an integration client only; Focus Notes never installs, downloads, launches, hosts or runs a model.
-- **D-259:** consent per connection and *Don't send private notes*, both enforced in main.
-- **D-260:** request time limits, the error words' reason codes, and the 26 built kinds only.
+- **D-259:** consent per connection and *Don't send private notes*, both enforced in main; a key stays with its address; an Ollama model is "Cloud" until seen as local.
+- **D-260:** request time limits, capped answers, the error words' reason codes, and the 26 built kinds only.
 - **D-238:** consent names the destination; built as D-259.

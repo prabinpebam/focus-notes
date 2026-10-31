@@ -176,9 +176,10 @@ export interface AiBridge {
   /**
    * Rewrite: starts streaming the Writer's rewrite of `text` under the window's own `id`; its chunks,
    * then `done` or `error` (a reason code, with `retryAfter` seconds for a rate limit), come through
-   * `onRewriteEvent`. `private`: the text is from a private or shared note.
+   * `onRewriteEvent`. `path`: the note the text is from; the shell decides from it whether the note is
+   * private or shared, and refuses one while those are kept off AI.
    */
-  rewriteStart(id: string, input: { text: string; instruction: string; private?: boolean }): Promise<void>;
+  rewriteStart(id: string, input: { text: string; instruction: string; path: string }): Promise<void>;
   rewriteCancel(id: string): Promise<void>;
   onRewriteEvent(listener: (event: unknown) => void): () => void;
 }

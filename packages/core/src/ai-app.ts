@@ -36,7 +36,7 @@ const PRESETS = ["concise", "warmer", "grammar"] as const;
 const GROUPS: readonly AiGroup[] = ["local", "cloud", "gateway"];
 /** The shell's reason codes that have their own words; any other is "couldn't answer". */
 const ERRORS = new Set([
-  "not-configured", "consent-required", "private-note", "secure-storage-unavailable", "unauthorized", "key-required",
+  "not-configured", "consent-required", "private-note", "secure-storage-unavailable", "unauthorized", "key-required", "key-new-address",
   "timeout", "network", "refused", "dns", "tls", "redirected", "model-missing", "not-found", "rate-limited", "server-error",
   "bad-request", "too-long", "provider-format", "provider-error", "provider-empty", "connection-unavailable",
   "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many",
@@ -73,6 +73,8 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let formOpen = false;
   let draft: Draft = blankDraft();
   let draftHasKey = false;
+  /** The saved connection the form changes: where its key and model locality belong. */
+  let draftSaved: AiConnectionView | undefined;
   let models: { id: string; cloud: boolean }[] = [];
   let modelsStatus = "";
   let found: AiFound[] = [];
@@ -82,8 +84,9 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const testing = new Set<string>();
   const testErrors = new Map<string, string>();
 
-  const where = (group: AiGroup, endpoint: string) => {
-    const local = group === "local" && /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])/.test(endpoint);
+  /** On this computer only for a local server's address and a model known to run there; else the cloud (an Ollama model may be cloud-routed). */
+  const where = (group: AiGroup, endpoint: string, modelCloud = false) => {
+    const local = group === "local" && !modelCloud && /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])/.test(endpoint);
     return t(local ? "ai.where.local" : "ai.where.cloud");
   };
   const destination = (provider: string, endpoint: string, account = "") => {
@@ -98,7 +101,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   };
   const describe = (c: AiConnectionView) => {
     const p = aiProvider(c.provider)!;
-    return [p.label, c.model || c.deployment, where(p.group, c.endpoint)].filter(Boolean).join(" · ");
+    return [p.label, c.model || c.deployment, where(p.group, c.endpoint, c.modelCloud)].filter(Boolean).join(" · ");
   };
   const testText = (c: AiConnectionView) => {
     if (testing.has(c.id)) return t("ai.test.running");
@@ -115,6 +118,16 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     changed();
   };
   const writerConnection = () => connections.find((c) => c.id === writer);
+  const trimBase = (v: string) => v.trim().replace(/\/+$/, "");
+  /** The form moved a saved connection to another address: its saved key won't go there (D-259). */
+  const draftMoved = () => Boolean(draftSaved) && (trimBase(draft.endpoint) !== trimBase(draftSaved!.endpoint) || draft.account.trim() !== draftSaved!.account);
+  /** Whether the draft's model may run in the cloud: as its list says, or as saved; an Ollama model not known to be local may. */
+  const draftCloud = () => {
+    const listed = models.find((m) => m.id === draft.model);
+    if (listed) return listed.cloud;
+    if (draftSaved && !draftMoved() && draft.model === draftSaved.model) return Boolean(draftSaved.modelCloud);
+    return aiProvider(draft.provider)?.shape === "ollama" && Boolean(draft.model.trim());
+  };
 
   viewModels.register({
     id: "vm.ai",
@@ -166,11 +179,11 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         showEndpoint: p.endpointEditable, showModel: !azure, showDeployment: azure, showApiVersion: azure, showAccount: p.fields.includes("account"),
         showKey: p.key !== "none",
         keyLabel: t(p.key === "required" ? "ai.key.label" : "ai.key.labelOptional"),
-        keyState: draft.id && draftHasKey ? t("ai.key.keep") : p.key === "required" ? t("ai.key.needed") : t("ai.key.optional"),
+        keyState: draft.id && draftHasKey ? t(draftMoved() ? "ai.key.reenter" : "ai.key.keep") : p.key === "required" ? t("ai.key.needed") : t("ai.key.optional"),
         hasModels: models.length > 0,
         modelMenu: [{ id: "models", items: models.map((m) => ({ id: m.id, label: m.cloud && p.group === "local" ? t("ai.model.cloud", { id: m.id }) : m.id, checked: m.id === draft.model })) }],
         modelsStatus,
-        destination: t("ai.destination", { host: destination(draft.provider, draft.endpoint, draft.account), where: where(p.group, draft.endpoint || p.endpoint) }),
+        destination: t("ai.destination", { host: destination(draft.provider, draft.endpoint, draft.account), where: where(p.group, draft.endpoint || p.endpoint, draftCloud()) }),
         testInfo: t("ai.test.info"),
         status,
         cannotSave: busy || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
@@ -181,7 +194,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const reg = (id: string, run: (a: Record<string, unknown>) => unknown, extra: Partial<Parameters<CommandRegistry<St>["register"]>[0]> = {}) =>
     commands.register({ id, title: `command.${id}`, ...extra, run: async (a: Record<string, unknown>) => { await run(a ?? {}); } });
   const input = (): AiConnectionInput => ({ ...(draft.id ? { id: draft.id } : {}), provider: draft.provider, name: draft.name, endpoint: draft.endpoint, model: draft.model, deployment: draft.deployment, apiVersion: draft.apiVersion, account: draft.account });
-  const openForm = (d: Draft, hasKey = false) => { draft = d; draftHasKey = hasKey; models = []; modelsStatus = ""; formOpen = true; status = ""; changed(); };
+  const openForm = (d: Draft, hasKey = false, saved?: AiConnectionView) => { draft = d; draftHasKey = hasKey; draftSaved = saved; models = []; modelsStatus = ""; formOpen = true; status = ""; changed(); };
 
   reg("ai.load", load);
   reg("ai.add", () => openForm(blankDraft()));
@@ -199,7 +212,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   });
   reg("ai.change", (a) => {
     const c = connections.find((x) => x.id === a.value);
-    if (c) openForm({ id: c.id, provider: c.provider, name: c.name, endpoint: c.endpoint, model: c.model, deployment: c.deployment, apiVersion: c.apiVersion, account: c.account }, c.hasKey);
+    if (c) openForm({ id: c.id, provider: c.provider, name: c.name, endpoint: c.endpoint, model: c.model, deployment: c.deployment, apiVersion: c.apiVersion, account: c.account }, c.hasKey, c);
   });
   reg("ai.save", async (a) => {
     if (!ai || busy) return;
@@ -314,7 +327,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   // ---- Rewrite: the dialog takes the prompt; the answer streams into the note ----
   let open = false, selection = "", prompt = "", instruction = "";
   /** The note the selection came from: its key (a switch stops the rewrite) and whether it's private or shared. */
-  let fromKey = "", fromPrivate = false;
+  let fromKey = "", fromPath = "", fromPrivate = false;
   /** The rewrite streaming into the note: its id, whether any text came, and the toast that says so. */
   let running: { id: string; got: boolean; off: () => void; toast: unknown } | undefined;
   const presetText = (p: (typeof PRESETS)[number]) => t(`rewrite.preset.${p}.prompt`);
@@ -350,7 +363,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         actions: a,
         needsConsent: a === "consent",
         privateNote: a === "private",
-        consentText: w ? t("rewrite.consent", { service: aiProvider(w.provider)!.label, host: destination(w.provider, w.endpoint, w.account), where: where(aiProvider(w.provider)!.group, w.endpoint) }) : "",
+        consentText: w ? t("rewrite.consent", { service: aiProvider(w.provider)!.label, host: destination(w.provider, w.endpoint, w.account), where: where(aiProvider(w.provider)!.group, w.endpoint, w.modelCloud) }) : "",
         empty: !prompt.trim(),
         concise: prompt === presetText("concise"), warmer: prompt === presetText("warmer"), grammar: prompt === presetText("grammar"),
       };
@@ -411,6 +424,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
     open = true; selection = text; prompt = "";
     fromKey = store.state.note.key;
+    fromPath = store.state.note.path ?? "";
     fromPrivate = isPrivate(store.state);
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
     await load();
@@ -452,7 +466,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const name = writerConnection()?.name ?? "";
     running = { id, got: false, off, toast: toast(t("rewrite.running", { name }), { action: { command: "rewrite.cancel", label: t("rewrite.stop") } }) };
     announce(t("rewrite.started"));
-    ai.rewriteStart(id, { text: selection, instruction, private: fromPrivate }).catch((e: unknown) => { if (running?.id === id) fail(String((e as Error)?.message ?? "provider")); });
+    ai.rewriteStart(id, { text: selection, instruction, path: fromPath }).catch((e: unknown) => { if (running?.id === id) fail(String((e as Error)?.message ?? "provider")); });
   });
   // Esc or Stop while it streams: the request is stopped and the original comes back at once.
   reg("rewrite.cancel", () => {
