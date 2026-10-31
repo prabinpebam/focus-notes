@@ -1,0 +1,7 @@
+{ "ref": { "rewrite": {
+  "$type": "color",
+  "purple": { "$value": "#8854d0", "$description": "AI rainbow purple." },
+  "red": { "$value": "#d34b65", "$description": "AI rainbow red." },
+  "orange": { "$value": "#bc6a20", "$description": "AI rainbow orange." },
+  "blue": { "$value": "#3973cb", "$description": "AI rainbow blue." }
+} } }

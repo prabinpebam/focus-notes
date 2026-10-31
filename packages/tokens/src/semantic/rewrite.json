@@ -1,0 +1,9 @@
+{ "rewrite": {
+  "purple": { "$type": "color", "$value": "{ref.rewrite.purple}", "$description": "AI rewrite rainbow start." },
+  "red": { "$type": "color", "$value": "{ref.rewrite.red}", "$description": "AI rewrite rainbow red." },
+  "orange": { "$type": "color", "$value": "{ref.rewrite.orange}", "$description": "AI rewrite rainbow orange." },
+  "blue": { "$type": "color", "$value": "{ref.rewrite.blue}", "$description": "AI rewrite rainbow end." },
+  "shimmerDuration": { "$type": "duration", "$value": "{ref.duration.1500}", "$description": "One sweep of the shimmer over text being rewritten." },
+  "fadeDelay": { "$type": "duration", "$value": "{ref.duration.1000}", "$description": "How long rewritten text keeps its rainbow before fading." },
+  "fadeDuration": { "$type": "duration", "$value": "{ref.duration.3000}", "$description": "Rewritten text slowly returns to ordinary ink." }
+} }

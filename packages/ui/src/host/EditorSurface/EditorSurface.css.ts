@@ -1,9 +1,43 @@
-import { createVar, globalStyle, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { scrollEdge, tokens } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.editorSurface;
 
+// AI Rewrite's decorations: never note content, never in the history (rewrite-stream.ts).
+const rw = t.rewrite;
+const rainbow = `linear-gradient(90deg, ${rw.purple}, ${rw.red}, ${rw.orange}, ${rw.blue}, ${rw.purple})`;
+const shimmer = keyframes({ from: { backgroundPosition: "0% 50%" }, to: { backgroundPosition: "200% 50%" } });
+/** The rainbow fading back into the text's own ink; its end clears the decoration. */
+export const rewriteFade = keyframes({ from: { color: "transparent" }, to: { color: t.text } });
+const rainbowText = {
+  backgroundImage: rainbow, backgroundSize: "200% 100%",
+  backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent",
+} as const;
+const flowing = style({
+  ...rainbowText,
+  animationName: shimmer, animationDuration: rw.shimmer, animationTimingFunction: "linear", animationIterationCount: "infinite",
+  "@media": {
+    // A static tint instead of a moving one.
+    "(prefers-reduced-motion: reduce)": { animation: "none" },
+    "(forced-colors: active)": { animation: "none", backgroundImage: "none", color: "CanvasText" },
+  },
+});
+export const rewriteClasses = {
+  /** The selection while the request waits for its first words. */
+  pending: flowing,
+  /** The new text as it streams in. */
+  streaming: flowing,
+  /** The finished text: the rainbow holds, then fades slowly to ordinary text. */
+  fading: style({
+    ...rainbowText,
+    animationName: rewriteFade, animationDelay: rw.fadeDelay, animationDuration: rw.fadeDuration, animationFillMode: "both",
+    "@media": {
+      "(prefers-reduced-motion: reduce)": { animation: "none", backgroundImage: "none", color: t.text },
+      "(forced-colors: active)": { animation: "none", backgroundImage: "none", color: "CanvasText" },
+    },
+  }),
+};
 /** The table controls' reach, read by the tracker in pixels (Tables → Anatomy). */
 export const tableGutterVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 export const tableReachVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });

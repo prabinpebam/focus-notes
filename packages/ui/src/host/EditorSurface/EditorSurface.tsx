@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  acceptRewrite, focusAtEnd, ghostRange, replaceDocument, type RewriteCapture, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -74,8 +74,10 @@ export interface EditorSurfaceProps {
   onFindPrefill?: (payload: { value: string }) => void;
   /** Rewrite's capture: the selected text (empty when nothing is selected or the note is read-only). */
   onRewriteCapture?: (payload: { text: string }) => void;
-  /** Rewrite's Accept: whether the captured selection was replaced (false when the note changed since). */
-  onRewriteApplied?: (payload: { ok: boolean }) => void;
+  /** Rewrite's Generate: whether the captured selection is now being rewritten (false when the note changed since). */
+  onRewriteBegan?: (payload: { ok: boolean }) => void;
+  /** Esc while a rewrite streams in: stop it. */
+  onRewriteCancel?: () => void;
   /** Whether text was selected as the find bar opened: find in selection's scope (FND-03). */
   onFindScope?: (payload: { scoped: boolean }) => void;
   onReady?: () => void;
@@ -157,7 +159,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteApplied, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteBegan, onRewriteCancel, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -170,9 +172,10 @@ export function EditorSurface({
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, onFindScope, findOpen });
   findRef.current = { onFindResult, onFindPrefill, onFindScope, findOpen };
-  const rewriteRef = useRef({ onRewriteCapture, onRewriteApplied });
-  rewriteRef.current = { onRewriteCapture, onRewriteApplied };
+  const rewriteRef = useRef({ onRewriteCapture, onRewriteBegan, onRewriteCancel });
+  rewriteRef.current = { onRewriteCapture, onRewriteBegan, onRewriteCancel };
   const rewriteTarget = useRef<RewriteCapture | undefined>(undefined);
+  const rewriteStream = useRef<RewriteStream | undefined>(undefined);
   const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
   formatRef.current = { onFormat, onLinkEdit, onOpenLink, onPasteNotice };
   const tableRef = useRef({ onTable, onTableChange, onTableCopy, onTableMenu });
@@ -284,8 +287,11 @@ export function EditorSurface({
       onUpdate: ({ editor: ed }) => {
         clearTimeout(timer.current);
         timer.current = undefined;
+        // A rewrite streaming in is handed over once it's finished or undone, never half-written.
+        if (rewriteStream.current?.active) return;
         const handOver = () => {
           timer.current = undefined;
+          if (rewriteStream.current?.active) return;
           pendingSince.current = undefined;
           const value = session.serialize(ed.getJSON() as PMNode);
           if (value !== last.current) {
@@ -302,6 +308,7 @@ export function EditorSurface({
       onBlur: ({ editor: ed }) => {
         clearTimeout(timer.current);
         pendingSince.current = undefined;
+        if (rewriteStream.current?.active) return;
         const value = session.serialize(ed.getJSON() as PMNode);
         if (value !== last.current) {
           last.current = value;
@@ -518,12 +525,26 @@ export function EditorSurface({
         rewriteRef.current.onRewriteCapture?.({ text: rewriteTarget.current ? text : "" });
         return;
       }
-      if (id === "rewrite.apply") {
+      if (id === "rewrite.begin") {
+        // The captured selection, if the note hasn't changed since: locked, and shimmering while the answer comes.
         const target = rewriteTarget.current;
-        const ok = Boolean(target && typeof args.text === "string" && acceptRewrite(editor, target, args.text));
-        if (ok) rewriteTarget.current = undefined;
-        rewriteRef.current.onRewriteApplied?.({ ok });
-        if (ok) editor.view.focus();
+        rewriteTarget.current = undefined;
+        rewriteStream.current?.abort();
+        const ok = Boolean(target && editor.state.doc.eq(target.doc) && editor.isEditable);
+        rewriteStream.current = ok && target ? new RewriteStream(editor, target, s.rewriteClasses) : undefined;
+        rewriteRef.current.onRewriteBegan?.({ ok });
+        return;
+      }
+      if (id === "rewrite.chunk") {
+        if (typeof args.text === "string") rewriteStream.current?.push(args.text);
+        return;
+      }
+      if (id === "rewrite.finish" || id === "rewrite.abort") {
+        const stream = rewriteStream.current;
+        if (!stream?.active) return;
+        if (id === "rewrite.abort") stream.abort();
+        else if (stream.finish() && window.matchMedia("(prefers-reduced-motion: reduce)").matches) stream.clear();
+        editor.view.focus();
         return;
       }
       syncSelection(editor);
@@ -659,10 +680,27 @@ export function EditorSurface({
       }
     };
     window.addEventListener(EDITOR_ACTION_EVENT, runAction);
+    // Esc while a rewrite streams in stops it, wherever focus is; the original comes back.
+    const stopRewrite = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !rewriteStream.current?.active) return;
+      e.preventDefault();
+      e.stopPropagation();
+      rewriteRef.current.onRewriteCancel?.();
+    };
+    window.addEventListener("keydown", stopRewrite, true);
+    // The finished rewrite's rainbow has faded: the decoration goes.
+    const faded = (e: AnimationEvent) => {
+      if (e.animationName === s.rewriteFade) rewriteStream.current?.clear();
+    };
+    const column = columnRef.current;
+    column?.addEventListener("animationend", faded);
     return () => {
       window.removeEventListener(FLUSH_EVENT, flush);
       window.removeEventListener(REFOCUS_EVENT, refocus);
       window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
+      window.removeEventListener("keydown", stopRewrite, true);
+      column?.removeEventListener("animationend", faded);
+      if (editor && !editor.isDestroyed) rewriteStream.current?.abort();
     };
   }, [editor, session, documentKey]);
 

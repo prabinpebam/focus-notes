@@ -1,6 +1,43 @@
 {
   "cmp": {
     "editorSurface": {
+      "rewrite": {
+        "purple": {
+          "$type": "color",
+          "$value": "{rewrite.purple}",
+          "$description": "Rewrite rainbow purple."
+        },
+        "red": {
+          "$type": "color",
+          "$value": "{rewrite.red}",
+          "$description": "Rewrite rainbow red."
+        },
+        "orange": {
+          "$type": "color",
+          "$value": "{rewrite.orange}",
+          "$description": "Rewrite rainbow orange."
+        },
+        "blue": {
+          "$type": "color",
+          "$value": "{rewrite.blue}",
+          "$description": "Rewrite rainbow blue."
+        },
+        "shimmer": {
+          "$type": "duration",
+          "$value": "{rewrite.shimmerDuration}",
+          "$description": "Shimmer sweep while text is rewritten."
+        },
+        "fadeDelay": {
+          "$type": "duration",
+          "$value": "{rewrite.fadeDelay}",
+          "$description": "Rainbow kept after the rewrite finishes."
+        },
+        "fadeDuration": {
+          "$type": "duration",
+          "$value": "{rewrite.fadeDuration}",
+          "$description": "Rainbow fades back to ordinary text."
+        }
+      },
       "background": {
         "$type": "color",
         "$value": "{color.canvas}"
@@ -272,75 +309,276 @@
       },
       "minimap": {
         "$description": "The document minimap (UI-13, D-185): the heading rail and its contents card.",
-        "railWidth": { "$type": "dimension", "$value": "{size.hit}" },
-        "railInset": { "$type": "dimension", "$value": "{space.s}" },
-        "clearance": { "$type": "dimension", "$value": "{space.l}" },
-        "railMax": { "$type": "number", "$value": "{minimap.share}" },
-        "pitch": { "$type": "dimension", "$value": "{space.l}" },
-        "pitchMin": { "$type": "dimension", "$value": "{space.xs}" },
-        "barThickness": { "$type": "dimension", "$value": "{border.focus}" },
-        "barInset": { "$type": "dimension", "$value": "{space.xs}" },
-        "bar0": { "$type": "dimension", "$value": "{size.iconM}" },
-        "bar1": { "$type": "dimension", "$value": "{size.iconS}" },
-        "bar2": { "$type": "dimension", "$value": "{space.m}" },
-        "bar3": { "$type": "dimension", "$value": "{space.s}" },
-        "barRest": { "$type": "color", "$value": "{color.textPlaceholder}" },
-        "barCurrent": { "$type": "color", "$value": "{color.text}" },
-        "barCurrentLength": { "$type": "dimension", "$value": "{space.xl}" },
-        "radius": { "$type": "dimension", "$value": "{radius.round}" },
-        "layer": { "$type": "number", "$value": "{layer.contextual}" },
-        "openDelay": { "$type": "duration", "$value": "{wait.hoverOpen}" },
-        "closeDelay": { "$type": "duration", "$value": "{wait.hoverClose}" },
-        "duration": { "$type": "duration", "$value": "{motion.enter}" },
-        "easing": { "$type": "cubicBezier", "$value": "{easing.decelerate}" },
-        "cardMax": { "$type": "number", "$value": "{minimap.share}" },
-        "cardMinWidth": { "$type": "dimension", "$value": "{layout.menuMinWidth}" },
-        "cardMaxWidth": { "$type": "dimension", "$value": "{layout.slashMenu}" },
-        "cardPadding": { "$type": "dimension", "$value": "{space.xs}" },
-        "pinSize": { "$type": "dimension", "$value": "{size.controlM}" },
-        "cardFade": { "$type": "dimension", "$value": "{space.l}" },
-        "cardRadius": { "$type": "dimension", "$value": "{radius.popover}" },
-        "cardBackground": { "$type": "color", "$value": "{color.surface}" },
-        "cardOpacity": { "$type": "number", "$value": "{frost.opacity}" },
-        "cardBlur": { "$type": "dimension", "$value": "{frost.blur}" },
-        "cardBorder": { "$type": "color", "$value": "{color.border}" },
-        "cardBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
-        "cardShadow": { "$type": "shadow", "$value": "{shadow.2}" },
-        "edgeTop": { "$type": "dimension", "$value": "{layout.topBand}" },
-        "edgeBottom": { "$type": "dimension", "$value": "{space.l}" },
-        "itemFont": { "$type": "fontFamily", "$value": "{font.ui}" },
-        "itemSize": { "$type": "dimension", "$value": "{font.uiBody}" },
-        "itemLineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
-        "itemText": { "$type": "color", "$value": "{color.text}" },
-        "itemCurrent": { "$type": "color", "$value": "{color.accent}" },
-        "itemCurrentWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
-        "itemUntitled": { "$type": "color", "$value": "{color.textPlaceholder}" },
-        "itemHover": { "$type": "color", "$value": "{color.hover}" },
-        "itemPressed": { "$type": "color", "$value": "{color.pressed}" },
-        "itemPaddingBlock": { "$type": "dimension", "$value": "{space.xs}" },
-        "itemPaddingInline": { "$type": "dimension", "$value": "{space.m}" },
-        "itemGap": { "$type": "dimension", "$value": "{space.xxs}" },
-        "itemRadius": { "$type": "dimension", "$value": "{radius.control}" },
-        "indent": { "$type": "dimension", "$value": "{space.m}" },
-        "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
-        "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
-        "transparent": { "$type": "color", "$value": "{color.none}" },
+        "railWidth": {
+          "$type": "dimension",
+          "$value": "{size.hit}"
+        },
+        "railInset": {
+          "$type": "dimension",
+          "$value": "{space.s}"
+        },
+        "clearance": {
+          "$type": "dimension",
+          "$value": "{space.l}"
+        },
+        "railMax": {
+          "$type": "number",
+          "$value": "{minimap.share}"
+        },
+        "pitch": {
+          "$type": "dimension",
+          "$value": "{space.l}"
+        },
+        "pitchMin": {
+          "$type": "dimension",
+          "$value": "{space.xs}"
+        },
+        "barThickness": {
+          "$type": "dimension",
+          "$value": "{border.focus}"
+        },
+        "barInset": {
+          "$type": "dimension",
+          "$value": "{space.xs}"
+        },
+        "bar0": {
+          "$type": "dimension",
+          "$value": "{size.iconM}"
+        },
+        "bar1": {
+          "$type": "dimension",
+          "$value": "{size.iconS}"
+        },
+        "bar2": {
+          "$type": "dimension",
+          "$value": "{space.m}"
+        },
+        "bar3": {
+          "$type": "dimension",
+          "$value": "{space.s}"
+        },
+        "barRest": {
+          "$type": "color",
+          "$value": "{color.textPlaceholder}"
+        },
+        "barCurrent": {
+          "$type": "color",
+          "$value": "{color.text}"
+        },
+        "barCurrentLength": {
+          "$type": "dimension",
+          "$value": "{space.xl}"
+        },
+        "radius": {
+          "$type": "dimension",
+          "$value": "{radius.round}"
+        },
+        "layer": {
+          "$type": "number",
+          "$value": "{layer.contextual}"
+        },
+        "openDelay": {
+          "$type": "duration",
+          "$value": "{wait.hoverOpen}"
+        },
+        "closeDelay": {
+          "$type": "duration",
+          "$value": "{wait.hoverClose}"
+        },
+        "duration": {
+          "$type": "duration",
+          "$value": "{motion.enter}"
+        },
+        "easing": {
+          "$type": "cubicBezier",
+          "$value": "{easing.decelerate}"
+        },
+        "cardMax": {
+          "$type": "number",
+          "$value": "{minimap.share}"
+        },
+        "cardMinWidth": {
+          "$type": "dimension",
+          "$value": "{layout.menuMinWidth}"
+        },
+        "cardMaxWidth": {
+          "$type": "dimension",
+          "$value": "{layout.slashMenu}"
+        },
+        "cardPadding": {
+          "$type": "dimension",
+          "$value": "{space.xs}"
+        },
+        "pinSize": {
+          "$type": "dimension",
+          "$value": "{size.controlM}"
+        },
+        "cardFade": {
+          "$type": "dimension",
+          "$value": "{space.l}"
+        },
+        "cardRadius": {
+          "$type": "dimension",
+          "$value": "{radius.popover}"
+        },
+        "cardBackground": {
+          "$type": "color",
+          "$value": "{color.surface}"
+        },
+        "cardOpacity": {
+          "$type": "number",
+          "$value": "{frost.opacity}"
+        },
+        "cardBlur": {
+          "$type": "dimension",
+          "$value": "{frost.blur}"
+        },
+        "cardBorder": {
+          "$type": "color",
+          "$value": "{color.border}"
+        },
+        "cardBorderWidth": {
+          "$type": "dimension",
+          "$value": "{border.hairline}"
+        },
+        "cardShadow": {
+          "$type": "shadow",
+          "$value": "{shadow.2}"
+        },
+        "edgeTop": {
+          "$type": "dimension",
+          "$value": "{layout.topBand}"
+        },
+        "edgeBottom": {
+          "$type": "dimension",
+          "$value": "{space.l}"
+        },
+        "itemFont": {
+          "$type": "fontFamily",
+          "$value": "{font.ui}"
+        },
+        "itemSize": {
+          "$type": "dimension",
+          "$value": "{font.uiBody}"
+        },
+        "itemLineHeight": {
+          "$type": "number",
+          "$value": "{font.uiLineHeight}"
+        },
+        "itemText": {
+          "$type": "color",
+          "$value": "{color.text}"
+        },
+        "itemCurrent": {
+          "$type": "color",
+          "$value": "{color.accent}"
+        },
+        "itemCurrentWeight": {
+          "$type": "fontWeight",
+          "$value": "{font.weightSemibold}"
+        },
+        "itemUntitled": {
+          "$type": "color",
+          "$value": "{color.textPlaceholder}"
+        },
+        "itemHover": {
+          "$type": "color",
+          "$value": "{color.hover}"
+        },
+        "itemPressed": {
+          "$type": "color",
+          "$value": "{color.pressed}"
+        },
+        "itemPaddingBlock": {
+          "$type": "dimension",
+          "$value": "{space.xs}"
+        },
+        "itemPaddingInline": {
+          "$type": "dimension",
+          "$value": "{space.m}"
+        },
+        "itemGap": {
+          "$type": "dimension",
+          "$value": "{space.xxs}"
+        },
+        "itemRadius": {
+          "$type": "dimension",
+          "$value": "{radius.control}"
+        },
+        "indent": {
+          "$type": "dimension",
+          "$value": "{space.m}"
+        },
+        "focusRing": {
+          "$type": "color",
+          "$value": "{color.focusRing}"
+        },
+        "focusWidth": {
+          "$type": "dimension",
+          "$value": "{border.focus}"
+        },
+        "transparent": {
+          "$type": "color",
+          "$value": "{color.none}"
+        },
         "dock": {
           "$description": "The docked contents (D-187): flush to the window's right edge below the title band, a hairline on its inner side, resized from that side.",
-          "width": { "$type": "dimension", "$value": "{layout.dockOutline}" },
-          "min": { "$type": "dimension", "$value": "{layout.dockMin}" },
-          "max": { "$type": "dimension", "$value": "{layout.dockMax}" },
-          "contentMin": { "$type": "dimension", "$value": "{layout.dockContentMin}" },
-          "filesWidth": { "$type": "dimension", "$value": "{layout.dockFiles}" },
-          "top": { "$type": "dimension", "$value": "{layout.titleBar}" },
-          "background": { "$type": "color", "$value": "{color.surface}" },
-          "border": { "$type": "color", "$value": "{color.border}" },
-          "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
-          "padding": { "$type": "dimension", "$value": "{space.s}" },
-          "handleWidth": { "$type": "dimension", "$value": "{space.s}" },
-          "handleLine": { "$type": "dimension", "$value": "{border.focus}" },
-          "handleHover": { "$type": "color", "$value": "{color.borderStrong}" },
-          "handleActive": { "$type": "color", "$value": "{color.accent}" }
+          "width": {
+            "$type": "dimension",
+            "$value": "{layout.dockOutline}"
+          },
+          "min": {
+            "$type": "dimension",
+            "$value": "{layout.dockMin}"
+          },
+          "max": {
+            "$type": "dimension",
+            "$value": "{layout.dockMax}"
+          },
+          "contentMin": {
+            "$type": "dimension",
+            "$value": "{layout.dockContentMin}"
+          },
+          "filesWidth": {
+            "$type": "dimension",
+            "$value": "{layout.dockFiles}"
+          },
+          "top": {
+            "$type": "dimension",
+            "$value": "{layout.titleBar}"
+          },
+          "background": {
+            "$type": "color",
+            "$value": "{color.surface}"
+          },
+          "border": {
+            "$type": "color",
+            "$value": "{color.border}"
+          },
+          "borderWidth": {
+            "$type": "dimension",
+            "$value": "{border.hairline}"
+          },
+          "padding": {
+            "$type": "dimension",
+            "$value": "{space.s}"
+          },
+          "handleWidth": {
+            "$type": "dimension",
+            "$value": "{space.s}"
+          },
+          "handleLine": {
+            "$type": "dimension",
+            "$value": "{border.focus}"
+          },
+          "handleHover": {
+            "$type": "color",
+            "$value": "{color.borderStrong}"
+          },
+          "handleActive": {
+            "$type": "color",
+            "$value": "{color.accent}"
+          }
         }
       },
       "zoneBottom": {
