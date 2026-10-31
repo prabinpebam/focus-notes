@@ -234,11 +234,16 @@ Every operation that can take longer than 100 ms, with its class, pattern and wo
 | Sealing and sharing | Waiting | Busy button through the tracker | "Sharing…" | `fn:share.seal` | Gap: check every share action |
 | Publishing (the deploy on GitHub) | Long, remote, background | The note's public state with *Publishing…* and a link to the run; done when the page answers | "Publishing… usually about a minute" | PRF-06 | Partial |
 | Report a problem | Responsive | Busy button | "Preparing the report…" | `fn:diagnostics.report` | Built (D-140) |
+| AI Rewrite: *Generate* (the note locks) | Instant | The dialog closes; the selection shimmers in place, the note is read-only and `aria-busy` (typing, paste, drop, commands and undo do nothing) | "Rewriting the selection. The note is locked until it’s done." (announced) | `fn:rewrite.lock` | Built (`packages/editor/src/rewrite-stream.ts`) |
+| AI Rewrite: the Writer's first text | Waiting to long | The shimmer stays on the selection; a toast with *Stop*, and Esc anywhere stops it; the main process gives up after 90 s with an error toast, and the original comes back | "Rewriting with ⟨Writer⟩… Press Esc to stop." | `fn:rewrite.firstText`, from *Generate* to the first formatted text on screen | Built; gap: no elapsed seconds past 3 s yet |
+| AI Rewrite: the answer streaming in | Long | The answer shows in place as formatted Markdown (open `**`, code spans, fences and links closed for display), rendered at most once a frame, or at twice a render's cost for a long answer; only changed blocks are redrawn; nothing is saved until it ends. It ends as one undo step, or Esc, *Stop*, an error, a timeout or leaving the note puts back the original exactly | same toast, then "Rewrite finished. Ctrl+Z puts the original back." or "Rewrite stopped. The original text is back." | `fn:rewrite.render` (each render, within a frame), `fn:rewrite.stream` (*Generate* to the end or the stop) | Built |
 | Downloading an update | Long, background | The update note's progress | "Downloading the update · 40%" | none | Planned (DSK-07) |
 
 ## Where it stands
 
 ### Planned rewrite waits
+
+The streaming Rewrite that's built has its rows in [the wait inventory](#the-wait-inventory) (`fn:rewrite.lock`, `.firstText`, `.render`, `.stream`); the rows below are from the earlier, larger design and stay planned.
 
 PRF-15 / RWR-05 / RWR-09, [rewrite lifecycle](../experience/rewrite-with-ai.md#lifecycle). These rows are future instrumentation and fixtures, **not measured results**. Existing `packages/core/src/tasks.ts` supports named tasks/elapsed time but has **no step/progress update API today**: WP-AI.2/8 must explicitly extend the typed task model/events for rewrite steps, bounded progress and cancellation. Align current `focus-notes:<target>` tracker measures with these `fn:` spans rather than assuming they already match.
 

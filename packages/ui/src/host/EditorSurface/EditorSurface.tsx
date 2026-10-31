@@ -478,7 +478,8 @@ export function EditorSurface({
   // The runtime asks every surface to hand over pending text before the app writes (QLT-03).
   useEffect(() => {
     const flush = () => {
-      if (!editor || editor.isDestroyed) return;
+      // A rewrite still streaming is never written: the note on disk stays as it was until it ends.
+      if (!editor || editor.isDestroyed || rewriteStream.current?.active) return;
       clearTimeout(timer.current);
       timer.current = undefined;
       pendingSince.current = undefined;
@@ -500,6 +501,12 @@ export function EditorSurface({
       });
     };
     window.addEventListener(REFOCUS_EVENT, refocus);
+    // The editor ends a rewrite itself (the note is replaced or closes): the original comes back and the request stops.
+    const stopRewrite = () => {
+      if (!rewriteStream.current?.active) return;
+      rewriteStream.current.abort();
+      rewriteRef.current.onRewriteCancel?.();
+    };
     const runAction = (e: Event) => {
       const detail = (e as CustomEvent<{ id?: string; args?: Record<string, unknown> }>).detail;
       const id = String(detail?.id);
@@ -512,6 +519,7 @@ export function EditorSurface({
       // Recovered text for this note (QLT-06): it replaces the text as one undo step back to the disk's.
       if (id === "note.recover") {
         if (args.key === documentKey && typeof args.markdown === "string") {
+          stopRewrite();
           last.current = args.markdown;
           replaceDocument(editor, session, args.markdown);
         }
@@ -681,13 +689,13 @@ export function EditorSurface({
     };
     window.addEventListener(EDITOR_ACTION_EVENT, runAction);
     // Esc while a rewrite streams in stops it, wherever focus is; the original comes back.
-    const stopRewrite = (e: KeyboardEvent) => {
+    const escRewrite = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || !rewriteStream.current?.active) return;
       e.preventDefault();
       e.stopPropagation();
       rewriteRef.current.onRewriteCancel?.();
     };
-    window.addEventListener("keydown", stopRewrite, true);
+    window.addEventListener("keydown", escRewrite, true);
     // The finished rewrite's rainbow has faded: the decoration goes.
     const faded = (e: AnimationEvent) => {
       if (e.animationName === s.rewriteFade) rewriteStream.current?.clear();
@@ -698,9 +706,9 @@ export function EditorSurface({
       window.removeEventListener(FLUSH_EVENT, flush);
       window.removeEventListener(REFOCUS_EVENT, refocus);
       window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
-      window.removeEventListener("keydown", stopRewrite, true);
+      window.removeEventListener("keydown", escRewrite, true);
       column?.removeEventListener("animationend", faded);
-      if (editor && !editor.isDestroyed) rewriteStream.current?.abort();
+      stopRewrite();
     };
   }, [editor, session, documentKey]);
 
