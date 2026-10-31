@@ -14,7 +14,8 @@
     "vm.shareTemplate",
     "vm.shareNote",
     "vm.agents",
-    "vm.keyboard"
+    "vm.keyboard",
+    "vm.ai"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -97,6 +98,20 @@
                   "get": "vm.settings.section"
                 },
                 "cases": {
+                  "ai": {
+                    "type": "Stack",
+                    "props": { "gap": "l" },
+                    "children": [
+                      { "type": "Heading", "props": { "level": "3", "value": { "t": "ai.heading" } } },
+                      { "type": "Text", "props": { "value": { "t": "ai.intro" } } },
+                      { "type": "TextField", "props": { "label": { "t": "ai.url" }, "type": "url", "required": true, "description": { "t": "ai.urlHint" }, "value": { "get": "vm.ai.url" } }, "on": { "change": { "run": "ai.edit", "args": { "field": "url", "value": { "get": "event.value" } } } } },
+                      { "type": "TextField", "props": { "label": { "t": "ai.model" }, "required": true, "value": { "get": "vm.ai.model" } }, "on": { "change": { "run": "ai.edit", "args": { "field": "model", "value": { "get": "event.value" } } } } },
+                      { "type": "Button", "props": { "label": { "t": "ai.writer" }, "toggle": true, "pressed": { "get": "vm.ai.writer" }, "icon": "check", "variant": "subtle" }, "on": { "press": { "run": "ai.edit", "args": { "field": "writer" } } } },
+                      { "type": "Text", "props": { "value": { "get": "vm.ai.keyState" }, "role": "caption", "tone": "muted" } },
+                      { "type": "SecureKeyField", "props": { "label": { "t": "ai.key" }, "saveLabel": { "t": "ai.save" } }, "on": { "save": { "run": "ai.save", "args": { "key": { "get": "event.key" } } } } },
+                      { "type": "Text", "props": { "value": { "get": "vm.ai.status" }, "announce": true } }
+                    ]
+                  },
                   "account": {
                     "type": "Stack",
                     "props": {

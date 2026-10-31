@@ -52,6 +52,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
     id: "edit", label: "menu.edit",
     items: [
       { role: "undo", command: "edit.undo" }, { role: "redo", command: "edit.redo" }, "-",
+      "rewrite.open",
       { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "pasteAndMatchStyle" }, { role: "selectAll" }, "edit.expandSelection", "edit.shrinkSelection", "-",
       { submenu: "menu.find", items: ["find.open", "find.replace", "find.next", "find.prev", "find.toggle.inSelection", "find.allNotes", "find.nextResult", "find.prevResult"] },
     ],
@@ -95,6 +96,8 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
+  // Settings → AI's fields and the Rewrite dialog's own steps, and the editor's answers to it.
+  { why: "AI settings and the Rewrite dialog", ids: /^(ai\.(load|edit|save|openSettings)|rewrite\.(captured|dismiss|prompt|preset|tab|generate|accept|applied))$/ },
   // What views, the editor, and the shell send as things change: values, events, and their own steps.
   { why: "state", ids: /^(command\.run|app\.ready|note\.setContent|paste\.notice|toolbar\.setOpen|format\.setState|table\.(setState|changed|copied|action)|slash\..+|find\.(setQuery|setReplace|prefill|setResult)|toast\.setPaused|files\.(drop|editBlur|setEditValue|setExpanded|setFilter)|window\.(drag|key)|theme\.color\.set|.+\.set[A-Z]\w*)$/ },
   // Keys of one focused control, listed in the cheat sheet: the find bar, a picker's field, the Files tree, a table, a toolbar.

@@ -23,7 +23,7 @@ import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./
 
 /** Settings' categories, in order, as built so far. */
 // Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
-export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "agents", "appearance", "keyboard", "about"] as const;
+export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -140,6 +140,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     if (v === "sharing") await commands.run("share.manage.load");
     if (v === "about") await commands.run("diagnostics.load");
     if (v === "agents") await commands.run("agents.load");
+    if (v === "ai") await commands.run("ai.load");
     if (v === "workspace") prefetchRepos?.();
   });
   registerDiagnostics({ store, bridge, catalog, commands, viewModels, toast });

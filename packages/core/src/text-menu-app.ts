@@ -77,6 +77,9 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
       const chord = chordOf(e.role);
       const enabled = e.enabled && (e.role === "undo" ? history.undo : e.role === "redo" ? history.redo : true);
       items.push({ id, label: catalog.format(`textMenu.${e.role}`), ...(chord ? { shortcut: formatChord(chord, platform) } : {}), ...(enabled ? {} : { disabled: true }) });
+    } else if (e.kind === "rewrite") {
+      const chord = commands?.has("rewrite.open") ? commands.describe("rewrite.open").shortcut : undefined;
+      items.push({ id, label: catalog.format("textMenu.rewrite"), ...(chord ? { shortcut: chord } : {}) });
     } else if (e.kind === "emoji") items.push({ id, label: catalog.format("textMenu.emoji"), ...(platform === "windows" ? { shortcut: formatChord(EMOJI_CHORD, platform) } : {}) });
     else if (e.kind === "copyLink" || e.kind === "openLink") items.push({ id, label: catalog.format(`textMenu.${e.kind}`) });
     // lookUp and speech are macOS's, and macOS shows its own menu.
@@ -96,6 +99,12 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge,
       // Only what the menu offers; the shell checks again.
       if (!model.entries.some((_e, i) => textMenuItemId(model.entries, i) === id)) return;
       set({ ...t, open: false });
+      // Rewrite… is the page's own: the shell forgets the menu, and the dialog opens on the selection.
+      if (id === "rewrite") {
+        bridge.textMenu?.closed?.(model.id);
+        void commands.run("rewrite.open").catch(() => {});
+        return;
+      }
       bridge.textMenu?.choose(model.id, id);
     },
   });

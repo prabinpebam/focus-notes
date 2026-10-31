@@ -931,6 +931,22 @@
               }
             }
           },
+          "rewriteCapture": {
+            "run": "rewrite.captured",
+            "args": {
+              "text": {
+                "get": "event.text"
+              }
+            }
+          },
+          "rewriteApplied": {
+            "run": "rewrite.applied",
+            "args": {
+              "ok": {
+                "get": "event.ok"
+              }
+            }
+          },
           "format": {
             "run": "format.setState",
             "args": {

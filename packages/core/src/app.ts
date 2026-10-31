@@ -33,6 +33,7 @@ import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
+import { registerAi } from "./ai-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
@@ -839,6 +840,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // ---- find and replace (FND-01, FND-02) ----
   const setFind = (patch: Partial<FindState>) => store.update((s) => ({ ...s, ui: { ...s.ui, find: { ...s.ui.find, ...patch } } }));
   const editorAction = (id: string, args?: Record<string, unknown>) => { for (const l of editorListeners) l(id, args); };
+  // AI Rewrite and Settings → AI: on every note, with no switch to turn them on.
+  registerAi({ store, bridge, catalog, commands, viewModels, editorAction, announce });
   const findHistory: string[] = [];
   let historyAt = -1;
   const remember = () => {

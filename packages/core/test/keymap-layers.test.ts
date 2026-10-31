@@ -47,6 +47,7 @@ const COVERAGE: Record<string, Cover> = {
   "Strikethrough": ["format.strike"],
   "Inline code": ["format.code"],
   "Add or edit link": ["link.edit"],
+  "Rewrite with AI… (desktop)": ["rewrite.open"],
   "Clear formatting": ["format.clear"],
   "Move focus into the formatting toolbar": ["format.focusToolbar"],
   "Leave the formatting toolbar, back to the text with the selection kept": ["format.exitToolbar"],

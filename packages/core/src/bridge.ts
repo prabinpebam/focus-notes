@@ -147,6 +147,21 @@ export interface PlatformBridge {
    * desktop's; the browser continues on GitHub through `openExternal`.
    */
   feedback?: FeedbackBridge;
+  /**
+   * AI Rewrite (desktop): the main process keeps the service and its key (sealed with the system's
+   * key store) and makes the one request. The key goes in once and never comes back to the window.
+   */
+  ai?: AiBridge;
+}
+
+/** Settings → AI as the window sees it: never the key itself. */
+export interface AiSettingsView { url: string; model: string; writer: boolean; hasKey: boolean }
+export interface AiBridge {
+  settings(): Promise<AiSettingsView>;
+  /** An empty or missing key keeps the one already saved. */
+  save(input: { url: string; model: string; writer: boolean; key?: string }): Promise<AiSettingsView>;
+  /** One OpenAI-compatible request for three alternatives; rejects with a plain reason code. */
+  rewrite(input: { text: string; instruction: string }): Promise<{ options: string[] }>;
 }
 
 export interface FeedbackBridge {

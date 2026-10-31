@@ -27,6 +27,8 @@ export type TextMenuEntry =
   | { kind: "edit"; role: TextMenuEdit; enabled: boolean }
   /** Windows' emoji panel (Win+.), macOS's Emoji & Symbols. Linux has none. */
   | { kind: "emoji" }
+  /** Rewrite… on selected text in a note (Windows and Linux): the page runs it, never the shell. */
+  | { kind: "rewrite" }
   /** macOS: the Speech submenu (Start Speaking, Stop Speaking). */
   | { kind: "speech" }
   | { kind: "copyLink" }
@@ -74,6 +76,7 @@ export function textMenuEntries(p: TextMenuParams, opts: { platform: TextMenuPla
   }
   const lookUp = selected || (p.isEditable ? p.misspelledWord : "");
   if (mac && lookUp && lookUp.length <= MAX_LOOK_UP && !/\s{2,}|[\r\n]/.test(lookUp)) groups.push([{ kind: "lookUp", word: lookUp }]);
+  if (p.isEditable && selected && !mac) groups.push([{ kind: "rewrite" }]);
   const edit = (role: TextMenuEdit, enabled: boolean | undefined): TextMenuEntry => ({ kind: "edit", role, enabled: enabled === true });
   if (p.isEditable) {
     // Undo and Redo are the editor's own history, which the browser's canUndo and canRedo don't see:
@@ -146,7 +149,7 @@ export interface TextMenuModel {
 }
 
 const word = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= MAX_WORD && !/[\u0000-\u001f]/.test(v);
-const PLAIN = ["noSuggestions", "checking", "separator", "emoji", "copyLink", "openLink"] as const;
+const PLAIN = ["noSuggestions", "checking", "separator", "emoji", "rewrite", "copyLink", "openLink"] as const;
 
 /** The model from the shell, checked: anything malformed is dropped whole. macOS-only items never reach the page. */
 export function parseTextMenu(raw: unknown): TextMenuModel | undefined {
