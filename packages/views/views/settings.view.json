@@ -100,16 +100,739 @@
                 "cases": {
                   "ai": {
                     "type": "Stack",
-                    "props": { "gap": "l" },
+                    "props": {
+                      "gap": "l"
+                    },
                     "children": [
-                      { "type": "Heading", "props": { "level": "3", "value": { "t": "ai.heading" } } },
-                      { "type": "Text", "props": { "value": { "t": "ai.intro" } } },
-                      { "type": "TextField", "props": { "label": { "t": "ai.url" }, "type": "url", "required": true, "description": { "t": "ai.urlHint" }, "value": { "get": "vm.ai.url" } }, "on": { "change": { "run": "ai.edit", "args": { "field": "url", "value": { "get": "event.value" } } } } },
-                      { "type": "TextField", "props": { "label": { "t": "ai.model" }, "required": true, "value": { "get": "vm.ai.model" } }, "on": { "change": { "run": "ai.edit", "args": { "field": "model", "value": { "get": "event.value" } } } } },
-                      { "type": "Button", "props": { "label": { "t": "ai.writer" }, "toggle": true, "pressed": { "get": "vm.ai.writer" }, "icon": "check", "variant": "subtle" }, "on": { "press": { "run": "ai.edit", "args": { "field": "writer" } } } },
-                      { "type": "Text", "props": { "value": { "get": "vm.ai.keyState" }, "role": "caption", "tone": "muted" } },
-                      { "type": "SecureKeyField", "props": { "label": { "t": "ai.key" }, "saveLabel": { "t": "ai.save" } }, "on": { "save": { "run": "ai.save", "args": { "key": { "get": "event.key" } } } } },
-                      { "type": "Text", "props": { "value": { "get": "vm.ai.status" }, "announce": true } }
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "ai.heading"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "ai.intro"
+                          }
+                        }
+                      },
+                      {
+                        "type": "MenuButton",
+                        "when": {
+                          "get": "vm.ai.hasWriter"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "ai.writer.label"
+                          },
+                          "variant": "select",
+                          "text": {
+                            "get": "vm.ai.writerName"
+                          },
+                          "sections": {
+                            "get": "vm.ai.writerMenu"
+                          }
+                        },
+                        "on": {
+                          "action": {
+                            "run": "ai.writer",
+                            "args": {
+                              "value": {
+                                "get": "event.id"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "each": {
+                          "get": "vm.ai.connections"
+                        },
+                        "as": "c",
+                        "key": "c.id",
+                        "render": {
+                          "type": "ItemCard",
+                          "props": {
+                            "title": {
+                              "get": "c.name"
+                            },
+                            "detail": {
+                              "get": "c.detail"
+                            },
+                            "badge": {
+                              "get": "c.badge"
+                            },
+                            "icon": "link",
+                            "personal": "title"
+                          },
+                          "children": [
+                            {
+                              "type": "Stack",
+                              "props": {
+                                "gap": "s"
+                              },
+                              "children": [
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "get": "c.keyText"
+                                    },
+                                    "role": "caption",
+                                    "tone": "muted"
+                                  }
+                                },
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "get": "c.testText"
+                                    },
+                                    "role": "caption",
+                                    "announce": true
+                                  }
+                                },
+                                {
+                                  "type": "Inline",
+                                  "props": {
+                                    "gap": "s"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "label": {
+                                          "t": "ai.test"
+                                        },
+                                        "size": "s",
+                                        "disabled": {
+                                          "get": "c.testing"
+                                        },
+                                        "disabledReason": {
+                                          "t": "ai.test.running"
+                                        }
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "ai.test",
+                                          "args": {
+                                            "value": {
+                                              "get": "c.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "Button",
+                                      "when": {
+                                        "get": "c.notWriter"
+                                      },
+                                      "props": {
+                                        "label": {
+                                          "t": "ai.useAsWriter"
+                                        },
+                                        "size": "s",
+                                        "variant": "subtle"
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "ai.writer",
+                                          "args": {
+                                            "value": {
+                                              "get": "c.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "label": {
+                                          "t": "ai.change"
+                                        },
+                                        "size": "s",
+                                        "variant": "subtle"
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "ai.change",
+                                          "args": {
+                                            "value": {
+                                              "get": "c.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "label": {
+                                          "t": "ai.remove"
+                                        },
+                                        "size": "s",
+                                        "variant": "subtle"
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "ai.remove",
+                                          "args": {
+                                            "value": {
+                                              "get": "c.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "empty": {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "t": "ai.empty"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "ai.test.info"
+                          },
+                          "role": "caption",
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.ai.addVisible"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "ai.add"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "ai.add"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Surface",
+                        "when": {
+                          "get": "vm.ai.formOpen"
+                        },
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "l"
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "level": "3",
+                                  "value": {
+                                    "get": "vm.ai.formTitle"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "MenuButton",
+                                "props": {
+                                  "label": {
+                                    "t": "ai.provider"
+                                  },
+                                  "variant": "select",
+                                  "text": {
+                                    "get": "vm.ai.providerName"
+                                  },
+                                  "sections": {
+                                    "get": "vm.ai.providerMenu"
+                                  }
+                                },
+                                "on": {
+                                  "action": {
+                                    "run": "ai.provider",
+                                    "args": {
+                                      "value": {
+                                        "get": "event.id"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.ai.providerNote"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "props": {
+                                  "label": {
+                                    "t": "ai.name"
+                                  },
+                                  "value": {
+                                    "get": "vm.ai.name"
+                                  }
+                                },
+                                "on": {
+                                  "change": {
+                                    "run": "ai.edit",
+                                    "args": {
+                                      "field": "name",
+                                      "value": {
+                                        "get": "event.value"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "when": {
+                                  "get": "vm.ai.showEndpoint"
+                                },
+                                "props": {
+                                  "label": {
+                                    "t": "ai.endpoint"
+                                  },
+                                  "value": {
+                                    "get": "vm.ai.endpoint"
+                                  },
+                                  "type": "url",
+                                  "required": true
+                                },
+                                "on": {
+                                  "change": {
+                                    "run": "ai.edit",
+                                    "args": {
+                                      "field": "endpoint",
+                                      "value": {
+                                        "get": "event.value"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "when": {
+                                  "get": "vm.ai.showAccount"
+                                },
+                                "props": {
+                                  "label": {
+                                    "t": "ai.account"
+                                  },
+                                  "value": {
+                                    "get": "vm.ai.account"
+                                  },
+                                  "required": true
+                                },
+                                "on": {
+                                  "change": {
+                                    "run": "ai.edit",
+                                    "args": {
+                                      "field": "account",
+                                      "value": {
+                                        "get": "event.value"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "when": {
+                                  "get": "vm.ai.showDeployment"
+                                },
+                                "props": {
+                                  "label": {
+                                    "t": "ai.deployment"
+                                  },
+                                  "value": {
+                                    "get": "vm.ai.deployment"
+                                  },
+                                  "required": true
+                                },
+                                "on": {
+                                  "change": {
+                                    "run": "ai.edit",
+                                    "args": {
+                                      "field": "deployment",
+                                      "value": {
+                                        "get": "event.value"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "when": {
+                                  "get": "vm.ai.showApiVersion"
+                                },
+                                "props": {
+                                  "label": {
+                                    "t": "ai.apiVersion"
+                                  },
+                                  "value": {
+                                    "get": "vm.ai.apiVersion"
+                                  }
+                                },
+                                "on": {
+                                  "change": {
+                                    "run": "ai.edit",
+                                    "args": {
+                                      "field": "apiVersion",
+                                      "value": {
+                                        "get": "event.value"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Stack",
+                                "when": {
+                                  "get": "vm.ai.showModel"
+                                },
+                                "props": {
+                                  "gap": "s"
+                                },
+                                "children": [
+                                  {
+                                    "type": "TextField",
+                                    "props": {
+                                      "label": {
+                                        "t": "ai.model"
+                                      },
+                                      "value": {
+                                        "get": "vm.ai.model"
+                                      },
+                                      "required": true
+                                    },
+                                    "on": {
+                                      "change": {
+                                        "run": "ai.edit",
+                                        "args": {
+                                          "field": "model",
+                                          "value": {
+                                            "get": "event.value"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "s"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "label": {
+                                            "t": "ai.models.find"
+                                          },
+                                          "size": "s"
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "ai.models"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "MenuButton",
+                                        "when": {
+                                          "get": "vm.ai.hasModels"
+                                        },
+                                        "props": {
+                                          "label": {
+                                            "t": "ai.models.choose"
+                                          },
+                                          "variant": "text",
+                                          "text": {
+                                            "get": "vm.ai.model"
+                                          },
+                                          "sections": {
+                                            "get": "vm.ai.modelMenu"
+                                          }
+                                        },
+                                        "on": {
+                                          "action": {
+                                            "run": "ai.model",
+                                            "args": {
+                                              "value": {
+                                                "get": "event.id"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "get": "vm.ai.modelsStatus"
+                                      },
+                                      "role": "caption",
+                                      "announce": true
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.ai.destination"
+                                  },
+                                  "role": "caption"
+                                }
+                              },
+                              {
+                                "type": "Stack",
+                                "when": {
+                                  "get": "vm.ai.showKey"
+                                },
+                                "props": {
+                                  "gap": "s"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "get": "vm.ai.keyState"
+                                      },
+                                      "role": "caption",
+                                      "tone": "muted"
+                                    }
+                                  },
+                                  {
+                                    "type": "SecureKeyField",
+                                    "props": {
+                                      "label": {
+                                        "get": "vm.ai.keyLabel"
+                                      },
+                                      "saveLabel": {
+                                        "t": "ai.save"
+                                      }
+                                    },
+                                    "on": {
+                                      "save": {
+                                        "run": "ai.save",
+                                        "args": {
+                                          "key": {
+                                            "get": "event.key"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "s",
+                                  "justify": "end"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "ai.cancel"
+                                      },
+                                      "variant": "subtle"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "ai.cancel"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "when": {
+                                      "get": "vm.ai.noKeyField"
+                                    },
+                                    "props": {
+                                      "label": {
+                                        "t": "ai.save"
+                                      },
+                                      "disabled": {
+                                        "get": "vm.ai.cannotSave"
+                                      },
+                                      "disabledReason": {
+                                        "t": "ai.save.reason"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "ai.save"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.ai.status"
+                          },
+                          "announce": true
+                        }
+                      },
+                      {
+                        "type": "Divider"
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "ai.found.title"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "ai.found.find"
+                              },
+                              "disabled": {
+                                "get": "vm.ai.discovering"
+                              },
+                              "disabledReason": {
+                                "t": "ai.found.looking"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "ai.discover"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Spinner",
+                            "when": {
+                              "get": "vm.ai.discovering"
+                            },
+                            "props": {
+                              "label": {
+                                "t": "ai.found.looking"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.ai.discoverStatus"
+                          },
+                          "role": "caption",
+                          "announce": true
+                        }
+                      },
+                      {
+                        "each": {
+                          "get": "vm.ai.found"
+                        },
+                        "as": "f",
+                        "key": "f.id",
+                        "render": {
+                          "type": "ItemCard",
+                          "props": {
+                            "title": {
+                              "get": "f.name"
+                            },
+                            "detail": {
+                              "get": "f.detail"
+                            },
+                            "icon": "link"
+                          },
+                          "children": [
+                            {
+                              "type": "Button",
+                              "props": {
+                                "label": {
+                                  "t": "ai.found.use"
+                                },
+                                "size": "s"
+                              },
+                              "on": {
+                                "press": {
+                                  "run": "ai.useFound",
+                                  "args": {
+                                    "value": {
+                                      "get": "f.id"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "empty": {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "t": "ai.found.hint"
+                            },
+                            "role": "caption",
+                            "tone": "muted"
+                          }
+                        }
+                      }
                     ]
                   },
                   "account": {

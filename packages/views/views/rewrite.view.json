@@ -20,6 +20,7 @@
                 { "type": "Text", "props": { "value": { "get": "vm.rewrite.selection" } } }
               ] }
             ] },
+            { "type": "Text", "when": { "get": "vm.rewrite.hasWriter" }, "props": { "value": { "get": "vm.rewrite.writerLabel" }, "role": "caption", "tone": "muted" } },
             { "type": "Text", "when": { "get": "vm.rewrite.needsSetup" }, "props": { "value": { "t": "rewrite.setupNeeded" }, "announce": true } },
             { "type": "TextField", "id": "rewritePrompt", "props": { "label": { "t": "rewrite.prompt" }, "placeholder": { "t": "rewrite.placeholder" }, "value": { "get": "vm.rewrite.prompt" }, "multiline": true },
               "on": { "change": { "run": "rewrite.prompt", "args": { "value": { "get": "event.value" } } } } },
