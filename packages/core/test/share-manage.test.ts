@@ -139,7 +139,7 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     await t.app.start();
     await settle();
     await t.run("settings.open");
-    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "sharing", "appearance"]);
+    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "sharing", "ai", "appearance"]);
     await t.run("settings.setSection", { value: "sharing" });
     expect(t.vm("vm.shareManage")).toMatchObject({ available: true, empty: true, hasAudiences: false, vault: true, rows: [] });
   });

@@ -112,7 +112,7 @@
       "requirements": ["AIS-13", "AIS-14", "RWR-86"],
       "dependsOn": ["WP-AI.11"], "touches": ["core", "desktop", "views"],
       "reviews": ["code", "security", "design-system"], "specs": ["experience/ai-settings.md", "experience/rewrite-with-ai.md", "architecture/rewrite-providers.md", "plan/rewrite-acceptance.md"],
-      "lookahead": true, "status": "planned"
+      "lookahead": true, "status": "building"
     },
     {
       "id": "WP-AI.9", "stage": "MAI", "title": "Rewrite gate evidence and Help",

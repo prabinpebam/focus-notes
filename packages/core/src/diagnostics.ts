@@ -132,6 +132,8 @@ export function redact(text: string, o: RedactOptions = {}): string {
     .replace(/(?<![\w.-])[\w.-]{1,64}@([\w-]{1,63}(?:\.[\w-]{1,63}){1,8}):(?!\/)\S{1,512}/g, "$1:…")
     .replace(/-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]{0,40}PRIVATE KEY-----|$)/g, "[private key]")
     .replace(/\b(?:gh[pousr]_[A-Za-z0-9_]{16,255}|github_pat_[A-Za-z0-9_]{20,255})/g, "[token]")
+    // AI services' API keys by their own prefixes (OpenAI, Anthropic, OpenRouter, Gemini, Hugging Face, Groq, xAI, NVIDIA, Cerebras, Fireworks).
+    .replace(/\b(?:sk-[A-Za-z0-9_-]{16,255}|AIza[0-9A-Za-z_-]{30,64}|hf_[A-Za-z0-9]{20,255}|gsk_[A-Za-z0-9]{20,255}|xai-[A-Za-z0-9]{20,255}|nvapi-[A-Za-z0-9_-]{20,255}|csk-[A-Za-z0-9]{20,255}|fw_[A-Za-z0-9]{16,255})/g, "[key]")
     .replace(/\b(bearer|token|basic)(\s+)[A-Za-z0-9._~+/=-]{8,512}/gi, "$1$2[token]")
     // A secret's value: quoted ({"passcode":"482913"}, "password": "hunter2"), or to the end of the line (it may hold spaces).
     .replace(new RegExp(`\\b(${SECRET_KEYS})\\b(["']?)(\\s*[=:]\\s*|\\s+)(?:"[^"\\n]{0,512}"|'[^'\\n]{0,512}'|[^\\s"'][^\\n]*)`, "gi"), "$1$2$3[redacted]")

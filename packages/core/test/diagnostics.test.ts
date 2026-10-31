@@ -38,6 +38,20 @@ const facts = (patch: Partial<DiagnosticFacts> = {}): DiagnosticFacts => ({
 });
 
 describe("QLT-04: redact", () => {
+  it("takes out AI services' API keys in free text, and their auth headers", () => {
+    const keys = [
+      "sk-proj-" + "Ab12Cd34Ef56Gh78Ij90Kl12", "sk-ant-api03-" + "Ab12Cd34Ef56Gh78Ij90", "sk-or-v1-" + "0123456789abcdef0123",
+      "AIza" + "SyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q", "hf_" + "Ab12Cd34Ef56Gh78Ij90Kl", "gsk_" + "Ab12Cd34Ef56Gh78Ij90Kl",
+      "xai-" + "Ab12Cd34Ef56Gh78Ij90Kl", "nvapi-" + "Ab12Cd34Ef56Gh78Ij90Kl", "csk-" + "Ab12Cd34Ef56Gh78Ij90Kl",
+    ];
+    for (const k of keys) {
+      expect(redact(`provider said: Incorrect API key provided: ${k}.`)).not.toContain(k);
+      expect(redact(`x-api-key: ${k}`)).not.toContain(k);
+      expect(redact(`x-goog-api-key=${k}`)).not.toContain(k);
+      expect(redact(`Authorization: Bearer ${k}`)).not.toContain(k);
+    }
+    expect(redact("the task-runner and desk-lamp")).toBe("the task-runner and desk-lamp");
+  });
   it("takes out GitHub tokens, bearer tokens, and credentials in addresses", () => {
     expect(redact(`push https://x-access-token:${TOKEN}@github.com/ada/notes.git failed`)).not.toContain(TOKEN);
     expect(redact(`push https://ada:hunter2pass@github.com/ada/notes.git`)).toBe("push https://[redacted]@github.com/…");

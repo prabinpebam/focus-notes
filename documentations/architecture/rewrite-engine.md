@@ -52,8 +52,11 @@ When the answer is complete, `finish` puts the original back outside the history
 - **Checks** the input: text of 1 character to 32 KiB, a prompt of 1 to 4,000 characters, a Writer that exists. The ID must match `[\w-]{1,64}`.
 - **Builds** one request in the Writer's shape (see [Rewrite providers](rewrite-providers.md#request-shapes)) with the fixed instruction "You rewrite text for a writer. Rewrite the text the user gives, following their instruction. Reply with only the rewritten text: no preamble, no quotes, no commentary. Keep the language of the text." and the user message "Instruction: {prompt}, Text: {selection}". Up to 4,096 tokens of answer.
 - **Streams:** `stream: true` (Gemini: `:streamGenerateContent?alt=sse`). Server-sent events for OpenAI-compatible services, Azure, Anthropic (`content_block_delta`), Gemini and Cohere (`content-delta`); newline-delimited JSON for Ollama. A service that answers with plain JSON in one piece yields it once. More than 1 MB without a line break is a format error.
-- **Bounds:** 90 s for the whole request, combined with the window's abort signal; `redirect: "error"`.
-- **Sends** only text back, to the window that asked, tagged with the ID. One rewrite per window: a new one aborts the last. Closing the window aborts it.
+- **Bounds:** the answer must start within 30 s (120 s from a server on this computer, which may be loading its model), may go quiet for at most 30 s once started (60 s on this computer), and ends at 5 minutes (10 on this computer); each closes the HTTP request. The window's abort signal closes it at once. `redirect: "error"`. Up to 64 KiB of text back.
+- **Thinking models:** Ollama gets `think: false`; OpenAI's own API gets `max_completion_tokens`; a leading `<think>…</think>` block in the text is left out, however it's split.
+- **Ends** at the provider's own end event (`[DONE]`, Ollama's `done: true`, Anthropic's `message_stop`, Cohere's `message-end`) or when the stream closes; an `error` event mid-stream fails it.
+- **Checks first:** a private or shared note's text is refused while *Don't send private notes* is on (AIS-13), and nothing is sent to a connection without its consent (AIS-14).
+- **Sends** only text back, to the window that asked, tagged with the ID; a failure as `{ code, retryAfter? }`, only Focus Notes' own reason codes. One rewrite per window: a new one aborts the last. Closing or reloading the window aborts it.
 
 The key is opened from `safeStorage` for the request and never leaves the main process.
 
@@ -61,18 +64,25 @@ The key is opened from `safeStorage` for the request and never leaves the main p
 
 | What happens | Code | The person sees |
 | --- | --- | --- |
-| Can't connect | `network` | "Couldn't reach the service…"; the original |
-| Too slow (90 s) | `timeout` | "The service took too long to answer. Try again." |
+| Nothing listening | `refused` | "Nothing is answering at that address. Start the server, or check the address in Settings → AI." |
+| Address not found | `dns` | "Couldn't find the service's address…" |
+| Secure connection not verified | `tls` | "The service's secure connection couldn't be verified, so nothing was sent." |
+| Any other connection failure | `network` | "Couldn't reach the service…"; the original |
+| Too slow (no start, quiet, or past the total; 408, 504) | `timeout` | "The service took too long to answer. Try again." |
 | 401 or 403 | `unauthorized` | "The service refused the key. Check it in Settings → AI." |
 | 404 | `not-found` or `model-missing` | The model or address isn't known |
-| 429 | `rate-limited` | "The service is busy or out of quota…" |
+| 429 | `rate-limited` | "The service is busy or out of quota. Try again in {n} seconds." with Retry-After, else "Wait a moment, then try again." |
+| 5xx | `server-error` | "The service had a problem. Wait a moment, then try again." |
+| 400, 413 | `bad-request`, `too-long` | Check the model; select less |
+| Unreadable answer, error event mid-stream | `provider-format`, `provider-error` | The answer couldn't be read; the service stopped with an error |
 | No text at all | `provider-empty` | "The service sent back no text. The original is unchanged." |
+| No consent, a private note | `consent-required`, `private-note` | Nothing was sent |
 | Esc or Stop | `cancelled` | "Rewrite stopped. The original text is back." (announced) |
 | The note changed before Generate | — | "The note changed after you selected the text. Select it again and rewrite." |
 
-In every case the editor's `abort` restores the original exactly, outside the history, and unlocks the note (RWR-80, RWR-81). Late events for an old ID are ignored.
+In every case the editor's `abort` restores the original exactly, outside the history, and unlocks the note (RWR-80, RWR-81). Late events for an old ID are ignored. Every row is proven against protocol-faithful fakes on 127.0.0.1 (`apps/desktop/test/ai-contract.test.ts`).
 
-**Leaving mid-rewrite (RWR-86):** switching or closing the note, or recovered text replacing it, ends the rewrite in the editor and cancels the request in main through `rewrite.cancel`. Closing the window aborts it, since main listens for the window's end.
+**Leaving mid-rewrite (RWR-86):** the editor ends the rewrite itself when it is torn down or recovered text replaces the note, putting the original back, and asks core to cancel (`rewrite.cancel`); and when another note opens or this one closes, core cancels the request in main and clears its toast, without touching the new note's editor. When the window closes or reloads, main aborts it (`destroyed`, `did-start-loading`), and core also cancels on `pagehide`.
 
 **Nothing is recovered after a crash:** while a rewrite streams the note isn't handed over for saving, so the saved note and any crash draft hold the original. There is no rewrite history to recover.
 
