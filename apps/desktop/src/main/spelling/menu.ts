@@ -59,6 +59,8 @@ function nativeItem(e: TextMenuEntry, act: SpellingMenuActions): MenuItemConstru
     case "separator": return { type: "separator" };
     case "speech": return { label: W.speech, submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }] };
     case "emoji": return { label: literal(W.emoji), click: () => act.emoji() };
+    // Rewrite… is only in the page's drawn menu (Windows and Linux); macOS's model never has it.
+    case "rewrite": return { type: "separator" };
     case "copyLink": return { label: W.copyLink, click: () => act.copyLink() };
     case "openLink": return { label: W.openLink, click: () => act.openLink() };
     case "edit": {

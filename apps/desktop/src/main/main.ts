@@ -73,6 +73,7 @@ import { spawnOffThread } from "./spelling/off-thread.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import { DraftStore } from "./drafts.ts";
+import { AiService } from "./ai-rewrite.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 import { watchCompositing } from "./window/compositing.ts";
@@ -1226,6 +1227,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     await writeFile(keybindingsFile(), "[]\n", "utf8");
     sendAll("keybindings:changed");
   });
+  // ---- Settings → AI and Rewrite: the key is sealed here and never sent to the window ----
+  const ai = new AiService(dataFile(DATA_FILES.ai), {
+    available: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (text) => safeStorage.encryptString(text),
+    decrypt: (data) => safeStorage.decryptString(data),
+  }, (path, content) => atomicWrite(path, content));
+  handle("ai:settings", () => ai.settings());
+  handle("ai:save", (input: unknown) => ai.save(input));
+  handle("ai:rewrite", (input: unknown) => ai.rewrite(input));
   // ---- Settings → Agents (WP-7.4, AGT-02, D-166) ----
   // The main process reads and writes agents.json and builds every command line; the window only
   // sees the page and asks for a switch by name.

@@ -216,6 +216,12 @@ contextBridge.exposeInMainWorld("focusNotes", {
     save: (timings: unknown) => ipcRenderer.invoke("diagnostics:save", timings),
   },
   // Send feedback (QLT-07, D-203): main posts to the project's fixed repository with the token it keeps; the window gets a number or a problem code.
+  // AI Rewrite: main keeps the key and makes the request; the key goes in once and never comes back.
+  ai: {
+    settings: () => ipcRenderer.invoke("ai:settings"),
+    save: (input: unknown) => ipcRenderer.invoke("ai:save", input),
+    rewrite: (input: unknown) => ipcRenderer.invoke("ai:rewrite", input),
+  },
   feedback: {
     preview: (timings: unknown) => ipcRenderer.invoke("feedback:preview", timings),
     send: (input: unknown) => ipcRenderer.invoke("feedback:send", input),
