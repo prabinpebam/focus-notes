@@ -81,7 +81,8 @@ export const dialog = style({
   gap: t.gap,
   width: "100%",
   minHeight: 0,
-  paddingBlock: t.padding,
+  // No block padding of its own: the part at each edge holds it, so a scrolling body at the top or
+  // bottom runs to the dialog's edge and its content scrolls right up to it.
   borderRadius: t.radius,
   borderStyle: "solid",
   borderWidth: t.borderWidth,
@@ -94,7 +95,14 @@ export const dialog = style({
   boxSizing: "border-box",
 });
 
-export const region = style({ paddingInline: t.padding, flexShrink: 0 });
+export const region = style({
+  paddingInline: t.padding,
+  flexShrink: 0,
+  selectors: { "&:first-child": { paddingBlockStart: t.padding }, "&:last-child": { paddingBlockEnd: t.padding } },
+});
+
+// The body's corners at the dialog's edge follow its rounding, so what scrolls (and the scrollbar) stays inside it.
+const inner = `calc(${t.radius} - ${t.borderWidth})`;
 
 export const body = style({
   // A column, so what it holds can fill its height (vertical tabs: their divider runs to the bottom, D-123).
@@ -112,7 +120,13 @@ export const body = style({
   paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,
   scrollbarGutter: "stable",
   outline: "none",
-  selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` } },
+  selectors: {
+    "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
+    // At the dialog's top or bottom edge, the dialog's padding is inside the scroller: content keeps
+    // that spacing at rest, scrolls right to the edge, and what scrolls into view keeps it too.
+    "&:first-child": { paddingBlockStart: t.padding, marginBlockStart: 0, scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
+    "&:last-child": { paddingBlockEnd: t.padding, marginBlockEnd: 0, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
+  },
 });
 minimalScrollbar(body, t);
 
