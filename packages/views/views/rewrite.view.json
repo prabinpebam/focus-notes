@@ -37,6 +37,20 @@
               "compose": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
                 { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
                 { "type": "Button", "props": { "label": { "t": "rewrite.generate" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate" } } }
+              ] },
+              "consent": { "type": "Stack", "props": { "gap": "s" }, "children": [
+                { "type": "Text", "props": { "value": { "get": "vm.rewrite.consentText" }, "role": "caption", "announce": true } },
+                { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+                  { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
+                  { "type": "Button", "props": { "label": { "t": "rewrite.consentSend" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate", "args": { "consent": true } } } }
+                ] }
+              ] },
+              "private": { "type": "Stack", "props": { "gap": "s" }, "children": [
+                { "type": "Text", "props": { "value": { "t": "rewrite.privateNote" }, "announce": true } },
+                { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+                  { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
+                  { "type": "Button", "props": { "label": { "t": "rewrite.privateSettings" }, "icon": "settings", "variant": "primary" }, "on": { "press": { "run": "ai.openSettings" } } }
+                ] }
               ] }
             } }
           ]

@@ -122,6 +122,14 @@
                         }
                       },
                       {
+                        "type": "Stack",
+                        "props": { "gap": "xs", "align": "start" },
+                        "children": [
+                          { "type": "Button", "props": { "label": { "t": "ai.private.label" }, "toggle": true, "pressed": { "get": "vm.ai.keepPrivate" } }, "on": { "press": { "run": "ai.privacy" } } },
+                          { "type": "Text", "props": { "value": { "t": "ai.private.hint" }, "tone": "muted" } }
+                        ]
+                      },
+                      {
                         "type": "MenuButton",
                         "when": {
                           "get": "vm.ai.hasWriter"

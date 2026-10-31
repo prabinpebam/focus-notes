@@ -10,7 +10,7 @@
  * (packages/ui); nothing here is styled.
  */
 import { Extension, type Editor } from "@tiptap/core";
-import { Plugin, PluginKey, Selection, TextSelection, type Transaction } from "@tiptap/pm/state";
+import { Plugin, PluginKey, Selection, TextSelection, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Fragment, Slice, type Node as ProseNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
@@ -43,9 +43,28 @@ export const RewriteDecoration = Extension.create({
           return m && m.to > m.from ? DecorationSet.create(state.doc, [Decoration.inline(m.from, m.to, { class: m.cls })]) : null;
         },
       },
+    }), new Plugin<boolean>({
+      key: REWRITE_LOCK,
+      state: {
+        init: () => false,
+        apply: (tr, locked) => (tr.getMeta(REWRITE_LOCK) as boolean | undefined) ?? locked,
+      },
+      // The lock: while a rewrite streams, only the stream (and what plugins append to it) changes
+      // the note. Typing, paste and drop are already off (not editable); this also stops commands,
+      // undo and anything else that would dispatch straight to the editor.
+      filterTransaction: (tr, state) =>
+        !REWRITE_LOCK.getState(state) || !tr.docChanged || tr.getMeta(OWN) === true || Boolean(tr.getMeta("appendedTransaction")),
+      props: {
+        attributes: (state): Record<string, string> => (REWRITE_LOCK.getState(state) ? { "aria-busy": "true", "aria-readonly": "true" } : {}),
+      },
     })];
   },
 });
+
+const REWRITE_LOCK = new PluginKey<boolean>("rewriteLock");
+const OWN = "rewriteStream";
+/** Whether a rewrite is streaming into the note, which is locked until it ends. */
+export const rewriteLocked = (state: EditorState): boolean => REWRITE_LOCK.getState(state) ?? false;
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 /** A last line of nothing but block markers so far (`#`, `-`, `>`, `1.`, `---`): held back until it has text. */
@@ -147,9 +166,29 @@ export function streamingMarkdown(text: string): string {
 
 const quiet = (tr: Transaction) => tr.setMeta("addToHistory", false);
 
+/** The rewrite's waits on the page's timeline (perceived-performance.md → wait inventory). */
+export const REWRITE_MEASURES = { lock: "fn:rewrite.lock", firstText: "fn:rewrite.firstText", render: "fn:rewrite.render", stream: "fn:rewrite.stream" } as const;
+const clock = (): number => globalThis.performance?.now() ?? Date.now();
+function measure(name: string, start: number, end = clock()): void {
+  try {
+    globalThis.performance?.measure(name, { start, duration: Math.max(0, end - start) });
+  } catch {
+    // A timeline without measures (an old test environment): nothing to record.
+  }
+}
+
 export interface RewriteClasses { pending: string; streaming: string; fading: string }
 
 interface Target { doc: ProseNode; from: number; to: number }
+
+export interface RewriteOptions {
+  /**
+   * The least time between two renders of the answer, in ms (default one frame). Chunks that come
+   * faster are rendered together, and a long answer whose render costs more waits twice that, so
+   * re-reading a long answer never starves the frame. 0 renders every chunk at once.
+   */
+  frame?: number;
+}
 
 export class RewriteStream {
   readonly #editor: Editor;
@@ -158,28 +197,36 @@ export class RewriteStream {
   readonly #from: number;
   readonly #to: number;
   readonly #wasEditable: boolean;
+  readonly #frame: number;
   #text = "";
-  #shown = false;
   #done = false;
+  #timer: ReturnType<typeof setTimeout> | undefined;
+  #rendered = 0;
+  #cost = 0;
+  readonly #began = clock();
+  #firstText = false;
 
   /** Locks the note and marks the selection as being rewritten. */
-  constructor(editor: Editor, target: { from: number; to: number }, classes: RewriteClasses) {
+  constructor(editor: Editor, target: { from: number; to: number }, classes: RewriteClasses, options: RewriteOptions = {}) {
     this.#editor = editor;
     this.#classes = classes;
     this.#original = editor.state.doc;
     this.#from = target.from;
     this.#to = target.to;
+    this.#frame = options.frame ?? 16;
     this.#wasEditable = editor.isEditable;
     editor.setEditable(false, false);
-    this.#mark(quiet(editor.state.tr), classes.pending, target.from, target.to);
+    this.#mark(quiet(editor.state.tr).setMeta(REWRITE_LOCK, true), classes.pending, target.from, target.to);
+    measure(REWRITE_MEASURES.lock, this.#began);
   }
 
   get active(): boolean {
     return !this.#done;
   }
 
+  /** Every transaction of the stream: allowed through the lock, carrying the decoration (or none). */
   #mark(tr: Transaction, cls: string | null, from = 0, to = 0): void {
-    tr.setMeta(REWRITE_DECORATION, cls && to > from ? { from, to, cls } : null);
+    tr.setMeta(OWN, true).setMeta(REWRITE_DECORATION, cls && to > from ? { from, to, cls } : null);
     this.#editor.view.dispatch(tr);
   }
 
@@ -208,52 +255,76 @@ export class RewriteStream {
     return tr;
   }
 
-  /** More of the answer: the note shows all of it so far, formatted, outside the history. */
+  #stopTimer(): void {
+    clearTimeout(this.#timer);
+    this.#timer = undefined;
+  }
+
+  /** The note shows all of the answer so far, formatted, outside the history. */
+  #render(): void {
+    this.#stopTimer();
+    if (this.#done || this.#editor.isDestroyed) return;
+    const start = Date.now();
+    const at = clock();
+    const target = this.#target(streamingMarkdown(this.#text.replace(/^\s+/, "")));
+    if (target) {
+      this.#mark(quiet(this.#toward(target.doc)), this.#classes.streaming, target.from, target.to);
+      measure(REWRITE_MEASURES.render, at);
+      if (!this.#firstText) measure(REWRITE_MEASURES.firstText, this.#began);
+      this.#firstText = true;
+    }
+    this.#rendered = Date.now();
+    this.#cost = this.#rendered - start;
+  }
+
+  /** More of the answer: rendered at once, or with the next render if one was just done. */
   push(chunk: string): void {
     if (this.#done || !chunk) return;
     this.#text += chunk;
-    const target = this.#target(streamingMarkdown(this.#text.replace(/^\s+/, "")));
-    if (!target) return;
-    this.#shown = true;
-    this.#mark(quiet(this.#toward(target.doc)), this.#classes.streaming, target.from, target.to);
+    if (this.#timer !== undefined) return;
+    const wait = this.#frame > 0 ? Math.max(this.#frame, this.#cost * 2) - (Date.now() - this.#rendered) : 0;
+    if (wait <= 0) this.#render();
+    else this.#timer = setTimeout(() => this.#render(), wait);
   }
 
   /** The answer is complete: one undo step from the original to the provider's Markdown, and the rainbow starts to fade. False if nothing came. */
   finish(): boolean {
     if (this.#done) return false;
+    this.#stopTimer();
     const text = this.#text.trim();
-    const target = this.#shown && text ? this.#target(text) : null;
-    if (!target) {
+    const target = text ? this.#target(text) : null;
+    if (!target || this.#editor.isDestroyed) {
       this.abort();
       return false;
     }
     this.#done = true;
     const editor = this.#editor;
     // Back to the original outside the history, then the whole answer as one step.
-    const back = quiet(this.#toward(this.#original));
-    back.setMeta(REWRITE_DECORATION, null);
-    editor.view.dispatch(back);
+    this.#mark(quiet(this.#toward(this.#original)), null);
     const tr = closeHistory(this.#toward(target.doc));
     tr.setSelection(Selection.near(tr.doc.resolve(target.to), -1)).scrollIntoView();
-    this.#mark(tr, this.#classes.fading, target.from, target.to);
+    this.#mark(tr.setMeta(REWRITE_LOCK, false), this.#classes.fading, target.from, target.to);
     editor.view.dispatch(closeHistory(editor.state.tr));
     editor.setEditable(this.#wasEditable, false);
+    measure(REWRITE_MEASURES.stream, this.#began);
     return true;
   }
 
-  /** Failure or Esc: the original note exactly, with the selection as it was, outside the history, and the note unlocked. */
+  /** Failure, Esc, a timeout, or the note closing: the original note exactly, with the selection as it was, outside the history, and the note unlocked. */
   abort(): void {
     if (this.#done) return;
     this.#done = true;
+    this.#stopTimer();
+    if (this.#editor.isDestroyed) return;
     const tr = quiet(this.#toward(this.#original));
     if (tr.docChanged) tr.setSelection(TextSelection.between(tr.doc.resolve(this.#from), tr.doc.resolve(this.#to)));
-    this.#mark(tr, null);
+    this.#mark(tr.setMeta(REWRITE_LOCK, false), null);
     this.#editor.setEditable(this.#wasEditable, false);
+    measure(REWRITE_MEASURES.stream, this.#began);
   }
 
   /** The fade has run: the text is ordinary again. */
   clear(): void {
-    if (REWRITE_DECORATION.getState(this.#editor.state)) this.#mark(quiet(this.#editor.state.tr), null);
+    if (!this.#editor.isDestroyed && REWRITE_DECORATION.getState(this.#editor.state)) this.#mark(quiet(this.#editor.state.tr), null);
   }
 }
-
