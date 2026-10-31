@@ -142,6 +142,29 @@ test("AIS-13, AIS-14: a private note sends nothing; the first send asks, Cancel 
     await expect(dialog.getByRole("button", { name: "Send" })).toHaveCount(0);
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toBeHidden();
+
+    // 6. Main decides, not the window (D-259, SEC-09 M1): with the switch back on, a window that skips the
+    //    dialog and says the note isn't private, or gives no path, is refused, and nothing is sent.
+    const refused = await page.evaluate(async ({ diary }) => {
+      const ai = (window as unknown as { focusNotes: { ai: {
+        privacy(keep: boolean): Promise<unknown>;
+        rewriteStart(id: string, input: unknown): Promise<void>;
+        onRewriteEvent(listener: (e: unknown) => void): () => void;
+      } } }).focusNotes.ai;
+      await ai.privacy(true);
+      const ask = (id: string, input: Record<string, unknown>) => new Promise<unknown>((resolve) => {
+        const off = ai.onRewriteEvent((e) => {
+          const ev = e as { id?: string; type?: string; code?: string };
+          if (ev.id !== id || ev.type === "delta") return;
+          off();
+          resolve(ev.type === "error" ? ev.code : ev.type);
+        });
+        void ai.rewriteStart(id, { text: "A kinder thought.", instruction: "Shorter", ...input });
+      });
+      return [await ask("m1-a", { path: diary, private: false }), await ask("m1-b", {})];
+    }, { diary });
+    expect(refused).toEqual(["private-note", "private-note"]);
+    expect(fake.seen).toHaveLength(1);
   } finally {
     if (l) await quit(l).catch(() => {});
     await fake.close();
