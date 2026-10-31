@@ -188,12 +188,12 @@ Focus Notes is done (as planned, before the *Later* components) when:
 
 <h2 id="when-checks-run" data-reader-personas="engineering product">When checks run</h2>
 
-The bar above never weakens, but each check runs at the moment that matches its cost and the risk it covers (D-113, [The agentic loop → Throughput](agentic-loop.html#throughput)):
+The bar above never weakens, but each check runs at the moment that matches its cost and the risk it covers (D-113, D-255, [The agentic loop → Throughput](agentic-loop.html#throughput)):
 
 | Moment | Checks | Time budget |
 | --- | --- | --- |
 | **Each change, before the owner sees it** | Typecheck of the packages touched, `ui:check`, the boundary check, and the unit tests and journeys for what changed | 5 minutes or less |
-| **Each merge to `main`** | Attended: the full Windows suite (unit, desktop and web journeys) runs on CI after the merge, never blocking the owner. Unattended: it runs on CI for the pushed work branch before the merge, and the merge waits until it's green. A failing check is never waived as "the same as main" or "a flake": fix it, or quarantine it explicitly, with a scope, an owner and an expiry recorded in the gate evidence. Data safety and security changes always run their full checks before merging | While the owner tests, or before the merge when they're away |
+| **Each merge to `main`** | Sized to the risk (D-255). Low-risk UI-only changes (tokens, primitive styling, view documents, copy) land on their fast checks. Desktop runtime changes (main, preload or IPC, file I/O and saving, sync or Git, security or privacy, build or packaging) wait for their Windows CI on the pushed work branch, batched on one merge candidate. The full suite runs only when every item in [AGENTS.md → Before the full suite](../../AGENTS.md#before-the-full-suite-d-255) is true. A failing gated check is never waived as "the same as main" or "a flake": fix it, or quarantine it explicitly, with a scope, an owner and an expiry recorded in the gate evidence | Before the merge, for runtime changes only |
 | **Before a stage gate** | Everything in the work package and stage definitions of done: guard journeys, the accessibility audit, the visual quality checklist on every surface, the [VVS](../design/visual-score.html) of every surface (anything below its threshold goes into the feedback queue), the bench on a quiet machine | Once per stage |
 | **Before a release** | Everything, on every platform (D-112) | Once per release |
 
