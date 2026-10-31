@@ -144,6 +144,20 @@ test("AI Rewrite: streams formatted and locked, Esc cancels the request and rest
     await page.waitForTimeout(500);
     expect(saved()).toBe(ORIGINAL);
 
+    // 2b. By keyboard alone: F6 reaches the toast's Stop, Enter stops it.
+    fake.play(ANSWER, 2);
+    const keyed = fake.seen.length;
+    await rewrite(page, "Change this part.", "Make it bold");
+    await expect(editor).toHaveAttribute("aria-busy", "true");
+    await page.keyboard.press("F6");
+    await expect(page.getByRole("button", { name: "Stop" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(editor).not.toHaveAttribute("aria-busy", "true");
+    await expect(editor).toContainText("Keep this. Change this part. Keep that.");
+    await expect.poll(() => fake.seen[keyed]?.closed, PROMPTLY).toBe(true);
+    fake.release();
+    expect(saved()).toBe(ORIGINAL);
+
     // 3. To the end: saved as the provider's Markdown, one undo step back, redo again.
     fake.play(ANSWER);
     await rewrite(page, "Change this part.", "Make it bold");
