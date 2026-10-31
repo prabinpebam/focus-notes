@@ -59,3 +59,4 @@ export * from "./keybindings.ts";
 export * from "./keybindings-app.ts";
 export * from "./toolbar-customize.ts";
 export * from "./custom-themes.ts";
+export * from "./ai-providers.ts";

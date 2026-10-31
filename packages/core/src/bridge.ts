@@ -154,13 +154,22 @@ export interface PlatformBridge {
   ai?: AiBridge;
 }
 
-/** Settings → AI as the window sees it: never the key itself. */
-export interface AiSettingsView { url: string; model: string; writer: boolean; hasKey: boolean }
+/** Settings → AI as the window sees it: its connections and the Writer, never a key. */
+export interface AiSettingsView { writer: string; connections: import("./ai-providers.ts").AiConnectionView[] }
+/** A connection being added or changed; `key` crosses once, and an empty one keeps the saved key. */
+export interface AiConnectionInput { id?: string; provider: string; name: string; endpoint: string; model: string; deployment?: string; apiVersion?: string; account?: string; key?: string }
 export interface AiBridge {
   settings(): Promise<AiSettingsView>;
-  /** An empty or missing key keeps the one already saved. */
-  save(input: { url: string; model: string; writer: boolean; key?: string }): Promise<AiSettingsView>;
-  /** One OpenAI-compatible request for three alternatives; rejects with a plain reason code. */
+  save(input: AiConnectionInput): Promise<AiSettingsView>;
+  remove(id: string): Promise<AiSettingsView>;
+  writer(id: string): Promise<AiSettingsView>;
+  /** One short synthetic request to the saved connection; never note text. Rejects with a reason code. */
+  test(id: string): Promise<AiSettingsView>;
+  /** Local servers answering on this computer's usual ports, with their models. */
+  discover(): Promise<import("./ai-providers.ts").AiFound[]>;
+  /** The models a connection (saved, or the draft with its typed endpoint) lists. */
+  models(input: AiConnectionInput): Promise<{ id: string; cloud: boolean }[]>;
+  /** Three alternatives from the Writer, in its own request shape; rejects with a plain reason code. */
   rewrite(input: { text: string; instruction: string }): Promise<{ options: string[] }>;
 }
 
