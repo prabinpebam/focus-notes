@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { aiProvider } from "@focus-notes/core/ai-providers";
-import { AiService, answerText, generateCall, normalizeUrl, parseOptions } from "../src/main/ai-rewrite.ts";
+import { AiService, answerText, deltaText, generateCall, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
 const file = () => join(mkdtempSync(join(tmpdir(), "fn-ai-")), "ai.json");
@@ -16,6 +16,8 @@ const answering = (seen: Seen[], body: (url: string) => unknown) =>
     return new Response(JSON.stringify(body(url)), { status: 200 });
   }) as unknown as typeof fetch;
 
+const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
+
 describe("AI connections (main process)", () => {
   it("accepts https and this computer's http only", () => {
     expect(normalizeUrl("https://api.example.com/v1/")).toBe("https://api.example.com/v1");
@@ -23,10 +25,17 @@ describe("AI connections (main process)", () => {
     expect(() => normalizeUrl("http://example.com/v1")).toThrow("invalid-url");
     expect(() => normalizeUrl("https://u:p@example.com")).toThrow("invalid-url");
   });
-  it("reads three options from a JSON array, numbered lines or plain text", () => {
-    expect(parseOptions('```json\n["a", "b", "c", "d"]\n```')).toEqual(["a", "b", "c"]);
-    expect(parseOptions("1. one\n2. two\n3. three")).toEqual(["one", "two", "three"]);
-    expect(parseOptions("just this")).toEqual(["just this"]);
+  it("asks each provider to stream in its own way and reads each streamed event", () => {
+    const call = (provider: string) => streamCall(aiProvider(provider)!, generateCall(aiProvider(provider)!, { ...conn, provider, endpoint: "http://127.0.0.1:1", deployment: "d" }, "k", "s", "u", 10));
+    expect(call("openai").body).toMatchObject({ stream: true });
+    expect(call("gemini").url).toBe("https://generativelanguage.googleapis.com/v1beta/models/m:streamGenerateContent?alt=sse");
+    expect(call("ollama").body).toMatchObject({ stream: true });
+    expect(deltaText(aiProvider("openai")!, { choices: [{ delta: { content: "a" } }] })).toBe("a");
+    expect(deltaText(aiProvider("anthropic")!, { type: "content_block_delta", delta: { type: "text_delta", text: "b" } })).toBe("b");
+    expect(deltaText(aiProvider("anthropic")!, { type: "message_start" })).toBe("");
+    expect(deltaText(aiProvider("gemini")!, { candidates: [{ content: { parts: [{ text: "c" }] } }] })).toBe("c");
+    expect(deltaText(aiProvider("ollama")!, { message: { content: "d" }, done: false })).toBe("d");
+    expect(deltaText(aiProvider("cohere")!, { type: "content-delta", delta: { message: { content: { text: "e" } } } })).toBe("e");
   });
   it("makes each provider's own request and reads its own answer", () => {
     const call = (provider: string, extra = {}) => generateCall(aiProvider(provider)!, { ...conn, provider, ...extra }, "k", "sys", "user", 10);
@@ -54,8 +63,9 @@ describe("AI connections (main process)", () => {
   it("keeps connections with sealed keys that never come back, and rewrites with the Writer", async () => {
     const f = file();
     const seen: Seen[] = [];
-    const ai = new AiService(f, crypt, write, answering(seen, () => ({ content: [{ text: '["x", "y", "z"]' }] })));
-    await expect(ai.rewrite({ text: "t", instruction: "i" })).rejects.toThrow("not-configured");
+    const sseBody = "event: message_start\ndata: {\"type\":\"message_start\"}\n\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"Hel\"}}\n\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"lo\"}}\n\ndata: {\"type\":\"message_stop\"}\n\n";
+    const ai = new AiService(f, crypt, write, (async (url: string, init: RequestInit) => { seen.push({ url, init }); return new Response(sseBody, { headers: { "content-type": "text/event-stream" } }); }) as unknown as typeof fetch);
+    await expect(collect(ai, { text: "t", instruction: "i" })).rejects.toThrow("not-configured");
     await expect(ai.save({ provider: "anthropic", name: "Claude", model: "claude-x" })).rejects.toThrow("key-required");
     const saved = await ai.save({ provider: "anthropic", name: "Claude", model: "claude-x", key: "secret" });
     expect(saved.writer).toBe(saved.connections[0]!.id);
@@ -65,7 +75,8 @@ describe("AI connections (main process)", () => {
     // Changing it without a key keeps the saved one.
     const id = saved.connections[0]!.id;
     expect((await ai.save({ id, provider: "anthropic", name: "Claude", model: "claude-y" })).connections[0]!.hasKey).toBe(true);
-    expect(await ai.rewrite({ text: "hello", instruction: "warmer" })).toEqual({ options: ["x", "y", "z"] });
+    expect(await collect(ai, { text: "hello", instruction: "warmer" })).toEqual(["Hel", "lo"]);
+    expect(JSON.parse(seen.at(-1)!.init.body as string)).toMatchObject({ stream: true });
     expect(seen.at(-1)!.url).toBe("https://api.anthropic.com/v1/messages");
     expect((seen.at(-1)!.init.headers as Record<string, string>)["x-api-key"]).toBe("secret");
     // A second connection, made the Writer; removing it moves the Writer back.
@@ -82,9 +93,27 @@ describe("AI connections (main process)", () => {
     await expect(ai.test(s.connections[0]!.id)).rejects.toThrow("unauthorized");
     expect((await ai.settings()).connections[0]!.lastTest).toMatchObject({ ok: false });
     const down = new AiService(f, crypt, write, (async () => { throw new TypeError("fetch failed"); }) as unknown as typeof fetch);
-    await expect(down.rewrite({ text: "a", instruction: "b" })).rejects.toThrow("network");
+    await expect(collect(down, { text: "a", instruction: "b" })).rejects.toThrow("network");
   });
-  it("finds local servers and marks Ollama's cloud models", async () => {
+  it("streams Ollama's NDJSON, takes a one-piece JSON answer, and stops on cancel", async () => {
+    const f = file();
+    let body = "";
+    let type = "";
+    const ai = new AiService(f, crypt, write, (async (_url: string, init: RequestInit) => {
+      if (init.signal?.aborted) throw new DOMException("aborted", "AbortError");
+      return new Response(body, { headers: { "content-type": type } });
+    }) as unknown as typeof fetch);
+    await ai.save({ provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "llama3" });
+    body = '{"message":{"content":"A"},"done":false}\n{"message":{"content":"B"},"done":true}\n';
+    type = "application/x-ndjson";
+    expect(await collect(ai, { text: "x", instruction: "y" })).toEqual(["A", "B"]);
+    body = '{"message":{"content":"whole"}}';
+    type = "application/json";
+    expect(await collect(ai, { text: "x", instruction: "y" })).toEqual(["whole"]);
+    const stop = new AbortController();
+    stop.abort();
+    await expect(collect(ai, { text: "x", instruction: "y" }, stop.signal)).rejects.toThrow("cancelled");
+  });  it("finds local servers and marks Ollama's cloud models", async () => {
     const fetcher = (async (url: string) => {
       if (url === "http://127.0.0.1:11434/api/tags") return new Response(JSON.stringify({ models: [{ name: "llama3" }, { name: "gpt-oss:cloud", remote_host: "https://ollama.com" }] }));
       throw new TypeError("refused");

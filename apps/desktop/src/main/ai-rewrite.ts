@@ -31,7 +31,7 @@ const LIST_TIMEOUT_MS = 8_000;
 const PROBE_TIMEOUT_MS = 800;
 const MAX_CONNECTIONS = 30;
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
-const SYSTEM = "You rewrite text for a writer. Follow the instruction. Reply with only a JSON array of exactly 3 different rewritten versions of the text, as strings, with no commentary.";
+const SYSTEM = "You rewrite text for a writer. Rewrite the text the user gives, following their instruction. Reply with only the rewritten text: no preamble, no quotes, no commentary. Keep the language of the text.";
 
 /** https, or plain http only to this computer; no credentials, query or fragment in the address. */
 export function normalizeUrl(input: string): string {
@@ -44,23 +44,6 @@ export function normalizeUrl(input: string): string {
   const local = url.protocol === "http:" && LOCAL_HOSTS.has(url.hostname);
   if ((url.protocol !== "https:" && !local) || url.username || url.password || url.search || url.hash) throw new Error("invalid-url");
   return url.href.replace(/\/+$/, "");
-}
-
-/** The model's answer as up to three alternatives: a JSON array, numbered lines, or the whole text as one. */
-export function parseOptions(content: string): string[] {
-  const text = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  const strings = (v: unknown): string[] | undefined =>
-    Array.isArray(v) && v.every((s) => typeof s === "string") ? (v as string[]).map((s) => s.trim()).filter(Boolean) : undefined;
-  try {
-    const parsed = JSON.parse(text) as unknown;
-    const list = strings(parsed) ?? strings((parsed as { options?: unknown })?.options);
-    if (list?.length) return list.slice(0, 3);
-  } catch {
-    // Not JSON: try numbered lines.
-  }
-  const numbered = text.split(/\n(?=\s*\d+[.)]\s)/).map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
-  if (numbered.length > 1) return numbered.slice(0, 3);
-  return text ? [text] : [];
 }
 
 const str = (v: unknown, max = 500) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -329,17 +312,119 @@ export class AiService {
     }));
     return found.filter((f): f is AiFound => Boolean(f));
   }
-
-  async rewrite(input: unknown): Promise<{ options: string[] }> {
+  /**
+   * Rewrite: the Writer's answer as it streams, chunk by chunk, in its own streaming shape (SSE for
+   * Chat Completions, Azure, Anthropic, Gemini and Cohere; NDJSON for Ollama). A service that
+   * answers in one piece yields it once. The key stays here; only text goes back to the window.
+   */
+  async *stream(input: unknown, signal: AbortSignal): AsyncGenerator<string> {
     const a = (input ?? {}) as Record<string, unknown>;
     if (typeof a.text !== "string" || !a.text.trim() || a.text.length > MAX_TEXT) throw new Error("invalid-text");
     if (typeof a.instruction !== "string" || !a.instruction.trim() || a.instruction.length > MAX_INSTRUCTION) throw new Error("invalid-instruction");
     const s = await this.#read();
     const c = s.connections.find((x) => x.id === s.writer);
     if (!c) throw new Error("not-configured");
-    const content = await this.#generate(c, SYSTEM, JSON.stringify({ instruction: a.instruction.trim(), text: a.text }), 4096, TIMEOUT_MS);
-    const options = parseOptions(content);
-    if (!options.length) throw new Error("provider-empty");
-    return { options };
+    const p = aiProvider(c.provider)!;
+    const key = this.#open(c);
+    if (p.key === "required" && !key) throw new Error("key-required");
+    const call = streamCall(p, generateCall(p, c, key, SYSTEM, `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`, 4096));
+    const all = AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]);
+    let response: Response;
+    try {
+      response = await this.#fetch(call.url, { method: "POST", redirect: "error", signal: all, headers: { "content-type": "application/json", ...call.headers }, body: JSON.stringify(call.body) });
+    } catch {
+      if (signal.aborted) throw new Error("cancelled");
+      throw new Error(all.aborted ? "timeout" : "network");
+    }
+    if (response.status === 401 || response.status === 403) throw new Error("unauthorized");
+    if (response.status === 404) throw new Error(p.group === "local" ? "model-missing" : "not-found");
+    if (response.status === 429) throw new Error("rate-limited");
+    if (!response.ok || !response.body) throw new Error(`provider-${response.status}`);
+    const type = response.headers.get("content-type") ?? "";
+    try {
+      if (/application\/json/.test(type) && !/ndjson/.test(type)) {
+        const text = answerText(p, await response.json());
+        if (typeof text !== "string") throw new Error("provider-format");
+        yield text;
+        return;
+      }
+      for await (const payload of (p.shape === "ollama" || /ndjson/.test(type) ? ndjson : sse)(response.body)) {
+        if (payload === "[DONE]") return;
+        let json: unknown;
+        try {
+          json = JSON.parse(payload);
+        } catch {
+          throw new Error("provider-format");
+        }
+        if ((json as { error?: unknown })?.error || (json as { type?: unknown })?.type === "error") throw new Error("provider-error");
+        const text = deltaText(p, json);
+        if (text) yield text;
+      }
+    } catch (e) {
+      if (signal.aborted) throw new Error("cancelled");
+      if (all.aborted) throw new Error("timeout");
+      throw e;
+    }
   }
+}
+
+/** The streaming form of a generation request. */
+export function streamCall(p: AiProvider, call: Call): Call {
+  const body = { ...(call.body as Record<string, unknown>) };
+  if (p.shape === "gemini") return { ...call, url: call.url.replace(":generateContent", ":streamGenerateContent?alt=sse"), body };
+  return { ...call, body: { ...body, stream: true } };
+}
+
+/** One streamed event's new text, in the provider's own shape. */
+export function deltaText(p: AiProvider, json: unknown): string {
+  const j = json as Record<string, any> | undefined;
+  const join = (parts: unknown) => (Array.isArray(parts) ? parts.map((x) => (typeof x?.text === "string" ? x.text : "")).join("") : "");
+  switch (p.shape) {
+    case "anthropic": return j?.type === "content_block_delta" && typeof j.delta?.text === "string" ? j.delta.text : "";
+    case "gemini": return join(j?.candidates?.[0]?.content?.parts);
+    case "ollama": return typeof j?.message?.content === "string" ? j.message.content : "";
+    case "cohere": return j?.type === "content-delta" && typeof j.delta?.message?.content?.text === "string" ? j.delta.message.content.text : "";
+    default: {
+      const c = j?.choices?.[0]?.delta?.content;
+      return typeof c === "string" ? c : "";
+    }
+  }
+}
+
+async function* lines(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      if (buffer.length > 1_000_000) throw new Error("provider-format");
+      let at: number;
+      while ((at = buffer.indexOf("\n")) >= 0) {
+        yield buffer.slice(0, at).replace(/\r$/, "");
+        buffer = buffer.slice(at + 1);
+      }
+    }
+    buffer += decoder.decode();
+    if (buffer) yield buffer;
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+}
+/** Server-sent events: each event's data lines, joined. */
+export async function* sse(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  let data: string[] = [];
+  for await (const line of lines(body)) {
+    if (line === "") {
+      if (data.length) yield data.join("\n");
+      data = [];
+    } else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /, ""));
+  }
+  if (data.length) yield data.join("\n");
+}
+/** Newline-delimited JSON: each line. */
+export async function* ndjson(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  for await (const line of lines(body)) if (line.trim()) yield line;
 }

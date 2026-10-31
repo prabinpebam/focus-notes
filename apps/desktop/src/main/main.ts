@@ -1240,7 +1240,31 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("ai:test", (id: unknown) => ai.test(id));
   handle("ai:discover", () => ai.discover());
   handle("ai:models", (input: unknown) => ai.models(input));
-  handle("ai:rewrite", (input: unknown) => ai.rewrite(input));
+  // Rewrite streams: one per window at a time, each chunk sent to the window that asked, tagged with its id.
+  const rewrites = new Map<number, { id: string; abort: AbortController }>();
+  handleFrom("ai:rewriteStart", (e, id: unknown, input: unknown) => {
+    if (typeof id !== "string" || !/^[\w-]{1,64}$/.test(id)) throw new Error("invalid-request");
+    const owner = e.sender.id;
+    rewrites.get(owner)?.abort.abort();
+    const abort = new AbortController();
+    rewrites.set(owner, { id, abort });
+    const send = (event: Record<string, unknown>) => { if (!e.sender.isDestroyed()) e.sender.send("ai:rewriteEvent", { id, ...event }); };
+    e.sender.once("destroyed", () => abort.abort());
+    void (async () => {
+      try {
+        for await (const text of ai.stream(input, abort.signal)) send({ type: "delta", text });
+        send({ type: "done" });
+      } catch (error) {
+        send({ type: "error", code: String((error as Error)?.message ?? "provider").slice(0, 60) });
+      } finally {
+        if (rewrites.get(owner)?.id === id) rewrites.delete(owner);
+      }
+    })();
+  });
+  handleFrom("ai:rewriteCancel", (e, id: unknown) => {
+    const r = rewrites.get(e.sender.id);
+    if (r && r.id === id) r.abort.abort();
+  });
   // ---- Settings → Agents (WP-7.4, AGT-02, D-166) ----
   // The main process reads and writes agents.json and builds every command line; the window only
   // sees the page and asks for a switch by name.

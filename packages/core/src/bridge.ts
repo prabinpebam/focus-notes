@@ -169,8 +169,13 @@ export interface AiBridge {
   discover(): Promise<import("./ai-providers.ts").AiFound[]>;
   /** The models a connection (saved, or the draft with its typed endpoint) lists. */
   models(input: AiConnectionInput): Promise<{ id: string; cloud: boolean }[]>;
-  /** Three alternatives from the Writer, in its own request shape; rejects with a plain reason code. */
-  rewrite(input: { text: string; instruction: string }): Promise<{ options: string[] }>;
+  /**
+   * Rewrite: starts streaming the Writer's rewrite of `text` under the window's own `id`; its chunks,
+   * then `done` or `error` (a reason code), come through `onRewriteEvent`.
+   */
+  rewriteStart(id: string, input: { text: string; instruction: string }): Promise<void>;
+  rewriteCancel(id: string): Promise<void>;
+  onRewriteEvent(listener: (event: unknown) => void): () => void;
 }
 
 export interface FeedbackBridge {
