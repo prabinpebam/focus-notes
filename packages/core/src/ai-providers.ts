@@ -75,6 +75,8 @@ export interface AiConnectionView {
   apiVersion: string;
   account: string;
   hasKey: boolean;
+  /** The person agreed to send selected text to this connection's destination and model (RWR-43). */
+  consented: boolean;
   /** The last Test: when, and whether it passed. */
   lastTest?: { ok: boolean; at: string };
 }

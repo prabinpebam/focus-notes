@@ -63,8 +63,11 @@ A service that ignores streaming and answers with one JSON body is read with the
 
 - **Addresses** (`normalizeUrl`, AIS-06): https, or plain http only to `127.0.0.1`, `localhost` or `[::1]`; no user name, password, query or fragment; trailing slashes dropped. Fixed cloud addresses can't be changed.
 - **Every request** uses `redirect: "error"`, so a service can't send the text somewhere else.
-- **Timeouts:** 90 s for a rewrite, 20 s for a Test, 8 s for a model list, 800 ms per port for Find on this computer.
-- **Status codes:** 401 and 403 → `unauthorized`; 404 → `model-missing` for a local server, `not-found` for others; 429 → `rate-limited`; any other failure → `provider-{status}`; a body that isn't JSON → `provider-format`. The window turns each code into words ([Settings → AI → Errors](../experience/ai-settings.md#errors)).
+- **Timeouts** (`AI_LIMITS`): each request has a response limit (until the answer starts), an idle limit (a started answer going quiet) and a total. Rewrite: 30 s, 30 s, 5 min to a cloud service; 120 s, 60 s, 10 min to a server on this computer, which may be loading a model. Test: 20 s (90 s on this computer); a model list: 8 s to answer, 10 s in all; Find on this computer: 800 ms per port, 1.5 s in all. Each closes the request.
+- **Status codes** (`statusError`): 401 and 403 → `unauthorized`; 404 → `model-missing` for a local server, `not-found` for others; 408 and 504 → `timeout`; 413 → `too-long`; 429 → `rate-limited` with Retry-After's seconds (a number or an HTTP date, or `retry-after-ms`); other 5xx → `server-error`; other 4xx → `bad-request`. A body that isn't the expected JSON → `provider-format`.
+- **Connection failures** (`transportError`, from fetch's cause): `ECONNREFUSED` → `refused`; `ENOTFOUND` and `EAI_*` → `dns`; certificate and TLS errors → `tls`; a redirect → `redirected`; anything else → `network`. The window turns each code into words ([Settings → AI → Errors](../experience/ai-settings.md#errors)); only these codes leave main, never the service's text (`reasonOf`).
+- **Thinking models:** Ollama gets `think: false` (else a thinking model's words go only to `message.thinking`, found against Ollama 0.35 on 31 October); OpenAI's own API gets `max_completion_tokens` (its reasoning models refuse `max_tokens`), and it and Gemini get four times the token limit, since thinking counts in it; Rewrite leaves out a leading `<think>…</think>` block.
+- **Proof:** `apps/desktop/test/ai-contract.test.ts` runs all 26 kinds against protocol-faithful fakes on 127.0.0.1 (`ai-fakes.ts`, each citing its provider's docs): the documented URL and auth header, streamed deltas cut at every byte including inside UTF-8 characters and SSE lines, the end events, Test, model lists, discovery, every error above, Stop and each timeout closing the socket, and keys that never leave main. `ai-ollama.live.test.ts` runs the same path against a real local Ollama with `FOCUS_NOTES_LIVE_AI=1` and skips otherwise.
 - **No retries, no fallback:** a failed request is reported, never repeated or sent to another connection.
 - **Local isn't proof of local:** a server on `127.0.0.1` may still pass text to the cloud. Ollama's models with a `remote_host` or `remote_model` are marked "· Cloud" in the model list.
 
@@ -72,31 +75,30 @@ A service that ignores streaming and answers with one JSON body is read with the
 
 `ai.json` in the app's data folder, written atomically (AIS-05, AIS-15):
 
-- each connection: `id`, service, name, address, model, deployment, API version, account ID, the key sealed with `safeStorage.encryptString`, and the last Test (`ok`, `at`);
-- `writer`: the Writer's ID.
+- each connection: `id`, service, name, address, model, deployment, API version, account ID, the key sealed with `safeStorage.encryptString`, the last Test (`ok`, `at`), and `consent`: what the person agreed to send selected text to (the service, address, model and a hash of the sealed key, `consentScope`);
+- `writer`: the Writer's ID;
+- `keepPrivate`: *Don't send private notes*, true unless switched off.
 
 The window sends a key only inside `ai:save`, from SecureKeyField's `save` event; core deletes it from the command's arguments as soon as it's read. Main seals it at once and returns the connections' views, which say only `hasKey`. A key is never carried to another service's connection. If `safeStorage` isn't available, saving a key fails with `secure-storage-unavailable`. Up to 30 connections. The first build's single service (one OpenAI-compatible address, model and key) is read as the connection `first`, the Writer if it was (AIS-12).
 
 ## Find on this computer
 
-`discover` asks each local kind that has a usual port (all but LocalAI) for its model list, all at once, 800 ms each, with no key. A server that answers 401 or 403 is listed with no models: it's there, it wants a token. Nothing leaves the computer: every address is loopback (AIS-07).
+`discover` asks each local kind that has a usual port (all but LocalAI) for its model list, all at once, 800 ms each, with no key. Only a server that answers in its own list shape counts (Ollama's `models`, the others' `data`), so a web page or other JSON on the port isn't listed. A server that answers 401 or 403 is listed with no models: it's there, it wants a token. Nothing leaves the computer: every address is loopback (AIS-07).
 
 ## Test connection
 
-`test(id)` sends the saved connection one generation: system "Reply with the single word OK.", user "Connection test.", up to 16 tokens, 20 s. No note text. It records `{ ok, at }` on the connection either way; the error, if any, shows on its row (AIS-09).
+`test(id)` sends the saved connection one generation: system "Reply with the single word OK.", user "Connection test.", up to 16 tokens, 20 s (90 s on this computer). No note text. An answer in the service's own shape passes even if it's empty, since a thinking model may spend 16 tokens thinking. It records `{ ok, at }` on the connection either way; the error, if any, shows on its row (AIS-09).
 
 ## IPC
 
-The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `rewriteStart(id, { text, instruction })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. Main's handlers are `ai:settings`, `ai:save`, `ai:remove`, `ai:writer`, `ai:test`, `ai:discover`, `ai:models`, `ai:rewriteStart`, `ai:rewriteCancel`; events go out on `ai:rewriteEvent` as `{ id, type: "delta" | "done" | "error", text?, code? }`, only to the window that started the rewrite. The browser app has no `ai` bridge, so the commands are disabled there (RWR-71).
+The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `privacy(keepPrivate)`, `rewriteStart(id, { text, instruction, private })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. Main's handlers are `ai:settings`, `ai:save`, `ai:remove`, `ai:writer`, `ai:test`, `ai:discover`, `ai:models`, `ai:consent`, `ai:privacy`, `ai:rewriteStart`, `ai:rewriteCancel`; events go out on `ai:rewriteEvent` as `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }`, only to the window that started the rewrite. An invoke that fails carries only a reason code (with ` retry-after={s}` for a rate limit). The browser app has no `ai` bridge, so the commands are disabled there (RWR-71).
 
-## Consent and private notes (planned)
+## Consent and private notes
 
-Not built (WP-AI.13, D-238 proposed):
+Built in main and core (AIS-13, AIS-14, D-238); the dialog's consent and private cases and the Settings switch are view changes being integrated:
 
-- **Don't send private notes** (AIS-13): on by default. Rewrite checks the note's root before sending; a private note sends nothing and says so.
-- **First-send confirmation** (AIS-14): main remembers, per connection, the address, model and key it was confirmed for; any change asks again.
-
-Until then the safeguards are: nothing is connected by default; every form and row says where text goes; and only the prompt and the selection are sent.
+- **Don't send private notes** (AIS-13): on by default. Core marks the selection private when the note is under the Private root (shared notes too) or is a `private:` note, and the dialog offers *Change in Settings* instead of *Generate*; main refuses a private selection too (`private-note`).
+- **First-send confirmation** (AIS-14): the dialog names the service, its address and On this computer or Cloud, and *Send* records consent (`ai:consent`) before the rewrite starts. Main refuses to stream without consent that matches the connection's current service, address, model and key (`consent-required`), so a change of any of them asks again.
 
 ## Security review (to do)
 
@@ -106,5 +108,5 @@ SEC-09, WP-AI.9: the `ai:*` handlers' input checks and sender, address and redir
 
 - **D-257:** every text service kind in the kit; supersedes D-236 and D-249's single OpenAI-compatible contract, and D-242's owner gate.
 - **D-233:** an integration client only; kept.
-- **D-238:** consent names the destination; proposed, not built.
+- **D-238:** consent names the destination; built in main and core on 31 October (AIS-14).
 - **D-239:** cost caps; superseded by D-256's limits (RWR-82). There's no daily or money cap: the service's own billing applies.

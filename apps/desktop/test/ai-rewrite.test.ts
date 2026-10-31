@@ -75,6 +75,8 @@ describe("AI connections (main process)", () => {
     // Changing it without a key keeps the saved one.
     const id = saved.connections[0]!.id;
     expect((await ai.save({ id, provider: "anthropic", name: "Claude", model: "claude-y" })).connections[0]!.hasKey).toBe(true);
+    await expect(collect(ai, { text: "hello", instruction: "warmer" })).rejects.toThrow("consent-required");
+    expect((await ai.consent(id)).connections[0]!.consented).toBe(true);
     expect(await collect(ai, { text: "hello", instruction: "warmer" })).toEqual(["Hel", "lo"]);
     expect(JSON.parse(seen.at(-1)!.init.body as string)).toMatchObject({ stream: true });
     expect(seen.at(-1)!.url).toBe("https://api.anthropic.com/v1/messages");
@@ -93,6 +95,7 @@ describe("AI connections (main process)", () => {
     await expect(ai.test(s.connections[0]!.id)).rejects.toThrow("unauthorized");
     expect((await ai.settings()).connections[0]!.lastTest).toMatchObject({ ok: false });
     const down = new AiService(f, crypt, write, (async () => { throw new TypeError("fetch failed"); }) as unknown as typeof fetch);
+    await down.consent(s.connections[0]!.id);
     await expect(collect(down, { text: "a", instruction: "b" })).rejects.toThrow("network");
   });
   it("streams Ollama's NDJSON, takes a one-piece JSON answer, and stops on cancel", async () => {
@@ -103,7 +106,7 @@ describe("AI connections (main process)", () => {
       if (init.signal?.aborted) throw new DOMException("aborted", "AbortError");
       return new Response(body, { headers: { "content-type": type } });
     }) as unknown as typeof fetch);
-    await ai.save({ provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "llama3" });
+    await ai.consent((await ai.save({ provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "llama3" })).connections[0]!.id);
     body = '{"message":{"content":"A"},"done":false}\n{"message":{"content":"B"},"done":true}\n';
     type = "application/x-ndjson";
     expect(await collect(ai, { text: "x", instruction: "y" })).toEqual(["A", "B"]);
@@ -113,7 +116,8 @@ describe("AI connections (main process)", () => {
     const stop = new AbortController();
     stop.abort();
     await expect(collect(ai, { text: "x", instruction: "y" }, stop.signal)).rejects.toThrow("cancelled");
-  });  it("finds local servers and marks Ollama's cloud models", async () => {
+  });
+  it("finds local servers and marks Ollama's cloud models", async () => {
     const fetcher = (async (url: string) => {
       if (url === "http://127.0.0.1:11434/api/tags") return new Response(JSON.stringify({ models: [{ name: "llama3" }, { name: "gpt-oss:cloud", remote_host: "https://ollama.com" }] }));
       throw new TypeError("refused");

@@ -155,7 +155,7 @@ export interface PlatformBridge {
 }
 
 /** Settings → AI as the window sees it: its connections and the Writer, never a key. */
-export interface AiSettingsView { writer: string; connections: import("./ai-providers.ts").AiConnectionView[] }
+export interface AiSettingsView { writer: string; keepPrivate: boolean; connections: import("./ai-providers.ts").AiConnectionView[] }
 /** A connection being added or changed; `key` crosses once, and an empty one keeps the saved key. */
 export interface AiConnectionInput { id?: string; provider: string; name: string; endpoint: string; model: string; deployment?: string; apiVersion?: string; account?: string; key?: string }
 export interface AiBridge {
@@ -169,11 +169,16 @@ export interface AiBridge {
   discover(): Promise<import("./ai-providers.ts").AiFound[]>;
   /** The models a connection (saved, or the draft with its typed endpoint) lists. */
   models(input: AiConnectionInput): Promise<{ id: string; cloud: boolean }[]>;
+  /** The person agreed to send selected text to this connection's destination and model; a change of either asks again. */
+  consent(id: string): Promise<AiSettingsView>;
+  /** Keep private and shared notes off AI (on by default). */
+  privacy(keepPrivate: boolean): Promise<AiSettingsView>;
   /**
    * Rewrite: starts streaming the Writer's rewrite of `text` under the window's own `id`; its chunks,
-   * then `done` or `error` (a reason code), come through `onRewriteEvent`.
+   * then `done` or `error` (a reason code, with `retryAfter` seconds for a rate limit), come through
+   * `onRewriteEvent`. `private`: the text is from a private or shared note.
    */
-  rewriteStart(id: string, input: { text: string; instruction: string }): Promise<void>;
+  rewriteStart(id: string, input: { text: string; instruction: string; private?: boolean }): Promise<void>;
   rewriteCancel(id: string): Promise<void>;
   onRewriteEvent(listener: (event: unknown) => void): () => void;
 }

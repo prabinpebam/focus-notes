@@ -30,13 +30,13 @@ That the rows marked built work in the app they're using, that the original is n
 | RWR-77 | First text replaces the selection; pieces rebuild it; blank lines make paragraphs | `rewrite-stream.test.ts` | — |
 | RWR-78 | One change, caret after it, 1 s hold and 3 s fade, cleared at the end; reduced motion | `rewrite-stream.test.ts` (one step); Owner | Look in light, dark, contrast and reduced motion |
 | RWR-79 | One Ctrl+Z gives the exact original; Ctrl+Y the rewrite | `rewrite-stream.test.ts` (one undo step and redo) | Journey |
-| RWR-80 | Esc or Stop aborts in main and restores exactly | `rewrite-stream.test.ts` (Esc mid-stream restores the original exactly, even inside a list and a fence); `apps/desktop/test/ai-rewrite.test.ts` (stops on cancel) | Journey |
-| RWR-81 | Each failure restores the original with its words | `rewrite-stream.test.ts` (a stop or failure puts the original back exactly; no text is a failure); `ai-rewrite.test.ts` (names a refused key and an unreachable service) | Journey with a failing fake |
-| RWR-82 | 32 KiB, 4,000 characters, 4,096 tokens, 90 s, one at a time | Code (`MAX_TEXT`, `MAX_INSTRUCTION`, `TIMEOUT_MS`; one per window in `main.ts`) | Unit test of the limits |
-| RWR-83 | Only the instruction, prompt and selection are sent | `ai-rewrite.test.ts` (each provider's own request) | Security review (SEC-09) |
+| RWR-80 | Esc or Stop aborts in main and restores exactly | `rewrite-stream.test.ts` (Esc mid-stream restores the original exactly, even inside a list and a fence); `apps/desktop/test/ai-contract.test.ts` (Stop mid-stream and before the answer starts close the socket within 1 s); `packages/core/test/ai-app.test.ts` (Stop cancels in the shell and restores); `ai-ollama.live.test.ts` against the owner's Ollama, 31 October (stopped 1 ms after Stop) | Journey |
+| RWR-81 | Each failure restores the original with its words | `rewrite-stream.test.ts` (a stop or failure puts the original back exactly; no text is a failure); `apps/desktop/test/ai-contract.test.ts` (401, 403, 404, 400, 413, 429 with Retry-After, 5xx, 504, a malformed stream, an error event, HTML, empty answers, refused, DNS, TLS, redirect: each one reason code, never the service's text); `packages/core/test/ai-app.test.ts` (each error event aborts the editor and toasts its words) | Journey with a failing fake |
+| RWR-82 | Text, prompt and answer limits; response, idle and total timeouts; one at a time | `apps/desktop/test/ai-contract.test.ts` (response, idle and total timeouts each close the request; too-long answers; local limits longer than cloud) | — |
+| RWR-83 | Only the instruction, prompt and selection are sent; thinking kept out of the note | `apps/desktop/test/ai-contract.test.ts` (each kind's documented URL, auth and body; `think: false` for Ollama; `max_completion_tokens` for OpenAI; a leading `<think>` block left out); `ai-ollama.live.test.ts` against the owner's Ollama, 31 October | Security review (SEC-09) |
 | RWR-84 | Live Markdown while streaming; the answer's content kept in the note's canonical style afterwards | `rewrite-stream.test.ts` at 2616070c (formatted while it streams, one undo step at the end; open syntax mid-stream; `streamingMarkdown`) | The owner accepts it in the review build |
 | RWR-85 | Ctrl+Shift+R and ⇧⌘R named per platform | `packages/core/test/text-menu.test.ts` at bb50e208 (the text menu's key per platform) | The finish message's undo key; the cheat sheet and tooltips |
-| RWR-86 | Switching notes stops the request in main | — | Not built (WP-AI.13) |
+| RWR-86 | Switching or closing the note stops the request in main | `packages/core/test/ai-app.test.ts` (a note switch cancels in the shell and the new note gets no late pieces; `pagehide` cancels); main aborts on `destroyed` and `did-start-loading` | Journey |
 
 ## Settings → AI
 
@@ -46,16 +46,16 @@ That the rows marked built work in the app they're using, that the original is n
 | AIS-02 | 26 kinds, three groups, six shapes; the not-offered list | `ai-providers.ts` data; `ai-rewrite.test.ts` (each provider's own request, answer and stream) | — |
 | AIS-03 | Rows show name, detail, badge, key state and last Test, with their actions | Owner | Journey; look |
 | AIS-04 | Only the chosen service's fields; Save disabled with reason; switching service starts afresh | Owner | Unit test of `vm.ai` |
-| AIS-05 | The key goes out once, sealed in main, never returned; empty keeps it; no key store fails | `ai-rewrite.test.ts` (keeps connections with sealed keys that never come back) | Security review |
+| AIS-05 | The key goes out once, sealed in main, never returned; empty keeps it; no key store fails | `ai-rewrite.test.ts`; `apps/desktop/test/ai-contract.test.ts` (a provider's 401 that echoes the key: the key isn't in settings, the file, errors, stacks, reason codes, model lists or discovery); `diagnostics.test.ts` (AI keys redacted by prefix) | Security review |
 | AIS-06 | https or loopback http only; no credentials, query or fragment; no redirects | `ai-rewrite.test.ts` (accepts https and this computer's http only); `redirect: "error"` in code | — |
-| AIS-07 | Find on this computer: usual ports, 800 ms, loopback only; a 401 still counts | Owner with Ollama | Unit test of `discover` |
+| AIS-07 | Find on this computer: usual ports, 800 ms, loopback only; a 401 still counts; another program on the port doesn't | `apps/desktop/test/ai-contract.test.ts` (none running, some running, HTML or other JSON on a port, a 401, a silent port); `ai-ollama.live.test.ts` against the owner's Ollama, 31 October (found Ollama in 12 ms) | — |
 | AIS-08 | Model lists per shape; Ollama cloud models marked | Owner | Unit test of `modelList` |
-| AIS-09 | Test sends the made-up request, no note text; records the result | `ai-rewrite.test.ts` (Test records its result); Owner | — |
+| AIS-09 | Test sends the made-up request, no note text; records the result | `apps/desktop/test/ai-contract.test.ts` (every kind; a thinking model's empty answer passes; a non-answer fails; timeouts); `ai-ollama.live.test.ts` against the owner's Ollama, 31 October (379 ms) | — |
 | AIS-10 | One Writer; the first saved becomes it; the dialog names it | Owner | Unit test |
-| AIS-11 | Each error code has its words | `en.json` keys; `ui:check` | — |
+| AIS-11 | Each error code has its words | `en.json` keys; `ui:check`; `packages/core/test/ai-app.test.ts` (the words for each code, Retry-After's seconds) | — |
 | AIS-12 | The first build's service carries over | `ai-rewrite.test.ts` (moves the first version's single service into a connection) | — |
-| AIS-13 | Don't send private notes | — | Not built (WP-AI.13) |
-| AIS-14 | First-send confirmation | — | Not built (WP-AI.13) |
+| AIS-13 | Don't send private notes | `apps/desktop/test/ai-contract.test.ts` (main refuses a private selection while it's on; sends once it's off); `packages/core/test/ai-app.test.ts` (Private root, shared and `private:` notes; the dialog's private case) | The dialog's case and the Settings switch (view, integrating) |
+| AIS-14 | First-send confirmation | `apps/desktop/test/ai-contract.test.ts` (nothing sent before consent; a new model, address or key asks again; a new name doesn't); `packages/core/test/ai-app.test.ts` (the dialog names the service, address and where; Send records it first) | The dialog's consent case (view, integrating) |
 | AIS-15 | `ai.json` on the data inventory | `packages/core/test/inventory.test.ts` | — |
 
 Test titles in brackets are the tests' own, on the branch at bb50e208; the file list is in [Rewrite engine → Tests](../architecture/rewrite-engine.md#tests).

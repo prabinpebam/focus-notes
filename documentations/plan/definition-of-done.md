@@ -53,7 +53,7 @@ The owner's next changes (live Markdown while streaming, platform key names: WP-
 | MAI.7 | Every row of the [acceptance matrix](rewrite-acceptance.md) has evidence; the [wait rows](../architecture/perceived-performance.md#rewrite-waits) are measured (open and Stop within 100 ms). | Acceptance matrix; `fn:rewrite.*` |
 | MAI.8 | GATE-MAI: the owner accepts the feature; reviews approve; Windows app CI is green; Help matches what ships. | WP-AI.9 |
 
-**Against the promise:** the flow the owner asked for is built and in their hands. What would still break the promise today: a request that runs on after switching notes (RWR-86), private notes that can be sent (AIS-13), and no security review yet (SEC-09).
+**Against the promise:** the flow the owner asked for is built and in their hands. What would still break the promise today: the consent and private-note cases not yet shown in the dialog and Settings (AIS-13, AIS-14: refused in main already, views being integrated), and no security review yet (SEC-09). Every connection kind is proven against a protocol-faithful fake, and the local path against the owner's real Ollama (`ai-contract.test.ts`, `ai-ollama.live.test.ts`).
 
 ## The levels
 

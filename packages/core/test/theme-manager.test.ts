@@ -212,7 +212,7 @@ describe("Settings → Appearance (DD-SET-02)", () => {
   it("summarizes the look, sets the interface size, and opens the theme manager", async () => {
     const t = await started({ settings: null });
     const a = () => (t.vm("vm.settings") as { appearance: Record<string, unknown> }).appearance;
-    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "appearance"]);
+    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "ai", "appearance"]);
     expect(a()).toMatchObject({ summary: "System · Paper / Ink · 16 px Mono (Roboto Mono)", scale: "1", canSync: false });
     expect((a().scales as { label: string }[]).map((s) => s.label)).toEqual(["90%", "100%", "110%", "125%", "150%"]);
     await t.run("ui.setScale", { value: "1.25" });

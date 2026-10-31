@@ -12,10 +12,13 @@ import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import { sourceOf } from "./notes.ts";
+import { visibilityOf, type WorkspaceTree } from "./workspace.ts";
 
 interface S {
-  note: { status: string };
+  note: { status: string; key: string; path?: string };
   ui: { toolbarOpen: boolean };
+  workspace: { tree: WorkspaceTree };
 }
 
 interface Ctx<St extends S> {
@@ -31,7 +34,19 @@ interface Ctx<St extends S> {
 
 const PRESETS = ["concise", "warmer", "grammar"] as const;
 const GROUPS: readonly AiGroup[] = ["local", "cloud", "gateway"];
-const ERRORS = ["not-configured", "secure-storage-unavailable", "unauthorized", "key-required", "timeout", "network", "model-missing", "not-found", "rate-limited", "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many", "provider-empty"] as const;
+/** The shell's reason codes that have their own words; any other is "couldn't answer". */
+const ERRORS = new Set([
+  "not-configured", "consent-required", "private-note", "secure-storage-unavailable", "unauthorized", "key-required",
+  "timeout", "network", "refused", "dns", "tls", "redirected", "model-missing", "not-found", "rate-limited", "server-error",
+  "bad-request", "too-long", "provider-format", "provider-error", "provider-empty", "connection-unavailable",
+  "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many",
+]);
+/** A reason from the shell: the code at the end of an IPC error's text, and Retry-After's seconds. */
+export function reasonCode(raw: string): { code: string; retryAfter?: number } {
+  const m = /([a-z][a-z-]*)(?: retry-after=(\d+))?\s*$/.exec(raw);
+  const code = m && ERRORS.has(m[1]!) ? m[1]! : "";
+  return m?.[2] ? { code, retryAfter: Number(m[2]) } : { code };
+}
 const DRAFT_FIELDS = ["name", "endpoint", "model", "deployment", "apiVersion", "account"] as const;
 type Draft = { id?: string; provider: string; name: string; endpoint: string; model: string; deployment: string; apiVersion: string; account: string };
 const blankDraft = (provider = "ollama"): Draft => {
@@ -44,14 +59,16 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const changed = () => store.update((s) => ({ ...s }));
   const t = (key: string, args?: Record<string, unknown>) => catalog.format(key, args);
   /** A reason code from the shell (inside an IPC error's text) as words. */
-  const reason = (e: unknown, fallback: string) => {
-    const raw = String((e as Error)?.message ?? "");
-    const code = ERRORS.find((c) => raw.includes(c));
-    return t(code ? `ai.error.${code}` : fallback);
+  const reason = (e: unknown, fallback: string, retryAfter?: number) => {
+    const r = reasonCode(String((e as Error)?.message ?? ""));
+    const wait = retryAfter ?? r.retryAfter;
+    if (r.code === "rate-limited" && wait) return t("ai.error.rate-limited.wait", { s: wait });
+    return t(r.code ? `ai.error.${r.code}` : fallback);
   };
 
   // ---- Settings → AI ----
   let writer = "";
+  let keepPrivate = true;
   let connections: AiConnectionView[] = [];
   let formOpen = false;
   let draft: Draft = blankDraft();
@@ -91,23 +108,25 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const at = new Date(c.lastTest.at).toLocaleString();
     return t(c.lastTest.ok ? "ai.test.passed" : "ai.test.failed", { at });
   };
-  const apply = (v: { writer: string; connections: AiConnectionView[] }) => { writer = v.writer; connections = v.connections; };
+  const apply = (v: { writer: string; keepPrivate?: boolean; connections: AiConnectionView[] }) => { writer = v.writer; keepPrivate = v.keepPrivate !== false; connections = v.connections; };
   const load = async () => {
     if (!ai) return;
-    apply(await ai.settings().catch(() => ({ writer: "", connections: [] })));
+    apply(await ai.settings().catch(() => ({ writer: "", keepPrivate: true, connections: [] })));
     changed();
   };
   const writerConnection = () => connections.find((c) => c.id === writer);
 
   viewModels.register({
     id: "vm.ai",
+    // Its values live in this module, not in state: selected again on every change (`changed()`).
+    reads: "*",
     schema: { type: "object", properties: {
       ...Object.fromEntries([
         "writerName", "status", "formTitle", "providerName", "keyLabel", "keyState", "destination", "testInfo", "modelsStatus", "discoverStatus",
         "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote",
       ].map((k) => [k, { type: "string" as const }])),
       ...Object.fromEntries([
-        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField",
+        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "keepPrivate",
       ].map((k) => [k, { type: "boolean" as const }])),
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
@@ -124,6 +143,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       return {
         writerName: writerConnection()?.name ?? t("ai.writer.none"),
         hasWriter: Boolean(writerConnection()),
+        keepPrivate,
         writerMenu: [{ id: "writer", items: connections.map((c) => ({ id: c.id, label: c.name, checked: c.id === writer })) }],
         connections: connections.map((c) => ({
           id: c.id, name: c.name, detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
@@ -274,6 +294,17 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     changed();
   });
   reg("ai.model", (a) => { if (typeof a.value === "string") { draft = { ...draft, model: a.value }; changed(); } });
+  // Keep private notes off AI (on by default): switching it off lets Rewrite send from private and shared notes.
+  reg("ai.privacy", async (a) => {
+    if (!ai) return;
+    try {
+      apply(await ai.privacy(a.value !== false));
+      status = t(keepPrivate ? "ai.private.kept" : "ai.private.allowed");
+    } catch (e) {
+      status = reason(e, "ai.error.save");
+    }
+    changed();
+  });
   reg("ai.openSettings", async () => {
     closeModal();
     await commands.run("settings.open");
@@ -282,23 +313,44 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
 
   // ---- Rewrite: the dialog takes the prompt; the answer streams into the note ----
   let open = false, selection = "", prompt = "", instruction = "";
+  /** The note the selection came from: its key (a switch stops the rewrite) and whether it's private or shared. */
+  let fromKey = "", fromPrivate = false;
   /** The rewrite streaming into the note: its id, whether any text came, and the toast that says so. */
   let running: { id: string; got: boolean; off: () => void; toast: unknown } | undefined;
   const presetText = (p: (typeof PRESETS)[number]) => t(`rewrite.preset.${p}.prompt`);
   const closeModal = () => { open = false; changed(); };
+  const isPrivate = (s: St) => {
+    const path = s.note.path;
+    if (!path) return false;
+    if (sourceOf(path) === "private") return true;
+    const v = visibilityOf(s.workspace.tree, path);
+    return v === "private" || v === "shared";
+  };
+  /** What the dialog offers: set up a Writer, the private-note stop, consent before the first send, or the prompt. */
+  const actions = () => {
+    const w = writerConnection();
+    if (!w) return "setup";
+    if (fromPrivate && keepPrivate) return "private";
+    return w.consented ? "compose" : "consent";
+  };
   viewModels.register({
     id: "vm.rewrite",
+    reads: "*",
     schema: { type: "object", properties: {
-      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel"].map((k) => [k, { type: "string" as const }])),
-      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
+      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel", "consentText"].map((k) => [k, { type: "string" as const }])),
+      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "needsConsent", "privateNote", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
     } },
     select: () => {
       const w = writerConnection();
+      const a = actions();
       return {
         open, selection, prompt,
         writerLabel: w ? t("rewrite.writer", { name: w.name, detail: describe(w) }) : "",
         needsSetup: !w, hasWriter: Boolean(w),
-        actions: w ? "compose" : "setup",
+        actions: a,
+        needsConsent: a === "consent",
+        privateNote: a === "private",
+        consentText: w ? t("rewrite.consent", { service: aiProvider(w.provider)!.label, host: destination(w.provider, w.endpoint, w.account), where: where(aiProvider(w.provider)!.group, w.endpoint) }) : "",
         empty: !prompt.trim(),
         concise: prompt === presetText("concise"), warmer: prompt === presetText("warmer"), grammar: prompt === presetText("grammar"),
       };
@@ -313,14 +365,14 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     if (typeof r.toast === "number") void commands.run("toast.dismiss", { id: r.toast }).catch(() => {});
   };
   /** A failure or a stop: the editor puts the original back and unlocks the note. */
-  const fail = (code: string) => {
+  const fail = (code: string, retryAfter?: number) => {
     editorAction("rewrite.abort");
     end();
     if (code === "cancelled") announce(t("rewrite.stopped"));
-    else toast(reason(new Error(code), "ai.error.provider"), { tone: "error" });
+    else toast(reason(new Error(code), "ai.error.provider", retryAfter), { tone: "error" });
   };
   const onEvent = (raw: unknown) => {
-    const e = raw as { id?: unknown; type?: unknown; text?: unknown; code?: unknown } | null;
+    const e = raw as { id?: unknown; type?: unknown; text?: unknown; code?: unknown; retryAfter?: unknown } | null;
     if (!running || !e || e.id !== running.id) return;
     if (e.type === "delta" && typeof e.text === "string") {
       running.got ||= e.text.trim().length > 0;
@@ -330,8 +382,21 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       editorAction("rewrite.finish");
       end();
       announce(t("rewrite.replaced"));
-    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider");
+    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider", typeof e.retryAfter === "number" ? e.retryAfter : undefined);
   };
+  /** Stops the request in the shell, without touching the editor (it has already let the note go). */
+  const drop = () => {
+    if (!running || !ai) return;
+    void ai.rewriteCancel(running.id).catch(() => {});
+    end();
+    announce(t("rewrite.stopped"));
+  };
+  // Another note opened, or this one closed: the old note's rewrite stops in the shell too.
+  store.subscribe(() => {
+    if (running && store.state.note.key !== fromKey) drop();
+  });
+  // The window going away (reload, close): nothing keeps running in the shell for it.
+  (globalThis as { addEventListener?: (type: string, fn: () => void) => void }).addEventListener?.("pagehide", drop);
 
   reg("rewrite.open", () => {
     if (open || running) return;
@@ -345,6 +410,8 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       return;
     }
     open = true; selection = text; prompt = "";
+    fromKey = store.state.note.key;
+    fromPrivate = isPrivate(store.state);
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
     await load();
   });
@@ -355,8 +422,21 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     if (p) { prompt = presetText(p); changed(); }
   });
   // Generate: the dialog closes, and the note locks and shimmers (rewrite.began) while the answer comes.
-  reg("rewrite.generate", () => {
-    if (!ai || !prompt.trim() || running || !writerConnection()) return;
+  // The first send to a connection is its consent ("Send and rewrite", { consent: true }); a private note never goes while they're kept off AI.
+  reg("rewrite.generate", async (a) => {
+    const w = writerConnection();
+    if (!ai || !prompt.trim() || running || !w) return;
+    const step = actions();
+    if (step === "private") return;
+    if (step === "consent") {
+      if (a.consent !== true) return;
+      try {
+        apply(await ai.consent(w.id));
+      } catch (e) {
+        toast(reason(e, "ai.error.provider"), { tone: "error" });
+        return;
+      }
+    }
     instruction = prompt.trim();
     closeModal();
     editorAction("rewrite.begin");
@@ -372,7 +452,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const name = writerConnection()?.name ?? "";
     running = { id, got: false, off, toast: toast(t("rewrite.running", { name }), { action: { command: "rewrite.cancel", label: t("rewrite.stop") } }) };
     announce(t("rewrite.started"));
-    ai.rewriteStart(id, { text: selection, instruction }).catch((e: unknown) => { if (running?.id === id) fail(String((e as Error)?.message ?? "provider")); });
+    ai.rewriteStart(id, { text: selection, instruction, private: fromPrivate }).catch((e: unknown) => { if (running?.id === id) fail(String((e as Error)?.message ?? "provider")); });
   });
   // Esc or Stop while it streams: the request is stopped and the original comes back at once.
   reg("rewrite.cancel", () => {

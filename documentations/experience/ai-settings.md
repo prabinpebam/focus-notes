@@ -7,7 +7,7 @@
 | --- | --- | --- | --- | --- |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-05 | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY | AIS-01 to AIS-06, AIS-08 to AIS-12, AIS-15, PRV-05; DD-RWR-05 to DD-RWR-07 |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-08 | IA-CMP-AIDISCOVER | AIS-07; DD-RWR-08 |
-| CP-RWR-01 | SC-RWR-04 | UC-RWR-09 | IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS | AIS-13, AIS-14 (not built); DD-RWR-09 |
+| CP-RWR-01 | SC-RWR-04 | UC-RWR-09 | IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS | AIS-13, AIS-14 (in progress); DD-RWR-09 |
 
 Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is called, and the ones not offered, are in [Rewrite providers](../architecture/rewrite-providers.md). The kit behind the catalogue is [ai-integration](https://prabinpebam.github.io/loushing/items/ai-integration/), pinned at 1613a55.
 
@@ -102,10 +102,22 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 | Key refused | "The service refused the key. Check it in Settings → AI." |
 | Key missing | "This service needs an API key." |
 | Too slow | "The service took too long to answer. Try again." |
+| Nothing listening | "Nothing is answering at that address. Start the server, or check the address in Settings → AI." |
+| Address not found | "Couldn't find the service's address. Check your internet connection and the address." |
+| Secure connection | "The service's secure connection couldn't be verified, so nothing was sent." |
+| Redirected | "The service tried to send the request somewhere else, so nothing was sent." |
 | Can't reach | "Couldn't reach the service. Check the address and your connection, or start the local server." |
 | Model missing | "The server doesn't have that model. Choose an installed model." |
 | Not found | "The service doesn't know that model or address. Check them in Settings → AI." |
-| Busy | "The service is busy or out of quota. Wait a moment, then try again." |
+| Busy | "The service is busy or out of quota. Try again in {n} seconds." when it says how long, else "Wait a moment, then try again." |
+| Service fault | "The service had a problem. Wait a moment, then try again." |
+| Request refused | "The service turned the request down. Check the model in Settings → AI." |
+| Too long | "The text is too long for this service. Select less and try again." |
+| Unreadable answer | "The service's answer couldn't be read. Check the address and the service in Settings → AI." |
+| Error mid-answer | "The service stopped with an error. Try again." |
+| No consent | "Rewrite needs your OK before it sends text to this connection." |
+| Private note | "This note is private. Rewrite doesn't send private notes." |
+| Connection gone | "That connection is gone. Choose another in Settings → AI." |
 | Bad address | "Use an https:// address, or http://127.0.0.1 or http://localhost for a server on this computer." |
 | No model, deployment or account | "Choose or type a model.", "Enter the deployment name from Azure.", "Enter your Cloudflare account ID." |
 | Bad key | "That key can't be used. Paste it again without line breaks." |
@@ -114,19 +126,19 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 
 ## Where it's kept
 
-`ai.json` in the app's data folder: each connection's service, name, address, model, deployment, API version, account ID, sealed key and last Test, and which one is the Writer. It's per device, never synced or committed, and listed in the [data inventory](../architecture/security-and-privacy.md) (AIS-15). A single OpenAI-compatible service saved by the first build becomes a connection, and the Writer if it was (AIS-12).
+`ai.json` in the app's data folder: each connection's service, name, address, model, deployment, API version, account ID, sealed key, last Test and what its consent covers, which one is the Writer, and whether private notes are kept from Rewrite. It's per device, never synced or committed, and listed in the [data inventory](../architecture/security-and-privacy.md) (AIS-15). A single OpenAI-compatible service saved by the first build becomes a connection, and the Writer if it was (AIS-12).
 
-## Planned: private notes and consent
+## Private notes and consent
 
-Not built (WP-AI.13):
+The logic is built in the main process and the window; the dialog's two cases and the switch below are view changes being integrated (WP-AI.13):
 
-- **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**.
-- **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, one dialog names the service, its address and On this computer or Cloud. **Send** goes ahead and is remembered for that connection; **Cancel** sends nothing.
+- **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private or shared note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**. The main process refuses such text too.
+- **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "The first time, check where your text goes: Rewrite sends the selected text and your prompt to {service} at {address} · On this computer" (or "· Cloud"). **Send** goes ahead and is remembered for that connection; **Cancel** sends nothing. The main process refuses to send without it.
 
-These follow D-238 (consent names the destination), which the owner hasn't settled; the words above are proposals.
+These follow D-238 (consent names the destination).
 
 ## Decisions
 
 - **D-257:** every text service kind in the ai-integration kit; supersedes D-236 and D-249.
 - **D-233:** an integration client only; Focus Notes never installs, downloads, launches, hosts or runs a model.
-- **D-238:** consent names the destination; proposed, not built.
+- **D-238:** consent names the destination; built in main and core on 31 October.
