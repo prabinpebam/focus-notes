@@ -135,10 +135,12 @@ The logic is built in the main process and the window; the dialog's two cases an
 - **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private or shared note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**. The main process refuses such text too.
 - **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "The first time, check where your text goes: Rewrite sends the selected text and your prompt to {service} at {address} · On this computer" (or "· Cloud"). **Send** goes ahead and is remembered for that connection; **Cancel** sends nothing. The main process refuses to send without it.
 
-These follow D-238 (consent names the destination).
+These follow D-259, which builds D-238 (consent names the destination).
 
 ## Decisions
 
 - **D-257:** every text service kind in the ai-integration kit; supersedes D-236 and D-249.
 - **D-233:** an integration client only; Focus Notes never installs, downloads, launches, hosts or runs a model.
-- **D-238:** consent names the destination; built in main and core on 31 October.
+- **D-259:** consent per connection and *Don't send private notes*, both enforced in main.
+- **D-260:** request time limits, the error words' reason codes, and the 26 built kinds only.
+- **D-238:** consent names the destination; built as D-259.

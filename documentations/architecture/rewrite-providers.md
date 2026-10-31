@@ -108,5 +108,7 @@ SEC-09, WP-AI.9: the `ai:*` handlers' input checks and sender, address and redir
 
 - **D-257:** every text service kind in the kit; supersedes D-236 and D-249's single OpenAI-compatible contract, and D-242's owner gate.
 - **D-233:** an integration client only; kept.
-- **D-238:** consent names the destination; built in main and core on 31 October (AIS-14).
+- **D-259:** consent per connection and *Don't send private notes*, enforced in main; builds D-238 (AIS-13, AIS-14).
+- **D-260:** the three request clocks, one reason code per failure, thinking models, and the 26 built kinds only.
+- **D-238:** consent names the destination; built as D-259.
 - **D-239:** cost caps; superseded by D-256's limits (RWR-82). There's no daily or money cap: the service's own billing applies.
