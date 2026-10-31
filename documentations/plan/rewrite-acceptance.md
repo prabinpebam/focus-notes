@@ -1,7 +1,7 @@
 # Rewrite acceptance
 
 > [!NOTE]
-> **TL;DR.** One row per Rewrite and Settings → AI requirement: how to check it, the evidence today and what's left. On 31 October the built rows (RWR-70 to RWR-83, AIS-01 to AIS-12, AIS-15) have `pnpm check`, typechecks and unit tests on `fix-ai-rewrite-simple`, and the owner is trying them in the review build with Ollama. Nothing is proven by a Windows journey yet, no live service is ever called in CI, and the security review, wait measures and screen-reader pass are still to do (WP-AI.9).
+> **TL;DR.** One row per Rewrite and Settings → AI requirement: how to check it, the evidence today and what's left. On 31 October the built rows (RWR-70 to RWR-83, AIS-01 to AIS-12, AIS-15) have `pnpm check`, typechecks and unit tests on `fix-ai-rewrite-simple`, and the owner is trying them in the review build with Ollama. The `air-rewrite` and `air-safeguards` journeys run against a local fake Ollama, and the first security review's findings are fixed (SEC-09). No live service is ever called in CI; a live cloud service waits for the owner's own key. The wait measures' budgets and the screen-reader pass are still to do (WP-AI.9).
 
 The chain is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md); requirements in [requirements](../product/requirements.md#rewrite-with-ai-rwr); packages in the [implementation plan](implementation-plan.md#mai).
 
@@ -82,6 +82,8 @@ Test titles in brackets are the tests' own, on the branch at bb50e208; the file 
 ## Stage gate
 
 **GATE-MAI** passes when every row above has its evidence, the owner has accepted Rewrite and Settings → AI in the review build, and the branch has passed the desktop gate for app code (D-206, sized by D-255). Live services are never part of CI: the owner's own trial is the evidence for real services.
+
+- **Cloud services (OpenAI, Anthropic and the other keyed kinds), live:** depends on the owner (their own key), deferred. Until then `apps/desktop/test/ai-contract.test.ts` is the evidence: each kind's documented address, auth header and body through the main process's own fetch, with the key sealed by the system's key store, never shown, and kept with its address.
 
 ## Decisions
 
