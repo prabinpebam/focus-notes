@@ -253,16 +253,21 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     await selectWord(page, "word");
     const before = await selection(page);
     await openAt(page, word);
-    // Nothing to undo yet: it starts on the first item that does something.
+    // It starts on the first item that does something: with text selected, Rewrite… heads the menu (RWR-72).
     await expect(item(page, "Undo")).toHaveAttribute("aria-disabled", "true");
-    await expect(item(page, "Cut")).toBeFocused();
+    await expect(item(page, "Rewrite…")).toBeFocused();
     // Keys: arrows, End, Home, and typeahead.
+    await page.keyboard.press("ArrowDown");
+    await expect(item(page, "Undo")).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await expect(item(page, "Cut")).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(item(page, "Copy")).toBeFocused();
     await page.keyboard.press("End");
     await expect(item(page, windows ? "Emoji" : "Select all")).toBeFocused();
     await page.keyboard.press("Home");
-    await expect(item(page, "Undo")).toBeFocused();
+    await expect(item(page, "Rewrite…")).toBeFocused();
     await page.keyboard.press("s");
     await expect(item(page, "Select all")).toBeFocused();
     await page.keyboard.press("Escape");
@@ -281,6 +286,7 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     for (const g of await menu(page).getByRole("group").all()) expect(await g.getAttribute("aria-label")).toBeNull();
     // Enter on an unavailable item leaves the menu open.
     await page.keyboard.press("Home");
+    await page.keyboard.press("ArrowDown");
     await expect(item(page, "Undo")).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(menu(page)).toBeVisible();
