@@ -87,7 +87,12 @@ async function rewrite(page: Page, text: string, prompt: string) {
   const dialog = page.getByRole("dialog", { name: "Rewrite" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
-  await dialog.getByRole("button", { name: "Generate" }).click();
+  // The first send to a connection asks once where the text goes (AIS-14); after that it's Generate.
+  const consent = dialog.getByRole("button", { name: "Send", exact: true });
+  if (await consent.isVisible()) {
+    await expect(dialog.getByText(/^The first time, check where your text goes/)).toBeVisible();
+    await consent.click();
+  } else await dialog.getByRole("button", { name: "Generate" }).click();
   await expect(dialog).toBeHidden();
 }
 
