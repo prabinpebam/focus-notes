@@ -24,7 +24,7 @@ That the rows marked built work in the app they're using, that the original is n
 | RWR-71 | The web build has no `ai` bridge; `rewrite.open` disabled there | Code (`enabled` needs `bridge.ai`) | Journey or web test |
 | RWR-72 | Ctrl+Shift+R, the text menu and the Edit menu open the dialog on the selection; no selection announces and opens nothing | `packages/core/test/keymap-layers.test.ts`, `menu-bar`, `text-menu` tests; `apps/desktop/e2e/spelling-menu.spec.ts` (with text selected, *Rewrite…* heads the text menu and takes its first focus); Owner | Journey |
 | RWR-73 | The dialog's parts; presets fill the prompt and never send; Generate disabled when empty | `ui:check` of `rewrite.view.json`; Owner | Look; journey |
-| RWR-74 | No Writer → *Set up AI* opens Settings at AI | Owner | Journey |
+| RWR-74 | No Writer → *Set up AI* opens Settings at AI | `packages/core/test/ai-app.test.ts` (at AI even while Settings' account check is still running: it once opened at Account on CI); `apps/desktop/e2e/air-safeguards.spec.ts` (*Change in Settings* opens at AI); Owner | Journey |
 | RWR-75 | A note changed after capture sends nothing and says so | Code (`doc.eq` check in EditorSurface) | Unit test |
 | RWR-76 | Read-only and shimmer while generating; toast with Stop; no hand-over for saving | `packages/editor/test/rewrite-stream.test.ts` (streams in place, locked; the lock stops commands, undo and inserts); `apps/desktop/e2e/air-rewrite.spec.ts` (typing, Ctrl+B and Ctrl+Z change nothing, `aria-busy`, nothing on disk while it streams) | — |
 | RWR-77 | First text replaces the selection; pieces rebuild it; blank lines make paragraphs | `rewrite-stream.test.ts` | — |

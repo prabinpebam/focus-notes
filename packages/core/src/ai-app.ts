@@ -320,8 +320,9 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   });
   reg("ai.openSettings", async () => {
     closeModal();
-    await commands.run("settings.open");
+    // The section first: Settings' open waits on the account check, which can take seconds (offline, slow GitHub).
     await commands.run("settings.setSection", { value: "ai" });
+    await commands.run("settings.open");
   });
 
   // ---- Rewrite: the dialog takes the prompt; the answer streams into the note ----

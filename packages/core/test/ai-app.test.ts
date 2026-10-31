@@ -224,6 +224,18 @@ describe("private notes kept off AI", () => {
   });
 });
 
+describe("Change in Settings (RWR-74, AIS-13)", () => {
+  it("opens at AI even while Settings' account check is still running", async () => {
+    const t = setup();
+    const order: string[] = [];
+    t.commands.register({ id: "settings.open", title: "command.settings.open", run: () => (order.push("open"), new Promise<void>(() => {})) });
+    t.commands.register({ id: "settings.setSection", title: "command.settings.setSection", run: async (a?: { value?: string }) => void order.push(`section:${a?.value}`) });
+    void t.commands.run("ai.openSettings");
+    await settle();
+    expect(order).toEqual(["section:ai", "open"]);
+  });
+});
+
 describe("where text goes and which key goes with it (D-259)", () => {
   const ollama = { provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "gpt-oss:120b-cloud", hasKey: false };
   it("a local server's model that may be cloud-routed is named as the cloud, in consent and in Settings", async () => {
