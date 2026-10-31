@@ -96,7 +96,7 @@ The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`,
 
 ## Consent and private notes
 
-Built in main and core (AIS-13, AIS-14, D-238); the dialog's consent and private cases and the Settings switch are view changes being integrated:
+Built (AIS-13, AIS-14, D-259), in main, core, the Rewrite dialog's `consent` and `private` cases and the Settings switch; the `air-safeguards` journey runs both in the app:
 
 - **Don't send private notes** (AIS-13): on by default. Core shows the dialog's private case when the note is under the Private root (shared notes too) or is a `private:` note, offering *Change in Settings* instead of *Generate*. That only picks the dialog's step: `ai:rewriteStart` carries the note's path, and main decides for itself (`isPrivateNote`, D-259) that a note under the workspace's `private/` folder, by the path as given or its real path (so a link into `private/` counts), is private, and refuses it (`private-note`). With a private folder, a missing or relative path counts as private.
 - **First-send confirmation** (AIS-14): the dialog names the service, its address and On this computer or Cloud, and *Send* records consent (`ai:consent`) before the rewrite starts. Main refuses to stream without consent that matches the connection's current service, address, model and key (`consent-required`), so a change of any of them asks again.
