@@ -34,7 +34,7 @@ That the rows marked built work in the app they're using, that the original is n
 | RWR-81 | Each failure restores the original with its words | `rewrite-stream.test.ts` (a stop or failure puts the original back exactly; no text is a failure); `ai-rewrite.test.ts` (names a refused key and an unreachable service) | Journey with a failing fake |
 | RWR-82 | 32 KiB, 4,000 characters, 4,096 tokens, 90 s, one at a time | Code (`MAX_TEXT`, `MAX_INSTRUCTION`, `TIMEOUT_MS`; one per window in `main.ts`) | Unit test of the limits |
 | RWR-83 | Only the instruction, prompt and selection are sent | `ai-rewrite.test.ts` (each provider's own request) | Security review (SEC-09) |
-| RWR-84 | Live Markdown while streaming; bytes exact afterwards | `rewrite-stream.test.ts` at 2616070c (formatted while it streams and the provider's bytes as one undo step; open syntax mid-stream; `streamingMarkdown`) | The owner accepts it in the review build |
+| RWR-84 | Live Markdown while streaming; the answer's content kept in the note's canonical style afterwards | `rewrite-stream.test.ts` at 2616070c (formatted while it streams, one undo step at the end; open syntax mid-stream; `streamingMarkdown`) | The owner accepts it in the review build |
 | RWR-85 | Ctrl+Shift+R and ⇧⌘R named per platform | `packages/core/test/text-menu.test.ts` at bb50e208 (the text menu's key per platform) | The finish message's undo key; the cheat sheet and tooltips |
 | RWR-86 | Switching notes stops the request in main | — | Not built (WP-AI.13) |
 

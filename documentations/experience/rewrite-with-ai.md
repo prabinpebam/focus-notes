@@ -85,7 +85,7 @@ Official documentation, checked 30 October 2026. These products show the interac
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Stream in place</p>
-    <p>The first text replaces the selection, and the answer grows there in the rainbow gradient. Blank lines in the answer become new paragraphs. Nothing outside the selection changes (RWR-77). In progress (2616070c, not yet in the review build): Markdown in the answer shows formatted as it streams, and the note ends with exactly the answer's Markdown (RWR-84).</p>
+    <p>The first text replaces the selection, and the answer grows there in the rainbow gradient. Blank lines in the answer become new paragraphs. Nothing outside the selection changes (RWR-77). In progress (2616070c, not yet in the review build): Markdown in the answer shows formatted as it streams, and the note keeps the answer's content, saved in the note's canonical Markdown style (`* ` bullets become `- `, `__bold__` becomes `**bold**`), not the service's exact bytes (RWR-84).</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Done</p>

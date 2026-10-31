@@ -122,7 +122,7 @@ Notes are often edited elsewhere too: on GitHub, in VS Code, or on a phone. The 
 
 ### Planned rewrite splice
 
-Rewrite (D-256) replaces only the selected text, in the editor, as one undo step; the note's Markdown is then saved by the ordinary path, so canonical style applies to the edited blocks as for any edit. The answer goes in as plain paragraphs today; live Markdown while it streams, with the note's Markdown exactly the answer's (RWR-84), is in progress. See [Rewrite engine](rewrite-engine.md#in-the-editor).
+Rewrite (D-256) replaces only the selected text, in the editor, as one undo step; the note's Markdown is then saved by the ordinary path, so canonical style applies to the edited blocks as for any edit. The answer goes in as plain paragraphs today; live Markdown while it streams, keeping the answer's content in the note's canonical style, not its exact bytes (RWR-84), is in progress. See [Rewrite engine](rewrite-engine.md#in-the-editor).
 
 ## Public URLs
 
