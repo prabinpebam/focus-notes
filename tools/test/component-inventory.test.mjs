@@ -33,7 +33,8 @@ describe("component catalog page (DS-A07)", () => {
   it("fails when the TL;DR's counts disagree", () => {
     const primitives = catalog.components.filter((c) => c.tier === "primitive").length;
     expect(lint(page.replace(`**${primitives} primitives**`, "**40 primitives**")).join("\n")).toMatch(new RegExp(`${primitives} primitives`));
-    expect(lint(page.replace("**3 compound components**", "**38 compound components**")).join("\n")).toMatch(/3 compound components/);
+    const compounds = catalog.components.filter((c) => c.tier === "compound").length;
+    expect(lint(page.replace(`**${compounds} compound components**`, "**38 compound components**")).join("\n")).toMatch(new RegExp(`${compounds} compound components`));
   });
 
   it("fails when a planned entry is marked Implemented", () => {
