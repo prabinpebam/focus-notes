@@ -83,7 +83,7 @@ Test titles in brackets are the tests' own, on the branch at bb50e208; the file 
 
 **GATE-MAI** passes when every row above has its evidence, the owner has accepted Rewrite and Settings → AI in the review build, and the branch has passed the desktop gate for app code (D-206, sized by D-255). Live services are never part of CI: the owner's own trial is the evidence for real services.
 
-- **Cloud services (OpenAI, Anthropic and the other keyed kinds), live:** depends on the owner (their own key), deferred. Until then `apps/desktop/test/ai-contract.test.ts` is the evidence: each kind's documented address, auth header and body through the main process's own fetch, with the key sealed by the system's key store, never shown, and kept with its address.
+- **Cloud services (OpenAI, Anthropic and the other keyed kinds), live:** depends on the owner (their own key), deferred. Until then `apps/desktop/test/ai-own-key.test.ts` is the evidence for the owner's own path: Settings → AI's form adds an OpenAI or Anthropic connection with a key, Test passes, and Rewrite streams the answer, through the main process's service at api.openai.com or api.anthropic.com (answered by a local fake), with the key in its own header, sealed on disk and never in the window; a wrong key fails Test in plain words. `ai-contract.test.ts` checks every keyed kind's documented address, auth header and body the same way.
 
 ## Decisions
 
