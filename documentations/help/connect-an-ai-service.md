@@ -1,15 +1,16 @@
 # Connect an AI service
 
-Set up the AI service that rewrites your words: one running on this computer, or a service online that you use with your own key.
+Set up the AI service that rewrites your words: a server on this computer, GitHub Copilot you already use in your terminal, or an online service with your own key.
 
 > [!NOTE]
-> **TL;DR.** Open **Settings** → **AI**. For a service on this computer, like Ollama, select **Find on this computer**, then **Set up**. For an online service, select **Add connection**, choose the service, paste your key, and select **Save connection**. Then select **Test connection**.
+> **TL;DR.** Open **Settings** → **AI**, then **Find on this computer**. A supported signed-in **GitHub Copilot** is added directly; local servers offer **Set up**. Copilot says **Cloud** because your words go to GitHub. Online APIs still use **Add connection** and your own key. **Test connection** sends only made-up text.
 
 **Applies to:** the desktop app on Windows, macOS and Linux.
 
 **Before you start:** you need one of these:
 
 - an AI app running on this computer, like Ollama or LM Studio, with a model in it;
+- or a supported GitHub Copilot CLI already installed and signed in;
 - or an account with an online AI service, like OpenAI or Anthropic, and an API key from it. An API key is a long code the service gives you so it knows the requests are yours.
 
 Focus Notes doesn't install or run AI models. It connects to a service you already have.
@@ -23,6 +24,18 @@ Focus Notes doesn't install or run AI models. It connects to a service you alrea
 5. Select **Save connection**.
 
 **Result:** the service is in **AI connections**, marked "This computer" for a local model or "Cloud" for a cloud model. The first one you save is the **Writer**, the one Rewrite uses.
+
+## Connect GitHub Copilot on this computer
+
+1. Open **Settings** → **AI**.
+2. Select **Find on this computer**.
+3. If a supported signed-in Copilot is found, it appears in your connections without pasting a key. It becomes the active integration only if you have not chosen one.
+
+**Result:** **GitHub Copilot (on this computer)** says **Cloud**. The installed program runs here; GitHub's service rewrites the words. Focus Notes uses the login the program already owns, not a copied token. Before your first rewrite it still asks whether to send the selected words. Finding Copilot never sends your notes or starts sign-in.
+
+If it says to sign in, use Copilot in your normal terminal, then look again. A login that cannot be used with isolated configuration is not activated. The supported version for this adapter is CLI **1.0.105**; Focus Notes does not download or update it.
+
+Claude subscription logins are not reused. Gemini CLI login reuse is on hold, and Codex integration is deferred; their existing API connections remain separate.
 
 ## Connect an online service
 
@@ -55,13 +68,16 @@ Focus Notes doesn't install or run AI models. It connects to a service you alrea
 - Online services have their own terms and charges.
 - To change a connection, select **Change**. Leave **API key** empty to keep the saved key.
 - To delete a connection and its key, select **Remove**. Your notes don't change.
-- Focus Notes works with 26 kinds of service, like Ollama, LM Studio, OpenAI, Anthropic, Google Gemini, Azure OpenAI, Mistral, Groq and OpenRouter. It doesn't work with Amazon Bedrock or Vertex AI yet.
+- Focus Notes offers 26 API/server kinds plus the supported Copilot CLI integration. It doesn't work with Amazon Bedrock or Vertex AI yet.
 
 ## If the test fails
 
 - "Couldn't reach the service." Start the app on this computer, or check that you're online. Then test again.
 - "The service refused the key." Paste the key again, then select **Save connection**.
 - "The server doesn't have that model." Select **Find models** and choose one it has.
+- Copilot not found: install or restore it yourself, then select **Find on this computer**. Focus Notes does not install it.
+- Copilot not signed in: sign in in your normal terminal, then look again.
+- Copilot quota reached: check your Copilot plan or allowance, then try again. Your original words stay unchanged.
 
 ## Related
 

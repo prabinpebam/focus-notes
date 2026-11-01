@@ -58,7 +58,7 @@ The decoration is never part of the note: it isn't in the Markdown, the clipboar
 | --- | --- |
 | Section | No connections (empty text with **Add connection** and **Find on this computer**); connections; form open (Add connection hidden) |
 | Row | Writer or Saved badge; key saved, none or not needed; never tested, testing, passed, failed, error |
-| Find on this computer | Rest; looking; found some; found none |
+| Find on this computer | Rest; looking with earlier results kept; found servers; supported signed-in Copilot added directly; CLI signed-out, unsupported-version or unknown with a reason; found none. Copilot is Cloud, never an on-device model (D-264). |
 | Form | Each service's own fields; models: none, finding, list, none available, error; Save disabled with reason, saving, saved, failed |
 
 ## Words

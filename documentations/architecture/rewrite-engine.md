@@ -48,6 +48,8 @@ When the answer is complete, `finish` puts the original back outside the history
 
 ## In the main process
 
+**Copilot CLI (D-264):** `AiService.stream` input validation and first-send consent precede the official SDK adapter; private-note judgement follows D-261. Selected text travels over stdio RPC to an explicit supported installed CLI, never process arguments or app-written prompt files. Any isolated temporary runtime state is removed after exit. Its empty-mode session exposes zero tools; only answer deltas enter the existing rewrite-ID event lane. Cloud timeouts include runtime startup. Stop aborts the session and closes only its owned runtime; the editor's exact restoration, save authority and one undo step remain unchanged. See [the provider contract](rewrite-providers.md#github-copilot-on-this-computer).
+
 `AiService.stream` (RWR-82, RWR-83):
 
 - **Checks** the input: text of 1 character to 32 KiB, a prompt of 1 to 4,000 characters, a Writer that exists. The ID must match `[\w-]{1,64}`.

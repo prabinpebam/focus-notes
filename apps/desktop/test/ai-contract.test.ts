@@ -5,13 +5,20 @@
  * documentation. Also: errors as one reason each, cancellation and timeouts that close the
  * request, Find on this computer, and keys that never leave the main process.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AI_PROVIDERS, aiProvider, aiRunsInCloud } from "@focus-notes/core/ai-providers";
 import { AiError, AiService, reasonOf, retryAfter, sse, ndjson } from "../src/main/ai-rewrite.ts";
 import { KEY, TEXT, TEXT_PARTS, closedPort, provider, silent, sleep, stalls, startFake, streamWire, type Fake, type Handler } from "./ai-fakes.ts";
+
+vi.mock("../src/main/ai-copilot.ts", async (original) => {
+  const module = await original<typeof import("../src/main/ai-copilot.ts")>();
+  return { ...module, CopilotIntegration: class extends module.CopilotIntegration {
+    constructor() { super({ binary: async () => undefined }); }
+  } };
+});
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
 const file = () => join(mkdtempSync(join(tmpdir(), "fn-ai-contract-")), "ai.json");
@@ -68,15 +75,15 @@ async function writerFor(id: string, handler: Handler, opts: { key?: string; lim
 }
 
 describe("every connection kind against its service's documented protocol", () => {
-  it("covers exactly the 26 kinds Settings lists, each in a built request shape", () => {
-    expect(Object.keys(KINDS).sort()).toEqual(AI_PROVIDERS.map((p) => p.id).sort());
-    expect(AI_PROVIDERS).toHaveLength(26);
-    expect(new Set(AI_PROVIDERS.map((p) => p.shape))).toEqual(new Set(["openai", "anthropic", "gemini", "azure", "ollama", "cohere"]));
+  it("covers the 26 HTTP kinds; Copilot has its own stdio contract", () => {
+    expect(Object.keys(KINDS).sort()).toEqual(AI_PROVIDERS.filter((p) => p.shape !== "copilot-cli").map((p) => p.id).sort());
+    expect(AI_PROVIDERS).toHaveLength(27);
+    expect(new Set(AI_PROVIDERS.map((p) => p.shape))).toEqual(new Set(["openai", "anthropic", "gemini", "azure", "ollama", "cohere", "copilot-cli"]));
     // Not built, so never listed: they need cloud sign-in, job queues or another program (air-integration-gaps.md).
     for (const id of ["amazon-bedrock", "bedrock", "vertex-ai", "vertex", "azure-foundry", "foundry", "replicate", "fal", "mlx-lm", "copilot", "claude-code", "codex"]) expect(aiProvider(id)).toBeUndefined();
   });
 
-  for (const p of AI_PROVIDERS) {
+  for (const p of AI_PROVIDERS.filter((p) => p.shape !== "copilot-cli")) {
     const k = KINDS[p.id]!;
     it(`${p.label}: streams, tests and lists models the documented way (${k.doc})`, async () => {
       const key = p.key === "none" ? undefined : KEY;

@@ -42,6 +42,7 @@ const ERRORS = new Set([
   "timeout", "network", "refused", "dns", "tls", "redirected", "model-missing", "not-found", "rate-limited", "server-error",
   "bad-request", "too-long", "provider-format", "provider-error", "provider-empty", "connection-unavailable",
   "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many",
+  "cli-missing", "cli-unsupported", "cli-not-signed-in",
 ]);
 /** A reason from the shell: the code at the end of an IPC error's text, and Retry-After's seconds. */
 export function reasonCode(raw: string): { code: string; retryAfter?: number } {
@@ -53,7 +54,7 @@ const DRAFT_FIELDS = ["name", "endpoint", "model", "deployment", "apiVersion", "
 type Draft = { id?: string; provider: string; name: string; endpoint: string; model: string; deployment: string; apiVersion: string; account: string };
 const blankDraft = (provider = "ollama"): Draft => {
   const p = aiProvider(provider)!;
-  return { provider, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: "", deployment: "", apiVersion: p.shape === "azure" ? AZURE_API_VERSION : "", account: "" };
+  return { provider, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: p.shape === "copilot-cli" ? "auto" : "", deployment: "", apiVersion: p.shape === "azure" ? AZURE_API_VERSION : "", account: "" };
 };
 
 export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, tracker, editorAction, announce, toast }: Ctx<St>) {
@@ -166,16 +167,17 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
           keyText: t(c.hasKey ? "ai.key.saved" : aiProvider(c.provider)!.key === "none" ? "ai.key.notNeeded" : "ai.key.none"),
           testText: testText(c), testing: testing.has(c.id),
         })),
-        found: found.map((f, i) => {
+        found: found.flatMap((f, i) => {
+          if (f.provider === "copilot-cli") return [];
           const fp = aiProvider(f.provider)!;
           const n = f.models.length;
-          return { id: String(i), name: fp.label, detail: n ? t("ai.found.models", { n, endpoint: f.endpoint }) : t("ai.found.noModels", { endpoint: f.endpoint }) };
+          return [{ id: String(i), name: fp.label, detail: n ? t("ai.found.models", { n, endpoint: f.endpoint }) : t("ai.found.noModels", { endpoint: f.endpoint }) }];
         }),
         discovering, discoverStatus,
         formOpen, addVisible: !formOpen, noKeyField: p.key === "none",
         formTitle: draft.id ? t("ai.form.change", { name: draft.name }) : t("ai.form.add"),
         providerName: p.label,
-        providerNote: t(`ai.note.${p.group}`),
+        providerNote: t(p.shape === "copilot-cli" ? "ai.note.copilot" : `ai.note.${p.group}`),
         providerMenu: GROUPS.map((g) => ({ id: g, label: t(`ai.group.${g}`), items: AI_PROVIDERS.filter((x) => x.group === g).map((x) => ({ id: x.id, label: x.label, checked: x.id === draft.provider })) })),
         name: draft.name, endpoint: draft.endpoint, model: draft.model, deployment: draft.deployment, apiVersion: draft.apiVersion, account: draft.account,
         showEndpoint: p.endpointEditable, showModel: !azure, showDeployment: azure, showApiVersion: azure, showAccount: p.fields.includes("account"),
@@ -277,9 +279,13 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     changed();
     try {
       found = await ai.discover();
-      discoverStatus = t(found.length ? "ai.found.some" : "ai.found.none", { n: found.length });
-    } catch {
-      discoverStatus = t("ai.found.none", { n: 0 });
+      apply(await ai.settings());
+      const cli = found.find((f) => f.provider === "copilot-cli");
+      if (cli?.status === "signed-in") discoverStatus = t("ai.found.copilot");
+      else if (cli) discoverStatus = reason(new Error(cli.error ?? "provider-error"), "ai.error.provider");
+      else discoverStatus = t(found.length ? "ai.found.some" : "ai.found.none", { n: found.length });
+    } catch (e) {
+      discoverStatus = reason(e, "ai.error.provider");
     } finally {
       discovering = false;
       changed();
@@ -289,6 +295,11 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   reg("ai.useFound", (a) => {
     const f = found[Number(a.value)];
     if (!f) return;
+    if (f.provider === "copilot-cli") {
+      status = f.status === "signed-in" ? t("ai.found.copilot") : reason(new Error(f.error ?? "provider-error"), "ai.error.provider");
+      changed();
+      return;
+    }
     const p = aiProvider(f.provider)!;
     const local = f.models.find((m) => !m.cloud);
     openForm({ ...blankDraft(p.id), endpoint: f.endpoint, model: local?.id ?? "" });

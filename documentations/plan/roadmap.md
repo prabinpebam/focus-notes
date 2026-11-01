@@ -123,6 +123,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MAI: Rewrite with AI (building)</p>
+<p>D-264 extends WP-AI.11's AIS-02 to AIS-04 and AIS-07 to AIS-11: GitHub Copilot (on this computer), a Cloud-labelled official CLI SDK integration. Find directly adds supported signed-in Copilot without generation, preserving an existing active integration and first-send consent. Isolated login reuse, zero tools, dummy streaming and abort proven on 1 November; adapter on <code>fix-ai-copilot-cli</code>, pending combined Settings integration. Claude subscription reuse is dropped, Gemini held, Codex deferred. No new requirement IDs or stage.</p>
 <p>Desktop rewriting in place: select text, then <kbd>Ctrl+Shift+R</kbd> or Rewrite… in the text menu, give a prompt, and the answer streams over the selection as one undo step; <kbd>Esc</kbd>, Stop and errors put the original back. Settings → AI connects 26 kinds of service on this computer or in the cloud, with sealed keys, Find on this computer and Test. Focus Notes never runs a model. Browser rewriting is not included. <a href="implementation-plan.md#mai">Details</a>; <a href="rewrite-acceptance.md#stage-gate">GATE-MAI</a>. RWR-70 to RWR-86, AIS-01 to AIS-15, KEY-08, SPT-09, UI-14, FOC-07, HLP-10, PRV-05, SEC-09, PRF-15, QLT-08, A11Y-03, I18N-04, DSY-14, DOC-03, LIC-03.</p>
 </li>
 <li class="slate-step">

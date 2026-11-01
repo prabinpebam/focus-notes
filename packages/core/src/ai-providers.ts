@@ -4,7 +4,7 @@
  * or pays for. `shape` is the request the main process makes; the window only sees this data.
  */
 
-export type AiShape = "openai" | "anthropic" | "gemini" | "azure" | "ollama" | "cohere";
+export type AiShape = "openai" | "anthropic" | "gemini" | "azure" | "ollama" | "cohere" | "copilot-cli";
 export type AiGroup = "local" | "cloud" | "gateway";
 export type AiField = "endpoint" | "model" | "deployment" | "apiVersion" | "account";
 
@@ -40,6 +40,7 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
   local("jan", "Jan", "http://127.0.0.1:1337/v1", "/models"),
   local("docker-model-runner", "Docker Model Runner", "http://127.0.0.1:12434/engines/v1", "/models", "none"),
   cloud("openai", "OpenAI", "https://api.openai.com/v1"),
+  { id: "copilot-cli", label: "GitHub Copilot (on this computer)", group: "cloud", shape: "copilot-cli", endpoint: "https://api.githubcopilot.com", endpointEditable: false, key: "none", fields: [] },
   cloud("anthropic", "Anthropic Claude", "https://api.anthropic.com", "anthropic"),
   cloud("gemini", "Google Gemini", "https://generativelanguage.googleapis.com", "gemini"),
   { id: "azure-openai", label: "Azure OpenAI", group: "cloud", shape: "azure", endpoint: "", endpointEditable: true, key: "required", fields: ["deployment", "apiVersion"] },
@@ -108,4 +109,7 @@ export interface AiFound {
   provider: string;
   endpoint: string;
   models: { id: string; cloud: boolean }[];
+  /** Installed CLI authentication, checked without generation. Not a service health test. */
+  status?: "signed-in" | "signed-out" | "unsupported-version" | "unknown";
+  error?: string;
 }

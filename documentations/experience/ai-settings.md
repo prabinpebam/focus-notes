@@ -59,23 +59,30 @@ Each row (IA-CMP-REWRITESTATUS, AIS-03) has:
 
 ## The services
 
-26 kinds, from the ai-integration kit's text-capable catalogue (AIS-02, D-257).
+26 API/server kinds from the ai-integration kit, plus the supported GitHub Copilot CLI integration (AIS-02, D-257, D-264). The CLI adapter is on `fix-ai-copilot-cli`, pending combined Settings integration.
 
 | Group | Services | Address | Key |
 | --- | --- | --- | --- |
 | On this computer | Ollama (`127.0.0.1:11434`), LM Studio (`:1234/v1`), llama.cpp server (`:8080/v1`), vLLM (`:8000/v1`), SGLang (`:30000/v1`), LocalAI (`:8080/v1`), Jan (`:1337/v1`), Docker Model Runner (`:12434/engines/v1`) | Yours to change; the usual one filled in | Optional; none for Ollama and Docker Model Runner |
 | Cloud APIs | OpenAI, Anthropic Claude, Google Gemini, Azure OpenAI, Mistral AI, Cohere, Groq, Together AI, Fireworks AI, DeepSeek, xAI Grok, Cerebras, Perplexity, NVIDIA NIM, Cloudflare Workers AI | Fixed by the service; Azure's is your resource; Cloudflare's takes your account ID | Required |
+| Cloud integration on this computer | GitHub Copilot (on this computer) | GitHub's service through the supported installed CLI | No key field; runtime-owned existing login |
 | Gateways and other services | OpenRouter, Hugging Face, Other OpenAI-compatible service | Fixed, or yours for Other | Required, or optional for Other |
 
 The group's note says what that means for your words: "Runs on this computer. Choose a model you've installed; models marked Cloud send text off this computer.", "Your text goes to this service with your own API key. Its terms and charges apply." or "Your text goes to this service, which may pass it to other providers. Its terms and charges apply."
 
-**Not offered, and why:** Amazon Bedrock (needs AWS request signing), Vertex AI (needs Google sign-in), Microsoft Foundry with Entra sign-in (Azure OpenAI with a key is covered), Replicate and fal (job queues, not a text answer), MLX LM (a library, not a server) and command-line or MCP bridges (not in the kit).
+**Not offered, and why:** Amazon Bedrock (AWS signing), Vertex AI (Google sign-in), Foundry with Entra, Replicate/fal (job queues), MLX LM (in-process hosting) and blanket command-line/MCP bridges. D-264 adds only proven Copilot support: Claude subscription reuse is dropped without Anthropic approval; Gemini OAuth reuse is held; Codex is deferred until no-actions support is proven.
 
 ## Keys
 
 You type a key into the **API key** field (IA-CMP-AIKEY). It leaves the field once, when you choose **Save connection**: the main process seals it with the system key store (Electron `safeStorage`), the field clears, and the key is never sent back to the window, written to a log or put in your notes (AIS-05). When you change a connection, leave the field empty to keep the saved key ("A key is saved in the system keychain. Leave this empty to keep it, or enter a new one to replace it."). If the key store can't be used: "Couldn't use the system keychain on this computer. Enter the key again." A key is never copied to a connection of another service, or to another address: when you change a saved connection's address, the key field says "Enter the key again for the new address. The saved key is never sent to it.", and saving without a new key drops the old one (a service that needs a key says "Enter the key again for the new address."; D-259). **Remove** deletes the connection and its sealed key.
 
 ## Find on this computer
+
+### Supported CLI login discovery (D-264)
+
+The owner's **Find on this computer** action also checks the supported installed Copilot version and its runtime-owned authentication, with no prompt, login flow, cloud-model list or credential read. It keeps the earlier results while checking; the CLI probe has a 5 s failure bound plus bounded runtime shutdown. Signed-in Copilot is added directly, once, and becomes the active integration only if none is set. An existing choice is unchanged. First-send consent remains mandatory.
+
+The Copilot connection always says **Cloud**, has no API key or editable endpoint, and starts with model `auto` (the CLI default). **Find models** explicitly lists the GitHub service's models. Signed-out, unsupported and unknown results say why and do not claim readiness or activate. Sign-in stays in the person's normal terminal; the app never copies tokens or uses the person's active configuration as a fallback. Errors include CLI missing, unsupported version, not signed in and quota; original text is restored on Rewrite failure or Stop.
 
 **Find on this computer** (IA-CMP-AIDISCOVER, AIS-07) asks each local server's usual port for its models, waiting at most 800 ms each, and never looks beyond this computer. It says "Looking for AI servers on this computer…", then "Found 2 servers on this computer." with a row per server ("3 models · http://127.0.0.1:11434", or "Running, no models yet · …") and **Set up**, or "No AI server is answering on this computer. Start Ollama, LM Studio or another local server, then look again." **Set up** opens the form with the address and the first model that runs locally. A server that asks for a token still counts as found. LocalAI shares llama.cpp's port, so it isn't asked separately.
 
