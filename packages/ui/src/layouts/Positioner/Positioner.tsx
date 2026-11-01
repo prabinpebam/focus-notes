@@ -107,11 +107,6 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
         }
         const target = fragments[rewritePlacement.fragment] ?? fragments.at(-1);
         if (!target) return;
-        if (returning.current && target.bottom > viewport.top && target.top < viewport.bottom) {
-          const belowFits = target.bottom + metrics.gap + rewriteSize.height <= viewport.bottom - metrics.edge;
-          const aboveFits = target.top - metrics.gap - rewriteSize.height >= viewport.top + metrics.edge;
-          if (belowFits || aboveFits) rewritePlacement.side = belowFits ? "below" : "above";
-        }
         returnPosition.current = {
           fragment: rewritePlacement.fragment, side: rewritePlacement.side === "above" ? "above" : "below",
           edge: metrics.edge, gap: metrics.gap,
