@@ -560,6 +560,18 @@ export function EditorSurface({
         left: Math.min(...fragments.map((r) => r.left)), right: Math.max(...fragments.map((r) => r.right)),
         top: Math.min(...fragments.map((r) => r.top)), bottom: Math.max(...fragments.map((r) => r.bottom)),
         fragments, viewport,
+        reveal: (position) => {
+          const current = selectionAnchor();
+          const scroller = scrollerRef.current;
+          const fragment = current?.fragments?.[position.fragment] ?? current?.fragments?.at(-1);
+          if (!current?.viewport || !fragment || !scroller) return;
+          scroller.scrollBy({
+            top: position.side === "below"
+              ? fragment.bottom - current.viewport.top - position.edge - position.gap
+              : fragment.top - current.viewport.bottom + position.edge + position.gap,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+          });
+        },
       };
     };
     const runAction = (e: Event) => {

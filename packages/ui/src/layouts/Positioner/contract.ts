@@ -13,6 +13,8 @@ export const contract = defineContract({
     offset: { kind: "token", group: "space", default: "s" },
     landmark: { kind: "enum", values: ["none", "region"], default: "none" },
     label: { kind: "message", requiredWhen: "landmark" },
+    returnAboveLabel: { kind: "message", description: "Return to the selection above the viewport (Rewrite)." },
+    returnBelowLabel: { kind: "message", description: "Return to the selection below the viewport (Rewrite)." },
   },
   events: { dismiss: {} },
   slots: { default: { accepts: "any", max: 1 } },

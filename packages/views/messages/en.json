@@ -2050,6 +2050,8 @@
   "site.themes.dark": "Dark themes",
   "settings.section.ai": "AI",
   "rewrite.title": "Rewrite",
+  "rewrite.returnAbove": "Return to selection above",
+  "rewrite.returnBelow": "Return to selection below",
   "rewrite.close": "Dismiss rewrite",
   "rewrite.selected": "Selected passage",
   "rewrite.prompt": "Prompt",

@@ -27,7 +27,9 @@ Already using GitHub Copilot in your terminal? **Find on this computer** can add
 
 The prompt opens beside your selected words, like an inline menu. It doesn't show a second copy of the passage. You can still scroll the note and see the selected words in context while typing.
 
-While any selected words are on screen, the prompt follows them and stays inside the document viewport. It can scroll away only when the entire selection is offscreen. Scroll back to return to the same prompt.
+The prompt starts two lines high and grows with what you type. Only the prompt field scrolls once it reaches its maximum; the surrounding panel does not. The panel keeps its horizontal position while following the selection vertically.
+
+When the selection or panel moves beyond an edge, one button shows **Return to selection above** or **Return to selection below**. Choose it to bring the selection and the same prompt back. Scrolling back also restores the prompt. Reduced motion turns off the fade and smooth return. This 1 November feedback revision is awaiting the owner's UX/UI verdict.
 
 ## Change your mind before generating
 

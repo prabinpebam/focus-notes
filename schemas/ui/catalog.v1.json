@@ -1481,6 +1481,11 @@
           "default": false,
           "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
         },
+        "compactMultiline": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Two lines initially, growing to the token maximum; only the textarea scrolls (D-265)."
+        },
         "scrolls": {
           "kind": "boolean",
           "default": false,
@@ -1521,6 +1526,7 @@
         "size m",
         "label hidden",
         "multiline",
+        "compact multiline",
         "read only",
         "read only scrolls",
         "required"
@@ -3523,6 +3529,14 @@
         "label": {
           "kind": "message",
           "requiredWhen": "landmark"
+        },
+        "returnAboveLabel": {
+          "kind": "message",
+          "description": "Return to the selection above the viewport (Rewrite)."
+        },
+        "returnBelowLabel": {
+          "kind": "message",
+          "description": "Return to the selection below the viewport (Rewrite)."
         }
       },
       "events": {

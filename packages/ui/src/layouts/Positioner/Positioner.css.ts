@@ -36,8 +36,31 @@ export const base = style({
     // No anchor (the gallery): in the flow, where it was placed.
     '&[data-placed="static"]': { position: "static" },
     "&[data-offscreen]": { visibility: "hidden" },
-    "&[data-selection-popover]": { width: tokens.cmp.positioner.promptWidth },
+    "&[data-selection-popover]": {
+      width: tokens.cmp.positioner.promptWidth, left: 0, top: 0,
+      transform: `translate3d(${xVar}, ${yVar}, 0)`,
+    },
+    "&[data-selection-popover][data-edge]": {
+      transitionProperty: "transform", transitionDuration: t.duration, transitionTimingFunction: t.easing,
+    },
   },
+  "@media": { "(prefers-reduced-motion: reduce)": { animationName: "none", transitionDuration: "0s" } },
 });
 
 export const offset = styleVariants(tokens.space, (v) => ({ vars: { [gapVar]: v } }));
+export const promptContent = style({
+  width: "100%", opacity: 1, visibility: "visible",
+  transitionProperty: "opacity, visibility", transitionDuration: t.duration, transitionTimingFunction: t.easing,
+  selectors: {
+    [`${base}[data-edge] &`]: { position: "absolute", opacity: 0, visibility: "hidden", pointerEvents: "none" },
+  },
+  "@media": { "(prefers-reduced-motion: reduce)": { transitionDuration: "0s" } },
+});
+export const returnAction = style({
+  position: "absolute", opacity: 0, visibility: "hidden", pointerEvents: "none",
+  transitionProperty: "opacity, visibility", transitionDuration: t.duration, transitionTimingFunction: t.easing,
+  selectors: {
+    [`${base}[data-edge] &`]: { position: "relative", opacity: 1, visibility: "visible", pointerEvents: "auto" },
+  },
+  "@media": { "(prefers-reduced-motion: reduce)": { transitionDuration: "0s" } },
+});

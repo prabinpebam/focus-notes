@@ -13,6 +13,8 @@ export interface AnchorRect {
   /** Exact selected fragments and their clipping viewport, for long inline tasks. */
   fragments?: readonly AnchorRect[];
   viewport?: AnchorRect;
+  /** Return the retained selection to view without changing focus, capture or the document. */
+  reveal?: (position: { fragment: number; side: "above" | "below"; edge: number; gap: number }) => void;
 }
 /** The selection (or caret), a link, and the `/` the slash menu opened at. */
 export type AnchorName = "selection" | "link" | "caret" | "rewrite";
