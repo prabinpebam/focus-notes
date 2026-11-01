@@ -20,6 +20,7 @@ describe("AI integration icons", () => {
 
   it("maps researched CLI identities without pretending they are supported connections", () => {
     expect(aiConnectionIcon("github-copilot")).toBe("aiCopilot");
+    expect(aiConnectionIcon("copilot-cli")).toBe("aiCopilot");
     expect(aiConnectionIcon("claude-code")).toBe("aiClaudeCode");
     expect(aiConnectionIcon("gemini-cli")).toBe("aiGemini");
     expect(aiConnectionIcon("codex")).toBe("code");

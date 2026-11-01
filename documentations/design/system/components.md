@@ -113,6 +113,8 @@ Brand names remain their owners' trademarks. CC0 is not a trademark licence and 
 
 **Try it:** open the gallery's Icon brand fixtures in light and dark; open Settings → AI with an Ollama or Claude connection. The card's name and status stay visible beside its mark. No hover, pressed, loading or disabled state is introduced by a decorative icon.
 
+The Copilot CLI connection kind is `copilot-cli`: `aiConnectionIcon("copilot-cli")` returns `aiCopilot` (GitHub Copilot, MIT). The alias is tested explicitly; its icon does not imply on-device inference.
+
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
 Each component declares a contract in `packages/ui`. `ui:check` turns the contracts into the view JSON Schema, the gallery's fixtures, and the catalog published for agents (DSY-13), and fails when the committed copies in `schemas/ui` differ (D-138). Each component's React props are written beside its contract, and every registry is built with `defineRegistry` (`packages/ui/src/register.ts`), which checks them against the contract at compile time (D-199). Contracts are also exported keyed by type as `contractsByType`, and a contract can declare `requiresId`, which `ui:check` enforces (ResultList, FileTree). This is the contract for `Button`, abridged from `schemas/ui/contracts.v1.json`:
