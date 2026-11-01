@@ -1,6 +1,11 @@
 {
   "cmp": {
     "positioner": {
+      "visible": {
+        "$type": "number",
+        "$value": "{opacity.full}",
+        "$description": "Fully visible prompt or return action in the active placement state."
+      },
       "promptWidth": {
         "$type": "dimension",
         "$value": "{layout.popover}"

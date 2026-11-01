@@ -55,6 +55,7 @@ async function select(page: Page, text: string) {
     throw new Error(`"${text}" isn't in the note`);
   }, text);
   await expect.poll(() => page.evaluate(() => getSelection()?.toString() ?? "")).toBe(text);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 /** Select, open Rewrite and type the prompt; the dialog is left open. */
 async function openRewrite(page: Page, text: string, prompt?: string) {
@@ -96,7 +97,7 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         let prompt = await openRewrite(page, "Opening words to rewrite.");
         await expect(page.getByRole("dialog")).toHaveCount(0);
         await expect(prompt.getByText("Opening words to rewrite.", { exact: true })).toHaveCount(0);
-        await editor.click({ position: { x: 10, y: 10 } });
+        await editor.getByRole("heading", { name: "Essay", exact: true }).click();
         await expect(prompt).toBeHidden();
         expect(fake.seen).toHaveLength(sentBefore);
 
@@ -116,16 +117,19 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         });
         await expect.poll(inBounds).toBe(true);
         if (captureDir) await page.screenshot({ path: join(captureDir, `popover-scroll-${theme}.png`), animations: "disabled" });
-        const returnScroll = await page.locator("[data-editor-scroller]").evaluate((el) => el.scrollTop);
         await page.locator("[data-editor-scroller]").evaluate((el) => { el.scrollTop = el.scrollHeight; });
-        await expect(prompt).toBeHidden();
-        await page.locator("[data-editor-scroller]").evaluate((el, top) => { el.scrollTop = top; }, returnScroll);
-        await expect(prompt).toBeVisible();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeHidden();
+        const returnAbove = prompt.getByRole("button", { name: "Return to selection above", exact: true });
+        await expect(returnAbove).toBeVisible();
+        await returnAbove.click();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeVisible();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
         const originalSize = await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getSize());
         await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
         await expect.poll(inBounds).toBe(true);
         if (captureDir) await page.screenshot({ path: join(captureDir, `popover-small-${theme}.png`), animations: "disabled" });
+        await prompt.getByRole("button", { name: /Return to selection/ }).click();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
         const smallGenerate = prompt.getByRole("button", { name: "Generate" });
         await smallGenerate.scrollIntoViewIfNeeded();
         await expect(smallGenerate).toBeInViewport();
@@ -134,7 +138,7 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         await l.app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]!.setSize(size[0]!, size[1]!), originalSize);
         await expect.poll(inBounds).toBe(true);
 
-        await editor.click({ position: { x: 10, y: 10 } });
+        await editor.getByRole("heading", { name: "Essay", exact: true }).click();
         const loss = page.getByRole("dialog", { name: "Discard prompt?" });
         await expect(loss).toBeVisible();
         await expect(loss.getByRole("button", { name: "Keep editing", exact: true }).last()).toBeFocused();
@@ -144,13 +148,13 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         await expect(loss).toBeHidden();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeFocused();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
-        await editor.click({ position: { x: 10, y: 10 } });
+        await editor.getByRole("heading", { name: "Essay", exact: true }).click();
         await expect(loss).toBeVisible();
         await loss.getByRole("button", { name: "Keep editing", exact: true }).last().click();
         await expect(loss).toBeHidden();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeFocused();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
-        await editor.click({ position: { x: 10, y: 10 } });
+        await editor.getByRole("heading", { name: "Essay", exact: true }).click();
         await expect(loss).toBeVisible();
         await loss.getByRole("button", { name: "Discard prompt", exact: true }).click();
         await expect(loss).toBeHidden();

@@ -49,7 +49,7 @@ export const base = style({
 
 export const offset = styleVariants(tokens.space, (v) => ({ vars: { [gapVar]: v } }));
 export const promptContent = style({
-  width: "100%", opacity: 1, visibility: "visible",
+  width: "100%", opacity: t.visible, visibility: "visible",
   transitionProperty: "opacity, visibility", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
     [`${base}[data-edge] &`]: { position: "absolute", height: 0, overflow: "clip", opacity: 0, visibility: "hidden", pointerEvents: "none" },
@@ -60,7 +60,7 @@ export const returnAction = style({
   position: "absolute", opacity: 0, visibility: "hidden", pointerEvents: "none",
   transitionProperty: "opacity, visibility", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
-    [`${base}[data-edge] &`]: { position: "relative", opacity: 1, visibility: "visible", pointerEvents: "auto" },
+    [`${base}[data-edge] &`]: { position: "relative", opacity: t.visible, visibility: "visible", pointerEvents: "auto" },
   },
   "@media": { "(prefers-reduced-motion: reduce)": { transitionDuration: "0s" } },
 });

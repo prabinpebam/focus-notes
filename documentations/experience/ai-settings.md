@@ -19,7 +19,7 @@ Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is 
 
 CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS / IA-CMP-AIDISCOVER → DD-RWR-07 / DD-RWR-08 → AIS-16, in WP-AI.15 / MAI.
 
-The 17:29 feedback revision places **Find on this PC** and **Scans this PC for running AI services you can use.** in one named semantic row above the connections list; they wrap as a group when needed. Discovery results remain directly below that row. **Add connection is the final item**, after every list, setup form, explanation and necessary status; nothing follows it. Signed-in supported Copilot is added once, while servers still offer **Set up**. Unknown, unsupported and signed-out results keep their reasons. Remove redundant signed-in/privacy success prose and the empty local-setup sentence; preserve row locality, necessary errors and setup controls.
+The 17:29 feedback revision places **Find on this PC** and **Scans this PC for running AI services you can use.** in one named semantic row above the connections list; they wrap as a group when needed. Discovery results remain directly below that row. **Add connection is the final item**, after every list, setup form, explanation and necessary status; nothing follows it. Signed-in supported Copilot is added once, while servers still offer **Set up**. Unknown, unsupported and signed-out results keep their reasons. Remove redundant signed-in/privacy success prose and the empty local-setup sentence; preserve row locality, necessary errors and setup controls. Successful Copilot discovery still announces its availability and Cloud destination to assistive technology without adding visual prose.
 
 | Row part | Behaviour |
 | --- | --- |

@@ -18,6 +18,37 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Approved AI integration hardening (1 November, in progress)
+
+The owner approved both UX and UI of `d40b78a345b7fe79262116b270b3a908c0966eac`
+at 19:59 ("This looks good") and requested production hardening at 20:00.
+The isolated `fix-ai-approved-merge` candidate preserves that whole lineage and
+combines it once with `origin/main` `15760786f211cf0910cfc25226429a626e57bf60`;
+the merge is `e598f5a740cc60687ce3fc12d61a5297ffe4ec3f`.
+**Not green, not merged to main, and not a release.** Store preparation is a
+separate task; this worker does not bump versions, package, tag or submit.
+
+| Check from the candidate | Actual result |
+| --- | --- |
+| Initial `pnpm check` | Failed: fresh worktree lacked TypeScript / node_modules. npm and pnpm both reported `https://packagefeedproxy.microsoft.io/npm/`; `pnpm install --frozen-lockfile` restored 682 cached packages, with no downloads or manifest changes. |
+| `pnpm tokens`; `node tools/component-inventory.mjs`; `pnpm check` | Passed after fixing approved Positioner's raw full opacity to its owned token alias: 1,935 tokens, 461 documents, 71 components, 547 commands. Unchecked kit submodules are explicitly skipped by the existing check. |
+| `pnpm typecheck` | Passed across all workspaces before the subsequent announcement-only core fix. |
+| `pnpm exec vitest run apps/desktop/test/ai-contract.test.ts apps/desktop/test/ai-copilot-contract.test.ts apps/desktop/test/ai-rewrite.test.ts apps/desktop/test/ai-own-key.test.ts packages/core/test/ai-app.test.ts packages/ui/test/positioner-follow.test.tsx packages/ui/test/ai-icons.test.tsx packages/editor/test/rewrite-stream.test.ts` | Passed: 203 tests / 8 files. The first run found suppressed accessible Copilot discovery feedback; success is now announced without restoring the redundant visual prose the owner rejected. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after the announcement fix; existing renderer chunk-size warning. |
+| `pnpm --filter @focus-notes/desktop exec playwright test e2e/air-safeguards.spec.ts e2e/air-rewrite.spec.ts --workers=1` with `FOCUS_NOTES_E2E=1` | First aggregate: 4 passed / 2 failed. Stream/undo/cancel/switch, direct private-note Generate, picker locality and dialog layout passed. Settings round-trip subsequently passed after synthetic DOM selection waited for ProseMirror's browser-frame synchronization. |
+| Targeted `D-265` journey reruns | Still failing: obsolete editor-top clicks were intercepted by chrome, and pre-approval hidden/automatic-return assertions no longer describe the approved named Return action. Those assertions now exercise visible heading deselection and Return. Normal-window Return retains the draft. At 480 x 360, Return still fails to expose the retained Prompt; investigate the real placement/resize state before any full suite or merge. No quarantine or disabled assertion. |
+| Independent AI/IPC security review | Running in the one read-only reviewer chat `9928707a-9091-4eee-9dd7-f6c0b720656f`; no verdict yet. |
+| Full suites, budgets, exact Windows CI and final main fast-forward | Not run: targeted gates must pass first. |
+
+All local app runs are invisible, synthetic, and end with the existing cleanup
+script using the worker launcher's PID, first with `-WhatIf`, then without.
+The scripts report zero remaining owned instances. Owner review, Preview, notes,
+private content and the docs server on 8787 are untouched.
+
+The remaining evidence must map every approved requirement and DoD row to
+commands/results on the final candidate; this intermediate table is not that
+completed matrix and does not close GATE-MAI.
+
 ### MAI: Rewrite with AI (building)
 
 This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 46 requirements in four packages (D-256, D-257). WP-AI.11 is built on `fix-ai-rewrite-simple` and in the owner's review build, with `pnpm check`, typechecks and unit tests; no journey, measure or security review yet. The [acceptance matrix](rewrite-acceptance.md) has the evidence row by row and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define what's required.

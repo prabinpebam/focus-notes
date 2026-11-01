@@ -301,7 +301,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     } finally {
       discovering = false;
       changed();
-      announce(discoverStatus);
+      announce(discoverStatus || (found.some((f) => f.provider === "copilot-cli" && f.status === "signed-in") ? t("ai.found.copilot") : ""));
     }
   });
   reg("ai.useFound", (a) => {

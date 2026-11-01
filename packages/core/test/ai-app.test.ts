@@ -388,7 +388,8 @@ describe("where text goes and which key goes with it (D-259)", () => {
       expect(t.settingsVm().hasWriter).toBe(true);
       expect(t.settingsVm().writerName).toBe(c.name);
       expect(t.settingsVm().found).toEqual([]);
-      expect(t.settingsVm().discoverStatus).toBe(en["ai.found.copilot"]);
+      expect(t.settingsVm().discoverStatus).toBe("");
+      expect(t.said.at(-1)).toBe(en["ai.found.copilot"]);
       expect(t.settingsVm().connections).toEqual([expect.objectContaining({ icon: "aiCopilot", keyText: en["ai.key.notNeeded"], detail: expect.stringContaining("Cloud") })]);
       await t.commands.run("rewrite.captured", { text: "Synthetic" });
       await settle();
