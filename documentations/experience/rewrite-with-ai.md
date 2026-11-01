@@ -77,7 +77,7 @@ Official documentation, checked 30 October 2026. These products show the interac
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Prompt</p>
-    <p>The Rewrite dialog shows the selected passage, the Writer ("Writer: Ollama · Ollama · llama3.2 · On this computer"), the prompt, focused, and three presets: <strong>Make concise</strong>, <strong>Make warmer</strong>, <strong>Fix grammar</strong>. A preset fills the prompt and never sends. <strong>Generate</strong> stays disabled until the prompt has text. With no Writer, the dialog says "Rewrite needs an AI service. Add one in Settings → AI." and offers <strong>Set up AI</strong> instead (RWR-73, RWR-74).</p>
+    <p>The Rewrite dialog shows the selected passage and an integration card: icon, service (for example Ollama), model (llama3.2), and <strong>This computer</strong> or <strong>Cloud</strong>. With several configured connections, <strong>AI integration</strong> chooses another and remembers it on this device for the next rewrite (D-262). Then the focused prompt and three presets: <strong>Make concise</strong>, <strong>Make warmer</strong>, <strong>Fix grammar</strong>. A preset never sends. <strong>Generate</strong> waits for prompt text and a saved integration choice. With no Writer, <strong>Set up AI</strong> opens Settings (RWR-73, RWR-74, AIS-03, AIS-13).</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Generate</p>
@@ -110,7 +110,8 @@ Every entry runs the same command: the editor captures the selection, and the di
 | --- | --- | --- | --- |
 | Closed | The note | Select text; <kbd>Ctrl+Shift+R</kbd> | Ordinary editing |
 | Dialog, no Writer | The passage and "Rewrite needs an AI service. Add one in Settings → AI." | **Set up AI**, **Cancel**, <kbd>Esc</kbd> | Unchanged |
-| Dialog, ready | The passage, the Writer line, the prompt and presets | Type, pick a preset, **Generate**, **Cancel**, <kbd>Esc</kbd> | Unchanged |
+| Dialog, ready | Passage, integration icon/service/model/locality card, prompt and presets; an integration picker only with several connections | Type, pick a preset or integration, **Generate**, **Cancel**, <kbd>Esc</kbd> | Unchanged |
+| Integration choice saving | The old card and prompt remain; "Remembering your choice…" appears after the task tracker's delay | Typing and Cancel stay available; Generate waits for the save | Unchanged |
 | Generating | The selection shimmering; the toast with **Stop** | <kbd>Esc</kbd> or **Stop** | Read-only; not handed over for saving |
 | Streaming | The answer growing in place in the rainbow | <kbd>Esc</kbd> or **Stop** | Read-only; streamed pieces are outside the undo history |
 | Done | The new text, fading to ordinary ink | Edit; <kbd>Ctrl+Z</kbd> for the original | One undo step; saved as usual |
@@ -126,9 +127,9 @@ Every entry runs the same command: the editor captures the selection, and the di
 
 ## What is sent, and where
 
-Only the prompt and the selected text, with a fixed instruction to reply with just the rewritten text in the same language, go to the Writer's address, from the main process (RWR-83). Nothing else from the note: no title, path, front matter or other text. A thinking model's thoughts never go into the note. Nothing is sent before you've confirmed the connection once (AIS-14), or from a private note while *Don't send private notes* is on (AIS-13). Limits: 32 KiB of text, 4,000 characters of prompt, 4,096 tokens of answer; the answer must start within 30 seconds (2 minutes from a server on this computer, which may be loading its model) and may pause for at most 30 seconds (1 minute); one rewrite at a time (RWR-82). The window never sees a key. Which service is the Writer, and whether it's on this computer or in the cloud, is set in [Settings → AI](ai-settings.md).
+Only the prompt and the selected text, with a fixed instruction to reply with just the rewritten text in the same language, go to the chosen Writer's address, from main (RWR-83). No title, path, front matter or other note text is sent to the service. Thinking is never inserted. First-send consent remains per connection (AIS-14). The person decides whether to send, including private or shared notes: no private-notes blocking option remains (AIS-13, D-261). The prompt always shows the integration, model and This computer or Cloud, and can switch the remembered Writer without leaving the dialog (D-262). Locality follows model and host, not service: cloud-suffixed or cloud-routed Ollama models are Cloud even through localhost; other local Ollama models require no discovery. Existing request limits and one-rewrite-at-a-time behavior remain (RWR-82). The window never sees a key.
 
-Planned (WP-AI.13): private notes aren't sent while **Don't send private notes** is on, and the first send to a connection asks once (AIS-13, AIS-14).
+WP-AI.13's 1 November feedback replaces its private-note gate with disclosure and user judgement (D-261); first-send consent remains. RWR-73/AIS-03's remembered prompt picker is covered by the same targeted units and `air-safeguards` journey, including one/two connections in light and dark.
 
 ## Keyboard and accessibility
 

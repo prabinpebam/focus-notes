@@ -31,13 +31,13 @@ function owner() {
   const ai: AiBridge = {
     settings: () => service.settings() as never, save: (i) => service.save(i) as never, remove: (id) => service.remove(id) as never,
     writer: (id) => service.writer(id) as never, test: (id) => service.test(id) as never, discover: () => service.discover(),
-    models: (i) => service.models(i), consent: (id) => service.consent(id) as never, privacy: (k) => service.privacy(k) as never,
+    models: (i) => service.models(i), consent: (id) => service.consent(id) as never,
     rewriteStart: async (id, input) => {
       const abort = new AbortController();
       rewrites.set(id, abort);
       void (async () => {
         try {
-          for await (const text of service.stream(input, abort.signal, async () => false)) listener?.({ id, type: "delta", text });
+          for await (const text of service.stream(input, abort.signal)) listener?.({ id, type: "delta", text });
           listener?.({ id, type: "done" });
         } catch (error) {
           listener?.({ id, type: "error", ...reasonOf(error) });
@@ -47,13 +47,14 @@ function owner() {
     rewriteCancel: async (id) => rewrites.get(id)?.abort(),
     onRewriteEvent: (l) => ((listener = l), () => { listener = undefined; }),
   };
-  const store = new Store({ note: { status: "ready", key: "k1", path: "C:/ws/notes/a.md" }, ui: { toolbarOpen: false }, workspace: { tree: { roots: [] } } });
+  const store = new Store({ note: { status: "ready", key: "k1", path: "C:/ws/notes/a.md" }, ui: { toolbarOpen: false }, workspace: { tree: { roots: [] } }, tasks: [] });
   const commands = new CommandRegistry(() => store.state, (r) => store.update(r), "windows");
   const viewModels = new ViewModelRegistry<typeof store.state>();
   const editor: { id: string; text?: string }[] = [];
   const toasts: string[] = [];
   registerAi({
     store, bridge: { ai } as never, catalog: new MessageCatalog("en", en as Record<string, string>), commands, viewModels,
+    tracker: { run: async (_target, _message, work) => work() },
     editorAction: (id, args) => void editor.push({ id, ...(typeof args?.text === "string" ? { text: args.text } : {}) }),
     announce: () => {}, toast: (m) => (toasts.push(m), toasts.length),
   });

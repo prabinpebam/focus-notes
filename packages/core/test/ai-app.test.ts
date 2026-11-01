@@ -1,7 +1,7 @@
 /**
  * AI Rewrite's window side (ai-app.ts) against a fake shell bridge: the event shape the editor
  * relies on (delta, done, error with a reason and Retry-After), the original put back on every
- * failure, consent before the first send, private notes kept off AI, and the shell's request
+ * failure, consent before the first send, remembered integration choice, and the shell's request
  * stopped when the note changes or the window goes.
  */
 import { describe, expect, it } from "vitest";
@@ -12,6 +12,7 @@ import { MessageCatalog } from "../src/messages.ts";
 import { Store } from "../src/store.ts";
 import { ViewModelRegistry } from "../src/view-models.ts";
 import type { WorkspaceTree } from "../src/workspace.ts";
+import type { TaskView } from "../src/tasks.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -19,16 +20,27 @@ const conn = (over: Partial<AiSettingsView["connections"][number]> = {}) => ({
   id: "w", provider: "openai", name: "OpenAI", endpoint: "", model: "gpt-x", deployment: "", apiVersion: "", account: "", hasKey: true, consented: false, ...over,
 });
 
-function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string; tree?: WorkspaceTree; startError?: string; connection?: Partial<AiSettingsView["connections"][number]> } = {}) {
-  let settings: AiSettingsView = { writer: "w", keepPrivate: opts.keepPrivate ?? true, connections: [conn({ consented: opts.consented ?? true, ...opts.connection })] };
+function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree; startError?: string; connection?: Partial<AiSettingsView["connections"][number]>; connections?: AiSettingsView["connections"]; writerError?: boolean; writerWait?: Promise<void>; consentWait?: Promise<void> } = {}) {
+  let settings: AiSettingsView = { writer: "w", connections: opts.connections ?? [conn({ consented: opts.consented ?? true, ...opts.connection })] };
   const calls: string[] = [];
   let listener: ((e: unknown) => void) | undefined;
   const ai: AiBridge = {
     settings: async () => settings,
-    save: async () => settings, remove: async () => settings, writer: async () => settings, test: async () => settings,
+    save: async () => settings, remove: async () => settings, test: async () => settings,
+    writer: async (id) => {
+      calls.push(`writer:${id}`);
+      await opts.writerWait;
+      if (opts.writerError) throw new Error("connection-unavailable");
+      settings = { ...settings, writer: id };
+      return settings;
+    },
     discover: async () => [], models: async () => [],
-    consent: async (id) => (calls.push(`consent:${id}`), (settings = { ...settings, connections: settings.connections.map((c) => ({ ...c, consented: true })) })),
-    privacy: async (keep) => (calls.push(`privacy:${keep}`), (settings = { ...settings, keepPrivate: keep })),
+    consent: async (id) => {
+      calls.push(`consent:${id}`);
+      await opts.consentWait;
+      settings = { ...settings, connections: settings.connections.map((c) => c.id === id ? { ...c, consented: true } : c) };
+      return settings;
+    },
     rewriteStart: async (id, input) => {
       calls.push(`start:${id}:${JSON.stringify(input)}`);
       if (opts.startError) throw new Error(`Error invoking remote method 'ai:rewriteStart': Error: ${opts.startError}`);
@@ -40,6 +52,7 @@ function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string
     note: { status: "ready", key: "k1", path: opts.path ?? "C:/ws/notes/a.md" },
     ui: { toolbarOpen: false },
     workspace: { tree: opts.tree ?? { roots: [] } },
+    tasks: [] as TaskView[],
   });
   const commands = new CommandRegistry(() => store.state, (r) => store.update(r), "windows");
   const viewModels = new ViewModelRegistry<typeof store.state>();
@@ -49,6 +62,7 @@ function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string
   const said: string[] = [];
   registerAi({
     store, bridge: { ai } as never, catalog, commands, viewModels,
+    tracker: { run: async (_target, _message, work) => work() },
     editorAction: (id) => void editor.push(id), announce: (t) => void said.push(t),
     toast: (m) => (toasts.push(m), toasts.length),
   });
@@ -170,12 +184,32 @@ describe("Rewrite in the window", () => {
 });
 
 describe("consent before the first send", () => {
+  it.each(["cancel", "choose"])("does not send after %s while first-send permission is saving", async (action) => {
+    let release = () => {};
+    const consentWait = new Promise<void>((resolve) => { release = resolve; });
+    const t = setup({ consentWait, connections: [conn(), conn({ id: "other", model: "other-model", consented: true })] });
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.prompt", { value: "My prompt" });
+    const sending = t.commands.run("rewrite.generate", { consent: true });
+    await settle();
+    if (action === "cancel") await t.commands.run("rewrite.dismiss");
+    else await t.commands.run("rewrite.writer", { value: "other" });
+    release();
+    await sending;
+    expect(t.editor).toEqual([]);
+    expect(t.vm().prompt).toBe("My prompt");
+    if (action === "choose") {
+      expect(t.vm()).toMatchObject({ open: true, writerModel: "other-model" });
+      await t.commands.run("rewrite.generate");
+      expect(t.editor).toEqual(["rewrite.begin"]);
+    } else expect(t.vm().open).toBe(false);
+  });
   it("asks once, names where the text goes, and only then sends", async () => {
     const t = setup({ consented: false });
     await t.commands.run("rewrite.captured", { text: "Old words." });
     await settle();
     expect(t.vm()).toMatchObject({ actions: "consent", needsConsent: true });
-    expect(t.vm().consentText).toBe("The first time, check where your text goes: Rewrite sends the selected text and your prompt to OpenAI at api.openai.com · Cloud. Nothing else from your notes is sent.");
+    expect(t.vm().consentText).toBe("Rewrite sends the selected text and your prompt to OpenAI · gpt-x at api.openai.com · Cloud. You decide what to send. Nothing else from your notes is sent.");
     await t.commands.run("rewrite.preset", { value: "warmer" });
     // Generate without the consent flag does nothing.
     await t.commands.run("rewrite.generate");
@@ -190,45 +224,57 @@ describe("consent before the first send", () => {
   });
 });
 
-describe("private notes kept off AI", () => {
-  const tree: WorkspaceTree = { roots: [
-    { id: "private", path: "C:/ws/private/notes", readOnly: false, children: [] },
-    { id: "public", path: "C:/ws/notes", readOnly: false, children: [] },
-  ] } as unknown as WorkspaceTree;
-  it("a private note's selection is never sent while the setting is on", async () => {
-    const t = setup({ path: "C:/ws/private/notes/diary.md", tree });
-    await t.commands.run("rewrite.captured", { text: "Secret." });
+describe("disclosed integration and user judgement (D-261, D-262)", () => {
+  it.each(["C:/ws/private/notes/diary.md", "private:diary.md"])("allows the person to rewrite %s", async (path) => {
+    const t = setup({ path, consented: false });
+    await t.begin({ consent: true });
+    expect(t.vm().actions).toBe("compose");
+    expect(t.calls).toContain("consent:w");
+    expect(t.calls.at(-1)).toContain(`"path":"${path}"`);
+  });
+  it("shows a single local Ollama model without a picker or discovery requirement", async () => {
+    const t = setup({ connection: { provider: "ollama", model: "llama3.2", endpoint: "http://localhost:11434" } });
+    await t.commands.run("rewrite.captured", { text: "Words" });
+    expect(t.vm()).toMatchObject({ writerService: "Ollama", writerKind: "ollama", writerIcon: "aiOllama", writerModel: "llama3.2", writerWhere: "This computer", canChooseWriter: false });
+  });
+  it("remembers a picked integration for the next rewrite, with its own first-send consent", async () => {
+    const t = setup({ connections: [
+      conn({ provider: "ollama", model: "llama3.2", endpoint: "http://localhost:11434", consented: true }),
+      conn({ id: "cloud", provider: "ollama", model: "gpt-oss:cloud", endpoint: "http://localhost:11434" }),
+    ] });
+    await t.commands.run("rewrite.captured", { text: "Words" });
+    expect(t.vm().canChooseWriter).toBe(true);
+    await t.commands.run("rewrite.writer", { value: "cloud" });
+    expect(t.vm()).toMatchObject({ writerModel: "gpt-oss:cloud", writerWhere: "Cloud", needsConsent: true });
+    await t.commands.run("rewrite.dismiss");
+    await t.commands.run("rewrite.captured", { text: "Next" });
+    expect(t.vm().writerModel).toBe("gpt-oss:cloud");
+    expect(t.settingsVm().writerName).toBe("OpenAI");
+    expect(t.calls).toEqual(["writer:cloud"]);
+  });
+  it("keeps the old integration and surfaces a failed save", async () => {
+    const t = setup({ writerError: true });
+    await t.commands.run("rewrite.captured", { text: "Words" });
+    await t.commands.run("rewrite.writer", { value: "missing" });
+    expect(t.vm()).toMatchObject({ writerModel: "gpt-x", choosingWriter: false });
+    expect(t.toasts.at(-1)).toBe(en["ai.error.connection-unavailable"]);
+  });
+  it("keeps input and prevents generating with an unpersisted choice", async () => {
+    let release = () => {};
+    const writerWait = new Promise<void>((resolve) => { release = resolve; });
+    const t = setup({ writerWait, connections: [conn({ consented: true }), conn({ id: "other", model: "other-model", consented: true })] });
+    await t.commands.run("rewrite.captured", { text: "Words" });
+    await t.commands.run("rewrite.prompt", { value: "My prompt" });
+    const changing = t.commands.run("rewrite.writer", { value: "other" });
     await settle();
-    expect(t.vm()).toMatchObject({ actions: "private", privateNote: true });
-    await t.commands.run("rewrite.preset", { value: "warmer" });
-    await t.commands.run("rewrite.generate", { consent: true });
-    expect(t.calls).toEqual([]);
+    expect(t.vm()).toMatchObject({ choosingWriter: true, prompt: "My prompt", writerModel: "gpt-x", empty: true });
+    await t.commands.run("rewrite.generate");
     expect(t.editor).toEqual([]);
-  });
-  it("a browser instance's private: note counts too, and a public note doesn't", async () => {
-    const t = setup({ path: "private:diary.md" });
-    await t.commands.run("rewrite.captured", { text: "Secret." });
-    await settle();
-    expect(t.vm().actions).toBe("private");
-    const p = setup({ path: "C:/ws/notes/open.md", tree });
-    await p.commands.run("rewrite.captured", { text: "Open." });
-    await settle();
-    expect(p.vm().actions).toBe("compose");
-  });
-  it("with the setting off, it sends the note's path, and the shell decides whether it's private (D-259)", async () => {
-    const t = setup({ path: "C:/ws/private/notes/diary.md", tree, keepPrivate: true });
-    await t.commands.run("ai.privacy", { value: false });
-    expect(t.calls).toEqual(["privacy:false"]);
-    await t.begin();
-    expect(t.calls.at(-1)).toContain("\"path\":\"C:/ws/private/notes/diary.md\"");
-    expect(t.calls.at(-1)).not.toContain("\"private\"");
-  });
-  it("the Settings switch flips it when pressed without a value", async () => {
-    const t = setup({ keepPrivate: true });
-    await t.commands.run("ai.load");
-    await t.commands.run("ai.privacy");
-    await t.commands.run("ai.privacy");
-    expect(t.calls).toEqual(["privacy:false", "privacy:true"]);
+    await t.commands.run("rewrite.prompt", { value: "My revised prompt" });
+    release();
+    await changing;
+    expect(t.vm()).toMatchObject({ choosingWriter: false, prompt: "My revised prompt", writerModel: "other-model", empty: false });
+    expect(performance.getEntriesByName("fn:ai.chooseWriter").length).toBeGreaterThan(0);
   });
 });
 
@@ -255,14 +301,16 @@ describe("where text goes and which key goes with it (D-259)", () => {
     const local = setup({ consented: false, connection: { ...ollama, model: "llama3.2" } });
     await local.commands.run("rewrite.captured", { text: "Old words." });
     await settle();
-    expect(local.vm().consentText).toContain("127.0.0.1:11434 · On this computer.");
+    expect(local.vm().consentText).toContain("127.0.0.1:11434 · This computer.");
   });
-  it("a draft's Ollama model is the cloud unless its list or the saved connection says it's local", async () => {
+  it("a typed Ollama model is local unless its name or model metadata identifies cloud routing", async () => {
     const t = setup({ connection: { ...ollama, model: "llama3.2" } });
     await t.commands.run("ai.load");
     await t.commands.run("ai.change", { value: "w" });
-    expect(t.settingsVm().destination).toBe("Selected text goes to 127.0.0.1:11434 · On this computer");
+    expect(t.settingsVm().destination).toBe("Selected text goes to 127.0.0.1:11434 · This computer");
     await t.commands.run("ai.edit", { field: "model", value: "typed-model" });
+    expect(t.settingsVm().destination).toBe("Selected text goes to 127.0.0.1:11434 · This computer");
+    await t.commands.run("ai.edit", { field: "model", value: "typed-model:cloud" });
     expect(t.settingsVm().destination).toBe("Selected text goes to 127.0.0.1:11434 · Cloud");
   });
   it("asks for the key again when a saved connection's address changes", async () => {
