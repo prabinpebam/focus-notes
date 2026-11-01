@@ -21,6 +21,10 @@ export const contract = defineContract({
   a11y: { pattern: "menu button", name: "label" },
   journeys: [{ spec: "apps/desktop/e2e/m1-toolbar.spec.ts", covers: ["open", "itemFocused", "itemDisabled", "itemChecked"] }],
   fixtures: [
+    ...(["pill", "text", "select"] as const).map((variant) => ({
+      name: `glyph bounds ${variant}`,
+      props: { variant, label: { t: "gallery.glyphs" }, sections: { get: "vm.gallery.menu" } },
+    })),
     { name: "variant icon", covers: ["closed"], props: { icon: "more", label: { t: "gallery.action" }, sections: { get: "vm.gallery.menu" } } },
     { name: "variant pill", covers: ["closed"], props: { variant: "pill", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, placement: "top start", sections: { get: "vm.gallery.menu" } } },
     { name: "placement top start", covers: ["closed"], props: { icon: "more", label: { t: "gallery.action" }, placement: "top start", sections: { get: "vm.gallery.menu" } } },

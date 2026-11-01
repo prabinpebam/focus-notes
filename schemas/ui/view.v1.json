@@ -1065,7 +1065,7 @@
     },
     "c_Button": {
       "type": "object",
-      "description": "A labelled action. Shared native-control reset and trimmed line box center its label and icon with symmetric block padding. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
+      "description": "A labelled action. Shared native-control reset centers the complete font line box and icon with symmetric block padding. Token minimum heights grow for natural content; labels ellipsize inline without clipping ascenders or descenders. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "required": [
         "type",
         "props"

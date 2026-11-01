@@ -1,6 +1,6 @@
 # Component catalog
 
-**Shared anatomy revision, 1 November 17:29 feedback (D-265/D-267; approval pending):** Button, PillButton and MenuButton text/pill triggers reuse the native-control reset, explicit line height and trimmed label box from `packages/ui/src/primitives/control.css.ts`. Floating controls preserve opaque surface paint under hover/pressed highlights; ordinary secondary controls also layer highlights over their resting surface. Inline's `related` contract groups an action and its explanation with named related spacing and responsive wrapping; independent groups use section spacing. ItemCard's saved selected badge is accent-filled with on-accent text and semibold weight. `ui:check` includes the static source invariants in `packages/ui-runtime/src/cli/design-source.ts`; gallery fixtures expose sizes/icon positions and selected/pending choices. These source checks are not visual approval.
+**Shared anatomy revision, 1 November 18:12 regression (D-265/D-266/D-267; approval pending):** Button, PillButton and MenuButton text/pill/select triggers reuse the native-control reset and complete font line box from `packages/ui/src/primitives/control.css.ts`. The supplied confirmation screenshot disproved cap-to-baseline trimming: it cut off descenders when paired with hidden label overflow. Labels now ellipsize only inline, remain visible vertically, and are flex-centered inside token minimum heights with symmetric padding. Floating controls preserve opaque surface paint under hover/pressed highlights; ordinary secondary controls also layer highlights over their resting surface. Inline's `related` contract groups an action and its explanation with named related spacing and responsive wrapping; independent groups use section spacing. ItemCard's saved selected badge is accent-filled with on-accent text and semibold weight. `ui:check` includes static full-line/non-clipping/minimum-height invariants in `packages/ui-runtime/src/cli/design-source.ts`. The gallery's normal/floating matrix contains `Copy Agjpqy` for every Button variant/size/no-start-end icon combination and Pill/Menu controls. Labels are single-line; long labels ellipsize rather than wrap. These source checks are not visual approval.
 
 **ItemCard choice implementation (D-267):** the existing primitive accepts `choiceGroup`, `choiceValue` and saved `selected`, emitting `choose` from a native radio. Its radio label contains icon/title/detail/Default badge only; the default slot remains a sibling, so action controls never select it. Arrow keys and Space use the browser's radio model; pending marks the radio `aria-disabled` and suppresses activation without native disabling, replacing it, or dropping focus. Selected background paint is composited over the existing opaque card, not a transparent replacement. No new component or selection store.
 
@@ -32,14 +32,14 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 23 | `hover`, `pressed`, `focusVisible` |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 51 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
 | Divider | primitive | `rest` | 2 | None |
 | PopoverPanel | primitive | `closed`, `open` | 7 | `open` |
-| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 6 | None |
+| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 9 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 15 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
@@ -52,7 +52,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
 | TextField | primitive | `rest`, `focused`, `invalid` | 12 | `focused` |
-| PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 1 | `hover`, `pressed`, `focusVisible` |
+| PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 2 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen` | 2 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
 | WindowControls | primitive | `hidden`, `shown`, `buttonHover`, `closeHover`, `focusVisible`, `layoutsOpen`, `zoneHover` | 3 | `buttonHover`, `focusVisible`, `zoneHover` |

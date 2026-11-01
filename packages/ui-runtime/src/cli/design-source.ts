@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
+import { contracts } from "@focus-notes/ui/contracts";
 import { isComponent, isEach, isSwitch, type ComponentNode, type Node, type ViewDocument } from "../types.ts";
 
 /** Source-level anatomy rules run by ui:check, without rendering or a test runner. */
@@ -25,11 +26,12 @@ export function checkDesignSource(root: string): string[] {
   requireRule(Boolean(metrics && ts.isObjectLiteralExpression(metrics)), shared, "native-control metrics must remain explicit");
   if (metrics && ts.isObjectLiteralExpression(metrics)) {
     const values = new Map(metrics.properties.filter(ts.isPropertyAssignment).map((p) => [p.name.getText(file), compact(p.initializer.getText(file))]));
-    for (const [key, value] of Object.entries({ appearance: '"none"', boxSizing: '"border-box"', margin: "0", paddingBlock: "0", lineHeight: "tokens.font.uiLineHeight" }))
+    for (const [key, value] of Object.entries({ appearance: '"none"', boxSizing: '"border-box"', margin: "0", paddingBlock: "0", lineHeight: "tokens.font.uiLineHeight", overflow: '"visible"' }))
       requireRule(values.get(key) === value, shared, `shared ${key} must be ${value}`);
   }
   const label = initializer(file, "controlLabel")?.getText(file) ?? "";
-  requireRule(label.includes('textBoxTrim: "trim-both"') && label.includes('textBoxEdge: "cap alphabetic"'), shared, "label centering must use the shared font-metric trim, not per-control offsets");
+  requireRule(label.includes("lineHeight: tokens.font.uiLineHeight") && !/textBoxTrim|textBoxEdge/.test(label), shared, "labels must retain the complete font line box, not trim to caps or the baseline");
+  requireRule(label.includes('overflowX: "clip"') && label.includes('overflowY: "visible"') && !/\boverflow\s*:/.test(label), shared, "inline ellipsis must not clip glyphs in the block direction");
   const surface = initializer(file, "floatingControlSurface")?.getText(file) ?? "";
   requireRule(surface.includes("backgroundImage: `linear-gradient(") && surface.includes("data-hovered") && surface.includes("data-pressed"), shared, "floating hover and pressed paint must be layered highlights");
   requireRule(!/opacity\s*:/.test(surface) && [...surface.matchAll(/backgroundColor:\s*([^,\n]+)/g)].every((m) => m[1] === "tokens.color.surface"), shared, "floating controls never reduce opacity or replace their solid surface with an alpha tint");
@@ -41,11 +43,21 @@ export function checkDesignSource(root: string): string[] {
       const value = initializer(css, name);
       const object = value && ts.isCallExpression(value) ? value.arguments[0] : undefined;
       requireRule(Boolean(object && ts.isObjectLiteralExpression(object) && object.properties.some((p) => ts.isSpreadAssignment(p) && p.expression.getText(css) === "controlMetrics")), path, `${name} must use shared native-control metrics`);
-      if (object && ts.isObjectLiteralExpression(object)) requireRule(!object.properties.some((p) => ts.isPropertyAssignment(p) && ["padding", "paddingBlock", "paddingTop", "paddingBottom", "lineHeight"].includes(p.name.getText(css))), path, `${name} cannot override symmetric block padding or line height`);
+      if (object && ts.isObjectLiteralExpression(object)) requireRule(!object.properties.some((p) => ts.isPropertyAssignment(p) && ["padding", "paddingBlock", "paddingTop", "paddingBottom", "lineHeight", "height", "overflow", "overflowY", "textBoxTrim", "textBoxEdge"].includes(p.name.getText(css))), path, `${name} cannot override symmetric padding, complete line height or natural block containment`);
     }
     requireRule(initializer(css, "floating")?.getText(css) === "style(floatingControlSurface)", path, "floating controls must use shared opaque interaction paint");
     const componentSource = read(`packages/ui/src/primitives/${component}/${component}.tsx`);
     requireRule(componentSource.includes("controlLabel") && componentSource.includes("FloatingContext") && componentSource.includes("s.floating"), path, "label metrics and floating-context paint must reach the actual control");
+    const ownLabel = initializer(css, "label")?.getText(css) ?? "";
+    if (component === "Button") {
+      requireRule(!/overflow|textBoxTrim|textBoxEdge/.test(ownLabel), path, "Button's label cannot override shared non-clipping glyph bounds");
+      requireRule(!/\bheight\s*:/.test(initializer(css, "size")?.getText(css) ?? ""), path, "button sizes are token minimum heights, never a clipping fixed height");
+    }
+    const fixtures = contracts.find((c) => c.type === component)?.fixtures ?? [];
+    requireRule(fixtures.some((f) => f.name.startsWith("glyph bounds")), path, "the gallery must show real ascenders/descenders");
+    if (component === "Button") for (const variant of ["primary", "secondary", "subtle", "danger"])
+      for (const size of ["s", "m", "l"]) for (const position of ["text", "start", "end"])
+        requireRule(fixtures.some((f) => f.name === `glyph bounds ${variant} ${size} ${position}`), path, `missing full-glyph fixture ${variant}/${size}/${position}`);
   }
   const cardFile = source("packages/ui/src/primitives/ItemCard/ItemCard.tsx");
   const card = cardFile.getFullText();

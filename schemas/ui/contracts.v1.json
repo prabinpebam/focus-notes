@@ -540,7 +540,7 @@
     {
       "type": "Button",
       "tier": "primitive",
-      "description": "A labelled action. Shared native-control reset and trimmed line box center its label and icon with symmetric block padding. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
+      "description": "A labelled action. Shared native-control reset centers the complete font line box and icon with symmetric block padding. Token minimum heights grow for natural content; labels ellipsize inline without clipping ascenders or descenders. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "props": {
         "label": {
           "kind": "message",
@@ -687,96 +687,420 @@
           }
         },
         {
-          "name": "centering s text",
+          "name": "glyph bounds primary s text",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "s"
           }
         },
         {
-          "name": "centering s start",
+          "name": "glyph bounds primary s start",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "s",
             "icon": "save",
             "iconPosition": "start"
           }
         },
         {
-          "name": "centering s end",
+          "name": "glyph bounds primary s end",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "s",
             "icon": "save",
             "iconPosition": "end"
           }
         },
         {
-          "name": "centering m text",
+          "name": "glyph bounds primary m text",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "m"
           }
         },
         {
-          "name": "centering m start",
+          "name": "glyph bounds primary m start",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "m",
             "icon": "save",
             "iconPosition": "start"
           }
         },
         {
-          "name": "centering m end",
+          "name": "glyph bounds primary m end",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "m",
             "icon": "save",
             "iconPosition": "end"
           }
         },
         {
-          "name": "centering l text",
+          "name": "glyph bounds primary l text",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "l"
           }
         },
         {
-          "name": "centering l start",
+          "name": "glyph bounds primary l start",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "l",
             "icon": "save",
             "iconPosition": "start"
           }
         },
         {
-          "name": "centering l end",
+          "name": "glyph bounds primary l end",
           "props": {
             "label": {
-              "t": "rewrite.preset.concise"
+              "t": "gallery.glyphs"
             },
+            "variant": "primary",
             "size": "l",
             "icon": "save",
             "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds secondary s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds secondary s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds secondary s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds secondary m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds secondary m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds secondary m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds secondary l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds secondary l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds secondary l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds subtle s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds subtle s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds subtle s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds subtle m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds subtle m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds subtle m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds subtle l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds subtle l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds subtle l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds danger s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds danger s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds danger s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds danger m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds danger m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds danger m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds danger l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds danger l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds danger l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds long label",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs.long"
+            },
+            "icon": "save"
           }
         },
         {
@@ -1784,6 +2108,42 @@
         }
       ],
       "fixtures": [
+        {
+          "name": "glyph bounds pill",
+          "props": {
+            "variant": "pill",
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "glyph bounds text",
+          "props": {
+            "variant": "text",
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "glyph bounds select",
+          "props": {
+            "variant": "select",
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
         {
           "name": "variant icon",
           "covers": [
@@ -3565,6 +3925,14 @@
           "props": {
             "label": {
               "t": "account.unlock"
+            }
+          }
+        },
+        {
+          "name": "glyph bounds pill",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
             }
           }
         }

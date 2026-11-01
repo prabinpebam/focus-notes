@@ -12,7 +12,7 @@ export const pill = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  height: t.height,
+  minHeight: t.height,
   paddingInline: t.paddingInline,
   borderRadius: t.radius,
   borderStyle: "solid",

@@ -8,13 +8,15 @@ export const controlMetrics = {
   margin: 0,
   paddingBlock: 0,
   lineHeight: tokens.font.uiLineHeight,
+  overflow: "visible",
 } as const;
 
 export const controlLabel = style({
   display: "inline-block",
   lineHeight: tokens.font.uiLineHeight,
-  textBoxTrim: "trim-both",
-  textBoxEdge: "cap alphabetic",
+  overflowX: "clip",
+  overflowY: "visible",
+  textOverflow: "ellipsis",
 });
 
 /** Highlight paint sits over an opaque surface, never replaces it with an alpha tint. */

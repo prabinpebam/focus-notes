@@ -5,7 +5,7 @@ const variants = ["primary", "secondary", "subtle", "danger"] as const;
 export const contract = defineContract({
   type: "Button",
   tier: "primitive",
-  description: "A labelled action. Shared native-control reset and trimmed line box center its label and icon with symmetric block padding. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
+  description: "A labelled action. Shared native-control reset centers the complete font line box and icon with symmetric block padding. Token minimum heights grow for natural content; labels ellipsize inline without clipping ascenders or descenders. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
   props: {
     label: { kind: "message", required: true },
     variant: { kind: "enum", values: variants, default: "secondary" },
@@ -31,10 +31,11 @@ export const contract = defineContract({
   fixtures: [
     ...variants.map((variant) => ({ name: `variant ${variant}`, props: { label: { t: "gallery.action" }, variant } })),
     { name: "size s", props: { label: { t: "gallery.action" }, size: "s" } },
-    ...(["s", "m", "l"] as const).flatMap((size) => [undefined, "start", "end"].map((iconPosition) => ({
-      name: `centering ${size} ${iconPosition ?? "text"}`,
-      props: { label: { t: "rewrite.preset.concise" }, size, ...(iconPosition ? { icon: "save", iconPosition } : {}) },
-    }))),
+    ...variants.flatMap((variant) => (["s", "m", "l"] as const).flatMap((size) => [undefined, "start", "end"].map((iconPosition) => ({
+      name: `glyph bounds ${variant} ${size} ${iconPosition ?? "text"}`,
+      props: { label: { t: "gallery.glyphs" }, variant, size, ...(iconPosition ? { icon: "save", iconPosition } : {}) },
+    })))),
+    { name: "glyph bounds long label", props: { label: { t: "gallery.glyphs.long" }, icon: "save" } },
     { name: "size l", props: { label: { t: "gallery.action" }, size: "l", variant: "primary" } },
     { name: "bleed", props: { label: { t: "gallery.action" }, variant: "subtle", bleed: true } },
     { name: "size m with icon", props: { label: { t: "gallery.action" }, size: "m", icon: "save" } },

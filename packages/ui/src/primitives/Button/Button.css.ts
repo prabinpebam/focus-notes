@@ -35,10 +35,10 @@ export const base = style({
 });
 
 export const size = styleVariants({
-  s: { height: t.height.s, paddingInline: t.paddingInline.s },
-  m: { height: t.height.m, paddingInline: t.paddingInline.m },
+  s: { minHeight: t.height.s, paddingInline: t.paddingInline.s },
+  m: { minHeight: t.height.m, paddingInline: t.paddingInline.m },
   // An onboarding step's main action (Get started, D-126).
-  l: { height: t.height.l, paddingInline: t.paddingInline.l, fontSize: t.fontSizeL },
+  l: { minHeight: t.height.l, paddingInline: t.paddingInline.l, fontSize: t.fontSizeL },
 });
 /** A subtle button at the start of the content: its label lines up with the edge, its hit area reaching into the padding (D-111, D-123). */
 export const bleed = styleVariants({
@@ -64,7 +64,7 @@ export const variant = styleVariants({
   danger: variantStyle(t.danger),
 });
 
-export const label = style({ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" });
+export const label = style({ minWidth: 0 });
 export const floating = style(floatingControlSurface);
 
 // The busy sign (Waits, D-199): the icon and a Spinner share one cell, so the control keeps its size.

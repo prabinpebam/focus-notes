@@ -11,7 +11,6 @@ export interface GalleryFixture { id: string; type: string; label: string }
 export function galleryFixtures(contracts: readonly Contract[]): GalleryFixture[] {
   return contracts.flatMap((c) => c.fixtures.map((f, i) => ({ id: `${c.type}.${i}`, type: c.type, label: `${c.type}: ${f.name}` })));
 }
-
 export function galleryViews(contracts: readonly Contract[], scheme: "light" | "dark" = "light"): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const c of contracts) {
@@ -27,6 +26,33 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
           };
       out[`gallery.${c.type}.${i}`] = { $schema: VIEW_SCHEMA_URL, id: `gallery.${c.type}.${i}`, viewModels: ["vm.app", "vm.gallery"], focus: "fixture", root: wrapped };
     });
+  }
+  const glyphRows = contracts.flatMap((c) => c.fixtures
+    .filter((f) => f.name.startsWith("glyph bounds"))
+    .map((f) => ({ type: c.type, props: f.props })));
+  const primaries = glyphRows.filter((n) => n.type === "Button" && n.props?.variant === "primary");
+  const companions = glyphRows.filter((n) => n.type !== "Button" || n.props?.variant !== "primary");
+  for (const context of ["normal", "floating"]) for (const [index, primary] of primaries.entries()) {
+    // Each educational matrix is still a surface with just one primary action.
+    const specimens = [primary, ...companions];
+    const matrix = {
+      type: "Stack", id: "glyph-controls", props: { padding: "m", gap: "s" },
+      children: [
+        { type: "Heading", props: { level: "2", value: { t: "gallery.glyphs.title" } } },
+        ...Array.from({ length: Math.ceil(specimens.length / 3) }, (_, i) => ({
+          type: "Inline", props: { gap: "s", wrap: true }, children: specimens.slice(i * 3, i * 3 + 3),
+        })),
+      ],
+    };
+    out[`gallery.controls.${context}.${index}`] = {
+      $schema: VIEW_SCHEMA_URL, id: `gallery.controls.${context}.${index}`, viewModels: ["vm.app", "vm.gallery"], focus: "glyph-controls",
+      root: {
+        type: "AppRoot", props: { scheme, platform: { get: "vm.app.platform" } },
+        children: context === "floating"
+          ? [{ type: "Layer", props: { position: "center" }, children: [{ type: "Surface", props: { variant: "raised", padding: "none" }, children: [matrix] }] }]
+          : [{ type: "Center", props: { maxWidth: "wideContent" }, children: [matrix] }],
+      },
+    };
   }
   out["gallery.index"] = {
     $schema: VIEW_SCHEMA_URL,
