@@ -1,5 +1,7 @@
 # Connect an AI service
 
+Service icons help you recognize a connection. Some services use a neutral cloud, server or link icon because their logo needs permission or approved artwork is not available. The service name and address, not its icon, tell you where your words go; an icon does not mean the connection has passed **Test connection**.
+
 Set up the AI service that rewrites your words: one running on this computer, or a service online that you use with your own key.
 
 > [!NOTE]

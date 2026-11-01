@@ -26,6 +26,14 @@ entries.sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b
 
 // Code copied into the app rather than installed: each with where it is and its license (LIC-02).
 const VENDORED = [
+  ...Object.values(JSON.parse(readFileSync(join(root, "packages/ui/src/ai-brand-paths.json"), "utf8"))).map((icon) => ({
+    name: `Simple Icons: ${icon.title}`, version: "90646e4bf7f3b89df6c37e65baf3e7bc759a517c",
+    license: icon.license, homepage: icon.source,
+    what: `Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: ${icon.upstream}. Brand guidelines/source terms: ${icon.guidelines}. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.`,
+    text: icon.license === "MIT"
+      ? `MIT License\n\nCopyright (c) GitHub Inc.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`
+      : `Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.\nPinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md\nDisclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md`,
+  })),
   {
     name: "EFF large wordlist", version: "2016-07-18", license: "CC-BY-3.0-US", homepage: "https://www.eff.org/dice",
     what: "The 7,776 words of `eff_large_wordlist.txt`, unmodified apart from dropping the dice numbers, in `packages/seal/src/words.ts`, for generated passcodes (SHR-07, D-52).",
@@ -81,6 +89,16 @@ const body = [
   "# Copied into the app",
   "",
   ...VENDORED.flatMap((e) => [`## ${e.name} ${e.version}`, "", `License: ${e.license}  \nHomepage: ${e.homepage}`, "", e.what, "", "```text", e.text, "```", ""]),
+  "## AI integration neutral fallbacks (D-263)",
+  "",
+  "Existing Fluent UI System Icons from @fluentui/react-icons 2.0.344 (MIT; full licence above). These are not brand logos.",
+  "",
+  "| Icon | Source | Kinds and terms |",
+  "| --- | --- | --- |",
+  "| code | https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Code/SVG/ic_fluent_code_20_regular.svg | llama.cpp, SGLang, LocalAI, Jan, Codex: no verified permissive brand artwork obtained. Docker Model Runner: https://www.docker.com/legal/trademark-guidelines/ requires authorization for logos. |",
+  "| cloud | https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Cloud/SVG/ic_fluent_cloud_20_regular.svg | OpenAI/Azure, Cohere, Groq, Together, Fireworks, xAI, Cerebras: no approved artwork obtained (OpenAI terms: https://openai.com/brand/). NVIDIA: https://www.nvidia.com/en-us/about-nvidia/legal-info/logo-brand-usage/ and Cloudflare: https://www.cloudflare.com/trademark/ require written authorization. |",
+  "| link | https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Link/SVG/ic_fluent_link_20_regular.svg | Other compatible or unknown integrations have no single brand. |",
+  "",
   "# Programs in the Microsoft Store package",
   "",
   `The Microsoft Store package also carries Git, from GitHub Desktop's dugite-native ${gitBundle.tag} (\`${gitBundle.asset}\`, SHA-256 \`${gitBundle.sha256}\`), unmodified, at \`resources\\git\`. These are separate programs that Focus Notes starts; none is linked into it. The installer and the portable download don't include them.`,

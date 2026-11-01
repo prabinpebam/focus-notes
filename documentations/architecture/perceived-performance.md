@@ -2,6 +2,8 @@
 
 How Focus Notes stays calm while work takes time. It covers what a person must see within 100 ms, 1 s and 10 s, which feedback pattern each kind of wait gets, how windows and views change without a blank or white frame, and the inventory of every wait in the app with its pattern and measure. It's the design half of performance. The measuring half, with the budgets and the benchmark, is [Performance and quality](performance-and-quality.md), and the signs themselves are [Feedback and dialogs → Waits](../design/components/feedback-and-dialogs.md#waits). Adapted from the owner's perceived-performance framework for his personal site (D-149).
 
+**D-263, integration icons:** local bundled SVG paths replace decorative connection marks; no remote image fetch, model operation or new wait is added. Existing AI Find, models, Test and Rewrite wait rows remain unchanged.
+
 > [!NOTE]
 > **TL;DR.**
 > - **Speed is felt, not measured.** A 3 s sign-in that names each step feels faster than a 1 s one that freezes. Every action gets the feedback its wait deserves, and no more.

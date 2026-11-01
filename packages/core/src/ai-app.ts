@@ -7,6 +7,7 @@
  * selection through the editor as one undo step. No key ever enters this state.
  */
 import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, type AiConnectionView, type AiFound, type AiGroup } from "./ai-providers.ts";
+import { aiConnectionIcon } from "../../ui/src/ai-icons.ts";
 import type { AiConnectionInput, PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
@@ -145,7 +146,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       modelMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       connections: { type: "array", items: { type: "object", properties: {
-        id: { type: "string" }, name: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
+        id: { type: "string" }, name: { type: "string" }, icon: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
         testText: { type: "string" }, testing: { type: "boolean" }, writer: { type: "boolean" }, notWriter: { type: "boolean" },
       } } },
       found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, detail: { type: "string" } } } },
@@ -159,7 +160,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         keepPrivate,
         writerMenu: [{ id: "writer", items: connections.map((c) => ({ id: c.id, label: c.name, checked: c.id === writer })) }],
         connections: connections.map((c) => ({
-          id: c.id, name: c.name, detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
+          id: c.id, name: c.name, icon: aiConnectionIcon(c.provider), detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
           badge: t(c.id === writer ? "ai.badge.writer" : "ai.badge.saved"),
           keyText: t(c.hasKey ? "ai.key.saved" : aiProvider(c.provider)!.key === "none" ? "ai.key.notNeeded" : "ai.key.none"),
           testText: testText(c), testing: testing.has(c.id),

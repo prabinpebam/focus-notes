@@ -887,7 +887,7 @@
     },
     "c_Icon": {
       "type": "object",
-      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "description": "A system or integration brand icon. Inherited colour; decorative unless it has a label (D-263).",
       "required": [
         "type",
         "props"
@@ -1000,7 +1000,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -1213,7 +1226,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -1479,7 +1505,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -2199,7 +2238,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -2606,7 +2658,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -4846,7 +4911,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -5081,7 +5159,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -5566,7 +5657,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
