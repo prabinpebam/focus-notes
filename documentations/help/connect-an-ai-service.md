@@ -58,8 +58,15 @@ Claude subscription logins are not reused. Gemini CLI login reuse is on hold, an
 
 ## Choose which one rewrites
 
-- In **Writer (used by Rewrite)**, choose a connection. Or select **Use as Writer** next to it.
-- You can also choose **AI integration** in the Rewrite prompt when you have more than one connection. The choice is remembered on this computer for your next rewrite.
+The single-list Settings update below is planned (D-267), not yet in the current owner build.
+
+- In **Settings** → **AI**, select a connection row. Its **Default** badge shows which one Rewrite uses. With the keyboard, move between choices with the arrow keys and select with Space.
+- You can also choose **AI integration** in the Rewrite prompt when you have more than one connection. Both places change the same remembered choice on this computer; reopening Settings shows it.
+- **Test connection**, **Change** and **Remove** act only on that connection, without changing the default.
+- While a choice is being remembered, the old default remains selected. If saving fails, the reason appears and you can try again.
+- Removing the default leaves no default. Choose another before rewriting.
+
+In this update, **Find on this PC** replaces **Find on this computer**, with one explanation: **Scans this PC for running AI services you can use.** There is no separate **On this computer** section. Discovery still does not send your notes; unsupported or unknown services are not claimed ready.
 
 ## Good to know
 

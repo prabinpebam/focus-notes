@@ -1,5 +1,7 @@
 # Rewrite with AI design
 
+**Settings single-list update (D-267, planned):** UC-RWR-05/UC-RWR-08, DD-RWR-07/DD-RWR-08 and AIS-16 compose one list of connection choice areas and sibling Test/Change/Remove controls. Checked radio semantics and the Default badge use the saved Writer ID, also written by Rewrite's remembered picker. Reuse the lowest existing radio/list helper that supports this anatomy; never nest action buttons in the choice target. Selection uses existing semantic surface/border/text/focus tokens, not literal visual values. Rest, hover, active, focus, disabled/pending, error, empty and one/many states must remain legible in light/dark/contrast and narrow layouts. One Find on this PC action and scan line replace the local section. See [Settings anatomy](../experience/ai-settings.md#single-list-default-choice-d-267-planned) and [observable checks](../plan/definition-of-done.md#settings-ai-single-list-stage). No registered component or runtime change is claimed by this spec. design
+
 > [!NOTE]
 > **TL;DR.** Three surfaces: an **inline, non-modal Rewrite popover** with active integration, remembered picker, prompt and presets; the **in-place stream** with rainbow and Stop; and **Settings → AI**. No passage preview or first-send disclaimer/consent. The selection stays visible in the scrollable document and anchors the popover (D-265); the visible integration and the person's judgement are the disclosure (D-266, D-261, D-262). The popover and prompt-loss confirmation are built in WP-AI.14, pending candidate integration and the owner's review.
 

@@ -1,5 +1,13 @@
 # Decisions
 
+## D-267: one Settings list, one remembered default
+
+**Accepted, implementation planned (owner, 1 November 12:03).** Settings → AI is one connections list with a directly selectable row and **Default** badge, not a separate Writer dropdown or **Use as Writer** action. Retain connection identity, icon, model/locality, key and Test state; Test/Change/Remove remain independent sibling controls. Checked radio-like semantics, arrows and Space, token-only selected styling, named pending/failure feedback and no invented fallback are required. One **Find on this PC** button says **Scans this PC for running AI services you can use.** No separate **On this computer** section; unavailable discovery stays honest.
+
+**Default means the existing Writer ID.** Settings row choice calls the existing Writer command; Rewrite's remembered integration picker changes that same device-local ID. Reopening either surface reflects it; there is no new default store or sync. Removing the default clears it. Choosing/discovering sends no notes. D-267 changes Settings anatomy, not the later D-265/D-266 removal of consent/private blocking; serial integration must preserve those changes.
+
+**Trace:** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS / IA-CMP-AIDISCOVER → DD-RWR-07 / DD-RWR-08 → AIS-16 → WP-AI.15 / MAI. Affects [Settings AI](../experience/ai-settings.md#single-list-default-choice-d-267-planned), [Rewrite design](../design/rewrite-with-ai.md), [Help](../help/connect-an-ai-service.md#choose-which-one-rewrites), [waits](../architecture/perceived-performance.md), [DoD](definition-of-done.md#settings-ai-single-list-stage).
+
 Every assumption and design choice these docs make beyond the literal [seed spec](../seed-specs.md), in one place, so any of them can be revisited deliberately.
 
 > [!NOTE]

@@ -1,5 +1,7 @@
 # Views as data
 
+**D-267, Settings AI (planned):** the view binds checked Default state to the existing Writer-derived view model and dispatches the existing Writer command. Do not add view-local or persisted independent default selection. Labels, Default badge, Find on this PC and its scan explanation are message keys; list/row structure is data. Keep Test/Change/Remove events outside the choice target and regenerate UI schemas if a contract changes. Rewrite's remembered picker updates the same ID; the next Settings view/reopen reads it. See [Settings spec](../../experience/ai-settings.md#single-list-default-choice-d-267-planned).
+
 Every screen in Focus Notes is a JSON document. The UI runtime reads it, checks it, and maps each node onto a design-system component, binding it to typed state and wiring its events to commands. This page defines that format, how it's validated and rendered, and what it deliberately can't do.
 
 > [!NOTE]

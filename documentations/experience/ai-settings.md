@@ -13,6 +13,24 @@ Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is 
 
 ## The section
 
+### Single-list default choice (D-267, planned)
+
+CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS / IA-CMP-AIDISCOVER → DD-RWR-07 / DD-RWR-08 → AIS-16, in WP-AI.15 / MAI.
+
+This owner feedback supersedes the separate Writer menu, **Use as Writer** action and **On this computer** section described in the historical built anatomy below. The replacement is one connections list, **Add connection**, and one **Find on this PC** button with the line **Scans this PC for running AI services you can use.** Discovery results remain adjacent to that action, without a separate local-services section; signed-in supported Copilot is added once, while servers still offer **Set up**. Unknown, unsupported and signed-out results keep their reasons, never a ready badge.
+
+| Row part | Behaviour |
+| --- | --- |
+| Choice area | Keyboard-accessible radio-like choice named with the connection and **Default**; checked semantics reflect the saved Writer ID. Space selects the focused row; arrow keys move between choices. |
+| Identity | Keep the icon, name, service, model, destination/locality, key state and last Test. Selection uses existing semantic tokens plus a **Default** badge, never colour alone. |
+| Actions | **Test connection**, **Change**, **Remove** remain sibling controls outside the choice target, not buttons nested in a radio/button. Editing, testing or removing never also selects the row. |
+| Saving | **Remembering your choice…** beside the list; keep the previous saved choice checked until persistence succeeds. On failure retain it and show the reason with retry available. |
+| Empty / one / many | Empty offers Add or Find, no invented default. The existing first-save rule selects the first connection. Multiple rows have exactly one checked default when a Writer exists. Removing it leaves no default until another is chosen. |
+
+**One truth:** Default is the existing device-local Writer ID, not a second preference or store. Choosing a row calls the existing Writer command. Rewrite's remembered integration picker writes the same ID; reopening Settings reflects that choice, and choosing in Settings determines the next Rewrite. Neither discovery nor selecting a default sends note text.
+
+**Build boundary:** spec accepted for implementation; not yet built. This Settings slice must preserve the later D-265/D-266 Rewrite changes during serial integration and must not restore private-note blocking or first-send consent.
+
 Connection rows now identify the service with its monochrome brand icon where permissive artwork is available, otherwise a neutral server, cloud or connection mark (D-263, AIS-03). Names, destinations and status stay visible: an icon never promises a working connection or on-device inference. This extends CP-RWR-01 → SC-RWR-04 → UC-RWR-05 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS → DD-RWR-07 → AIS-03, planned in WP-AI.11 / MAI.
 
 | Identity | Icon |
