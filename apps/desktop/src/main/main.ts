@@ -73,7 +73,7 @@ import { spawnOffThread } from "./spelling/off-thread.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import { DraftStore } from "./drafts.ts";
-import { AiService, isPrivateNote, reasonOf } from "./ai-rewrite.ts";
+import { AiService, reasonOf } from "./ai-rewrite.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 import { watchCompositing } from "./window/compositing.ts";
@@ -1240,8 +1240,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("ai:test", (id: unknown) => ai.test(id));
   handle("ai:discover", () => ai.discover());
   handle("ai:models", (input: unknown) => ai.models(input));
-  handle("ai:consent", (id: unknown) => ai.consent(id));
-  handle("ai:privacy", (keep: unknown) => ai.privacy(keep));
   // Rewrite streams: one per window at a time, each chunk sent to the window that asked, tagged with its id.
   // A Stop, a new rewrite, or the window closing or reloading aborts the request here, not just in the window.
   const rewrites = new Map<number, { id: string; abort: AbortController }>();
@@ -1258,7 +1256,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     sender.once("did-start-loading", gone);
     void (async () => {
       try {
-        for await (const text of ai.stream(input, abort.signal, (path) => isPrivateNote(isWorkspace() && existsSync(privateDir()) ? privateDir() : undefined, path))) send({ type: "delta", text });
+        for await (const text of ai.stream(input, abort.signal)) send({ type: "delta", text });
         send({ type: "done" });
       } catch (error) {
         send({ type: "error", ...reasonOf(error) });

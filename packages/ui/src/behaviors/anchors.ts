@@ -10,13 +10,18 @@ export interface AnchorRect {
   /** The first line's horizontal extent: the toolbar centers on it. */
   left: number;
   right: number;
+  /** Exact selected fragments and their clipping viewport, for long inline tasks. */
+  fragments?: readonly AnchorRect[];
+  viewport?: AnchorRect;
+  /** Return the retained selection to view without changing focus, capture or the document. */
+  reveal?: (position: { fragment: number; side: "above" | "below"; edge: number; gap: number; viewportTop: number; viewportBottom: number }) => void;
 }
 /** The selection (or caret), a link, and the `/` the slash menu opened at. */
-export type AnchorName = "selection" | "link" | "caret";
+export type AnchorName = "selection" | "link" | "caret" | "rewrite";
 
-const rects: Record<AnchorName, AnchorRect | null> = { selection: null, link: null, caret: null };
+const rects: Record<AnchorName, AnchorRect | null> = { selection: null, link: null, caret: null, rewrite: null };
 /** Reads an anchor where it is now (DEF-21): a Positioner places against the live rectangle, never one a frame old. */
-const readers: Record<AnchorName, (() => AnchorRect | null) | null> = { selection: null, link: null, caret: null };
+const readers: Record<AnchorName, (() => AnchorRect | null) | null> = { selection: null, link: null, caret: null, rewrite: null };
 const listeners = new Set<() => void>();
 const openers = new Set<() => void>();
 const followers = new Set<() => void>();

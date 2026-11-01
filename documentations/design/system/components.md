@@ -1,5 +1,11 @@
 # Component catalog
 
+**Shared anatomy revision, 1 November 18:12 regression (D-265/D-266/D-267; approval pending):** Button, PillButton and MenuButton text/pill/select triggers reuse the native-control reset and complete font line box from `packages/ui/src/primitives/control.css.ts`. The supplied confirmation screenshot disproved cap-to-baseline trimming: it cut off descenders when paired with hidden label overflow. Labels now ellipsize only inline, remain visible vertically, and are flex-centered inside token minimum heights with symmetric padding. Floating controls preserve opaque surface paint under hover/pressed highlights; ordinary secondary controls also layer highlights over their resting surface. Inline's `related` contract groups an action and its explanation with named related spacing and responsive wrapping; independent groups use section spacing. ItemCard's saved selected badge is accent-filled with on-accent text and semibold weight. `ui:check` includes static full-line/non-clipping/minimum-height invariants in `packages/ui-runtime/src/cli/design-source.ts`. The gallery's normal/floating matrix contains `Copy Agjpqy` for every Button variant/size/no-start-end icon combination and Pill/Menu controls. Labels are single-line; long labels ellipsize rather than wrap. These source checks are not visual approval.
+
+**ItemCard choice implementation (D-267):** the existing primitive accepts `choiceGroup`, `choiceValue` and saved `selected`, emitting `choose` from a native radio. Its radio label contains icon/title/detail/Default badge only; the default slot remains a sibling, so action controls never select it. Arrow keys and Space use the browser's radio model; pending marks the radio `aria-disabled` and suppresses activation without native disabling, replacing it, or dropping focus. Selected background paint is composited over the existing opaque card, not a transparent replacement. No new component or selection store.
+
+**D-267, Settings connection choice (built ItemCard adaptation):** one radio-like choice target per row, with explicit Default name/checked state and token-only selected/focus appearance; Test/Change/Remove are sibling controls, never interactive descendants. Reuse existing radio/list behaviour in the lowest UI tier; any missing capability requires a documented contract, states/stories and regenerated schemas before the view can use it. Identity/status content stays separate from selection. See [Settings spec](../../experience/ai-settings.md#single-list-default-choice-d-267-planned).
+
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
@@ -25,15 +31,15 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | --- | --- | --- | ---: | --- |
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
-| Icon | primitive | `rest` | 4 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 14 | `hover`, `pressed`, `focusVisible` |
+| Icon | primitive | `rest` | 17 | None |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 51 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
 | Divider | primitive | `rest` | 2 | None |
 | PopoverPanel | primitive | `closed`, `open` | 7 | `open` |
-| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 6 | None |
+| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 9 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 15 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
@@ -45,8 +51,8 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
-| TextField | primitive | `rest`, `focused`, `invalid` | 11 | `focused` |
-| PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 1 | `hover`, `pressed`, `focusVisible` |
+| TextField | primitive | `rest`, `focused`, `invalid` | 12 | `focused` |
+| PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 2 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen` | 2 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
 | WindowControls | primitive | `hidden`, `shown`, `buttonHover`, `closeHover`, `focusVisible`, `layoutsOpen`, `zoneHover` | 3 | `buttonHover`, `focusVisible`, `zoneHover` |
@@ -55,7 +61,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ColorField | primitive | `rest`, `focused`, `invalid` | 2 | `focused` |
 | AppMark | primitive | `rest` | 3 | None |
 | StepMark | primitive | `rest` | 9 | None |
-| ItemCard | primitive | `rest` | 8 | None |
+| ItemCard | primitive | `rest`, `selected`, `disabled` | 10 | None |
 | SaveState | primitive | `rest`, `hover`, `pressed`, `focusVisible`, `savedLocal`, `pending`, `syncing`, `synced`, `offline`, `error` | 6 | `hover`, `pressed`, `focusVisible` |
 | StepDots | primitive | `rest` | 3 | None |
 | StatusRow | primitive | `rest` | 5 | None |
@@ -73,8 +79,8 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | BlockHandle | host component | `hidden`, `shown`, `pressed`, `menuOpen`, `dragging` | 0 | `hidden` |
 | WindowFrame | host component | `rest`, `bandHover`, `fullScreenHidden`, `moving`, `resizing`, `menuOpen` | 0 | `bandHover`, `fullScreenHidden` |
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
-| Stack | layout | `rest` | 16 | None |
-| Inline | layout | `rest` | 16 | None |
+| Stack | layout | `rest` | 18 | None |
+| Inline | layout | `rest` | 19 | None |
 | Columns | layout | `rest` | 1 | None |
 | Surface | layout | `rest` | 24 | None |
 | Layer | layout | `rest` | 19 | None |
@@ -82,7 +88,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | AppRoot | layout | `rest` | 29 | None |
 | ToolbarRow | layout | `rest` | 1 | None |
 | Field | layout | `rest`, `error` | 2 | None |
-| Positioner | layout | `above`, `below`, `offscreen` | 5 | `offscreen` |
+| Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
 | ReaderPage | layout | `rest` | 1 | None |
 | PrintPage | layout | `rest` | 2 | None |
@@ -96,6 +102,24 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Dialog | compound component | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 
 <!-- /generated:component-inventory -->
+
+<h2 id="integration-icons" data-reader-personas="design engineering">Integration icons</h2>
+
+The existing **Icon** primitive also renders AI service marks (D-263). Paths are local design-system data in `packages/ui/src/ai-brand-paths.json`, never SVG in view documents. Brand fixtures in the generated gallery cover every asset. No new primitive or tokens: `size` remains `s`, `m` or `l` using `cmp.icon.size.*`; paths use `currentColor` for light, dark, contrast and forced colours. Beside a service name the mark is decorative and hidden from assistive technology. Standing alone it requires `label`, which becomes `role="img"` and `aria-label`; it is never focusable.
+
+| API or asset | Contract |
+| --- | --- |
+| `aiConnectionIcon(kind): IconName` | Exported from `@focus-notes/ui/contracts` (Node-safe) and `@focus-notes/ui`; covers all 26 supported kinds plus Copilot, Claude Code, Codex and Gemini CLI aliases. Unknown kinds return `link`. Does not enable a transport. |
+| `AI_CONNECTION_ICONS` | Explicit read-only kind-to-icon table for picker reuse |
+| Simple Icons revision `90646e4bf7f3b89df6c37e65baf3e7bc759a517c` | 12 CC0-1.0 paths: Ollama, LM Studio, vLLM, Anthropic, Claude, Claude Code, Gemini, Mistral, DeepSeek, Perplexity, OpenRouter, Hugging Face |
+| GitHub Copilot from the same catalogue | MIT (Octicons); its full licence and source ship in the generated third-party notices |
+| Neutral fallbacks | Existing Fluent icons (MIT): `code` for local servers / Codex, `cloud` for cloud services, `link` for custom connections |
+
+Brand names remain their owners' trademarks. CC0 is not a trademark licence and Simple Icons notes that per-brand rights may differ. Use only to identify the actual service, never to imply endorsement or status. Docker, NVIDIA and Cloudflare explicitly require authorization for their logos, so their artwork is not shipped. Other absent/uncleared artwork also stays neutral. Each included path records the pinned SVG source, upstream source, licence and guidelines/source URL in `THIRD_PARTY_NOTICES.md`; review terms when updating assets.
+
+**Try it:** open the gallery's Icon brand fixtures in light and dark; open Settings → AI with an Ollama or Claude connection. The card's name and status stay visible beside its mark. No hover, pressed, loading or disabled state is introduced by a decorative icon.
+
+The Copilot CLI connection kind is `copilot-cli`: `aiConnectionIcon("copilot-cli")` returns `aiCopilot` (GitHub Copilot, MIT). The alias is tested explicitly; its icon does not imply on-device inference.
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
@@ -141,8 +165,8 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 
 | Component | Status | Variants and key props | Pattern | Used by |
 | --- | --- | --- | --- | --- |
-| **Text** | Implemented | `role`: caption, secondary, body, emphasis, title, label. `tone`: default, muted, accent, danger, warning, success. `lines` (truncate), `value` (message or binding) | Text | Everywhere |
-| **Heading** | Implemented | `level` 1 to 3 (interface headings, not note headings), `value` | Heading | Sheets, dialogs, settings |
+| **Text** | Implemented | `role`: caption, secondary, body, emphasis, title, label. Labels are 16 px / 600; body is 14 px / 400; hints use secondary 13 px / 400 (D-258). `tone`: default, muted, accent, danger, warning, success. `lines` (truncate), `value` (message or binding) | Text | Everywhere |
+| **Heading** | Implemented | `level` 1 to 3 (interface headings, not note headings): 28, 24, 20 px, all bold (700); `value`. The shared ramp separates Settings section headers from subsection labels (D-258) | Heading | Sheets, dialogs, settings |
 | **Icon** | Implemented | `name` (Fluent registry), `size` s/m/l, `filled` | Image, or hidden when decorative | Everywhere |
 | **Shortcut** | Implemented | `keys` (key caps in the platform's symbols, from a view model, which takes them from the command registry) and `label` (the chord in words). Caps are hidden from screen readers, which read the words instead | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
 | **Button** | Implemented | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed`, `autoFocus` (takes focus when it appears: a confirmation's *Cancel*, D-100, or a first-run step's primary action, D-101). Inside an editor companion (Positioner), a pointer press leaves focus in the note | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link, the first run |

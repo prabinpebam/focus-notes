@@ -887,7 +887,7 @@
     },
     "c_Icon": {
       "type": "object",
-      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "description": "A system or integration brand icon. Inherited colour; decorative unless it has a label (D-263).",
       "required": [
         "type",
         "props"
@@ -1000,7 +1000,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -1052,7 +1065,7 @@
     },
     "c_Button": {
       "type": "object",
-      "description": "A labelled action. Its label says what it does.",
+      "description": "A labelled action. Shared native-control reset centers the complete font line box and icon with symmetric block padding. Token minimum heights grow for natural content; labels ellipsize inline without clipping ascenders or descenders. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "required": [
         "type",
         "props"
@@ -1213,7 +1226,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -1479,7 +1505,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -2199,7 +2238,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -2606,7 +2658,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -3796,6 +3861,19 @@
                 }
               ]
             },
+            "compactMultiline": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "scrolls": {
               "anyOf": [
                 {
@@ -4846,7 +4924,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -4973,6 +5064,33 @@
                 }
               ]
             },
+            "choiceGroup": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "choiceValue": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "detail": {
               "anyOf": [
                 {
@@ -5081,7 +5199,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -5224,6 +5355,9 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "choose": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -5566,7 +5700,20 @@
                     "pinOff",
                     "feedback",
                     "sent",
-                    "print"
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot"
                   ]
                 },
                 {
@@ -6571,6 +6718,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6591,6 +6740,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6611,6 +6762,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6728,6 +6881,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6744,10 +6899,38 @@
                 }
               ]
             },
+            "related": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "padding": {
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6878,6 +7061,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7003,6 +7188,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7023,6 +7210,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7798,7 +7987,8 @@
                   "enum": [
                     "selection",
                     "link",
-                    "caret"
+                    "caret",
+                    "rewrite"
                   ]
                 },
                 {
@@ -7845,6 +8035,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7889,6 +8081,32 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "returnAboveLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "returnBelowLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": []
@@ -7896,7 +8114,11 @@
         "on": {
           "type": "object",
           "additionalProperties": false,
-          "properties": {}
+          "properties": {
+            "dismiss": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         },
         "children": {
           "type": "array",
@@ -8846,6 +9068,9 @@
               "$ref": "#/$defs/actions"
             },
             "rewriteCancel": {
+              "$ref": "#/$defs/actions"
+            },
+            "rewriteDeselect": {
               "$ref": "#/$defs/actions"
             },
             "format": {

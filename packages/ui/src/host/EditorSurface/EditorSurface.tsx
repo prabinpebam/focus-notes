@@ -17,7 +17,7 @@ import { measureColumns, tableView } from "./table-view.ts";
 import { trackTables, type TablePayload, type TableTracker } from "./table-tracker.ts";
 import { trackBlocks, type BlockPayload, type BlockTracker } from "./block-tracker.ts";
 import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
-import { inCompanion } from "../../behaviors/anchors.ts";
+import { anchors, inCompanion, type AnchorRect } from "../../behaviors/anchors.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./EditorSurface.css.ts";
@@ -78,6 +78,7 @@ export interface EditorSurfaceProps {
   onRewriteBegan?: (payload: { ok: boolean }) => void;
   /** Esc while a rewrite streams in: stop it. */
   onRewriteCancel?: () => void;
+  onRewriteDeselect?: (payload: { started: number }) => void;
   /** Whether text was selected as the find bar opened: find in selection's scope (FND-03). */
   onFindScope?: (payload: { scoped: boolean }) => void;
   onReady?: () => void;
@@ -159,7 +160,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteBegan, onRewriteCancel, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -172,8 +173,8 @@ export function EditorSurface({
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, onFindScope, findOpen });
   findRef.current = { onFindResult, onFindPrefill, onFindScope, findOpen };
-  const rewriteRef = useRef({ onRewriteCapture, onRewriteBegan, onRewriteCancel });
-  rewriteRef.current = { onRewriteCapture, onRewriteBegan, onRewriteCancel };
+  const rewriteRef = useRef({ onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect });
+  rewriteRef.current = { onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect };
   const rewriteTarget = useRef<RewriteCapture | undefined>(undefined);
   const rewriteStream = useRef<RewriteStream | undefined>(undefined);
   const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
@@ -443,7 +444,7 @@ export function EditorSurface({
   }, [editor]);
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    setSelectionGhost(editor, Boolean(linkEditing));
+    setSelectionGhost(editor, Boolean(linkEditing || rewriteTarget.current));
     tracker.current?.holdSelection(Boolean(linkEditing));
   }, [editor, linkEditing]);
   // A press anywhere in the note while the link editor is open puts it away (EDT-13): the press then
@@ -507,6 +508,72 @@ export function EditorSurface({
       rewriteStream.current.abort();
       rewriteRef.current.onRewriteCancel?.();
     };
+    let selecting = false, deselectFrame = 0;
+    const selectionChanged = () => {
+      if (selecting || deselectFrame || !rewriteTarget.current) return;
+      const started = performance.now();
+      // A loss dialog must not intercept the pointer-up that finishes ProseMirror's selection.
+      deselectFrame = requestAnimationFrame(() => {
+        deselectFrame = 0;
+        if (selecting || !rewriteTarget.current || editor.isDestroyed) return;
+        syncSelection(editor);
+        const target = rewriteTarget.current;
+        if (target && (editor.state.selection.from !== target.from || editor.state.selection.to !== target.to)) {
+          rewriteRef.current.onRewriteDeselect?.({ started });
+        }
+      });
+    };
+    const pointerStart = (e: PointerEvent) => {
+      selecting = e.target instanceof Node && Boolean(scrollerRef.current?.contains(e.target)) && !inCompanion(e.target);
+    };
+    const pointerEnd = () => {
+      if (!selecting) return;
+      selecting = false;
+      selectionChanged();
+    };
+    const ownerDocument = columnRef.current?.ownerDocument ?? document;
+    ownerDocument.addEventListener("pointerdown", pointerStart, true);
+    ownerDocument.addEventListener("pointerup", pointerEnd, true);
+    ownerDocument.addEventListener("pointercancel", pointerEnd, true);
+    editor.on("selectionUpdate", selectionChanged);
+    const releaseCapture = () => {
+      rewriteTarget.current = undefined;
+      anchors.set("rewrite", null);
+      setSelectionGhost(editor, Boolean(linkEditing));
+    };
+    const domRange = (fromPos: number, toPos: number) => {
+      const from = editor.view.domAtPos(fromPos), to = editor.view.domAtPos(toPos);
+      const range = editor.view.dom.ownerDocument.createRange();
+      range.setStart(from.node, from.offset);
+      range.setEnd(to.node, to.offset);
+      return range;
+    };
+    const selectionAnchor = (): AnchorRect | null => {
+      const target = rewriteTarget.current;
+      const viewport = scrollerRef.current?.getBoundingClientRect();
+      if (!target || !viewport || editor.isDestroyed || !editor.state.doc.eq(target.doc)) return null;
+      const range = domRange(target.from, target.to);
+      const fragments = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0)
+        .map(({ left, right, top, bottom }) => ({ left, right, top, bottom }));
+      if (!fragments.length) return null;
+      return {
+        left: Math.min(...fragments.map((r) => r.left)), right: Math.max(...fragments.map((r) => r.right)),
+        top: Math.min(...fragments.map((r) => r.top)), bottom: Math.max(...fragments.map((r) => r.bottom)),
+        fragments, viewport,
+        reveal: (position) => {
+          const current = selectionAnchor();
+          const scroller = scrollerRef.current;
+          const fragment = current?.fragments?.[position.fragment] ?? current?.fragments?.at(-1);
+          if (!current?.viewport || !fragment || !scroller) return;
+          scroller.scrollBy({
+            top: position.side === "below"
+              ? fragment.bottom - position.viewportTop - position.edge - position.gap
+              : fragment.top - position.viewportBottom + position.edge + position.gap,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+          });
+        },
+      };
+    };
     const runAction = (e: Event) => {
       const detail = (e as CustomEvent<{ id?: string; args?: Record<string, unknown> }>).detail;
       const id = String(detail?.id);
@@ -525,18 +592,39 @@ export function EditorSurface({
         }
         return;
       }
-      // Rewrite: the selection is captured as the dialog opens, and Accept replaces exactly it.
+      // Rewrite holds its own range while the document scrolls and prompt controls take focus.
       if (id === "rewrite.capture") {
         const { from, to, empty } = editor.state.selection;
         const text = empty || !editor.isEditable ? "" : editor.state.doc.textBetween(from, to, "\n\n");
         rewriteTarget.current = text.trim() ? { doc: editor.state.doc, from, to } : undefined;
+        if (rewriteTarget.current) {
+          setSelectionGhost(editor, true);
+          anchors.set("rewrite", selectionAnchor(), selectionAnchor);
+        }
         rewriteRef.current.onRewriteCapture?.({ text: rewriteTarget.current ? text : "" });
+        return;
+      }
+      if (id === "rewrite.release") {
+        releaseCapture();
+        return;
+      }
+      if (id === "rewrite.restore") {
+        const range = ghostRange(editor.state);
+        if (rewriteTarget.current && range) {
+          editor.commands.setTextSelection(range);
+          // While the modal still holds focus, ProseMirror doesn't restore the native range.
+          // Restore both or clicking the same deselected caret again produces no selection event.
+          const selection = editor.view.dom.ownerDocument.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(domRange(range.from, range.to));
+          syncSelection(editor, true);
+        }
         return;
       }
       if (id === "rewrite.begin") {
         // The captured selection, if the note hasn't changed since: locked, and shimmering while the answer comes.
         const target = rewriteTarget.current;
-        rewriteTarget.current = undefined;
+        releaseCapture();
         rewriteStream.current?.abort();
         const ok = Boolean(target && editor.state.doc.eq(target.doc) && editor.isEditable);
         rewriteStream.current = ok && target ? new RewriteStream(editor, target, s.rewriteClasses) : undefined;
@@ -706,6 +794,12 @@ export function EditorSurface({
       window.removeEventListener(FLUSH_EVENT, flush);
       window.removeEventListener(REFOCUS_EVENT, refocus);
       window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
+      editor.off("selectionUpdate", selectionChanged);
+      ownerDocument.removeEventListener("pointerdown", pointerStart, true);
+      ownerDocument.removeEventListener("pointerup", pointerEnd, true);
+      ownerDocument.removeEventListener("pointercancel", pointerEnd, true);
+      cancelAnimationFrame(deselectFrame);
+      anchors.set("rewrite", null);
       window.removeEventListener("keydown", escRewrite, true);
       column?.removeEventListener("animationend", faded);
       stopRewrite();

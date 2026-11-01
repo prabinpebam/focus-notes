@@ -2,7 +2,7 @@ import type { FluentIcon } from "@fluentui/react-icons";
 
 /**
  * GitHub's mark, `mark-github` from GitHub's Octicons (@primer/octicons 19.40.0, MIT, © GitHub Inc.;
- * see THIRD_PARTY_NOTICES.md). The only icon outside the Fluent family (D-126): it names GitHub
+ * see THIRD_PARTY_NOTICES.md). An identity icon outside the Fluent family (D-126): it names GitHub
  * where the setup talks about it. Per GitHub's logo guidelines it's drawn unmodified, in one color
  * (the text color, so it works in light and dark), and never larger than the app's own icon.
  */

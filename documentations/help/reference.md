@@ -11,4 +11,8 @@ Keyboard shortcuts, settings, and where Focus Notes keeps your files.
 - Where Focus Notes keeps your files
 - Settings explained
 
+## Finding your way in Settings
+
+Settings groups choices into categories. Bigger, bold headings mark sections; smaller semibold labels mark groups within them. Regular text explains the choices. This interface type scale is separate from the size of your note text.
+
 [Back to Help](index.md)

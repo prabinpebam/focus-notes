@@ -1,6 +1,6 @@
 import { defineContract } from "../../contract.ts";
 
-export const SPACE = ["none", "xs", "s", "m", "l", "xl", "xxl", "xxxl"] as const;
+export const SPACE = ["none", "related", "section", "xs", "s", "m", "l", "xl", "xxl", "xxxl"] as const;
 
 export const contract = defineContract({
   type: "Stack",

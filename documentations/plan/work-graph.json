@@ -91,8 +91,16 @@
   "implicitDependency": "Every work package depends on the gate of the previous stage, unless lookahead is true.",
   "workPackages": [
     {
+      "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
+      "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Built after POP release over 86631980: native ItemCard radio area, shared Writer bridge/tracker and explicit save failure/default deletion. UX-LIST evidence checked; integration and owner acceptance pending. D-264/D-265/D-266 preserved.",
+      "requirements": ["AIS-16"],
+      "dependsOn": ["WP-AI.11"], "touches": ["core", "ui", "views", "tests", "help", "spec"],
+      "reviews": ["code", "design-system", "accessibility"], "specs": ["experience/ai-settings.md", "design/rewrite-with-ai.md", "plan/definition-of-done.md", "help/connect-an-ai-service.md"],
+      "lookahead": true, "status": "verifying"
+    },
+    {
       "id": "WP-AI.11", "stage": "MAI", "title": "Rewrite in place and AI connections",
-      "summary": "As built on 31 October (D-256, D-257): Settings → AI with 26 service kinds in six request shapes, sealed keys, Find on this computer, models, Test and the Writer; the Rewrite dialog (prompt only) from Ctrl+Shift+R, the text menu and the Edit menu; the answer streamed in place from the main process with the note read-only, the rainbow shimmer and fade, one undo step, and Esc, Stop and errors restoring the original. Branch fix-ai-rewrite-simple, in the owner's review build; not merged.",
+      "summary": "As built on 31 October (D-256, D-257): Settings → AI with 26 API/server kinds in six HTTP shapes, sealed keys, Find, models, Test and the Writer; a prompt dialog and in-place stream, note read-only, rainbow fade, one undo step, and Esc, Stop and errors restoring the original. D-263 adds licensed integration icons or neutral fallbacks via a shared kind-to-icon API. D-262 adds a remembered integration picker and model/endpoint locality disclosure; D-261 leaves private-note sending to user judgement with first-send consent. D-264 adds Cloud-labelled GitHub Copilot through the official SDK: Find checks existing login without generation, adds signed-in Copilot and preserves an existing Writer. Tool-free ephemeral streaming, Stop and explicit CLI errors; AIS-02 to AIS-04 and AIS-07 to AIS-11 remain in this package and MAI. Track proof: CLI 1.0.105 / SDK 1.0.28, isolated configuration and gh-cli authentication, zero tools, dummy rewrite and abort. Combined on own-candidate for owner review, not main.",
       "requirements": ["RWR-70", "RWR-71", "RWR-72", "RWR-73", "RWR-74", "RWR-75", "RWR-76", "RWR-77", "RWR-78", "RWR-79", "RWR-80", "RWR-81", "RWR-82", "RWR-83", "AIS-01", "AIS-02", "AIS-03", "AIS-04", "AIS-05", "AIS-06", "AIS-07", "AIS-08", "AIS-09", "AIS-10", "AIS-11", "AIS-12", "AIS-15", "KEY-08", "SPT-09", "UI-14", "I18N-04", "PRV-05", "LIC-03"],
       "dependsOn": ["WP-1.1", "WP-8.9"], "touches": ["core", "editor", "tokens", "ui", "views", "desktop"],
       "reviews": ["code", "security", "design-system"], "specs": ["experience/rewrite-with-ai.md", "experience/ai-settings.md", "design/rewrite-with-ai.md", "architecture/rewrite-engine.md", "architecture/rewrite-providers.md", "plan/rewrite-acceptance.md"],
@@ -107,18 +115,26 @@
       "lookahead": true, "status": "in-progress"
     },
     {
-      "id": "WP-AI.13", "stage": "MAI", "title": "Private notes, first-send consent and leaving mid-rewrite",
-      "summary": "Don't send private notes (on by default), one confirmation before the first send to a connection, and stopping the request in main when the person switches notes or closes the window mid-rewrite.",
-      "requirements": ["AIS-13", "AIS-14", "RWR-86"],
+      "id": "WP-AI.13", "stage": "MAI", "title": "Destination disclosure and leaving mid-rewrite",
+      "summary": "D-261 removes the private-notes blocking option in favour of the user's judgement and clear disclosure. D-262 shows integration, model and per-model/per-host This computer or Cloud in the prompt, and remembers the selected Writer on this device (RWR-73, AIS-03 remain in WP-AI.11). WP-AI.14 removes first-send consent (D-266). Switching notes or closing the window stops the request in main.",
+      "requirements": ["AIS-13", "RWR-86"],
       "dependsOn": ["WP-AI.11"], "touches": ["core", "desktop", "views"],
       "reviews": ["code", "security", "design-system"], "specs": ["experience/ai-settings.md", "experience/rewrite-with-ai.md", "architecture/rewrite-providers.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "verifying"
+    },
+    {
+      "id": "WP-AI.14", "stage": "MAI", "title": "Inline selection-anchored prompt popover",
+      "summary": "Owner, 1 November 11:17 (D-265, D-266): no passage preview; non-modal inline prompt follows visible selection fragments and stays within the editor viewport while any fragment is visible. Document remains scrollable and selection visibly marked. Fully offscreen selection lets the prompt scroll out without losing draft. Empty-prompt deselection dismisses; written or preset text asks Keep editing / Discard prompt. No first-send disclaimer, consent or sending gate; active integration disclosure and remembered picker remain.       DoD UX-POP.1 to UX-POP.6 locally proven on own-popover-build; candidate integration and owner acceptance pending. Affected aggregate 206 passed / five opt-in live tests skipped; three safeguards journeys passed.",
+      "requirements": ["RWR-87", "RWR-88", "RWR-89", "RWR-90", "AIS-14"],
+      "dependsOn": ["WP-AI.11", "WP-AI.13"], "touches": ["core", "editor", "ui", "views", "desktop", "tests", "spec", "help"],
+      "reviews": ["code", "design-system", "accessibility"], "specs": ["design/rewrite-with-ai.md", "experience/rewrite-with-ai.md", "experience/ai-settings.md", "architecture/rewrite-providers.md", "plan/definition-of-done.md", "plan/rewrite-acceptance.md", "help/rewrite-with-ai.md"],
       "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-AI.9", "stage": "MAI", "title": "Rewrite gate evidence and Help",
       "summary": "Close the cross-cutting rows on the built design: a Windows journey against a fake local service (no live services or keys in CI), the security review, wait measures, keyboard and screen-reader pass, contrast of every gradient frame and the focus band, gallery states and VVS, and Help.",
       "requirements": ["QLT-08", "HLP-10", "DOC-03", "SEC-09", "PRF-15", "A11Y-03", "DSY-14", "FOC-07"],
-      "dependsOn": ["WP-AI.11", "WP-AI.12", "WP-AI.13"], "touches": ["tests", "help", "spec", "ui"],
+      "dependsOn": ["WP-AI.11", "WP-AI.12", "WP-AI.13", "WP-AI.14"], "touches": ["tests", "help", "spec", "ui"],
       "reviews": ["code", "security", "design-system", "accessibility"], "specs": ["plan/rewrite-acceptance.md", "experience/rewrite-with-ai.md", "architecture/perceived-performance.md"],
       "lookahead": false, "status": "planned"
     },
@@ -186,7 +202,7 @@
       "id": "WP-0.3",
       "stage": "M0",
       "title": "Token source and build",
-      "summary": "DTCG sources for every tier, Style Dictionary output, and alias checks.",
+      "summary": "DTCG sources for every tier, Style Dictionary output, and alias checks. D-258: shared Heading/Text ramp makes Settings section headers 20 px/700, subsection labels 16 px/600 and body 14 px/400 (DD-IA-06, IA-VIEW-SETTINGS, UC-KEY-03, SC-FIND-04, CP-REACH-01).",
       "requirements": [
         "DSY-01",
         "DSY-02"

@@ -152,6 +152,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         const t = checkRead(node.each.get, `${at}/each`, scope);
         if (t && t.type !== "array") add("types", `${at}/each`, `"${node.each.get}" isn't a list`);
         if (!node.empty) add("accessibility", at, "a repeat needs an empty case");
+        const identity = checkRead(node.key, `${at}/key`, { ...scope, [node.as]: t?.items ?? {} });
+        if (identity && identity.type !== "string" && identity.type !== "number") add("design", `${at}/key`, "repeat identity must be a stable string or number, never selection/pending state");
         walk(node.render, `${at}/render`, { ...scope, [node.as]: t?.items ?? {} }, parent, surface);
         if (node.empty) walk(node.empty, `${at}/empty`, scope, parent, `${at}/empty`);
         return;
@@ -178,6 +180,9 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         ids.add(node.id);
       }
       const props = node.props ?? {};
+      if (node.type === "Inline" && props.related === true) {
+        if (props.gap !== undefined || props.wrap === false) add("design", `${at}/props`, "a related group uses its shared spacing and responsive wrapping defaults");
+      }
       for (const [k, v] of Object.entries(props)) checkValue(v, c.props[k], `${at}/props/${k}`, scope);
       for (const [k, spec] of Object.entries(c.props)) {
         if (spec.kind === "message" && spec.requiredWhen && props[spec.requiredWhen] !== undefined && props[spec.requiredWhen] !== false && props[k] === undefined)
@@ -200,8 +205,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
 
     walk(doc.root, "/root", {});
     if (doc.overlay) {
-      // A view hosted beside the main one adds only dialogs and side sheets: no second app root, nothing on the canvas.
-      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || (c.type !== "Dialog" && c.type !== "Sheet"))) add("design", "/root", "an overlay view's root is a Stack of Dialogs and Sheets");
+      // Overlay views add only dialogs, sheets and anchored content, never a second app root.
+      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || !["Dialog", "Sheet", "Positioner"].includes(c.type))) add("design", "/root", "an overlay view's root is a Stack of Dialogs, Sheets and anchored Positioners");
     } else if (doc.ia === "IA-VIEW-PUBLIC") {
       // A published page (WP-5.1) is a document of its own, without the app: its root is ReaderPage.
       if (!isComponent(doc.root) || doc.root.type !== "ReaderPage") add("design", "/root", "a published page's root is ReaderPage");

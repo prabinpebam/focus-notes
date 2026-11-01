@@ -5,20 +5,25 @@
  * documentation. Also: errors as one reason each, cancellation and timeouts that close the
  * request, Find on this computer, and keys that never leave the main process.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AI_PROVIDERS, aiProvider } from "@focus-notes/core/ai-providers";
-import { AiError, AiService, isPrivateNote, reasonOf, retryAfter, sse, ndjson } from "../src/main/ai-rewrite.ts";
+import { AI_PROVIDERS, aiProvider, aiRunsInCloud } from "@focus-notes/core/ai-providers";
+import { AiError, AiService, reasonOf, retryAfter, sse, ndjson } from "../src/main/ai-rewrite.ts";
 import { KEY, TEXT, TEXT_PARTS, closedPort, provider, silent, sleep, stalls, startFake, streamWire, type Fake, type Handler } from "./ai-fakes.ts";
 
+vi.mock("../src/main/ai-copilot.ts", async (original) => {
+  const module = await original<typeof import("../src/main/ai-copilot.ts")>();
+  return { ...module, CopilotIntegration: class extends module.CopilotIntegration {
+    constructor() { super({ binary: async () => undefined }); }
+  } };
+});
+
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
-/** Every note here is public: the private-note check is tested on its own. */
-const notPrivate = async () => false;
 const file = () => join(mkdtempSync(join(tmpdir(), "fn-ai-contract-")), "ai.json");
 const write = async (p: string, c: string) => writeFileSync(p, c);
-const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal, notPrivate)) out.push(c); return out; };
+const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
 const REWRITE = { text: "The quick brown fox.", instruction: "Make it warmer" };
 
 type Auth = "bearer" | "none" | "x-api-key" | "x-goog-api-key" | "api-key";
@@ -70,15 +75,15 @@ async function writerFor(id: string, handler: Handler, opts: { key?: string; lim
 }
 
 describe("every connection kind against its service's documented protocol", () => {
-  it("covers exactly the 26 kinds Settings lists, each in a built request shape", () => {
-    expect(Object.keys(KINDS).sort()).toEqual(AI_PROVIDERS.map((p) => p.id).sort());
-    expect(AI_PROVIDERS).toHaveLength(26);
-    expect(new Set(AI_PROVIDERS.map((p) => p.shape))).toEqual(new Set(["openai", "anthropic", "gemini", "azure", "ollama", "cohere"]));
+  it("covers the 26 HTTP kinds; Copilot has its own stdio contract", () => {
+    expect(Object.keys(KINDS).sort()).toEqual(AI_PROVIDERS.filter((p) => p.shape !== "copilot-cli").map((p) => p.id).sort());
+    expect(AI_PROVIDERS).toHaveLength(27);
+    expect(new Set(AI_PROVIDERS.map((p) => p.shape))).toEqual(new Set(["openai", "anthropic", "gemini", "azure", "ollama", "cohere", "copilot-cli"]));
     // Not built, so never listed: they need cloud sign-in, job queues or another program (air-integration-gaps.md).
     for (const id of ["amazon-bedrock", "bedrock", "vertex-ai", "vertex", "azure-foundry", "foundry", "replicate", "fal", "mlx-lm", "copilot", "claude-code", "codex"]) expect(aiProvider(id)).toBeUndefined();
   });
 
-  for (const p of AI_PROVIDERS) {
+  for (const p of AI_PROVIDERS.filter((p) => p.shape !== "copilot-cli")) {
     const k = KINDS[p.id]!;
     it(`${p.label}: streams, tests and lists models the documented way (${k.doc})`, async () => {
       const key = p.key === "none" ? undefined : KEY;
@@ -292,7 +297,7 @@ describe("cancellation and timeouts close the request", () => {
   it("Stop mid-stream aborts the HTTP request at once", async () => {
     const { ai } = await writerFor("openai", stalls(), { key: KEY });
     const stop = new AbortController();
-    const g = ai.stream(REWRITE, stop.signal, notPrivate);
+    const g = ai.stream(REWRITE, stop.signal);
     expect((await g.next()).value).toBe("first ");
     const req = fake.seen.at(-1)!;
     const t = Date.now();
@@ -311,7 +316,7 @@ describe("cancellation and timeouts close the request", () => {
     await expect(pending).rejects.toThrow("cancelled");
     await fake.seen.at(-1)!.closed;
     fake.use(stalls());
-    const g = ai.stream(REWRITE, new AbortController().signal, notPrivate);
+    const g = ai.stream(REWRITE, new AbortController().signal);
     await g.next();
     await g.return(undefined);
     await fake.seen.at(-1)!.closed;
@@ -327,7 +332,7 @@ describe("cancellation and timeouts close the request", () => {
   it("times out when a started stream goes quiet (idle timeout)", async () => {
     const { ai } = await writerFor("openai", stalls(), { key: KEY, limits: { generate: fast } });
     const got: string[] = [];
-    await expect((async () => { for await (const x of ai.stream(REWRITE, new AbortController().signal, notPrivate)) got.push(x); })()).rejects.toThrow("timeout");
+    await expect((async () => { for await (const x of ai.stream(REWRITE, new AbortController().signal)) got.push(x); })()).rejects.toThrow("timeout");
     expect(got).toEqual(["first "]);
     await fake.seen.at(-1)!.closed;
     expect(fake.seen.at(-1)!.aborted).toBe(true);
@@ -410,7 +415,7 @@ describe("Find on this computer", () => {
       1337: (_r, res) => { res.writeHead(401); res.end(); },
     });
     expect(found).toEqual([
-      { provider: "ollama", endpoint: "http://127.0.0.1:11434", models: [{ id: "llama3.2:3b", cloud: false }, { id: "gpt-oss:120b-cloud", cloud: false }] },
+      { provider: "ollama", endpoint: "http://127.0.0.1:11434", models: [{ id: "llama3.2:3b", cloud: false }, { id: "gpt-oss:120b-cloud", cloud: true }] },
       { provider: "lm-studio", endpoint: "http://127.0.0.1:1234/v1", models: [{ id: "qwen2.5-7b-instruct", cloud: false }] },
       { provider: "jan", endpoint: "http://127.0.0.1:1337/v1", models: [] },
     ]);
@@ -427,21 +432,19 @@ describe("Find on this computer", () => {
 });
 
 describe("consent and private notes (RWR-43)", () => {
-  it("sends nothing before consent, and asks again when the destination or model changes", async () => {
+  it("sends without legacy consent, including after changing the model (D-266)", async () => {
     fake.use(provider("openai", { key: KEY }));
     const ai = new AiService(file(), crypt, write, fake.fetch());
     const s = await ai.save({ provider: "openai", name: "OpenAI", model: "model-a", key: KEY });
     const id = s.connections[0]!.id;
     expect(s.connections[0]!.consented).toBe(false);
-    const before = fake.seen.length;
-    await expect(collect(ai, REWRITE)).rejects.toThrow("consent-required");
-    expect(fake.seen.length).toBe(before);
+    expect((await collect(ai, REWRITE)).join("")).toBe(TEXT);
     await ai.consent(id);
     expect((await collect(ai, REWRITE)).join("")).toBe(TEXT);
     // A new name keeps it; a new model doesn't.
     expect((await ai.save({ id, provider: "openai", name: "Renamed", model: "model-a" })).connections[0]!.consented).toBe(true);
     expect((await ai.save({ id, provider: "openai", name: "Renamed", model: "model-b" })).connections[0]!.consented).toBe(false);
-    await expect(collect(ai, REWRITE)).rejects.toThrow("consent-required");
+    expect((await collect(ai, REWRITE)).join("")).toBe(TEXT);
     // A new address for an editable endpoint doesn't either.
     const local = await ai.save({ provider: "ollama", name: "Ollama", model: "m" });
     const lid = local.connections[1]!.id;
@@ -452,46 +455,22 @@ describe("consent and private notes (RWR-43)", () => {
     expect((await ai.save({ id, provider: "openai", name: "Renamed", model: "model-b" })).connections[0]!.consented).toBe(true);
     expect((await ai.save({ id, provider: "openai", name: "Renamed", model: "model-b", key: "sk-another-key-entirely-123" })).connections[0]!.consented).toBe(false);
   });
-  it("never sends a private note while private notes are kept off AI (on by default)", async () => {
-    const { ai } = await writerFor("openai", provider("openai", { key: KEY }), { key: KEY });
-    const ws = mkdtempSync(join(tmpdir(), "fn-ai-ws-"));
-    const priv = join(ws, "private");
-    mkdirSync(join(priv, "notes"), { recursive: true });
-    mkdirSync(join(ws, "notes"));
-    const diary = join(priv, "notes", "diary.md");
-    const open = join(ws, "notes", "open.md");
-    writeFileSync(diary, "# Diary\n");
-    writeFileSync(open, "# Open\n");
-    // The shell decides from the note's path; the window's own flag counts for nothing (D-259).
-    const run = async (input: Record<string, unknown>) => { const out: string[] = []; for await (const c of ai.stream({ ...REWRITE, ...input }, new AbortController().signal, (p) => isPrivateNote(priv, p))) out.push(c); return out.join(""); };
-    expect((await ai.settings()).keepPrivate).toBe(true);
-    const before = fake.seen.length;
-    await expect(run({ path: diary, private: false })).rejects.toThrow("private-note");
-    await expect(run({ path: join(ws, "notes", "..", "private", "notes", "diary.md") })).rejects.toThrow("private-note");
-    // No path, or one that isn't absolute, counts as private while there's a private folder.
-    await expect(run({})).rejects.toThrow("private-note");
-    await expect(run({ path: "private/notes/diary.md" })).rejects.toThrow("private-note");
-    expect(fake.seen.length).toBe(before);
-    expect(await run({ path: open, private: true })).toBe(TEXT);
-    expect((await ai.privacy(false)).keepPrivate).toBe(false);
-    expect(await run({ path: diary })).toBe(TEXT);
-    expect((await ai.privacy(true)).keepPrivate).toBe(true);
-    await expect(run({ path: diary })).rejects.toThrow("private-note");
-  });
-  it("finds a private note by its real path: other letter case on Windows, and a link into private/", async () => {
-    const ws = mkdtempSync(join(tmpdir(), "fn-ai-ws-"));
-    const priv = join(ws, "private");
-    mkdirSync(join(priv, "notes"), { recursive: true });
-    mkdirSync(join(ws, "notes"));
-    writeFileSync(join(priv, "notes", "diary.md"), "# Diary\n");
-    expect(await isPrivateNote(priv, join(priv, "notes", "diary.md"))).toBe(true);
-    expect(await isPrivateNote(priv, join(ws, "notes", "open.md"))).toBe(false);
-    expect(await isPrivateNote(priv, join(ws, "private-ish", "a.md"))).toBe(false);
-    // A plain folder (no workspace, no private folder) has no private notes.
-    expect(await isPrivateNote(undefined, join(ws, "notes", "open.md"))).toBe(false);
-    if (process.platform === "win32") expect(await isPrivateNote(priv, join(priv, "notes", "diary.md").toUpperCase())).toBe(true);
-    symlinkSync(join(priv, "notes"), join(ws, "notes", "linked"), "junction");
-    expect(await isPrivateNote(priv, join(ws, "notes", "linked", "diary.md"))).toBe(true);
+  it("ignores an old private-note setting, preserves the connections and strips the key on the next save (D-261)", async () => {
+    const { ai, id } = await writerFor("openai", provider("openai", { key: KEY }), { key: KEY });
+    const saved = await ai.settings();
+    const legacyFile = file();
+    writeFileSync(legacyFile, JSON.stringify({
+      version: 2, writer: "legacy", keepPrivate: true,
+      connections: [{ id: "legacy", provider: "ollama", name: "Legacy", endpoint: "http://localhost:11434", model: "m", deployment: "", apiVersion: "", account: "" }],
+    }));
+    const legacy = new AiService(legacyFile, crypt, write, fake.fetch());
+    expect(await legacy.settings()).toMatchObject({ writer: "legacy", connections: [{ name: "Legacy" }] });
+    expect(await legacy.settings()).not.toHaveProperty("keepPrivate");
+    await legacy.writer("legacy");
+    expect(JSON.parse(readFileSync(legacyFile, "utf8"))).not.toHaveProperty("keepPrivate");
+    expect((await ai.settings()).writer).toBe(saved.writer);
+    expect(id).toBe(saved.writer);
+    expect((await collect(ai, { ...REWRITE, path: "C:\\disposable\\private\\notes\\diary.md" })).join("")).toBe(TEXT);
   });
 });
 
@@ -550,21 +529,49 @@ describe("whole answers are read only so far (D-260)", () => {
   });
 });
 
-describe("where an Ollama model runs (D-259)", () => {
-  it("is the cloud until Ollama's own list shows the model is on this computer", async () => {
+describe("where a model runs (D-262)", () => {
+  it("persists the picked Writer across service reloads and uses its model for the next rewrite", async () => {
+    fake.use(provider("ollama"));
+    const savedFile = file();
+    const ai = new AiService(savedFile, crypt, write, fake.fetch());
+    const first = (await ai.save({ provider: "ollama", name: "First", model: "first" })).connections[0]!;
+    const second = (await ai.save({ provider: "ollama", name: "Second", model: "second-cloud" })).connections[1]!;
+    await ai.consent(first.id);
+    await ai.consent(second.id);
+    await ai.writer(second.id);
+    const reloaded = new AiService(savedFile, crypt, write, fake.fetch());
+    expect((await reloaded.settings()).writer).toBe(second.id);
+    const before = fake.seen.length;
+    expect((await collect(reloaded, REWRITE)).join("")).toBe(TEXT);
+    expect(fake.seen[before]!.body.model).toBe("second-cloud");
+  });
+  it("uses the model suffix and endpoint without requiring discovery", async () => {
     const tags: Handler = (_r, res) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ models: [{ name: "a" }, { name: "b:cloud", remote_model: "b", remote_host: "https://ollama.com:443" }] })); };
     fake.use(tags);
     const ai = new AiService(file(), crypt, write, fake.fetch());
     const a = (await ai.save({ provider: "ollama", name: "A", model: "a" })).connections[0]!;
     const b = (await ai.save({ provider: "ollama", name: "B", model: "b:cloud" })).connections[1]!;
-    expect([a.modelCloud, b.modelCloud]).toEqual([true, true]);
+    expect([a.modelCloud, b.modelCloud]).toEqual([false, true]);
     await ai.models({ provider: "ollama" });
-    expect((await ai.settings()).connections.map((c) => c.modelCloud)).toEqual([undefined, true]);
-    // A new model that the list hasn't shown is the cloud again; one it has is kept as local.
-    expect((await ai.save({ id: a.id, provider: "ollama", name: "A", model: "c" })).connections[0]!.modelCloud).toBe(true);
-    expect((await ai.save({ id: a.id, provider: "ollama", name: "A", model: "a" })).connections[0]!.modelCloud).toBeUndefined();
-    // Another address isn't the server whose list was seen.
-    expect((await ai.save({ id: a.id, provider: "ollama", name: "A", model: "a", endpoint: "http://localhost:11434" })).connections[0]!.modelCloud).toBe(true);
+    expect((await ai.settings()).connections.map((c) => c.modelCloud)).toEqual([false, true]);
+    expect((await ai.save({ id: a.id, provider: "ollama", name: "A", model: "c" })).connections[0]!.modelCloud).toBe(false);
+    expect((await ai.save({ id: a.id, provider: "ollama", name: "A", model: "a" })).connections[0]!.modelCloud).toBe(false);
+    expect((await ai.save({ id: a.id, provider: "ollama", name: "A", model: "a", endpoint: "http://localhost:11434" })).connections[0]!.modelCloud).toBe(false);
+  });
+  it.each([
+    ["ollama", "http://localhost:11434", "m", false],
+    ["ollama", "https://192.168.1.2:11434", "m", false],
+    ["ollama", "https://10.0.0.2:11434", "m:cloud", true],
+    ["ollama", "http://127.0.0.1:11434", "m-cloud", true],
+    ["ollama", "https://ollama.com", "m", true],
+    ["compatible", "http://localhost:1234/v1", "m", false],
+    ["compatible", "https://172.16.1.2/v1", "m", false],
+    ["compatible", "https://models.example/v1", "m", true],
+    ["compatible", "https://localhost.example/v1", "m", true],
+    ["compatible", "http://[::1]:1234/v1", "m", false],
+    ["openai", "", "m", true],
+  ])("discloses %s at %s with %s as cloud=%s", (kind, host, model, cloud) => {
+    expect(aiRunsInCloud(kind, host, model)).toBe(cloud);
   });
 });
 

@@ -13,12 +13,14 @@ import {
   Cloud20Regular, CloudArrowUp20Regular, CloudCheckmark20Regular, CloudOff20Regular,
   ArrowDownload20Regular, Circle20Regular, Globe20Regular, CalendarLtr20Regular, ChevronLeft20Regular, Mail20Regular, Pin20Regular, PinOff20Regular,
   PersonFeedback20Regular, CheckmarkCircle20Regular, Print20Regular,
-  type FluentIcon,
 } from "@fluentui/react-icons";
+import type { ComponentType, SVGProps } from "react";
 import type { IconName } from "./icon-names.ts";
 import { GitHubMark } from "./github-mark.tsx";
+import { AI_BRAND_ICONS } from "./ai-brand-icons.tsx";
 
-export const ICONS: Record<IconName, FluentIcon> = {
+export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
+  ...AI_BRAND_ICONS,
   open: FolderOpen20Regular, save: Save20Regular, darkTheme: WeatherMoon20Regular, lightTheme: WeatherSunny20Regular,
   more: MoreHorizontal20Regular, moreVertical: MoreVertical20Regular, search: Search20Regular, add: Add20Regular, dismiss: Dismiss20Regular,
   check: Checkmark20Regular, newNote: DocumentAdd20Regular, newFolder: FolderAdd20Regular, bold: TextBold20Regular, italic: TextItalic20Regular,

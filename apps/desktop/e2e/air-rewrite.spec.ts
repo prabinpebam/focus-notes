@@ -84,17 +84,11 @@ async function select(page: Page, text: string) {
 async function rewrite(page: Page, text: string, prompt: string) {
   await select(page, text);
   await page.keyboard.press(`${mod}+Shift+R`);
-  const dialog = page.getByRole("dialog", { name: "Rewrite" });
+  const dialog = page.getByRole("region", { name: "Rewrite", exact: true });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
-  // The first send to a connection asks once where the text goes (AIS-14); after that it's Generate.
-  const consent = dialog.getByRole("button", { name: "Send", exact: true });
-  if (await consent.isVisible()) {
-    await expect(dialog.getByText(/^The first time, check where your text goes/)).toBeVisible();
-    // The seed's model is on Ollama's own list as local (modelLocal, D-259): never "Cloud" for it.
-    await expect(dialog.getByText(/· On this computer\./)).toBeVisible();
-    await consent.click();
-  } else await dialog.getByRole("button", { name: "Generate" }).click();
+  await expect(dialog.getByText("This computer", { exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Generate" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -111,7 +105,7 @@ test("AI Rewrite: streams formatted and locked, Esc cancels the request and rest
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, DATA_FILES.ai), JSON.stringify({
     version: 2, writer: "fake",
-    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake", modelLocal: true }],
+    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake" }],
   }));
   const note = join(dirs.docs, "Welcome.md");
   const other = join(dirs.docs, "Other.md");

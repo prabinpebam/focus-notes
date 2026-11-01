@@ -2,23 +2,25 @@
  * AI Rewrite and Settings → AI. Settings keeps a list of AI connections (the ai-integration kit's
  * providers: local servers found on this computer, cloud APIs and gateways, any compatible
  * service), each with only its own fields, a key sealed by the shell, a Test, and one chosen as the
- * Writer. Rewrite: select text, then Ctrl+Shift+R (or Rewrite… in the text menu); the approved
- * dialog asks the Writer, through the shell, for three alternatives, and Accept replaces the
- * selection through the editor as one undo step. No key ever enters this state.
+ * Writer. Rewrite: select text, then Ctrl+Shift+R (or Rewrite… in the text menu); the dialog
+ * discloses the integration and model, remembers a picked Writer, and streams its rewrite into
+ * the selection as one undo step. No key ever enters this state.
  */
-import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, type AiConnectionView, type AiFound, type AiGroup } from "./ai-providers.ts";
+import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiGroup } from "./ai-providers.ts";
+import { aiConnectionIcon } from "../../ui/src/ai-icons.ts";
 import type { AiConnectionInput, PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import { sourceOf } from "./notes.ts";
-import { visibilityOf, type WorkspaceTree } from "./workspace.ts";
+import type { TaskTracker, TaskView } from "./tasks.ts";
+import type { WorkspaceTree } from "./workspace.ts";
 
 interface S {
   note: { status: string; key: string; path?: string };
   ui: { toolbarOpen: boolean };
   workspace: { tree: WorkspaceTree };
+  tasks: TaskView[];
 }
 
 interface Ctx<St extends S> {
@@ -27,6 +29,7 @@ interface Ctx<St extends S> {
   catalog: MessageCatalog;
   commands: CommandRegistry<St>;
   viewModels: ViewModelRegistry<St>;
+  tracker: Pick<TaskTracker, "run">;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   announce: (text: string) => void;
   toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }) => unknown;
@@ -36,10 +39,11 @@ const PRESETS = ["concise", "warmer", "grammar"] as const;
 const GROUPS: readonly AiGroup[] = ["local", "cloud", "gateway"];
 /** The shell's reason codes that have their own words; any other is "couldn't answer". */
 const ERRORS = new Set([
-  "not-configured", "consent-required", "private-note", "secure-storage-unavailable", "unauthorized", "key-required", "key-new-address",
+  "not-configured", "consent-required", "secure-storage-unavailable", "unauthorized", "key-required", "key-new-address",
   "timeout", "network", "refused", "dns", "tls", "redirected", "model-missing", "not-found", "rate-limited", "server-error",
   "bad-request", "too-long", "provider-format", "provider-error", "provider-empty", "connection-unavailable",
   "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many",
+  "cli-missing", "cli-unsupported", "cli-not-signed-in",
 ]);
 /** A reason from the shell: the code at the end of an IPC error's text, and Retry-After's seconds. */
 export function reasonCode(raw: string): { code: string; retryAfter?: number } {
@@ -51,10 +55,10 @@ const DRAFT_FIELDS = ["name", "endpoint", "model", "deployment", "apiVersion", "
 type Draft = { id?: string; provider: string; name: string; endpoint: string; model: string; deployment: string; apiVersion: string; account: string };
 const blankDraft = (provider = "ollama"): Draft => {
   const p = aiProvider(provider)!;
-  return { provider, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: "", deployment: "", apiVersion: p.shape === "azure" ? AZURE_API_VERSION : "", account: "" };
+  return { provider, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: p.shape === "copilot-cli" ? "auto" : "", deployment: "", apiVersion: p.shape === "azure" ? AZURE_API_VERSION : "", account: "" };
 };
 
-export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, editorAction, announce, toast }: Ctx<St>) {
+export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, tracker, editorAction, announce, toast }: Ctx<St>) {
   const ai = bridge.ai;
   const changed = () => store.update((s) => ({ ...s }));
   const t = (key: string, args?: Record<string, unknown>) => catalog.format(key, args);
@@ -68,7 +72,6 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
 
   // ---- Settings → AI ----
   let writer = "";
-  let keepPrivate = true;
   let connections: AiConnectionView[] = [];
   let formOpen = false;
   let draft: Draft = blankDraft();
@@ -81,14 +84,12 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let discovering = false, discoverStatus = "";
   let status = "";
   let busy = false;
+  let choosingWriter = false;
   const testing = new Set<string>();
   const testErrors = new Map<string, string>();
 
-  /** On this computer only for a local server's address and a model known to run there; else the cloud (an Ollama model may be cloud-routed). */
-  const where = (group: AiGroup, endpoint: string, modelCloud = false) => {
-    const local = group === "local" && !modelCloud && /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])/.test(endpoint);
-    return t(local ? "ai.where.local" : "ai.where.cloud");
-  };
+  const where = (provider: string, endpoint: string, model = "", modelCloud = false) =>
+    t(aiRunsInCloud(provider, endpoint, model, modelCloud) ? "ai.where.cloud" : "ai.where.local");
   const destination = (provider: string, endpoint: string, account = "") => {
     const p = aiProvider(provider);
     if (!p) return "";
@@ -101,7 +102,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   };
   const describe = (c: AiConnectionView) => {
     const p = aiProvider(c.provider)!;
-    return [p.label, c.model || c.deployment, where(p.group, c.endpoint, c.modelCloud)].filter(Boolean).join(" · ");
+    return [p.label, c.model || c.deployment, where(c.provider, c.endpoint, c.model, c.modelCloud)].filter(Boolean).join(" · ");
   };
   const testText = (c: AiConnectionView) => {
     if (testing.has(c.id)) return t("ai.test.running");
@@ -111,22 +112,27 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const at = new Date(c.lastTest.at).toLocaleString();
     return t(c.lastTest.ok ? "ai.test.passed" : "ai.test.failed", { at });
   };
-  const apply = (v: { writer: string; keepPrivate?: boolean; connections: AiConnectionView[] }) => { writer = v.writer; keepPrivate = v.keepPrivate !== false; connections = v.connections; };
+  const apply = (v: { writer: string; connections: AiConnectionView[] }) => { writer = v.writer; connections = v.connections; };
   const load = async () => {
     if (!ai) return;
-    apply(await ai.settings().catch(() => ({ writer: "", keepPrivate: true, connections: [] })));
+    try {
+      apply(await ai.settings());
+    } catch (e) {
+      status = reason(e, "ai.error.save");
+      toast(status, { tone: "error" });
+    }
     changed();
   };
   const writerConnection = () => connections.find((c) => c.id === writer);
   const trimBase = (v: string) => v.trim().replace(/\/+$/, "");
   /** The form moved a saved connection to another address: its saved key won't go there (D-259). */
   const draftMoved = () => Boolean(draftSaved) && (trimBase(draft.endpoint) !== trimBase(draftSaved!.endpoint) || draft.account.trim() !== draftSaved!.account);
-  /** Whether the draft's model may run in the cloud: as its list says, or as saved; an Ollama model not known to be local may. */
+  /** A model list can identify cloud routing that isn't in the model's name. */
   const draftCloud = () => {
     const listed = models.find((m) => m.id === draft.model);
     if (listed) return listed.cloud;
     if (draftSaved && !draftMoved() && draft.model === draftSaved.model) return Boolean(draftSaved.modelCloud);
-    return aiProvider(draft.provider)?.shape === "ollama" && Boolean(draft.model.trim());
+    return false;
   };
 
   viewModels.register({
@@ -136,16 +142,16 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     schema: { type: "object", properties: {
       ...Object.fromEntries([
         "writerName", "status", "formTitle", "providerName", "keyLabel", "keyState", "destination", "testInfo", "modelsStatus", "discoverStatus",
-        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote",
+        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup",
       ].map((k) => [k, { type: "string" as const }])),
       ...Object.fromEntries([
-        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "keepPrivate",
+        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter",
       ].map((k) => [k, { type: "boolean" as const }])),
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       modelMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       connections: { type: "array", items: { type: "object", properties: {
-        id: { type: "string" }, name: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
+        id: { type: "string" }, name: { type: "string" }, choiceLabel: { type: "string" }, icon: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
         testText: { type: "string" }, testing: { type: "boolean" }, writer: { type: "boolean" }, notWriter: { type: "boolean" },
       } } },
       found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, detail: { type: "string" } } } },
@@ -156,24 +162,25 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       return {
         writerName: writerConnection()?.name ?? t("ai.writer.none"),
         hasWriter: Boolean(writerConnection()),
-        keepPrivate,
+        choiceGroup: "ai-default", choosingWriter, writerSaveText: choosingWriter ? t("rewrite.integration.saving") : "",
         writerMenu: [{ id: "writer", items: connections.map((c) => ({ id: c.id, label: c.name, checked: c.id === writer })) }],
         connections: connections.map((c) => ({
-          id: c.id, name: c.name, detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
+          id: c.id, name: c.name, choiceLabel: t("ai.default.choice", { name: c.name }), icon: aiConnectionIcon(c.provider), detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
           badge: t(c.id === writer ? "ai.badge.writer" : "ai.badge.saved"),
           keyText: t(c.hasKey ? "ai.key.saved" : aiProvider(c.provider)!.key === "none" ? "ai.key.notNeeded" : "ai.key.none"),
           testText: testText(c), testing: testing.has(c.id),
         })),
-        found: found.map((f, i) => {
+        found: found.flatMap((f, i) => {
+          if (f.provider === "copilot-cli") return [];
           const fp = aiProvider(f.provider)!;
           const n = f.models.length;
-          return { id: String(i), name: fp.label, detail: n ? t("ai.found.models", { n, endpoint: f.endpoint }) : t("ai.found.noModels", { endpoint: f.endpoint }) };
+          return [{ id: String(i), name: fp.label, detail: n ? t("ai.found.models", { n, endpoint: f.endpoint }) : t("ai.found.noModels", { endpoint: f.endpoint }) }];
         }),
         discovering, discoverStatus,
         formOpen, addVisible: !formOpen, noKeyField: p.key === "none",
         formTitle: draft.id ? t("ai.form.change", { name: draft.name }) : t("ai.form.add"),
         providerName: p.label,
-        providerNote: t(`ai.note.${p.group}`),
+        providerNote: t(p.shape === "copilot-cli" ? "ai.note.copilot" : `ai.note.${p.group}`),
         providerMenu: GROUPS.map((g) => ({ id: g, label: t(`ai.group.${g}`), items: AI_PROVIDERS.filter((x) => x.group === g).map((x) => ({ id: x.id, label: x.label, checked: x.id === draft.provider })) })),
         name: draft.name, endpoint: draft.endpoint, model: draft.model, deployment: draft.deployment, apiVersion: draft.apiVersion, account: draft.account,
         showEndpoint: p.endpointEditable, showModel: !azure, showDeployment: azure, showApiVersion: azure, showAccount: p.fields.includes("account"),
@@ -183,10 +190,10 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         hasModels: models.length > 0,
         modelMenu: [{ id: "models", items: models.map((m) => ({ id: m.id, label: m.cloud && p.group === "local" ? t("ai.model.cloud", { id: m.id }) : m.id, checked: m.id === draft.model })) }],
         modelsStatus,
-        destination: t("ai.destination", { host: destination(draft.provider, draft.endpoint, draft.account), where: where(p.group, draft.endpoint || p.endpoint, draftCloud()) }),
+        destination: t("ai.destination", { host: destination(draft.provider, draft.endpoint, draft.account), where: where(p.id, draft.endpoint || p.endpoint, draft.model, draftCloud()) }),
         testInfo: t("ai.test.info"),
         status,
-        cannotSave: busy || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
+        cannotSave: busy || choosingWriter || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
       };
     },
   });
@@ -233,7 +240,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
   });
   reg("ai.remove", async (a) => {
-    if (!ai || typeof a.value !== "string") return;
+    if (!ai || choosingWriter || typeof a.value !== "string") return;
     try {
       apply(await ai.remove(a.value));
       status = t("ai.removed");
@@ -242,16 +249,25 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
     changed();
   });
-  reg("ai.writer", async (a) => {
-    if (!ai || typeof a.value !== "string") return;
+  const chooseWriter = async (value: unknown, target: string) => {
+    if (!ai || choosingWriter || typeof value !== "string" || value === writer) return;
+    choosingWriter = true;
+    status = "";
+    changed();
+    const started = performance.now();
     try {
-      apply(await ai.writer(a.value));
-      status = t("ai.writer.set", { name: writerConnection()?.name ?? "" });
+      apply(await tracker.run(target, "rewrite.integration.saving", () => ai.writer(value), "rewrite.integration.saved"));
+      announce(t("ai.writer.set", { name: writerConnection()?.name ?? "" }));
     } catch (e) {
       status = reason(e, "ai.error.save");
+      toast(status, { tone: "error" });
+    } finally {
+      choosingWriter = false;
+      performance.measure("fn:ai.chooseWriter", { start: started, duration: performance.now() - started });
+      changed();
     }
-    changed();
-  });
+  };
+  reg("ai.writer", (a) => chooseWriter(a.value, "settings.writer"));
   reg("ai.test", async (a) => {
     const id = typeof a.value === "string" ? a.value : "";
     if (!ai || !id || testing.has(id)) return;
@@ -275,9 +291,13 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     changed();
     try {
       found = await ai.discover();
-      discoverStatus = t(found.length ? "ai.found.some" : "ai.found.none", { n: found.length });
-    } catch {
-      discoverStatus = t("ai.found.none", { n: 0 });
+      apply(await ai.settings());
+      const cli = found.find((f) => f.provider === "copilot-cli");
+      if (cli?.status === "signed-in") discoverStatus = found.some((f) => f.provider !== "copilot-cli") ? t("ai.found.some", { n: found.filter((f) => f.provider !== "copilot-cli").length }) : "";
+      else if (cli) discoverStatus = reason(new Error(cli.error ?? "provider-error"), "ai.error.provider");
+      else discoverStatus = t(found.length ? "ai.found.some" : "ai.found.none", { n: found.length });
+    } catch (e) {
+      discoverStatus = reason(e, "ai.error.provider");
     } finally {
       discovering = false;
       changed();
@@ -287,6 +307,11 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   reg("ai.useFound", (a) => {
     const f = found[Number(a.value)];
     if (!f) return;
+    if (f.provider === "copilot-cli") {
+      status = f.status === "signed-in" ? "" : reason(new Error(f.error ?? "provider-error"), "ai.error.provider");
+      changed();
+      return;
+    }
     const p = aiProvider(f.provider)!;
     const local = f.models.find((m) => !m.cloud);
     openForm({ ...blankDraft(p.id), endpoint: f.endpoint, model: local?.id ?? "" });
@@ -307,17 +332,6 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     changed();
   });
   reg("ai.model", (a) => { if (typeof a.value === "string") { draft = { ...draft, model: a.value }; changed(); } });
-  // Keep private notes off AI (on by default): switching it off lets Rewrite send from private and shared notes.
-  reg("ai.privacy", async (a) => {
-    if (!ai) return;
-    try {
-      apply(await ai.privacy(a.value === undefined ? !keepPrivate : a.value !== false));
-      status = t(keepPrivate ? "ai.private.kept" : "ai.private.allowed");
-    } catch (e) {
-      status = reason(e, "ai.error.save");
-    }
-    changed();
-  });
   reg("ai.openSettings", async () => {
     closeModal();
     // The section first: Settings' open waits on the account check, which can take seconds (offline, slow GitHub).
@@ -325,47 +339,46 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     await commands.run("settings.open");
   });
 
-  // ---- Rewrite: the dialog takes the prompt; the answer streams into the note ----
+  // ---- Rewrite: the inline popover takes the prompt; the answer streams into the note ----
   let open = false, selection = "", prompt = "", instruction = "";
-  /** The note the selection came from: its key (a switch stops the rewrite) and whether it's private or shared. */
-  let fromKey = "", fromPath = "", fromPrivate = false;
+  let confirmingDiscard = false, focusRequest = 0;
+  /** The note the selection came from: a switch stops the rewrite. */
+  let fromKey = "", fromPath = "";
   /** The rewrite streaming into the note: its id, whether any text came, and the toast that says so. */
   let running: { id: string; got: boolean; off: () => void; toast: unknown } | undefined;
   const presetText = (p: (typeof PRESETS)[number]) => t(`rewrite.preset.${p}.prompt`);
-  const closeModal = () => { open = false; changed(); };
-  const isPrivate = (s: St) => {
-    const path = s.note.path;
-    if (!path) return false;
-    if (sourceOf(path) === "private") return true;
-    const v = visibilityOf(s.workspace.tree, path);
-    return v === "private" || v === "shared";
+  const closeModal = () => {
+    open = false; confirmingDiscard = false; prompt = "";
+    editorAction("rewrite.release");
+    changed();
   };
-  /** What the dialog offers: set up a Writer, the private-note stop, consent before the first send, or the prompt. */
-  const actions = () => {
-    const w = writerConnection();
-    if (!w) return "setup";
-    if (fromPrivate && keepPrivate) return "private";
-    return w.consented ? "compose" : "consent";
-  };
+  const actions = () => writerConnection() ? "compose" : "setup";
   viewModels.register({
     id: "vm.rewrite",
     reads: "*",
     schema: { type: "object", properties: {
-      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel", "consentText"].map((k) => [k, { type: "string" as const }])),
-      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "needsConsent", "privateNote", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
+      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel", "writerName", "writerService", "writerModel", "writerWhere", "writerKind", "writerIcon", "writerSaveText"].map((k) => [k, { type: "string" as const }])),
+      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "confirmingDiscard", "canChooseWriter", "choosingWriter", "writerSaving", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
+      focusRequest: { type: "number" },
+      writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
     } },
     select: () => {
       const w = writerConnection();
       const a = actions();
       return {
-        open, selection, prompt,
+        open, selection, prompt, confirmingDiscard, focusRequest,
         writerLabel: w ? t("rewrite.writer", { name: w.name, detail: describe(w) }) : "",
+        writerName: w?.name ?? "", writerService: w ? aiProvider(w.provider)!.label : "",
+        writerModel: w ? w.model || w.deployment : "",
+        writerWhere: w ? where(w.provider, w.endpoint, w.model, w.modelCloud) : "",
+        writerKind: w?.provider ?? "", writerIcon: aiConnectionIcon(w?.provider ?? ""),
+        canChooseWriter: connections.length > 1, choosingWriter,
+        writerSaving: store.state.tasks.some((task) => task.target === "rewrite.writer" && task.phase === "on"),
+        writerSaveText: t(choosingWriter ? "rewrite.integration.saving" : "rewrite.integration.saved"),
+        writerMenu: [{ id: "writer", items: connections.map((c) => ({ id: c.id, label: `${c.name} · ${describe(c)}`, checked: c.id === writer })) }],
         needsSetup: !w, hasWriter: Boolean(w),
         actions: a,
-        needsConsent: a === "consent",
-        privateNote: a === "private",
-        consentText: w ? t("rewrite.consent", { service: aiProvider(w.provider)!.label, host: destination(w.provider, w.endpoint, w.account), where: where(aiProvider(w.provider)!.group, w.endpoint, w.modelCloud) }) : "",
-        empty: !prompt.trim(),
+        empty: !prompt.trim() || choosingWriter,
         concise: prompt === presetText("concise"), warmer: prompt === presetText("warmer"), grammar: prompt === presetText("grammar"),
       };
     },
@@ -408,13 +421,18 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   // Another note opened, or this one closed: the old note's rewrite stops in the shell too.
   store.subscribe(() => {
     if (running && store.state.note.key !== fromKey) drop();
+    if (open && store.state.note.key !== fromKey) closeModal();
   });
   // The window going away (reload, close): nothing keeps running in the shell for it.
   (globalThis as { addEventListener?: (type: string, fn: () => void) => void }).addEventListener?.("pagehide", drop);
 
   reg("rewrite.open", () => {
-    if (open || running) return;
+    if (running) return;
     // The editor answers with the selection (rewrite.captured).
+    if (open) {
+      if (!confirmingDiscard) { focusRequest++; changed(); }
+      return;
+    }
     editorAction("rewrite.capture");
   }, { icon: "rename", shortcut: { default: "Mod+Shift+R" }, layer: "writer", group: "editing", enabled: (s) => Boolean(ai) && s.note.status === "ready" });
   reg("rewrite.captured", async (a) => {
@@ -423,37 +441,42 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       announce(t("rewrite.selectFirst"));
       return;
     }
-    open = true; selection = text; prompt = "";
+    open = true; selection = text; prompt = ""; confirmingDiscard = false; focusRequest++;
     fromKey = store.state.note.key;
     fromPath = store.state.note.path ?? "";
-    fromPrivate = isPrivate(store.state);
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
     await load();
   });
   reg("rewrite.dismiss", (a) => { if (a.open !== true) closeModal(); });
+  reg("rewrite.deselected", (a) => {
+    if (!open || confirmingDiscard) return;
+    const started = typeof a.started === "number" ? a.started : performance.now();
+    if (prompt.length === 0) closeModal();
+    else { confirmingDiscard = true; changed(); }
+    performance.measure("fn:rewrite.deselect", { start: started, duration: performance.now() - started });
+  });
+  reg("rewrite.keepPrompt", () => {
+    if (!confirmingDiscard) return;
+    confirmingDiscard = false;
+    editorAction("rewrite.restore");
+    focusRequest++;
+    changed();
+  });
+  reg("rewrite.discardPrompt", () => { if (confirmingDiscard) closeModal(); });
   reg("rewrite.prompt", (a) => { prompt = String(a.value ?? ""); changed(); });
+  reg("rewrite.writer", async (a) => {
+    if (open) await chooseWriter(a.value, "rewrite.writer");
+  });
   reg("rewrite.preset", (a) => {
     const p = PRESETS.find((x) => x === a.value);
     if (p) { prompt = presetText(p); changed(); }
   });
-  // Generate: the dialog closes, and the note locks and shimmers (rewrite.began) while the answer comes.
-  // The first send to a connection is its consent ("Send and rewrite", { consent: true }); a private note never goes while they're kept off AI.
-  reg("rewrite.generate", async (a) => {
+  // Generate closes the popover directly; the captured note locks and shimmers (rewrite.began).
+  reg("rewrite.generate", () => {
     const w = writerConnection();
-    if (!ai || !prompt.trim() || running || !w) return;
-    const step = actions();
-    if (step === "private") return;
-    if (step === "consent") {
-      if (a.consent !== true) return;
-      try {
-        apply(await ai.consent(w.id));
-      } catch (e) {
-        toast(reason(e, "ai.error.provider"), { tone: "error" });
-        return;
-      }
-    }
+    if (!ai || !open || confirmingDiscard || !prompt.trim() || running || choosingWriter || !w) return;
     instruction = prompt.trim();
-    closeModal();
+    open = false; prompt = ""; changed();
     editorAction("rewrite.begin");
   });
   reg("rewrite.began", (a) => {

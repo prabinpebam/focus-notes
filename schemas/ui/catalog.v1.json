@@ -193,7 +193,7 @@
     {
       "type": "Icon",
       "tier": "primitive",
-      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "description": "A system or integration brand icon. Inherited colour; decorative unless it has a label (D-263).",
       "props": {
         "name": {
           "kind": "icon",
@@ -226,13 +226,26 @@
         "size s",
         "size m",
         "size l",
-        "labelled"
+        "labelled",
+        "brand aiOllama",
+        "brand aiLmStudio",
+        "brand aiVllm",
+        "brand aiAnthropic",
+        "brand aiClaude",
+        "brand aiClaudeCode",
+        "brand aiGemini",
+        "brand aiMistral",
+        "brand aiDeepseek",
+        "brand aiPerplexity",
+        "brand aiOpenrouter",
+        "brand aiHuggingface",
+        "brand aiCopilot"
       ]
     },
     {
       "type": "Button",
       "tier": "primitive",
-      "description": "A labelled action. Its label says what it does.",
+      "description": "A labelled action. Shared native-control reset centers the complete font line box and icon with symmetric block padding. Token minimum heights grow for natural content; labels ellipsize inline without clipping ascenders or descenders. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "props": {
         "label": {
           "kind": "message",
@@ -333,6 +346,43 @@
         "variant subtle",
         "variant danger",
         "size s",
+        "glyph bounds primary s text",
+        "glyph bounds primary s start",
+        "glyph bounds primary s end",
+        "glyph bounds primary m text",
+        "glyph bounds primary m start",
+        "glyph bounds primary m end",
+        "glyph bounds primary l text",
+        "glyph bounds primary l start",
+        "glyph bounds primary l end",
+        "glyph bounds secondary s text",
+        "glyph bounds secondary s start",
+        "glyph bounds secondary s end",
+        "glyph bounds secondary m text",
+        "glyph bounds secondary m start",
+        "glyph bounds secondary m end",
+        "glyph bounds secondary l text",
+        "glyph bounds secondary l start",
+        "glyph bounds secondary l end",
+        "glyph bounds subtle s text",
+        "glyph bounds subtle s start",
+        "glyph bounds subtle s end",
+        "glyph bounds subtle m text",
+        "glyph bounds subtle m start",
+        "glyph bounds subtle m end",
+        "glyph bounds subtle l text",
+        "glyph bounds subtle l start",
+        "glyph bounds subtle l end",
+        "glyph bounds danger s text",
+        "glyph bounds danger s start",
+        "glyph bounds danger s end",
+        "glyph bounds danger m text",
+        "glyph bounds danger m start",
+        "glyph bounds danger m end",
+        "glyph bounds danger l text",
+        "glyph bounds danger l start",
+        "glyph bounds danger l end",
+        "glyph bounds long label",
         "size l",
         "bleed",
         "size m with icon",
@@ -739,6 +789,9 @@
         "name": "label"
       },
       "fixtures": [
+        "glyph bounds pill",
+        "glyph bounds text",
+        "glyph bounds select",
         "variant icon",
         "variant pill",
         "placement top start",
@@ -1468,6 +1521,11 @@
           "default": false,
           "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
         },
+        "compactMultiline": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Two lines initially, growing to the token maximum; only the textarea scrolls (D-265)."
+        },
         "scrolls": {
           "kind": "boolean",
           "default": false,
@@ -1508,6 +1566,7 @@
         "size m",
         "label hidden",
         "multiline",
+        "compact multiline",
         "read only",
         "read only scrolls",
         "required"
@@ -1539,7 +1598,8 @@
         "name": "label"
       },
       "fixtures": [
-        "unlock"
+        "unlock",
+        "glyph bounds pill"
       ]
     },
     {
@@ -2061,6 +2121,19 @@
           "kind": "message",
           "required": true
         },
+        "choiceGroup": {
+          "kind": "text",
+          "description": "Native radio group name. Identity is the choice target; slot actions remain siblings (D-267)."
+        },
+        "choiceValue": {
+          "kind": "text",
+          "description": "The radio's stable value."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Saved radio selection, never optimistic. Emphasizes the badge with selected badge tokens."
+        },
         "detail": {
           "kind": "message"
         },
@@ -2109,7 +2182,7 @@
         "busy": {
           "kind": "boolean",
           "default": false,
-          "description": "A pressable card's action is running."
+          "description": "An action is running. Radio choices remain mounted and focusable, aria-disabled suppresses activation without resetting scroll or native focus."
         },
         "disabled": {
           "kind": "boolean",
@@ -2128,7 +2201,12 @@
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "choose": {
+          "payload": {
+            "value": "text"
+          }
+        }
       },
       "slots": {
         "default": {
@@ -2136,7 +2214,9 @@
         }
       },
       "states": [
-        "rest"
+        "rest",
+        "selected",
+        "disabled"
       ],
       "tokens": "cmp.itemCard.*",
       "a11y": {
@@ -2144,6 +2224,8 @@
         "name": "label"
       },
       "fixtures": [
+        "selected radio with independent action",
+        "pending radio",
         "workspace",
         "profile",
         "github",
@@ -2812,6 +2894,8 @@
       },
       "fixtures": [
         "gap none",
+        "gap related",
+        "gap section",
         "gap xs",
         "gap s",
         "gap m",
@@ -2838,6 +2922,16 @@
           "kind": "token",
           "group": "space",
           "default": "none"
+        },
+        "related": {
+          "kind": "boolean",
+          "default": false,
+          "description": "One semantic group, using space.related and wrapping by default. Independent groups use space.section."
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "related",
+          "description": "Names the semantic group."
         },
         "padding": {
           "kind": "token",
@@ -2887,7 +2981,10 @@
         "pattern": "none"
       },
       "fixtures": [
+        "related action and explanation",
         "gap none",
+        "gap related",
+        "gap section",
         "gap xs",
         "gap s",
         "gap m",
@@ -3448,10 +3545,11 @@
           "values": [
             "selection",
             "link",
-            "caret"
+            "caret",
+            "rewrite"
           ],
           "default": "selection",
-          "description": "The selection, a link, or the `/` the slash menu opened at."
+          "description": "The selection, a link, the slash menu caret, or Rewrite's retained selection fragments and viewport."
         },
         "placement": {
           "kind": "enum",
@@ -3487,9 +3585,19 @@
         "label": {
           "kind": "message",
           "requiredWhen": "landmark"
+        },
+        "returnAboveLabel": {
+          "kind": "message",
+          "description": "Return to the selection above the viewport (Rewrite)."
+        },
+        "returnBelowLabel": {
+          "kind": "message",
+          "description": "Return to the selection below the viewport (Rewrite)."
         }
       },
-      "events": {},
+      "events": {
+        "dismiss": {}
+      },
       "slots": {
         "default": {
           "accepts": "any",
@@ -3509,6 +3617,7 @@
         "anchor selection, above",
         "anchor link, below",
         "anchor caret, below, start",
+        "anchor rewrite, below, start",
         "align center",
         "landmark region"
       ]
@@ -3954,6 +4063,11 @@
           }
         },
         "rewriteCancel": {},
+        "rewriteDeselect": {
+          "payload": {
+            "started": "number"
+          }
+        },
         "format": {
           "payload": {
             "toolbar": "boolean",
@@ -4607,6 +4721,8 @@
   ],
   "tokens": {
     "space": [
+      "related",
+      "section",
       "none",
       "xxs",
       "xs",
@@ -4819,7 +4935,20 @@
     "pinOff",
     "feedback",
     "sent",
-    "print"
+    "print",
+    "aiOllama",
+    "aiLmStudio",
+    "aiVllm",
+    "aiAnthropic",
+    "aiClaude",
+    "aiClaudeCode",
+    "aiGemini",
+    "aiMistral",
+    "aiDeepseek",
+    "aiPerplexity",
+    "aiOpenrouter",
+    "aiHuggingface",
+    "aiCopilot"
   ],
   "views": [
     {

@@ -32,6 +32,17 @@ Text is read and written in the band between **25% and 65% of the window height*
 
 <h2 data-reader-personas="design">Spacing and shape</h2>
 
+### Control anatomy and related groups
+
+| Shared rule | As built, 1 November feedback | Static enforcement |
+| --- | --- | --- |
+| Center and contain native control content | Button, PillButton and MenuButton text/pill triggers share `controlMetrics`: no native block padding, complete UI font line height, border-box sizing and zero margin. Flex centers the full font line box and icons. Token sizes are minimum heights that grow for natural content, not glyph-clipping fixed boxes. Labels may ellipsize inline (`overflow-x: clip`) but remain visible in the block direction. Never trim to cap/alphabetic bounds: the baseline excludes descenders. No offsets or extra magic pixels. | `packages/ui-runtime/src/cli/design-source.ts`, invoked by `ui:check`, rejects trimmed/clipped labels and fixed control heights. The gallery's `Copy Agjpqy` matrix covers all Button variants/sizes/icon positions, PillButton and MenuButton text/pill/select, in normal/floating contexts and light/dark. |
+| Paint hover over a surface | Floating secondary/subtle buttons and text/pill/select triggers use `FloatingContext` and shared `floatingControlSurface`: opaque `color.surface` remains underneath the hover/pressed gradient. Alpha highlight roles never replace that surface or reduce control opacity. | The source guard checks shared paint wiring and resolves opaque surface/accent roles in every theme. |
+| Space expresses relationship | `space.related` is 8 px within a group; `space.section` is 16 px between independent groups. `Inline.related` names one semantic group and wraps by default, with no local gap override. | The source guard checks related spacing is smaller; the view checker rejects overrides to related-group gap/wrapping. |
+| Saved selection is emphasis | ItemCard's selected badge uses `badgeSelectedBackground`, `badgeSelectedText` and `badgeSelectedWeight`; saved defaults are stronger than muted metadata. Pending choices remain focusable and retain their saved checked state. | Shared ItemCard contract and source guard, with selected/pending gallery fixtures. |
+
+These are shared defaults, not Rewrite or Settings exceptions (D-265/D-267). Documentation rendering and broader suites remain unchecked until the owner's UX/UI approval.
+
 | Spacing token | `space.xxs` | `space.xs` | `space.s` | `space.m` | `space.l` | `space.xl` | `space.xxl` | `space.xxxl` |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Value | 2 px | 4 px | 8 px | 12 px | 16 px | 24 px | 32 px | 48 px |
@@ -104,15 +115,25 @@ The editor and published pages use the same tokens. A unit test (`packages/ui/te
 
 **Interface text** uses `font.ui` (the system UI font by default) and doesn't scale with the note's font size, only with *UI scale*:
 
-| Role | Size | Used for |
-| --- | --- | --- |
-| Caption | 12 px | Key caps, metadata, counts |
-| Secondary | 13 px | Hints, row details, tooltips |
-| Body | 14 px | Menus, buttons, fields, list rows |
-| Emphasis | 16 px | Spotlight field, dialog field |
-| Title | 20 px | Dialog and sheet titles |
-| Lead | 18 px | The one sentence of a full-window onboarding step (D-126) |
-| Display | 40 px, line height 1.25 | A full-window onboarding step's title: the ramp's largest size (`font.uiDisplay`, D-126) |
+| Role | Size | Weight | Used for |
+| --- | --- | --- | --- |
+| Caption | 12 px | Regular (400) | Key caps, metadata, counts |
+| Secondary | 13 px | Regular (400) | Hints, row details, tooltips |
+| Body | 14 px | Regular (400) | Menus, buttons, fields, list rows |
+| Label | 16 px | Semibold (600) | Subsection labels, distinct from body and help text (D-258) |
+| Emphasis | 16 px | Regular (400) | Spotlight field, dialog field |
+| Title | 20 px | Semibold (600) | Text titles |
+| Heading 3 | 20 px | Bold (700) | Settings section headers |
+| Heading 2 | 24 px | Bold (700) | Dialog and sheet headings (`font.uiHeading`) |
+| Heading 1 | 28 px | Bold (700) | Top-level interface headings (`font.uiHeadingLarge`) |
+| Lead | 18 px | Regular (400) | The one sentence of a full-window onboarding step (D-126) |
+| Display | 40 px, line height 1.25 | Bold (700) | A full-window onboarding step's title: the ramp's largest size (`font.uiDisplay`, D-126) |
+
+**Settings hierarchy (D-258).** The section header is bigger and heavier than the subsection label, which is bigger and heavier than body/help text. This is the shared `Heading`/`Text` ramp, not a Settings-only style override; other sheets and dialogs using these primitives inherit it. Note typography, control labels, content order, heading semantics, and theme contrast remain unchanged. No operation or wait is added.
+
+| Promise | Scenario | User can | View and primitives | Design decision | Requirement and plan |
+| --- | --- | --- | --- | --- | --- |
+| CP-REACH-01 | SC-FIND-04 | UC-KEY-03 | IA-VIEW-SETTINGS; Heading, Text | DD-IA-06, D-258 | DSY-01, WP-0.3, M0 |
 
 **Bundled fonts** are self-hosted and licensed under the SIL Open Font License, which D-29 proposes adding to the allowed list for fonts: Roboto Mono (mono, the default for note text and code), Newsreader and Fraunces (the serif preset: Newsreader for text, Fraunces for headings), Inter (sans), Atkinson Hyperlegible (a highly legible font designed for low vision), and OpenDyslexic (an option for some dyslexic readers). License checks in CI confirm each one.
 

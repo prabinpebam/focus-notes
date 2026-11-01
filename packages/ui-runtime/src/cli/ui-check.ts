@@ -13,6 +13,7 @@ import { checkUi, checkFixtureCoverage } from "../check.ts";
 import { staleFiles, staleMessage, uiSchemaFiles } from "../generated.ts";
 import { missingMigrations } from "../migrate.ts";
 import { galleryViews, registerGallery } from "../gallery.ts";
+import { checkDesignSource } from "./design-source.ts";
 
 const inertBridge: PlatformBridge = {
   platform: "windows",
@@ -49,6 +50,7 @@ const inputs = {
 
 const problems = checkUi(inputs);
 const root = join(import.meta.dirname, "..", "..", "..", "..");
+for (const message of checkDesignSource(root)) problems.push({ doc: "design-system source", stage: "design", at: "/", message });
 const coverage = checkFixtureCoverage(contracts, { exists: (p) => existsSync(join(root, p)) });
 // A major bump ships with the migration from the major before it (DSY-10).
 for (const m of missingMigrations()) problems.push({ doc: `UI schema v${m}`, stage: "schema", at: "/", message: `no migration to v${m + 1}` });

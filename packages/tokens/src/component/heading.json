@@ -1,8 +1,8 @@
 { "cmp": { "heading": {
   "color": { "$type": "color", "$value": "{color.text}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
-  "size": { "$type": "dimension", "1": { "$value": "{font.uiTitle}" }, "2": { "$value": "{font.uiEmphasis}" }, "3": { "$value": "{font.uiBody}" }, "display": { "$value": "{font.uiDisplay}" }, "displayShort": { "$value": "{font.uiTitle}", "$description": "A display title in a short window (D-131)." } },
-  "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "size": { "$type": "dimension", "1": { "$value": "{font.uiHeadingLarge}" }, "2": { "$value": "{font.uiHeading}" }, "3": { "$value": "{font.uiTitle}" }, "display": { "$value": "{font.uiDisplay}" }, "displayShort": { "$value": "{font.uiTitle}", "$description": "A display title in a short window (D-131)." } },
+  "weight": { "$type": "fontWeight", "$value": "{font.weightBold}", "$description": "Interface headings are heavier than semibold labels (D-258)." },
   "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
   "displayLineHeight": { "$type": "number", "$value": "{font.headingLineHeight}", "$description": "A display title that wraps keeps its lines together (D-126)." },
   "press": { "$description": "A heading that leads back (Files from Recently deleted, D-189): a chevron before it, muted on hover (never underlined), the controls' focus ring.",

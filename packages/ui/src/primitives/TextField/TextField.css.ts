@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { createVar, fallbackVar, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.textField;
@@ -37,3 +37,10 @@ export const area = style({ height: "auto", minHeight: t.areaHeight, paddingBloc
 /** Several lines that scroll past a set height instead of growing: read-only text to check before it's sent (D-203).
  * After `area`, so its fixed size wins. */
 export const scrolls = style({ maxHeight: t.areaMaxHeight, overflowY: "auto", resize: "none" });
+export const promptRoom = createVar();
+export const compactArea = style({
+  minHeight: `calc(2 * ${t.fontSize} * ${t.lineHeight} + 2 * ${t.paddingBlock} + 2 * ${t.borderWidth})`,
+  maxHeight: `min(${t.areaMaxHeight}, ${fallbackVar(promptRoom, t.areaMaxHeight)})`,
+  overflowY: "auto",
+  resize: "none",
+});

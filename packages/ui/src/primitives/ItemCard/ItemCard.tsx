@@ -28,6 +28,11 @@ export interface ItemCardProps {
   /** Its content is on its way (PRF-13): the card's shape with placeholders, named by its title for screen readers. */
   skeleton?: boolean;
   id?: string;
+  /** Native radio identity; cards with the same group form one mutually exclusive list. */
+  choiceGroup?: string;
+  choiceValue?: string;
+  selected?: boolean;
+  onChoose?: (payload: { value: string }) => void;
   children?: ReactNode;
   /** With an action, the whole card is one button, named by what it shows: its title, then its detail (D-131). */
   onPress?: () => void;
@@ -35,8 +40,11 @@ export interface ItemCardProps {
 
 const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
 
-/** One thing, shown rather than described (D-126, D-127): an account, a workspace, or an option. */
-export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, skeleton, id, children, onPress }: ItemCardProps) {
+/** One thing, shown rather than described (D-126, D-127): an account, a workspace, or an option.
+ * @a11y A choice uses native grouped radios; its slot actions are outside the choice label.
+ * @key Arrow keys choose within the native radio group; Space chooses the focused radio.
+ */
+export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
   // The shared busy policy (D-199): inert, aria-busy and data-busy, the same as Button's.
   const { inert, attrs: busyAttrs, ref: busyRef } = useBusy({ busy, label: label ?? "", disabled });
   if (skeleton) {
@@ -62,8 +70,8 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
     <span className={s.avatar} aria-hidden="true" data-visual-anchor="" data-avatar="initials">{initials}</span>
   ) : null;
   // Inside a button only phrasing content: spans, laid out the same.
-  const Title = pressable ? "span" : "p";
-  const Detail = pressable ? "span" : "div";
+  const Title = pressable || choiceGroup ? "span" : "p";
+  const Detail = pressable || choiceGroup ? "span" : "div";
   const text = (
     <Detail className={s.text}>
       <Title className={`${s.title} ${size === "l" ? s.titleLarge : ""} ${pressable ? s.titleAction : ""}`} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>
@@ -71,11 +79,26 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
         <Detail className={s.detail}>
           {mark ? <GitHub className={s.mark} aria-hidden="true" /> : null}
           {detail ? <span data-personal={personal === "all" ? "" : undefined}>{detail}</span> : null}
-          {badge ? <span className={s.badge}>{badge}</span> : null}
+          {badge ? <span className={`${s.badge} ${selected ? s.selectedBadge : ""}`}>{badge}</span> : null}
         </Detail>
       ) : null}
     </Detail>
   );
+  if (choiceGroup) {
+    return (
+      <div id={id} className={`${s.base} ${s.choiceCard}`} data-item-card="" data-selected={selected ? "" : undefined} aria-busy={busy || undefined}>
+        <label className={s.choice}>
+          <input className={s.radio} type="radio" name={choiceGroup} value={choiceValue} checked={Boolean(selected)} aria-disabled={busy || disabled || undefined} aria-label={label ?? title}
+            onClick={(e) => { if (inert) e.preventDefault(); }}
+            onKeyDown={(e) => { if (inert && [" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault(); }}
+            onChange={() => { if (!inert && choiceValue) onChoose?.({ value: choiceValue }); }} />
+          {visual}
+          {text}
+        </label>
+        {Children.count(children) ? <div className={s.actions}>{children}</div> : null}
+      </div>
+    );
+  }
   if (pressable) {
     return (
       <AriaButton

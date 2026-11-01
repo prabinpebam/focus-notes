@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { aiProvider } from "@focus-notes/core/ai-providers";
 import { AiService, answerText, deltaText, generateCall, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
+import { CopilotIntegration } from "../src/main/ai-copilot.ts";
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
 /** Every note here is public: the private-note check is tested on its own. */
-const notPrivate = async () => false;
 const file = () => join(mkdtempSync(join(tmpdir(), "fn-ai-")), "ai.json");
 const write = async (p: string, c: string) => writeFileSync(p, c);
 const conn = { id: "c", provider: "", name: "n", endpoint: "", model: "m", deployment: "", apiVersion: "", account: "" };
@@ -18,7 +18,7 @@ const answering = (seen: Seen[], body: (url: string) => unknown) =>
     return new Response(JSON.stringify(body(url)), { status: 200 });
   }) as unknown as typeof fetch;
 
-const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal, notPrivate)) out.push(c); return out; };
+const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
 
 describe("AI connections (main process)", () => {
   it("accepts https and this computer's http only", () => {
@@ -77,17 +77,19 @@ describe("AI connections (main process)", () => {
     // Changing it without a key keeps the saved one.
     const id = saved.connections[0]!.id;
     expect((await ai.save({ id, provider: "anthropic", name: "Claude", model: "claude-y" })).connections[0]!.hasKey).toBe(true);
-    await expect(collect(ai, { text: "hello", instruction: "warmer" })).rejects.toThrow("consent-required");
-    expect((await ai.consent(id)).connections[0]!.consented).toBe(true);
+    expect((await ai.settings()).connections[0]!.consented).toBe(false);
     expect(await collect(ai, { text: "hello", instruction: "warmer" })).toEqual(["Hel", "lo"]);
     expect(JSON.parse(seen.at(-1)!.init.body as string)).toMatchObject({ stream: true });
     expect(seen.at(-1)!.url).toBe("https://api.anthropic.com/v1/messages");
     expect((seen.at(-1)!.init.headers as Record<string, string>)["x-api-key"]).toBe("secret");
-    // A second connection, made the Writer; removing it moves the Writer back.
+    // Removing the default leaves the remaining connections unselected.
     const two = await ai.save({ provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "llama3" });
     const ollama = two.connections[1]!.id;
     expect((await ai.writer(ollama)).writer).toBe(ollama);
-    expect((await ai.remove(ollama)).writer).toBe(id);
+    expect((await ai.remove(ollama)).writer).toBe("");
+    expect((await ai.settings()).writer).toBe("");
+    expect((await ai.save({ id, provider: "anthropic", name: "Claude", model: "claude-y" })).writer).toBe("");
+    expect((await ai.writer(id)).writer).toBe(id);
   });
   it("Test records its result, and names a refused key and an unreachable service", async () => {
     const f = file();
@@ -124,7 +126,7 @@ describe("AI connections (main process)", () => {
       if (url === "http://127.0.0.1:11434/api/tags") return new Response(JSON.stringify({ models: [{ name: "llama3" }, { name: "gpt-oss:cloud", remote_host: "https://ollama.com" }] }));
       throw new TypeError("refused");
     }) as unknown as typeof fetch;
-    const found = await new AiService(file(), crypt, write, fetcher).discover();
+    const found = await new AiService(file(), crypt, write, fetcher, {}, new CopilotIntegration({ binary: async () => undefined })).discover();
     expect(found).toEqual([{ provider: "ollama", endpoint: "http://127.0.0.1:11434", models: [{ id: "llama3", cloud: false }, { id: "gpt-oss:cloud", cloud: true }] }]);
   });
   it("moves the first version's single service into a connection", async () => {

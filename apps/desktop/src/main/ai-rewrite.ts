@@ -10,10 +10,10 @@
  * for at most `idle`, and the whole exchange ends at `total`. A failure is one reason code
  * (`AiError`), never the service's own text, so nothing it echoes (a key, a note) reaches the window.
  */
-import { readFile, realpath } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
-import { isAbsolute, relative, resolve } from "node:path";
-import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, type AiConnectionView, type AiFound, type AiProvider } from "@focus-notes/core/ai-providers";
+import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiProvider } from "@focus-notes/core/ai-providers";
+import { CopilotIntegration } from "./ai-copilot.ts";
 
 export interface AiCrypt {
   available(): boolean;
@@ -24,20 +24,21 @@ interface Connection {
   id: string; provider: string; name: string; endpoint: string; model: string;
   deployment: string; apiVersion: string; account: string;
   key?: string; lastTest?: { ok: boolean; at: string };
-  /** What the person agreed to send note text to: the provider, destination and model (`consentScope`). */
+  /** Legacy first-send consent metadata, retained for storage compatibility only (D-266). */
   consent?: string;
-  /** This process saw the model in the server's own list as a model on this computer (an Ollama model may be cloud-routed). */
-  modelLocal?: true;
+  /** Ollama's own model list identifies cloud routing. */
+  modelCloud?: true;
 }
-interface Stored { version: 2; writer: string; keepPrivate: boolean; connections: Connection[] }
-export interface AiSettings { writer: string; keepPrivate: boolean; connections: AiConnectionView[] }
+interface Stored { version: 2; writer: string; connections: Connection[] }
+export interface AiSettings { writer: string; connections: AiConnectionView[] }
 
 /** The reasons a request can fail with; the window turns each into one plain sentence. */
 export type AiErrorCode =
-  | "not-configured" | "consent-required" | "private-note" | "secure-storage-unavailable" | "key-required" | "key-new-address"
+  | "not-configured" | "consent-required" | "secure-storage-unavailable" | "key-required" | "key-new-address"
   | "unauthorized" | "model-missing" | "not-found" | "rate-limited" | "server-error" | "bad-request" | "too-long"
   | "timeout" | "refused" | "dns" | "tls" | "redirected" | "network"
-  | "provider-format" | "provider-error" | "provider-empty" | "cancelled" | "connection-unavailable";
+  | "provider-format" | "provider-error" | "provider-empty" | "cancelled" | "connection-unavailable"
+  | "cli-missing" | "cli-unsupported" | "cli-not-signed-in";
 export class AiError extends Error {
   readonly code: AiErrorCode;
   /** Seconds to wait before trying again (429 with Retry-After). */
@@ -122,24 +123,7 @@ const baseOrEmpty = (p: AiProvider, c: Pick<Connection, "endpoint" | "account">)
     return "";
   }
 };
-/**
- * Whether a note is kept off AI: under the workspace's `private/` (private and shared notes alike),
- * decided here from the note's own path, never from the window's say-so (RWR-43, D-259). Both the
- * path as given and its real path are checked, so a link can't hide it. With a private folder, a
- * missing or relative path counts as private.
- */
-export async function isPrivateNote(privateDir: string | undefined, path: unknown): Promise<boolean> {
-  if (!privateDir) return false;
-  if (typeof path !== "string" || !path || !isAbsolute(path)) return true;
-  const under = (base: string, p: string) => {
-    const r = relative(base, p);
-    return r === "" || (!r.startsWith("..") && !isAbsolute(r));
-  };
-  const real = (p: string) => realpath(p).catch(() => resolve(p));
-  const [dir, note] = await Promise.all([real(privateDir), real(path)]);
-  return under(resolve(privateDir), resolve(path)) || under(dir, note);
-}
-/** What consent covers: a change of provider, address, model or key needs it again (AIS-14, RWR-43). The key enters only as a hash of its sealed form. */
+/** Legacy consent fingerprint for storage compatibility; never an authority or gate to Generate (D-266). */
 export function consentScope(c: Connection): string {
   const p = aiProvider(c.provider);
   if (!p) return "";
@@ -154,8 +138,7 @@ const view = (c: Connection): AiConnectionView => ({
   id: c.id, provider: c.provider, name: c.name, endpoint: c.endpoint, model: c.model, deployment: c.deployment,
   apiVersion: c.apiVersion, account: c.account, hasKey: Boolean(c.key), consented: Boolean(c.consent) && c.consent === consentScope(c),
   ...(c.lastTest ? { lastTest: c.lastTest } : {}),
-  // An Ollama model not seen as local in Ollama's own list may go to the cloud (Ollama routes `-cloud` models).
-  ...(aiProvider(c.provider)?.shape === "ollama" && !c.modelLocal ? { modelCloud: true } : {}),
+  modelCloud: aiRunsInCloud(c.provider, c.endpoint, c.model, c.modelCloud),
 });
 
 interface Call { url: string; headers: Record<string, string>; body?: unknown }
@@ -235,7 +218,7 @@ export function modelList(p: AiProvider, json: unknown): { id: string; cloud: bo
     // Ollama can route a model to the cloud through localhost: those are marked, never shown as local.
     case "ollama":
       if (!Array.isArray(j?.models)) return undefined;
-      return (j.models as any[]).filter((m) => typeof m?.name === "string").map((m) => ({ id: m.name as string, cloud: Boolean(m.remote_host || m.remote_model) }));
+      return (j.models as any[]).filter((m) => typeof m?.name === "string").map((m) => ({ id: m.name as string, cloud: Boolean(m.remote_host || m.remote_model) || /(?::cloud|-cloud)$/i.test(m.name) }));
     case "gemini":
       if (!Array.isArray(j?.models)) return undefined;
       return ids(j.models, (m) => String(m?.name ?? "").replace(/^models\//, ""), (m) => !Array.isArray(m?.supportedGenerationMethods) || m.supportedGenerationMethods.includes("generateContent")).map((id) => ({ id, cloud: true }));
@@ -244,7 +227,7 @@ export function modelList(p: AiProvider, json: unknown): { id: string; cloud: bo
       return ids(j.models, (m) => m?.name).map((id) => ({ id, cloud: true }));
     default:
       if (!Array.isArray(j?.data)) return undefined;
-      return ids(j.data, (m) => m?.id).map((id) => ({ id, cloud: p.group !== "local" }));
+      return ids(j.data, (m) => m?.id).map((id) => ({ id, cloud: !p.endpointEditable }));
   }
 }
 
@@ -367,16 +350,18 @@ export class AiService {
   readonly #write: (path: string, content: string) => Promise<unknown>;
   readonly #fetch: typeof fetch;
   readonly #limits: Partial<Record<AiLimitKind, AiLimits>>;
+  readonly #copilot: CopilotIntegration;
   #tail: Promise<unknown> = Promise.resolve();
   /** Each server's last model list this process fetched itself: base → model → on this computer. */
   readonly #listed = new Map<string, Map<string, boolean>>();
   /** `limits` replaces the defaults for both local and cloud connections (tests). */
-  constructor(file: string, crypt: AiCrypt, write: (path: string, content: string) => Promise<unknown>, fetcher: typeof fetch = fetch, limits: Partial<Record<AiLimitKind, AiLimits>> = {}) {
+  constructor(file: string, crypt: AiCrypt, write: (path: string, content: string) => Promise<unknown>, fetcher: typeof fetch = fetch, limits: Partial<Record<AiLimitKind, AiLimits>> = {}, copilot = new CopilotIntegration()) {
     this.#file = file;
     this.#crypt = crypt;
     this.#write = write;
     this.#fetch = fetcher;
     this.#limits = limits;
+    this.#copilot = copilot;
   }
   #limit(kind: AiLimitKind, local: boolean): AiLimits {
     return this.#limits[kind] ?? AI_LIMITS[kind][local ? "local" : "cloud"];
@@ -392,19 +377,19 @@ export class AiService {
           ...(typeof c.key === "string" && c.key ? { key: c.key } : {}),
           ...(c.lastTest && typeof c.lastTest.at === "string" ? { lastTest: { ok: c.lastTest.ok === true, at: c.lastTest.at } } : {}),
           ...(typeof c.consent === "string" && c.consent ? { consent: c.consent } : {}),
-          ...(c.modelLocal === true ? { modelLocal: true as const } : {}),
+          ...(c.modelCloud === true ? { modelCloud: true as const } : {}),
         }));
-        return { version: 2, writer: typeof v.writer === "string" ? v.writer : "", keepPrivate: v.keepPrivate !== false, connections };
+        return { version: 2, writer: typeof v.writer === "string" ? v.writer : "", connections };
       }
       // The first version kept one OpenAI-compatible service: it becomes a connection, the Writer if it was.
       if (v.version === 1 && typeof v.url === "string" && v.url) {
         const id = "first";
-        return { version: 2, writer: v.writer === false ? "" : id, keepPrivate: true, connections: [{ id, provider: "compatible", name: "Compatible service", endpoint: v.url, model: str(v.model, 200), deployment: "", apiVersion: "", account: "", ...(typeof v.key === "string" && v.key ? { key: v.key } : {}) }] };
+        return { version: 2, writer: v.writer === false ? "" : id, connections: [{ id, provider: "compatible", name: "Compatible service", endpoint: v.url, model: str(v.model, 200), deployment: "", apiVersion: "", account: "", ...(typeof v.key === "string" && v.key ? { key: v.key } : {}) }] };
       }
     } catch {
       // Nothing saved yet.
     }
-    return { version: 2, writer: "", keepPrivate: true, connections: [] };
+    return { version: 2, writer: "", connections: [] };
   }
   #change(fn: (s: Stored) => void | Promise<void>): Promise<AiSettings> {
     const run = this.#tail.then(async () => {
@@ -418,7 +403,7 @@ export class AiService {
     return run;
   }
   #view(s: Stored): AiSettings {
-    return { writer: s.writer, keepPrivate: s.keepPrivate, connections: s.connections.map(view) };
+    return { writer: s.writer, connections: s.connections.map(view) };
   }
   #seal(key: string): string {
     if (key.length > 8192 || /[\r\n]/.test(key)) throw new Error("invalid-key");
@@ -442,7 +427,7 @@ export class AiService {
     const c: Connection = {
       id: old?.id ?? randomUUID(), provider: p.id, name: str(a.name, 100) || p.label,
       endpoint: p.endpointEditable ? normalizeUrl(str(a.endpoint) || p.endpoint) : "",
-      model: str(a.model, 200), deployment: str(a.deployment, 100), apiVersion: str(a.apiVersion, 40), account: str(a.account, 64),
+      model: str(a.model, 200) || (p.shape === "copilot-cli" ? "auto" : ""), deployment: str(a.deployment, 100), apiVersion: str(a.apiVersion, 40), account: str(a.account, 64),
     };
     const base = baseOf(p, c);
     // A saved key, and its Test, stay only with the same provider at the same address: a key never follows an edited endpoint (D-259).
@@ -450,9 +435,12 @@ export class AiService {
     if (same && old?.key) c.key = old.key;
     if (same && old?.lastTest) c.lastTest = old.lastTest;
     const listed = this.#listed.get(base)?.get(c.model);
-    if (listed === true || (listed === undefined && same && old?.modelLocal && old.model === c.model)) c.modelLocal = true;
+    if (listed === true || (listed === undefined && same && old?.modelCloud && old.model === c.model)) c.modelCloud = true;
     if (p.shape === "azure" ? !/^[\w.-]{1,100}$/.test(c.deployment) : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
-    if (typeof a.key === "string" && a.key) c.key = this.#seal(a.key);
+    if (typeof a.key === "string" && a.key) {
+      if (p.shape === "copilot-cli") throw new Error("invalid-key");
+      c.key = this.#seal(a.key);
+    }
     if (p.key === "required" && !c.key) throw new AiError(old?.key && old.provider === p.id ? "key-new-address" : "key-required");
     // Consent stays only while it covers the same provider, destination and model.
     if (old?.consent && old.consent === consentScope(c)) c.consent = old.consent;
@@ -472,11 +460,14 @@ export class AiService {
         if (s.connections.length >= MAX_CONNECTIONS) throw new Error("too-many");
         s.connections.push(c);
       }
-      s.writer ||= c.id;
+      if (!s.writer && s.connections.length === 1 && at < 0) s.writer = c.id;
     });
   }
   remove(id: unknown): Promise<AiSettings> {
-    return this.#change((s) => { s.connections = s.connections.filter((c) => c.id !== id); });
+    return this.#change((s) => {
+      s.connections = s.connections.filter((c) => c.id !== id);
+      if (s.writer === id) s.writer = "";
+    });
   }
   writer(id: unknown): Promise<AiSettings> {
     return this.#change((s) => {
@@ -491,10 +482,6 @@ export class AiService {
       if (!c) throw new AiError("connection-unavailable");
       c.consent = consentScope(c);
     });
-  }
-  /** Keep private notes off AI (on by default): Rewrite refuses a private or shared note. */
-  privacy(keepPrivate: unknown): Promise<AiSettings> {
-    return this.#change((s) => { s.keepPrivate = keepPrivate !== false; });
   }
 
   /** One JSON answer (Test, model lists, discovery) under its limits, read at most `max` bytes. */
@@ -514,19 +501,19 @@ export class AiService {
   }
   /**
    * Remembers which of a server's models are on this computer, from a list this process fetched,
-   * and marks the saved connections there (Settings and consent say where text goes, D-259).
+   * and marks the saved connections there (Settings and the prompt disclose where text goes).
    */
   async #learn(p: AiProvider, base: string, list: { id: string; cloud: boolean }[]): Promise<void> {
     if (p.shape !== "ollama" || !base) return;
-    const known = new Map(list.map((m) => [m.id, !m.cloud]));
+    const known = new Map(list.map((m) => [m.id, m.cloud]));
     this.#listed.set(base, known);
     const at = (c: Connection) => c.provider === p.id && known.has(c.model) && baseOrEmpty(p, c) === base;
-    if (!(await this.#read()).connections.some((c) => at(c) && Boolean(c.modelLocal) !== known.get(c.model))) return;
+    if (!(await this.#read()).connections.some((c) => at(c) && Boolean(c.modelCloud) !== known.get(c.model))) return;
     await this.#change((s) => {
       for (const c of s.connections) {
         if (!at(c)) continue;
-        if (known.get(c.model)) c.modelLocal = true;
-        else delete c.modelLocal;
+        if (known.get(c.model)) c.modelCloud = true;
+        else delete c.modelCloud;
       }
     });
   }
@@ -539,16 +526,20 @@ export class AiService {
     const started = performance.now();
     try {
       const p = aiProvider(c.provider)!;
-      const key = this.#open(c);
-      if (p.key === "required" && !key) throw new AiError("key-required");
-      const call = generateCall(p, c, key, "Reply with the single word OK.", "Connection test.", 16);
-      const local = isLoopback(call.url);
-      if (!answered(p, await this.#json(call, this.#limit("test", local), local, MAX_JSON.test))) throw new AiError("provider-format");
-      // Ollama: the Test also learns whether the model runs here or is routed to the cloud.
-      const listCall = p.shape === "ollama" ? modelsCall(p, c, key) : undefined;
-      if (listCall) {
-        const list = await this.#json(listCall, this.#limit("list", local), local, MAX_JSON.list).then((j) => modelList(p, j), () => undefined);
-        if (list) await this.#learn(p, baseOf(p, c), list);
+      if (p.shape === "copilot-cli") {
+        for await (const _text of this.#copilot.stream(SYSTEM, "Reply with the single word OK.", c.model, new AbortController().signal, this.#limit("test", false))) {}
+      } else {
+        const key = this.#open(c);
+        if (p.key === "required" && !key) throw new AiError("key-required");
+        const call = generateCall(p, c, key, "Reply with the single word OK.", "Connection test.", 16);
+        const local = isLoopback(call.url);
+        if (!answered(p, await this.#json(call, this.#limit("test", local), local, MAX_JSON.test))) throw new AiError("provider-format");
+        // Ollama: the Test also learns whether the model runs here or is routed to the cloud.
+        const listCall = p.shape === "ollama" ? modelsCall(p, c, key) : undefined;
+        if (listCall) {
+          const list = await this.#json(listCall, this.#limit("list", local), local, MAX_JSON.list).then((j) => modelList(p, j), () => undefined);
+          if (list) await this.#learn(p, baseOf(p, c), list);
+        }
       }
     } catch (e) {
       failure = e;
@@ -568,6 +559,7 @@ export class AiService {
     const saved = typeof a.id === "string" ? (await this.#read()).connections.find((c) => c.id === a.id) : undefined;
     const p = aiProvider(a.provider ?? saved?.provider);
     if (!p) throw new Error("invalid-provider");
+    if (p.shape === "copilot-cli") return this.#copilot.models();
     const c = { endpoint: p.endpointEditable ? str(a.endpoint) || saved?.endpoint || p.endpoint : "", account: str(a.account, 64) || saved?.account || "" };
     // The saved key goes only to the saved address: a draft with another endpoint or account lists without it (D-259).
     const base = baseOf(p, c);
@@ -581,13 +573,13 @@ export class AiService {
     measure("fn:ai.models", started);
     if (!list) throw new AiError("provider-format");
     await this.#learn(p, base, list);
-    return list.slice(0, 500);
+    return list.slice(0, 500).map((m) => ({ ...m, cloud: aiRunsInCloud(p.id, base, m.id, p.shape === "ollama" && m.cloud) }));
   }
 
-  /** Find on this computer: each local server's usual port, asked for its models. Nothing leaves this computer. */
+  /** Loopback model lists and a bounded CLI auth-status probe, never generation or login. */
   async discover(): Promise<AiFound[]> {
     const started = performance.now();
-    const found = await Promise.all(AI_PROVIDERS.filter((p) => p.discover).map(async (p): Promise<AiFound | undefined> => {
+    const servers = Promise.all(AI_PROVIDERS.filter((p) => p.discover).map(async (p): Promise<AiFound | undefined> => {
       const endpoint = p.discover!.url;
       try {
         // Only a server that answers in its provider's own list shape counts: any other program on the port doesn't.
@@ -599,6 +591,19 @@ export class AiService {
         return (e as AiError).code === "unauthorized" ? { provider: p.id, endpoint, models: [] } : undefined;
       }
     }));
+    const [found, cli] = await Promise.all([servers, this.#copilot.discover()]);
+    if (cli) found.push(cli);
+    if (cli?.status === "signed-in") {
+      await this.#change((s) => {
+        let c = s.connections.find((x) => x.provider === "copilot-cli");
+        if (!c) {
+          if (s.connections.length >= MAX_CONNECTIONS) throw new Error("too-many");
+          c = this.#fromInput({ provider: "copilot-cli", model: "auto" });
+          s.connections.push(c);
+        }
+        s.writer ||= c.id;
+      });
+    }
     measure("fn:ai.discover", started);
     return found.filter((f): f is AiFound => Boolean(f));
   }
@@ -607,19 +612,27 @@ export class AiService {
    * Rewrite: the Writer's answer as it streams, chunk by chunk, in its own streaming shape (SSE for
    * Chat Completions, Azure, Anthropic, Gemini and Cohere; NDJSON for Ollama). A service that
    * answers in one piece yields it once. The key stays here; only text goes back to the window.
-   * Nothing is sent before consent for this connection, or from a private note while those are kept off AI:
-   * `privateNote` decides that here from the note's path (`input.path`); the window's own view never counts.
+   * Generate sends directly to the selected Writer (D-266). The person decides what to send.
    */
-  async *stream(input: unknown, signal: AbortSignal, privateNote: (path: unknown) => Promise<boolean>): AsyncGenerator<string> {
+  async *stream(input: unknown, signal: AbortSignal): AsyncGenerator<string> {
     const a = (input ?? {}) as Record<string, unknown>;
     if (typeof a.text !== "string" || !a.text.trim() || a.text.length > MAX_TEXT) throw new Error("invalid-text");
     if (typeof a.instruction !== "string" || !a.instruction.trim() || a.instruction.length > MAX_INSTRUCTION) throw new Error("invalid-instruction");
     const s = await this.#read();
     const c = s.connections.find((x) => x.id === s.writer);
     if (!c) throw new AiError("not-configured");
-    if (s.keepPrivate && (await privateNote(a.path))) throw new AiError("private-note");
-    if (!c.consent || c.consent !== consentScope(c)) throw new AiError("consent-required");
     const p = aiProvider(c.provider)!;
+    if (p.shape === "copilot-cli") {
+      const started = performance.now();
+      let first = true;
+      for await (const text of this.#copilot.stream(SYSTEM, `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`, c.model, signal, this.#limit("generate", false))) {
+        if (first) measure("fn:ai.firstToken", started);
+        first = false;
+        yield text;
+      }
+      measure("fn:ai.stream", started);
+      return;
+    }
     const key = this.#open(c);
     if (p.key === "required" && !key) throw new AiError("key-required");
     const call = streamCall(p, generateCall(p, c, key, SYSTEM, `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`, 4096));

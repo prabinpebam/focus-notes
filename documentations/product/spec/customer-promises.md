@@ -30,7 +30,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | Field | Value |
 | --- | --- |
 | Customer promise | I can ask an AI service I chose to rewrite words I've selected, watch the new words arrive in place, and get my exact original back with one undo, without Focus Notes running a model or sending my words anywhere else. |
-| Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged, and the person decides which service, on this computer or in the cloud, sees their words. |
+| Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged. Before sending, the person sees the integration, model and where it runs, chooses which connection sees their words, and decides whether to send even from a private note (D-261, D-262). |
 | Breaks when | A rewrite loses the original or changes text outside the selection; Stop or an error leaves half-written text; text goes to any service other than the chosen Writer, or anything beyond the prompt and the selection is sent; a key shows in the window, a file in the notes or a log; Focus Notes installs, downloads or runs a model. |
 | Signals | Unit tests prove one undo step, an exact restore on Stop and errors, each service's request shape and that keys stay in the main process; the owner tries it on their own notes with their own service. No telemetry is collected to measure use. |
 | Scenarios | SC-RWR-01, SC-RWR-03, SC-RWR-04 |

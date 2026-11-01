@@ -1,9 +1,13 @@
 # Rewrite with AI design
 
-> [!NOTE]
-> **TL;DR.** Three surfaces, all from the design system. The **Rewrite dialog** (view `rewrite`: Dialog size m with the passage, the Writer line, a prompt, three preset toggles, Cancel and Generate). The **in-place stream** in the editor (EditorSurface's rewrite decoration: a rainbow shimmer, the rainbow text, then a 1 s hold and 3 s fade), with a toast that offers Stop. **Settings → AI** (a section of view `settings`: the Writer menu, connection rows, Find on this computer and the Add connection form with the new SecureKeyField). Every colour and timing is a token (`ref.rewrite.*`, `rewrite.*`, `cmp.editorSurface.rewrite.*`). Built on 31 October (D-256, D-257); live Markdown while streaming and platform key names are in progress.
+**As built for 1 November 17:29 feedback (D-265/D-266/D-267; UX/UI verdict pending):** preset buttons inherit shared native-control metrics and symmetric centering; the directional Return button inherits shared opaque floating hover paint. No padding or color override exists in the Rewrite view. First/middle/last return geometry, mounted prompt/draft, Cancel, remembered integration and direct Generate from the previous delivery remain unchanged. Settings places the named Find/explanation group above the radio list and Add connection last. Default updates retain native focus and existing row identities, with an emphasized shared badge and no redundant success prose. See [shared rules](system/components.md), [Settings anatomy](../experience/ai-settings.md#single-list-default-choice-d-267-planned) and [observable checks](../plan/definition-of-done.md#settings-ai-single-list-stage). Only build, typecheck and static view/source checks are authorized; documentation remains unchecked.
 
-Serves UC-RWR-01, UC-RWR-02 and UC-RWR-05 to UC-RWR-09 under CP-RWR-01; the flow is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md), and the IA rows and design decisions DD-RWR-01 to DD-RWR-09 are in the [information architecture](information-architecture.html#rewrite-with-ai).
+> [!NOTE]
+> **TL;DR.** Three surfaces: an **inline, non-modal Rewrite popover** with active integration, remembered picker, prompt and presets; the **in-place stream** with rainbow and Stop; and **Settings → AI**. No passage preview or first-send disclaimer/consent. The selection stays visible in the scrollable document and anchors the popover (D-265); the visible integration and the person's judgement are the disclosure (D-266, D-261, D-262). The popover and prompt-loss confirmation are built in WP-AI.14, pending candidate integration and the owner's review.
+
+Serves UC-RWR-01, UC-RWR-02 and UC-RWR-05 to UC-RWR-11 under CP-RWR-01; the flow is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md), and the IA rows and design decisions DD-RWR-01 to DD-RWR-11 are in the [information architecture](information-architecture.html#rewrite-with-ai).
+
+**Integration identities (D-263, DD-RWR-07, AIS-03).** Settings connection cards and the Rewrite integration card use the same `aiConnectionIcon(kind)` mapping through the existing Icon primitive, alongside the name, never instead of it. The Rewrite view model maps its Writer's provider kind to the card's icon. The mark is decorative; standalone usage supplies `label`. All paths inherit `currentColor` and existing `cmp.icon.size` tokens, including contrast contexts. Neutral fallbacks do not imitate missing brands. Sources, licences and restricted-logo fallbacks are in the [component catalog](system/components.md#integration-icons); no new token, wait or AI transport is introduced.
 
 ## What people expect
 
@@ -13,29 +17,47 @@ A rewrite should feel like the words changing where they are, not a detour throu
 
 | Surface | Built from | Where | IA |
 | --- | --- | --- | --- |
-| Rewrite dialog | `Dialog` (size m, height content), `Surface` sunken with caption `Text` and the passage, caption `Text` for the Writer, `TextField` multiline, three `Button`s (subtle, s, toggle), `Inline` of `Button`s | `packages/views/views/rewrite.view.json`, overlay view, focus on `rewritePrompt` | IA-CMP-REWRITEPROMPT |
+| Rewrite popover | Existing `Positioner` with a dedicated `rewrite` fragment anchor and `Surface`, token-only sizing/spacing/placement; `ItemCard` with service title, model detail, locality badge and kind-keyed icon slot; `MenuButton` select for several connections; multiline `TextField`, preset `Button`s and action `Inline`. No passage surface or disclaimer | `packages/views/views/rewrite.view.json`, `vm.rewrite`, focus on `rewritePrompt` | IA-CMP-REWRITEPROMPT; DD-RWR-01, DD-RWR-09, DD-RWR-10 |
 | In-place stream | EditorSurface's rewrite decoration classes `pending`, `streaming`, `fading` (`rewriteClasses` in `EditorSurface.css.ts`) over a ProseMirror inline decoration (`RewriteDecoration` in `packages/editor/src/rewrite-stream.ts`) | The note | IA-CMP-REWRITEREVIEW |
 | Rewrite toast | The app's toast with an action: "Rewriting with {name}… Press Esc to stop." and **Stop** | Bottom of the window | IA-CMP-REWRITEREVIEW |
 | Settings → AI | `Heading`, `Text`, `Menu` triggers for the Writer, service and model, connection rows (`Surface`, `Text`, a badge, `Button`s), the found list, `TextField`s, `SecureKeyField`, `Button`s | The `ai` section of `packages/views/views/settings.view.json` | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIDISCOVER |
 | API key field | **SecureKeyField**, a new compound: a password `TextField` and a **Save** `Button`. The key goes out once in the `save` event and the field clears; it's never bound to a view model | Add connection and Change | IA-CMP-AIKEY |
-| First-send confirmation (planned) | `Dialog` with the service, address and On this computer or Cloud; **Cancel**, **Send** | Before the first send to a connection | IA-VIEW-REWRITECONSENT |
+| Prompt-loss confirmation | Existing design-system `Dialog`: **Discard prompt?**, “Deselecting this text will lose your written prompt.” **Keep editing** (autofocused default), **Discard prompt** | Deselect with non-empty written or preset prompt; never on first send | IA-CMP-REWRITEPROMPTLOSS; DD-RWR-11 |
 
-The text menu gets a plain `rewrite` entry (Windows and Linux; the page runs it, never the shell) and the Edit menu lists `rewrite.open`. The editor's canvas view wires three new EditorSurface events: `rewriteCapture` → `rewrite.captured`, `rewriteBegan` → `rewrite.began`, `rewriteCancel` → `rewrite.cancel`.
+The text menu gets a plain `rewrite` entry (Windows and Linux; the page runs it, never the shell) and the Edit menu lists `rewrite.open`. The editor's canvas view wires `rewriteCapture` → `rewrite.captured`, `rewriteBegan` → `rewrite.began`, `rewriteCancel` → `rewrite.cancel`, and `rewriteDeselect` → `rewrite.deselected`. The existing Positioner/Surface composition is reused rather than introducing a second popover primitive; the overlay-view checker permits this anchored layout beside the loss Dialog.
 
 Also part of this work: the owner's **modal scroll-to-edges** fix (be8807f9, on `main`; UI-09, D-111). A dialog's block padding moves into the part at each edge. A fixed header or footer keeps it as padding; a scrolling body at the top or bottom holds it inside the scroller, with scroll padding and rounded inner corners. Content now scrolls right up to the dialog's edge and keeps its spacing at rest; Settings → AI, a long scrolling section, is where it shows most.
 
 ## States
 
-### Rewrite dialog
+### Rewrite popover
 
 | State | Shows | Primary action |
 | --- | --- | --- |
-| No Writer | Passage; "Rewrite needs an AI service. Add one in Settings → AI." (announced) | **Set up AI** (primary, settings icon); **Cancel** |
-| Empty prompt | Passage; Writer line; empty prompt with "Make it clearer and warmer" | **Generate** disabled: "Add a prompt or choose a preset" |
+| No Writer | "Rewrite needs an AI service. Add one in Settings → AI." (announced); no passage preview | **Set up AI** (primary, settings icon); **Cancel** |
+| Empty prompt | Integration card; empty prompt with "Make it clearer and warmer" | **Generate** disabled: "Add a prompt or choose a preset" |
+| Several connections | Same card plus an AI integration menu; each item names connection, service, model and locality; current item checked | Choose one; saved choice updates card without losing the prompt |
+| Saving a choice | Old card stays, prompt remains editable; the task tracker's delayed "Remembering your choice…" sign | Generate waits for persistence; Cancel remains available |
+| Choice save failed | Old card and choice remain; one error toast | Retry or keep the previous integration |
+| Deselect, empty prompt | Popover dismisses immediately; no confirmation, nothing sent | Ordinary editing |
+| Deselect, written or preset prompt | Prompt-loss confirmation; original selection and prompt retained pending decision | **Keep editing** restores selection and prompt focus; **Discard prompt** dismisses and clears draft, sending nothing |
+| Selection and dialog in view | Popover follows one retained fragment vertically, keeping its initial x and side | Scroll document, type prompt, use controls |
+| Selection or dialog beyond an edge | One edge-pinned Button with arrow and “Return to selection above/below”; mounted prompt is inert and hidden, not discarded | Return scrolls the selection into view and restores the prompt; ordinary scrolling back also reverses the morph |
 | Preset chosen | The preset's prompt ("Make it concise", "Make it warmer", "Fix the grammar"); that toggle pressed | **Generate** |
 | Own prompt | The prompt typed; no toggle pressed | **Generate** |
 
-Rest, hover, pressed, focus and disabled come from Button, TextField and Dialog. The dialog fits 480 × 360: at the compact size class Dialog goes full screen.
+Rest, hover, pressed, focus and disabled come from design-system components. The prompt is never full-screen or modal. It is at most the existing popover width (360 px), bounded by viewport width. **1 November 15:36 feedback, UX/UI verdict pending:** the textarea starts at exactly two lines, using font/leading/padding/border tokens, grows and shrinks with content to `areaMaxHeight` or remaining viewport room, and alone scrolls past that maximum. Surface scrolling and its reserved gutter are removed. One initial x and fragment/side survive scrolling; scroll updates apply a transform without resetting or measuring panel size. Content/viewport resize alone refreshes size and textarea room. Edge changes fade between the retained prompt and one native return button, using Positioner motion tokens; reduced motion disables fades and smooth return scrolling. Prompt input stays mounted; focus moves out of the inert panel and returns when appropriate. No backdrop, inert document or focus trap.
+
+### Selection anchoring and dismissal
+
+- Track the captured editor range, not the native selection after focus moves to the prompt. Preserve its visible selection decoration while prompt controls have focus; using presets or the integration menu is not deselecting.
+- Use exact selected fragment rectangles, not just their bounding box. Choose one visible fragment, side and x on opening; retain them through scrolling and throughout a return animation, with width constrained by token gutters. Do not flip to the first fitting side as the selection enters view: smooth scrolling is still moving toward the original side's target, and an early flip can carry the restored panel off the opposite edge.
+- Return uses the same effective viewport as placement, including the token-defined top control band, not the editor scroller's raw top. Otherwise it can stop beneath that band while the panel remains pinned. The effective bounds travel with the existing retained-anchor reveal payload; the original capture and note remain untouched.
+- While edge-pinned, the mounted prompt wrapper is zero-height and clips overflow. A hidden full-height absolute panel must not enlarge the app root's scrollable area and let native focus/scroll-into-view shift the whole canvas. Keep the last natural panel size while hidden; its resize observer refreshes that size again when restored. Input stays mounted, never copied or reset.
+- Apply vertical transforms in the rendering frame without per-scroll panel-size resets. Refresh panel size and textarea room only on content/viewport resize. When selection or dialog crosses an edge, fade into one directional return Button; its action scrolls the selection into view and restores the same mounted prompt. Reduced motion disables fades and smooth scrolling.
+- A collapsed or replaced editor selection is deselection. Empty means zero prompt characters; whitespace and presets count as written input. Empty drafts dismiss immediately. Non-empty drafts keep the original captured range and input until confirmation: **Keep editing** (also confirmation Escape) restores both; **Discard prompt** accepts deselection, clears the draft and closes the popover. No network request or note write occurs.
+  - Finish a pointer-selection gesture before opening the confirmation, then publish in the next frame. Restore both the editor range and the native selection observer's snapshot: clicking the same deselected caret again must still count. Reopening Rewrite focuses the existing draft rather than resetting it.
+- Escape or Cancel explicitly dismisses the popover without sending. A document outside click that deselects follows the prompt-loss rule, not generic popover auto-close. Editing remains available before Generate; a document revision change invalidates the captured rewrite and must never send stale text (RWR-75).
 
 ### In-place stream
 
@@ -54,7 +76,7 @@ The decoration is never part of the note: it isn't in the Markdown, the clipboar
 | --- | --- |
 | Section | No connections (empty text with **Add connection** and **Find on this computer**); connections; form open (Add connection hidden) |
 | Row | Writer or Saved badge; key saved, none or not needed; never tested, testing, passed, failed, error |
-| Find on this computer | Rest; looking; found some; found none |
+| Find on this computer | Rest; looking with earlier results kept; found servers; supported signed-in Copilot added directly; CLI signed-out, unsupported-version or unknown with a reason; found none. Copilot is Cloud, never an on-device model (D-264). |
 | Form | Each service's own fields; models: none, finding, list, none available, error; Save disabled with reason, saving, saved, failed |
 
 ## Words
@@ -64,11 +86,14 @@ Every word is a message key in `packages/views/messages/en.json` (I18N-04). The 
 | Key | Words |
 | --- | --- |
 | `rewrite.title`, `rewrite.close` | Rewrite · Dismiss rewrite |
-| `rewrite.selected`, `rewrite.prompt`, `rewrite.placeholder` | Selected passage · Prompt · Make it clearer and warmer |
+| `rewrite.prompt`, `rewrite.placeholder` | Prompt · Make it clearer and warmer |
 | `rewrite.preset.concise`, `.warmer`, `.grammar` | Make concise · Make warmer · Fix grammar |
 | `rewrite.preset.*.prompt` | Make it concise · Make it warmer · Fix the grammar |
 | `rewrite.generate`, `rewrite.cancel`, `rewrite.emptyReason` | Generate · Cancel · Add a prompt or choose a preset |
 | `rewrite.writer` | Writer: {name} · {detail} |
+| `rewrite.integration`, `rewrite.integration.saving`, `rewrite.integration.saved` | AI integration · Remembering your choice… · Choice remembered. |
+| `ai.where.local`, `ai.where.cloud` | This computer · Cloud |
+| Planned prompt-loss messages | Discard prompt? · Deselecting this text will lose your written prompt. · Keep editing · Discard prompt |
 | `rewrite.setupNeeded`, `rewrite.setup` | Rewrite needs an AI service. Add one in Settings → AI. · Set up AI |
 | `rewrite.selectFirst` | Select some text to rewrite first. |
 | `rewrite.running`, `rewrite.stop` | Rewriting with {name}… Press Esc to stop. · Stop |
@@ -96,18 +121,20 @@ The gradient runs purple → red → orange → blue → purple across 200% of t
 
 ## Accessibility
 
-- **Keyboard:** <kbd>Ctrl+Shift+R</kbd> opens; <kbd>Tab</kbd> moves through the prompt, the presets, Cancel and Generate; <kbd>Esc</kbd> closes the dialog, or stops a rewrite wherever focus is. The presets are toggle buttons with a pressed state.
-- **Focus:** the prompt takes focus when the dialog opens; after Generate, Cancel or a stop, focus is back in the note.
+- **Keyboard:** <kbd>Ctrl+Shift+R</kbd> opens; <kbd>Tab</kbd> moves through integration, prompt, presets and actions without trapping focus; <kbd>Esc</kbd> closes the popover, or stops a rewrite wherever focus is. The presets are toggle buttons with a pressed state. The confirmation uses Dialog's focus trap, with Keep editing as the safe default and Escape equivalent to Keep editing.
+- **Focus:** the prompt takes focus when the popover opens; editor selection stays visibly decorated. Generate or Cancel returns focus to the note; Keep editing restores the captured selection and prompt focus. Discard prompt preserves the person's new document caret/selection.
 - **Screen reader:** the start, a stop, the finish and errors are announced; text pieces are never announced one by one. The "Rewrite needs an AI service" line is announced when it appears.
 - **Colour and motion:** the rainbow is never the only signal: the toast says it's rewriting and the finish is announced. Reduced motion has no shimmer or fade; forced colours show ordinary text.
 - **Still to check (A11Y-03, FOC-07):** a full screen-reader pass, contrast of every gradient frame, and that the decoration never hides the paragraph focus band, the caret or spelling underlines.
 
 ## Visual score
 
-Not yet scored. The dialog is one passage, one line, one field, three toggles and two buttons, with no sentences describing what the UI could show; Settings → AI uses rows, badges and menus rather than prose. A score of at least 70 (80 for the empty state) and gallery stories for each state above, in light, dark and contrast, are WP-AI.9's (DSY-14).
+Not yet scored. The popover is one integration line, one field, three toggles and two buttons, with no passage preview or disclaimer; Settings → AI uses rows, badges and menus rather than prose. A score of at least 70 (80 for the empty state) and gallery stories for each state above, in light, dark and contrast, are WP-AI.9's (DSY-14). WP-AI.14 checks visible anchoring and confirmation in light/dark and at 480 × 360 before owner review.
 
 ## Decisions
 
 - **D-256:** the prompt-only dialog, in-place stream, rainbow timings and one undo step; supersedes D-243, D-250, D-251 and D-252.
 - **D-257:** Settings → AI with 26 service kinds.
 - **D-111:** dialogs; the scroll-to-edges fix follows it.
+- **D-265:** the selection-anchored inline popover and draft-preserving deselection rules replace D-256's modal prompt.
+- **D-266:** no first-send disclaimer or consent; active integration disclosure and user judgement replace it, extending D-261.

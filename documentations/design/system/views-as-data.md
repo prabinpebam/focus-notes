@@ -1,5 +1,11 @@
 # Views as data
 
+**As built, D-267:** the Settings repeat binds ItemCard's native radio identity, accessible label and saved checked state from `vm.ai.connections`; sibling actions dispatch their existing commands. `ai.writer` and `rewrite.writer` share one `chooseWriter` implementation and existing bridge ID, with targets `settings.writer` / `rewrite.writer` in the existing tracker. No view-local default is stored; failures retain checked state and show/announce their reason. Schema generation is part of this implementation commit.
+
+**17:29 feedback revision:** discovery is one named `Inline.related` action/explanation row inside a related Stack, above the connections repeat; results and necessary errors stay in that group. Add connection is the last section child, after setup and status. Default-save progress uses a mounted, off-layout LiveRegion, not a growing line above every row. Success is announced rather than adding a redundant default sentence. Repeat keys must read a string or number identity; selection/pending booleans cannot key a subtree. Normal default changes update the existing checked state, badge and paint, not the app root, tab panel or editor. The observed earlier disturbance came from native disabling losing radio focus and transient status text changing list height, not an app reload; no renderer cache or reload workaround is introduced. Static source and view rules are in `ui:check`; documentation and suites remain unchecked pending approval.
+
+**D-267, Settings AI (built on own-ai-default-list-build):** the view binds checked Default state to the existing Writer-derived view model and dispatches the existing Writer command. Do not add view-local or persisted independent default selection. Labels, Default badge, Find on this PC and its scan explanation are message keys; list/row structure is data. Keep Test/Change/Remove events outside the choice target and regenerate UI schemas if a contract changes. Rewrite's remembered picker updates the same ID; the next Settings view/reopen reads it. See [Settings spec](../../experience/ai-settings.md#single-list-default-choice-d-267-planned).
+
 Every screen in Focus Notes is a JSON document. The UI runtime reads it, checks it, and maps each node onto a design-system component, binding it to typed state and wiring its events to commands. This page defines that format, how it's validated and rendered, and what it deliberately can't do.
 
 > [!NOTE]
@@ -71,7 +77,7 @@ Files live next to their owners: `packages/views/` for the app (shared by deskto
 
 Any node may have `"when": <expression>` to render only when the expression is true, and an `"id"` so other nodes can refer to it (a Tooltip's target, a Positioner's anchor, the focus target when the view opens).
 
-**Overlay views.** A view document with `"overlay": true` is hosted beside the main view (`mountApp`'s `overlays`) and adds only dialogs: its root is a Stack of Dialogs, each open only when its view model says, and the main view's AppRoot sets the theme for both. Settings is one (`settings.view.json`, D-103), so later categories add to its document, not the canvas's.
+**Overlay views.** A view document with `"overlay": true` is hosted beside the main view (`mountApp`'s `overlays`): its root is a Stack of Dialogs, Sheets or anchored Positioners, each open only when its view model says, and the main view's AppRoot sets the theme for both. Settings is one (`settings.view.json`, D-103), so later categories add to its document, not the canvas's. Rewrite reuses Positioner for its non-modal selection-anchored prompt and Dialog only for draft-loss confirmation (D-265); an overlay view is not inherently modal.
 
 <h2 data-reader-personas="engineering">Values</h2>
 
@@ -181,7 +187,7 @@ Fragments are expanded at build time, so they cost nothing at run time.
 | **2. References** | Every component, fragment, view, command, icon, message key, token name, and view-model path exists. Every `when` and `switch` refers to a declared field. |
 | **3. Types** | Reads and bindings match the prop's type, message arguments match the message, and repeats bind to lists. Bindings only target fields with setters. |
 | **4. Accessibility rules** | Accessible names are present, dialogs and sheets have titles, interface heading levels don't skip, every view declares where focus goes when it opens, and every repeat and switch has its empty, error, and loading cases. |
-| **5. Design rules** | A view's root is AppRoot, or, for an overlay view, a Stack of Dialogs. At most one primary button per surface, toolbars and menus list commands only, no Layer inside a Layer except menus and tooltips, frost only in floating layers, and view depth under a limit. |
+| **5. Design rules** | A view's root is AppRoot, or, for an overlay view, a Stack of Dialogs, Sheets and anchored Positioners. At most one primary button per surface, toolbars and menus list commands only, no Layer inside a Layer except menus and tooltips, frost only in floating layers, and view depth under a limit. |
 | **6. Rendering** | Every view renders with each of its view-model fixtures, in light, dark, high contrast, compact, and reduced transparency, then goes through visual regression and axe (DSY-09). |
 
 <h2 data-reader-personas="engineering">Rendering</h2>

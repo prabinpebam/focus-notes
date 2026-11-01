@@ -397,7 +397,7 @@
     {
       "type": "Icon",
       "tier": "primitive",
-      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "description": "A system or integration brand icon. Inherited colour; decorative unless it has a label (D-263).",
       "props": {
         "name": {
           "kind": "icon",
@@ -456,13 +456,91 @@
               "t": "gallery.sample"
             }
           }
+        },
+        {
+          "name": "brand aiOllama",
+          "props": {
+            "name": "aiOllama"
+          }
+        },
+        {
+          "name": "brand aiLmStudio",
+          "props": {
+            "name": "aiLmStudio"
+          }
+        },
+        {
+          "name": "brand aiVllm",
+          "props": {
+            "name": "aiVllm"
+          }
+        },
+        {
+          "name": "brand aiAnthropic",
+          "props": {
+            "name": "aiAnthropic"
+          }
+        },
+        {
+          "name": "brand aiClaude",
+          "props": {
+            "name": "aiClaude"
+          }
+        },
+        {
+          "name": "brand aiClaudeCode",
+          "props": {
+            "name": "aiClaudeCode"
+          }
+        },
+        {
+          "name": "brand aiGemini",
+          "props": {
+            "name": "aiGemini"
+          }
+        },
+        {
+          "name": "brand aiMistral",
+          "props": {
+            "name": "aiMistral"
+          }
+        },
+        {
+          "name": "brand aiDeepseek",
+          "props": {
+            "name": "aiDeepseek"
+          }
+        },
+        {
+          "name": "brand aiPerplexity",
+          "props": {
+            "name": "aiPerplexity"
+          }
+        },
+        {
+          "name": "brand aiOpenrouter",
+          "props": {
+            "name": "aiOpenrouter"
+          }
+        },
+        {
+          "name": "brand aiHuggingface",
+          "props": {
+            "name": "aiHuggingface"
+          }
+        },
+        {
+          "name": "brand aiCopilot",
+          "props": {
+            "name": "aiCopilot"
+          }
         }
       ]
     },
     {
       "type": "Button",
       "tier": "primitive",
-      "description": "A labelled action. Its label says what it does.",
+      "description": "A labelled action. Shared native-control reset centers the complete font line box and icon with symmetric block padding. Token minimum heights grow for natural content; labels ellipsize inline without clipping ascenders or descenders. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "props": {
         "label": {
           "kind": "message",
@@ -606,6 +684,423 @@
               "t": "gallery.action"
             },
             "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds primary s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds primary s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds primary s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds primary m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds primary m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds primary m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds primary l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds primary l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds primary l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "primary",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds secondary s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds secondary s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds secondary s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds secondary m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds secondary m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds secondary m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds secondary l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds secondary l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds secondary l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "secondary",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds subtle s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds subtle s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds subtle s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds subtle m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds subtle m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds subtle m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds subtle l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds subtle l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds subtle l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "subtle",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds danger s text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "s"
+          }
+        },
+        {
+          "name": "glyph bounds danger s start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds danger s end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "s",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds danger m text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "m"
+          }
+        },
+        {
+          "name": "glyph bounds danger m start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds danger m end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "m",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds danger l text",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "l"
+          }
+        },
+        {
+          "name": "glyph bounds danger l start",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "start"
+          }
+        },
+        {
+          "name": "glyph bounds danger l end",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "variant": "danger",
+            "size": "l",
+            "icon": "save",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "glyph bounds long label",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs.long"
+            },
+            "icon": "save"
           }
         },
         {
@@ -1613,6 +2108,42 @@
         }
       ],
       "fixtures": [
+        {
+          "name": "glyph bounds pill",
+          "props": {
+            "variant": "pill",
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "glyph bounds text",
+          "props": {
+            "variant": "text",
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "glyph bounds select",
+          "props": {
+            "variant": "select",
+            "label": {
+              "t": "gallery.glyphs"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
         {
           "name": "variant icon",
           "covers": [
@@ -3183,6 +3714,11 @@
           "default": false,
           "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
         },
+        "compactMultiline": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Two lines initially, growing to the token maximum; only the textarea scrolls (D-265)."
+        },
         "scrolls": {
           "kind": "boolean",
           "default": false,
@@ -3307,6 +3843,16 @@
           }
         },
         {
+          "name": "compact multiline",
+          "props": {
+            "label": {
+              "t": "rewrite.prompt"
+            },
+            "multiline": true,
+            "compactMultiline": true
+          }
+        },
+        {
           "name": "read only",
           "props": {
             "label": {
@@ -3379,6 +3925,14 @@
           "props": {
             "label": {
               "t": "account.unlock"
+            }
+          }
+        },
+        {
+          "name": "glyph bounds pill",
+          "props": {
+            "label": {
+              "t": "gallery.glyphs"
             }
           }
         }
@@ -4282,6 +4836,19 @@
           "kind": "message",
           "required": true
         },
+        "choiceGroup": {
+          "kind": "text",
+          "description": "Native radio group name. Identity is the choice target; slot actions remain siblings (D-267)."
+        },
+        "choiceValue": {
+          "kind": "text",
+          "description": "The radio's stable value."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Saved radio selection, never optimistic. Emphasizes the badge with selected badge tokens."
+        },
         "detail": {
           "kind": "message"
         },
@@ -4330,7 +4897,7 @@
         "busy": {
           "kind": "boolean",
           "default": false,
-          "description": "A pressable card's action is running."
+          "description": "An action is running. Radio choices remain mounted and focusable, aria-disabled suppresses activation without resetting scroll or native focus."
         },
         "disabled": {
           "kind": "boolean",
@@ -4349,7 +4916,12 @@
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "choose": {
+          "payload": {
+            "value": "text"
+          }
+        }
       },
       "slots": {
         "default": {
@@ -4357,7 +4929,9 @@
         }
       },
       "states": [
-        "rest"
+        "rest",
+        "selected",
+        "disabled"
       ],
       "tokens": "cmp.itemCard.*",
       "a11y": {
@@ -4365,6 +4939,62 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "selected radio with independent action",
+          "covers": [
+            "rest",
+            "selected"
+          ],
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "badge": {
+              "t": "ai.badge.writer"
+            },
+            "icon": "cloud",
+            "choiceGroup": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "choiceValue": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "selected": true
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "ai.change"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "pending radio",
+          "covers": [
+            "selected",
+            "disabled"
+          ],
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "choiceGroup": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "choiceValue": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "selected": true,
+            "busy": true
+          }
+        },
         {
           "name": "workspace",
           "props": {
@@ -5683,6 +6313,54 @@
           ]
         },
         {
+          "name": "gap related",
+          "props": {
+            "gap": "related"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap section",
+          "props": {
+            "gap": "section"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "gap xs",
           "props": {
             "gap": "xs"
@@ -5998,6 +6676,16 @@
           "group": "space",
           "default": "none"
         },
+        "related": {
+          "kind": "boolean",
+          "default": false,
+          "description": "One semantic group, using space.related and wrapping by default. Independent groups use space.section."
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "related",
+          "description": "Names the semantic group."
+        },
         "padding": {
           "kind": "token",
           "group": "space",
@@ -6047,9 +6735,85 @@
       },
       "fixtures": [
         {
+          "name": "related action and explanation",
+          "props": {
+            "related": true,
+            "label": {
+              "t": "ai.found.find"
+            }
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "ai.found.find"
+                }
+              }
+            },
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "ai.found.hint"
+                },
+                "role": "caption"
+              }
+            }
+          ]
+        },
+        {
           "name": "gap none",
           "props": {
             "gap": "none"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap related",
+          "props": {
+            "gap": "related"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap section",
+          "props": {
+            "gap": "section"
           },
           "children": [
             {
@@ -8572,10 +9336,11 @@
           "values": [
             "selection",
             "link",
-            "caret"
+            "caret",
+            "rewrite"
           ],
           "default": "selection",
-          "description": "The selection, a link, or the `/` the slash menu opened at."
+          "description": "The selection, a link, the slash menu caret, or Rewrite's retained selection fragments and viewport."
         },
         "placement": {
           "kind": "enum",
@@ -8611,9 +9376,19 @@
         "label": {
           "kind": "message",
           "requiredWhen": "landmark"
+        },
+        "returnAboveLabel": {
+          "kind": "message",
+          "description": "Return to the selection above the viewport (Rewrite)."
+        },
+        "returnBelowLabel": {
+          "kind": "message",
+          "description": "Return to the selection below the viewport (Rewrite)."
         }
       },
-      "events": {},
+      "events": {
+        "dismiss": {}
+      },
       "slots": {
         "default": {
           "accepts": "any",
@@ -8699,6 +9474,35 @@
           "name": "anchor caret, below, start",
           "props": {
             "anchor": "caret",
+            "placement": "below",
+            "align": "start"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "s",
+                "shape": "popover",
+                "elevation": "2"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "anchor rewrite, below, start",
+          "props": {
+            "anchor": "rewrite",
             "placement": "below",
             "align": "start"
           },
@@ -9820,6 +10624,11 @@
           }
         },
         "rewriteCancel": {},
+        "rewriteDeselect": {
+          "payload": {
+            "started": "number"
+          }
+        },
         "format": {
           "payload": {
             "toolbar": "boolean",

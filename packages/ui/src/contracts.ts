@@ -1,5 +1,6 @@
 /** Every component contract. Plain data with no React, so Node tools (ui:check) can read it. */
 import type { Contract } from "./contract.ts";
+export { AI_CONNECTION_ICONS, aiConnectionIcon } from "./ai-icons.ts";
 import { contract as SecureKeyField } from "./compounds/SecureKeyField/contract.ts";
 import { contract as Text } from "./primitives/Text/contract.ts";
 import { contract as Heading } from "./primitives/Heading/contract.ts";

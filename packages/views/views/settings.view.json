@@ -100,8 +100,9 @@
                 "cases": {
                   "ai": {
                     "type": "Stack",
+                    "id": "aiConnections",
                     "props": {
-                      "gap": "l"
+                      "gap": "section"
                     },
                     "children": [
                       {
@@ -122,40 +123,41 @@
                         }
                       },
                       {
-                        "type": "Stack",
-                        "props": { "gap": "xs", "align": "start" },
-                        "children": [
-                          { "type": "Button", "props": { "label": { "t": "ai.private.label" }, "toggle": true, "pressed": { "get": "vm.ai.keepPrivate" } }, "on": { "press": { "run": "ai.privacy" } } },
-                          { "type": "Text", "props": { "value": { "t": "ai.private.hint" }, "tone": "muted" } }
-                        ]
+                        "type": "LiveRegion",
+                        "props": {
+                          "message": { "get": "vm.ai.writerSaveText" }
+                        }
                       },
                       {
-                        "type": "MenuButton",
-                        "when": {
-                          "get": "vm.ai.hasWriter"
-                        },
-                        "props": {
-                          "label": {
-                            "t": "ai.writer.label"
+                        "type": "Stack",
+                        "id": "aiDiscovery",
+                        "props": { "gap": "related" },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": { "related": true, "label": { "t": "ai.found.find" } },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": { "label": { "t": "ai.found.find" }, "busy": { "get": "vm.ai.discovering" } },
+                                "on": { "press": { "run": "ai.discover" } }
+                              },
+                              { "type": "Text", "props": { "value": { "t": "ai.found.hint" }, "role": "caption", "tone": "muted" } }
+                            ]
                           },
-                          "variant": "select",
-                          "text": {
-                            "get": "vm.ai.writerName"
-                          },
-                          "sections": {
-                            "get": "vm.ai.writerMenu"
-                          }
-                        },
-                        "on": {
-                          "action": {
-                            "run": "ai.writer",
-                            "args": {
-                              "value": {
-                                "get": "event.id"
-                              }
+                          { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.ai.discoverStatus" }, ""] } }, "props": { "value": { "get": "vm.ai.discoverStatus" }, "role": "caption", "announce": true } },
+                          {
+                            "each": { "get": "vm.ai.found" }, "as": "f", "key": "f.id",
+                            "empty": { "type": "LiveRegion", "props": { "message": { "get": "vm.ai.discoverStatus" } } },
+                            "render": {
+                              "type": "ItemCard",
+                              "props": { "title": { "get": "f.name" }, "detail": { "get": "f.detail" }, "icon": "link" },
+                              "children": [
+                                { "type": "Button", "props": { "label": { "t": "ai.found.use" }, "size": "s" }, "on": { "press": { "run": "ai.useFound", "args": { "value": { "get": "f.id" } } } } }
+                              ]
                             }
                           }
-                        }
+                        ]
                       },
                       {
                         "each": {
@@ -175,8 +177,16 @@
                             "badge": {
                               "get": "c.badge"
                             },
-                            "icon": "link",
+                            "icon": { "get": "c.icon" },
+                            "choiceGroup": { "get": "vm.ai.choiceGroup" },
+                            "choiceValue": { "get": "c.id" },
+                            "selected": { "get": "c.writer" },
+                            "busy": { "get": "vm.ai.choosingWriter" },
+                            "label": { "get": "c.choiceLabel" },
                             "personal": "title"
+                          },
+                          "on": {
+                            "choose": { "run": "ai.writer", "args": { "value": { "get": "event.value" } } }
                           },
                           "children": [
                             {
@@ -217,6 +227,7 @@
                                         "label": {
                                           "t": "ai.test"
                                         },
+                                        "busy": { "get": "vm.ai.choosingWriter" },
                                         "size": "s",
                                         "disabled": {
                                           "get": "c.testing"
@@ -238,33 +249,11 @@
                                     },
                                     {
                                       "type": "Button",
-                                      "when": {
-                                        "get": "c.notWriter"
-                                      },
-                                      "props": {
-                                        "label": {
-                                          "t": "ai.useAsWriter"
-                                        },
-                                        "size": "s",
-                                        "variant": "subtle"
-                                      },
-                                      "on": {
-                                        "press": {
-                                          "run": "ai.writer",
-                                          "args": {
-                                            "value": {
-                                              "get": "c.id"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "Button",
                                       "props": {
                                         "label": {
                                           "t": "ai.change"
                                         },
+                                        "busy": { "get": "vm.ai.choosingWriter" },
                                         "size": "s",
                                         "variant": "subtle"
                                       },
@@ -285,6 +274,7 @@
                                         "label": {
                                           "t": "ai.remove"
                                         },
+                                        "busy": { "get": "vm.ai.choosingWriter" },
                                         "size": "s",
                                         "variant": "subtle"
                                       },
@@ -322,23 +312,6 @@
                           },
                           "role": "caption",
                           "tone": "muted"
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "when": {
-                          "get": "vm.ai.addVisible"
-                        },
-                        "props": {
-                          "label": {
-                            "t": "ai.add"
-                          },
-                          "variant": "primary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "ai.add"
-                          }
                         }
                       },
                       {
@@ -394,6 +367,7 @@
                               },
                               {
                                 "type": "Text",
+                                "when": { "expr": { "!=": [{ "get": "vm.ai.status" }, ""] } },
                                 "props": {
                                   "value": {
                                     "get": "vm.ai.providerNote"
@@ -732,114 +706,11 @@
                         }
                       },
                       {
-                        "type": "Divider"
-                      },
-                      {
-                        "type": "Heading",
-                        "props": {
-                          "level": "3",
-                          "value": {
-                            "t": "ai.found.title"
-                          }
-                        }
-                      },
-                      {
-                        "type": "Inline",
-                        "props": {
-                          "gap": "s"
-                        },
-                        "children": [
-                          {
-                            "type": "Button",
-                            "props": {
-                              "label": {
-                                "t": "ai.found.find"
-                              },
-                              "disabled": {
-                                "get": "vm.ai.discovering"
-                              },
-                              "disabledReason": {
-                                "t": "ai.found.looking"
-                              }
-                            },
-                            "on": {
-                              "press": {
-                                "run": "ai.discover"
-                              }
-                            }
-                          },
-                          {
-                            "type": "Spinner",
-                            "when": {
-                              "get": "vm.ai.discovering"
-                            },
-                            "props": {
-                              "label": {
-                                "t": "ai.found.looking"
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Text",
-                        "props": {
-                          "value": {
-                            "get": "vm.ai.discoverStatus"
-                          },
-                          "role": "caption",
-                          "announce": true
-                        }
-                      },
-                      {
-                        "each": {
-                          "get": "vm.ai.found"
-                        },
-                        "as": "f",
-                        "key": "f.id",
-                        "render": {
-                          "type": "ItemCard",
-                          "props": {
-                            "title": {
-                              "get": "f.name"
-                            },
-                            "detail": {
-                              "get": "f.detail"
-                            },
-                            "icon": "link"
-                          },
-                          "children": [
-                            {
-                              "type": "Button",
-                              "props": {
-                                "label": {
-                                  "t": "ai.found.use"
-                                },
-                                "size": "s"
-                              },
-                              "on": {
-                                "press": {
-                                  "run": "ai.useFound",
-                                  "args": {
-                                    "value": {
-                                      "get": "f.id"
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        },
-                        "empty": {
-                          "type": "Text",
-                          "props": {
-                            "value": {
-                              "t": "ai.found.hint"
-                            },
-                            "role": "caption",
-                            "tone": "muted"
-                          }
-                        }
+                        "type": "Button",
+                        "id": "aiAddConnection",
+                        "when": { "get": "vm.ai.addVisible" },
+                        "props": { "label": { "t": "ai.add" }, "variant": "primary" },
+                        "on": { "press": { "run": "ai.add" } }
                       }
                     ]
                   },

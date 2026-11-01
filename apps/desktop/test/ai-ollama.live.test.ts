@@ -29,7 +29,6 @@ const model = local[0]?.name;
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(t), decrypt: (b: Buffer) => b.toString() };
 /** Every note here is public: the private-note check is tested on its own. */
-const notPrivate = async () => false;
 const folder = () => {
   const base = process.env.FOCUS_NOTES_LIVE_DIR ?? tmpdir();
   mkdirSync(base, { recursive: true });
@@ -61,13 +60,11 @@ describe.skipIf(!model)("live: the real Ollama on this computer", () => {
     log(`Test passed in ${Date.now() - t} ms (includes loading the model if it wasn't)`);
   }, 180_000);
 
-  it("streams a rewrite in pieces, after consent", async () => {
-    await expect(ai.stream({ text: "x", instruction: "y" }, new AbortController().signal, notPrivate).next()).rejects.toThrow("consent-required");
-    await ai.consent(id);
+  it("streams a rewrite in pieces without first-send consent", async () => {
     const t = Date.now();
     let first = 0;
     const parts: string[] = [];
-    for await (const p of ai.stream({ text: "this sentence have a error in it and it dont read good.", instruction: "Fix the grammar" }, new AbortController().signal, notPrivate)) {
+    for await (const p of ai.stream({ text: "this sentence have a error in it and it dont read good.", instruction: "Fix the grammar" }, new AbortController().signal)) {
       first ||= Date.now() - t;
       parts.push(p);
     }
@@ -80,7 +77,7 @@ describe.skipIf(!model)("live: the real Ollama on this computer", () => {
 
   it("Stop mid-stream ends it at once", async () => {
     const stop = new AbortController();
-    const g = ai.stream({ text: "Cats.", instruction: "Write five long paragraphs about this, at least 600 words." }, stop.signal, notPrivate);
+    const g = ai.stream({ text: "Cats.", instruction: "Write five long paragraphs about this, at least 600 words." }, stop.signal);
     expect((await g.next()).done).toBe(false);
     const t = Date.now();
     stop.abort();

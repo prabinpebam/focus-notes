@@ -1,7 +1,7 @@
 # Rewrite providers
 
 > [!NOTE]
-> **TL;DR.** Rewrite and Settings → AI talk to 26 kinds of AI service, from the [ai-integration kit](https://prabinpebam.github.io/loushing/items/ai-integration/)'s text catalogue at 1613a55, in six request shapes: OpenAI-compatible Chat Completions, Anthropic Messages, Gemini generateContent, Azure OpenAI deployments, Ollama chat and Cohere v2 chat (D-257). Every request is made by the desktop main process with the platform's `fetch`; keys are sealed with Electron `safeStorage` and never reach the window. Addresses are https, or http only to this computer; redirects are refused. Focus Notes is a client only: it never installs, downloads, launches, hosts or runs a model (D-233). Built on 31 October; a private-notes switch and first-send consent are planned.
+> **TL;DR.** Rewrite supports 26 API/server kinds and **GitHub Copilot (on this computer)** through its official installed-CLI SDK, labelled **Cloud** (D-264). HTTP requests, CLI stdio and sealed keys stay in main. Every prompt shows the chosen integration/model and This computer/Cloud, with a remembered picker (D-262). The person decides what to send, including private notes (D-261). First-send disclaimer/consent is removed in WP-AI.14 (D-266); key/address isolation, URL/TLS, redirect, error and timeout rules stay. Copilot reuses only its runtime-owned login with isolated configuration and no tools. Focus Notes never extracts credentials or hosts a model.
 
 Serves UC-RWR-05, UC-RWR-08 and UC-RWR-09 (AIS-01 to AIS-15, RWR-70, RWR-83). The settings people see are in [Settings → AI](../experience/ai-settings.md); how the answer reaches the note is in [Rewrite engine](rewrite-engine.md).
 
@@ -24,6 +24,7 @@ That the service they chose, and only it, sees the words they selected; that a k
 | `jan` | Jan | Local | OpenAI | `http://127.0.0.1:1337/v1`, editable | optional | `/models` |
 | `docker-model-runner` | Docker Model Runner | Local | OpenAI | `http://127.0.0.1:12434/engines/v1`, editable | none | `/models` |
 | `openai` | OpenAI | Cloud | OpenAI | `https://api.openai.com/v1` | required | `/models` |
+| `copilot-cli` | GitHub Copilot (on this computer) | Cloud | Official CLI SDK / stdio | GitHub Copilot service, through installed CLI | none: runtime-owned login | SDK `listModels`, explicit request; `auto` uses CLI default |
 | `anthropic` | Anthropic Claude | Cloud | Anthropic | `https://api.anthropic.com` | required | `/v1/models` |
 | `gemini` | Google Gemini | Cloud | Gemini | `https://generativelanguage.googleapis.com` | required | `/v1beta/models` (generateContent only) |
 | `azure-openai` | Azure OpenAI | Cloud | Azure | your resource, editable; deployment and API version | required | none: the deployment is the model |
@@ -42,7 +43,7 @@ That the service they chose, and only it, sees the words they selected; that a k
 | `huggingface` | Hugging Face | Gateway | OpenAI | `https://router.huggingface.co/v1` | required | `/models` |
 | `compatible` | Other OpenAI-compatible service | Gateway | OpenAI | yours | optional | `/models` |
 
-**Not offered** (from `handoffs/air-integration-gaps.md`, 31 October): Amazon Bedrock (Converse with AWS request signing and the AWS identity chain), Vertex AI (Google sign-in or application default credentials), Microsoft Foundry Models with Entra sign-in (Azure OpenAI with a key is covered), Replicate and fal (asynchronous prediction queues, not a text answer), MLX LM (an in-process library on macOS, not a server). The kit lists no CLI or MCP bridges (Copilot, Claude Code, Codex); one would need its own entry, a spawned process with no shell, and its own consent. Speech, image and video services don't apply: Rewrite is text only.
+**Not offered:** Amazon Bedrock (AWS signing), Vertex AI (Google sign-in), Foundry with Entra, Replicate/fal (job queues) and MLX LM (in-process model hosting). D-264 adds only the proven Copilot CLI: Claude subscription reuse is dropped without Anthropic approval, Gemini OAuth reuse is held pending an approved route, Codex is deferred until a complete no-actions adapter is proven, and Aider adds no new supported login route. No blanket CLI/MCP bridge; speech, image and video are out of scope.
 
 ## Request shapes
 
@@ -78,13 +79,30 @@ A service that ignores streaming and answers with one JSON body is read with the
 
 - each connection: `id`, service, name, address, model, deployment, API version, account ID, the key sealed with `safeStorage.encryptString`, the last Test (`ok`, `at`), `modelLocal` (an Ollama model main saw listed as local), and `consent`: what the person agreed to send selected text to (the service, address, model and a hash of the sealed key, `consentScope`);
 - `writer`: the Writer's ID;
-- `keepPrivate`: *Don't send private notes*, true unless switched off.
+- Legacy `keepPrivate` is ignored on read and stripped on the next ordinary settings write (D-261). D-266 will make legacy `consent` non-authoritative; the other connection fields and sealed keys stay intact.
 
 The window sends a key only inside `ai:save`, from SecureKeyField's `save` event; core deletes it from the command's arguments as soon as it's read. Main seals it at once and returns the connections' views, which say only `hasKey`. A key is never carried to another service's connection, nor to another address (D-259): changing a connection's address or account drops its saved key and last Test, so a service that needs a key refuses to save until one is typed (`key-new-address`: "Enter the key again for the new address."), and the form says so as soon as the address changes. *Find models* for a draft uses the saved key only when the draft's address is the saved one. If `safeStorage` isn't available, saving a key fails with `secure-storage-unavailable`. Up to 30 connections. The first build's single service (one OpenAI-compatible address, model and key) is read as the connection `first`, the Writer if it was (AIS-12).
 
 ## Find on this computer
 
-`discover` asks each local kind that has a usual port (all but LocalAI) for its model list, all at once, 800 ms each, with no key. Only a server that answers in its own list shape counts (Ollama's `models`, the others' `data`), so a web page or other JSON on the port isn't listed. A server that answers 401 or 403 is listed with no models: it's there, it wants a token. Nothing leaves the computer: every address is loopback (AIS-07).
+`discover` asks each local kind that has a usual port (all but LocalAI) for its models, within the existing 800 ms / 1.5 s bounds. In parallel it checks the supported Copilot CLI, bounded to 5 s including version and runtime authentication. It never sends a prompt or lists cloud models implicitly. Loopback probes stay loopback; the CLI owns any authentication validation. Results distinguish signed-in, signed-out, unsupported-version and unknown. Only signed-in Copilot is persisted directly, once, and selected only if no Writer exists; consent is not granted by discovery. Server setup remains unchanged (AIS-07, D-264).
+
+## GitHub Copilot on this computer
+
+| Boundary | Contract |
+| --- | --- |
+| Discovery | Absolute PATH directories only, no current-directory fallback or VS Code bootstrap shim; resolve native executable, check exact supported version without auto-update. No credential files, recursive home scans or token inheritance. |
+| Runtime | Official SDK 1.0.28 with explicit installed CLI 1.0.105 via stdio. Empty mode, fresh app-owned cwd and state, CLI built-in MCP and account history sync disabled. No bundled/default runtime or model process. |
+| No actions | `availableTools: []`, `tools: []`, `mcpServers: {}`, `enableConfigDiscovery: false`, infinite sessions off, replacement system instruction. Empty defaults disable file hooks, plugins, skills, memory, Git context and session store. The initialized runtime must report zero tools before a prompt; every permission/pre-tool request is denied and stops the operation. |
+| Login | `getAuthStatus()` yields readiness, not identity or tokens. The runtime obtains its own available login. Isolated configuration and `gh-cli` login reuse were proven together; other unavailable logins are reported signed-out/unknown, never copied or accessed directly. |
+| Send | Input validation and first-send consent happen before the CLI starts; private-note judgement follows D-261. Focus Notes sends the prompt over RPC, never process arguments or a shell, and does not write prompt files or transcript logs. Any isolated temporary runtime state is removed after exit. Text cap 32 KiB, prompt cap 4,000 characters, answer cap 64 KiB. |
+| Answer | Only `assistant.message_delta.data.deltaContent`; full final message only if its message ID had no deltas, once. Require a final answer and successful idle event plus nonblank text. Ignore reasoning/usage. |
+| Stop and error | SDK abort, then terminate only the owned runtime and remove its generated state after exit. First answer 30 s, idle 30 s, total 5 min, including startup. Missing CLI, unsupported version, not signed in and quota are distinct reason codes, never raw stderr. No account/model/provider fallback. |
+| Proof | 1 November: runtime offered zero tools, three dummy-text deltas, no cwd files, existing runtime-owned `gh-cli` login in empty mode, 5,395 ms including startup, and a second dummy request's abort acknowledged. This is a one-shot observation, not a latency promise. |
+
+Protocol tests: `apps/desktop/test/ai-copilot-contract.test.ts` uses the real SDK against an app-owned stdio fake; `ai-copilot.live.test.ts` skips unless `FOCUS_NOTES_LIVE_AI=1`. Existing HTTP contracts remain separate and never probe the owner's login.
+
+[Official local-CLI SDK guide](https://github.com/github/copilot-sdk/blob/main/docs/setup/local-cli.md) and [authentication](https://github.com/github/copilot-sdk/blob/main/docs/auth/authenticate.md), checked 1 November 2026. Provider-specific drops and sources: [D-264](../plan/decisions.md).
 
 ## Test connection
 
@@ -92,14 +110,18 @@ The window sends a key only inside `ai:save`, from SecureKeyField's `save` event
 
 ## IPC
 
-The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `privacy(keepPrivate)`, `rewriteStart(id, { text, instruction, path })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. Main's handlers are `ai:settings`, `ai:save`, `ai:remove`, `ai:writer`, `ai:test`, `ai:discover`, `ai:models`, `ai:consent`, `ai:privacy`, `ai:rewriteStart`, `ai:rewriteCancel`; events go out on `ai:rewriteEvent` as `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }`, only to the window that started the rewrite. An invoke that fails carries only a reason code (with ` retry-after={s}` for a rate limit). The browser app has no `ai` bridge, so the commands are disabled there (RWR-71).
+The preload `PlatformBridge.ai` exposes `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `rewriteStart(id, { text, instruction, path })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. There is no privacy-setting method or handler. Settings and the prompt picker both use `ai:writer`, serially persisting the selected connection in device-local `ai.json`. Events remain `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }` on `ai:rewriteEvent`, only to the originating window. Failures carry reason codes, not service text. The browser app still has no AI bridge (RWR-71).
 
 ## Consent and private notes
 
-Built (AIS-13, AIS-14, D-259), in main, core, the Rewrite dialog's `consent` and `private` cases and the Settings switch; the `air-safeguards` journey runs both in the app:
+D-261/D-262's user judgement and disclosure and D-266's consent removal are built. The updated `ai-contract`, `ai-app`, Copilot contract and `air-safeguards` tests cover direct Generate without saved consent:
 
-- **Don't send private notes** (AIS-13): on by default. Core shows the dialog's private case when the note is under the Private root (shared notes too) or is a `private:` note, offering *Change in Settings* instead of *Generate*. That only picks the dialog's step: `ai:rewriteStart` carries the note's path, and main decides for itself (`isPrivateNote`, D-259) that a note under the workspace's `private/` folder, by the path as given or its real path (so a link into `private/` counts), is private, and refuses it (`private-note`). With a private folder, a missing or relative path counts as private.
-- **First-send confirmation** (AIS-14): the dialog names the service, its address and On this computer or Cloud, and *Send* records consent (`ai:consent`) before the rewrite starts. Main refuses to stream without consent that matches the connection's current service, address, model and key (`consent-required`), so a change of any of them asks again.
+- **User judgement** (AIS-13): no private-note setting, renderer case or main path gate. Every prompt names the selected integration and model, with a locality badge. The person decides whether to send a private or shared selection; Cancel sends nothing. Legacy `keepPrivate` keys are dropped on read and the next write, never rewritten in the owner's real profile by validation.
+- **First-send consent removed** (AIS-14, D-266): no first-time disclaimer/consent text, extra Send confirmation or consent-required main/core/IPC gate. The preload, bridge and main IPC `consent(id)` path is removed. Generate calls the selected, saved Writer directly on first or later use. Active icon, service, model and locality remain visible. Old consent fields and the internal legacy storage helper remain compatible but neither authorize traffic nor block sends; Generate does not rewrite connection settings. Key/address isolation, URL/redirect rules, request limits, cancellation and selected-text-only requests are unchanged. Updated tests use connections with absent/outdated consent and assert direct requests to the visible integration, never a fallback.
+
+### Model and endpoint locality
+
+`aiRunsInCloud` in the shared core provider catalogue is used by Settings, the prompt and main's connection/model-list views. Ollama names ending in `:cloud` or `-cloud`, remote-model metadata or a host at `ollama.com` are Cloud. Otherwise, loopback or explicit private-LAN hosts are This computer; remote hosts are Cloud. Other editable services, including OpenAI-compatible endpoints, follow the host rather than their catalogue group. A local typed model needs no discovery. A LAN connection still obeys the existing https requirement; plain HTTP remains loopback-only. This is a configured-destination disclosure, not evidence that a service never forwards requests.
 
 ## Security review
 
@@ -109,7 +131,9 @@ SEC-09, WP-AI.9: the `ai:*` handlers' input checks and sender, address and redir
 
 - **D-257:** every text service kind in the kit; supersedes D-236 and D-249's single OpenAI-compatible contract, and D-242's owner gate.
 - **D-233:** an integration client only; kept.
-- **D-259:** consent per connection and *Don't send private notes*, enforced in main from the note's path; a key stays with its address; where an Ollama model runs; builds D-238 (AIS-05, AIS-08, AIS-13, AIS-14).
+- **D-259:** consent and key/address isolation remain; the private-note gate and unknown-model cloud assumption are superseded by D-261 and D-262.
+- **D-261:** user judgement with explicit integration/model disclosure, not private-note blocking.
+- **D-262:** remembered prompt picker and per-model/per-host locality.
 - **D-260:** the three request clocks, capped whole answers, one reason code per failure, thinking models, and the 26 built kinds only.
 - **D-238:** consent names the destination; built as D-259.
 - **D-239:** cost caps; superseded by D-256's limits (RWR-82). There's no daily or money cap: the service's own billing applies.

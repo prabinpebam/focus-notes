@@ -52,6 +52,16 @@
       "$type": "dimension",
       "$value": "{ref.size.20}"
     },
+    "uiHeading": {
+      "$type": "dimension",
+      "$value": "{ref.size.24}",
+      "$description": "Level-2 interface headings above section titles (D-258)."
+    },
+    "uiHeadingLarge": {
+      "$type": "dimension",
+      "$value": "{ref.size.28}",
+      "$description": "Level-1 interface headings above level-2 headings (D-258)."
+    },
     "uiLead": {
       "$type": "dimension",
       "$value": "{ref.size.18}",
@@ -185,6 +195,8 @@
   },
   "space": {
     "$type": "dimension",
+    "related": { "$value": "{ref.size.8}", "$description": "Within one semantic group; smaller than section separation." },
+    "section": { "$value": "{ref.size.16}", "$description": "Between independent groups; larger than related content spacing." },
     "none": {
       "$value": "{ref.size.0}"
     },

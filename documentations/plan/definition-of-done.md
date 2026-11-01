@@ -5,6 +5,58 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The **OWNER-TESTABLE Rewrite UX stage** is the owner trying Rewrite and Settings → AI in the review build, on their own notes with their own AI service (D-255, D-256, D-257): open as of 31 October, with the built flow in front of the owner. The **MAI** rows add CP-RWR-01 to the production bar.
 
+## Settings AI single-list stage
+
+**17:29 feedback revision, not approval:** shared centering/opaque hover, related discovery grouping above the list, prominent Default, no success-prose duplication, stable focused row/editor/scroll during default save and Add last are required. Static source checks and gallery anatomy accompany the implementation. This revision is checked only by build/typecheck/ui:check and the ordinary synthetic review app; previous suites do not prove it, and docs remain unchecked.
+
+**D-267 · WP-AI.15 / MAI · integrated, locally verified; owner acceptance pending.** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → AIS-16. Exact published Settings implementation c4335741 is integrated into own-candidate over 86631980, preserving the CLI companion and inline prompt. Combined checks and the five related journeys pass; see [candidate evidence](rewrite-acceptance.md#settings-list-combined-candidate-1-november). The owner-review refresh follows these checks; production acceptance is not implied.
+
+| Row | Done when | Evidence required |
+| --- | --- | --- |
+| UX-LIST.1 | Empty, one and multiple connections render one list; no Writer menu, Use as Writer or local section; one Find on this PC button and exact scan explanation. | Settings journey and light/dark captures at default and narrow sizes |
+| UX-LIST.2 | Keyboard/assistive technology expose one saved Default with checked semantics; Space selects and arrows navigate; actions do not also select, no nested interactive controls. | Role/keyboard journey assertions and UI behaviour units |
+| UX-LIST.3 | Settings choice is next Rewrite's Writer; choosing Rewrite integration changes the same ID seen on Settings reopen. No independent default store. | Core Writer tests and Settings/Rewrite round-trip journey |
+| UX-LIST.4 | Pending and failed saves retain the previous choice and show named feedback; deleting the default clears it; empty never invents a connection. | Controlled bridge failure/pending/deletion units and journey |
+| UX-LIST.5 | Icons, model/locality, key and Test state remain honest; unsupported/unknown discovery is not ready; no note text sent by choosing or finding. | Discovery fake tests; light/dark/narrow captures; bounded call assertions |
+| UX-LIST.6 | Find and the scan explanation are one related responsive row above the list; Add is last; Default badge is emphasized; no redundant signed-in/default/local-empty prose. | Static source/view rules and ordinary review UI; owner verdict pending, suites deferred |
+| UX-LIST.7 | Default selection changes existing row state/paint only, preserving native radio focus, panel/editor identity, scroll and input; errors remain explicit. | Ordinary synthetic UI with bounded read-only node-identity diagnosis; no reload/remount or measurement claim |
+
+### Try it
+
+Open Settings → AI with two fake connections. Select the second row, see **Default**, open Rewrite and confirm the same integration. Choose the first integration there, reopen Settings and confirm its badge. Use arrow keys and Space; Test, Change and Remove must not also select. Delay and reject the settings write: the old Default remains, with **Remembering your choice…** or an explicit error. Remove the default, then inspect empty, one-row and unknown discovery states. Repeat in light/dark and at a narrow window.
+
+### Spec evidence, 1 November 12:10
+
+| Check | Result |
+| --- | --- |
+| `pnpm check` in own-ai-default-list | Passed: chain and plan include AIS-16 exactly once in WP-AI.15 / MAI; 393 view documents and 71 contracts unchanged. Kit-copy checks skipped because isolated worktree submodules are not checked out. |
+| `node E:\Projects\side-projects\focus-notes\slate\scripts\runtime-host.mjs check --repo . --host documentations` in own-ai-default-list | Passed; canonical pinned runtime invoked read-only from the checked-out kit. |
+| `git diff --check` | Passed. |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\own-list-render.mjs` | Passed 26 changed reader-page/theme cases in headless Edge on a private ephemeral port, never 8787. One H1 per page, theme and SVG fit assertions; new target headings rendered. Settings light/dark captures inspected, readable. Browser/server closed in finally. |
+
+**Historical spec-only boundary (145eb45c): runtime evidence was not yet available.** UX-LIST.1 to UX-LIST.5 were open at that boundary. Initial check found missing TypeScript; approved-feed offline frozen-lockfile install restored it without downloads or manifest changes. The next check needed generated tokens; `pnpm tokens` fixed that prerequisite, then the complete check passed. Build was queued because live POP owned overlapping core AI state, AI unit tests, message catalogue and generated schemas. No runtime, test, message or schema file was edited by that spec. The implementation and combined evidence below supersede that historical queue state.
+
+### Settings implementation evidence, 1 November
+
+| Row | Checked evidence |
+| --- | --- |
+| UX-LIST.1 | `AIS-16: Settings Default is one list shared with Rewrite` passed: 0, 1, 2 and 30 rows; absent Writer menu/Use as Writer/local heading; one Find button and exact scan line. Captures include light/dark two-row views at normal and 480-wide viewport sizes. |
+| UX-LIST.2 | ItemCard units passed for 30 native radios, one checked value, action outside label and pending disabled selection. Journey passed ArrowDown, Space, direct selection and independent Change/Remove; explicit native radio names and checked state asserted. |
+| UX-LIST.3 | Core units and journey passed Settings → Rewrite → Settings with the same saved Writer ID, preserving Rewrite draft; no second preference or store. |
+| UX-LIST.4 | Core units passed delayed/rejected writes retaining the previous default and explicit error/retry; journey deletion clears the Writer and all checked rows. The first journey exposed the old implicit next-connection fallback; main removal now clears it, with main-service tests also proving an edit does not invent a replacement. |
+| UX-LIST.5 | Existing API/Copilot contract fake tests passed, including discovery outcome honesty; unchanged icon/locality/key/Test information checked in captures. Core round-trip records only Writer calls, no rewrite requests. |
+
+**Commands and results in the isolated worktree:**
+
+- `pnpm exec vitest run packages/core/test/ai-app.test.ts packages/ui/test/item-card-choice.test.tsx apps/desktop/test/ai-rewrite.test.ts apps/desktop/test/ai-contract.test.ts apps/desktop/test/ai-copilot-contract.test.ts`: **158 passed**.
+- `pnpm --filter @focus-notes/core run typecheck`, `pnpm --filter @focus-notes/ui run typecheck`, `pnpm --filter @focus-notes/desktop run typecheck`: **passed**.
+- `pnpm --filter @focus-notes/desktop run build`: **passed**, existing renderer chunk-size warning.
+- `pnpm --filter @focus-notes/desktop exec playwright test e2e/air-safeguards.spec.ts e2e/air-rewrite.spec.ts --workers=1 -g 'AIS-16: Settings Default|D-265, D-266: inline|AIS-13, AIS-14:|AIS-04, AIS-13:|AI Rewrite: streams'` with `FOCUS_NOTES_E2E=1`: **5 passed**, including four coupled POP/stream/direct-Generate/picker journeys.
+- `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`, `node tools/component-inventory.mjs`, `pnpm check`: **passed**, generated schemas/catalogue in this implementation commit; 396 documents, 71 contracts. Kit checks skipped because worktree submodules are unchecked.
+- Canonical Slate runtime check and `git diff --check`: **passed**.
+
+Captures are in `focus-notes-work\scratch\own-list-ui`; normal/narrow Settings light/dark images inspected. Native radio plus badge/border make selection visible without colour alone; actions remain sibling controls and wrap in narrow views. Test apps quit in finally; PID-scoped close-test-apps WhatIf then actual reported 0 leftovers. That isolated implementation did not change the owner app/settings/profile, notes/private content, Preview or 8787. No real inference, full suite, CI wait or screen-level benchmark. Combined integration now passes 401 related units and all five journeys, with fresh captures in `focus-notes-work\scratch\own-int2-ui`; [candidate evidence](rewrite-acceptance.md#settings-list-combined-candidate-1-november) records the commands. Owner acceptance and full assistive-technology/forced-colours audit remain pending.
+
 ## OWNER-TESTABLE Rewrite UX stage
 
 **Mode:** show me the UX sooner · work with me (D-255). **Status: OPEN, in the owner's hands.** The review build of `fix-ai-rewrite-simple` (452e44ba plus the dialog scroll fix, 59fb5449) is open on the owner's review profile with their Ollama Writer. The 30 October version of this stage (Ctrl+K, three variations, Accept and Discard, whole-file New file, restart recovery of variations) was dropped with D-256.
@@ -34,7 +86,27 @@ Every row traces to CP-RWR-01.
 
 ### What's left after the owner accepts
 
-The owner's next changes (live Markdown while streaming, platform key names: WP-AI.12), then WP-AI.13 (private notes, first-send consent, leaving mid-rewrite) and WP-AI.9's evidence below, then the desktop gate before `main`.
+The owner's next changes (live Markdown while streaming, platform key names: WP-AI.12), WP-AI.13 (user judgement and leaving mid-rewrite), the inline prompt below (WP-AI.14), and WP-AI.9's evidence, then the desktop gate before `main`.
+
+### Inline prompt popover definition of done
+
+**Delivers:** UC-RWR-10 and UC-RWR-11, with UC-RWR-01 and UC-RWR-09 under CP-RWR-01. **Status: built and locally verifying, 1 November; candidate integration and owner acceptance pending.** WP-AI.14 belongs to MAI (D-265, D-266). Mode: show me the UX sooner; fast checks and one targeted rewrite journey, not the full suite or a CI wait before the owner sees it.
+
+| Row | Trace / done when | Local implementation evidence | Try it |
+| --- | --- | --- | --- |
+| UX-POP.1 | UC-RWR-01, UC-RWR-10; RWR-87: all entry points open the same inline non-modal prompt, with no passage preview, backdrop, document scroll lock or full-screen conversion. Selection remains marked while prompt controls take focus. | PASS: `ui:check`; D-265 journey; reviewed light/dark captures at normal and 480 × 360 sizes | Select a paragraph, open Rewrite, type a prompt and scroll the note; selected words remain visible in the document, not copied into the popover. |
+| UX-POP.2 | UC-RWR-10; RWR-87/88: exactly two initial textarea lines, content growth/shrink up to the token/viewport limit, only textarea overflow; one x and retained side/fragment during scrolling, no panel-size reflow loop. | 1 November 15:36 revision: build/types/ui:check only before UX/UI acceptance; implementation evidence now, new runtime checks deferred | Type, paste several lines, then erase. Scroll slowly in both directions: no horizontal jitter, no dialog scrollbar. |
+| UX-POP.3 | UC-RWR-10; RWR-88: selection/dialog leaving either edge morphs into one directional return button; return scrolls selection into view and restores the same prompt/focus, reversible with reduced motion. | 1 November 15:36 revision: build/types/ui:check and ordinary review UI only; owner UX/UI verdict pending, prior offscreen tests do not prove this revision | Write a prompt; scroll beyond each edge, use Return to selection, then repeat by scrolling back. Try reduced motion; draft never changes. |
+| UX-POP.4 | UC-RWR-11; RWR-89: deselect with zero prompt characters dismisses automatically with no warning, request or write; moving focus among prompt controls is not deselection. | PASS: `ai-app.test.ts` draft units; D-265 empty-prompt and control-focus journey branches | Open Rewrite without typing; click elsewhere in the note. It closes immediately. Open again and focus Prompt or the integration picker; it stays open. |
+| UX-POP.5 | UC-RWR-11; RWR-90: deselect with written, whitespace or preset text opens exactly one loss confirmation. Keep editing/Escape restores the original range, exact draft and prompt focus; Discard prompt accepts deselection and clears the draft. | PASS: core draft units, real-editor observer regression, repeated Escape/Keep editing/Discard journey; confirmation light/dark captures and keyboard checks | Type “Make warmer”, click elsewhere: read the loss warning. Choose Keep editing, then try Escape on the warning. Deselect again and Discard prompt; nothing sends or writes. Repeat with a preset and whitespace. |
+| UX-POP.6 | UC-RWR-09; AIS-14: no first-send disclaimer, consent or extra Send step/gate; icon, service, model, This computer/Cloud and remembered picker remain. Data-safety and stale-capture protections are unchanged. | PASS: core/provider units with absent/stale consent and stale-note regression; direct first-send fake-service safeguards journeys; reviewed captures | On a disposable connection with no saved consent, open Rewrite: just the active integration, prompt, presets and actions. Generate sends once directly to that integration. Cancel sends nothing. |
+| UX-POP.7 | RWR-87/88, D-265: shared preset text/icon centering and symmetric padding; Return hover is opaque and highlighted, with the same draft restored at first/middle/last document boundaries. | Static native-control/composited-paint invariants and gallery fixture source; ordinary synthetic UI before delivery. No suite/capture/Slate validation before approval. | Hover both return directions, restore the draft on the first press, then Cancel; inspect preset labels with and without icons. |
+
+**Documentation evidence (1 November):** `pnpm check` passed (chain, plan, licenses, generated files and UI contracts); the pinned Slate runtime check passed. All 17 affected reader pages, including the regenerated component and view inventories, rendered with one H1 in headless Edge in light and dark (34 cases), figures stayed within the content column, and the new DoD/design anchors resolved. Historical link and anchor-parser observations were recorded separately, not repaired in this slice. This is documentation evidence; implementation proof is below.
+
+**Local proof (1 November):** UX-POP.1: `ui:check` passes for 394 documents / 71 components; the D-265 actual-app journey opens a named non-modal region and reviews normal/small light/dark captures. UX-POP.2/3: `selection-placement.test.ts` covers fragment visibility, bounding-box gaps and full clamping; that journey scrolls entirely offscreen and back without losing the exact draft. UX-POP.4/5: `ai-app.test.ts` covers empty, whitespace and preset drafts; the journey covers empty dismissal, repeated same-caret deselection after both Escape and Keep editing, prompt focus and Discard without sending or writing. `format.test.ts` holds the native-selection observer regression. UX-POP.6: absent/stale consent and changed captures are covered by core/provider units; all three `air-safeguards` journeys pass, including direct first Generate, private disposable selection/Cancel/undo and the remembered picker. The affected aggregate is 206 passed / five opt-in live tests skipped.
+
+**Against the promise:** these six rows have local implementation proof, not owner acceptance or a full MAI gate. The extra stream journey also passes, including external overwrite and switching notes. Its initial panel failure was caused by the new listener effect accessing an unmounted Tiptap view during note replacement; obtaining the owning document from the mounted column fixes that lifecycle access without changing saving or conflict handling. The [design](../design/rewrite-with-ai.md#selection-anchoring-and-dismissal) defines the selection and focus rules; the [acceptance matrix](rewrite-acceptance.md) records the delivery limit. The owner's current candidate remains `52bf0dfe` until accepted integration.
 
 ## MAI rewrite definition of done
 
@@ -44,11 +116,11 @@ The owner's next changes (live Markdown while streaming, platform key names: WP-
 
 | Row | Done when | Evidence |
 | --- | --- | --- |
-| MAI.1 | UC-RWR-01: every entry opens the dialog on the selection, with the key named for the platform; no selection explains why; presets never send. | Journey (QLT-08); `text-menu.test.ts`, `keymap-layers.test.ts` |
+| MAI.1 | UC-RWR-01: every entry opens the inline prompt on the selection, with the key named for the platform; no selection explains why; presets never send. UC-RWR-10 and UC-RWR-11 meet UX-POP.1 to UX-POP.5. | Journey (QLT-08); `text-menu.test.ts`, `keymap-layers.test.ts`; WP-AI.14 evidence |
 | MAI.2 | UC-RWR-02: the answer streams in place, formatted, with the note read-only; only the selection changes; only the prompt and selection are sent. | `rewrite-stream.test.ts`, `ai-rewrite.test.ts`; journey |
 | MAI.3 | UC-RWR-07: one undo step; <kbd>Esc</kbd>, Stop, every error and switching notes restore the exact original and stop the request. | `rewrite-stream.test.ts`; journey with a failing fake |
 | MAI.4 | UC-RWR-05, UC-RWR-08: every service kind's request shape, key sealing, address rules, discovery and Test behave as specified. | `ai-rewrite.test.ts`; security review (SEC-09) |
-| MAI.5 | UC-RWR-09: private notes aren't sent while the switch is on; the first send to a connection is confirmed. | Unit and journey tests (WP-AI.13) |
+| MAI.5 | UC-RWR-05, UC-RWR-09: every prompt shows the integration, model and locality; choosing another connection persists for the next rewrite; user judgement replaces the private-page guard and first-send disclaimer/consent (UX-POP.6). | Unit and journey tests, one/two-connection light/dark captures (WP-AI.11, WP-AI.13, WP-AI.14; D-261, D-262, D-266) |
 | MAI.6 | UC-RWR-06: the rainbow is at least 4.5:1 in every frame in light and dark, never hides the focus band, and reduced motion and forced colours show ordinary text. | Look in the gallery; contrast check |
 | MAI.7 | Every row of the [acceptance matrix](rewrite-acceptance.md) has evidence; the [wait rows](../architecture/perceived-performance.md#rewrite-waits) are measured (open and Stop within 100 ms). | Acceptance matrix; `fn:rewrite.*` |
 | MAI.8 | GATE-MAI: the owner accepts the feature; reviews approve; Windows app CI is green; Help matches what ships. | WP-AI.9 |

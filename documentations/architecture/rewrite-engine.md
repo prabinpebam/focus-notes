@@ -15,6 +15,7 @@ The words they selected change, and nothing else does. If they stop it or it fai
 | --- | --- | --- | --- |
 | Open | `rewrite.open` (Mod+Shift+R, the text menu, the Edit menu) asks the editor for the selection | `rewrite.capture`: the selected text (`textBetween` with blank lines between blocks), with the document and range kept; empty if nothing is selected or the note is read-only | — |
 | Captured | `rewrite.captured`: no text → announce "Select some text to rewrite first."; otherwise open the dialog, close the formatting toolbar, load the settings | — | `ai:settings` |
+| Choose integration | `rewrite.writer`: track the save, keep the prompt and previous card; update only after success; failures toast the reason; Generate waits for persistence | The original selection is unchanged | `ai:writer`: serial settings write remembers the same Writer used by Settings and the next rewrite |
 | Generate | `rewrite.generate`: needs a prompt and a Writer; closes the dialog; asks the editor to begin | `rewrite.begin`: if the document is unchanged since the capture and editable, a `RewriteStream` locks the note and marks the range `pending`; answers `ok` | — |
 | Began | `rewrite.began`: not ok → "The note changed after you selected the text…"; ok → a new ID, subscribe to events, the toast with Stop, announce, `ai.rewriteStart(id, { text, instruction })` | — | `ai:rewriteStart`: checks the ID, aborts any earlier rewrite from the same window, starts the stream |
 | Streaming | each `delta` → `rewrite.chunk` | `push`: replaces the range with all the text so far, as paragraphs split at blank lines, outside the history; marks it `streaming` | each piece of text → `ai:rewriteEvent { id, type: "delta", text }` |
@@ -47,6 +48,8 @@ When the answer is complete, `finish` puts the original back outside the history
 
 ## In the main process
 
+**Copilot CLI (D-264):** `AiService.stream` input validation and first-send consent precede the official SDK adapter; private-note judgement follows D-261. Selected text travels over stdio RPC to an explicit supported installed CLI, never process arguments or app-written prompt files. Any isolated temporary runtime state is removed after exit. Its empty-mode session exposes zero tools; only answer deltas enter the existing rewrite-ID event lane. Cloud timeouts include runtime startup. Stop aborts the session and closes only its owned runtime; the editor's exact restoration, save authority and one undo step remain unchanged. See [the provider contract](rewrite-providers.md#github-copilot-on-this-computer).
+
 `AiService.stream` (RWR-82, RWR-83):
 
 - **Checks** the input: text of 1 character to 32 KiB, a prompt of 1 to 4,000 characters, a Writer that exists. The ID must match `[\w-]{1,64}`.
@@ -55,7 +58,7 @@ When the answer is complete, `finish` puts the original back outside the history
 - **Bounds:** the answer must start within 30 s (120 s from a server on this computer, which may be loading its model), may go quiet for at most 30 s once started (60 s on this computer), and ends at 5 minutes (10 on this computer); each closes the HTTP request. The window's abort signal closes it at once. `redirect: "error"`. Up to 64 KiB of text back.
 - **Thinking models:** Ollama gets `think: false`; OpenAI's own API gets `max_completion_tokens`; a leading `<think>…</think>` block in the text is left out, however it's split.
 - **Ends** at the provider's own end event (`[DONE]`, Ollama's `done: true`, Anthropic's `message_stop`, Cohere's `message-end`) or when the stream closes; an `error` event mid-stream fails it.
-- **Checks first:** a private or shared note's text is refused while *Don't send private notes* is on (AIS-13), and nothing is sent to a connection without its consent (AIS-14).
+- **Checks first:** nothing is sent without consent for the current connection (AIS-14). D-261 removes the private-note gate: the person sees integration/model/locality and decides what to send (AIS-13).
 - **Sends** only text back, to the window that asked, tagged with the ID; a failure as `{ code, retryAfter? }`, only Focus Notes' own reason codes. One rewrite per window: a new one aborts the last. Closing or reloading the window aborts it.
 
 The key is opened from `safeStorage` for the request and never leaves the main process.
@@ -76,7 +79,7 @@ The key is opened from `safeStorage` for the request and never leaves the main p
 | 400, 413 | `bad-request`, `too-long` | Check the model; select less |
 | Unreadable answer, error event mid-stream | `provider-format`, `provider-error` | The answer couldn't be read; the service stopped with an error |
 | No text at all | `provider-empty` | "The service sent back no text. The original is unchanged." |
-| No consent, a private note | `consent-required`, `private-note` | Nothing was sent |
+| No consent | `consent-required` | Nothing was sent |
 | Esc or Stop | `cancelled` | "Rewrite stopped. The original text is back." (announced) |
 | The note changed before Generate | — | "The note changed after you selected the text. Select it again and rewrite." |
 

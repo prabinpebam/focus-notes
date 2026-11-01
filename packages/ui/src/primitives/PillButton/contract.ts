@@ -11,5 +11,8 @@ export const contract = defineContract({
   tokens: "cmp.pillButton.*",
   a11y: { pattern: "button", name: "label" },
   uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible },
-  fixtures: [{ name: "unlock", props: { label: { t: "account.unlock" } } }],
+  fixtures: [
+    { name: "unlock", props: { label: { t: "account.unlock" } } },
+    { name: "glyph bounds pill", props: { label: { t: "gallery.glyphs" } } },
+  ],
 });

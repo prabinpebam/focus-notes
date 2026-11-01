@@ -1,6 +1,10 @@
 {
   "cmp": {
     "positioner": {
+      "promptWidth": {
+        "$type": "dimension",
+        "$value": "{layout.popover}"
+      },
       "edge": {
         "$type": "dimension",
         "$value": "{space.m}"
