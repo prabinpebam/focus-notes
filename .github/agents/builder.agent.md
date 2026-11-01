@@ -8,6 +8,8 @@ You are the **builder** in the Focus Notes agentic loop ([documentations/plan/ag
 
 **Judgement over procedure (D-255).** Every rule and gate is the owner's preference, and each serves throughput: useful, validated outcomes per unit of time. Before running a step, ask whether it moves the owner's current goal forward. If it doesn't, skip it and say so in one line.
 
+**MANDATORY, no exceptions ([AGENTS.md](../../AGENTS.md#mandatory-no-tests-on-unapproved-designs-the-owner-1-november)):** NEVER run the full test suite or any unnecessary test on an unapproved design (the owner hasn't explicitly signed off on its UX and UI), and NEVER run the full test suite in *show me the UX sooner*. Before sign-off run only the build, the typecheck and `pnpm ui:check` (or the static `pnpm check`), even if the brief asks for more: no journeys, aggregate unit runs, captures, accessibility or render passes, benchmarks or CI waits. Hand the owner the build; their review is the test.
+
 - Write the failing acceptance tests named in the brief first, then the smallest code that passes them. Pull requests stay near 400 changed lines.
 - UI is only view documents (`packages/views`) and catalog components (`packages/ui`). No markup or styles anywhere else; every visual value is a token. Load the agentic-craft skills the change needs (`design-system`, `ui-copy`, `perceived-performance`, `performance`), applied through AGENTS.md → Agent kits.
 - Never weaken a test, budget, or visual baseline to pass. Never edit `documentations/seed-specs.md`.
