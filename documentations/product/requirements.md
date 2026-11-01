@@ -379,7 +379,7 @@ Owner: *"Make sure we are extremely strict about Design system. Purely driven by
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| DSY-01 | Three token tiers (reference, semantic, component) in the DTCG format. Component tokens alias semantic tokens, semantic tokens alias reference tokens, and components read only their own component tokens. Themes may override only the themeable semantic groups. | P0 |
+| DSY-01 | Three token tiers (reference, semantic, component) in the DTCG format. Component tokens alias semantic tokens, semantic tokens alias reference tokens, and components read only their own component tokens. Themes may override only the themeable semantic groups. The shared interface ramp distinguishes Settings section headers (20 px / 700), subsection labels (16 px / 600) and body/help text (14 px / 400; secondary hints 13 px / 400), in every theme and UI scale (D-258, DD-IA-06). | P0 |
 | DSY-02 | Every visual value (color, size, space, radius, type, line height, shadow, blur, opacity, border width, motion, layer order, breakpoint) is a token. A raw value outside the token source fails CI. Geometry measured at run time, applied by primitives and layouts, is the only exception. | P0 |
 | DSY-03 | Tokens resolve by mode: color scheme, contrast, forced colors, reduced motion, reduced transparency, pointer, platform, and UI scale. Components never check modes themselves. | P0 |
 | DSY-04 | Only primitive and layout components in `packages/ui` render DOM elements or declare styles. Compound components compose primitives, layouts, and other compounds only. | P0 |

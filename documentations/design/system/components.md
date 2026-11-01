@@ -141,8 +141,8 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 
 | Component | Status | Variants and key props | Pattern | Used by |
 | --- | --- | --- | --- | --- |
-| **Text** | Implemented | `role`: caption, secondary, body, emphasis, title, label. `tone`: default, muted, accent, danger, warning, success. `lines` (truncate), `value` (message or binding) | Text | Everywhere |
-| **Heading** | Implemented | `level` 1 to 3 (interface headings, not note headings), `value` | Heading | Sheets, dialogs, settings |
+| **Text** | Implemented | `role`: caption, secondary, body, emphasis, title, label. Labels are 16 px / 600; body is 14 px / 400; hints use secondary 13 px / 400 (D-258). `tone`: default, muted, accent, danger, warning, success. `lines` (truncate), `value` (message or binding) | Text | Everywhere |
+| **Heading** | Implemented | `level` 1 to 3 (interface headings, not note headings): 28, 24, 20 px, all bold (700); `value`. The shared ramp separates Settings section headers from subsection labels (D-258) | Heading | Sheets, dialogs, settings |
 | **Icon** | Implemented | `name` (Fluent registry), `size` s/m/l, `filled` | Image, or hidden when decorative | Everywhere |
 | **Shortcut** | Implemented | `keys` (key caps in the platform's symbols, from a view model, which takes them from the command registry) and `label` (the chord in words). Caps are hidden from screen readers, which read the words instead | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
 | **Button** | Implemented | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed`, `autoFocus` (takes focus when it appears: a confirmation's *Cancel*, D-100, or a first-run step's primary action, D-101). Inside an editor companion (Positioner), a pointer press leaves focus in the note | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link, the first run |

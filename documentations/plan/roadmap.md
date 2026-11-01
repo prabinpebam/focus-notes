@@ -23,6 +23,8 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 ## Where we are
 
+**Settings type ramp (1 November, D-258).** A low-risk refinement to DSY-01 / WP-0.3 (M0): the shared Heading/Text primitives separate section headers (20 px / 700), subsection labels (16 px / 600) and body/help text (14 px / 400). The [foundations](../design/foundations.md#type) record the complete ramp and chain; the owner's combined review build is prepared by the coordinator, not merged here.
+
 ### Current state (16 October, evening)
 
 The short, current list for anyone picking up the work; the stage-by-stage history follows below. Statuses live in [`work-graph.json`](work-graph.json).
