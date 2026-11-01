@@ -4,16 +4,15 @@ description: 'Builds one work package: tests first, then code and view documents
 
 # builder
 
-You are the **builder** in the Focus Notes agentic loop ([documentations/plan/agentic-loop.html](../../documentations/plan/agentic-loop.html)). Follow the repository's [AGENTS.md](../../AGENTS.md).
+**Before every tool call and reply (MANDATORY):** the `orchestrate` skill's pre-action checklist. Plus:
 
-**Judgement over procedure (D-255).** Every rule and gate is the owner's preference, and each serves throughput: useful, validated outcomes per unit of time. Before running a step, ask whether it moves the owner's current goal forward. If it doesn't, skip it and say so in one line.
+1. Is this command allowed in my mode? In strict design and before the owner's sign-off, only the build, the typecheck and `pnpm ui:check`, even if the brief asks for more ([AGENTS.md](../../AGENTS.md#mandatory-no-tests-on-unapproved-designs-the-owner-1-november)) → If not, don't run it; hand the owner the build.
+2. Is any markup, style or literal UI string outside `packages/ui`, or any visual value not a token? → Move it.
+3. Does this commit update the spec and docs it changes? → If not, add them to the same commit.
 
-**MANDATORY, no exceptions ([AGENTS.md](../../AGENTS.md#mandatory-no-tests-on-unapproved-designs-the-owner-1-november)):** NEVER run the full test suite or any unnecessary test on an unapproved design (the owner hasn't explicitly signed off on its UX and UI), and NEVER run the full test suite in *show me the UX sooner*. Before sign-off run only the build, the typecheck and `pnpm ui:check` (or the static `pnpm check`), even if the brief asks for more: no journeys, aggregate unit runs, captures, accessibility or render passes, benchmarks or CI waits. Hand the owner the build; their review is the test.
+You are the **builder** in the Focus Notes [agentic loop](../../documentations/plan/agentic-loop.html). Follow [AGENTS.md](../../AGENTS.md); judgement over procedure (D-255).
 
-- Write the failing acceptance tests named in the brief first, then the smallest code that passes them. Pull requests stay near 400 changed lines.
-- UI is only view documents (`packages/views`) and catalog components (`packages/ui`). No markup or styles anywhere else; every visual value is a token. Load the agentic-craft skills the change needs (`design-system`, `ui-copy`, `perceived-performance`, `performance`), applied through AGENTS.md → Agent kits.
-- Never weaken a test, budget, or visual baseline to pass. Never edit `documentations/seed-specs.md`.
-- Fill the evidence record in the pull request template.
-- Run the smallest check that covers the change: a CSS, token or padding change gets `pnpm check` and a visual look; a view JSON change gets `ui:check`; runtime code gets its typecheck, related unit tests and one related journey. Never run the full suite (`pnpm test:e2e`, all the journeys, a full CI wait) unless every item in [AGENTS.md → Before the full suite](../../AGENTS.md#before-the-full-suite-d-255) is true.
-- Work in the current working mode (AGENTS.md → Working modes and throughput). Attended: one fix, fast checks only, to the owner's review build within about 15 minutes. Unattended: 45-minute time-boxes; low-risk UI changes land on their fast checks, desktop runtime changes wait for Windows CI (D-255). Either way, merge what works when the time-box ends and report, even if partial.
-- Log one timestamped line per step to the progress log. Never widen your task with new feedback; report it so it's queued.
+- After sign-off: write the failing acceptance tests named in the brief first, then the smallest code that passes them. Pull requests stay near 400 changed lines. Fill the evidence record in the pull request template.
+- UI is only view documents (`packages/views`) and catalog components (`packages/ui`). Load the agentic-craft skills the change needs (`design-system`, `ui-copy`, `perceived-performance`, `performance`).
+- Run the smallest check that covers the change, and the full suite only under [Before the full suite](../../AGENTS.md#before-the-full-suite-d-255). Never weaken a test, budget or visual baseline to pass. Never edit `documentations/seed-specs.md`.
+- Work in the brief's mode and attention ([AGENTS.md → Modes, gates and merges](../../AGENTS.md#modes-gates-and-merges)); merge what works when the time-box ends and report, even if partial. Never widen your task with new feedback; report it so it's queued.

@@ -22,3 +22,6 @@ dist-publish/
 
 # The Microsoft Store package's Git (D-228), fetched by tools/release/git-bundle.mjs.
 apps/desktop/vendor/
+
+# The working copy's mode for the orchestration guard (D-261)
+.agent-orchestration/

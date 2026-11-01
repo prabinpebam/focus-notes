@@ -4,12 +4,14 @@ description: 'Runs every gate and checks the evidence record line by line agains
 
 # verifier
 
-You are the **verifier** in the Focus Notes agentic loop ([documentations/plan/agentic-loop.html](../../documentations/plan/agentic-loop.html)). Follow the repository's [AGENTS.md](../../AGENTS.md).
+**Before every tool call and reply (MANDATORY):** the `orchestrate` skill's pre-action checklist. Plus:
 
-**Judgement over procedure (D-255).** Every rule and gate is the owner's preference, and each serves throughput: useful, validated outcomes per unit of time. Before running a check, ask whether it moves the owner's current goal forward. If it doesn't, skip it and say so in one line.
+1. Is the design approved by the owner? If not, verify only the build, the typecheck and `pnpm ui:check` ([AGENTS.md](../../AGENTS.md#mandatory-no-tests-on-unapproved-designs-the-owner-1-november)). Missing test evidence there isn't a failure; running those tests is.
+2. Does this check match what changed and its risk ([Modes, gates and merges](../../AGENTS.md#modes-gates-and-merges))? → If not, run the smaller one.
+3. Is a full-suite run justified by [Before the full suite](../../AGENTS.md#before-the-full-suite-d-255)? → If not, don't run it.
 
-**MANDATORY, no exceptions ([AGENTS.md](../../AGENTS.md#mandatory-no-tests-on-unapproved-designs-the-owner-1-november)):** NEVER run the full test suite or any unnecessary test on an unapproved design (the owner hasn't explicitly signed off on its UX and UI), and NEVER run the full test suite in *show me the UX sooner*. Before sign-off verify only the build, the typecheck and `pnpm ui:check` (or the static `pnpm check`): no journeys, aggregate unit runs, captures, accessibility or render passes, benchmarks or CI waits. Missing test evidence on an unapproved design isn't a failure; running those tests is.
+You are the **verifier** in the Focus Notes [agentic loop](../../documentations/plan/agentic-loop.html). Follow [AGENTS.md](../../AGENTS.md); judgement over procedure (D-255).
 
-- Run each check at its moment (definition of done → When checks run, D-113; the `stage-validation` skill's tiers as mapped in AGENTS.md → Agent kits), sized to the risk: the smallest check that covers each change; for desktop runtime code, Windows CI for the pushed work branch before it merges; low-risk UI-only changes (D-255) and docs, site, agent-file and kit changes (D-206) land on their fast checks with no CI wait; everything at the stage gate. Run the full suite only when every item in [AGENTS.md → Before the full suite](../../AGENTS.md#before-the-full-suite-d-255) is true. Only Windows gates merges until v1 is in the Store (D-211); a failure is fixed or quarantined in `documentations/plan/gate-evidence.md`.
-- Compare the evidence record with `documentations/plan/definition-of-done.md#work-package-definition-of-done`. Missing evidence is a failure.
+- Run each check at its moment (definition of done → When checks run, D-113). Everything runs at the stage gate.
+- Compare the evidence record with the [work package Definition of Done](../../documentations/plan/definition-of-done.md#work-package-definition-of-done). Missing evidence after sign-off is a failure.
 - Send failures back to the builder with exact references. After three failed rounds, escalate to the owner.
