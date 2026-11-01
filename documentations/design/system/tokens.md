@@ -7,6 +7,8 @@ Every visual value in Focus Notes is a named token. This page defines the three 
 
 <h2 data-reader-personas="design engineering">Tiers</h2>
 
+**Interface type ramp (D-258).** `font.uiHeadingLarge` (28 px) and `font.uiHeading` (24 px) alias the reference scale. `cmp.heading.size` uses these and `font.uiTitle` (20 px); its weight aliases `font.weightBold` (700). `cmp.text.size.label` aliases `font.uiEmphasis` (16 px), with semibold (600) labels and explicitly regular (400) body/hints. All sizes remain rem-based, scale with UI scale and use the same tokens in light, dark and contrast themes. See the [role table and Settings chain](../foundations.md#type).
+
 | Tier | Prefix | Example | Holds | Who may read it | Who may change it |
 | --- | --- | --- | --- | --- | --- |
 | **Reference** | `ref.` | `ref.color.red.600`, `ref.size.16`, `ref.duration.150` | Raw values: the palette, the numeric scales, the font files | Semantic tokens only | The design system |

@@ -186,7 +186,7 @@
       "id": "WP-0.3",
       "stage": "M0",
       "title": "Token source and build",
-      "summary": "DTCG sources for every tier, Style Dictionary output, and alias checks.",
+      "summary": "DTCG sources for every tier, Style Dictionary output, and alias checks. D-258: shared Heading/Text ramp makes Settings section headers 20 px/700, subsection labels 16 px/600 and body 14 px/400 (DD-IA-06, IA-VIEW-SETTINGS, UC-KEY-03, SC-FIND-04, CP-REACH-01).",
       "requirements": [
         "DSY-01",
         "DSY-02"

@@ -104,15 +104,25 @@ The editor and published pages use the same tokens. A unit test (`packages/ui/te
 
 **Interface text** uses `font.ui` (the system UI font by default) and doesn't scale with the note's font size, only with *UI scale*:
 
-| Role | Size | Used for |
-| --- | --- | --- |
-| Caption | 12 px | Key caps, metadata, counts |
-| Secondary | 13 px | Hints, row details, tooltips |
-| Body | 14 px | Menus, buttons, fields, list rows |
-| Emphasis | 16 px | Spotlight field, dialog field |
-| Title | 20 px | Dialog and sheet titles |
-| Lead | 18 px | The one sentence of a full-window onboarding step (D-126) |
-| Display | 40 px, line height 1.25 | A full-window onboarding step's title: the ramp's largest size (`font.uiDisplay`, D-126) |
+| Role | Size | Weight | Used for |
+| --- | --- | --- | --- |
+| Caption | 12 px | Regular (400) | Key caps, metadata, counts |
+| Secondary | 13 px | Regular (400) | Hints, row details, tooltips |
+| Body | 14 px | Regular (400) | Menus, buttons, fields, list rows |
+| Label | 16 px | Semibold (600) | Subsection labels, distinct from body and help text (D-258) |
+| Emphasis | 16 px | Regular (400) | Spotlight field, dialog field |
+| Title | 20 px | Semibold (600) | Text titles |
+| Heading 3 | 20 px | Bold (700) | Settings section headers |
+| Heading 2 | 24 px | Bold (700) | Dialog and sheet headings (`font.uiHeading`) |
+| Heading 1 | 28 px | Bold (700) | Top-level interface headings (`font.uiHeadingLarge`) |
+| Lead | 18 px | Regular (400) | The one sentence of a full-window onboarding step (D-126) |
+| Display | 40 px, line height 1.25 | Bold (700) | A full-window onboarding step's title: the ramp's largest size (`font.uiDisplay`, D-126) |
+
+**Settings hierarchy (D-258).** The section header is bigger and heavier than the subsection label, which is bigger and heavier than body/help text. This is the shared `Heading`/`Text` ramp, not a Settings-only style override; other sheets and dialogs using these primitives inherit it. Note typography, control labels, content order, heading semantics, and theme contrast remain unchanged. No operation or wait is added.
+
+| Promise | Scenario | User can | View and primitives | Design decision | Requirement and plan |
+| --- | --- | --- | --- | --- | --- |
+| CP-REACH-01 | SC-FIND-04 | UC-KEY-03 | IA-VIEW-SETTINGS; Heading, Text | DD-IA-06, D-258 | DSY-01, WP-0.3, M0 |
 
 **Bundled fonts** are self-hosted and licensed under the SIL Open Font License, which D-29 proposes adding to the allowed list for fonts: Roboto Mono (mono, the default for note text and code), Newsreader and Fraunces (the serif preset: Newsreader for text, Fraunces for headings), Inter (sans), Atkinson Hyperlegible (a highly legible font designed for low vision), and OpenDyslexic (an option for some dyslexic readers). License checks in CI confirm each one.
 
