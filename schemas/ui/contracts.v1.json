@@ -397,7 +397,7 @@
     {
       "type": "Icon",
       "tier": "primitive",
-      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "description": "A system or integration brand icon. Inherited colour; decorative unless it has a label (D-263).",
       "props": {
         "name": {
           "kind": "icon",
@@ -455,6 +455,84 @@
             "label": {
               "t": "gallery.sample"
             }
+          }
+        },
+        {
+          "name": "brand aiOllama",
+          "props": {
+            "name": "aiOllama"
+          }
+        },
+        {
+          "name": "brand aiLmStudio",
+          "props": {
+            "name": "aiLmStudio"
+          }
+        },
+        {
+          "name": "brand aiVllm",
+          "props": {
+            "name": "aiVllm"
+          }
+        },
+        {
+          "name": "brand aiAnthropic",
+          "props": {
+            "name": "aiAnthropic"
+          }
+        },
+        {
+          "name": "brand aiClaude",
+          "props": {
+            "name": "aiClaude"
+          }
+        },
+        {
+          "name": "brand aiClaudeCode",
+          "props": {
+            "name": "aiClaudeCode"
+          }
+        },
+        {
+          "name": "brand aiGemini",
+          "props": {
+            "name": "aiGemini"
+          }
+        },
+        {
+          "name": "brand aiMistral",
+          "props": {
+            "name": "aiMistral"
+          }
+        },
+        {
+          "name": "brand aiDeepseek",
+          "props": {
+            "name": "aiDeepseek"
+          }
+        },
+        {
+          "name": "brand aiPerplexity",
+          "props": {
+            "name": "aiPerplexity"
+          }
+        },
+        {
+          "name": "brand aiOpenrouter",
+          "props": {
+            "name": "aiOpenrouter"
+          }
+        },
+        {
+          "name": "brand aiHuggingface",
+          "props": {
+            "name": "aiHuggingface"
+          }
+        },
+        {
+          "name": "brand aiCopilot",
+          "props": {
+            "name": "aiCopilot"
           }
         }
       ]

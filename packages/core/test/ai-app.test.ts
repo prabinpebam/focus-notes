@@ -67,6 +67,14 @@ function setup(opts: { consented?: boolean; keepPrivate?: boolean; path?: string
 }
 
 describe("Rewrite in the window", () => {
+  it("names the connection's brand icon in Settings without changing its connection identity", async () => {
+    const s = setup({ connection: { provider: "ollama", name: "My server" } });
+    await s.commands.run("ai.load");
+    expect(s.settingsVm().connections).toEqual([
+      expect.objectContaining({ id: "w", name: "My server", icon: "aiOllama" }),
+    ]);
+  });
+
   it("streams deltas into the editor and finishes as one step", async () => {
     const t = setup();
     await t.begin();

@@ -175,7 +175,7 @@
                             "badge": {
                               "get": "c.badge"
                             },
-                            "icon": "link",
+                            "icon": { "get": "c.icon" },
                             "personal": "title"
                           },
                           "children": [

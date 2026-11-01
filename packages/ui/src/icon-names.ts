@@ -1,5 +1,6 @@
 /**
- * The icon registry: one family, Fluent UI System Icons (MIT, D-32), and GitHub's mark (Octicons, MIT, D-126). Names here are the only
+ * The icon registry: Fluent UI System Icons (MIT, D-32), GitHub's mark (MIT, D-126), and
+ * AI integration identities (CC0/MIT, D-263). Names here are the only
  * values the `icon` prop accepts.
  */
 export const ICON_NAMES = [
@@ -10,5 +11,8 @@ export const ICON_NAMES = [
   "numberedList", "heading1", "heading2", "heading3", "color", "share", "history", "matchCase", "wholeWord", "regex", "sort", "inSelection", "grip",
   "arrowUp", "arrowDown", "lock", "export", "import", "strikethrough", "text", "taskList", "divider", "moreVertical", "newFolder", "github",
   "cloud", "cloudUp", "cloudCheck", "cloudOff", "download", "circle", "globe", "calendar", "chevronLeft", "mail", "pin", "pinOff", "feedback", "sent", "print",
+  "aiOllama", "aiLmStudio", "aiVllm", "aiAnthropic", "aiClaude", "aiClaudeCode",
+  "aiGemini", "aiMistral", "aiDeepseek", "aiPerplexity",
+  "aiOpenrouter", "aiHuggingface", "aiCopilot",
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];

@@ -7583,6 +7583,181 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Copied into the app
 
+## Simple Icons: Ollama 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/ollama.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922. Brand guidelines/source terms: https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: LM Studio 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/lmstudio.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://files.lmstudio.ai/lmstudio_icon2.svg. Brand guidelines/source terms: https://files.lmstudio.ai/lmstudio_icon2.svg. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: vLLM 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/vllm.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://github.com/vllm-project/media-kit/blob/79b2ea5db25b723f2d81dae203a87c5b9a076722/vLLM-Logo.svg. Brand guidelines/source terms: https://github.com/vllm-project/media-kit/blob/79b2ea5db25b723f2d81dae203a87c5b9a076722/vLLM-Logo.svg. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Anthropic 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/anthropic.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://www.anthropic.com. Brand guidelines/source terms: https://www.anthropic.com. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Claude 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/claude.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://claude.ai. Brand guidelines/source terms: https://claude.ai. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Claude Code 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/claudecode.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://code.claude.com. Brand guidelines/source terms: https://code.claude.com. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Google Gemini 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/googlegemini.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://gemini.google.com. Brand guidelines/source terms: https://gemini.google.com. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Mistral AI 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/mistralai.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://chat.mistral.ai. Brand guidelines/source terms: https://chat.mistral.ai. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: DeepSeek 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/deepseek.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://www.deepseek.com. Brand guidelines/source terms: https://www.deepseek.com. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Perplexity 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/perplexity.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://www.perplexity.ai. Brand guidelines/source terms: https://www.perplexity.ai. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: OpenRouter 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/openrouter.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://openrouter.ai. Brand guidelines/source terms: https://openrouter.ai. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: Hugging Face 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: CC0-1.0  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/huggingface.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://huggingface.co/brand. Brand guidelines/source terms: https://huggingface.co/brand. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+Simple Icons contributors dedicate their artwork under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/.
+Pinned licence: https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/LICENSE.md
+Disclaimer (individual brand rights remain): https://github.com/simple-icons/simple-icons/blob/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/DISCLAIMER.md
+```
+
+## Simple Icons: GitHub Copilot 90646e4bf7f3b89df6c37e65baf3e7bc759a517c
+
+License: MIT  
+Homepage: https://raw.githubusercontent.com/simple-icons/simple-icons/90646e4bf7f3b89df6c37e65baf3e7bc759a517c/icons/githubcopilot.svg
+
+Unmodified monochrome path in packages/ui/src/ai-brand-paths.json (D-263). Original source: https://primer.style/foundations/icons/copilot-24. Brand guidelines/source terms: https://primer.style/foundations/icons/copilot-24. Used only to identify a connection, never to imply sponsorship or readiness. CC0 does not license trademark rights.
+
+```text
+MIT License
+
+Copyright (c) GitHub Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
 ## EFF large wordlist 2016-07-18
 
 License: CC-BY-3.0-US  
@@ -7626,6 +7801,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## AI integration neutral fallbacks (D-263)
+
+Existing Fluent UI System Icons from @fluentui/react-icons 2.0.344 (MIT; full licence above). These are not brand logos.
+
+| Icon | Source | Kinds and terms |
+| --- | --- | --- |
+| code | https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Code/SVG/ic_fluent_code_20_regular.svg | llama.cpp, SGLang, LocalAI, Jan, Codex: no verified permissive brand artwork obtained. Docker Model Runner: https://www.docker.com/legal/trademark-guidelines/ requires authorization for logos. |
+| cloud | https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Cloud/SVG/ic_fluent_cloud_20_regular.svg | OpenAI/Azure, Cohere, Groq, Together, Fireworks, xAI, Cerebras: no approved artwork obtained (OpenAI terms: https://openai.com/brand/). NVIDIA: https://www.nvidia.com/en-us/about-nvidia/legal-info/logo-brand-usage/ and Cloudflare: https://www.cloudflare.com/trademark/ require written authorization. |
+| link | https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Link/SVG/ic_fluent_link_20_regular.svg | Other compatible or unknown integrations have no single brand. |
 
 # Programs in the Microsoft Store package
 

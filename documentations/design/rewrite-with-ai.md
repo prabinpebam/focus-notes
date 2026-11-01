@@ -5,6 +5,8 @@
 
 Serves UC-RWR-01, UC-RWR-02 and UC-RWR-05 to UC-RWR-09 under CP-RWR-01; the flow is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md), and the IA rows and design decisions DD-RWR-01 to DD-RWR-09 are in the [information architecture](information-architecture.html#rewrite-with-ai).
 
+**Integration identities (D-263, DD-RWR-07, AIS-03).** Settings connection cards use the existing Icon primitive's service mark alongside the name, never instead of it. The mark is decorative; standalone usage supplies `label`. All paths inherit `currentColor` and existing `cmp.icon.size` tokens, including contrast contexts. Neutral fallbacks do not imitate missing brands. Sources, licences and restricted-logo fallbacks are in the [component catalog](system/components.md#integration-icons); no new token, wait or AI transport is introduced.
+
 ## What people expect
 
 A rewrite should feel like the words changing where they are, not a detour through another screen. Word, Google Docs and Notion rewrite a selection next to it; Craft makes one AI edit one undo step; iA Writer colours AI text. Focus Notes keeps the selection where it is, shows the new words arriving there, marks them only for a few seconds, and lets undo be the way back. See [the comparison](../experience/rewrite-with-ai.md#what-people-expect).

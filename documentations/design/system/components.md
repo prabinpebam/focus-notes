@@ -25,7 +25,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | --- | --- | --- | ---: | --- |
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
-| Icon | primitive | `rest` | 4 | None |
+| Icon | primitive | `rest` | 17 | None |
 | Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 14 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
@@ -96,6 +96,24 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Dialog | compound component | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 
 <!-- /generated:component-inventory -->
+
+<h2 id="integration-icons" data-reader-personas="design engineering">Integration icons</h2>
+
+The existing **Icon** primitive also renders AI service marks (D-263). Paths are local design-system data in `packages/ui/src/ai-brand-paths.json`, never SVG in view documents. Brand fixtures in the generated gallery cover every asset. No new primitive or tokens: `size` remains `s`, `m` or `l` using `cmp.icon.size.*`; paths use `currentColor` for light, dark, contrast and forced colours. Beside a service name the mark is decorative and hidden from assistive technology. Standing alone it requires `label`, which becomes `role="img"` and `aria-label`; it is never focusable.
+
+| API or asset | Contract |
+| --- | --- |
+| `aiConnectionIcon(kind): IconName` | Exported from `@focus-notes/ui/contracts` (Node-safe) and `@focus-notes/ui`; covers all 26 supported kinds plus Copilot, Claude Code, Codex and Gemini CLI aliases. Unknown kinds return `link`. Does not enable a transport. |
+| `AI_CONNECTION_ICONS` | Explicit read-only kind-to-icon table for picker reuse |
+| Simple Icons revision `90646e4bf7f3b89df6c37e65baf3e7bc759a517c` | 12 CC0-1.0 paths: Ollama, LM Studio, vLLM, Anthropic, Claude, Claude Code, Gemini, Mistral, DeepSeek, Perplexity, OpenRouter, Hugging Face |
+| GitHub Copilot from the same catalogue | MIT (Octicons); its full licence and source ship in the generated third-party notices |
+| Neutral fallbacks | Existing Fluent icons (MIT): `code` for local servers / Codex, `cloud` for cloud services, `link` for custom connections |
+
+Brand names remain their owners' trademarks. CC0 is not a trademark licence and Simple Icons notes that per-brand rights may differ. Use only to identify the actual service, never to imply endorsement or status. Docker, NVIDIA and Cloudflare explicitly require authorization for their logos, so their artwork is not shipped. Other absent/uncleared artwork also stays neutral. Each included path records the pinned SVG source, upstream source, licence and guidelines/source URL in `THIRD_PARTY_NOTICES.md`; review terms when updating assets.
+
+**Try it:** open the gallery's Icon brand fixtures in light and dark; open Settings → AI with an Ollama or Claude connection. The card's name and status stay visible beside its mark. No hover, pressed, loading or disabled state is introduced by a decorative icon.
+
+The Copilot CLI connection kind is `copilot-cli`: `aiConnectionIcon("copilot-cli")` returns `aiCopilot` (GitHub Copilot, MIT). The alias is tested explicitly; its icon does not imply on-device inference.
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 

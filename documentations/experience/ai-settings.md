@@ -13,6 +13,19 @@ Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is 
 
 ## The section
 
+Connection rows now identify the service with its monochrome brand icon where permissive artwork is available, otherwise a neutral server, cloud or connection mark (D-263, AIS-03). Names, destinations and status stay visible: an icon never promises a working connection or on-device inference. This extends CP-RWR-01 → SC-RWR-04 → UC-RWR-05 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS → DD-RWR-07 → AIS-03, planned in WP-AI.11 / MAI.
+
+| Identity | Icon |
+| --- | --- |
+| Ollama, LM Studio, vLLM | Their service marks |
+| Anthropic Claude, Google Gemini, Mistral AI, DeepSeek, Perplexity | Their service marks |
+| OpenRouter, Hugging Face | Their service marks |
+| llama.cpp, SGLang, LocalAI, Jan, Docker Model Runner | Neutral code/server mark |
+| OpenAI, Azure OpenAI, Cohere, Groq, Together AI, Fireworks AI, xAI, Cerebras, NVIDIA NIM, Cloudflare Workers AI | Neutral cloud mark |
+| Other OpenAI-compatible service, unknown/custom kinds | Neutral connection mark |
+
+Docker, NVIDIA and Cloudflare logo terms require authorization; none has been obtained. OpenAI/Azure and the other neutral kinds have no approved artwork in this increment; that is an artwork gap, not an unsupported connection. The [component catalog](../design/system/components.md#integration-icons) and [D-263](../plan/decisions.md) record the source and terms. CLI identity aliases for Copilot, Claude Code, Codex and Gemini are available to the picker, but this icon change adds no CLI transport.
+
 Settings on the desktop always lists **AI** (AIS-01). From top to bottom:
 
 | Part | What it shows | Actions |

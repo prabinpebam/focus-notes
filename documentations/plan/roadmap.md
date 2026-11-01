@@ -123,6 +123,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MAI: Rewrite with AI (building)</p>
+<p>WP-AI.11 also owns the integration icon increment (D-263, 1 November): CP-RWR-01 → SC-RWR-04 → UC-RWR-05 → IA-CMP-REWRITESTATUS → DD-RWR-07 → AIS-03. Licensed monochrome service marks and explicit neutral fallbacks share the Icon primitive and a kind-to-icon API; built on fix-ai-icons, not merged.</p>
 <p>Desktop rewriting in place: select text, then <kbd>Ctrl+Shift+R</kbd> or Rewrite… in the text menu, give a prompt, and the answer streams over the selection as one undo step; <kbd>Esc</kbd>, Stop and errors put the original back. Settings → AI connects 26 kinds of service on this computer or in the cloud, with sealed keys, Find on this computer and Test. Focus Notes never runs a model. Browser rewriting is not included. <a href="implementation-plan.md#mai">Details</a>; <a href="rewrite-acceptance.md#stage-gate">GATE-MAI</a>. RWR-70 to RWR-86, AIS-01 to AIS-15, KEY-08, SPT-09, UI-14, FOC-07, HLP-10, PRV-05, SEC-09, PRF-15, QLT-08, A11Y-03, I18N-04, DSY-14, DOC-03, LIC-03.</p>
 </li>
 <li class="slate-step">
