@@ -70,9 +70,10 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       const px = (v: string) => parseFloat(cs.getPropertyValue(name(v))) || 0;
       rewriteMetrics = { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) };
       rewriteFrame = fixedBox(el);
+      buttonHeight = edgeRef.current?.getBoundingClientRect().height ?? 0;
+      if (el.dataset.edge) return;
       const box = contentRef.current.getBoundingClientRect();
       rewriteSize = { width: box.width, height: box.height };
-      buttonHeight = edgeRef.current?.getBoundingClientRect().height ?? 0;
       const area = contentRef.current.querySelector("textarea");
       const viewport = anchors.get(anchor)?.viewport;
       if (area && viewport) {

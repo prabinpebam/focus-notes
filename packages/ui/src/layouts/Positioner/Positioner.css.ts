@@ -52,7 +52,7 @@ export const promptContent = style({
   width: "100%", opacity: 1, visibility: "visible",
   transitionProperty: "opacity, visibility", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
-    [`${base}[data-edge] &`]: { position: "absolute", opacity: 0, visibility: "hidden", pointerEvents: "none" },
+    [`${base}[data-edge] &`]: { position: "absolute", height: 0, overflow: "clip", opacity: 0, visibility: "hidden", pointerEvents: "none" },
   },
   "@media": { "(prefers-reduced-motion: reduce)": { transitionDuration: "0s" } },
 });
