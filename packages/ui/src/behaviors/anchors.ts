@@ -14,7 +14,7 @@ export interface AnchorRect {
   fragments?: readonly AnchorRect[];
   viewport?: AnchorRect;
   /** Return the retained selection to view without changing focus, capture or the document. */
-  reveal?: (position: { fragment: number; side: "above" | "below"; edge: number; gap: number }) => void;
+  reveal?: (position: { fragment: number; side: "above" | "below"; edge: number; gap: number; viewportTop: number; viewportBottom: number }) => void;
 }
 /** The selection (or caret), a link, and the `/` the slash menu opened at. */
 export type AnchorName = "selection" | "link" | "caret" | "rewrite";

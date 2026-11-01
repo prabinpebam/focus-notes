@@ -42,7 +42,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
   const [edge, setEdge] = useState<"top" | "bottom" | undefined>();
   const retainedFocus = useRef<HTMLElement | null>(null);
   const returning = useRef(false);
-  const returnPosition = useRef({ fragment: 0, side: "below" as "above" | "below", edge: 0, gap: 0 });
+  const returnPosition = useRef({ fragment: 0, side: "below" as "above" | "below", edge: 0, gap: 0, viewportTop: 0, viewportBottom: 0 });
   useLayoutEffect(() => {
     if (edge) {
       const active = document.activeElement;
@@ -115,6 +115,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
         returnPosition.current = {
           fragment: rewritePlacement.fragment, side: rewritePlacement.side === "above" ? "above" : "below",
           edge: metrics.edge, gap: metrics.gap,
+          viewportTop: viewport.top + o.top, viewportBottom: viewport.bottom + o.top,
         };
         const y = rewritePlacement.side === "above" ? target.top - metrics.gap - rewriteSize.height : target.bottom + metrics.gap;
         const pinned = y < viewport.top + metrics.edge ? "top"

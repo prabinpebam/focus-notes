@@ -567,8 +567,8 @@ export function EditorSurface({
           if (!current?.viewport || !fragment || !scroller) return;
           scroller.scrollBy({
             top: position.side === "below"
-              ? fragment.bottom - current.viewport.top - position.edge - position.gap
-              : fragment.top - current.viewport.bottom + position.edge + position.gap,
+              ? fragment.bottom - position.viewportTop - position.edge - position.gap
+              : fragment.top - position.viewportBottom + position.edge + position.gap,
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
           });
         },
