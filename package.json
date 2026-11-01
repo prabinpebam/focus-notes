@@ -48,6 +48,9 @@
     "vitest": "5.0.3"
   },
   "pnpm": {
+    "overrides": {
+      "@github/copilot-sdk>zod": "4.6.6"
+    },
     "onlyBuiltDependencies": [
       "electron",
       "esbuild"

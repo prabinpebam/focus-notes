@@ -57,9 +57,43 @@ do not claim a final CI head, complete MAI gate or release approval.
 | TR | `pnpm trace MAI` | Reports 7 explicitly ID-traced / 44 untraced requirements. This is an honest title/comment inventory gap, not 44 observed behavior failures; the matrix below names actual evidence rather than pretending the trace is complete. |
 | TG | `pnpm check`; `pnpm typecheck`; `pnpm build` | PASS again after final core metadata corrections; production packages, desktop renderer, main and preload built. |
 | TM | `pnpm exec vitest run packages\core\test\diagnostics.test.ts packages\core\test\menu-bar.test.ts packages\core\test\ai-app.test.ts` | PASS: 71 tests / 3 files. Full units first found two coupled metadata gaps: Writer tracker targets must be fixed IDs, and the four new Rewrite view-only commands need explicit menu exclusion. Both are corrected without changing commands or the UI. |
-| TF | `pnpm test` | First full run: 2 failed / 2,557 passed / 12 skipped (146.65 s), the two metadata gaps above. After fixing them: 1 failed / 2,558 passed / 12 skipped (170.94 s): Copilot fake's two-second version subprocess timed out under simultaneous full build/test CPU load. No assertion, timeout or runtime behavior was changed to hide it. Isolated `pnpm exec vitest run apps\desktop\test\ai-copilot-contract.test.ts` passed all 18 tests (17.21 s). Complete `pnpm exec vitest run --maxWorkers=2` is running with bounded resource use; exact Windows CI must still pass. |
+| TF | `pnpm test` | First full run: 2 failed / 2,557 passed / 12 skipped (146.65 s), the two metadata gaps above. After fixing them: 1 failed / 2,558 passed / 12 skipped (170.94 s): Copilot fake's two-second version subprocess timed out under simultaneous full build/test CPU load. No assertion, timeout or runtime behavior was changed to hide it. Isolated `pnpm exec vitest run apps\desktop\test\ai-copilot-contract.test.ts` passed all 18 tests (17.21 s). Complete `pnpm exec vitest run --maxWorkers=2` was stopped after several silent minutes under the worker's no-hang rule; no full-local success is claimed. Exact Windows CI must still pass. |
 | TP | `pnpm bench --check` with `FOCUS_NOTES_E2E=1` | Stopped after the 10,000-note step stayed silent for several minutes during concurrent full units. Earlier steps completed (launch 4.7 s, renderer 67.9 s, Git 4.6 s, open/save 9.7 s); no complete budget result or success is claimed. Stopped only the owned process tree, then confirmed no owned candidate Electron main processes remained. Full budgets remain a Windows CI gate, with no quarantine. |
 | TD | `node E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-reader.mjs` | PASS: eight changed pages in light/dark (16 cases), one H1, target anchors, correct theme and figures inside the column. Headless private ephemeral server blocks external requests, makes no captures, and closes browser/server in finally; never touches 8787. |
+
+#### Exact candidate and dependency audit
+
+Clean published runtime candidate `31140c031f68bc564c765c5444e647be78c71443`
+ran all six TJ journeys again: **PASS, 43.7 s**; applied-anchor maxima
+11.90/20.00 ms and deselection 37.10/5.70 ms (light/dark), still not paint.
+All owned app instances closed with PID-scoped WhatIf and actual cleanup.
+
+Its [Windows CI run 41322619657](https://github.com/prabinpebam/focus-notes/actions/runs/41322619657)
+found a real **high** production dependency advisory:
+Zod 4.3.6, pinned by `@github/copilot-sdk` 1.0.28,
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5).
+The dependency audit blocked later unit/type steps, so their absence is not a
+passing full gate. Main stayed at clean `15760786f211cf0910cfc25226429a626e57bf60`.
+
+The correction keeps that official SDK and the supported CLI version unchanged.
+A **scoped** `@github/copilot-sdk>zod` override pins 4.6.6, replacing only its
+vulnerable schema validator; no unrelated package is upgraded. This is an explicit
+deviation from the SDK's exact transitive pin, checked against its protocol tests,
+not an assertion that its upstream manifest already permits the version.
+
+| Exact command | Result after scoped override |
+| --- | --- |
+| `npm config get registry`; `pnpm config get registry`; `npm view zod@4.6.6 version dist.integrity --json` | Both actual package processes use `https://packagefeedproxy.microsoft.io/npm/`; approved fixed artifact/version/integrity verified before the manifest change. |
+| `pnpm install --no-frozen-lockfile` | PASS after manifest change: one approved-feed download, +1/-1 package; lock changes only the override and Zod 4.3.6 → 4.6.6. No public-registry fallback, TLS exception, SDK change or new license. |
+| `pnpm audit:deps` | PASS: 240 production dependencies; 3 low, 2 moderate, **0 high / 0 critical**. Low/moderate advisory presence is not hidden. |
+| `pnpm exec vitest run apps\desktop\test\ai-copilot-contract.test.ts apps\desktop\test\ai-contract.test.ts apps\desktop\test\ai-own-key.test.ts apps\desktop\test\ai-rewrite.test.ts packages\core\test\ai-app.test.ts` | PASS: 159 tests / 5 files, including all 18 official SDK stdio fake cases and key/address/abort/tool-denial/direct-send contracts. |
+| `node tools\notices.mjs`; `pnpm check`; `pnpm typecheck`; `pnpm --filter @focus-notes/desktop run build` | PASS; notices change only the MIT Zod version label. Existing renderer chunk warning remains. |
+| `pnpm --filter @focus-notes/desktop exec playwright test air-safeguards.spec.ts air-rewrite.spec.ts --workers=1` with `FOCUS_NOTES_E2E=1` | PASS again against the patched-dependency build: six journeys, 41.1 s; applied-anchor maxima 19.70/18.50 ms, deselection 7.90/5.90 ms (light/dark). Own PID-scoped cleanup reports zero instances closed/remaining. |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-reader.mjs`; pinned Slate runtime check; `git diff --check` | PASS again: 16 reader/theme cases and runtime integrity; no screenshots, external requests or owner process changes. |
+
+The fixed source still needs its own complete green Windows CI before main
+fast-forwards. No advisory quarantine, disabled test or release is authorized
+by this correction.
 
 | Approved requirement / DoD | Checked evidence | Remaining limitation |
 | --- | --- | --- |

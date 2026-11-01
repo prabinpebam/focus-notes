@@ -32,7 +32,7 @@ That the rows marked built work in the app they're using, that the original is n
 
 | ID | Check | Evidence today | Left |
 | --- | --- | --- | --- |
-| RWR-70 | No model, runtime or AI SDK in the dependencies; every request goes through main's `fetch` | Code review of the branch; `pnpm check` licences | — |
+| RWR-70 | No hosted model/runtime in Focus Notes; HTTP transport stays in main, and the official SDK communicates with a separate installed Copilot CLI | Core/main boundary, `pnpm check` licences and SDK stdio protocol fakes | No live SDK/account certification |
 | RWR-71 | The web build has no `ai` bridge; `rewrite.open` disabled there | Code (`enabled` needs `bridge.ai`) | Journey or web test |
 | RWR-72 | Ctrl+Shift+R, the text menu and the Edit menu open the dialog on the selection; no selection announces and opens nothing | `packages/core/test/keymap-layers.test.ts`, `menu-bar`, `text-menu` tests; `apps/desktop/e2e/spelling-menu.spec.ts` (with text selected, *Rewrite…* heads the text menu and takes its first focus); Owner | Journey |
 | RWR-73 | The inline prompt's integration/picker, field, presets and actions; no preview or disclaimer; presets never send, Generate disabled when empty | `ui:check`; core units; combined `air-safeguards` journeys; normal/small light/dark popover and picker captures reviewed (1 November) | Owner acceptance |

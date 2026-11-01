@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@github/copilot-sdk>zod': 4.6.6
+
 patchedDependencies:
   app-builder-lib@26.15.3:
     hash: 84c55ff1623017768ec51ccd76d4f0c480440816b76be64736a6fca4cc32def4
@@ -3509,8 +3512,8 @@ packages:
     resolution: {integrity: sha1-ApTrPe4FAo0x7hpfosVWpqrxChs=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/yocto-queue/-/yocto-queue-0.1.0.tgz}
     engines: {node: '>=10'}
 
-  zod@4.3.6:
-    resolution: {integrity: sha1-icVuCqfSsFEH2JRBIicIeIWrESo=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/zod/-/zod-4.3.6.tgz}
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/zod/-/zod-4.6.6.tgz}
 
   zwitch@2.0.4:
     resolution: {integrity: sha1-yCfUsKy3b8PmhaTG7CkC1RBw6dc=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/zwitch/-/zwitch-2.0.4.tgz}
@@ -3939,7 +3942,7 @@ snapshots:
     dependencies:
       koffi: 3.2.1
       vscode-jsonrpc: 8.2.1
-      zod: 4.3.6
+      zod: 4.6.6
     optionalDependencies:
       '@github/copilot-sdk-darwin-arm64': 1.0.28
       '@github/copilot-sdk-darwin-x64': 1.0.28
@@ -7052,6 +7055,6 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@4.3.6: {}
+  zod@4.6.6: {}
 
   zwitch@2.0.4: {}

@@ -7621,7 +7621,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-## zod 4.3.6
+## zod 4.6.6
 
 License: MIT  
 Homepage: https://zod.dev
