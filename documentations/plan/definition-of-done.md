@@ -5,6 +5,33 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The **OWNER-TESTABLE Rewrite UX stage** is the owner trying Rewrite and Settings → AI in the review build, on their own notes with their own AI service (D-255, D-256, D-257): open as of 31 October, with the built flow in front of the owner. The **MAI** rows add CP-RWR-01 to the production bar.
 
+## Settings AI single-list stage
+
+**D-267 · WP-AI.15 / MAI · planned, not built.** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → AIS-16. The existing owner app remains at 52bf0dfe; this spec does not claim runtime acceptance.
+
+| Row | Done when | Evidence required |
+| --- | --- | --- |
+| UX-LIST.1 | Empty, one and multiple connections render one list; no Writer menu, Use as Writer or local section; one Find on this PC button and exact scan explanation. | Settings journey and light/dark captures at default and narrow sizes |
+| UX-LIST.2 | Keyboard/assistive technology expose one saved Default with checked semantics; Space selects and arrows navigate; actions do not also select, no nested interactive controls. | Role/keyboard journey assertions and UI behaviour units |
+| UX-LIST.3 | Settings choice is next Rewrite's Writer; choosing Rewrite integration changes the same ID seen on Settings reopen. No independent default store. | Core Writer tests and Settings/Rewrite round-trip journey |
+| UX-LIST.4 | Pending and failed saves retain the previous choice and show named feedback; deleting the default clears it; empty never invents a connection. | Controlled bridge failure/pending/deletion units and journey |
+| UX-LIST.5 | Icons, model/locality, key and Test state remain honest; unsupported/unknown discovery is not ready; no note text sent by choosing or finding. | Discovery fake tests; light/dark/narrow captures; bounded call assertions |
+
+### Try it
+
+Open Settings → AI with two fake connections. Select the second row, see **Default**, open Rewrite and confirm the same integration. Choose the first integration there, reopen Settings and confirm its badge. Use arrow keys and Space; Test, Change and Remove must not also select. Delay and reject the settings write: the old Default remains, with **Remembering your choice…** or an explicit error. Remove the default, then inspect empty, one-row and unknown discovery states. Repeat in light/dark and at a narrow window.
+
+### Spec evidence, 1 November 12:10
+
+| Check | Result |
+| --- | --- |
+| `pnpm check` in own-ai-default-list | Passed: chain and plan include AIS-16 exactly once in WP-AI.15 / MAI; 393 view documents and 71 contracts unchanged. Kit-copy checks skipped because isolated worktree submodules are not checked out. |
+| `node E:\Projects\side-projects\focus-notes\slate\scripts\runtime-host.mjs check --repo . --host documentations` in own-ai-default-list | Passed; canonical pinned runtime invoked read-only from the checked-out kit. |
+| `git diff --check` | Passed. |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\own-list-render.mjs` | Passed 26 changed reader-page/theme cases in headless Edge on a private ephemeral port, never 8787. One H1 per page, theme and SVG fit assertions; new target headings rendered. Settings light/dark captures inspected, readable. Browser/server closed in finally. |
+
+**Runtime evidence is not yet available:** UX-LIST.1 to UX-LIST.5 remain open. Initial check found missing TypeScript; approved-feed offline frozen-lockfile install restored it without downloads or manifest changes. The next check needed generated tokens; `pnpm tokens` fixed that prerequisite, then the complete check passed. Build is queued because live POP owns overlapping core AI state, AI unit tests, message catalogue and generated schemas. No runtime, test, message or schema file was edited by this spec.
+
 ## OWNER-TESTABLE Rewrite UX stage
 
 **Mode:** show me the UX sooner · work with me (D-255). **Status: OPEN, in the owner's hands.** The review build of `fix-ai-rewrite-simple` (452e44ba plus the dialog scroll fix, 59fb5449) is open on the owner's review profile with their Ollama Writer. The 30 October version of this stage (Ctrl+K, three variations, Accept and Discard, whole-file New file, restart recovery of variations) was dropped with D-256.

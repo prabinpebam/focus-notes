@@ -1,5 +1,7 @@
 # Component catalog
 
+**D-267, Settings connection choice (planned composition):** one radio-like choice target per row, with explicit Default name/checked state and token-only selected/focus appearance; Test/Change/Remove are sibling controls, never interactive descendants. Reuse existing radio/list behaviour in the lowest UI tier; any missing capability requires a documented contract, states/stories and regenerated schemas before the view can use it. Identity/status content stays separate from selection. See [Settings spec](../../experience/ai-settings.md#single-list-default-choice-d-267-planned).
+
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]

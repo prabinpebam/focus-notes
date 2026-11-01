@@ -91,6 +91,14 @@
   "implicitDependency": "Every work package depends on the gate of the previous stage, unless lookahead is true.",
   "workPackages": [
     {
+      "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
+      "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Spec first; build queued until overlapping POP runtime files are released. Preserve D-265/D-266 during serial integration.",
+      "requirements": ["AIS-16"],
+      "dependsOn": ["WP-AI.11"], "touches": ["core", "ui", "views", "tests", "help", "spec"],
+      "reviews": ["code", "design-system", "accessibility"], "specs": ["experience/ai-settings.md", "design/rewrite-with-ai.md", "plan/definition-of-done.md", "help/connect-an-ai-service.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
       "id": "WP-AI.11", "stage": "MAI", "title": "Rewrite in place and AI connections",
       "summary": "As built on 31 October (D-256, D-257): Settings → AI with 26 API/server kinds in six HTTP shapes, sealed keys, Find, models, Test and the Writer; a prompt dialog and in-place stream, note read-only, rainbow fade, one undo step, and Esc, Stop and errors restoring the original. D-263 adds licensed integration icons or neutral fallbacks via a shared kind-to-icon API. D-262 adds a remembered integration picker and model/endpoint locality disclosure; D-261 leaves private-note sending to user judgement with first-send consent. D-264 adds Cloud-labelled GitHub Copilot through the official SDK: Find checks existing login without generation, adds signed-in Copilot and preserves an existing Writer. Tool-free ephemeral streaming, Stop and explicit CLI errors; AIS-02 to AIS-04 and AIS-07 to AIS-11 remain in this package and MAI. Track proof: CLI 1.0.105 / SDK 1.0.28, isolated configuration and gh-cli authentication, zero tools, dummy rewrite and abort. Combined on own-candidate for owner review, not main.",
       "requirements": ["RWR-70", "RWR-71", "RWR-72", "RWR-73", "RWR-74", "RWR-75", "RWR-76", "RWR-77", "RWR-78", "RWR-79", "RWR-80", "RWR-81", "RWR-82", "RWR-83", "AIS-01", "AIS-02", "AIS-03", "AIS-04", "AIS-05", "AIS-06", "AIS-07", "AIS-08", "AIS-09", "AIS-10", "AIS-11", "AIS-12", "AIS-15", "KEY-08", "SPT-09", "UI-14", "I18N-04", "PRV-05", "LIC-03"],
