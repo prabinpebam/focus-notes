@@ -91,7 +91,7 @@ async function rewrite(page: Page, text: string, prompt: string) {
   const consent = dialog.getByRole("button", { name: "Send", exact: true });
   if (await consent.isVisible()) {
     await expect(dialog.getByText(/^The first time, check where your text goes/)).toBeVisible();
-    // The seed's model is on Ollama's own list as local (modelLocal, D-259): never "Cloud" for it.
+    // A local model is labelled from its name and endpoint, without discovery (D-262).
     await expect(dialog.getByText(/· On this computer\./)).toBeVisible();
     await consent.click();
   } else await dialog.getByRole("button", { name: "Generate" }).click();
@@ -111,7 +111,7 @@ test("AI Rewrite: streams formatted and locked, Esc cancels the request and rest
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, DATA_FILES.ai), JSON.stringify({
     version: 2, writer: "fake",
-    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake", modelLocal: true }],
+    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake" }],
   }));
   const note = join(dirs.docs, "Welcome.md");
   const other = join(dirs.docs, "Other.md");

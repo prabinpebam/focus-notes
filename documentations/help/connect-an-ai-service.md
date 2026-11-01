@@ -22,7 +22,7 @@ Focus Notes doesn't install or run AI models. It connects to a service you alrea
 4. Check the **Model**. To pick another, select **Find models**, then **Choose a model**.
 5. Select **Save connection**.
 
-**Result:** the service is in **AI connections**, marked "On this computer". The first one you save is the **Writer**, the one Rewrite uses.
+**Result:** the service is in **AI connections**, marked "This computer" for a local model or "Cloud" for a cloud model. The first one you save is the **Writer**, the one Rewrite uses.
 
 ## Connect an online service
 
@@ -44,11 +44,14 @@ Focus Notes doesn't install or run AI models. It connects to a service you alrea
 ## Choose which one rewrites
 
 - In **Writer (used by Rewrite)**, choose a connection. Or select **Use as Writer** next to it.
+- You can also choose **AI integration** in the Rewrite prompt when you have more than one connection. The choice is remembered on this computer for your next rewrite.
 
 ## Good to know
 
-- Each connection says where your words go: "On this computer" or "Cloud".
-- A service on this computer can still send words online. Models marked "Cloud" do.
+- Every Rewrite prompt shows the active service, model and "This computer" or "Cloud".
+- Ollama has local and cloud models. A model ending in `:cloud` or `-cloud`, one Ollama lists as cloud-routed, or a connection to `ollama.com`, is marked "Cloud". Other local Ollama models don't need a test or discovery before they are marked "This computer".
+- OpenAI-compatible services use their address too: localhost or a private-network address is "This computer"; a remote address is "Cloud". This identifies the configured destination, not a guarantee that the service never forwards requests.
+- You decide what to send, including words from private notes. Focus Notes sends only your selection and prompt, never the rest of the note.
 - Online services have their own terms and charges.
 - To change a connection, select **Change**. Leave **API key** empty to keep the saved key.
 - To delete a connection and its key, select **Remove**. Your notes don't change.

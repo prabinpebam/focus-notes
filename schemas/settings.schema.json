@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://prabinpebam.github.io/focus-notes/schemas/settings.v1.json",
   "title": "Synced settings (private/.focus-notes/settings.json)",
+  "description": "AI connections and the remembered rewrite integration are device-local, not synced here. The AI settings reader ignores legacy keepPrivate keys and omits them on later writes.",
   "type": "object",
   "properties": {
     "appearance": {

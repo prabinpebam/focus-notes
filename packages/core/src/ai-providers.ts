@@ -61,6 +61,27 @@ export const AI_PROVIDERS: readonly AiProvider[] = [
 
 export const aiProvider = (id: unknown): AiProvider | undefined => AI_PROVIDERS.find((p) => p.id === id);
 
+/** Disclosure follows the model and endpoint, not the service's catalogue group. */
+export function aiRunsInCloud(provider: string, endpoint: string, model: string, modelCloud = false): boolean {
+  const p = aiProvider(provider);
+  if (p?.shape === "ollama" && (modelCloud || /(?::cloud|-cloud)$/i.test(model))) return true;
+  let host: string;
+  try {
+    host = new URL(endpoint || p?.endpoint || "").hostname.toLowerCase();
+  } catch {
+    return true;
+  }
+  if (host === "ollama.com" || host.endsWith(".ollama.com")) return true;
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host === "[::1]") return false;
+  if (/^\[(?:f[cd][0-9a-f]{2}:|fe80:)/i.test(host)) return false;
+  const octets = host.split(".").map(Number);
+  if (octets.length === 4 && octets.every((n) => Number.isInteger(n) && n >= 0 && n <= 255)) {
+    const [a, b] = octets;
+    if (a === 127 || a === 10 || (a === 172 && b! >= 16 && b! <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254)) return false;
+  }
+  return true;
+}
+
 /** Azure OpenAI's default data-plane API version (GA). */
 export const AZURE_API_VERSION = "2024-10-21";
 
@@ -79,7 +100,7 @@ export interface AiConnectionView {
   consented: boolean;
   /** The last Test: when, and whether it passed. */
   lastTest?: { ok: boolean; at: string };
-  /** The model may run in the cloud though the server is on this computer (an Ollama model not seen as local in Ollama's own list). */
+  /** The model runs in the cloud, including a cloud-routed Ollama model. */
   modelCloud?: boolean;
 }
 

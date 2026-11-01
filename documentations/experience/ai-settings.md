@@ -1,7 +1,7 @@
 # Settings → AI
 
 > [!NOTE]
-> **TL;DR.** Settings → AI is where you connect the AI service Rewrite uses: a server already running on this computer (Ollama, LM Studio and six more), a cloud API with your own key (OpenAI, Anthropic, Gemini, Azure OpenAI and eleven more), or a gateway (OpenRouter, Hugging Face, any OpenAI-compatible service): 26 kinds in all. **Find on this computer** fills in local servers for you, keys are sealed in the system key store and never shown again, **Test connection** sends one made-up request and no note text, and one connection is the **Writer**. Focus Notes never runs a model. Built on 31 October (D-257), in the owner's review build. A private-notes switch and a first-send confirmation are planned.
+> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered connection is the **Writer**, selectable here or in the Rewrite prompt when several connections exist. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains. First-send consent stays per connection (D-261, D-262).
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ Settings on the desktop always lists **AI** (AIS-01). From top to bottom:
 Each row (IA-CMP-REWRITESTATUS, AIS-03) has:
 
 - the name you gave it;
-- "{service} · {model} · On this computer" or "· Cloud". An Ollama model says "On this computer" only once Focus Notes has seen it in Ollama's own list as a model that runs here (after **Find on this computer**, **Find models** or **Test connection**); until then it says "Cloud", since Ollama can pass a model to the cloud (D-259);
+- "{service} · {model} · This computer" or "· Cloud". Locality follows the model and address (D-262), not the service group. Ollama `:cloud`/`-cloud` models, cloud-routing metadata, or an `ollama.com` host are Cloud; otherwise a loopback/private-LAN endpoint is This computer. A typed local model requires no discovery. OpenAI-compatible endpoints use the same address classification; other remote hosts are Cloud;
 - a **Writer** or **Saved** badge;
 - the key: "Key saved in the system keychain", "No key saved" or "No key needed";
 - the last Test: "Saved. Connection not checked.", "Testing…", "Checked {time}: it answered.", "Last check {time} failed." or "Test failed: {reason}".
@@ -117,7 +117,6 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 | Unreadable answer | "The service's answer couldn't be read. Check the address and the service in Settings → AI." |
 | Error mid-answer | "The service stopped with an error. Try again." |
 | No consent | "Rewrite needs your OK before it sends text to this connection." |
-| Private note | "This note is private. Rewrite doesn't send private notes." |
 | Connection gone | "That connection is gone. Choose another in Settings → AI." |
 | Bad address | "Use an https:// address, or http://127.0.0.1 or http://localhost for a server on this computer." |
 | No model, deployment or account | "Choose or type a model.", "Enter the deployment name from Azure.", "Enter your Cloudflare account ID." |
@@ -127,21 +126,23 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 
 ## Where it's kept
 
-`ai.json` in the app's data folder: each connection's service, name, address, model, deployment, API version, account ID, sealed key, last Test and what its consent covers, which one is the Writer, and whether private notes are kept from Rewrite. It's per device, never synced or committed, and listed in the [data inventory](../architecture/security-and-privacy.md) (AIS-15). A single OpenAI-compatible service saved by the first build becomes a connection, and the Writer if it was (AIS-12).
+`ai.json` in the app's data folder: each connection's service, name, address, model, cloud-routing metadata, deployment, API version, account ID, sealed key, last Test and what its consent covers, plus the remembered Writer. It's per device, never synced or committed, and listed in the [data inventory](../architecture/security-and-privacy.md) (AIS-15). A single OpenAI-compatible service saved by the first build becomes a connection, and the Writer if it was (AIS-12). Old `keepPrivate` keys are ignored when loading and stripped by the next ordinary settings write; no owner's real settings are migrated by a test (D-261).
 
 ## Private notes and consent
 
-Built (WP-AI.13, D-259), and proven in the app by the `air-safeguards` journey:
+WP-AI.13, updated by the owner's 1 November feedback (D-261, D-262); covered by `ai-app`, `ai-contract` and the `air-safeguards` journey:
 
-- **Don't send private notes** (AIS-13): a switch in this section, on by default. While it's on, Rewrite in a private or shared note sends nothing; the dialog says "This note is private. Rewrite doesn't send private notes." and offers **Change in Settings**. The main process decides for itself from the note's location, under the workspace's `private/` folder, and refuses such text too (D-259).
-- **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "The first time, check where your text goes: Rewrite sends the selected text and your prompt to {service} at {address} · On this computer" (or "· Cloud"). **Send** goes ahead and is remembered for that connection; **Cancel** sends nothing. The main process refuses to send without it.
+- **User judgement** (AIS-13): no private-notes blocking switch or core/IPC gate. The Rewrite prompt shows the selected integration, model and locality every time, and the person decides whether to send from public, private or shared notes. This does not authorize logging private note text or publishing it to Git.
+- **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "Rewrite sends the selected text and your prompt to {service} · {model} at {host} · {where}. You decide what to send. Nothing else from your notes is sent." **Send** records this connection's consent; **Cancel** sends nothing. Main still refuses a request without matching consent.
 
-These follow D-259, which builds D-238 (consent names the destination).
+The connection picker changes the same device-local Writer as Settings. It keeps prompt input, updates the card and consent, and records `fn:ai.chooseWriter`; "Remembering your choice…" is announced during the save. Generate waits for the saved choice; errors keep the previous Writer and toast the reason.
 
 ## Decisions
 
 - **D-257:** every text service kind in the ai-integration kit; supersedes D-236 and D-249.
 - **D-233:** an integration client only; Focus Notes never installs, downloads, launches, hosts or runs a model.
-- **D-259:** consent per connection and *Don't send private notes*, both enforced in main; a key stays with its address; an Ollama model is "Cloud" until seen as local.
+- **D-259:** consent per connection and a key staying with its address remain; private-note blocking and unknown-model cloud labels are superseded by D-261 and D-262.
+- **D-261:** user judgement instead of a private-notes blocking option.
+- **D-262:** per-model/per-host disclosure and a remembered picker in the prompt.
 - **D-260:** request time limits, capped answers, the error words' reason codes, and the 26 built kinds only.
 - **D-238:** consent names the destination; built as D-259.

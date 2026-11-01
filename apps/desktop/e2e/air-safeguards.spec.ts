@@ -1,13 +1,13 @@
 /**
  * AI Rewrite's safeguards in the real app (AIS-13, AIS-14, D-259), against a local fake that speaks
- * Ollama's /api/chat NDJSON, so nothing leaves the machine. In a private note, Rewrite sends nothing
- * and offers Change in Settings; the Settings switch lets it through. The first send to a connection
- * asks first, naming the service, its address and On this computer; Cancel sends nothing; Send
+ * Ollama's /api/chat NDJSON, so nothing leaves the machine. In a disposable private note, the user
+ * decides whether to send after seeing the integration, model and destination. The first send
+ * asks first, naming the service, its address and This computer; Cancel sends nothing; Send
  * streams and is remembered, so the next rewrite just generates.
  */
 import { test, expect, type Page } from "./fixtures.ts";
 import { createServer, type Server } from "node:http";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { launch, quit, tempDirs, PROMPTLY, type Launched } from "./helpers.ts";
@@ -69,7 +69,7 @@ async function openRewrite(page: Page, text: string, prompt?: string) {
 
 const DIARY = "# Diary\n\nA private thought here.\n";
 
-test("AIS-13, AIS-14: a private note sends nothing; the first send asks, Cancel sends nothing, Send streams and is remembered", async () => {
+test("AIS-13, AIS-14: a private note discloses its integration; Cancel sends nothing, Send streams and is remembered", async () => {
   test.setTimeout(120_000);
   const fake = fakeOllama(["A ", "kinder ", "thought."]);
   const port = await fake.listen();
@@ -83,42 +83,24 @@ test("AIS-13, AIS-14: a private note sends nothing; the first send asks, Cancel 
   writeFileSync(diary, DIARY);
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: diary }));
   const aiFile = join(dirs.userData, DATA_FILES.ai);
-  // A saved Writer with no consent yet, and private notes kept off AI by default. Its model was seen in
-  // Ollama's own list as local (`modelLocal`), so consent says On this computer (D-259).
+  // A legacy private-notes key is ignored; a local Ollama model needs no discovery to be labelled.
   writeFileSync(aiFile, JSON.stringify({
-    version: 2, writer: "fake",
-    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake", deployment: "", apiVersion: "", account: "", modelLocal: true }],
+    version: 2, writer: "fake", keepPrivate: true,
+    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake", deployment: "", apiVersion: "", account: "" }],
   }));
   const ai = () => JSON.parse(readFileSync(aiFile, "utf8")) as { keepPrivate?: boolean; connections: { consent?: string }[] };
   let l: Launched | undefined;
   try {
     l = await launch(dirs);
+    if (process.env.FOCUS_NOTES_AI_PICKER_PIDS) appendFileSync(process.env.FOCUS_NOTES_AI_PICKER_PIDS, `${l.pid}\n`);
     const { page } = l;
     const editor = page.getByRole("textbox", { name: "Note" });
     await expect(editor).toContainText("A private thought here.");
 
-    // 1. A private note: the dialog says so and offers Settings; there's nothing to send with.
-    let dialog = await openRewrite(page, "A private thought here.");
-    await expect(dialog.getByText("This note is private. Rewrite doesn’t send private notes.")).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Generate" })).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Send" })).toHaveCount(0);
-
-    // 2. Change in Settings: Settings opens at AI, where the switch is on; turning it off is saved.
-    await dialog.getByRole("button", { name: "Change in Settings" }).click();
-    await expect(dialog).toBeHidden();
-    const toggle = page.getByRole("button", { name: /Don.t send private notes/ });
-    await expect(toggle).toBeVisible();
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
-    await expect.poll(() => ai().keepPrivate, PROMPTLY).toBe(false);
-    await page.keyboard.press("Escape");
-    await expect(toggle).toBeHidden();
-    expect(fake.seen).toHaveLength(0);
-
-    // 3. The first send asks, naming the service, its address and where it runs. Cancel sends nothing.
-    dialog = await openRewrite(page, "A private thought here.", "Make it kinder");
-    await expect(dialog.getByText(`Rewrite sends the selected text and your prompt to Ollama at 127.0.0.1:${port} · On this computer.`, { exact: false })).toBeVisible();
+    // The first send asks, including in a private note. Cancel sends nothing.
+    let dialog = await openRewrite(page, "A private thought here.", "Make it kinder");
+    await expect(dialog.getByText("This computer", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(`Rewrite sends the selected text and your prompt to Ollama · fake at 127.0.0.1:${port} · This computer.`, { exact: false })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Generate" })).toHaveCount(0);
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toBeHidden();
@@ -143,30 +125,60 @@ test("AIS-13, AIS-14: a private note sends nothing; the first send asks, Cancel 
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toBeHidden();
 
-    // 6. Main decides, not the window (D-259, SEC-09 M1): with the switch back on, a window that skips the
-    //    dialog and says the note isn't private, or gives no path, is refused, and nothing is sent.
-    const refused = await page.evaluate(async ({ diary }) => {
-      const ai = (window as unknown as { focusNotes: { ai: {
-        privacy(keep: boolean): Promise<unknown>;
-        rewriteStart(id: string, input: unknown): Promise<void>;
-        onRewriteEvent(listener: (e: unknown) => void): () => void;
-      } } }).focusNotes.ai;
-      await ai.privacy(true);
-      const ask = (id: string, input: Record<string, unknown>) => new Promise<unknown>((resolve) => {
-        const off = ai.onRewriteEvent((e) => {
-          const ev = e as { id?: string; type?: string; code?: string };
-          if (ev.id !== id || ev.type === "delta") return;
-          off();
-          resolve(ev.type === "error" ? ev.code : ev.type);
-        });
-        void ai.rewriteStart(id, { text: "A kinder thought.", instruction: "Shorter", ...input });
-      });
-      return [await ask("m1-a", { path: diary, private: false }), await ask("m1-b", {})];
-    }, { diary });
-    expect(refused).toEqual(["private-note", "private-note"]);
+    expect(ai().keepPrivate).toBeUndefined();
+    await editor.focus();
+    await page.keyboard.press(`${mod}+z`);
+    await expect(editor).toContainText("A private thought here.");
+    await expect.poll(() => readFileSync(diary, "utf8"), PROMPTLY).toContain("A private thought here.");
     expect(fake.seen).toHaveLength(1);
   } finally {
     if (l) await quit(l).catch(() => {});
     await fake.close();
+  }
+});
+
+test("AIS-04, AIS-13: the rewrite integration picker remembers its model and locality", async () => {
+  test.setTimeout(120_000);
+  const captureDir = process.env.FOCUS_NOTES_AI_PICKER_CAPTURES;
+  if (captureDir) mkdirSync(captureDir, { recursive: true });
+  for (const count of [1, 2]) {
+    for (const theme of ["light", "dark"]) {
+      const dirs = tempDirs();
+      const note = join(dirs.docs, "essay.md");
+      writeFileSync(note, "# Essay\n\nA few words to rewrite.\n");
+      writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note, appearance: theme }));
+      const aiFile = join(dirs.userData, DATA_FILES.ai);
+      const connections = [
+        { id: "local", provider: "ollama", name: "Local Ollama", endpoint: "http://localhost:11434", model: "llama3.2", deployment: "", apiVersion: "", account: "" },
+        { id: "cloud", provider: "ollama", name: "Cloud Ollama", endpoint: "http://localhost:11434", model: "gpt-oss:120b-cloud", deployment: "", apiVersion: "", account: "" },
+      ].slice(0, count);
+      writeFileSync(aiFile, JSON.stringify({ version: 2, writer: "local", connections }));
+      let l: Launched | undefined;
+      try {
+        l = await launch(dirs);
+        if (process.env.FOCUS_NOTES_AI_PICKER_PIDS) appendFileSync(process.env.FOCUS_NOTES_AI_PICKER_PIDS, `${l.pid}\n`);
+        const { page } = l;
+        const dialog = await openRewrite(page, "A few words to rewrite.", "Make it warmer");
+        await expect(dialog.getByText("This computer", { exact: true })).toBeVisible();
+        await expect(dialog.getByText("llama3.2", { exact: true })).toBeVisible();
+        const picker = dialog.getByRole("button", { name: "AI integration", exact: true });
+        await expect(picker).toHaveCount(count === 2 ? 1 : 0);
+        if (captureDir) await dialog.screenshot({ path: join(captureDir, `rewrite-${count}-${theme}.png`), animations: "disabled" });
+        if (count === 2) {
+          await picker.click();
+          await page.getByRole("menuitemcheckbox", { name: /Cloud Ollama/ }).click();
+          await expect(dialog.getByText("Cloud", { exact: true })).toBeVisible();
+          await expect(dialog.getByText("gpt-oss:120b-cloud", { exact: true })).toBeVisible();
+          await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("cloud");
+          await expect(dialog.getByRole("textbox", { name: "Prompt" })).toHaveValue("Make it warmer");
+          if (captureDir) await dialog.screenshot({ path: join(captureDir, `rewrite-2-cloud-${theme}.png`), animations: "disabled" });
+          await dialog.getByRole("button", { name: "Cancel" }).click();
+          const reopened = await openRewrite(page, "A few words to rewrite.");
+          await expect(reopened.getByText("gpt-oss:120b-cloud", { exact: true })).toBeVisible();
+        }
+      } finally {
+        if (l) await quit(l).catch(() => {});
+      }
+    }
   }
 });

@@ -1,7 +1,7 @@
 # Rewrite with AI design
 
 > [!NOTE]
-> **TL;DR.** Three surfaces, all from the design system. The **Rewrite dialog** (view `rewrite`: Dialog size m with the passage, the Writer line, a prompt, three preset toggles, Cancel and Generate). The **in-place stream** in the editor (EditorSurface's rewrite decoration: a rainbow shimmer, the rainbow text, then a 1 s hold and 3 s fade), with a toast that offers Stop. **Settings → AI** (a section of view `settings`: the Writer menu, connection rows, Find on this computer and the Add connection form with the new SecureKeyField). Every colour and timing is a token (`ref.rewrite.*`, `rewrite.*`, `cmp.editorSurface.rewrite.*`). Built on 31 October (D-256, D-257); live Markdown while streaming and platform key names are in progress.
+> **TL;DR.** Three design-system surfaces: the **Rewrite dialog** with passage, integration card and remembered picker, prompt and presets; the **in-place stream** with rainbow and Stop; and **Settings → AI** with connections, discovery and sealed keys. D-261 removes private-note blocking; D-262 discloses service, model and This computer or Cloud every time. The card and picker reuse existing ItemCard and MenuButton, with no new tokens or primitives.
 
 Serves UC-RWR-01, UC-RWR-02 and UC-RWR-05 to UC-RWR-09 under CP-RWR-01; the flow is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md), and the IA rows and design decisions DD-RWR-01 to DD-RWR-09 are in the [information architecture](information-architecture.html#rewrite-with-ai).
 
@@ -13,12 +13,12 @@ A rewrite should feel like the words changing where they are, not a detour throu
 
 | Surface | Built from | Where | IA |
 | --- | --- | --- | --- |
-| Rewrite dialog | `Dialog` (size m, height content), `Surface` sunken with caption `Text` and the passage, caption `Text` for the Writer, `TextField` multiline, three `Button`s (subtle, s, toggle), `Inline` of `Button`s | `packages/views/views/rewrite.view.json`, overlay view, focus on `rewritePrompt` | IA-CMP-REWRITEPROMPT |
+| Rewrite dialog | `Dialog` (size m, height content), sunken `Surface` for the passage, `ItemCard` with service title, model detail, locality badge and kind-keyed icon slot; `MenuButton` select for several connections; multiline `TextField`, preset `Button`s and action `Inline` | `packages/views/views/rewrite.view.json`, `vm.rewrite`, focus on `rewritePrompt` | IA-CMP-REWRITEPROMPT; DD-RWR-09 |
 | In-place stream | EditorSurface's rewrite decoration classes `pending`, `streaming`, `fading` (`rewriteClasses` in `EditorSurface.css.ts`) over a ProseMirror inline decoration (`RewriteDecoration` in `packages/editor/src/rewrite-stream.ts`) | The note | IA-CMP-REWRITEREVIEW |
 | Rewrite toast | The app's toast with an action: "Rewriting with {name}… Press Esc to stop." and **Stop** | Bottom of the window | IA-CMP-REWRITEREVIEW |
 | Settings → AI | `Heading`, `Text`, `Menu` triggers for the Writer, service and model, connection rows (`Surface`, `Text`, a badge, `Button`s), the found list, `TextField`s, `SecureKeyField`, `Button`s | The `ai` section of `packages/views/views/settings.view.json` | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIDISCOVER |
 | API key field | **SecureKeyField**, a new compound: a password `TextField` and a **Save** `Button`. The key goes out once in the `save` event and the field clears; it's never bound to a view model | Add connection and Change | IA-CMP-AIKEY |
-| First-send confirmation (planned) | `Dialog` with the service, address and On this computer or Cloud; **Cancel**, **Send** | Before the first send to a connection | IA-VIEW-REWRITECONSENT |
+| First-send confirmation | The same `Dialog` and integration card, plus a caption naming service, model, host and locality; **Cancel**, **Send** | Before the first send to a connection, including private notes | IA-VIEW-REWRITECONSENT |
 
 The text menu gets a plain `rewrite` entry (Windows and Linux; the page runs it, never the shell) and the Edit menu lists `rewrite.open`. The editor's canvas view wires three new EditorSurface events: `rewriteCapture` → `rewrite.captured`, `rewriteBegan` → `rewrite.began`, `rewriteCancel` → `rewrite.cancel`.
 
@@ -31,7 +31,11 @@ Also part of this work: the owner's **modal scroll-to-edges** fix (be8807f9, on 
 | State | Shows | Primary action |
 | --- | --- | --- |
 | No Writer | Passage; "Rewrite needs an AI service. Add one in Settings → AI." (announced) | **Set up AI** (primary, settings icon); **Cancel** |
-| Empty prompt | Passage; Writer line; empty prompt with "Make it clearer and warmer" | **Generate** disabled: "Add a prompt or choose a preset" |
+| Empty prompt | Passage; integration card; empty prompt with "Make it clearer and warmer" | **Generate** disabled: "Add a prompt or choose a preset" |
+| Several connections | Same card plus an AI integration menu; each item names connection, service, model and locality; current item checked | Choose one; saved choice updates card and consent without losing the prompt |
+| Saving a choice | Old card stays, prompt remains editable; the task tracker's delayed "Remembering your choice…" sign | Generate waits for persistence; Cancel remains available |
+| Choice save failed | Old card and choice remain; one error toast | Retry or keep the previous integration |
+| First-send permission saving | The disclosed integration and prompt remain | Cancel or choosing another integration cancels that pending send; permission finishing never sends to an outdated choice |
 | Preset chosen | The preset's prompt ("Make it concise", "Make it warmer", "Fix the grammar"); that toggle pressed | **Generate** |
 | Own prompt | The prompt typed; no toggle pressed | **Generate** |
 
@@ -69,6 +73,9 @@ Every word is a message key in `packages/views/messages/en.json` (I18N-04). The 
 | `rewrite.preset.*.prompt` | Make it concise · Make it warmer · Fix the grammar |
 | `rewrite.generate`, `rewrite.cancel`, `rewrite.emptyReason` | Generate · Cancel · Add a prompt or choose a preset |
 | `rewrite.writer` | Writer: {name} · {detail} |
+| `rewrite.integration`, `rewrite.integration.saving`, `rewrite.integration.saved` | AI integration · Remembering your choice… · Choice remembered. |
+| `ai.where.local`, `ai.where.cloud` | This computer · Cloud |
+| `rewrite.consent` | Rewrite sends the selected text and your prompt to {service} · {model} at {host} · {where}. You decide what to send. Nothing else from your notes is sent. |
 | `rewrite.setupNeeded`, `rewrite.setup` | Rewrite needs an AI service. Add one in Settings → AI. · Set up AI |
 | `rewrite.selectFirst` | Select some text to rewrite first. |
 | `rewrite.running`, `rewrite.stop` | Rewriting with {name}… Press Esc to stop. · Stop |

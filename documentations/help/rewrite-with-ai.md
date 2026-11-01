@@ -13,8 +13,9 @@ Ask an AI service you chose to rewrite a few words or a paragraph, and watch the
 
 1. In a note, select the words you want to change.
 2. Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (<kbd>⇧⌘R</kbd> on a Mac). Or right-click the words and select **Rewrite…**, or open the **Edit** menu and select **Rewrite…**.
-3. In **Prompt**, say what you want, like "Make it friendlier". Or select **Make concise**, **Make warmer** or **Fix grammar** to fill it in.
-4. Select **Generate**.
+3. Check the service, model and **This computer** or **Cloud** card. With several connections, use **AI integration** to choose another. Your choice is remembered for the next rewrite.
+4. In **Prompt**, say what you want, like "Make it friendlier". Or select **Make concise**, **Make warmer** or **Fix grammar** to fill it in.
+5. Select **Generate**, or **Send** the first time you use that connection.
 
 **Result:** the window closes and your note can't be edited for a moment. Your words shimmer, then the new words appear in their place, in rainbow colors. When it's done, the colors fade to normal text and you can type again.
 
@@ -42,7 +43,8 @@ If the service can't answer, your words stay as they were, and a message says wh
 - Only the words you selected and your prompt are sent, and only to the service you chose. Nothing else from your note goes with them.
 - Focus Notes never runs an AI model itself. It sends your words to the service you set up.
 - The colors are only on screen. They aren't saved in your note.
-- Coming soon: an option to never send private notes.
+- You decide whether to send words from a private note too. Check the integration and model before sending; **Cancel** sends nothing.
+- Ollama offers both local and cloud models. The card marks the model and address, not the service name alone. See [Connect an AI service](connect-an-ai-service.md#good-to-know).
 
 ## Related
 

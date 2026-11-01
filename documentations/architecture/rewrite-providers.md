@@ -1,7 +1,7 @@
 # Rewrite providers
 
 > [!NOTE]
-> **TL;DR.** Rewrite and Settings → AI talk to 26 kinds of AI service, from the [ai-integration kit](https://prabinpebam.github.io/loushing/items/ai-integration/)'s text catalogue at 1613a55, in six request shapes: OpenAI-compatible Chat Completions, Anthropic Messages, Gemini generateContent, Azure OpenAI deployments, Ollama chat and Cohere v2 chat (D-257). Every request is made by the desktop main process with the platform's `fetch`; keys are sealed with Electron `safeStorage` and never reach the window. Addresses are https, or http only to this computer; redirects are refused. Focus Notes is a client only: it never installs, downloads, launches, hosts or runs a model (D-233). Built on 31 October; a private-notes switch and first-send consent are planned.
+> **TL;DR.** Rewrite supports 26 service kinds in six request shapes (D-257), with requests and sealed keys confined to main. Every prompt shows the chosen integration, model and This computer/Cloud, and remembers a picked connection (D-262). Private-note blocking is removed: the person decides what to send, with first-send consent still enforced per connection (D-261). Existing URL/TLS, redirect, error and timeout rules stay. Focus Notes is a client only; it never runs a model.
 
 Serves UC-RWR-05, UC-RWR-08 and UC-RWR-09 (AIS-01 to AIS-15, RWR-70, RWR-83). The settings people see are in [Settings → AI](../experience/ai-settings.md); how the answer reaches the note is in [Rewrite engine](rewrite-engine.md).
 
@@ -92,14 +92,18 @@ The window sends a key only inside `ai:save`, from SecureKeyField's `save` event
 
 ## IPC
 
-The desktop preload bridge adds `ai` (the core `PlatformBridge.ai`): `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `privacy(keepPrivate)`, `rewriteStart(id, { text, instruction, path })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. Main's handlers are `ai:settings`, `ai:save`, `ai:remove`, `ai:writer`, `ai:test`, `ai:discover`, `ai:models`, `ai:consent`, `ai:privacy`, `ai:rewriteStart`, `ai:rewriteCancel`; events go out on `ai:rewriteEvent` as `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }`, only to the window that started the rewrite. An invoke that fails carries only a reason code (with ` retry-after={s}` for a rate limit). The browser app has no `ai` bridge, so the commands are disabled there (RWR-71).
+The preload `PlatformBridge.ai` exposes `settings`, `save`, `remove`, `writer`, `test`, `discover`, `models`, `consent(id)`, `rewriteStart(id, { text, instruction, path })`, `rewriteCancel(id)` and `onRewriteEvent(listener)`. There is no privacy-setting method or handler. Settings and the prompt picker both use `ai:writer`, serially persisting the selected connection in device-local `ai.json`. Events remain `{ id, type: "delta" | "done" | "error", text?, code?, retryAfter? }` on `ai:rewriteEvent`, only to the originating window. Failures carry reason codes, not service text. The browser app still has no AI bridge (RWR-71).
 
 ## Consent and private notes
 
-Built (AIS-13, AIS-14, D-259), in main, core, the Rewrite dialog's `consent` and `private` cases and the Settings switch; the `air-safeguards` journey runs both in the app:
+Current behavior (AIS-13, AIS-14, D-261, D-262), covered by `ai-contract`, `ai-app` and `air-safeguards`:
 
-- **Don't send private notes** (AIS-13): on by default. Core shows the dialog's private case when the note is under the Private root (shared notes too) or is a `private:` note, offering *Change in Settings* instead of *Generate*. That only picks the dialog's step: `ai:rewriteStart` carries the note's path, and main decides for itself (`isPrivateNote`, D-259) that a note under the workspace's `private/` folder, by the path as given or its real path (so a link into `private/` counts), is private, and refuses it (`private-note`). With a private folder, a missing or relative path counts as private.
-- **First-send confirmation** (AIS-14): the dialog names the service, its address and On this computer or Cloud, and *Send* records consent (`ai:consent`) before the rewrite starts. Main refuses to stream without consent that matches the connection's current service, address, model and key (`consent-required`), so a change of any of them asks again.
+- **User judgement** (AIS-13): no private-note setting, renderer case or main path gate. Every prompt names the selected integration and model, with a locality badge. The person decides whether to send a private or shared selection; Cancel sends nothing. Legacy `keepPrivate` keys are dropped on read and the next write, never rewritten in the owner's real profile by validation.
+- **First-send confirmation** (AIS-14): the dialog names service, model, host and This computer/Cloud; Send records consent before the request. Main still requires a matching service/address/model/key scope. Selecting another connection updates this disclosure and uses that connection's own consent.
+
+### Model and endpoint locality
+
+`aiRunsInCloud` in the shared core provider catalogue is used by Settings, the prompt and main's connection/model-list views. Ollama names ending in `:cloud` or `-cloud`, remote-model metadata or a host at `ollama.com` are Cloud. Otherwise, loopback or explicit private-LAN hosts are This computer; remote hosts are Cloud. Other editable services, including OpenAI-compatible endpoints, follow the host rather than their catalogue group. A local typed model needs no discovery. A LAN connection still obeys the existing https requirement; plain HTTP remains loopback-only. This is a configured-destination disclosure, not evidence that a service never forwards requests.
 
 ## Security review
 
@@ -109,7 +113,9 @@ SEC-09, WP-AI.9: the `ai:*` handlers' input checks and sender, address and redir
 
 - **D-257:** every text service kind in the kit; supersedes D-236 and D-249's single OpenAI-compatible contract, and D-242's owner gate.
 - **D-233:** an integration client only; kept.
-- **D-259:** consent per connection and *Don't send private notes*, enforced in main from the note's path; a key stays with its address; where an Ollama model runs; builds D-238 (AIS-05, AIS-08, AIS-13, AIS-14).
+- **D-259:** consent and key/address isolation remain; the private-note gate and unknown-model cloud assumption are superseded by D-261 and D-262.
+- **D-261:** user judgement with explicit integration/model disclosure, not private-note blocking.
+- **D-262:** remembered prompt picker and per-model/per-host locality.
 - **D-260:** the three request clocks, capped whole answers, one reason code per failure, thinking models, and the 26 built kinds only.
 - **D-238:** consent names the destination; built as D-259.
 - **D-239:** cost caps; superseded by D-256's limits (RWR-82). There's no daily or money cap: the service's own billing applies.

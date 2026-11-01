@@ -107,8 +107,8 @@
       "lookahead": true, "status": "in-progress"
     },
     {
-      "id": "WP-AI.13", "stage": "MAI", "title": "Private notes, first-send consent and leaving mid-rewrite",
-      "summary": "Don't send private notes (on by default), one confirmation before the first send to a connection, and stopping the request in main when the person switches notes or closes the window mid-rewrite.",
+      "id": "WP-AI.13", "stage": "MAI", "title": "Destination disclosure, first-send consent and leaving mid-rewrite",
+      "summary": "D-261 removes the private-notes blocking option in favour of the user's judgement and clear disclosure. D-262 shows integration, model and per-model/per-host This computer or Cloud in the prompt, and remembers the selected Writer on this device (RWR-73, AIS-03 remain in WP-AI.11). First-send confirmation stays per connection. Switching notes or closing the window stops the request in main.",
       "requirements": ["AIS-13", "AIS-14", "RWR-86"],
       "dependsOn": ["WP-AI.11"], "touches": ["core", "desktop", "views"],
       "reviews": ["code", "security", "design-system"], "specs": ["experience/ai-settings.md", "experience/rewrite-with-ai.md", "architecture/rewrite-providers.md", "plan/rewrite-acceptance.md"],
