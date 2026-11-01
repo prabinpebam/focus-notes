@@ -7,7 +7,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## Settings AI single-list stage
 
-**D-267 · WP-AI.15 / MAI · built, verifying; owner acceptance pending.** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → AIS-16. Built on own-ai-default-list-build over 86631980; the owner app remains at 86631980 until coordinator integration.
+**D-267 · WP-AI.15 / MAI · integrated, locally verified; owner acceptance pending.** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → AIS-16. Exact published Settings implementation c4335741 is integrated into own-candidate over 86631980, preserving the CLI companion and inline prompt. Combined checks and the five related journeys pass; see [candidate evidence](rewrite-acceptance.md#settings-list-combined-candidate-1-november). The owner-review refresh follows these checks; production acceptance is not implied.
 
 | Row | Done when | Evidence required |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ Open Settings → AI with two fake connections. Select the second row, see **Def
 | `git diff --check` | Passed. |
 | `node E:\Projects\side-projects\focus-notes-work\scratch\own-list-render.mjs` | Passed 26 changed reader-page/theme cases in headless Edge on a private ephemeral port, never 8787. One H1 per page, theme and SVG fit assertions; new target headings rendered. Settings light/dark captures inspected, readable. Browser/server closed in finally. |
 
-**Historical spec-only boundary (145eb45c): runtime evidence was not yet available.** UX-LIST.1 to UX-LIST.5 remain open. Initial check found missing TypeScript; approved-feed offline frozen-lockfile install restored it without downloads or manifest changes. The next check needed generated tokens; `pnpm tokens` fixed that prerequisite, then the complete check passed. Build is queued because live POP owns overlapping core AI state, AI unit tests, message catalogue and generated schemas. No runtime, test, message or schema file was edited by this spec.
+**Historical spec-only boundary (145eb45c): runtime evidence was not yet available.** UX-LIST.1 to UX-LIST.5 were open at that boundary. Initial check found missing TypeScript; approved-feed offline frozen-lockfile install restored it without downloads or manifest changes. The next check needed generated tokens; `pnpm tokens` fixed that prerequisite, then the complete check passed. Build was queued because live POP owned overlapping core AI state, AI unit tests, message catalogue and generated schemas. No runtime, test, message or schema file was edited by that spec. The implementation and combined evidence below supersede that historical queue state.
 
 ### Settings implementation evidence, 1 November
 
@@ -51,7 +51,7 @@ Open Settings → AI with two fake connections. Select the second row, see **Def
 - `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`, `node tools/component-inventory.mjs`, `pnpm check`: **passed**, generated schemas/catalogue in this implementation commit; 396 documents, 71 contracts. Kit checks skipped because worktree submodules are unchecked.
 - Canonical Slate runtime check and `git diff --check`: **passed**.
 
-Captures are in `focus-notes-work\scratch\own-list-ui`; normal/narrow Settings light/dark images inspected. Native radio plus badge/border make selection visible without colour alone; actions remain sibling controls and wrap in narrow views. Test apps quit in finally; PID-scoped close-test-apps WhatIf then actual reported 0 leftovers. No owner app/settings/profile, notes/private content, Preview or 8787 changes. No real inference, full suite, CI wait or screen-level benchmark. Owner acceptance, full assistive-technology/forced-colours audit and integration remain pending.
+Captures are in `focus-notes-work\scratch\own-list-ui`; normal/narrow Settings light/dark images inspected. Native radio plus badge/border make selection visible without colour alone; actions remain sibling controls and wrap in narrow views. Test apps quit in finally; PID-scoped close-test-apps WhatIf then actual reported 0 leftovers. That isolated implementation did not change the owner app/settings/profile, notes/private content, Preview or 8787. No real inference, full suite, CI wait or screen-level benchmark. Combined integration now passes 401 related units and all five journeys, with fresh captures in `focus-notes-work\scratch\own-int2-ui`; [candidate evidence](rewrite-acceptance.md#settings-list-combined-candidate-1-november) records the commands. Owner acceptance and full assistive-technology/forced-colours audit remain pending.
 
 ## OWNER-TESTABLE Rewrite UX stage
 
