@@ -1,7 +1,7 @@
 # Rewrite providers
 
 > [!NOTE]
-> **TL;DR.** Rewrite supports 26 API/server kinds and **GitHub Copilot (on this computer)** through its official installed-CLI SDK, labelled **Cloud** (D-264). HTTP requests, CLI stdio and sealed keys stay in main. Every prompt shows the chosen integration/model and This computer/Cloud, with a remembered picker (D-262). The person decides what to send, including private notes (D-261). First-send disclaimer/consent removal is specified in WP-AI.14 (D-266), not yet built; key/address isolation, URL/TLS, redirect, error and timeout rules stay. Copilot reuses only its runtime-owned login with isolated configuration and no tools. Focus Notes never extracts credentials or hosts a model.
+> **TL;DR.** Rewrite supports 26 API/server kinds and **GitHub Copilot (on this computer)** through its official installed-CLI SDK, labelled **Cloud** (D-264). HTTP requests, CLI stdio and sealed keys stay in main. Every prompt shows the chosen integration/model and This computer/Cloud, with a remembered picker (D-262). The person decides what to send, including private notes (D-261). First-send disclaimer/consent is removed in WP-AI.14 (D-266); key/address isolation, URL/TLS, redirect, error and timeout rules stay. Copilot reuses only its runtime-owned login with isolated configuration and no tools. Focus Notes never extracts credentials or hosts a model.
 
 Serves UC-RWR-05, UC-RWR-08 and UC-RWR-09 (AIS-01 to AIS-15, RWR-70, RWR-83). The settings people see are in [Settings → AI](../experience/ai-settings.md); how the answer reaches the note is in [Rewrite engine](rewrite-engine.md).
 
@@ -114,10 +114,10 @@ The preload `PlatformBridge.ai` exposes `settings`, `save`, `remove`, `writer`, 
 
 ## Consent and private notes
 
-D-261/D-262's user judgement and disclosure are built; D-266's consent removal is specified in WP-AI.14 and is not yet proven by existing `ai-contract`, `ai-app` and `air-safeguards` tests:
+D-261/D-262's user judgement and disclosure and D-266's consent removal are built. The updated `ai-contract`, `ai-app`, Copilot contract and `air-safeguards` tests cover direct Generate without saved consent:
 
 - **User judgement** (AIS-13): no private-note setting, renderer case or main path gate. Every prompt names the selected integration and model, with a locality badge. The person decides whether to send a private or shared selection; Cancel sends nothing. Legacy `keepPrivate` keys are dropped on read and the next write, never rewritten in the owner's real profile by validation.
-- **First-send consent removed** (AIS-14, D-266; planned): remove first-time disclaimer/consent text, extra Send confirmation and consent-required main/core/IPC gate (including the obsolete `consent(id)` path). Generate calls the selected, saved Writer directly on first or later use. Active icon, service, model and locality remain visible. Old consent fields may read compatibly but neither authorize traffic nor block sends. Key/address isolation, URL/redirect rules, request limits, cancellation and selected-text-only requests are unchanged. Test legacy connections with missing/stale consent and prove exactly one request to the visible integration, never a fallback.
+- **First-send consent removed** (AIS-14, D-266): no first-time disclaimer/consent text, extra Send confirmation or consent-required main/core/IPC gate. The preload, bridge and main IPC `consent(id)` path is removed. Generate calls the selected, saved Writer directly on first or later use. Active icon, service, model and locality remain visible. Old consent fields and the internal legacy storage helper remain compatible but neither authorize traffic nor block sends; Generate does not rewrite connection settings. Key/address isolation, URL/redirect rules, request limits, cancellation and selected-text-only requests are unchanged. Updated tests use connections with absent/outdated consent and assert direct requests to the visible integration, never a fallback.
 
 ### Model and endpoint locality
 

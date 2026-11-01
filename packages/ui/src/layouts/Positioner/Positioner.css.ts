@@ -12,6 +12,7 @@ export const xVar = createVar({ syntax: "<length>", inherits: false, initialValu
 export const yVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 /** The most room it has, when it's taller than the window allows; what it holds scrolls (D-111). */
 export const maxHeightVar = createVar();
+export const maxWidthVar = createVar();
 
 const enter = keyframes({ from: { opacity: 0 } });
 
@@ -27,7 +28,7 @@ export const base = style({
   maxHeight: fallbackVar(maxHeightVar, "none"),
   // Never wider than the window less its edges, so it reflows at 320 px (WCAG 1.4.10). Fixed, so
   // the percentage is of the window.
-  maxWidth: `calc(100% - 2 * ${edgeVar})`,
+  maxWidth: fallbackVar(maxWidthVar, `calc(100% - 2 * ${edgeVar})`),
   animationName: enter,
   animationDuration: t.duration,
   animationTimingFunction: t.easing,
@@ -35,6 +36,7 @@ export const base = style({
     // No anchor (the gallery): in the flow, where it was placed.
     '&[data-placed="static"]': { position: "static" },
     "&[data-offscreen]": { visibility: "hidden" },
+    "&[data-selection-popover]": { width: tokens.cmp.positioner.promptWidth },
   },
 });
 

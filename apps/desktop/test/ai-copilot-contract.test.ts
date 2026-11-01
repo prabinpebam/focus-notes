@@ -111,12 +111,13 @@ describe("Copilot CLI through the official SDK and a stdio protocol fake", () =>
     expect(await new CopilotIntegration({ binary: async () => undefined }).discover()).toBeUndefined();
   });
 
-  it("never contacts CLI before input validation or first-send consent checks", async () => {
+  it("validates input before contacting CLI but does not require first-send consent (D-266)", async () => {
     const f = await fixture();
     await expect(f.ai.stream({ text: "", instruction: "Shorter" }, new AbortController().signal).next()).rejects.toThrow("invalid-text");
-    await f.ai.save({ id: f.id, provider: "copilot-cli", model: "model-b" });
-    await expect(collect(f.ai)).rejects.toMatchObject({ code: "consent-required" });
     expect(await f.seen()).toEqual([]);
+    await f.ai.save({ id: f.id, provider: "copilot-cli", model: "model-b" });
+    expect(await collect(f.ai)).not.toEqual([]);
+    expect(await f.seen()).not.toEqual([]);
   });
 
   it("lists cloud models only on explicit request, and Test uses only a dummy prompt", async () => {

@@ -169,13 +169,11 @@ export interface AiBridge {
   discover(): Promise<import("./ai-providers.ts").AiFound[]>;
   /** The models a connection (saved, or the draft with its typed endpoint) lists. */
   models(input: AiConnectionInput): Promise<{ id: string; cloud: boolean }[]>;
-  /** The person agreed to send selected text to this connection's destination and model; a change of either asks again. */
-  consent(id: string): Promise<AiSettingsView>;
   /**
    * Rewrite: starts streaming the Writer's rewrite of `text` under the window's own `id`; its chunks,
    * then `done` or `error` (a reason code, with `retryAfter` seconds for a rate limit), come through
-   * `onRewriteEvent`. `path`: the note the text is from; the shell decides from it whether the note is
-   * private or shared, and refuses one while those are kept off AI.
+   * `onRewriteEvent`. `path` identifies the source note. The visible integration and the person's
+   * Generate action decide what is sent; private notes do not have a separate sending gate.
    */
   rewriteStart(id: string, input: { text: string; instruction: string; path: string }): Promise<void>;
   rewriteCancel(id: string): Promise<void>;

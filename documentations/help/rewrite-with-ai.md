@@ -11,7 +11,7 @@ Ask an AI service you chose to rewrite a few words or a paragraph, and watch the
 
 Already using GitHub Copilot in your terminal? **Find on this computer** can add its supported signed-in integration directly. It says **Cloud** and uses the same Rewrite and Stop flow.
 
-**Planned update (1 November):** the inline prompt and deselection behavior below are specified in D-265/D-266 and are being built in WP-AI.14. The current review build still has the modal prompt and first-send confirmation.
+**Built update (1 November):** the inline prompt and deselection behavior below are implemented in WP-AI.14 (D-265/D-266), pending integration into the owner's candidate build. The local fast checks and Try it evidence are in the [definition of done](../plan/definition-of-done.md#inline-prompt-popover-definition-of-done); this is not a `main` or release claim.
 
 ## Rewrite
 

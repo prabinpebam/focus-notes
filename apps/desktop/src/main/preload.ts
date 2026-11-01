@@ -225,7 +225,6 @@ contextBridge.exposeInMainWorld("focusNotes", {
     test: (id: string) => ipcRenderer.invoke("ai:test", id),
     discover: () => ipcRenderer.invoke("ai:discover"),
     models: (input: unknown) => ipcRenderer.invoke("ai:models", input),
-    consent: (id: string) => ipcRenderer.invoke("ai:consent", id),
     rewriteStart: (id: string, input: unknown) => ipcRenderer.invoke("ai:rewriteStart", id, input),
     rewriteCancel: (id: string) => ipcRenderer.invoke("ai:rewriteCancel", id),
     onRewriteEvent: (listener: (event: unknown) => void) => {

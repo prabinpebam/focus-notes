@@ -82,7 +82,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | AppRoot | layout | `rest` | 29 | None |
 | ToolbarRow | layout | `rest` | 1 | None |
 | Field | layout | `rest`, `error` | 2 | None |
-| Positioner | layout | `above`, `below`, `offscreen` | 5 | `offscreen` |
+| Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
 | ReaderPage | layout | `rest` | 1 | None |
 | PrintPage | layout | `rest` | 2 | None |

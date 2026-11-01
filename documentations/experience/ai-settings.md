@@ -1,7 +1,7 @@
 # Settings → AI
 
 > [!NOTE]
-> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered connection is the **Writer**, selectable here or in the Rewrite prompt when several connections exist. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains (D-261, D-262). D-266 removes first-send disclaimer/consent; that removal is specified, build pending in WP-AI.14.
+> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered connection is the **Writer**, selectable here or in the Rewrite prompt when several connections exist. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains (D-261, D-262). D-266 removes first-send disclaimer/consent in the built inline prompt (WP-AI.14); candidate integration and owner review remain.
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
@@ -136,7 +136,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 | Too long | "The text is too long for this service. Select less and try again." Also when an answer is longer than Focus Notes reads (D-260). |
 | Unreadable answer | "The service's answer couldn't be read. Check the address and the service in Settings → AI." |
 | Error mid-answer | "The service stopped with an error. Try again." |
-| No consent (retired by D-266) | Removed with AIS-14's consent gate; not an error in the specified inline flow. |
+| No consent (retired by D-266) | Removed with AIS-14's consent gate; not an error in the inline flow. |
 | Connection gone | "That connection is gone. Choose another in Settings → AI." |
 | Bad address | "Use an https:// address, or http://127.0.0.1 or http://localhost for a server on this computer." |
 | No model, deployment or account | "Choose or type a model.", "Enter the deployment name from Azure.", "Enter your Cloudflare account ID." |
@@ -153,7 +153,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 WP-AI.13 supplies D-261/D-262's disclosure; WP-AI.14 specifies removal of first-send consent (D-266). Existing `ai-app`, `ai-contract` and `air-safeguards` evidence covers the earlier implementation, not the pending removal:
 
 - **User judgement** (AIS-13): no private-notes blocking switch or core/IPC gate. The Rewrite prompt shows the selected integration, model and locality every time, and the person decides whether to send from public, private or shared notes. This does not authorize logging private note text or publishing it to Git.
-- **No first-send confirmation** (AIS-14, D-266; specified): the active integration icon, service, model and This computer/Cloud are the disclosure. Generate sends directly on first and later use, including after connection changes. Remove the first-time warning/disclaimer, consent text, extra Send and consent-required gate. Old consent can load compatibly but is no longer authority to send or a reason to block. Cancel sends nothing.
+- **No first-send confirmation** (AIS-14, D-266; built locally, candidate acceptance pending): the active integration icon, service, model and This computer/Cloud are the disclosure. Generate sends directly on first and later use, including after connection changes. Remove the first-time warning/disclaimer, consent text, extra Send and consent-required gate. Old consent can load compatibly but is no longer authority to send or a reason to block. Cancel sends nothing.
 
 The connection picker changes the same device-local Writer as Settings. It keeps prompt input, updates the active integration line and records `fn:ai.chooseWriter`; "Remembering your choice…" is announced during the save. Generate waits for the saved choice; errors keep the previous Writer and toast the reason.
 

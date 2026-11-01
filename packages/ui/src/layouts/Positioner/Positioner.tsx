@@ -4,6 +4,7 @@ import { anchors, fit, place, companion, CompanionContext, COMPANION_ATTR, COMPA
 import type { Space } from "../Stack/Stack.tsx";
 import { fixedBox } from "../../behaviors/frame.ts";
 import * as s from "./Positioner.css.ts";
+import { placeSelection } from "../../behaviors/selection-placement.ts";
 
 export interface PositionerProps {
   /** What it points at: the selection (or the caret), or a link. */
@@ -18,6 +19,8 @@ export interface PositionerProps {
   landmark?: "none" | "region";
   label?: string;
   id?: string;
+  /** Escape inside this non-modal task dismisses it; document clicks are handled by the editor. */
+  onDismiss?: () => void;
   children?: ReactNode;
 }
 
@@ -27,13 +30,15 @@ const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
  * Anchors floating content to a range in the note (Components → Positioner): centered on it, never
  * covering it, kept on screen, following it as it scrolls, and hidden while it's out of view.
  */
-export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "s", landmark = "none", label, id, children }: PositionerProps) {
+export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "s", landmark = "none", label, id, children, onDismiss }: PositionerProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    let frame = 0;
+    let frame = 0, scheduledAt: number | undefined;
     const measure = () => {
+      const started = scheduledAt ?? performance.now();
+      scheduledAt = undefined;
       frame = 0;
       const a = anchors.get(anchor);
       if (!a) {
@@ -44,6 +49,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       const px = (v: string) => parseFloat(cs.getPropertyValue(name(v))) || 0;
       // Its natural size, before any limit from an earlier place.
       el.style.removeProperty(name(s.maxHeightVar));
+      el.style.removeProperty(name(s.maxWidthVar));
       const box = el.getBoundingClientRect();
       const touch = globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
       // Inside the drawn window (D-14), the anchor's viewport coordinates move into the window's.
@@ -51,6 +57,26 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       const at = { top: a.top - o.top, bottom: a.bottom - o.top, left: a.left - o.left, right: a.right - o.left };
       const view = { width: o.width, height: o.height };
       const metrics = { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) };
+      if (anchor === "rewrite" && a.fragments && a.viewport) {
+        const relative = (r: { left: number; right: number; top: number; bottom: number }) => ({
+          left: r.left - o.left, right: r.right - o.left, top: r.top - o.top, bottom: r.bottom - o.top,
+        });
+        const viewport = relative(a.viewport);
+        viewport.top = Math.max(viewport.top, metrics.topBand);
+        viewport.bottom = Math.min(viewport.bottom, o.height);
+        viewport.left = Math.max(viewport.left, 0);
+        viewport.right = Math.min(viewport.right, o.width);
+        const p = placeSelection(a.fragments.map(relative), viewport, box, metrics);
+        el.style.setProperty(name(s.xVar), `${Math.round(p.x)}px`);
+        el.style.setProperty(name(s.yVar), `${Math.round(p.y)}px`);
+        el.style.setProperty(name(s.maxHeightVar), `${Math.floor(p.height)}px`);
+        el.style.setProperty(name(s.maxWidthVar), `${Math.floor(p.width)}px`);
+        el.dataset.placed = p.side;
+        if (p.offscreen) el.dataset.offscreen = "";
+        else delete el.dataset.offscreen;
+        performance.measure("fn:rewrite.anchor", { start: started, duration: performance.now() - started });
+        return;
+      }
       const p = place(at, box, view, metrics, touch ? "below" : placement, align);
       // Too tall for the window there: the side with more room, held to it (D-111).
       const f = fit(at, p, box.height, view, metrics);
@@ -62,7 +88,10 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       else delete el.dataset.offscreen;
     };
     const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
+      if (!frame) {
+        scheduledAt = performance.now();
+        frame = requestAnimationFrame(measure);
+      }
     };
     // Opening on a moving note: the auto-scroll ends first, so it opens where the anchor stays (DEF-21).
     const closed = anchors.opening();
@@ -109,6 +138,14 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
         className={`${s.base} ${s.offset[offset]}`}
         role={landmark === "region" ? "region" : undefined}
         aria-label={landmark === "region" ? label : undefined}
+        data-selection-popover={anchor === "rewrite" ? "" : undefined}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && onDismiss && !e.defaultPrevented) {
+            e.preventDefault();
+            e.stopPropagation();
+            onDismiss();
+          }
+        }}
         {...{ [COMPANION_ATTR]: "" }}
         onPointerEnter={() => { companion.hovered = true; }}
         onPointerLeave={() => {

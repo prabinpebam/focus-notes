@@ -23,7 +23,7 @@ That the rows marked built work in the app they're using, that the original is n
 | RWR-70 | No model, runtime or AI SDK in the dependencies; every request goes through main's `fetch` | Code review of the branch; `pnpm check` licences | — |
 | RWR-71 | The web build has no `ai` bridge; `rewrite.open` disabled there | Code (`enabled` needs `bridge.ai`) | Journey or web test |
 | RWR-72 | Ctrl+Shift+R, the text menu and the Edit menu open the dialog on the selection; no selection announces and opens nothing | `packages/core/test/keymap-layers.test.ts`, `menu-bar`, `text-menu` tests; `apps/desktop/e2e/spelling-menu.spec.ts` (with text selected, *Rewrite…* heads the text menu and takes its first focus); Owner | Journey |
-| RWR-73 | The inline prompt's integration/picker, field, presets and actions; no preview or disclaimer; presets never send, Generate disabled when empty | Existing `ui:check` and owner review cover the modal/picker only | WP-AI.14 inline view check, look and journey |
+| RWR-73 | The inline prompt's integration/picker, field, presets and actions; no preview or disclaimer; presets never send, Generate disabled when empty | `ui:check`; core units; three `air-safeguards` journeys; normal/small light/dark popover and picker captures reviewed (1 November) | Candidate integration and owner acceptance |
 | RWR-74 | No Writer → *Set up AI* opens Settings at AI | `packages/core/test/ai-app.test.ts` (at AI even while Settings' account check is still running: it once opened at Account on CI); `apps/desktop/e2e/air-safeguards.spec.ts` (*Change in Settings* opens at AI); Owner | Journey |
 | RWR-75 | A note changed after capture sends nothing and says so | Code (`doc.eq` check in EditorSurface) | Unit test |
 | RWR-76 | Read-only and shimmer while generating; toast with Stop; no hand-over for saving | `packages/editor/test/rewrite-stream.test.ts` (streams in place, locked; the lock stops commands, undo and inserts); `apps/desktop/e2e/air-rewrite.spec.ts` (typing, Ctrl+B and Ctrl+Z change nothing, `aria-busy`, nothing on disk while it streams) | — |
@@ -38,10 +38,10 @@ That the rows marked built work in the app they're using, that the original is n
 | RWR-85 | Ctrl+Shift+R and ⇧⌘R named per platform | `packages/core/test/text-menu.test.ts` at bb50e208 (the text menu's key per platform) | The finish message's undo key; the cheat sheet and tooltips |
 | RWR-86 | Switching or closing the note stops the request in main | `packages/core/test/ai-app.test.ts` (a note switch cancels in the shell and the new note gets no late pieces; `pagehide` cancels); main aborts on `destroyed` and `did-start-loading`; `apps/desktop/e2e/air-rewrite.spec.ts` (switching notes mid-stream closes the request at the service; neither note changes) | — |
 
-| RWR-87 | Non-modal inline prompt; selection visible in scrollable document; no passage preview, backdrop or fullscreen | Specified (D-265), no implementation evidence | UX-POP.1; view check and light/dark captures |
-| RWR-88 | Fragment anchor follows scroll/resize, clamps while any selection is visible, leaves only when all offscreen, draft returns on scroll back | Specified (D-265), no implementation evidence | UX-POP.2/3; geometry units, scroll journey, reviewed captures |
-| RWR-89 | Empty-prompt deselection dismisses with no confirmation, send or write; control focus is not deselection | Specified (D-265), no implementation evidence | UX-POP.4; state-machine units and journey |
-| RWR-90 | Written/preset/whitespace prompt asks Keep editing / Discard prompt; safe default/Escape preserves selection and draft; discard clears, no send/write | Specified (D-265), no implementation evidence | UX-POP.5; state units, both journey branches, confirmation light/dark |
+| RWR-87 | Non-modal inline prompt; selection visible in scrollable document; no passage preview, backdrop or fullscreen | UX-POP.1 locally proven: `ui:check`, D-265 journey and reviewed normal/small light/dark captures | Candidate integration and owner acceptance |
+| RWR-88 | Fragment anchor follows scroll/resize, clamps while any selection is visible, leaves only when all offscreen, draft returns on scroll back | UX-POP.2/3 locally proven: `selection-placement.test.ts` covers wrapped/partial/gap visibility and full clamp; D-265 scroll/resize/offscreen-return journey passes | Owner acceptance; see honest applied-placement measures in wait inventory |
+| RWR-89 | Empty-prompt deselection dismisses with no confirmation, send or write; control focus is not deselection | UX-POP.4 locally proven: core draft units and D-265 empty dismissal/control-focus journey | Candidate integration and owner acceptance |
+| RWR-90 | Written/preset/whitespace prompt asks Keep editing / Discard prompt; safe default/Escape preserves selection and draft; discard clears, no send/write | UX-POP.5 locally proven: core units, real-editor observer snapshot regression and repeated same-caret Escape/Keep editing/Discard journey; confirmation light/dark reviewed | Candidate integration and owner acceptance |
 
 ## Settings → AI
 
@@ -60,7 +60,7 @@ That the rows marked built work in the app they're using, that the original is n
 | AIS-11 | Each error code has its words | `en.json` keys; `ui:check`; `packages/core/test/ai-app.test.ts` (the words for each code, Retry-After's seconds) | — |
 | AIS-12 | The first build's service carries over | `ai-rewrite.test.ts` (moves the first version's single service into a connection) | — |
 | AIS-13 | User judgement after integration/model/locality disclosure; legacy settings still load | `ai-contract.test.ts` (old key ignored/stripped, connections preserved, disposable private selection sends after consent); `ai-app.test.ts` (private selections follow the same explicit-send path; local/cloud card, remembered picker and save failure) | `air-safeguards.spec.ts` (private selection Cancel/Send/undo; one/two-connection light/dark captures; persisted choice and reopened prompt) |
-| AIS-14 | No first-send warning/disclaimer, consent, Send step or gate; Generate uses the visible integration directly | D-266 specified; old consent tests prove superseded behavior, not this row | UX-POP.6; core/provider units for absent/stale legacy consent, first-send fake journey and captures |
+| AIS-14 | No first-send warning/disclaimer, consent, Send step or gate; Generate uses the visible integration directly | UX-POP.6 locally proven: core/provider units for absent/stale consent and changed capture; three fake-service safeguards journeys pass including first Generate, Cancel and undo | Candidate integration and owner acceptance; full MAI gate remains open |
 | AIS-15 | `ai.json` on the data inventory | `packages/core/test/inventory.test.ts` | — |
 
 Test titles in brackets are the tests' own, on the branch at bb50e208; the file list is in [Rewrite engine → Tests](../architecture/rewrite-engine.md#tests).
@@ -85,6 +85,26 @@ Test titles in brackets are the tests' own, on the branch at bb50e208; the file 
 | LIC-03 | No AI dependency | `pnpm check` licences | — |
 
 ## Stage gate
+
+### Inline prompt delivery evidence (1 November)
+
+WP-AI.14 / UX-POP.1 to UX-POP.6 are built and locally proven on `own-popover-build`, not yet integrated into the owner's `52bf0dfe` candidate. These commands run from the owned worktree:
+
+| Command | Result |
+| --- | --- |
+| `pnpm check` | PASS: boundaries, chain, plan, licences, generated inventory and `ui:check` (394 documents / 71 components / 547 commands) |
+| `pnpm typecheck` | PASS, all workspace packages |
+| `pnpm exec vitest run packages\ui\test\selection-placement.test.ts packages\ui\test\popover-box.test.ts packages\editor\test\format.test.ts packages\core\test\ai-app.test.ts packages\ui-runtime\test\check.test.ts apps\desktop\test\ai-contract.test.ts apps\desktop\test\ai-rewrite.test.ts apps\desktop\test\ai-own-key.test.ts apps\desktop\test\ai-copilot-contract.test.ts apps\desktop\test\ai-ollama.live.test.ts` | PASS: 206 tests; five opt-in live tests skipped |
+| `pnpm --filter @focus-notes/desktop run build` | PASS on final source |
+| `pnpm --filter @focus-notes/desktop exec playwright test air-safeguards.spec.ts air-rewrite.spec.ts --workers=1 -g 'D-265\|AIS-13\|AIS-04\|AI Rewrite: streams'` with `FOCUS_NOTES_E2E=1` | PASS: all four journeys, including external overwrite and switching notes |
+
+The initial extra stream journey failed at external replacement: the new selection listener effect accessed `editor.view.dom` while Tiptap replaced its view. A bounded renderer diagnostic identified that exact access; using the mounted column's owning document fixes it. The final four-journey run passes without a save/conflict workaround or weakening the assertion.
+
+Normal/small light/dark popover, loss-dialog and remembered-picker captures were reviewed in the worker's `own-popover-ui` capture set. At 480 × 360, the journey scrolls the popover's existing Surface and asserts Generate is in the viewport without moving the popover outside the editor. The [wait inventory](../architecture/perceived-performance.md#rewrite-waits) records the final applied-placement maxima (82.90 / 78.10 ms) and deselection maxima (18.50 / 17.90 ms, asserted ≤ 100 ms). Applied placement is not literal paint or a 16.7 ms wall-clock claim.
+
+The pinned Slate command `node E:\Projects\side-projects\focus-notes\slate\scripts\runtime-host.mjs check --repo . --host documentations` passes against the owned worktree. The worker's private headless Edge renderer checks all 17 affected reader pages in both themes (34 cases): one H1, figures inside the content column and the changed anchors. It blocks external requests and closes its ephemeral-port server/browser; it never uses port 8787. Historical missing-link and anchor-parser observations are kept separately from this slice.
+
+Candidate integration, the owner's acceptance, full MAI evidence, screen-reader/contrast review and the desktop merge gate remain pending. No full suite, CI wait, live account test or owner app relaunch ran in this slice.
 
 **GATE-MAI** passes when every row above has its evidence, the owner has accepted Rewrite and Settings → AI in the review build, and the branch has passed the desktop gate for app code (D-206, sized by D-255). Live services are never part of CI: the owner's own trial is the evidence for real services.
 

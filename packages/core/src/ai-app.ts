@@ -328,34 +328,35 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     await commands.run("settings.open");
   });
 
-  // ---- Rewrite: the dialog takes the prompt; the answer streams into the note ----
+  // ---- Rewrite: the inline popover takes the prompt; the answer streams into the note ----
   let open = false, selection = "", prompt = "", instruction = "";
+  let confirmingDiscard = false, focusRequest = 0;
   /** The note the selection came from: a switch stops the rewrite. */
   let fromKey = "", fromPath = "";
   let choosingWriter = false;
   /** The rewrite streaming into the note: its id, whether any text came, and the toast that says so. */
   let running: { id: string; got: boolean; off: () => void; toast: unknown } | undefined;
   const presetText = (p: (typeof PRESETS)[number]) => t(`rewrite.preset.${p}.prompt`);
-  const closeModal = () => { open = false; changed(); };
-  /** Consent names the destination before the first send; the person decides what to send. */
-  const actions = () => {
-    const w = writerConnection();
-    if (!w) return "setup";
-    return w.consented ? "compose" : "consent";
+  const closeModal = () => {
+    open = false; confirmingDiscard = false; prompt = "";
+    editorAction("rewrite.release");
+    changed();
   };
+  const actions = () => writerConnection() ? "compose" : "setup";
   viewModels.register({
     id: "vm.rewrite",
     reads: "*",
     schema: { type: "object", properties: {
-      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel", "writerName", "writerService", "writerModel", "writerWhere", "writerKind", "writerIcon", "writerSaveText", "consentText"].map((k) => [k, { type: "string" as const }])),
-      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "needsConsent", "canChooseWriter", "choosingWriter", "writerSaving", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
+      ...Object.fromEntries(["selection", "prompt", "actions", "writerLabel", "writerName", "writerService", "writerModel", "writerWhere", "writerKind", "writerIcon", "writerSaveText"].map((k) => [k, { type: "string" as const }])),
+      ...Object.fromEntries(["open", "empty", "needsSetup", "hasWriter", "confirmingDiscard", "canChooseWriter", "choosingWriter", "writerSaving", "concise", "warmer", "grammar"].map((k) => [k, { type: "boolean" as const }])),
+      focusRequest: { type: "number" },
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
     } },
     select: () => {
       const w = writerConnection();
       const a = actions();
       return {
-        open, selection, prompt,
+        open, selection, prompt, confirmingDiscard, focusRequest,
         writerLabel: w ? t("rewrite.writer", { name: w.name, detail: describe(w) }) : "",
         writerName: w?.name ?? "", writerService: w ? aiProvider(w.provider)!.label : "",
         writerModel: w ? w.model || w.deployment : "",
@@ -367,8 +368,6 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         writerMenu: [{ id: "writer", items: connections.map((c) => ({ id: c.id, label: `${c.name} · ${describe(c)}`, checked: c.id === writer })) }],
         needsSetup: !w, hasWriter: Boolean(w),
         actions: a,
-        needsConsent: a === "consent",
-        consentText: w ? t("rewrite.consent", { service: aiProvider(w.provider)!.label, model: w.model || w.deployment, host: destination(w.provider, w.endpoint, w.account), where: where(w.provider, w.endpoint, w.model, w.modelCloud) }) : "",
         empty: !prompt.trim() || choosingWriter,
         concise: prompt === presetText("concise"), warmer: prompt === presetText("warmer"), grammar: prompt === presetText("grammar"),
       };
@@ -412,13 +411,18 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   // Another note opened, or this one closed: the old note's rewrite stops in the shell too.
   store.subscribe(() => {
     if (running && store.state.note.key !== fromKey) drop();
+    if (open && store.state.note.key !== fromKey) closeModal();
   });
   // The window going away (reload, close): nothing keeps running in the shell for it.
   (globalThis as { addEventListener?: (type: string, fn: () => void) => void }).addEventListener?.("pagehide", drop);
 
   reg("rewrite.open", () => {
-    if (open || running) return;
+    if (running) return;
     // The editor answers with the selection (rewrite.captured).
+    if (open) {
+      if (!confirmingDiscard) { focusRequest++; changed(); }
+      return;
+    }
     editorAction("rewrite.capture");
   }, { icon: "rename", shortcut: { default: "Mod+Shift+R" }, layer: "writer", group: "editing", enabled: (s) => Boolean(ai) && s.note.status === "ready" });
   reg("rewrite.captured", async (a) => {
@@ -427,13 +431,28 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       announce(t("rewrite.selectFirst"));
       return;
     }
-    open = true; selection = text; prompt = "";
+    open = true; selection = text; prompt = ""; confirmingDiscard = false; focusRequest++;
     fromKey = store.state.note.key;
     fromPath = store.state.note.path ?? "";
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
     await load();
   });
   reg("rewrite.dismiss", (a) => { if (a.open !== true) closeModal(); });
+  reg("rewrite.deselected", (a) => {
+    if (!open || confirmingDiscard) return;
+    const started = typeof a.started === "number" ? a.started : performance.now();
+    if (prompt.length === 0) closeModal();
+    else { confirmingDiscard = true; changed(); }
+    performance.measure("fn:rewrite.deselect", { start: started, duration: performance.now() - started });
+  });
+  reg("rewrite.keepPrompt", () => {
+    if (!confirmingDiscard) return;
+    confirmingDiscard = false;
+    editorAction("rewrite.restore");
+    focusRequest++;
+    changed();
+  });
+  reg("rewrite.discardPrompt", () => { if (confirmingDiscard) closeModal(); });
   reg("rewrite.prompt", (a) => { prompt = String(a.value ?? ""); changed(); });
   reg("rewrite.writer", async (a) => {
     if (!ai || !open || choosingWriter || typeof a.value !== "string" || a.value === writer) return;
@@ -456,25 +475,12 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const p = PRESETS.find((x) => x === a.value);
     if (p) { prompt = presetText(p); changed(); }
   });
-  // Generate: the dialog closes, and the note locks and shimmers (rewrite.began) while the answer comes.
-  // The first send to a connection is its consent ("Send and rewrite", { consent: true }).
-  reg("rewrite.generate", async (a) => {
+  // Generate closes the popover directly; the captured note locks and shimmers (rewrite.began).
+  reg("rewrite.generate", () => {
     const w = writerConnection();
-    if (!ai || !prompt.trim() || running || choosingWriter || !w) return;
-    const step = actions();
-    if (step === "consent") {
-      if (a.consent !== true) return;
-      try {
-        const consented = await ai.consent(w.id);
-        if (!open || choosingWriter || writer !== w.id) return;
-        apply(consented);
-      } catch (e) {
-        toast(reason(e, "ai.error.provider"), { tone: "error" });
-        return;
-      }
-    }
+    if (!ai || !open || confirmingDiscard || !prompt.trim() || running || choosingWriter || !w) return;
     instruction = prompt.trim();
-    closeModal();
+    open = false; prompt = ""; changed();
     editorAction("rewrite.begin");
   });
   reg("rewrite.began", (a) => {

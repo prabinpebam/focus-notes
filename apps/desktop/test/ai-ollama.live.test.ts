@@ -60,9 +60,7 @@ describe.skipIf(!model)("live: the real Ollama on this computer", () => {
     log(`Test passed in ${Date.now() - t} ms (includes loading the model if it wasn't)`);
   }, 180_000);
 
-  it("streams a rewrite in pieces, after consent", async () => {
-    await expect(ai.stream({ text: "x", instruction: "y" }, new AbortController().signal).next()).rejects.toThrow("consent-required");
-    await ai.consent(id);
+  it("streams a rewrite in pieces without first-send consent", async () => {
     const t = Date.now();
     let first = 0;
     const parts: string[] = [];

@@ -432,21 +432,19 @@ describe("Find on this computer", () => {
 });
 
 describe("consent and private notes (RWR-43)", () => {
-  it("sends nothing before consent, and asks again when the destination or model changes", async () => {
+  it("sends without legacy consent, including after changing the model (D-266)", async () => {
     fake.use(provider("openai", { key: KEY }));
     const ai = new AiService(file(), crypt, write, fake.fetch());
     const s = await ai.save({ provider: "openai", name: "OpenAI", model: "model-a", key: KEY });
     const id = s.connections[0]!.id;
     expect(s.connections[0]!.consented).toBe(false);
-    const before = fake.seen.length;
-    await expect(collect(ai, REWRITE)).rejects.toThrow("consent-required");
-    expect(fake.seen.length).toBe(before);
+    expect((await collect(ai, REWRITE)).join("")).toBe(TEXT);
     await ai.consent(id);
     expect((await collect(ai, REWRITE)).join("")).toBe(TEXT);
     // A new name keeps it; a new model doesn't.
     expect((await ai.save({ id, provider: "openai", name: "Renamed", model: "model-a" })).connections[0]!.consented).toBe(true);
     expect((await ai.save({ id, provider: "openai", name: "Renamed", model: "model-b" })).connections[0]!.consented).toBe(false);
-    await expect(collect(ai, REWRITE)).rejects.toThrow("consent-required");
+    expect((await collect(ai, REWRITE)).join("")).toBe(TEXT);
     // A new address for an editable endpoint doesn't either.
     const local = await ai.save({ provider: "ollama", name: "Ollama", model: "m" });
     const lid = local.connections[1]!.id;

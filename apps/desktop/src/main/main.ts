@@ -1240,7 +1240,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("ai:test", (id: unknown) => ai.test(id));
   handle("ai:discover", () => ai.discover());
   handle("ai:models", (input: unknown) => ai.models(input));
-  handle("ai:consent", (id: unknown) => ai.consent(id));
   // Rewrite streams: one per window at a time, each chunk sent to the window that asked, tagged with its id.
   // A Stop, a new rewrite, or the window closing or reloading aborts the request here, not just in the window.
   const rewrites = new Map<number, { id: string; abort: AbortController }>();

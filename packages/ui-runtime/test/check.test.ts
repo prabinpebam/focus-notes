@@ -66,13 +66,14 @@ describe("ui:check (DSY-08)", () => {
     expect(messagesOf(checkUi({ ...base, views: { t: { ...view({ type: "Text", props: { value: { t: "gallery.sample" } } }).t, focus: undefined } } }))).toContain("accessibility: every view says where focus goes when it opens");
     expect(messagesOf(problems({ type: "Text", id: "f", props: { value: { t: "gallery.sample" } } }))).toContain('references: duplicate id "f"');
   });
-  it("lets an overlay view add only dialogs and side sheets beside the main view (Settings, the theme manager)", () => {
+  it("lets an overlay view add dialogs, side sheets and anchored popovers beside the main view", () => {
     const dialog = { type: "Dialog", id: "f", props: { title: { t: "gallery.sample" }, closeLabel: { t: "dialog.close" } }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] };
     const overlay = (children: unknown[]) => ({ o: { $schema: VIEW_SCHEMA_URL, id: "o", overlay: true, viewModels: [], focus: "f", root: { type: "Stack", children } } });
     expect(checkUi({ ...base, views: overlay([dialog]) })).toEqual([]);
     const sheet = { type: "Sheet", id: "s", props: { label: { t: "gallery.sample" }, side: "end", width: "theme" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] };
     expect(checkUi({ ...base, views: overlay([dialog, sheet]) })).toEqual([]);
-    expect(messagesOf(checkUi({ ...base, views: overlay([dialog, { type: "Text", props: { value: { t: "gallery.sample" } } }]) }))).toContain("design: an overlay view's root is a Stack of Dialogs and Sheets");
+    expect(checkUi({ ...base, views: overlay([dialog, { type: "Positioner", props: { anchor: "rewrite" } }]) })).toEqual([]);
+    expect(messagesOf(checkUi({ ...base, views: overlay([dialog, { type: "Text", props: { value: { t: "gallery.sample" } } }]) }))).toContain("design: an overlay view's root is a Stack of Dialogs, Sheets and anchored Positioners");
     expect(messagesOf(checkUi({ ...base, views: { o: { ...overlay([dialog]).o, overlay: undefined } } }))).toContain("design: a view's root is AppRoot");
   });
   it("limits expressions", () => {

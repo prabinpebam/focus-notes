@@ -77,8 +77,7 @@ describe("AI connections (main process)", () => {
     // Changing it without a key keeps the saved one.
     const id = saved.connections[0]!.id;
     expect((await ai.save({ id, provider: "anthropic", name: "Claude", model: "claude-y" })).connections[0]!.hasKey).toBe(true);
-    await expect(collect(ai, { text: "hello", instruction: "warmer" })).rejects.toThrow("consent-required");
-    expect((await ai.consent(id)).connections[0]!.consented).toBe(true);
+    expect((await ai.settings()).connections[0]!.consented).toBe(false);
     expect(await collect(ai, { text: "hello", instruction: "warmer" })).toEqual(["Hel", "lo"]);
     expect(JSON.parse(seen.at(-1)!.init.body as string)).toMatchObject({ stream: true });
     expect(seen.at(-1)!.url).toBe("https://api.anthropic.com/v1/messages");

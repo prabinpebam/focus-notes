@@ -84,17 +84,11 @@ async function select(page: Page, text: string) {
 async function rewrite(page: Page, text: string, prompt: string) {
   await select(page, text);
   await page.keyboard.press(`${mod}+Shift+R`);
-  const dialog = page.getByRole("dialog", { name: "Rewrite" });
+  const dialog = page.getByRole("region", { name: "Rewrite", exact: true });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
-  // The first send to a connection asks once where the text goes (AIS-14); after that it's Generate.
-  const consent = dialog.getByRole("button", { name: "Send", exact: true });
-  if (await consent.isVisible()) {
-    await expect(dialog.getByText(/^Rewrite sends the selected text and your prompt to Ollama · fake at 127\.0\.0\.1:/)).toBeVisible();
-    // A local model is labelled from its name and endpoint, without discovery (D-262).
-    await expect(dialog.getByText(/· This computer\. You decide what to send\. Nothing else from your notes is sent\.$/)).toBeVisible();
-    await consent.click();
-  } else await dialog.getByRole("button", { name: "Generate" }).click();
+  await expect(dialog.getByText("This computer", { exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Generate" }).click();
   await expect(dialog).toBeHidden();
 }
 

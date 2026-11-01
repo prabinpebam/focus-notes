@@ -35,12 +35,6 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
       return settings;
     },
     discover: async () => [], models: async () => [],
-    consent: async (id) => {
-      calls.push(`consent:${id}`);
-      await opts.consentWait;
-      settings = { ...settings, connections: settings.connections.map((c) => c.id === id ? { ...c, consented: true } : c) };
-      return settings;
-    },
     rewriteStart: async (id, input) => {
       calls.push(`start:${id}:${JSON.stringify(input)}`);
       if (opts.startError) throw new Error(`Error invoking remote method 'ai:rewriteStart': Error: ${opts.startError}`);
@@ -79,6 +73,51 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
   };
   return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, ai, setSettings: (v: AiSettingsView) => { settings = v; }, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
 }
+
+describe("Rewrite prompt deselection (D-265)", () => {
+  it("reopening an existing prompt focuses it without discarding its draft or capture", async () => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.prompt", { value: "My draft" });
+    const focus = Number(t.vm().focusRequest);
+    await t.commands.run("rewrite.open");
+    expect(t.vm()).toMatchObject({ open: true, prompt: "My draft", focusRequest: focus + 1 });
+    expect(t.editor).toEqual([]);
+  });
+  it("dismisses an empty prompt immediately and never sends", async () => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.deselected");
+    expect(t.vm()).toMatchObject({ open: false, confirmingDiscard: false, prompt: "" });
+    expect(t.calls).toEqual([]);
+    expect(t.editor).toContain("rewrite.release");
+  });
+  it.each(["Make it warmer", " "])("retains written input %j until Keep editing or Discard prompt", async (prompt) => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.prompt", { value: prompt });
+    await t.commands.run("rewrite.deselected");
+    await t.commands.run("rewrite.deselected");
+    expect(t.vm()).toMatchObject({ open: true, confirmingDiscard: true, prompt });
+    await t.commands.run("rewrite.keepPrompt");
+    expect(t.vm()).toMatchObject({ open: true, confirmingDiscard: false, prompt });
+    expect(t.editor.filter((action) => action === "rewrite.restore")).toHaveLength(1);
+    await t.commands.run("rewrite.deselected");
+    await t.commands.run("rewrite.discardPrompt");
+    expect(t.vm()).toMatchObject({ open: false, confirmingDiscard: false, prompt: "" });
+    expect(t.calls).toEqual([]);
+  });
+  it("a preset counts as written input and changing notes clears the captured draft", async () => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.preset", { value: "warmer" });
+    await t.commands.run("rewrite.deselected");
+    expect(t.vm().confirmingDiscard).toBe(true);
+    t.store.update((s) => ({ ...s, note: { ...s.note, key: "new-note" } }));
+    expect(t.vm()).toMatchObject({ open: false, confirmingDiscard: false, prompt: "" });
+    expect(t.calls).toEqual([]);
+  });
+});
 
 describe("Rewrite in the window", () => {
   it("names the connection's brand icon in Settings without changing its connection identity", async () => {
@@ -183,53 +222,37 @@ describe("Rewrite in the window", () => {
   });
 });
 
-describe("consent before the first send", () => {
-  it.each(["cancel", "choose"])("does not send after %s while first-send permission is saving", async (action) => {
-    let release = () => {};
-    const consentWait = new Promise<void>((resolve) => { release = resolve; });
-    const t = setup({ consentWait, connections: [conn(), conn({ id: "other", model: "other-model", consented: true })] });
-    await t.commands.run("rewrite.captured", { text: "Old words." });
-    await t.commands.run("rewrite.prompt", { value: "My prompt" });
-    const sending = t.commands.run("rewrite.generate", { consent: true });
-    await settle();
-    if (action === "cancel") await t.commands.run("rewrite.dismiss");
-    else await t.commands.run("rewrite.writer", { value: "other" });
-    release();
-    await sending;
-    expect(t.editor).toEqual([]);
-    expect(t.vm().prompt).toBe("My prompt");
-    if (action === "choose") {
-      expect(t.vm()).toMatchObject({ open: true, writerModel: "other-model" });
-      await t.commands.run("rewrite.generate");
-      expect(t.editor).toEqual(["rewrite.begin"]);
-    } else expect(t.vm().open).toBe(false);
-  });
-  it("asks once, names where the text goes, and only then sends", async () => {
+describe("direct Generate without first-send consent (D-266)", () => {
+  it("sends nothing when the editor rejects a changed captured document", async () => {
     const t = setup({ consented: false });
     await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.prompt", { value: "My draft" });
+    await t.commands.run("rewrite.generate");
+    await t.commands.run("rewrite.began", { ok: false });
+    expect(t.calls).toEqual([]);
+    expect(t.toasts).toContain(en["rewrite.error.stale"]);
+  });
+  it.each([false, true])("uses Generate with legacy consent=%s and shows only the active integration", async (consented) => {
+    const t = setup({ consented });
+    await t.commands.run("rewrite.captured", { text: "Old words." });
     await settle();
-    expect(t.vm()).toMatchObject({ actions: "consent", needsConsent: true });
-    expect(t.vm().consentText).toBe("Rewrite sends the selected text and your prompt to OpenAI · gpt-x at api.openai.com · Cloud. You decide what to send. Nothing else from your notes is sent.");
+    expect(t.vm()).toMatchObject({ actions: "compose", writerService: "OpenAI", writerModel: "gpt-x", writerWhere: "Cloud" });
+    expect(t.vm()).not.toHaveProperty("consentText");
     await t.commands.run("rewrite.preset", { value: "warmer" });
-    // Generate without the consent flag does nothing.
     await t.commands.run("rewrite.generate");
     expect(t.calls).toEqual([]);
-    expect(t.editor).toEqual([]);
-    await t.commands.run("rewrite.generate", { consent: true });
-    expect(t.calls).toEqual(["consent:w"]);
     expect(t.editor).toEqual(["rewrite.begin"]);
-    // From now on it's the ordinary prompt.
     await t.commands.run("rewrite.captured", { text: "More." });
-    expect(t.vm()).toMatchObject({ actions: "compose", needsConsent: false });
+    expect(t.vm()).toMatchObject({ actions: "compose" });
   });
 });
 
 describe("disclosed integration and user judgement (D-261, D-262)", () => {
   it.each(["C:/ws/private/notes/diary.md", "private:diary.md"])("allows the person to rewrite %s", async (path) => {
     const t = setup({ path, consented: false });
-    await t.begin({ consent: true });
+    await t.begin();
     expect(t.vm().actions).toBe("compose");
-    expect(t.calls).toContain("consent:w");
+    expect(t.calls.some((c) => c.startsWith("consent:"))).toBe(false);
     expect(t.calls.at(-1)).toContain(`"path":"${path}"`);
   });
   it("shows a single local Ollama model without a picker or discovery requirement", async () => {
@@ -237,7 +260,7 @@ describe("disclosed integration and user judgement (D-261, D-262)", () => {
     await t.commands.run("rewrite.captured", { text: "Words" });
     expect(t.vm()).toMatchObject({ writerService: "Ollama", writerKind: "ollama", writerIcon: "aiOllama", writerModel: "llama3.2", writerWhere: "This computer", canChooseWriter: false });
   });
-  it("remembers a picked integration for the next rewrite, with its own first-send consent", async () => {
+  it("remembers a picked integration for the next rewrite without a first-send consent gate", async () => {
     const t = setup({ connections: [
       conn({ provider: "ollama", model: "llama3.2", endpoint: "http://localhost:11434", consented: true }),
       conn({ id: "cloud", provider: "ollama", model: "gpt-oss:cloud", endpoint: "http://localhost:11434" }),
@@ -245,7 +268,7 @@ describe("disclosed integration and user judgement (D-261, D-262)", () => {
     await t.commands.run("rewrite.captured", { text: "Words" });
     expect(t.vm().canChooseWriter).toBe(true);
     await t.commands.run("rewrite.writer", { value: "cloud" });
-    expect(t.vm()).toMatchObject({ writerModel: "gpt-oss:cloud", writerWhere: "Cloud", needsConsent: true });
+    expect(t.vm()).toMatchObject({ writerModel: "gpt-oss:cloud", writerWhere: "Cloud", actions: "compose" });
     await t.commands.run("rewrite.dismiss");
     await t.commands.run("rewrite.captured", { text: "Next" });
     expect(t.vm().writerModel).toBe("gpt-oss:cloud");
@@ -292,16 +315,16 @@ describe("Change in Settings (RWR-74, AIS-13)", () => {
 
 describe("where text goes and which key goes with it (D-259)", () => {
   const ollama = { provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "gpt-oss:120b-cloud", hasKey: false };
-  it("a local server's model that may be cloud-routed is named as the cloud, in consent and in Settings", async () => {
+  it("a local server's cloud-routed model is disclosed in the popover and Settings", async () => {
     const t = setup({ consented: false, connection: { ...ollama, modelCloud: true } });
     await t.commands.run("rewrite.captured", { text: "Old words." });
     await settle();
-    expect(t.vm().consentText).toContain("127.0.0.1:11434 · Cloud.");
+    expect(t.vm()).toMatchObject({ writerService: "Ollama", writerModel: "gpt-oss:120b-cloud", writerWhere: "Cloud" });
     expect((t.settingsVm().connections as { detail: string }[])[0]!.detail).toBe("Ollama · gpt-oss:120b-cloud · Cloud");
     const local = setup({ consented: false, connection: { ...ollama, model: "llama3.2" } });
     await local.commands.run("rewrite.captured", { text: "Old words." });
     await settle();
-    expect(local.vm().consentText).toContain("127.0.0.1:11434 · This computer.");
+    expect(local.vm()).toMatchObject({ writerWhere: "This computer" });
   });
   describe("Copilot direct discovery (D-264)", () => {
     it("reloads settings after discovery and names cloud inference without another setup form", async () => {
@@ -320,7 +343,7 @@ describe("where text goes and which key goes with it (D-259)", () => {
       await t.commands.run("rewrite.captured", { text: "Synthetic" });
       await settle();
       expect(t.vm()).toMatchObject({ writerKind: "copilot-cli", writerIcon: "aiCopilot", writerWhere: "Cloud" });
-      expect(t.vm().consentText).toContain("api.githubcopilot.com · Cloud");
+      expect(t.vm()).toMatchObject({ writerWhere: "Cloud", actions: "compose" });
     });
 
     it("shows a sign-in reason, not a ready/server claim or setup action", async () => {

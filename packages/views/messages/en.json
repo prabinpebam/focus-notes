@@ -2201,8 +2201,10 @@
   "rewrite.integration": "AI integration",
   "rewrite.integration.saving": "Remembering your choice…",
   "rewrite.integration.saved": "Choice remembered.",
-  "rewrite.consent": "Rewrite sends the selected text and your prompt to {service} · {model} at {host} · {where}. You decide what to send. Nothing else from your notes is sent.",
-  "rewrite.consentSend": "Send",
+  "rewrite.discardTitle": "Discard prompt?",
+  "rewrite.discardWarning": "Deselecting this text will lose your written prompt.",
+  "rewrite.keepPrompt": "Keep editing",
+  "rewrite.discardPrompt": "Discard prompt",
   "command.rewrite.began": "Start rewriting the selection",
   "command.rewrite.cancel": "Stop rewriting"
 }

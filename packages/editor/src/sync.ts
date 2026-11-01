@@ -10,8 +10,12 @@ import type { EditorView } from "@tiptap/pm/view";
  * would put the old selection back over the one the person just made (arrow keys right after the
  * link editor closes, on a busy machine).
  */
-export function syncSelection(editor: Editor): void {
-  (editor.view as unknown as { domObserver?: { flush?: () => void } }).domObserver?.flush?.();
+export function syncSelection(editor: Editor, restored = false): void {
+  const observer = (editor.view as unknown as { domObserver?: { flush?: () => void; setCurSelection?: () => void } }).domObserver;
+  observer?.flush?.();
+  // A range restored without editor focus must replace Chromium's last observed caret too.
+  // Otherwise clicking that same caret again looks unchanged to ProseMirror's observer.
+  if (restored) observer?.setCurSelection?.();
 }
 
 const flush = (view: EditorView): false => {

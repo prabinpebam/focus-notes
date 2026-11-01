@@ -9,7 +9,7 @@
 | CP-RWR-01 | SC-RWR-03 | UC-RWR-02, UC-RWR-07 | IA-CMP-REWRITEREVIEW | RWR-79 to RWR-81; DD-RWR-03 |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-05, UC-RWR-08, UC-RWR-09 | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY, IA-CMP-AIDISCOVER, IA-CMP-REWRITEPROMPT | AIS-01 to AIS-15; DD-RWR-05 to DD-RWR-09 ([Settings → AI](ai-settings.md)) |
 
-**1 November prompt update (planned, WP-AI.14; D-265, D-266):** the modal becomes an inline, non-modal popover without a passage preview. Review the selected words in the scrollable document; the prompt follows any visible part of the selection and leaves the viewport only when all of it is offscreen. Deselect an empty prompt to dismiss; a written prompt asks **Keep editing** / **Discard prompt**. The integration icon, service, model and **This computer**/**Cloud** remain; first-send disclaimers and consent are removed. The in-place stream and undo behavior are unchanged.
+**1 November prompt update (built, WP-AI.14; D-265, D-266):** the modal becomes an inline, non-modal popover without a passage preview. Review the selected words in the scrollable document; the prompt follows any visible part of the selection and leaves the viewport only when all of it is offscreen. Deselect an empty prompt to dismiss; a written prompt asks **Keep editing** / **Discard prompt**. The integration icon, service, model and **This computer**/**Cloud** remain; first-send disclaimers and consent are removed. The in-place stream and undo behavior are unchanged. Local evidence is in the [DoD](../plan/definition-of-done.md#inline-prompt-popover-definition-of-done); candidate integration and owner review remain.
 
 The [design](../design/rewrite-with-ai.md) holds the surfaces, states, words and tokens; the [engine](../architecture/rewrite-engine.md) how the stream reaches the note; [providers](../architecture/rewrite-providers.md) the services and how each is called; the [acceptance matrix](../plan/rewrite-acceptance.md) what proves each row. Decisions: [D-256 and D-257](../plan/decisions.md#rewrite-with-ai-as-built-31-october-2026), with D-233 kept and D-255 for how checks are sized while the owner reviews.
 
@@ -69,7 +69,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 <text x="428" y="262" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="fnrw-flow__stop" data-slate-fit-padding="14">Esc, Stop or an error</text>
 <text x="428" y="288" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__stop" data-slate-fit-padding="14">The exact original comes back; the note unlocks</text>
 </svg>
-<figcaption>The rewrite flow, with the planned inline prompt (D-265). Nothing waits for an Accept: the result is in the note, and undo is the way back.</figcaption>
+<figcaption>The rewrite flow, with the inline prompt (D-265). Nothing waits for an Accept: the result is in the note, and undo is the way back.</figcaption>
 </figure>
 
 <ol class="slate-steps">
@@ -136,7 +136,7 @@ Every entry runs the same command: the editor captures the selection, and the in
 
 Only the prompt and the selected text, with a fixed instruction to reply with just the rewritten text in the same language, go to the chosen Writer's address, from main (RWR-83). No title, path, front matter or other note text is sent to the service. Thinking is never inserted. First-send disclaimer/consent and its sending gate are removed (AIS-14, D-266). The person decides whether to send, including private or shared notes: no private-notes blocking option remains (AIS-13, D-261). The prompt always shows the integration, model and This computer or Cloud, and can switch the remembered Writer without leaving the popover (D-262). Locality follows model and host, not service: cloud-suffixed or cloud-routed Ollama models are Cloud even through localhost; other local Ollama models require no discovery. Existing request limits and one-rewrite-at-a-time behavior remain (RWR-82). The window never sees a key.
 
-WP-AI.13 replaces the private-note gate with disclosure and user judgement (D-261). WP-AI.14 extends this to remove first-send consent (D-266) and supplies the inline prompt (D-265). Existing picker evidence does not prove these new behaviors; their DoD rows remain open until anchoring units, deselection state tests, one rewrite journey and reviewed light/dark captures pass.
+WP-AI.13 replaces the private-note gate with disclosure and user judgement (D-261). WP-AI.14 removes first-send consent (D-266) and supplies the inline prompt (D-265). Its [DoD](../plan/definition-of-done.md#inline-prompt-popover-definition-of-done) records geometry, deselection and native-selection snapshot units, the targeted rewrite journeys, and reviewed normal/small light/dark captures. Local UX evidence is separate from candidate integration, owner acceptance and the stage gate.
 
 ## Keyboard and accessibility
 

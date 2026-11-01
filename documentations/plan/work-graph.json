@@ -116,11 +116,11 @@
     },
     {
       "id": "WP-AI.14", "stage": "MAI", "title": "Inline selection-anchored prompt popover",
-      "summary": "Owner, 1 November 11:17 (D-265, D-266): no passage preview; non-modal inline prompt follows visible selection fragments and stays within the editor viewport while any fragment is visible. Document remains scrollable and selection visibly marked. Fully offscreen selection lets the prompt scroll out without losing draft. Empty-prompt deselection dismisses; written or preset text asks Keep editing / Discard prompt. No first-send disclaimer, consent or sending gate; active integration disclosure and remembered picker remain. DoD UX-POP.1 to UX-POP.6; spec first on own-popover, implementation waits for own-candidate integration.",
+      "summary": "Owner, 1 November 11:17 (D-265, D-266): no passage preview; non-modal inline prompt follows visible selection fragments and stays within the editor viewport while any fragment is visible. Document remains scrollable and selection visibly marked. Fully offscreen selection lets the prompt scroll out without losing draft. Empty-prompt deselection dismisses; written or preset text asks Keep editing / Discard prompt. No first-send disclaimer, consent or sending gate; active integration disclosure and remembered picker remain.       DoD UX-POP.1 to UX-POP.6 locally proven on own-popover-build; candidate integration and owner acceptance pending. Affected aggregate 206 passed / five opt-in live tests skipped; three safeguards journeys passed.",
       "requirements": ["RWR-87", "RWR-88", "RWR-89", "RWR-90", "AIS-14"],
       "dependsOn": ["WP-AI.11", "WP-AI.13"], "touches": ["core", "editor", "ui", "views", "desktop", "tests", "spec", "help"],
       "reviews": ["code", "design-system", "accessibility"], "specs": ["design/rewrite-with-ai.md", "experience/rewrite-with-ai.md", "experience/ai-settings.md", "architecture/rewrite-providers.md", "plan/definition-of-done.md", "plan/rewrite-acceptance.md", "help/rewrite-with-ai.md"],
-      "lookahead": true, "status": "planned"
+      "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-AI.9", "stage": "MAI", "title": "Rewrite gate evidence and Help",

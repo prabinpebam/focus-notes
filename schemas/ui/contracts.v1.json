@@ -8650,10 +8650,11 @@
           "values": [
             "selection",
             "link",
-            "caret"
+            "caret",
+            "rewrite"
           ],
           "default": "selection",
-          "description": "The selection, a link, or the `/` the slash menu opened at."
+          "description": "The selection, a link, the slash menu caret, or Rewrite's retained selection fragments and viewport."
         },
         "placement": {
           "kind": "enum",
@@ -8691,7 +8692,9 @@
           "requiredWhen": "landmark"
         }
       },
-      "events": {},
+      "events": {
+        "dismiss": {}
+      },
       "slots": {
         "default": {
           "accepts": "any",
@@ -8777,6 +8780,35 @@
           "name": "anchor caret, below, start",
           "props": {
             "anchor": "caret",
+            "placement": "below",
+            "align": "start"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "s",
+                "shape": "popover",
+                "elevation": "2"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "anchor rewrite, below, start",
+          "props": {
+            "anchor": "rewrite",
             "placement": "below",
             "align": "start"
           },
@@ -9898,6 +9930,11 @@
           }
         },
         "rewriteCancel": {},
+        "rewriteDeselect": {
+          "payload": {
+            "started": "number"
+          }
+        },
         "format": {
           "payload": {
             "toolbar": "boolean",

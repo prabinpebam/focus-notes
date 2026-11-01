@@ -31,7 +31,7 @@ function owner() {
   const ai: AiBridge = {
     settings: () => service.settings() as never, save: (i) => service.save(i) as never, remove: (id) => service.remove(id) as never,
     writer: (id) => service.writer(id) as never, test: (id) => service.test(id) as never, discover: () => service.discover(),
-    models: (i) => service.models(i), consent: (id) => service.consent(id) as never,
+    models: (i) => service.models(i),
     rewriteStart: async (id, input) => {
       const abort = new AbortController();
       rewrites.set(id, abort);
