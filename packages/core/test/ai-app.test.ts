@@ -333,6 +333,17 @@ describe("where text goes and which key goes with it (D-259)", () => {
       expect(reasonCode("Error: cli-unsupported")).toEqual({ code: "cli-unsupported" });
     });
 
+    it.each([
+      { status: "unknown", error: "timeout" },
+      { status: "unsupported-version", error: "cli-unsupported" },
+    ] as const)("shows the $status reason without claiming readiness", async ({ status, error }) => {
+      const t = setup();
+      t.ai.discover = async () => [{ provider: "copilot-cli", endpoint: "", models: [], status, error }];
+      await t.commands.run("ai.discover");
+      expect(t.settingsVm().discoverStatus).toBe(en[`ai.error.${error}`]);
+      expect(t.settingsVm().found).toEqual([]);
+    });
+
     it("starts a manual Copilot form with auto, no key or endpoint and no own-key claim", async () => {
       const t = setup();
       await t.commands.run("ai.add");
