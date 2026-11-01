@@ -7,6 +7,18 @@ The chain is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Setting
 
 ## What people expect
 
+**Current production boundary, 1 November:** the owner approved both UX and UI
+of exact d40b78a3 at 19:59. The combined candidate's 217 targeted units and six
+related real-app journeys pass, including 480 x 360 Return, both directions,
+reduced motion, opaque highlighted hover, preserved Default focus and mounted
+editor/panel/scroller identity. The [current command and requirement matrix](gate-evidence.md#current-production-candidate-checks)
+supersedes historical pending-owner-acceptance statements below and maps every
+approved requirement/DoD to actual checks and explicit gaps. Static security
+review is final with no reported findings, not comprehensive certification or
+live SDK/account proof. Full exact-head Windows CI and main landing remain
+pending; GATE-MAI's unmeasured renderer latency, full-frame contrast and
+screen-reader evidence are not inferred from these tests.
+
 That the rows marked built work in the app they're using, that the original is never lost, and that their words go only where they chose. Evidence here is a test that runs, or the owner trying it, never "should work".
 
 ## How to read the matrix

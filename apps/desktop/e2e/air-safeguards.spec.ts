@@ -121,6 +121,14 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeHidden();
         const returnAbove = prompt.getByRole("button", { name: "Return to selection above", exact: true });
         await expect(returnAbove).toBeVisible();
+        await returnAbove.hover();
+        await expect(returnAbove).toHaveAttribute("data-hovered", "true");
+        expect(await returnAbove.evaluate((el) => {
+          const style = getComputedStyle(el);
+          return style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundImage !== "none"
+            && style.alignItems === "center" && style.justifyContent === "center"
+            && style.paddingLeft === style.paddingRight;
+        })).toBe(true);
         await returnAbove.click();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeVisible();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
@@ -129,6 +137,7 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         await expect.poll(inBounds).toBe(true);
         if (captureDir) await page.screenshot({ path: join(captureDir, `popover-small-${theme}.png`), animations: "disabled" });
         await prompt.getByRole("button", { name: /Return to selection/ }).click();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeVisible();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
         const smallGenerate = prompt.getByRole("button", { name: "Generate" });
         await smallGenerate.scrollIntoViewIfNeeded();
@@ -137,6 +146,19 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         if (captureDir) await page.screenshot({ path: join(captureDir, `popover-small-actions-${theme}.png`), animations: "disabled" });
         await l.app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]!.setSize(size[0]!, size[1]!), originalSize);
         await expect.poll(inBounds).toBe(true);
+        await page.locator("[data-editor-scroller]").evaluate((el) => { el.scrollTop = 0; });
+        const returnBelow = prompt.getByRole("button", { name: "Return to selection below", exact: true });
+        await expect(returnBelow).toBeVisible();
+        await returnBelow.click();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeVisible();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.locator("[data-editor-scroller]").evaluate((el) => { el.scrollTop = el.scrollHeight; });
+        await expect(returnAbove).toBeVisible();
+        await returnAbove.click();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeVisible();
+        await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");
+        await page.emulateMedia({ reducedMotion: "no-preference" });
 
         await editor.getByRole("heading", { name: "Essay", exact: true }).click();
         const loss = page.getByRole("dialog", { name: "Discard prompt?" });
@@ -292,10 +314,20 @@ test("AIS-16: Settings Default is one list shared with Rewrite", async () => {
       if (count) await expect(radios.first()).toBeChecked();
       if (captureDir) await settings.screenshot({ path: join(captureDir, `settings-${count}-${theme}.png`), animations: "disabled" });
       if (count >= 2) {
+        const identities = await Promise.all([
+          settings.elementHandle(), radios.first().elementHandle(),
+          page.getByRole("textbox", { name: "Note" }).elementHandle(),
+          page.locator("[data-editor-scroller]").elementHandle(),
+        ]);
         await radios.first().focus();
         await page.keyboard.press("ArrowDown");
         await expect(radios.nth(1)).toBeChecked();
         await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c1");
+        await expect(radios.nth(1)).toBeFocused();
+        for (const identity of identities) {
+          expect(await identity!.evaluate((node) => node.isConnected)).toBe(true);
+          await identity!.dispose();
+        }
         await radios.first().focus();
         await page.keyboard.press("Space");
         await expect(radios.first()).toBeChecked();

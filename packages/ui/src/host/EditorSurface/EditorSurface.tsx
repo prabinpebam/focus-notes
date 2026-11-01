@@ -18,6 +18,7 @@ import { trackTables, type TablePayload, type TableTracker } from "./table-track
 import { trackBlocks, type BlockPayload, type BlockTracker } from "./block-tracker.ts";
 import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
 import { anchors, inCompanion, type AnchorRect } from "../../behaviors/anchors.ts";
+import { selectionReturnScroll } from "../../behaviors/selection-placement.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./EditorSurface.css.ts";
@@ -566,9 +567,7 @@ export function EditorSurface({
           const fragment = current?.fragments?.[position.fragment] ?? current?.fragments?.at(-1);
           if (!current?.viewport || !fragment || !scroller) return;
           scroller.scrollBy({
-            top: position.side === "below"
-              ? fragment.bottom - position.viewportTop - position.edge - position.gap
-              : fragment.top - position.viewportBottom + position.edge + position.gap,
+            top: selectionReturnScroll(fragment, position),
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
           });
         },

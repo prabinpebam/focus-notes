@@ -249,14 +249,14 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
     changed();
   });
-  const chooseWriter = async (value: unknown, target: string) => {
+  const chooseWriter = async (value: unknown, fromSettings: boolean) => {
     if (!ai || choosingWriter || typeof value !== "string" || value === writer) return;
     choosingWriter = true;
     status = "";
     changed();
     const started = performance.now();
     try {
-      apply(await tracker.run(target, "rewrite.integration.saving", () => ai.writer(value), "rewrite.integration.saved"));
+      apply(await tracker.run(fromSettings ? "settings.writer" : "rewrite.writer", "rewrite.integration.saving", () => ai.writer(value), "rewrite.integration.saved"));
       announce(t("ai.writer.set", { name: writerConnection()?.name ?? "" }));
     } catch (e) {
       status = reason(e, "ai.error.save");
@@ -267,7 +267,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       changed();
     }
   };
-  reg("ai.writer", (a) => chooseWriter(a.value, "settings.writer"));
+  reg("ai.writer", (a) => chooseWriter(a.value, true));
   reg("ai.test", async (a) => {
     const id = typeof a.value === "string" ? a.value : "";
     if (!ai || !id || testing.has(id)) return;
@@ -465,7 +465,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   reg("rewrite.discardPrompt", () => { if (confirmingDiscard) closeModal(); });
   reg("rewrite.prompt", (a) => { prompt = String(a.value ?? ""); changed(); });
   reg("rewrite.writer", async (a) => {
-    if (open) await chooseWriter(a.value, "rewrite.writer");
+    if (open) await chooseWriter(a.value, false);
   });
   reg("rewrite.preset", (a) => {
     const p = PRESETS.find((x) => x === a.value);

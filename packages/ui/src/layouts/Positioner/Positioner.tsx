@@ -71,16 +71,28 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       rewriteMetrics = { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) };
       rewriteFrame = fixedBox(el);
       buttonHeight = edgeRef.current?.getBoundingClientRect().height ?? 0;
-      if (el.dataset.edge) return;
+      const viewport = anchors.get(anchor)?.viewport;
+      if (viewport) {
+        const top = Math.max(viewport.top, rewriteFrame.top + rewriteMetrics.topBand);
+        const bottom = Math.min(viewport.bottom, rewriteFrame.top + rewriteFrame.height);
+        const room = Math.max(0, bottom - top - 2 * (rewriteMetrics.edge + rewriteMetrics.gap));
+        el.style.setProperty(name(s.maxHeightVar), `${room}px`);
+        el.style.setProperty(name(s.maxWidthVar), `${Math.max(0, viewport.right - viewport.left - 2 * rewriteMetrics.edge)}px`);
+      }
+      // Edge content is clipped to zero height; measure it uncollapsed within this layout turn.
+      const pinned = el.dataset.edge;
+      delete el.dataset.edge;
       const box = contentRef.current.getBoundingClientRect();
       rewriteSize = { width: box.width, height: box.height };
       const area = contentRef.current.querySelector("textarea");
-      const viewport = anchors.get(anchor)?.viewport;
       if (area && viewport) {
-        const chrome = box.height - area.getBoundingClientRect().height;
-        const room = viewport.bottom - Math.max(viewport.top, rewriteFrame.top + rewriteMetrics.topBand) - 2 * rewriteMetrics.edge - chrome;
+        const chrome = contentRef.current.scrollHeight - area.getBoundingClientRect().height;
+        const room = box.height - chrome;
         el.style.setProperty(name(promptRoom), `${Math.max(0, room)}px`);
+        const sized = contentRef.current.getBoundingClientRect();
+        rewriteSize = { width: sized.width, height: sized.height };
       }
+      if (pinned) el.dataset.edge = pinned;
     };
     const measure = () => {
       const started = scheduledAt ?? performance.now();

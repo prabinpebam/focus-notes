@@ -155,6 +155,8 @@ export function redact(text: string, o: RedactOptions = {}): string {
  */
 export const MEASURE_NAMES: readonly string[] = [
   "fn:note.open", "fn:spotlight.open",
+  "fn:ai.chooseWriter", "fn:rewrite.anchor", "fn:rewrite.deselect",
+  "focus-notes:settings.writer", "focus-notes:rewrite.writer",
   ...["note.save", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "files.import", "repoBackup.private", "repoBackup.public", "feedback.send", "note.print"].map((t) => `focus-notes:${t}`),
   // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
   ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength"].map((t) => `focus-notes:firstRun.${t}`),

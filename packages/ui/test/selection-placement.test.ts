@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeSelection } from "../src/behaviors/selection-placement.ts";
+import { placeSelection, selectionReturnScroll } from "../src/behaviors/selection-placement.ts";
 
 const viewport = { left: 20, right: 500, top: 40, bottom: 400 };
 const size = { width: 300, height: 220 };
@@ -7,6 +7,16 @@ const metrics = { edge: 8, gap: 8 };
 const rect = (top: number, bottom: number, left = 100, right = 250) => ({ top, bottom, left, right });
 
 describe("Rewrite selection popover placement (D-265)", () => {
+  it("rounds Return scroll toward usable room in both directions at fractional line coordinates", () => {
+    const position = { edge: 12, gap: 8, viewportTop: 126, viewportBottom: 344 };
+    const fragment = rect(323.59375, 344.59375);
+    const above = selectionReturnScroll(fragment, { ...position, side: "above" });
+    expect(above).toBe(-1);
+    expect(fragment.top - above).toBeGreaterThanOrEqual(position.viewportBottom - position.edge - position.gap);
+    const below = selectionReturnScroll(fragment, { ...position, side: "below" });
+    expect(below).toBe(199);
+    expect(fragment.bottom - below).toBeLessThanOrEqual(position.viewportTop + position.edge + position.gap);
+  });
   it("prefers below and flips above when the whole popover fits there", () => {
     expect(placeSelection([rect(50, 70)], viewport, size, metrics)).toMatchObject({ y: 78, side: "below", offscreen: false });
     expect(placeSelection([rect(350, 370)], viewport, size, metrics)).toMatchObject({ y: 122, side: "above", offscreen: false });

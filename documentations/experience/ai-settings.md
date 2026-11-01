@@ -13,6 +13,15 @@ Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is 
 
 ## The section
 
+**Current approval, 1 November 19:59:** exact d40b78a3 UX/UI is accepted.
+Production hardening preserves its list, CLI companion, glyphs and disclosure.
+The current 217-unit and six-journey checks prove native Default focus/identity,
+the shared Writer round-trip and retained editor/panel/scroller nodes.
+Signed-in Copilot discovery announces translated availability without restoring
+redundant visual prose. The [gate evidence](../plan/gate-evidence.md#current-production-candidate-checks)
+records full-gate and live-account limitations; older pending-review statements
+below describe their historical integration boundaries.
+
 <h3 id="single-list-default-choice-d-267-planned">Single-list default choice (D-267)</h3>
 
 **As built in c4335741 and integrated into own-candidate:** this anatomy is implemented with the ItemCard primitive's native radio choice area. Radio labels wrap identity only; Test/Change/Remove stay sibling actions. The native same-name group supports 30 rows, arrow keys and Space. Checked state remains bound to the saved Writer ID; shared `chooseWriter` uses the existing bridge and tracker, reports failures, and refreshes both view models. Deleting the default now clears the ID instead of silently choosing the first remaining connection; editing a remaining connection does not invent a new default. First-save selection is retained for a new first connection. See [measured checks](../plan/definition-of-done.md#settings-ai-single-list-stage) and [combined candidate evidence](../plan/rewrite-acceptance.md#settings-list-combined-candidate-1-november). All five combined journeys pass; the owner-review refresh follows validation. Owner acceptance remains pending.

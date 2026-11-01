@@ -32,17 +32,32 @@ it("supports 30 native radio choices with actions outside the choice label", () 
   expect(choose).toHaveBeenCalledWith({ value: "1" });
 });
 
-it("keeps the persisted choice and disables selection while saving", () => {
+it("keeps the persisted choice, radio identity and focus while saving without accepting another choice", () => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
   const choose = vi.fn();
-  act(() => root!.render(createElement(ItemCard, {
-    title: "Saved", choiceGroup: "test-default", choiceValue: "saved", selected: true, busy: true, onChoose: choose,
+  const render = (busy: boolean) => act(() => root!.render(createElement(ItemCard, {
+    title: "Saved", choiceGroup: "test-default", choiceValue: "saved", selected: true, busy, onChoose: choose,
   })));
+  render(false);
   const radio = host.querySelector<HTMLInputElement>("input")!;
+  radio.focus();
+  render(true);
+  expect(host.querySelector("input")).toBe(radio);
+  expect(document.activeElement).toBe(radio);
   expect(radio.checked).toBe(true);
-  expect(radio.disabled).toBe(true);
+  expect(radio.disabled).toBe(false);
+  expect(radio.getAttribute("aria-disabled")).toBe("true");
+  expect(host.querySelector("[data-item-card]")?.getAttribute("aria-busy")).toBe("true");
   act(() => radio.click());
   expect(choose).not.toHaveBeenCalled();
+  expect(radio.checked).toBe(true);
+  const arrow = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+  act(() => radio.dispatchEvent(arrow));
+  expect(arrow.defaultPrevented).toBe(true);
+  render(false);
+  expect(host.querySelector("input")).toBe(radio);
+  expect(document.activeElement).toBe(radio);
+  expect(radio.getAttribute("aria-disabled")).toBeNull();
 });

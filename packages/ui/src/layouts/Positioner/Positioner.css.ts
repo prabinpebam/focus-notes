@@ -50,6 +50,7 @@ export const base = style({
 export const offset = styleVariants(tokens.space, (v) => ({ vars: { [gapVar]: v } }));
 export const promptContent = style({
   width: "100%", opacity: t.visible, visibility: "visible",
+  maxHeight: "inherit", overflowY: "auto",
   transitionProperty: "opacity, visibility", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
     [`${base}[data-edge] &`]: { position: "absolute", height: 0, overflow: "clip", opacity: 0, visibility: "hidden", pointerEvents: "none" },

@@ -34,6 +34,8 @@ describe("a Positioner when the note scrolls in a frame's callback (DEF-25)", ()
     act(() => root?.unmount());
     host?.remove();
     anchors.set("caret", null);
+    anchors.set("rewrite", null);
+    vi.restoreAllMocks();
   });
 
   it("is placed again against the anchor where it is now, in the same frame, with no frame callback in between", () => {
@@ -55,5 +57,46 @@ describe("a Positioner when the note scrolls in a frame's callback (DEF-25)", ()
     expect(y()).toBeLessThan(400);
     expect(raf).not.toHaveBeenCalled();
     raf.mockRestore();
+  });
+
+  it("D-265: remeasures an edge-pinned prompt on resize so Return exposes the retained draft within the usable viewport", () => {
+    let bottom = 800, fragmentBottom = 200;
+    const reveal = vi.fn(() => { fragmentBottom = 0; });
+    const read = () => ({
+      left: 100, right: 250, top: fragmentBottom - 20, bottom: fragmentBottom,
+      fragments: [{ left: 100, right: 250, top: fragmentBottom - 20, bottom: fragmentBottom }],
+      viewport: { left: 0, right: 480, top: 0, bottom }, reveal,
+    });
+    anchors.set("rewrite", read(), read);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const el = this.closest<HTMLElement>("[data-selection-popover]");
+      const limit = parseFloat(el?.style.getPropertyValue(name(s.maxHeightVar)) ?? "") || 276;
+      const height = this.parentElement === el
+        ? el?.dataset.edge ? 0 : Math.min(276, limit)
+        : this.tagName === "TEXTAREA" ? 57 : 32;
+      return new DOMRect(0, 0, 360, height);
+    });
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    act(() => root!.render(createElement(Positioner, {
+      anchor: "rewrite", returnAboveLabel: "Return above", returnBelowLabel: "Return below",
+    }, createElement("textarea", { defaultValue: "Retained draft" }))));
+    const el = host.querySelector<HTMLElement>("[data-selection-popover]")!;
+    expect(el.dataset.edge).toBeUndefined();
+
+    fragmentBottom = -100;
+    act(() => anchors.moved());
+    expect(el.dataset.edge).toBe("top");
+    bottom = 210;
+    act(() => window.dispatchEvent(new Event("resize")));
+    act(() => anchors.moved());
+    expect(parseFloat(el.style.getPropertyValue(name(s.maxHeightVar)))).toBe(210);
+    act(() => el.querySelector<HTMLButtonElement>("button")!.click());
+    expect(reveal).toHaveBeenCalledOnce();
+    expect(el.dataset.edge).toBeUndefined();
+    expect(el.querySelector("textarea")?.value).toBe("Retained draft");
+    expect(el.firstElementChild?.getAttribute("aria-hidden")).toBeNull();
+    expect(parseFloat(el.style.getPropertyValue(name(s.yVar))) + 210).toBeLessThanOrEqual(bottom);
   });
 });

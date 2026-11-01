@@ -2,6 +2,22 @@
 
 ## D-267: one Settings list, one remembered default
 
+**D-265/D-266/D-267 production boundary, 1 November:** owner approval of exact
+`d40b78a345b7fe79262116b270b3a908c0966eac` at 19:59 supersedes the pending-approval
+status of the historical feedback revisions below. Production hardening retains
+the accepted layout and adds no controls. At 480 x 360, diagnosis measured
+276.1875 px natural prompt content against 194 px usable room: normally only
+the textarea scrolls, but when the chrome itself cannot fit, the complete
+existing prompt must scroll to keep Generate reachable. Edge-collapsed content
+is remeasured synchronously on resize. Return scroll rounds toward available
+room so fractional line coordinates cannot keep it pinned by less than a pixel.
+Normal/short light/dark, both Return directions and reduced-motion journeys pass.
+Default's fixed tracker targets and view-only menu command classification are
+kept explicit; no network, capture, saved-note or consent behavior changes.
+The [current gate evidence](gate-evidence.md#current-production-candidate-checks)
+records commands, results and remaining full-gate/security/assistive-technology
+limits. This is a responsive defect correction to D-265, not a new design.
+
 **D-265/D-266 correction, owner screenshot 1 November 18:12; design mode, feedback is not approval.** The supplied Discard prompt confirmation shows cut-off descenders in both **Keep editing** and **Discard prompt**. The earlier cap-to-alphabetic trim excluded the font descent while Button's `overflow: hidden` clipped it; the prior claim that this box centered complete visible text was wrong. Preserve the full token line box, center it with flex, use token minimum heights that accommodate natural content, and ellipsize only inline without vertical clipping. This shared Button/PillButton/MenuButton correction preserves symmetric padding, opaque floating hover, all Rewrite loss-protection/default semantics and the Settings layout. Static source guards replace the unsafe trim rule; real `Agjpqy` gallery specimens cover variants, sizes and icons in normal/floating light/dark contexts. The screenshot is evidence of the regression, not acceptance; build/types/ui:check and narrowly authorized ordinary-UI element images are the only verification here. Documentation rendering and all suites remain unapproved.
 
 **Accepted, built on own-ai-default-list-build; integration and owner acceptance pending (owner, 1 November 12:03).** Settings → AI is one connections list with a directly selectable row and **Default** badge, not a separate Writer dropdown or **Use as Writer** action. Retain connection identity, icon, model/locality, key and Test state; Test/Change/Remove remain independent sibling controls. Checked radio-like semantics, arrows and Space, token-only selected styling, named pending/failure feedback and no invented fallback are required. One **Find on this PC** button says **Scans this PC for running AI services you can use.** No separate **On this computer** section; unavailable discovery stays honest.

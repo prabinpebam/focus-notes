@@ -1,5 +1,14 @@
 import type { AnchorRect } from "./anchors.ts";
 
+/** Round toward available prompt room: a fractional scroll must not leave Return edge-pinned. */
+export function selectionReturnScroll(fragment: AnchorRect, position: {
+  side: "above" | "below"; edge: number; gap: number; viewportTop: number; viewportBottom: number;
+}) {
+  return position.side === "below"
+    ? Math.ceil(fragment.bottom - position.viewportTop - position.edge - position.gap)
+    : Math.floor(fragment.top - position.viewportBottom + position.edge + position.gap);
+}
+
 /** Placement for a selection that can span or partly leave the editor viewport (D-265). */
 export function placeSelection(
   fragments: readonly AnchorRect[],
