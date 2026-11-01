@@ -110,6 +110,28 @@ CI installs from lockfiles with frozen versions.
 </li>
 </ol>
 
+## Unsigned Mac testing (D-268)
+
+> [!NOTE]
+> **Testing, not a public release.** The owner resumed Mac testing on 2 November
+> 2026. Windows remains the merge gate; Mac CI reports independently and does not
+> hold the Store release. The signed universal release row above is the eventual
+> release plan, not the status of these unsigned architecture-specific copies.
+
+| Step | Evidence or boundary |
+| --- | --- |
+| Build | `mac-test-build.yml`, on the named testing branch or by manual dispatch, builds arm64 and x64 DMGs on cloud Mac runners. Frozen package versions use the Microsoft npm proxy and the existing approved binary channels; no public-feed fallback. |
+| Inspect | Mount each DMG read-only. Check the contained app version, Mach-O architecture, native libraries, required renderer/main/template/CLI resources, full Electron notices and source attribution. No OneAuth, Copilot platform SDK or native FFI payload ships. |
+| Exercise | Record the actual local-note smoke result against a temporary profile. Real-Mac first launch, Gatekeeper, Git availability, sign-in and cloud operations remain distinct checks, not implied by a successful build. |
+| Hand over | Download to `focus-notes-work\release\macos-1.1.0\`, with architecture, app version and source commit in the file names, SHA-256 sums and a build receipt. Copy the app from the mounted DMG into Applications; no commands delete or overwrite the owner's notes. |
+| Publish later | No release, tag, update channel, signing account or notarization action is performed by this workflow. Apple signing/account approval is a later owner decision. |
+
+The workflow sets `CSC_IDENTITY_AUTO_DISCOVERY=false`, uses `--publish never`,
+and uploads testing artifacts only. A work-branch DMG can be handed over before
+Windows CI or integration, clearly labelled with its exact source and limitations.
+The [owner decision](decisions.md#d-268-unsigned-mac-testing-resumes-independently-of-the-store)
+amends D-211 only for this resumed Mac track. Linux remains paused.
+
 ## Release qualification
 
 Every release is tested on the [support matrix](../architecture/performance-and-quality.md#support-matrix-tested-each-release) before it's published (QLT-02). The checklist below is the release checklist issue's body: the owner opens it from the draft release, each row is ticked with its evidence, and the release is published only when every row for the platforms it ships is ticked. It's specified and ready, and runs first with the first real release; until then it's open in [Gate evidence](gate-evidence.md#open-gaps-across-stages) (WP-5.7, D-140). Windows comes first; macOS and Linux rows apply only after the platform parity pass (D-112).

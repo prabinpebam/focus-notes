@@ -1,5 +1,29 @@
 # Decisions
 
+## D-268: unsigned Mac testing resumes independently of the Store
+
+**Accepted by the owner, 2 November 2026, 00:10.** Resume macOS builds now,
+reversing D-211's Mac pause without restoring D-196's all-platform merge gate.
+Windows remains the merge gate; macOS CI reports independently. Produce separate
+Apple Silicon (arm64) and Intel (x64) unsigned DMGs from an exact source commit,
+using the existing desktop build and DMG target. A universal build is not claimed
+until its native payload is proven. Testing artifacts may come from a work branch
+before Windows integration; they are not a tagged release or Store submission.
+
+Build on cloud Mac runners, not alongside the owner's local Store build. Verify
+the mounted app's version, Mach-O architecture, resources, native payload and
+licence notices; retain the source SHA, checksums and actual smoke-test result.
+Never redistribute OneAuth or the Copilot platform SDK/native FFI payload.
+Copilot remains an integration with an independently installed PATH CLI.
+The narrowly authorized unmodified Electron runtime licence exception is tracked
+separately by the Store worker; it does not permit other non-permissive payload.
+
+No Apple account, signing identity or notarization is needed for this testing
+copy. Signing/notarization and their account cost remain an owner decision before
+a public Mac release. Opening an unsigned app and real-Mac Git/login/cloud
+qualification are separate from cloud packaging evidence: do not claim them
+tested because a DMG built. See [Mac testing distribution](distribution.md#unsigned-mac-testing-d-268).
+
 ## D-267: one Settings list, one remembered default
 
 **D-265/D-266/D-267 production boundary, 1 November:** owner approval of exact
