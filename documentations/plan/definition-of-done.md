@@ -34,7 +34,24 @@ Every row traces to CP-RWR-01.
 
 ### What's left after the owner accepts
 
-The owner's next changes (live Markdown while streaming, platform key names: WP-AI.12), then WP-AI.13 (private notes, first-send consent, leaving mid-rewrite) and WP-AI.9's evidence below, then the desktop gate before `main`.
+The owner's next changes (live Markdown while streaming, platform key names: WP-AI.12), WP-AI.13 (user judgement and leaving mid-rewrite), the inline prompt below (WP-AI.14), and WP-AI.9's evidence, then the desktop gate before `main`.
+
+### Inline prompt popover definition of done
+
+**Delivers:** UC-RWR-10 and UC-RWR-11, with UC-RWR-01 and UC-RWR-09 under CP-RWR-01. **Status: OPEN, specified 1 November; not yet implemented.** WP-AI.14 belongs to MAI (D-265, D-266). Mode: show me the UX sooner; fast checks and one targeted rewrite journey, not the full suite or a CI wait before the owner sees it.
+
+| Row | Trace / done when | Evidence required (pending) | Try it |
+| --- | --- | --- | --- |
+| UX-POP.1 | UC-RWR-01, UC-RWR-10; RWR-87: all entry points open the same inline non-modal prompt, with no passage preview, backdrop, document scroll lock or full-screen conversion. Selection remains marked while prompt controls take focus. | View check; related journey; reviewed light/dark captures at normal and 480 × 360 sizes | Select a paragraph, open Rewrite, type a prompt and scroll the note; selected words remain visible in the document, not copied into the popover. |
+| UX-POP.2 | UC-RWR-10; RWR-88: while any selected fragment intersects the editor viewport, the whole popover stays clamped inside it and follows scroll/resize in the next frame. | Anchoring/clamping unit tests for wrapped, multiline, viewport-spanning selections and both viewport edges; one scroll journey; light/dark captures | Select several paragraphs; scroll up and down until only the first or last selected line remains visible; the prompt is still in bounds. Resize to 480 × 360. |
+| UX-POP.3 | UC-RWR-10; RWR-88: only an entirely offscreen selection lets the popover leave the viewport; scrolling back recovers the exact draft. | Fragment-visibility unit tests (including bounding-box gaps); scroll journey | Write a prompt, scroll all selected words out, then back; the same prompt returns, with no scroll jump or input loss. |
+| UX-POP.4 | UC-RWR-11; RWR-89: deselect with zero prompt characters dismisses automatically with no warning, request or write; moving focus among prompt controls is not deselection. | Deselection state-machine units; empty-prompt branch in rewrite journey | Open Rewrite without typing; click elsewhere in the note. It closes immediately. Open again and focus Prompt or the integration picker; it stays open. |
+| UX-POP.5 | UC-RWR-11; RWR-90: deselect with written, whitespace or preset text opens exactly one loss confirmation. Keep editing/Escape restores the original range, exact draft and prompt focus; Discard prompt accepts deselection and clears the draft. | State-machine units; both branches in rewrite journey; confirmation light/dark capture and keyboard check | Type “Make warmer”, click elsewhere: read the loss warning. Choose Keep editing, then try Escape on the warning. Deselect again and Discard prompt; nothing sends or writes. Repeat with a preset and whitespace. |
+| UX-POP.6 | UC-RWR-09; AIS-14: no first-send disclaimer, consent or extra Send step/gate; icon, service, model, This computer/Cloud and remembered picker remain. Data-safety and stale-capture protections are unchanged. | Core/provider units with legacy consent absent or outdated; fake-service journey on first send; reviewed captures; existing stale-note regression | On a disposable connection with no saved consent, open Rewrite: just the active integration, prompt, presets and actions. Generate sends once directly to that integration. Cancel sends nothing. |
+
+**Spec evidence (1 November):** `pnpm check` passed (chain, plan, licenses, generated files and UI contracts); the pinned Slate runtime check passed. All 15 changed reader pages rendered with one H1 in headless Edge in light and dark, figures stayed within the content column, and the new DoD/design anchors resolved. Historical decision-page link issues were recorded separately, not repaired in this slice. This is documentation evidence only, not implementation proof.
+
+**Against the promise:** the spec now matches the owner's requested interaction; all six implementation/evidence rows remain open. The [design](../design/rewrite-with-ai.md#selection-anchoring-and-dismissal) defines the selection and focus rules; the [acceptance matrix](rewrite-acceptance.md) must record actual evidence before these rows close.
 
 ## MAI rewrite definition of done
 
@@ -44,11 +61,11 @@ The owner's next changes (live Markdown while streaming, platform key names: WP-
 
 | Row | Done when | Evidence |
 | --- | --- | --- |
-| MAI.1 | UC-RWR-01: every entry opens the dialog on the selection, with the key named for the platform; no selection explains why; presets never send. | Journey (QLT-08); `text-menu.test.ts`, `keymap-layers.test.ts` |
+| MAI.1 | UC-RWR-01: every entry opens the inline prompt on the selection, with the key named for the platform; no selection explains why; presets never send. UC-RWR-10 and UC-RWR-11 meet UX-POP.1 to UX-POP.5. | Journey (QLT-08); `text-menu.test.ts`, `keymap-layers.test.ts`; WP-AI.14 evidence |
 | MAI.2 | UC-RWR-02: the answer streams in place, formatted, with the note read-only; only the selection changes; only the prompt and selection are sent. | `rewrite-stream.test.ts`, `ai-rewrite.test.ts`; journey |
 | MAI.3 | UC-RWR-07: one undo step; <kbd>Esc</kbd>, Stop, every error and switching notes restore the exact original and stop the request. | `rewrite-stream.test.ts`; journey with a failing fake |
 | MAI.4 | UC-RWR-05, UC-RWR-08: every service kind's request shape, key sealing, address rules, discovery and Test behave as specified. | `ai-rewrite.test.ts`; security review (SEC-09) |
-| MAI.5 | UC-RWR-05, UC-RWR-09: every prompt shows the integration, model and locality; choosing another connection persists for the next rewrite; the person decides what to send, including private notes, and first-send consent names the destination. | Unit and journey tests, one/two-connection light/dark captures (WP-AI.11, WP-AI.13; D-261, D-262) |
+| MAI.5 | UC-RWR-05, UC-RWR-09: every prompt shows the integration, model and locality; choosing another connection persists for the next rewrite; user judgement replaces the private-page guard and first-send disclaimer/consent (UX-POP.6). | Unit and journey tests, one/two-connection light/dark captures (WP-AI.11, WP-AI.13, WP-AI.14; D-261, D-262, D-266) |
 | MAI.6 | UC-RWR-06: the rainbow is at least 4.5:1 in every frame in light and dark, never hides the focus band, and reduced motion and forced colours show ordinary text. | Look in the gallery; contrast check |
 | MAI.7 | Every row of the [acceptance matrix](rewrite-acceptance.md) has evidence; the [wait rows](../architecture/perceived-performance.md#rewrite-waits) are measured (open and Stop within 100 ms). | Acceptance matrix; `fn:rewrite.*` |
 | MAI.8 | GATE-MAI: the owner accepts the feature; reviews approve; Windows app CI is green; Help matches what ships. | WP-AI.9 |

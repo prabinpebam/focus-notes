@@ -9,7 +9,9 @@ Ask an AI service you chose to rewrite a few words or a paragraph, and watch the
 
 **Before you start:** connect an AI service once. See [Connect an AI service](connect-an-ai-service.md).
 
-Already using GitHub Copilot in your terminal? **Find on this computer** can add its supported signed-in integration directly. It says **Cloud**, still asks before the first send and uses the same Rewrite and Stop flow.
+Already using GitHub Copilot in your terminal? **Find on this computer** can add its supported signed-in integration directly. It says **Cloud** and uses the same Rewrite and Stop flow.
+
+**Planned update (1 November):** the inline prompt and deselection behavior below are specified in D-265/D-266 and are being built in WP-AI.14. The current review build still has the modal prompt and first-send confirmation.
 
 ## Rewrite
 
@@ -17,9 +19,22 @@ Already using GitHub Copilot in your terminal? **Find on this computer** can add
 2. Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (<kbd>⇧⌘R</kbd> on a Mac). Or right-click the words and select **Rewrite…**, or open the **Edit** menu and select **Rewrite…**.
 3. Check the service, model and **This computer** or **Cloud** card. With several connections, use **AI integration** to choose another. Your choice is remembered for the next rewrite.
 4. In **Prompt**, say what you want, like "Make it friendlier". Or select **Make concise**, **Make warmer** or **Fix grammar** to fill it in.
-5. Select **Generate**, or **Send** the first time you use that connection.
+5. Select **Generate**. The active integration is the disclosure: there is no first-time warning, disclaimer or extra **Send** confirmation.
 
-**Result:** the window closes and your note can't be edited for a moment. Your words shimmer, then the new words appear in their place, in rainbow colors. When it's done, the colors fade to normal text and you can type again.
+**Result:** the inline prompt closes and your note can't be edited for a moment. Your words shimmer, then the new words appear in their place, in rainbow colors. When it's done, the colors fade to normal text and you can type again.
+
+## Review the selection while writing the prompt
+
+The prompt opens beside your selected words, like an inline menu. It doesn't show a second copy of the passage. You can still scroll the note and see the selected words in context while typing.
+
+While any selected words are on screen, the prompt follows them and stays inside the document viewport. It can scroll away only when the entire selection is offscreen. Scroll back to return to the same prompt.
+
+## Change your mind before generating
+
+- With an empty prompt, deselect the text to close the prompt immediately.
+- With a prompt you typed or filled from a preset, deselecting asks **Discard prompt?** and warns that your written prompt will be lost. Choose **Keep editing** to keep the prompt and original selection, or **Discard prompt** to close and clear it. <kbd>Esc</kbd> in that confirmation keeps your prompt too.
+- Using the prompt, presets or integration picker doesn't deselect the words.
+- **Cancel** or <kbd>Esc</kbd> in the prompt closes it without sending anything.
 
 ## Get your words back
 

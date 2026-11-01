@@ -1,13 +1,13 @@
 # Settings → AI
 
 > [!NOTE]
-> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered connection is the **Writer**, selectable here or in the Rewrite prompt when several connections exist. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains. First-send consent stays per connection (D-261, D-262).
+> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered connection is the **Writer**, selectable here or in the Rewrite prompt when several connections exist. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains (D-261, D-262). D-266 removes first-send disclaimer/consent; that removal is specified, build pending in WP-AI.14.
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-05 | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY | AIS-01 to AIS-06, AIS-08 to AIS-12, AIS-15, PRV-05; DD-RWR-05 to DD-RWR-07 |
 | CP-RWR-01 | SC-RWR-04 | UC-RWR-08 | IA-CMP-AIDISCOVER | AIS-07; DD-RWR-08 |
-| CP-RWR-01 | SC-RWR-04 | UC-RWR-09 | IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS | AIS-13, AIS-14; DD-RWR-09 |
+| CP-RWR-01 | SC-RWR-04 | UC-RWR-09 | IA-CMP-REWRITEPROMPT, IA-VIEW-REWRITESETTINGS | AIS-13, AIS-14; DD-RWR-09 |
 
 Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is called, and the ones not offered, are in [Rewrite providers](../architecture/rewrite-providers.md). The kit behind the catalogue is [ai-integration](https://prabinpebam.github.io/loushing/items/ai-integration/), pinned at 1613a55.
 
@@ -136,7 +136,7 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 | Too long | "The text is too long for this service. Select less and try again." Also when an answer is longer than Focus Notes reads (D-260). |
 | Unreadable answer | "The service's answer couldn't be read. Check the address and the service in Settings → AI." |
 | Error mid-answer | "The service stopped with an error. Try again." |
-| No consent | "Rewrite needs your OK before it sends text to this connection." |
+| No consent (retired by D-266) | Removed with AIS-14's consent gate; not an error in the specified inline flow. |
 | Connection gone | "That connection is gone. Choose another in Settings → AI." |
 | Bad address | "Use an https:// address, or http://127.0.0.1 or http://localhost for a server on this computer." |
 | No model, deployment or account | "Choose or type a model.", "Enter the deployment name from Azure.", "Enter your Cloudflare account ID." |
@@ -148,21 +148,22 @@ Each failure has its own words and next step (AIS-11). Saving that fails leaves 
 
 `ai.json` in the app's data folder: each connection's service, name, address, model, cloud-routing metadata, deployment, API version, account ID, sealed key, last Test and what its consent covers, plus the remembered Writer. It's per device, never synced or committed, and listed in the [data inventory](../architecture/security-and-privacy.md) (AIS-15). A single OpenAI-compatible service saved by the first build becomes a connection, and the Writer if it was (AIS-12). Old `keepPrivate` keys are ignored when loading and stripped by the next ordinary settings write; no owner's real settings are migrated by a test (D-261).
 
-## Private notes and consent
+## Private notes and disclosure
 
-WP-AI.13, updated by the owner's 1 November feedback (D-261, D-262); covered by `ai-app`, `ai-contract` and the `air-safeguards` journey:
+WP-AI.13 supplies D-261/D-262's disclosure; WP-AI.14 specifies removal of first-send consent (D-266). Existing `ai-app`, `ai-contract` and `air-safeguards` evidence covers the earlier implementation, not the pending removal:
 
 - **User judgement** (AIS-13): no private-notes blocking switch or core/IPC gate. The Rewrite prompt shows the selected integration, model and locality every time, and the person decides whether to send from public, private or shared notes. This does not authorize logging private note text or publishing it to Git.
-- **First-send confirmation** (AIS-14, IA-VIEW-REWRITECONSENT): the first time Rewrite sends to a connection, and again after its address, model or key changes, the dialog says "Rewrite sends the selected text and your prompt to {service} · {model} at {host} · {where}. You decide what to send. Nothing else from your notes is sent." **Send** records this connection's consent; **Cancel** sends nothing. Main still refuses a request without matching consent.
+- **No first-send confirmation** (AIS-14, D-266; specified): the active integration icon, service, model and This computer/Cloud are the disclosure. Generate sends directly on first and later use, including after connection changes. Remove the first-time warning/disclaimer, consent text, extra Send and consent-required gate. Old consent can load compatibly but is no longer authority to send or a reason to block. Cancel sends nothing.
 
-The connection picker changes the same device-local Writer as Settings. It keeps prompt input, updates the card and consent, and records `fn:ai.chooseWriter`; "Remembering your choice…" is announced during the save. Generate waits for the saved choice; errors keep the previous Writer and toast the reason.
+The connection picker changes the same device-local Writer as Settings. It keeps prompt input, updates the active integration line and records `fn:ai.chooseWriter`; "Remembering your choice…" is announced during the save. Generate waits for the saved choice; errors keep the previous Writer and toast the reason.
 
 ## Decisions
 
 - **D-257:** every text service kind in the ai-integration kit; supersedes D-236 and D-249.
 - **D-233:** an integration client only; Focus Notes never installs, downloads, launches, hosts or runs a model.
-- **D-259:** consent per connection and a key staying with its address remain; private-note blocking and unknown-model cloud labels are superseded by D-261 and D-262.
+- **D-259:** key/address isolation remains; private-note blocking and unknown-model cloud labels are superseded by D-261/D-262, and first-send consent by D-266.
 - **D-261:** user judgement instead of a private-notes blocking option.
 - **D-262:** per-model/per-host disclosure and a remembered picker in the prompt.
 - **D-260:** request time limits, capped answers, the error words' reason codes, and the 26 built kinds only.
-- **D-238:** consent names the destination; built as D-259.
+- **D-238:** historical consent proposal, superseded by D-266.
+- **D-266:** active integration and user judgement replace first-send warning/disclaimer and consent; implementation pending in WP-AI.14.

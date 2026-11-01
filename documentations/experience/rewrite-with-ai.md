@@ -5,9 +5,11 @@
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
-| CP-RWR-01 | SC-RWR-01 | UC-RWR-01, UC-RWR-02, UC-RWR-06 | IA-CMP-REWRITEPROMPT, IA-CMP-REWRITEREVIEW | RWR-70 to RWR-78, RWR-82 to RWR-86; DD-RWR-01, DD-RWR-02, DD-RWR-04 |
+| CP-RWR-01 | SC-RWR-01 | UC-RWR-01, UC-RWR-02, UC-RWR-06, UC-RWR-10, UC-RWR-11 | IA-CMP-REWRITEPROMPT, IA-CMP-REWRITEPROMPTLOSS, IA-CMP-REWRITEREVIEW | RWR-70 to RWR-78, RWR-82 to RWR-90; DD-RWR-01, DD-RWR-02, DD-RWR-04, DD-RWR-10, DD-RWR-11 |
 | CP-RWR-01 | SC-RWR-03 | UC-RWR-02, UC-RWR-07 | IA-CMP-REWRITEREVIEW | RWR-79 to RWR-81; DD-RWR-03 |
-| CP-RWR-01 | SC-RWR-04 | UC-RWR-05, UC-RWR-08, UC-RWR-09 | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY, IA-CMP-AIDISCOVER, IA-VIEW-REWRITECONSENT | AIS-01 to AIS-15; DD-RWR-05 to DD-RWR-09 ([Settings → AI](ai-settings.md)) |
+| CP-RWR-01 | SC-RWR-04 | UC-RWR-05, UC-RWR-08, UC-RWR-09 | IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY, IA-CMP-AIDISCOVER, IA-CMP-REWRITEPROMPT | AIS-01 to AIS-15; DD-RWR-05 to DD-RWR-09 ([Settings → AI](ai-settings.md)) |
+
+**1 November prompt update (planned, WP-AI.14; D-265, D-266):** the modal becomes an inline, non-modal popover without a passage preview. Review the selected words in the scrollable document; the prompt follows any visible part of the selection and leaves the viewport only when all of it is offscreen. Deselect an empty prompt to dismiss; a written prompt asks **Keep editing** / **Discard prompt**. The integration icon, service, model and **This computer**/**Cloud** remain; first-send disclaimers and consent are removed. The in-place stream and undo behavior are unchanged.
 
 The [design](../design/rewrite-with-ai.md) holds the surfaces, states, words and tokens; the [engine](../architecture/rewrite-engine.md) how the stream reaches the note; [providers](../architecture/rewrite-providers.md) the services and how each is called; the [acceptance matrix](../plan/rewrite-acceptance.md) what proves each row. Decisions: [D-256 and D-257](../plan/decisions.md#rewrite-with-ai-as-built-31-october-2026), with D-233 kept and D-255 for how checks are sized while the owner reviews.
 
@@ -19,7 +21,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 | --- | --- | --- |
 | [Word: edit with Copilot](https://support.microsoft.com/en-us/word/copilot/edit-with-copilot-in-word) | Rewrites selected text with Replace, Insert below and Regenerate | Replaces in place straight away; undo is the way back, so there's no Replace step |
 | [Google Docs: Gemini](https://support.google.com/docs/answer/13447609?hl=en) | Refine selected text: tone, length, a custom prompt | Three presets that fill the prompt, and a prompt of your own |
-| [Notion AI](https://www.notion.com/help/notion-ai-faqs) | Rewrite a selection with an instruction | The same, from a small dialog, with the service you chose |
+| [Notion AI](https://www.notion.com/help/notion-ai-faqs) | Rewrite a selection with an instruction | The same, from an inline popover, with the service you chose |
 | [Craft: editing](https://support.craft.do/en/ai-assistant/editing) | One AI edit is one undo step | One rewrite is one undo step (RWR-79) |
 | [iA Writer Authorship](https://ia.net/writer/support/editor/authorship) | Marks AI text with a colour, kept as metadata | A rainbow that fades in seconds and is never saved (RWR-78) |
 
@@ -28,7 +30,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 <figure class="slate-figure">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" role="img" aria-labelledby="fnrw-flow__title fnrw-flow__desc" preserveAspectRatio="xMidYMid meet" data-slate-safe-margin="24">
 <title id="fnrw-flow__title">Rewrite in place: select, prompt, generate, stream, done; Stop or an error puts the original back</title>
-<desc id="fnrw-flow__desc">Five boxes left to right. Select text, then Ctrl+Shift+R or Rewrite… in the text menu. The dialog: a prompt or a preset, then Generate, which closes it. Generating: the note is locked and the selection shimmers. Streaming: the first text replaces the selection and the answer arrives in place in a rainbow. Done: one undo step, the rainbow holds one second and fades over three. Below, from generating and streaming: Esc, Stop or an error puts the exact original back and unlocks the note.</desc>
+<desc id="fnrw-flow__desc">Five boxes left to right. Select text, then Ctrl+Shift+R or Rewrite… in the text menu. The inline popover: a prompt or a preset, then Generate, which closes it. The document can scroll while prompting. Generating: the note is locked and the selection shimmers. Streaming: the first text replaces the selection and the answer arrives in place in a rainbow. Done: one undo step, the rainbow holds one second and fades over three. Below, from generating and streaming: Esc, Stop or an error puts the exact original back and unlocks the note.</desc>
 <g id="fnrw-flow__boxes">
 <rect id="fnrw-flow__b1" x="24" y="40" width="168" height="130" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="40" y="72" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="fnrw-flow__b1" data-slate-fit-padding="14">Select</text>
@@ -39,7 +41,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 <text x="234" y="72" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="fnrw-flow__b2" data-slate-fit-padding="14">Prompt</text>
 <text x="234" y="102" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__b2" data-slate-fit-padding="14">Type it, or pick</text>
 <text x="234" y="124" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__b2" data-slate-fit-padding="14">a preset; Generate</text>
-<text x="234" y="146" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__b2" data-slate-fit-padding="14">closes the dialog</text>
+<text x="234" y="146" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__b2" data-slate-fit-padding="14">closes the popover</text>
 <rect id="fnrw-flow__b3" x="412" y="40" width="168" height="130" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="428" y="72" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="fnrw-flow__b3" data-slate-fit-padding="14">Generating</text>
 <text x="428" y="102" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__b3" data-slate-fit-padding="14">Note locked;</text>
@@ -67,7 +69,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 <text x="428" y="262" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="fnrw-flow__stop" data-slate-fit-padding="14">Esc, Stop or an error</text>
 <text x="428" y="288" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="fnrw-flow__stop" data-slate-fit-padding="14">The exact original comes back; the note unlocks</text>
 </svg>
-<figcaption>The rewrite flow as built. Nothing waits for an Accept: the result is in the note, and undo is the way back.</figcaption>
+<figcaption>The rewrite flow, with the planned inline prompt (D-265). Nothing waits for an Accept: the result is in the note, and undo is the way back.</figcaption>
 </figure>
 
 <ol class="slate-steps">
@@ -77,11 +79,12 @@ Official documentation, checked 30 October 2026. These products show the interac
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Prompt</p>
-    <p>The Rewrite dialog shows the selected passage and an integration card: icon, service (for example Ollama), model (llama3.2), and <strong>This computer</strong> or <strong>Cloud</strong>. With several configured connections, <strong>AI integration</strong> chooses another and remembers it on this device for the next rewrite (D-262). Then the focused prompt and three presets: <strong>Make concise</strong>, <strong>Make warmer</strong>, <strong>Fix grammar</strong>. A preset never sends. <strong>Generate</strong> waits for prompt text and a saved integration choice. With no Writer, <strong>Set up AI</strong> opens Settings (RWR-73, RWR-74, AIS-03, AIS-13).</p>
+    <p>The inline Rewrite popover shows an integration line: icon, service (for example Ollama), model (llama3.2), and <strong>This computer</strong> or <strong>Cloud</strong>. No selected-passage preview, warning or first-send disclaimer/consent (D-265, D-266). With several configured connections, <strong>AI integration</strong> chooses another and remembers it on this device for the next rewrite (D-262). Then the focused prompt and three presets: <strong>Make concise</strong>, <strong>Make warmer</strong>, <strong>Fix grammar</strong>. A preset never sends. <strong>Generate</strong> waits for prompt text and a saved integration choice. With no Writer, <strong>Set up AI</strong> opens Settings (RWR-73, RWR-74, AIS-03, AIS-13, AIS-14).</p>
+    <p>Scroll the document to review the selected words in context. Their selection stays visible even while typing in the prompt. The popover follows and stays within the editor viewport while any selected fragment is visible; only when the entire selection is offscreen may it scroll away. Scrolling back restores the same draft. Deselect with zero prompt characters to dismiss immediately. With any written or preset text, including whitespace, the separate confirmation says <strong>Discard prompt?</strong> and “Deselecting this text will lose your written prompt.” <strong>Keep editing</strong> restores selection and prompt; <strong>Discard prompt</strong> clears the draft and closes, sending nothing. Moving focus into prompt controls is not deselection (RWR-87 to RWR-90).</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Generate</p>
-    <p><strong>Generate</strong> closes the dialog. The note becomes read-only and the selection shimmers in the AI rainbow. A toast says "Rewriting with Ollama… Press Esc to stop." with <strong>Stop</strong>. If the note changed since you selected, nothing is sent: "The note changed after you selected the text. Select it again and rewrite." (RWR-75, RWR-76)</p>
+    <p><strong>Generate</strong> closes the popover and sends directly to the visible integration, including on first use. The note becomes read-only and the selection shimmers in the AI rainbow. A toast says "Rewriting with Ollama… Press Esc to stop." with <strong>Stop</strong>. If the note changed since you selected, nothing is sent: "The note changed after you selected the text. Select it again and rewrite." (RWR-75, RWR-76, AIS-14)</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Stream in place</p>
@@ -102,15 +105,19 @@ Official documentation, checked 30 October 2026. These products show the interac
 | **Rewrite…** in the Edit menu | The menu bar | `rewrite.open` |
 | **Rewrite…** in Spotlight | Spotlight's commands | `rewrite.open` (SPT-09) |
 
-Every entry runs the same command: the editor captures the selection, and the dialog opens on it. The command is disabled while no note is ready, and on the web, where there's no AI bridge (RWR-71, RWR-72).
+Every entry runs the same command: the editor captures the selection, and the inline popover opens beside it. The command is disabled while no note is ready, and on the web, where there's no AI bridge (RWR-71, RWR-72).
 
 ## States
 
 | State | You see | What you can do | Your note |
 | --- | --- | --- | --- |
 | Closed | The note | Select text; <kbd>Ctrl+Shift+R</kbd> | Ordinary editing |
-| Dialog, no Writer | The passage and "Rewrite needs an AI service. Add one in Settings → AI." | **Set up AI**, **Cancel**, <kbd>Esc</kbd> | Unchanged |
-| Dialog, ready | Passage, integration icon/service/model/locality card, prompt and presets; an integration picker only with several connections | Type, pick a preset or integration, **Generate**, **Cancel**, <kbd>Esc</kbd> | Unchanged |
+| Popover, no Writer | "Rewrite needs an AI service. Add one in Settings → AI." | **Set up AI**, **Cancel**, <kbd>Esc</kbd>; scroll document | Unchanged |
+| Popover, ready | Integration icon/service/model/locality, prompt and presets; picker only with several connections; selection in document, no preview | Type, pick a preset or integration, **Generate**, **Cancel**, <kbd>Esc</kbd>; scroll document | Editable before Generate; stale captures cannot send |
+| Selection partly visible | Popover clamped beside visible selected fragments | Scroll in either direction | Selection stays visible |
+| Selection wholly offscreen | Popover may be offscreen too; draft retained | Scroll back to recover the same prompt | Unchanged |
+| Deselect, empty prompt | Popover disappears, no confirmation | Ordinary editing | No send or write |
+| Deselect, non-empty prompt | Separate prompt-loss confirmation | **Keep editing** (default; also Escape) or **Discard prompt** | No send or write; original range retained until decision |
 | Integration choice saving | The old card and prompt remain; "Remembering your choice…" appears after the task tracker's delay | Typing and Cancel stay available; Generate waits for the save | Unchanged |
 | Generating | The selection shimmering; the toast with **Stop** | <kbd>Esc</kbd> or **Stop** | Read-only; not handed over for saving |
 | Streaming | The answer growing in place in the rainbow | <kbd>Esc</kbd> or **Stop** | Read-only; streamed pieces are outside the undo history |
@@ -127,21 +134,22 @@ Every entry runs the same command: the editor captures the selection, and the di
 
 ## What is sent, and where
 
-Only the prompt and the selected text, with a fixed instruction to reply with just the rewritten text in the same language, go to the chosen Writer's address, from main (RWR-83). No title, path, front matter or other note text is sent to the service. Thinking is never inserted. First-send consent remains per connection (AIS-14). The person decides whether to send, including private or shared notes: no private-notes blocking option remains (AIS-13, D-261). The prompt always shows the integration, model and This computer or Cloud, and can switch the remembered Writer without leaving the dialog (D-262). Locality follows model and host, not service: cloud-suffixed or cloud-routed Ollama models are Cloud even through localhost; other local Ollama models require no discovery. Existing request limits and one-rewrite-at-a-time behavior remain (RWR-82). The window never sees a key.
+Only the prompt and the selected text, with a fixed instruction to reply with just the rewritten text in the same language, go to the chosen Writer's address, from main (RWR-83). No title, path, front matter or other note text is sent to the service. Thinking is never inserted. First-send disclaimer/consent and its sending gate are removed (AIS-14, D-266). The person decides whether to send, including private or shared notes: no private-notes blocking option remains (AIS-13, D-261). The prompt always shows the integration, model and This computer or Cloud, and can switch the remembered Writer without leaving the popover (D-262). Locality follows model and host, not service: cloud-suffixed or cloud-routed Ollama models are Cloud even through localhost; other local Ollama models require no discovery. Existing request limits and one-rewrite-at-a-time behavior remain (RWR-82). The window never sees a key.
 
-WP-AI.13's 1 November feedback replaces its private-note gate with disclosure and user judgement (D-261); first-send consent remains. RWR-73/AIS-03's remembered prompt picker is covered by the same targeted units and `air-safeguards` journey, including one/two connections in light and dark.
+WP-AI.13 replaces the private-note gate with disclosure and user judgement (D-261). WP-AI.14 extends this to remove first-send consent (D-266) and supplies the inline prompt (D-265). Existing picker evidence does not prove these new behaviors; their DoD rows remain open until anchoring units, deselection state tests, one rewrite journey and reviewed light/dark captures pass.
 
 ## Keyboard and accessibility
 
 | Key | Where | Does |
 | --- | --- | --- |
 | <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd>) | A note with text selected | Opens Rewrite (KEY-08) |
-| <kbd>Tab</kbd>, <kbd>Shift+Tab</kbd> | The dialog | Prompt, presets, Cancel, Generate, close |
-| <kbd>Esc</kbd> | The dialog | Closes it; nothing is sent |
+| <kbd>Tab</kbd>, <kbd>Shift+Tab</kbd> | The popover | Integration, prompt, presets, actions; no focus trap |
+| <kbd>Esc</kbd> | The popover | Closes it; nothing is sent |
+| <kbd>Esc</kbd> | Prompt-loss confirmation | Keep editing: preserves prompt and restores captured selection |
 | <kbd>Esc</kbd> | While it generates or streams, anywhere | Stops; the original comes back |
 | <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> | After it's done | The original / the rewrite |
 
-The prompt takes focus when the dialog opens, and focus returns to the note when it closes. The screen reader hears the start, a stop, the finish and errors, never each piece of text. With reduced motion, the shimmer and fade don't move: a still gradient while it streams, ordinary text when done. Still to check: contrast of every frame of the gradient and the paragraph focus band (FOC-07, A11Y-03).
+The prompt takes focus when the non-modal popover opens; focus in its controls never clears the editor's visible selection. There is no backdrop, inert document or scroll lock. The separate prompt-loss confirmation uses the existing modal Dialog, names the loss, and initially focuses Keep editing. The screen reader hears the start, a stop, the finish and errors, never each piece of text. With reduced motion, the shimmer and fade don't move: a still gradient while it streams, ordinary text when done. Still to check: contrast of every frame of the gradient and the paragraph focus band (FOC-07, A11Y-03).
 
 ## Platform key names (in progress)
 
@@ -151,7 +159,9 @@ Menus, the cheat sheet, tooltips and messages say <kbd>Ctrl+Shift+R</kbd> on Win
 
 Built on `fix-ai-rewrite-simple` (commits 8e7e8766, e6e5de0c, 452e44ba, after 7adbf983 to 1309f42e for Settings → AI), in the owner's review build, not merged. Checked: `pnpm check`, the typechecks of core, editor, ui and desktop, and 745 unit tests, including `packages/editor/test/rewrite-stream.test.ts` and `apps/desktop/test/ai-rewrite.test.ts`. Not yet checked: a live service in CI (never), a Windows journey (QLT-08), the security review (SEC-09), wait measures (PRF-15) and a screen-reader pass (A11Y-03).
 
-**Dropped (D-256):** the three options in segmented tabs, *Regenerate*, *Accept* and *Discard*, saved variations and their history, rewriting a whole file to the same or a new file, the anchored companion prompt, <kbd>Ctrl+K</kbd> for Rewrite with the link key moved (links stay on <kbd>Ctrl+K</kbd>), the save hold through review, and the fixture-first owner gate.
+**Planned (1 November, WP-AI.14):** D-265 replaces the built modal with the inline selection-anchored popover and prompt-loss confirmation; D-266 removes the built first-send disclaimer/consent. These are not yet runtime evidence.
+
+**Dropped (D-256):** the three options in segmented tabs, *Regenerate*, *Accept* and *Discard*, saved variations and their history, rewriting a whole file to the same or a new file, <kbd>Ctrl+K</kbd> for Rewrite with the link key moved (links stay on <kbd>Ctrl+K</kbd>), the save hold through review, and the fixture-first owner gate. The anchored companion was dropped then; D-265 now restores an inline prompt, not the old review/history flow.
 
 ## Decisions
 
@@ -159,3 +169,5 @@ Built on `fix-ai-rewrite-simple` (commits 8e7e8766, e6e5de0c, 452e44ba, after 7a
 - **D-257:** every text service kind in the ai-integration kit; see [Settings → AI](ai-settings.md).
 - **D-233:** Focus Notes is an integration client only; kept.
 - **D-255:** the owner sees changes in the review build after fast checks; CI and the full suite come after acceptance.
+- **D-265:** inline non-modal prompt, document scrolling, selection anchoring and draft-preserving deselection.
+- **D-266:** active integration and user judgement replace first-send disclaimer/consent, extending D-261.
