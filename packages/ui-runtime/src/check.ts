@@ -200,8 +200,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
 
     walk(doc.root, "/root", {});
     if (doc.overlay) {
-      // A view hosted beside the main one adds only dialogs and side sheets: no second app root, nothing on the canvas.
-      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || (c.type !== "Dialog" && c.type !== "Sheet"))) add("design", "/root", "an overlay view's root is a Stack of Dialogs and Sheets");
+      // Overlay views add only dialogs, sheets and anchored content, never a second app root.
+      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || !["Dialog", "Sheet", "Positioner"].includes(c.type))) add("design", "/root", "an overlay view's root is a Stack of Dialogs, Sheets and anchored Positioners");
     } else if (doc.ia === "IA-VIEW-PUBLIC") {
       // A published page (WP-5.1) is a document of its own, without the app: its root is ReaderPage.
       if (!isComponent(doc.root) || doc.root.type !== "ReaderPage") add("design", "/root", "a published page's root is ReaderPage");

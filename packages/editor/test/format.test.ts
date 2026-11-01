@@ -8,7 +8,7 @@ import { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { Slice } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
-import { applyLink, coreExtensions, EDITOR_ACTIONS, formatState, ghostRange, MarkdownSession, removeLink, selectLink, setSelectionGhost, type PMNode } from "../src/index.ts";
+import { applyLink, coreExtensions, EDITOR_ACTIONS, formatState, ghostRange, MarkdownSession, removeLink, selectLink, setSelectionGhost, syncSelection, type PMNode } from "../src/index.ts";
 
 let editors: Editor[] = [];
 afterEach(() => {
@@ -23,6 +23,26 @@ function open(markdown: string, opts: Parameters<typeof coreExtensions>[1] = {})
   const md = () => session.serialize(editor.getJSON() as PMNode);
   return { editor, md };
 }
+
+it("refreshes the observed native selection after a focus-independent restore (D-265)", () => {
+  const { editor } = open("A selected passage.");
+  const element = editor.view.dom;
+  document.body.append(element);
+  const selection = document.getSelection()!;
+  const node = element.querySelector("p")!.firstChild!;
+  selection.collapse(node, 0);
+  const observer = Reflect.get(editor.view, "domObserver");
+  observer.setCurSelection();
+  const range = document.createRange();
+  range.setStart(node, 2);
+  range.setEnd(node, 10);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  expect(observer.currentSelection.eq(selection)).toBe(false);
+  syncSelection(editor, true);
+  expect(observer.currentSelection.eq(selection)).toBe(true);
+  element.remove();
+});
 
 /** Selects the first occurrence of `text` in the document. */
 function select(editor: Editor, text: string, length = text.length) {

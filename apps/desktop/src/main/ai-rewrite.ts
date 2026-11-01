@@ -24,7 +24,7 @@ interface Connection {
   id: string; provider: string; name: string; endpoint: string; model: string;
   deployment: string; apiVersion: string; account: string;
   key?: string; lastTest?: { ok: boolean; at: string };
-  /** What the person agreed to send note text to: the provider, destination and model (`consentScope`). */
+  /** Legacy first-send consent metadata, retained for storage compatibility only (D-266). */
   consent?: string;
   /** Ollama's own model list identifies cloud routing. */
   modelCloud?: true;
@@ -123,7 +123,7 @@ const baseOrEmpty = (p: AiProvider, c: Pick<Connection, "endpoint" | "account">)
     return "";
   }
 };
-/** What consent covers: a change of provider, address, model or key needs it again (AIS-14, RWR-43). The key enters only as a hash of its sealed form. */
+/** Legacy consent fingerprint for storage compatibility; never an authority or gate to Generate (D-266). */
 export function consentScope(c: Connection): string {
   const p = aiProvider(c.provider);
   if (!p) return "";
@@ -498,7 +498,7 @@ export class AiService {
   }
   /**
    * Remembers which of a server's models are on this computer, from a list this process fetched,
-   * and marks the saved connections there (Settings and consent say where text goes, D-259).
+   * and marks the saved connections there (Settings and the prompt disclose where text goes).
    */
   async #learn(p: AiProvider, base: string, list: { id: string; cloud: boolean }[]): Promise<void> {
     if (p.shape !== "ollama" || !base) return;
@@ -609,7 +609,7 @@ export class AiService {
    * Rewrite: the Writer's answer as it streams, chunk by chunk, in its own streaming shape (SSE for
    * Chat Completions, Azure, Anthropic, Gemini and Cohere; NDJSON for Ollama). A service that
    * answers in one piece yields it once. The key stays here; only text goes back to the window.
-   * Nothing is sent before consent for this named connection and model. The person decides what to send.
+   * Generate sends directly to the selected Writer (D-266). The person decides what to send.
    */
   async *stream(input: unknown, signal: AbortSignal): AsyncGenerator<string> {
     const a = (input ?? {}) as Record<string, unknown>;
@@ -618,7 +618,6 @@ export class AiService {
     const s = await this.#read();
     const c = s.connections.find((x) => x.id === s.writer);
     if (!c) throw new AiError("not-configured");
-    if (!c.consent || c.consent !== consentScope(c)) throw new AiError("consent-required");
     const p = aiProvider(c.provider)!;
     if (p.shape === "copilot-cli") {
       const started = performance.now();

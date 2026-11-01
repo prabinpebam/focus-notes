@@ -1,7 +1,7 @@
 # Rewrite providers
 
 > [!NOTE]
-> **TL;DR.** Rewrite supports 26 API/server kinds and **GitHub Copilot (on this computer)** through its official installed-CLI SDK, labelled **Cloud** (D-264). HTTP requests, CLI stdio and sealed keys stay in main. Every prompt shows the chosen integration/model and This computer/Cloud, with a remembered picker (D-262). The person decides what to send, including private notes; first-send consent remains enforced (D-261). Copilot reuses only its runtime-owned login with isolated configuration and no tools. Focus Notes never extracts credentials or hosts a model. The CLI adapter is on `fix-ai-copilot-cli`, rebased onto the picker, not yet in the owner's Preview.
+> **TL;DR.** Rewrite supports 26 API/server kinds and **GitHub Copilot (on this computer)** through its official installed-CLI SDK, labelled **Cloud** (D-264). HTTP requests, CLI stdio and sealed keys stay in main. Every prompt shows the chosen integration/model and This computer/Cloud, with a remembered picker (D-262). The person decides what to send, including private notes (D-261). First-send disclaimer/consent is removed in WP-AI.14 (D-266); key/address isolation, URL/TLS, redirect, error and timeout rules stay. Copilot reuses only its runtime-owned login with isolated configuration and no tools. Focus Notes never extracts credentials or hosts a model.
 
 Serves UC-RWR-05, UC-RWR-08 and UC-RWR-09 (AIS-01 to AIS-15, RWR-70, RWR-83). The settings people see are in [Settings → AI](../experience/ai-settings.md); how the answer reaches the note is in [Rewrite engine](rewrite-engine.md).
 
@@ -79,6 +79,7 @@ A service that ignores streaming and answers with one JSON body is read with the
 
 - each connection: `id`, service, name, address, model, deployment, API version, account ID, the key sealed with `safeStorage.encryptString`, the last Test (`ok`, `at`), `modelLocal` (an Ollama model main saw listed as local), and `consent`: what the person agreed to send selected text to (the service, address, model and a hash of the sealed key, `consentScope`);
 - `writer`: the Writer's ID;
+- Legacy `keepPrivate` is ignored on read and stripped on the next ordinary settings write (D-261). D-266 will make legacy `consent` non-authoritative; the other connection fields and sealed keys stay intact.
 
 The window sends a key only inside `ai:save`, from SecureKeyField's `save` event; core deletes it from the command's arguments as soon as it's read. Main seals it at once and returns the connections' views, which say only `hasKey`. A key is never carried to another service's connection, nor to another address (D-259): changing a connection's address or account drops its saved key and last Test, so a service that needs a key refuses to save until one is typed (`key-new-address`: "Enter the key again for the new address."), and the form says so as soon as the address changes. *Find models* for a draft uses the saved key only when the draft's address is the saved one. If `safeStorage` isn't available, saving a key fails with `secure-storage-unavailable`. Up to 30 connections. The first build's single service (one OpenAI-compatible address, model and key) is read as the connection `first`, the Writer if it was (AIS-12).
 
@@ -113,10 +114,10 @@ The preload `PlatformBridge.ai` exposes `settings`, `save`, `remove`, `writer`, 
 
 ## Consent and private notes
 
-Current behavior (AIS-13, AIS-14, D-261, D-262), covered by `ai-contract`, `ai-app` and `air-safeguards`:
+D-261/D-262's user judgement and disclosure and D-266's consent removal are built. The updated `ai-contract`, `ai-app`, Copilot contract and `air-safeguards` tests cover direct Generate without saved consent:
 
 - **User judgement** (AIS-13): no private-note setting, renderer case or main path gate. Every prompt names the selected integration and model, with a locality badge. The person decides whether to send a private or shared selection; Cancel sends nothing. Legacy `keepPrivate` keys are dropped on read and the next write, never rewritten in the owner's real profile by validation.
-- **First-send confirmation** (AIS-14): the dialog names service, model, host and This computer/Cloud; Send records consent before the request. Main still requires a matching service/address/model/key scope. Selecting another connection updates this disclosure and uses that connection's own consent.
+- **First-send consent removed** (AIS-14, D-266): no first-time disclaimer/consent text, extra Send confirmation or consent-required main/core/IPC gate. The preload, bridge and main IPC `consent(id)` path is removed. Generate calls the selected, saved Writer directly on first or later use. Active icon, service, model and locality remain visible. Old consent fields and the internal legacy storage helper remain compatible but neither authorize traffic nor block sends; Generate does not rewrite connection settings. Key/address isolation, URL/redirect rules, request limits, cancellation and selected-text-only requests are unchanged. Updated tests use connections with absent/outdated consent and assert direct requests to the visible integration, never a fallback.
 
 ### Model and endpoint locality
 

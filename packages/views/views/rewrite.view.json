@@ -8,18 +8,14 @@
     "type": "Stack",
     "children": [
       {
-        "type": "Dialog", "id": "rewrite", "when": { "get": "vm.rewrite.open" },
-        "props": { "title": { "t": "rewrite.title" }, "closeLabel": { "t": "rewrite.close" }, "open": { "get": "vm.rewrite.open" }, "size": "m", "height": "content" },
-        "on": { "openChange": { "run": "rewrite.dismiss", "args": { "open": { "get": "event.open" } } } },
+        "type": "Positioner", "id": "rewrite", "when": { "get": "vm.rewrite.open" },
+        "props": { "anchor": "rewrite", "placement": "below", "align": "start", "landmark": "region", "label": { "t": "rewrite.title" } },
+        "on": { "dismiss": { "run": "rewrite.dismiss" } },
         "children": [{
-          "type": "Stack", "props": { "gap": "l" },
+          "type": "Surface", "props": { "variant": "frost", "shape": "popover", "elevation": "2", "padding": "m", "scroll": true },
+          "children": [{
+          "type": "Stack", "props": { "gap": "m" },
           "children": [
-            { "type": "Surface", "props": { "variant": "sunken", "shape": "control", "padding": "m" }, "children": [
-              { "type": "Stack", "props": { "gap": "s" }, "children": [
-                { "type": "Text", "props": { "value": { "t": "rewrite.selected" }, "role": "caption", "tone": "muted" } },
-                { "type": "Text", "props": { "value": { "get": "vm.rewrite.selection" } } }
-              ] }
-            ] },
             { "type": "ItemCard", "when": { "get": "vm.rewrite.hasWriter" }, "props": {
               "title": { "get": "vm.rewrite.writerService" }, "detail": { "get": "vm.rewrite.writerModel" },
               "badge": { "get": "vm.rewrite.writerWhere" }, "icon": { "get": "vm.rewrite.writerIcon" }
@@ -32,7 +28,7 @@
               ] }
             ] },
             { "type": "Text", "when": { "get": "vm.rewrite.needsSetup" }, "props": { "value": { "t": "rewrite.setupNeeded" }, "announce": true } },
-            { "type": "TextField", "id": "rewritePrompt", "props": { "label": { "t": "rewrite.prompt" }, "placeholder": { "t": "rewrite.placeholder" }, "value": { "get": "vm.rewrite.prompt" }, "multiline": true },
+            { "type": "TextField", "id": "rewritePrompt", "props": { "label": { "t": "rewrite.prompt" }, "placeholder": { "t": "rewrite.placeholder" }, "value": { "get": "vm.rewrite.prompt" }, "multiline": true, "autoFocus": true, "focusRequest": { "get": "vm.rewrite.focusRequest" } },
               "on": { "change": { "run": "rewrite.prompt", "args": { "value": { "get": "event.value" } } } } },
             { "type": "Inline", "props": { "gap": "xs" }, "children": [
               { "type": "Button", "props": { "label": { "t": "rewrite.preset.concise" }, "size": "s", "variant": "subtle", "toggle": true, "pressed": { "get": "vm.rewrite.concise" } }, "on": { "press": { "run": "rewrite.preset", "args": { "value": "concise" } } } },
@@ -47,15 +43,23 @@
               "compose": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
                 { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
                 { "type": "Button", "props": { "label": { "t": "rewrite.generate" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate" } } }
-              ] },
-              "consent": { "type": "Stack", "props": { "gap": "s" }, "children": [
-                { "type": "Text", "props": { "value": { "get": "vm.rewrite.consentText" }, "role": "caption", "announce": true } },
-                { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
-                  { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
-                  { "type": "Button", "props": { "label": { "t": "rewrite.consentSend" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate", "args": { "consent": true } } } }
-                ] }
               ] }
             } }
+          ]
+          }]
+        }]
+      },
+      {
+        "type": "Dialog", "id": "rewritePromptLoss", "when": { "get": "vm.rewrite.confirmingDiscard" },
+        "props": { "title": { "t": "rewrite.discardTitle" }, "closeLabel": { "t": "rewrite.keepPrompt" }, "open": { "get": "vm.rewrite.confirmingDiscard" }, "size": "s", "height": "content" },
+        "on": { "openChange": { "run": "rewrite.keepPrompt" } },
+        "children": [{
+          "type": "Stack", "props": { "gap": "m" }, "children": [
+            { "type": "Text", "props": { "value": { "t": "rewrite.discardWarning" } } },
+            { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "rewrite.keepPrompt" }, "variant": "primary", "autoFocus": true }, "on": { "press": { "run": "rewrite.keepPrompt" } } },
+              { "type": "Button", "props": { "label": { "t": "rewrite.discardPrompt" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.discardPrompt" } } }
+            ] }
           ]
         }]
       }

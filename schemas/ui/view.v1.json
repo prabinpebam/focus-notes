@@ -7902,7 +7902,8 @@
                   "enum": [
                     "selection",
                     "link",
-                    "caret"
+                    "caret",
+                    "rewrite"
                   ]
                 },
                 {
@@ -8000,7 +8001,11 @@
         "on": {
           "type": "object",
           "additionalProperties": false,
-          "properties": {}
+          "properties": {
+            "dismiss": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         },
         "children": {
           "type": "array",
@@ -8950,6 +8955,9 @@
               "$ref": "#/$defs/actions"
             },
             "rewriteCancel": {
+              "$ref": "#/$defs/actions"
+            },
+            "rewriteDeselect": {
               "$ref": "#/$defs/actions"
             },
             "format": {

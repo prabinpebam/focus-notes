@@ -43,6 +43,7 @@ export const contract = defineContract({
     rewriteCapture: { payload: { text: "text" } },
     rewriteBegan: { payload: { ok: "boolean" } },
     rewriteCancel: {},
+    rewriteDeselect: { payload: { started: "number" } },
     format: { payload: {
       toolbar: "boolean", card: "boolean", bold: "text", italic: "text", strike: "text", code: "text",
       block: "text", codeBlock: "boolean", inlineCode: "boolean", oneBlock: "boolean", href: "text", table: "boolean",

@@ -950,6 +950,7 @@
           "rewriteCancel": {
             "run": "rewrite.cancel"
           },
+          "rewriteDeselect": { "run": "rewrite.deselected", "args": { "started": { "get": "event.started" } } },
           "format": {
             "run": "format.setState",
             "args": {
