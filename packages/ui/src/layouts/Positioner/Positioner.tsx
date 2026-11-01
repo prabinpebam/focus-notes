@@ -105,12 +105,17 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
           const visible = fragments.findLastIndex((r) => r.bottom > viewport.top && r.top < viewport.bottom);
           rewritePlacement = { x: p.x, side: p.side, fragment: Math.max(0, visible) };
         }
+        const target = fragments[rewritePlacement.fragment] ?? fragments.at(-1);
+        if (!target) return;
+        if (returning.current && target.bottom > viewport.top && target.top < viewport.bottom) {
+          const belowFits = target.bottom + metrics.gap + rewriteSize.height <= viewport.bottom - metrics.edge;
+          const aboveFits = target.top - metrics.gap - rewriteSize.height >= viewport.top + metrics.edge;
+          if (belowFits || aboveFits) rewritePlacement.side = belowFits ? "below" : "above";
+        }
         returnPosition.current = {
           fragment: rewritePlacement.fragment, side: rewritePlacement.side === "above" ? "above" : "below",
           edge: metrics.edge, gap: metrics.gap,
         };
-        const target = fragments[rewritePlacement.fragment] ?? fragments.at(-1);
-        if (!target) return;
         const y = rewritePlacement.side === "above" ? target.top - metrics.gap - rewriteSize.height : target.bottom + metrics.gap;
         const pinned = y < viewport.top + metrics.edge ? "top"
           : y + rewriteSize.height > viewport.bottom - metrics.edge ? "bottom" : undefined;
@@ -227,7 +232,11 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
           <div ref={edgeRef} className={s.returnAction} inert={!edge} aria-hidden={!edge}>
             <Button label={(edge === "top" ? returnAboveLabel : returnBelowLabel) ?? label ?? ""}
               icon={edge === "top" ? "arrowUp" : "arrowDown"}
-              onPress={() => { returning.current = true; anchors.get("rewrite")?.reveal?.(returnPosition.current); }} />
+              onPress={() => {
+                returning.current = true;
+                anchors.get("rewrite")?.reveal?.(returnPosition.current);
+                anchors.moved();
+              }} />
           </div>
         </> : children}
       </div>
