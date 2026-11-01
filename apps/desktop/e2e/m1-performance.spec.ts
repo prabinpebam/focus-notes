@@ -81,8 +81,12 @@ test("PRF-03: typing reaches the disk within 1 s of the last keystroke, and savi
   const lastKey = await page.evaluate(() => (window as unknown as { __lastKey: number }).__lastKey);
   // The wait is generous (helpers.ts `onDisk`); the budget is the measured delay, asserted below.
   await onDisk(note, "the end of a burst");
-  const saved = await page.evaluate((after) => performance.getEntriesByName("fn:note.saved", "mark").map((m) => m.startTime).find((t) => t > after), lastKey);
-  expect(saved).toBeDefined();
+  // Disk visibility precedes the IPC acknowledgement that records this renderer mark.
+  let saved: number | undefined;
+  await expect.poll(async () => {
+    saved = await page.evaluate((after) => performance.getEntriesByName("fn:note.saved", "mark").map((m) => m.startTime).find((t) => t > after), lastKey);
+    return saved;
+  }).toBeDefined();
   const delay = saved! - lastKey;
   const lat = await page.evaluate(() => (window as unknown as { __lat: number[] }).__lat.sort((a, b) => a - b));
   const p95 = lat[Math.floor(lat.length * 0.95)]!;

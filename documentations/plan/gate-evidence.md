@@ -38,7 +38,7 @@ separate task; this worker does not bump versions, package, tag or submit.
 | `pnpm --filter @focus-notes/desktop exec playwright test e2e/air-safeguards.spec.ts e2e/air-rewrite.spec.ts --workers=1` with `FOCUS_NOTES_E2E=1` | First aggregate: 4 passed / 2 failed. Stream/undo/cancel/switch, direct private-note Generate, picker locality and dialog layout passed. Settings round-trip subsequently passed after synthetic DOM selection waited for ProseMirror's browser-frame synchronization. |
 | Targeted `D-265` journey reruns | Fixed and passing in both themes. Live diagnosis found 276.1875 px natural content in 194 px usable room; collapsed content skipped resize measurement. The complete prompt now scrolls only when its chrome cannot fit, with fresh constrained dimensions. Return's fractional scroll rounded the retained fragment 0.40625 px beyond the fit boundary; directionally rounded scroll restores it without an epsilon or capture change. No quarantine or disabled assertion. |
 | Independent AI/IPC security review | FINAL, retained read-only reviewer `9928707a-9091-4eee-9dd7-f6c0b720656f`. No reported findings at `e598f5a740cc60687ce3fc12d61a5297ffe4ec3f`; original verdict provided no detailed file-level coverage or confidence. Incremental `e598f5a..36ba9de9027ab1917df3189add0455978f909430` inspected translated signed-in announcement (`ai-app.ts:304`), Positioner opacity token and retained safety assertions; no changed network/CLI/auth/IPC/keys/submit path and no high-confidence exploitable incremental finding. Static advisory, not comprehensive certification or live SDK/account verification. Reviewer finished; no duplicate review. |
-| Full suites, budgets, exact Windows CI and final main fast-forward | Targeted prerequisites now pass. Full local units and budgets in progress; exact Windows candidate CI and main landing still pending. |
+| Full suites, budgets, exact Windows CI and final main fast-forward | Windows run 41323971671 passed full units, audit, types, build, budgets and web, but one desktop journey raced the save acknowledgement. Its controller synchronization is corrected; the complete final exact-head gate and main landing remain pending. Failed/stopped local reference checks are retained below, not counted as green. |
 
 #### Current production candidate checks
 
@@ -62,6 +62,54 @@ do not claim a final CI head, complete MAI gate or release approval.
 | TD | `node E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-reader.mjs` | PASS: eight changed pages in light/dark (16 cases), one H1, target anchors, correct theme and figures inside the column. Headless private ephemeral server blocks external requests, makes no captures, and closes browser/server in finally; never touches 8787. |
 
 #### Exact candidate and dependency audit
+
+**Exact-head gate correction.** An evidence-only follow-up on a work branch
+previously compared only the preceding push, so it could skip desktop build,
+budgets and all four journey shards while the candidate still contained unmerged
+runtime changes. The candidate now compares non-main work-branch pushes against
+`origin/main`; pull requests retain their explicit base and main retains its
+previous-push fast path. No path exclusion, audit, assertion or timeout is relaxed.
+`pnpm exec vitest run tools\test\ci-workflow.test.mjs` passed all four actual
+workflow Bash / temporary Git-history regressions in 6.76 s: evidence follow-up,
+main documentation-only push, pull request and first work-branch push.
+`pnpm check` also passed. The correction and final recorded results will receive
+one complete exact-head Windows gate before the reserved main fast-forward.
+
+**Fixed-dependency candidate outcome.** Exact published head
+`75f376b6ce3cffd2869972f2132f66adb7e8f824` completed
+[Windows CI 41323971671](https://github.com/prabinpebam/focus-notes/actions/runs/41323971671)
+with **one failed desktop journey, not a green gate**. Repository checks,
+`pnpm audit:deps` (0 high / critical), `pnpm typecheck`, `pnpm test`
+(2,564 passed / 7 skipped; 208 files passed / 2 skipped),
+`pnpm --filter @focus-notes/desktop run build`, the unsigned placeholder Store
+manifest check, `pnpm bench --check` and `pnpm test:web` (46 passed) all passed.
+Desktop shards passed 76/86/69/62 journeys (293 total), skipped 6/3/0/15
+(24 total), and failed PRF-03 once in shard 2. Shard job times were
+12.1/5.7/10.1/12.9 minutes, below twice the usual eight-minute upper duration.
+
+The failed controller observed the exact burst on disk, then immediately read
+the renderer's `fn:note.saved` marker. Core records that marker **after** the
+`writeNote` IPC acknowledgement, so disk visibility alone cannot synchronize the
+read. The journey now polls for the actual marker and still compares its recorded
+timestamp with the last key, retaining the 1,000 ms local / 1,500 ms CI limit.
+No saving code, threshold or assertion is removed or quarantined.
+`pnpm --filter @focus-notes/desktop run typecheck` passed.
+The invisible local command
+`pnpm --filter @focus-notes/desktop exec playwright test m1-performance.spec.ts --workers=1 -g "typing reaches the disk"`
+with `FOCUS_NOTES_E2E=1` measured a passing **582 ms** save but the whole journey
+**failed** its existing local-reference-only two-frame paint check:
+p95 1,756.1 ms, limit <33 ms, over 31 keys. No local `CI` flag was set to hide
+that failure. The owner-safe invisible workstation is not claimed as reference
+paint evidence; the unchanged Windows reference gates still decide landing.
+Owned app cleanup ran in finally (WhatIf then scoped close; zero left).
+
+That exact run's unchanged CI budgets passed: cold/warm ready 424/357 ms,
+renderer overhead 5.8%, open/save 79/482 ms, 10,000-note memory 311 MB,
+idle CPU 0.16%, unchanged-note reopen 22.1 ms, recovery match 1.9 ms,
+and publish 6,319 ms. Complete actual logs are retained at
+`E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-ci-fixed.log`.
+These are proof for the named head only, not a substitute for the final
+combined controller / exact-head gate correction's full Windows run.
 
 Clean published runtime candidate `31140c031f68bc564c765c5444e647be78c71443`
 ran all six TJ journeys again: **PASS, 43.7 s**; applied-anchor maxima

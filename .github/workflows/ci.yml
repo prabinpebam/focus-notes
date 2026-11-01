@@ -28,6 +28,8 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           if [ -n "$BASE_REF" ]; then base="origin/$BASE_REF"
+          # Evidence-only follow-ups on an unmerged candidate still gate its entire runtime diff.
+          elif [ "$GITHUB_REF_NAME" != "main" ]; then base="origin/main"
           elif [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then base="$BEFORE"
           else base="$(git merge-base origin/main HEAD)"; fi
           files="$(git diff --name-only "$base" HEAD)"
