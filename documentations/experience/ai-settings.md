@@ -1,7 +1,7 @@
 # Settings → AI
 
 > [!NOTE]
-> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered connection is the **Writer**, selectable here or in the Rewrite prompt when several connections exist. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains (D-261, D-262). D-266 removes first-send disclaimer/consent in the inline prompt (WP-AI.14). The single Settings list c4335741 and inline prompt are integrated and locally verified in own-candidate; owner acceptance remains.
+> **TL;DR.** Settings → AI connects 26 kinds of service; keys stay sealed on this device, discovery finds already-running local servers, and Test sends only a made-up request. One remembered **Default** here is the **Writer** in the Rewrite prompt. Every prompt shows service, model and **This computer** or **Cloud**. The person decides what to send, including private notes; no private-notes blocking option remains (D-261, D-262). D-266 removes first-send disclaimer/consent in the inline prompt (WP-AI.14). The owner approved exact d40b78a3 UX/UI at 19:59 on 1 November; its combined runtime/test/config head passed complete Windows CI 41325681712, with separate certification limits recorded below.
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
@@ -19,7 +19,7 @@ The current 217-unit and six-journey checks prove native Default focus/identity,
 the shared Writer round-trip and retained editor/panel/scroller nodes.
 Signed-in Copilot discovery announces translated availability without restoring
 redundant visual prose. The [gate evidence](../plan/gate-evidence.md#current-production-candidate-checks)
-records full-gate and live-account limitations; older pending-review statements
+records complete exact-head full-gate proof and live-account limitations; older pending-review statements
 below describe their historical integration boundaries.
 
 <h3 id="single-list-default-choice-d-267-planned">Single-list default choice (D-267)</h3>

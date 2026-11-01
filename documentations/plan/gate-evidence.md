@@ -18,15 +18,18 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
-### Approved AI integration hardening (1 November, in progress)
+### Approved AI integration hardening (1 November, runtime validated)
 
 The owner approved both UX and UI of `d40b78a345b7fe79262116b270b3a908c0966eac`
 at 19:59 ("This looks good") and requested production hardening at 20:00.
 The isolated `fix-ai-approved-merge` candidate preserves that whole lineage and
 combines it once with `origin/main` `15760786f211cf0910cfc25226429a626e57bf60`;
 the merge is `e598f5a740cc60687ce3fc12d61a5297ffe4ec3f`.
-**Not green, not merged to main, and not a release.** Store preparation is a
-separate task; this worker does not bump versions, package, tag or submit.
+**Runtime/test/config validation is green on the exact head recorded below;
+this is not complete GATE-MAI certification or a release.** Main may fast-forward
+only to a head whose own Windows run is fully green, including documentation-only
+follow-ups. Store preparation is separate; this worker does not bump versions,
+package, tag or submit.
 
 | Check from the candidate | Actual result |
 | --- | --- |
@@ -38,7 +41,7 @@ separate task; this worker does not bump versions, package, tag or submit.
 | `pnpm --filter @focus-notes/desktop exec playwright test e2e/air-safeguards.spec.ts e2e/air-rewrite.spec.ts --workers=1` with `FOCUS_NOTES_E2E=1` | First aggregate: 4 passed / 2 failed. Stream/undo/cancel/switch, direct private-note Generate, picker locality and dialog layout passed. Settings round-trip subsequently passed after synthetic DOM selection waited for ProseMirror's browser-frame synchronization. |
 | Targeted `D-265` journey reruns | Fixed and passing in both themes. Live diagnosis found 276.1875 px natural content in 194 px usable room; collapsed content skipped resize measurement. The complete prompt now scrolls only when its chrome cannot fit, with fresh constrained dimensions. Return's fractional scroll rounded the retained fragment 0.40625 px beyond the fit boundary; directionally rounded scroll restores it without an epsilon or capture change. No quarantine or disabled assertion. |
 | Independent AI/IPC security review | FINAL, retained read-only reviewer `9928707a-9091-4eee-9dd7-f6c0b720656f`. No reported findings at `e598f5a740cc60687ce3fc12d61a5297ffe4ec3f`; original verdict provided no detailed file-level coverage or confidence. Incremental `e598f5a..36ba9de9027ab1917df3189add0455978f909430` inspected translated signed-in announcement (`ai-app.ts:304`), Positioner opacity token and retained safety assertions; no changed network/CLI/auth/IPC/keys/submit path and no high-confidence exploitable incremental finding. Static advisory, not comprehensive certification or live SDK/account verification. Reviewer finished; no duplicate review. |
-| Full suites, budgets, exact Windows CI and final main fast-forward | Windows run 41323971671 passed full units, audit, types, build, budgets and web, but one desktop journey raced the save acknowledgement. Its controller synchronization is corrected; the complete final exact-head gate and main landing remain pending. Failed/stopped local reference checks are retained below, not counted as green. |
+| Full suites, budgets and exact Windows CI | PASS on runtime/test/config head `ece4c25c722f96c572232c5c58398c9f25d74260`, run 41325681712: all Windows jobs green, including all four desktop shards. Main landing still requires the actual final documentation head's own full green run; its receipt belongs in the worker/coordinator progress record. Failed/stopped local reference checks remain below, not counted as green. |
 
 #### Current production candidate checks
 
@@ -63,6 +66,36 @@ do not claim a final CI head, complete MAI gate or release approval.
 
 #### Exact candidate and dependency audit
 
+**Complete runtime/test/config proof:** clean published
+`ece4c25c722f96c572232c5c58398c9f25d74260`, preserving approved d40b78a3,
+passed [Windows CI 41325681712](https://github.com/prabinpebam/focus-notes/actions/runs/41325681712).
+Every job concluded success. The following actual commands/results apply to
+every row of the approved requirement matrix below as **TCG**, in addition to
+its named targeted checks; no result is inferred from a skipped step.
+
+| Exact command on the named head | Actual result |
+| --- | --- |
+| `pnpm check`; `pnpm typecheck`; `pnpm audit:deps` | PASS: repository/generated parity and all workspace types; 240 production dependencies, 3 low / 2 moderate / 0 high / 0 critical. |
+| `pnpm test` | PASS: 2,568 tests / 7 skipped; 209 files passed / 2 skipped. Includes all four exact-candidate Bash/Git regression cases and the retained provider/CLI/privacy/data-safety assertions. |
+| `pnpm --filter @focus-notes/desktop run build` | PASS; existing renderer chunk-size warning. |
+| `node apps/desktop/scripts/dist-store.mjs "-c.directories.output=$RUNNER_TEMP/store"`; `node tools/release/store-manifest.mjs "$RUNNER_TEMP/store"` | PASS: unsigned placeholder package/manifests only, never a release or submission. |
+| In `apps/desktop`: `pnpm test:e2e --shard=1/4`; `pnpm test:e2e --shard=2/4`; `pnpm test:e2e --shard=3/4`; `pnpm test:e2e --shard=4/4` | PASS: 76/87/69/62 journeys (294 total), 6/3/0/15 explicit skips (24 total). PRF-03 measured save acknowledgement 575 ms and two-frame paint p95 26.7 ms over 31 keys; no controller race or relaxed threshold. |
+| `pnpm test:web` | PASS: all 46 Chromium journeys. |
+| `pnpm bench --check` | PASS with the unchanged CI margin: cold/warm ready 627/618 ms, renderer overhead 4.4%, open/save 160/480 ms, 10,000-note memory 311 MB, idle CPU 0.2%, reopen 31.8 ms, recovery match 6.3 ms, publish 10,311 ms. |
+
+Shard job times were 11.4/6.7/7.7/14.1 minutes, below twice the usual
+eight-minute upper duration. **Timing anomaly investigated:** units took
+311.94 s (> twice the usual two minutes); the unchanged renderer-overhead
+unit alone took 112.2 s and passed at 8.2% development React overhead.
+The runner spawned 211 isolated workers. This is a slow successful gate,
+not a claim of improved performance, a hang, or a reason to change its limits.
+Complete results are retained in
+`E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-ci-combined.log`.
+This documentation-only proof update changes no validated runtime, tests,
+configuration or dependency. Its own final head must still receive the same
+complete Windows gate before main fast-forwards; the final receipt is recorded
+outside the commit to avoid claiming a commit's future SHA or CI result.
+
 **Exact-head gate correction.** An evidence-only follow-up on a work branch
 previously compared only the preceding push, so it could skip desktop build,
 budgets and all four journey shards while the candidate still contained unmerged
@@ -72,8 +105,9 @@ previous-push fast path. No path exclusion, audit, assertion or timeout is relax
 `pnpm exec vitest run tools\test\ci-workflow.test.mjs` passed all four actual
 workflow Bash / temporary Git-history regressions in 6.76 s: evidence follow-up,
 main documentation-only push, pull request and first work-branch push.
-`pnpm check` also passed. The correction and final recorded results will receive
-one complete exact-head Windows gate before the reserved main fast-forward.
+`pnpm check` also passed. The correction received the complete TCG gate above;
+documentation-only follow-ups also receive a complete exact-head gate before
+the reserved main fast-forward.
 
 **Fixed-dependency candidate outcome.** Exact published head
 `75f376b6ce3cffd2869972f2132f66adb7e8f824` completed
@@ -155,15 +189,14 @@ not an assertion that its upstream manifest already permits the version.
 | `pnpm --filter @focus-notes/desktop exec playwright test air-safeguards.spec.ts air-rewrite.spec.ts --workers=1` with `FOCUS_NOTES_E2E=1` | PASS again against the patched-dependency build: six journeys, 41.1 s; applied-anchor maxima 19.70/18.50 ms, deselection 7.90/5.90 ms (light/dark). Own PID-scoped cleanup reports zero instances closed/remaining. |
 | `node E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-reader.mjs`; pinned Slate runtime check; `git diff --check` | PASS again: 16 reader/theme cases and runtime integrity; no screenshots, external requests or owner process changes. |
 
-The fixed source still needs its own complete green Windows CI before main
-fast-forwards. No advisory quarantine, disabled test or release is authorized
-by this correction.
+The fixed source passed its complete TCG Windows gate above. No advisory
+quarantine, disabled test or release is authorized by this correction.
 
 | Approved requirement / DoD | Checked evidence | Remaining limitation |
 | --- | --- | --- |
 | RWR-70, LIC-03 | T0 licence/dependency checks; no hosted model | No live service certification |
-| RWR-71, UI-14, I18N-04 | T0 view/contracts; TT web/desktop types | Full web journey gate pending |
-| RWR-72, RWR-74, RWR-85, KEY-08, SPT-09 | TU core open/entry behavior; existing text-menu/keymap/Spotlight tests in full suite | Full unit/Windows entry journeys pending |
+| RWR-71, UI-14, I18N-04 | T0 view/contracts; TT web/desktop types; TCG full units and 46 web journeys | No live service called |
+| RWR-72, RWR-74, RWR-85, KEY-08, SPT-09 | TU core open/entry behavior; TCG text-menu/keymap/Spotlight units and Windows entry journeys | No live service called |
 | RWR-73, RWR-87 to RWR-90; UX-POP.1 to UX-POP.5 | TU draft/geometry/stream; TJ non-modal selection, normal and short viewport, both Return directions, retained draft, loss confirmation defaults/Escape/discard/no-send/no-write | Tiny-height overflow belongs to the complete existing prompt, never a new modal |
 | RWR-75 to RWR-77, RWR-79 to RWR-84, RWR-86; MAI.2/3 | TU stale capture, errors/limits/cancellation, formatted stream; TJ lock, exact disk content, cancellation, external overwrite, switch and undo/redo | Live services not called |
 | RWR-78, FOC-07; MAI.6 | TU stream decorations; TJ reduced-motion Return; T0 tokens | Full-frame rainbow/focus-band contrast evidence not supplied by these checks |
@@ -173,28 +206,29 @@ by this correction.
 | UX-POP.7, DSY-14 | TJ opaque highlighted hover, symmetric centered icon/label and both Returns; TU brand fallback/licences and geometry; T0 token ownership | No new approved visual baselines produced |
 | QLT-08, PRF-15; MAI.7 | TJ six fake-service Windows journeys. Latest applied-anchor maxima 13.90/18.50 ms and deselection 4.00/13.20 ms (light/dark), asserted deselection <= 100 ms | Scheduling-to-applied placement, not paint; open/Stop renderer latency not measured by this journey |
 | SEC-09, PRV-05 | TU no key/text leakage, address/protocol/abort contracts; retained static security verdict above | No comprehensive certification or live account trial |
-| HLP-10, DOC-03 | As-built Help/spec, TS and TD changed-reader rendering | Full site/web checks pending |
+| HLP-10, DOC-03 | As-built Help/spec, TS and TD changed-reader rendering; TCG site-build units and full web journeys | No release or publication implied |
 | A11Y-03 | TU announcement regression/native semantics; TJ keyboard/focus/reduced motion | Screen-reader and full-frame contrast pass not inferred |
-| MAI.1, MAI.8 | Owner approved exact `d40b78a345b7fe79262116b270b3a908c0966eac` at 19:59; T0/TU/TJ preserve lineage | Windows exact-head green, complete stage evidence and final main landing pending |
+| MAI.1, MAI.8 | Owner approved exact `d40b78a345b7fe79262116b270b3a908c0966eac` at 19:59; T0/TU/TJ and green exact-head TCG preserve lineage | Complete stage certification remains open; final main head must have its own full green receipt |
 
 All local app runs are invisible, synthetic, and end with the existing cleanup
 script using the worker launcher's PID, first with `-WhatIf`, then without.
 The scripts report zero remaining owned instances. Owner review, Preview, notes,
 private content and the docs server on 8787 are untouched.
 
-The remaining evidence must map every approved requirement and DoD row to
-commands/results on the final candidate; this intermediate table is not that
-completed matrix and does not close GATE-MAI.
+Every approved requirement/DoD group now names targeted proof plus the complete
+TCG command/result/head/run record. The explicit non-automated gaps above are
+not silently waived: this closes the approved runtime hardening evidence, not
+the broader GATE-MAI certification or release gate.
 
 ### MAI: Rewrite with AI (building)
 
-This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 46 requirements in four packages (D-256, D-257). WP-AI.11 is built on `fix-ai-rewrite-simple` and in the owner's review build, with `pnpm check`, typechecks and unit tests; no journey, measure or security review yet. The [acceptance matrix](rewrite-acceptance.md) has the evidence row by row and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define what's required.
+This later stage is not part of the six historical gates below. **GATE-MAI remains open, not certified:** `pnpm trace MAI` inventories 51 requirements, 7 explicitly ID-traced and 44 without IDs in test titles/comments. That inventory gap is not 44 observed failures. The owner approved exact d40b78a3 on 1 November; the combined runtime/test/config candidate passed the complete Windows TCG gate above, including six related fake-service journeys and the retained limited static security review. Renderer open/Stop latency, full-frame contrast, screen-reader and live-account proof are not inferred. The [acceptance matrix](rewrite-acceptance.md) and [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) retain those separate certification limits.
 
 | Gate part | Status | What must supply evidence |
 | --- | --- | --- |
-| Rewrite and Settings → AI as built | Owner reviewing | WP-AI.11: unit tests on the branch; the owner's review build |
-| Live Markdown, key names, private notes, consent | In progress / planned | WP-AI.12 (in progress), WP-AI.13 (planned) |
-| Evidence and acceptance | Planned | WP-AI.9: Windows journey with a fake local service, security review, measures, screen reader, contrast, Help; the owner's acceptance |
+| Rewrite and Settings → AI as built | UX/UI approved; runtime validated | Exact d40b78a3 approval and TCG Windows proof above; no redesign |
+| Live Markdown, key names, private notes, disclosure | Automated contracts/journeys passing | TCG and named TU/TJ stream, undo/redo, keymap, direct-send/no-send and overwrite safety checks; no live account trial |
+| Evidence and acceptance | Runtime proof complete; certification gaps explicit | TCG, final limited static review, as-built Help and Slate checks; renderer latency, screen reader, full-frame contrast and live accounts remain unclaimed |
 
 | Stage | Requirements traced | Untraced | Work packages | Demo automated | Blocking the gate |
 | --- | ---: | ---: | --- | --- | --- |

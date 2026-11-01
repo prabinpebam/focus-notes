@@ -1,7 +1,7 @@
 # Rewrite acceptance
 
 > [!NOTE]
-> **TL;DR.** One row per Rewrite and Settings → AI requirement: how to check it, the evidence today and what's left. On 31 October the built rows (RWR-70 to RWR-83, AIS-01 to AIS-12, AIS-15) have `pnpm check`, typechecks and unit tests on `fix-ai-rewrite-simple`, and the owner is trying them in the review build with Ollama. The `air-rewrite` and `air-safeguards` journeys run against a local fake Ollama, and the first security review's findings are fixed (SEC-09). No live service is ever called in CI; a live cloud service waits for the owner's own key. The wait measures' budgets and the screen-reader pass are still to do (WP-AI.9).
+> **TL;DR.** The owner approved exact d40b78a3 UX/UI on 1 November. The combined runtime/test/config head ece4c25c passed complete Windows CI 41325681712: 2,568 units, 294 desktop journeys, 46 web journeys, audit, types, build and unchanged budgets. The current matrix below links the exact commands/head/run and explicitly retains unmeasured renderer latency, full-frame contrast, screen-reader and live-account gaps. Older row evidence is historical and is superseded by that combined proof. No live service is called in CI and complete GATE-MAI certification is not implied.
 
 The chain is in [Rewrite with AI](../experience/rewrite-with-ai.md) and [Settings → AI](../experience/ai-settings.md); requirements in [requirements](../product/requirements.md#rewrite-with-ai-rwr); packages in the [implementation plan](implementation-plan.md#mai).
 
@@ -15,9 +15,10 @@ editor/panel/scroller identity. The [current command and requirement matrix](gat
 supersedes historical pending-owner-acceptance statements below and maps every
 approved requirement/DoD to actual checks and explicit gaps. Static security
 review is final with no reported findings, not comprehensive certification or
-live SDK/account proof. Full exact-head Windows CI and main landing remain
-pending; GATE-MAI's unmeasured renderer latency, full-frame contrast and
-screen-reader evidence are not inferred from these tests.
+live SDK/account proof. The runtime/test/config head now has complete green
+Windows proof; documentation-only follow-ups must receive their own complete
+gate before main fast-forwards. GATE-MAI's unmeasured renderer latency,
+full-frame contrast and screen-reader evidence are not inferred from these tests.
 
 That the rows marked built work in the app they're using, that the original is never lost, and that their words go only where they chose. Evidence here is a test that runs, or the owner trying it, never "should work".
 

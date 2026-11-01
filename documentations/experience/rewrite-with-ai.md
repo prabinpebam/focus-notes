@@ -1,7 +1,7 @@
 # Rewrite with AI
 
 > [!NOTE]
-> **TL;DR.** Select text in a note, press <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd> on macOS) or choose **Rewrite…** in the text menu, type a prompt or pick a preset, and press **Generate**. The note locks, your selection shimmers, and the answer from the AI service you chose streams in over it in a rainbow that fades. One <kbd>Ctrl+Z</kbd> gives back your exact original; <kbd>Esc</kbd>, **Stop** or any error puts it back too. Focus Notes only connects to a service you run or pay for; it never runs a model. Built on 31 October (D-256) and open in the owner's review build; not yet on `main`. Live Markdown while streaming and platform key names are in progress.
+> **TL;DR.** Select text in a note, press <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd> on macOS) or choose **Rewrite…** in the text menu, type a prompt or pick a preset, and press **Generate**. The note locks, your selection shimmers, and the answer from the AI service you chose streams in over it in a rainbow that fades. One <kbd>Ctrl+Z</kbd> gives back your exact original; <kbd>Esc</kbd>, **Stop** or any error puts it back too. Focus Notes only connects to a service you run or pay for; it never runs a model. The owner approved exact d40b78a3 UX/UI on 1 November; the combined runtime/test/config head passed complete Windows CI 41325681712. The evidence below distinguishes that proof from broader certification and release.
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
@@ -151,15 +151,15 @@ WP-AI.13 replaces the private-note gate with disclosure and user judgement (D-26
 
 The prompt takes focus when the non-modal popover opens; focus in its controls never clears the editor's visible selection. There is no backdrop, inert document or scroll lock. The separate prompt-loss confirmation uses the existing modal Dialog, names the loss, and initially focuses Keep editing. The screen reader hears the start, a stop, the finish and errors, never each piece of text. With reduced motion, the shimmer and fade don't move: a still gradient while it streams, ordinary text when done. Still to check: contrast of every frame of the gradient and the paragraph focus band (FOC-07, A11Y-03).
 
-## Platform key names (in progress)
+## Platform key names
 
-Menus, the cheat sheet, tooltips and messages say <kbd>Ctrl+Shift+R</kbd> on Windows and Linux and <kbd>⇧⌘R</kbd> on macOS. The text menu was fixed in bb50e208; the rest, and the finish message's undo key, are being fixed on the same branch (RWR-85).
+Menus, the cheat sheet, tooltips and messages say <kbd>Ctrl+Shift+R</kbd> on Windows and Linux and <kbd>⇧⌘R</kbd> on macOS. The text-menu precursor was bb50e208 (RWR-85). The current combined keymap/menu units and Windows journeys passed in TCG; no live macOS run is claimed.
 
 ## As built
 
-Built on `fix-ai-rewrite-simple` (commits 8e7e8766, e6e5de0c, 452e44ba, after 7adbf983 to 1309f42e for Settings → AI), in the owner's review build, not merged. Checked: `pnpm check`, the typechecks of core, editor, ui and desktop, and 745 unit tests, including `packages/editor/test/rewrite-stream.test.ts` and `apps/desktop/test/ai-rewrite.test.ts`. Not yet checked: a live service in CI (never), a Windows journey (QLT-08), the security review (SEC-09), wait measures (PRF-15) and a screen-reader pass (A11Y-03).
+Current approved runtime/test/config head `ece4c25c722f96c572232c5c58398c9f25d74260` passed complete Windows CI 41325681712: checks, types, audit, 2,568 units, 294 desktop journeys, 46 web journeys, build and unchanged budgets. The [exact command/result matrix](../plan/gate-evidence.md#exact-candidate-and-dependency-audit) records the retained security review's limits and the unmeasured renderer open/Stop, screen-reader, full-frame contrast and live-account gaps. Documentation-only follow-ups also require their own complete green gate before main fast-forwards.
 
-**Planned (1 November, WP-AI.14):** D-265 replaces the built modal with the inline selection-anchored popover and prompt-loss confirmation; D-266 removes the built first-send disclaimer/consent. These are not yet runtime evidence.
+**Historical precursor, 31 October:** `fix-ai-rewrite-simple` (8e7e8766, e6e5de0c, 452e44ba, after 7adbf983 to 1309f42e for Settings → AI) had checks, types and 745 units, but not the later combined Windows gate. **Now approved and built (WP-AI.14):** D-265 replaces that modal with the inline selection-anchored popover and prompt-loss confirmation; D-266 removes its first-send disclaimer/consent. Current TJ/TCG prove the approved behavior rather than that historical modal.
 
 **Dropped (D-256):** the three options in segmented tabs, *Regenerate*, *Accept* and *Discard*, saved variations and their history, rewriting a whole file to the same or a new file, <kbd>Ctrl+K</kbd> for Rewrite with the link key moved (links stay on <kbd>Ctrl+K</kbd>), the save hold through review, and the fixture-first owner gate. The anchored companion was dropped then; D-265 now restores an inline prompt, not the old review/history flow.
 
