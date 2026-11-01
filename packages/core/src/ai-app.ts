@@ -257,8 +257,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const started = performance.now();
     try {
       apply(await tracker.run(target, "rewrite.integration.saving", () => ai.writer(value), "rewrite.integration.saved"));
-      status = t("ai.writer.set", { name: writerConnection()?.name ?? "" });
-      announce(status);
+      announce(t("ai.writer.set", { name: writerConnection()?.name ?? "" }));
     } catch (e) {
       status = reason(e, "ai.error.save");
       toast(status, { tone: "error" });
@@ -294,7 +293,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       found = await ai.discover();
       apply(await ai.settings());
       const cli = found.find((f) => f.provider === "copilot-cli");
-      if (cli?.status === "signed-in") discoverStatus = t("ai.found.copilot");
+      if (cli?.status === "signed-in") discoverStatus = found.some((f) => f.provider !== "copilot-cli") ? t("ai.found.some", { n: found.filter((f) => f.provider !== "copilot-cli").length }) : "";
       else if (cli) discoverStatus = reason(new Error(cli.error ?? "provider-error"), "ai.error.provider");
       else discoverStatus = t(found.length ? "ai.found.some" : "ai.found.none", { n: found.length });
     } catch (e) {
@@ -309,7 +308,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const f = found[Number(a.value)];
     if (!f) return;
     if (f.provider === "copilot-cli") {
-      status = f.status === "signed-in" ? t("ai.found.copilot") : reason(new Error(f.error ?? "provider-error"), "ai.error.provider");
+      status = f.status === "signed-in" ? "" : reason(new Error(f.error ?? "provider-error"), "ai.error.provider");
       changed();
       return;
     }

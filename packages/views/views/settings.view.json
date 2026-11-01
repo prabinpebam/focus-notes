@@ -100,8 +100,9 @@
                 "cases": {
                   "ai": {
                     "type": "Stack",
+                    "id": "aiConnections",
                     "props": {
-                      "gap": "l"
+                      "gap": "section"
                     },
                     "children": [
                       {
@@ -122,11 +123,41 @@
                         }
                       },
                       {
-                        "type": "Text",
+                        "type": "LiveRegion",
                         "props": {
-                          "value": { "get": "vm.ai.writerSaveText" },
-                          "announce": true
+                          "message": { "get": "vm.ai.writerSaveText" }
                         }
+                      },
+                      {
+                        "type": "Stack",
+                        "id": "aiDiscovery",
+                        "props": { "gap": "related" },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": { "related": true, "label": { "t": "ai.found.find" } },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": { "label": { "t": "ai.found.find" }, "busy": { "get": "vm.ai.discovering" } },
+                                "on": { "press": { "run": "ai.discover" } }
+                              },
+                              { "type": "Text", "props": { "value": { "t": "ai.found.hint" }, "role": "caption", "tone": "muted" } }
+                            ]
+                          },
+                          { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.ai.discoverStatus" }, ""] } }, "props": { "value": { "get": "vm.ai.discoverStatus" }, "role": "caption", "announce": true } },
+                          {
+                            "each": { "get": "vm.ai.found" }, "as": "f", "key": "f.id",
+                            "empty": { "type": "LiveRegion", "props": { "message": { "get": "vm.ai.discoverStatus" } } },
+                            "render": {
+                              "type": "ItemCard",
+                              "props": { "title": { "get": "f.name" }, "detail": { "get": "f.detail" }, "icon": "link" },
+                              "children": [
+                                { "type": "Button", "props": { "label": { "t": "ai.found.use" }, "size": "s" }, "on": { "press": { "run": "ai.useFound", "args": { "value": { "get": "f.id" } } } } }
+                              ]
+                            }
+                          }
+                        ]
                       },
                       {
                         "each": {
@@ -284,23 +315,6 @@
                         }
                       },
                       {
-                        "type": "Button",
-                        "when": {
-                          "get": "vm.ai.addVisible"
-                        },
-                        "props": {
-                          "label": {
-                            "t": "ai.add"
-                          },
-                          "variant": "primary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "ai.add"
-                          }
-                        }
-                      },
-                      {
                         "type": "Surface",
                         "when": {
                           "get": "vm.ai.formOpen"
@@ -353,6 +367,7 @@
                               },
                               {
                                 "type": "Text",
+                                "when": { "expr": { "!=": [{ "get": "vm.ai.status" }, ""] } },
                                 "props": {
                                   "value": {
                                     "get": "vm.ai.providerNote"
@@ -691,97 +706,11 @@
                         }
                       },
                       {
-                        "type": "Inline",
-                        "props": {
-                          "gap": "s"
-                        },
-                        "children": [
-                          {
-                            "type": "Button",
-                            "props": {
-                              "label": {
-                                "t": "ai.found.find"
-                              },
-                              "disabled": {
-                                "get": "vm.ai.discovering"
-                              },
-                              "disabledReason": {
-                                "t": "ai.found.looking"
-                              }
-                            },
-                            "on": {
-                              "press": {
-                                "run": "ai.discover"
-                              }
-                            }
-                          },
-                          {
-                            "type": "Spinner",
-                            "when": {
-                              "get": "vm.ai.discovering"
-                            },
-                            "props": {
-                              "label": {
-                                "t": "ai.found.looking"
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Text",
-                        "props": {
-                          "value": {
-                            "get": "vm.ai.discoverStatus"
-                          },
-                          "role": "caption",
-                          "announce": true
-                        }
-                      },
-                      {
-                        "type": "Text",
-                        "props": { "value": { "t": "ai.found.hint" }, "role": "caption", "tone": "muted" }
-                      },
-                      {
-                        "each": {
-                          "get": "vm.ai.found"
-                        },
-                        "as": "f",
-                        "key": "f.id",
-                        "empty": { "type": "Text", "props": { "value": { "t": "ai.found.empty" }, "role": "caption", "tone": "muted" } },
-                        "render": {
-                          "type": "ItemCard",
-                          "props": {
-                            "title": {
-                              "get": "f.name"
-                            },
-                            "detail": {
-                              "get": "f.detail"
-                            },
-                            "icon": "link"
-                          },
-                          "children": [
-                            {
-                              "type": "Button",
-                              "props": {
-                                "label": {
-                                  "t": "ai.found.use"
-                                },
-                                "size": "s"
-                              },
-                              "on": {
-                                "press": {
-                                  "run": "ai.useFound",
-                                  "args": {
-                                    "value": {
-                                      "get": "f.id"
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        }
+                        "type": "Button",
+                        "id": "aiAddConnection",
+                        "when": { "get": "vm.ai.addVisible" },
+                        "props": { "label": { "t": "ai.add" }, "variant": "primary" },
+                        "on": { "press": { "run": "ai.add" } }
                       }
                     ]
                   },

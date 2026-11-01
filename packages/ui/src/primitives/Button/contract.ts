@@ -5,7 +5,7 @@ const variants = ["primary", "secondary", "subtle", "danger"] as const;
 export const contract = defineContract({
   type: "Button",
   tier: "primitive",
-  description: "A labelled action. Its label says what it does.",
+  description: "A labelled action. Shared native-control reset and trimmed line box center its label and icon with symmetric block padding. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
   props: {
     label: { kind: "message", required: true },
     variant: { kind: "enum", values: variants, default: "secondary" },
@@ -31,6 +31,10 @@ export const contract = defineContract({
   fixtures: [
     ...variants.map((variant) => ({ name: `variant ${variant}`, props: { label: { t: "gallery.action" }, variant } })),
     { name: "size s", props: { label: { t: "gallery.action" }, size: "s" } },
+    ...(["s", "m", "l"] as const).flatMap((size) => [undefined, "start", "end"].map((iconPosition) => ({
+      name: `centering ${size} ${iconPosition ?? "text"}`,
+      props: { label: { t: "rewrite.preset.concise" }, size, ...(iconPosition ? { icon: "save", iconPosition } : {}) },
+    }))),
     { name: "size l", props: { label: { t: "gallery.action" }, size: "l", variant: "primary" } },
     { name: "bleed", props: { label: { t: "gallery.action" }, variant: "subtle", bleed: true } },
     { name: "size m with icon", props: { label: { t: "gallery.action" }, size: "m", icon: "save" } },

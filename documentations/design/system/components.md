@@ -1,6 +1,8 @@
 # Component catalog
 
-**ItemCard choice implementation (D-267):** the existing primitive accepts `choiceGroup`, `choiceValue` and saved `selected`, emitting `choose` from a native radio. Its radio label contains icon/title/detail/Default badge only; the default slot remains a sibling, so action controls never select it. Arrow keys and Space use the browser's radio model; pending disables the choice without changing checked state. Existing itemCard action/surface/focus tokens supply the selected border/background/focus ring. Selected and pending fixtures, 30-row DOM tests and generated contracts cover the adaptation; no new component or selection store.
+**Shared anatomy revision, 1 November 17:29 feedback (D-265/D-267; approval pending):** Button, PillButton and MenuButton text/pill triggers reuse the native-control reset, explicit line height and trimmed label box from `packages/ui/src/primitives/control.css.ts`. Floating controls preserve opaque surface paint under hover/pressed highlights; ordinary secondary controls also layer highlights over their resting surface. Inline's `related` contract groups an action and its explanation with named related spacing and responsive wrapping; independent groups use section spacing. ItemCard's saved selected badge is accent-filled with on-accent text and semibold weight. `ui:check` includes the static source invariants in `packages/ui-runtime/src/cli/design-source.ts`; gallery fixtures expose sizes/icon positions and selected/pending choices. These source checks are not visual approval.
+
+**ItemCard choice implementation (D-267):** the existing primitive accepts `choiceGroup`, `choiceValue` and saved `selected`, emitting `choose` from a native radio. Its radio label contains icon/title/detail/Default badge only; the default slot remains a sibling, so action controls never select it. Arrow keys and Space use the browser's radio model; pending marks the radio `aria-disabled` and suppresses activation without native disabling, replacing it, or dropping focus. Selected background paint is composited over the existing opaque card, not a transparent replacement. No new component or selection store.
 
 **D-267, Settings connection choice (built ItemCard adaptation):** one radio-like choice target per row, with explicit Default name/checked state and token-only selected/focus appearance; Test/Change/Remove are sibling controls, never interactive descendants. Reuse existing radio/list behaviour in the lowest UI tier; any missing capability requires a documented contract, states/stories and regenerated schemas before the view can use it. Identity/status content stays separate from selection. See [Settings spec](../../experience/ai-settings.md#single-list-default-choice-d-267-planned).
 
@@ -30,7 +32,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 14 | `hover`, `pressed`, `focusVisible` |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 23 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
@@ -49,7 +51,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
-| TextField | primitive | `rest`, `focused`, `invalid` | 11 | `focused` |
+| TextField | primitive | `rest`, `focused`, `invalid` | 12 | `focused` |
 | PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 1 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen` | 2 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
@@ -77,8 +79,8 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | BlockHandle | host component | `hidden`, `shown`, `pressed`, `menuOpen`, `dragging` | 0 | `hidden` |
 | WindowFrame | host component | `rest`, `bandHover`, `fullScreenHidden`, `moving`, `resizing`, `menuOpen` | 0 | `bandHover`, `fullScreenHidden` |
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
-| Stack | layout | `rest` | 16 | None |
-| Inline | layout | `rest` | 16 | None |
+| Stack | layout | `rest` | 18 | None |
+| Inline | layout | `rest` | 19 | None |
 | Columns | layout | `rest` | 1 | None |
 | Surface | layout | `rest` | 24 | None |
 | Layer | layout | `rest` | 19 | None |

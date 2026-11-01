@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
 const t = tokens.cmp.pillButton;
 
@@ -7,8 +8,10 @@ const t = tokens.cmp.pillButton;
 // It stays at full opacity so its text keeps AA contrast.
 
 export const pill = style({
+  ...controlMetrics,
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "center",
   height: t.height,
   paddingInline: t.paddingInline,
   borderRadius: t.radius,
@@ -32,3 +35,4 @@ export const pill = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing },
   },
 });
+export const floating = style(floatingControlSurface);

@@ -245,7 +245,7 @@
     {
       "type": "Button",
       "tier": "primitive",
-      "description": "A labelled action. Its label says what it does.",
+      "description": "A labelled action. Shared native-control reset and trimmed line box center its label and icon with symmetric block padding. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "props": {
         "label": {
           "kind": "message",
@@ -346,6 +346,15 @@
         "variant subtle",
         "variant danger",
         "size s",
+        "centering s text",
+        "centering s start",
+        "centering s end",
+        "centering m text",
+        "centering m start",
+        "centering m end",
+        "centering l text",
+        "centering l start",
+        "centering l end",
         "size l",
         "bleed",
         "size m with icon",
@@ -2091,7 +2100,7 @@
         "selected": {
           "kind": "boolean",
           "default": false,
-          "description": "Saved radio selection, never optimistic."
+          "description": "Saved radio selection, never optimistic. Emphasizes the badge with selected badge tokens."
         },
         "detail": {
           "kind": "message"
@@ -2141,7 +2150,7 @@
         "busy": {
           "kind": "boolean",
           "default": false,
-          "description": "A pressable card's action is running."
+          "description": "An action is running. Radio choices remain mounted and focusable, aria-disabled suppresses activation without resetting scroll or native focus."
         },
         "disabled": {
           "kind": "boolean",
@@ -2853,6 +2862,8 @@
       },
       "fixtures": [
         "gap none",
+        "gap related",
+        "gap section",
         "gap xs",
         "gap s",
         "gap m",
@@ -2879,6 +2890,16 @@
           "kind": "token",
           "group": "space",
           "default": "none"
+        },
+        "related": {
+          "kind": "boolean",
+          "default": false,
+          "description": "One semantic group, using space.related and wrapping by default. Independent groups use space.section."
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "related",
+          "description": "Names the semantic group."
         },
         "padding": {
           "kind": "token",
@@ -2928,7 +2949,10 @@
         "pattern": "none"
       },
       "fixtures": [
+        "related action and explanation",
         "gap none",
+        "gap related",
+        "gap section",
         "gap xs",
         "gap s",
         "gap m",
@@ -4665,6 +4689,8 @@
   ],
   "tokens": {
     "space": [
+      "related",
+      "section",
       "none",
       "xxs",
       "xs",

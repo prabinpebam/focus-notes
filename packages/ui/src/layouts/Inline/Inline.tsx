@@ -4,6 +4,9 @@ import type { Space } from "../Stack/Stack.tsx";
 
 export interface InlineProps {
   gap?: Space;
+  /** One named semantic group; uses related spacing and wraps together by default. */
+  related?: boolean;
+  label?: string;
   padding?: Space;
   align?: keyof typeof s.align;
   justify?: keyof typeof s.justify;
@@ -13,9 +16,9 @@ export interface InlineProps {
   children?: ReactNode;
 }
 
-export function Inline({ gap = "none", padding = "none", align = "center", justify = "start", wrap, grow, id, children }: InlineProps) {
+export function Inline({ gap = "none", related, label, padding = "none", align = "center", justify = "start", wrap, grow, id, children }: InlineProps) {
   return (
-    <div id={id} className={[s.base, s.gap[gap], s.padding[padding], s.align[align], s.justify[justify], wrap ? s.wrap : "", grow ? s.grow : ""].join(" ")}>
+    <div id={id} role={related ? "group" : undefined} aria-label={related ? label : undefined} data-related={related ? "" : undefined} className={[s.base, s.gap[related ? "related" : gap], s.padding[padding], s.align[align], s.justify[justify], (wrap ?? related) ? s.wrap : "", grow ? s.grow : ""].join(" ")}>
       {children}
     </div>
   );

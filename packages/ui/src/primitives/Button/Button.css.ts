@@ -1,9 +1,11 @@
 import { keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
 const t = tokens.cmp.button;
 
 export const base = style({
+  ...controlMetrics,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -28,7 +30,7 @@ export const base = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focus.ring, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
     // Busy is inert but not disabled: its sign is the Spinner and its words, never a dimmed look (D-199).
     '&[aria-disabled="true"]:not([data-busy="on"])': { opacity: t.disabledOpacity },
-    "&[data-selected]": { backgroundColor: t.toggle.selected },
+    "&[data-selected]": { backgroundImage: `linear-gradient(${t.toggle.selected}, ${t.toggle.selected})` },
   },
 });
 
@@ -50,8 +52,8 @@ const variantStyle = (v: { background: { rest: string; hover: string; pressed: s
   color: v.text,
   borderColor: v.border,
   selectors: {
-    '&[data-hovered]:not([aria-disabled="true"])': { backgroundColor: v.background.hover },
-    '&[data-pressed]:not([aria-disabled="true"])': { backgroundColor: v.background.pressed },
+    '&[data-hovered]:not([aria-disabled="true"])': { backgroundImage: `linear-gradient(${v.background.hover}, ${v.background.hover})` },
+    '&[data-pressed]:not([aria-disabled="true"])': { backgroundImage: `linear-gradient(${v.background.pressed}, ${v.background.pressed})` },
   },
 });
 
@@ -63,6 +65,7 @@ export const variant = styleVariants({
 });
 
 export const label = style({ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" });
+export const floating = style(floatingControlSurface);
 
 // The busy sign (Waits, D-199): the icon and a Spinner share one cell, so the control keeps its size.
 // The Spinner shows, and the icon hides, only after the busy delay (wait.signDelay), so quick work

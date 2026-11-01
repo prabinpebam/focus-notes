@@ -29,6 +29,10 @@
   "badgeSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
   "badgePaddingInline": { "$type": "dimension", "$value": "{space.s}" },
   "badgeRadius": { "$type": "dimension", "$value": "{radius.round}" },
+  "badgeSelectedBackground": { "$type": "color", "$value": "{color.accent}", "$description": "The saved default's badge is an emphasized state, not muted metadata." },
+  "badgeSelectedText": { "$type": "color", "$value": "{color.onAccent}" },
+  "badgeSelectedWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "busy": { "signDelay": { "$type": "duration", "$value": "{wait.signDelay}", "$description": "Delayed pending border paint; choice content and geometry remain unchanged." } },
   "markSize": { "$type": "dimension", "$value": "{size.iconS}" },
   "action": {
     "border": { "$type": "color", "$value": "{color.accent}", "$description": "A card that is the step's main action (D-131)." },

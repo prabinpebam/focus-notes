@@ -1,6 +1,8 @@
 import { useContext } from "react";
 import { Button as AriaButton, ToggleButton } from "react-aria-components";
 import { CompanionContext } from "../../behaviors/anchors.ts";
+import { FloatingContext } from "../../layouts/Layer/floating.ts";
+import { controlLabel } from "../control.css.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
@@ -37,9 +39,11 @@ export interface ButtonProps {
 export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, busyLabel, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
   const { inert, name, attrs, ref } = useBusy({ busy, busyLabel, label, disabled });
   const keepNoteFocus = useContext(CompanionContext);
+  const floating = useContext(FloatingContext) && (variant === "secondary" || variant === "subtle");
   const common = {
     id,
-    className: [s.base, s.size[size], s.variant[variant], ...(bleed ? [s.bleed[size]] : [])].join(" "),
+    className: [s.base, s.size[size], s.variant[variant], ...(floating ? [s.floating] : []), ...(bleed ? [s.bleed[size]] : [])].join(" "),
+    "data-floating-control": floating ? "" : undefined,
     "data-bleed": bleed ? "" : undefined,
     ...attrs,
     ref,
@@ -57,7 +61,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
   const content = (
     <>
       {iconPosition === "start" ? glyph : null}
-      <span className={s.label}>{name}</span>
+      <span className={`${s.label} ${controlLabel}`}>{name}</span>
       {iconPosition === "end" ? glyph : null}
     </>
   );

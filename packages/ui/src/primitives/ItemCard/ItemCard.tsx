@@ -79,7 +79,7 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
         <Detail className={s.detail}>
           {mark ? <GitHub className={s.mark} aria-hidden="true" /> : null}
           {detail ? <span data-personal={personal === "all" ? "" : undefined}>{detail}</span> : null}
-          {badge ? <span className={s.badge}>{badge}</span> : null}
+          {badge ? <span className={`${s.badge} ${selected ? s.selectedBadge : ""}`}>{badge}</span> : null}
         </Detail>
       ) : null}
     </Detail>
@@ -88,8 +88,10 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
     return (
       <div id={id} className={`${s.base} ${s.choiceCard}`} data-item-card="" data-selected={selected ? "" : undefined} aria-busy={busy || undefined}>
         <label className={s.choice}>
-          <input className={s.radio} type="radio" name={choiceGroup} value={choiceValue} checked={Boolean(selected)} disabled={Boolean(busy || disabled)} aria-label={label ?? title}
-            onChange={() => { if (choiceValue) onChoose?.({ value: choiceValue }); }} />
+          <input className={s.radio} type="radio" name={choiceGroup} value={choiceValue} checked={Boolean(selected)} aria-disabled={busy || disabled || undefined} aria-label={label ?? title}
+            onClick={(e) => { if (inert) e.preventDefault(); }}
+            onKeyDown={(e) => { if (inert && [" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault(); }}
+            onChange={() => { if (!inert && choiceValue) onChoose?.({ value: choiceValue }); }} />
           {visual}
           {text}
         </label>

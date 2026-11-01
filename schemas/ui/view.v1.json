@@ -1065,7 +1065,7 @@
     },
     "c_Button": {
       "type": "object",
-      "description": "A labelled action. Its label says what it does.",
+      "description": "A labelled action. Shared native-control reset and trimmed line box center its label and icon with symmetric block padding. Floating secondary/subtle actions retain an opaque surface under highlight paint.",
       "required": [
         "type",
         "props"
@@ -6718,6 +6718,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6738,6 +6740,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6758,6 +6762,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6875,6 +6881,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -6891,10 +6899,38 @@
                 }
               ]
             },
+            "related": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "padding": {
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7025,6 +7061,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7150,6 +7188,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7170,6 +7210,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",
@@ -7993,6 +8035,8 @@
               "anyOf": [
                 {
                   "enum": [
+                    "related",
+                    "section",
                     "none",
                     "xxs",
                     "xs",

@@ -1,4 +1,6 @@
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useContext, useRef, useState } from "react";
+import { FloatingContext } from "../../layouts/Layer/floating.ts";
+import { controlLabel } from "../control.css.ts";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
@@ -188,14 +190,17 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
 /** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
 export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, bleed, onAction }: MenuButtonProps) {
   const boundary = useWindowBoundary();
+  const floating = useContext(FloatingContext);
+  const surface = floating ? ` ${s.floating}` : "";
+  const words = <span className={controlLabel}>{text ?? label}</span>;
   return (
     <MenuTrigger>
       {variant === "pill"
-        ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
+        ? <Button className={`${s.pill}${surface}`} data-floating-control={floating ? "" : undefined} aria-label={label}>{words}</Button>
         : variant === "select"
-          ? <Button className={s.select} aria-label={label}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
+          ? <Button className={`${s.select}${surface}`} data-floating-control={floating ? "" : undefined} aria-label={label}>{words}<Icon name="chevronDown" size="s" /></Button>
           : variant === "text"
-          ? <Button className={`${s.text}${bleed ? ` ${s.textBleed}` : ""}`} aria-label={label} data-bleed={bleed ? "" : undefined}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
+          ? <Button className={`${s.text}${surface}${bleed ? ` ${s.textBleed}` : ""}`} data-floating-control={floating ? "" : undefined} aria-label={label} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">
         <CommandMenu label={label} sections={sections} onAction={onAction} />

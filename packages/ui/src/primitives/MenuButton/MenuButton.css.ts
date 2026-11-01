@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
 const t = tokens.cmp.menuButton;
 
@@ -76,6 +77,7 @@ export const separator = style({ height: t.separatorWidth, backgroundColor: t.se
 
 // The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).
 export const text = style({
+  ...controlMetrics,
   display: "inline-flex",
   alignItems: "center",
   gap: t.textGap,
@@ -119,6 +121,7 @@ export const textBleed = style({ marginInline: `calc(-1 * ${t.textPaddingInline}
 // The pill variant: the trigger is a quiet text pill (UI-12).
 
 export const pill = style({
+  ...controlMetrics,
   display: "inline-flex",
   alignItems: "center",
   height: t.pillHeight,
@@ -144,3 +147,4 @@ export const pill = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.pillFocusRing },
   },
 });
+export const floating = style(floatingControlSurface);

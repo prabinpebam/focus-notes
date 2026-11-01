@@ -195,6 +195,8 @@
   },
   "space": {
     "$type": "dimension",
+    "related": { "$value": "{ref.size.8}", "$description": "Within one semantic group; smaller than section separation." },
+    "section": { "$value": "{ref.size.16}", "$description": "Between independent groups; larger than related content spacing." },
     "none": {
       "$value": "{ref.size.0}"
     },

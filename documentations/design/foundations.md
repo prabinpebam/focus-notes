@@ -32,6 +32,17 @@ Text is read and written in the band between **25% and 65% of the window height*
 
 <h2 data-reader-personas="design">Spacing and shape</h2>
 
+### Control anatomy and related groups
+
+| Shared rule | As built, 1 November feedback | Static enforcement |
+| --- | --- | --- |
+| Center native control content | Button, PillButton and MenuButton text/pill triggers share `controlMetrics`: no native block padding, explicit UI line height, border-box sizing and zero margin. A trimmed cap-to-alphabetic label box centers visible text alongside icons; fixed control sizes leave symmetric space above and below. No per-view padding correction. | `packages/ui-runtime/src/cli/design-source.ts`, invoked by `ui:check`; Button gallery covers all sizes with text, start icon and end icon. |
+| Paint hover over a surface | Floating secondary/subtle buttons and text/pill/select triggers use `FloatingContext` and shared `floatingControlSurface`: opaque `color.surface` remains underneath the hover/pressed gradient. Alpha highlight roles never replace that surface or reduce control opacity. | The source guard checks shared paint wiring and resolves opaque surface/accent roles in every theme. |
+| Space expresses relationship | `space.related` is 8 px within a group; `space.section` is 16 px between independent groups. `Inline.related` names one semantic group and wraps by default, with no local gap override. | The source guard checks related spacing is smaller; the view checker rejects overrides to related-group gap/wrapping. |
+| Saved selection is emphasis | ItemCard's selected badge uses `badgeSelectedBackground`, `badgeSelectedText` and `badgeSelectedWeight`; saved defaults are stronger than muted metadata. Pending choices remain focusable and retain their saved checked state. | Shared ItemCard contract and source guard, with selected/pending gallery fixtures. |
+
+These are shared defaults, not Rewrite or Settings exceptions (D-265/D-267). Documentation rendering and broader suites remain unchecked until the owner's UX/UI approval.
+
 | Spacing token | `space.xxs` | `space.xs` | `space.s` | `space.m` | `space.l` | `space.xl` | `space.xxl` | `space.xxxl` |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Value | 2 px | 4 px | 8 px | 12 px | 16 px | 24 px | 32 px | 48 px |
