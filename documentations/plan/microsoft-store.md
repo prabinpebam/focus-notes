@@ -1,11 +1,32 @@
 # Microsoft Store
 
-How to publish Focus Notes to the Microsoft Store by hand now, and optionally automate later (PKG-12, [D-202](decisions.md)). Updated 24 October 2026 after the Entra tenant-creation failure.
+How to publish Focus Notes to the Microsoft Store by hand now, and optionally automate later (PKG-12, [D-202](decisions.md)). Updated 1 November 2026 for the proposed 1.1.0 update.
 
 > [!NOTE]
 > **TL;DR.** Use your personal Microsoft account to submit the app in Partner Center. **Entra is not required for manual submission.** The release workflow builds the unsigned MSIX; you upload it, and Microsoft certifies and signs it. The first Store release is **v1.0.0**, after you approve the [indie release bar](gate-evidence.md#version-1-0-for-the-microsoft-store). If you have already completed steps 1–3, **resume at step 4 below**: defer Entra, then build and submit the release. Steps 5–6 retain their old numbers. Automatic submissions are a separate, optional setup at the end.
 
 ## Which path to follow
+
+### Proposed 1.1.0 update
+
+The approved AI Rewrite and Settings runtime landed before this preparation, at
+`69a549d3bc2c4292da3ddccfc52f4dc882d1d4e6`, with its own
+[green Windows CI](https://github.com/prabinpebam/focus-notes/actions/runs/41327910905).
+Preparing a package does **not** authorize a tag, public release, Store upload or submission.
+
+| Item | Preparation and remaining check |
+| --- | --- |
+| Version | Desktop **1.1.0**, MSIX **1.1.0.0**, x64. The installed Store app is 1.0.3.0; the observed latest stable GitHub release is v1.0.2. The root package's 0.0.0 is tooling, not the desktop version. |
+| Version reservation | **Owner:** confirm 1.1.0.0 exceeds the highest package version already submitted in Partner Center. Installed and public versions do not prove that value. No Store account was accessed during preparation. |
+| Package | Use `dist:store --require-identity --publish never` with the real repository identity variables. Keep the output in `focus-notes-work\release\1.1.0`, alongside its checksum, manifest evidence, listing and `whats-new.txt`. Build from the frozen release source; its exact version/build head must pass Windows CI before landing. |
+| Privacy and listing | The canonical [privacy statement](../../site/privacy.md) and [listing source](../../store/listing.json) now describe optional selected-text and prompt transfer to the chosen AI connection, cloud routing and provider terms. Regenerate `store/listing.en-US.md`; never edit that output by hand. |
+| Age rating | **Owner:** reassess the current IARC questionnaire for AI-generated text and third-party processing. Do not reuse “nothing is shared”, assume provider filtering, or claim the old 3+ prediction is verified. |
+| Local validation | Check the unsigned package's manifest, contents and unpacked normal UI with synthetic notes. Do not install an update over the owner's app, change its certificate identity or trust store, or treat an unpacked smoke test as Store installation/certification. |
+| Final action | **Owner, after final approval:** publish the updated privacy statement, check version reservation and IARC answers, upload the verified MSIX to the existing Focus Notes product, paste the listing and complete note, and submit for certification. No agent performs these account or publishing steps without the final go. |
+
+The package receipt and final CI outcome remain outside the source in the release
+folder and progress record, avoiding a commit/CI loop merely to put that commit's
+own hash into itself. See [Store preparation evidence](gate-evidence.md#store-1-1-0-preparation).
 
 | Path | Account and configuration | What you do |
 | --- | --- | --- |

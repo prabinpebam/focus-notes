@@ -18,6 +18,38 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Store 1.1.0 preparation
+
+The release worker starts from validated main
+`69a549d3bc2c4292da3ddccfc52f4dc882d1d4e6`
+([Windows CI 41327910905](https://github.com/prabinpebam/focus-notes/actions/runs/41327910905),
+2,568 unit tests, 294 desktop journeys and 46 web journeys). The desktop version
+changes from 1.0.3 to **1.1.0**, mapping to MSIX **1.1.0.0**. Root tooling stays
+0.0.0. This is preparation, **not submission or complete GATE-MAI certification**.
+
+| Evidence needed | Where it is recorded |
+| --- | --- |
+| Release source and exact-head Windows CI | Final SHA, run URL and actual result in the release receipt under `focus-notes-work\release\1.1.0` and the worker/coordinator progress record; no self-referential CI follow-up. |
+| Identity, version, architecture, contents and dependencies | Finished MSIX manifest and receipt: real Store identity, 1.1.0.0, x64, full trust, alias, protocol, bundled Git, notices and runtime/template resources. |
+| Normal UI and isolation | Synthetic-profile unpacked smoke evidence; no owner notes, installed update, certificate/trust-store modification or real AI account. Unpacked execution is not Store installation or certification. |
+| Accurate public disclosures | Canonical `site/privacy.md`, `store/listing.json` and regenerated `store/listing.en-US.md`: optional chosen AI routing, selected-text transfer, external CLI/models and provider terms. |
+| Complete release note | Existing `whats-new.txt` adopted; final plain-language full text and character count no greater than 1,500 in the persistent release receipt. |
+| Remaining owner action | Confirm highest submitted Partner Center version; reassess IARC for AI content and third-party processing; approve publishing the privacy update and uploading/submitting the package. |
+
+Scoped packaging and disclosure checks cover this version-only release slice;
+the full exact-head Windows run covers packaging/build integration before main
+lands. Final outcomes belong in the persistent receipt after they actually run.
+
+| Local preparation check | Actual result, 1 November |
+| --- | --- |
+| `pnpm install --frozen-lockfile` after the desktop manifest change | Passed: 682 cached packages, 0 downloads; npm and pnpm effective registry both the approved Microsoft proxy. |
+| `pnpm tokens`; `node tools/release/store-listing.mjs`; `pnpm check` | Passed: 1,935 tokens, generated listing parity, 461 documents, 71 components, 547 commands; unchecked kit submodules explicitly skipped. |
+| `pnpm --filter @focus-notes/desktop run typecheck` | Passed. |
+| `pnpm exec vitest run tools/test/store-release.test.mjs tools/test/site-build.test.mjs` | 35 passed in 2 files after replacing the obsolete GitHub-only disclosure assertion with the actual optional selected-text AI routing. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed, with the existing renderer chunk-size warning. |
+| `node slate/scripts/runtime-host.mjs check --repo . --host documentations` using the pinned root Slate executable | Passed against the isolated release tree. |
+| Existing extracted Git cache | Rejected: tree digest `b66ed9b87870e0ca58c8cd601cb91f42a30123fc181b8ac66d77c0004e54f603` differs from its pinned marker `3d7f5ce28515e016ff22fa118a8be56ded4aadc16b19f3f4c85475f014070a23`. Read-only validation of the installed Store 1.0.3 bundle matches that exact marker and pinned archive SHA; copy and revalidate it in the worker's tree before packaging. No download workaround. |
+
 ### Approved AI integration hardening (1 November, runtime validated)
 
 The owner approved both UX and UI of `d40b78a345b7fe79262116b270b3a908c0966eac`

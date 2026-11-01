@@ -22,6 +22,30 @@ const desktop = JSON.parse(read("apps/desktop/package.json"));
 const workflow = (f) => { const text = read(`.github/workflows/${f}`); return { text, wf: yaml.load(text) }; };
 const steps = (job) => job.steps ?? [];
 
+describe("the 1.1.0 Store disclosures", () => {
+  it("describes optional selected-text AI routing without GitHub-only or bundled-model claims", () => {
+    const privacy = read("site/privacy.md");
+    const listing = JSON.parse(read("store/listing.json"));
+    expect(privacy).toContain("selected words and prompt");
+    expect(privacy).toContain("not the rest of your note");
+    expect(privacy).toContain("cloud");
+    expect(privacy).toContain("There is no separate first-send permission dialog or private-note block");
+    expect(privacy).not.toContain("talks only to your computer and to GitHub");
+    expect(listing.certificationNotes).toContain("No AI model or Copilot CLI is bundled");
+    expect(listing.certificationNotes).toContain("Optional AI rewriting requires");
+    expect(listing.certificationNotes).not.toContain("needs no other software");
+  });
+
+  it("leaves AI content and third-party processing ratings to the owner's current IARC answers", () => {
+    const rating = JSON.parse(read("store/listing.json")).ageRating;
+    const sharing = rating.answers.find((a) => a.question.includes("personal information"));
+    expect(sharing.answer).toContain("AI rewriting");
+    expect(sharing.answer).not.toContain("nothing is collected");
+    expect(rating.answers[0].answer).toContain("AI-generated text");
+    expect(rating.expected).toContain("Not verified for 1.1.0");
+  });
+});
+
 /** A zip archive, with zip64 records when asked, the way makeappx may write one. */
 function zip(entries, { zip64 = false } = {}) {
   const locals = [], central = [];
@@ -286,7 +310,8 @@ describe("the Store listing comes from the product site", () => {
     expect(l.shortDescription).toBe(landing.line);
     expect(l.description.startsWith(landing.headline)).toBe(true);
     for (const f of landing.features) expect(l.description).toContain(f.headline);
-    expect(l.description).toMatch(/^The app talks only to your computer and to GitHub/m);
+    expect(l.description).toMatch(/^The app saves notes on your computer/m);
+    expect(l.description).toContain("Optional AI rewriting sends your selected words and prompt");
     expect(l.description).not.toMatch(/this site|swatch/i);
     expect(overLimits(l, store.releaseNotesTemplate)).toEqual([]);
   });

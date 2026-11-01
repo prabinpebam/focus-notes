@@ -32,9 +32,11 @@
 >
 > Every note is a Markdown file in a folder you choose. Sign in with your own GitHub account and Focus Notes backs your notes up to your own repository, or keep them on this computer only.
 >
+> Rewrite selected words with a prompt or a preset. Connect an AI app you already run, an online service with your own API key, or a supported GitHub Copilot CLI already installed and signed in. Choose your default connection in Settings. Focus Notes does not install or run AI models; cloud services have their own terms and charges.
+>
 > Free and open source, under the MIT License.
 >
-> The app talks only to your computer and to GitHub, with your own account, to save and back up your notes. There's no Focus Notes server and no Focus Notes account.
+> The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. There's no Focus Notes server and no Focus Notes account.
 >
 > Start writing.
 
@@ -46,6 +48,9 @@
 - Works offline: notes are plain files on your computer, backed up to your own GitHub repository when you're online.
 - Private notes stay in your own private repository; share a sealed copy with only the people you choose.
 - A command-line tool and an MCP server, so the agents you allow can read and write notes, each change kept and undoable.
+- Rewrite selected words with a prompt or preset; stop restores your original text, and a finished rewrite is undoable in one step.
+- Choose your default AI connection in Settings and check its service, model and locality before generating. GitHub Copilot uses the cloud.
+- Print the open note through the Windows print dialog, with optional page numbers.
 
 ## Search terms
 
@@ -66,7 +71,7 @@
 
 ## Notes for certification
 
-> No account is needed to test the app: on the first screen choose "Just use this computer for now" and start writing; notes are saved as Markdown files in Documents\Focus Notes. Signing in to GitHub is optional and only backs notes up to the tester's own repository. Closing the window keeps Focus Notes running in the notification area, so it opens again at once; right-click its icon there and choose "Quit Focus Notes" to quit. The app declares runFullTrust because it's a desktop (Electron) app, the focus-notes: link scheme to open a note from a link, and the focus-notes command-line alias. Focus Notes saves notes with Git: the package includes Git and Git Credential Manager (GitHub Desktop's build of Git for Windows), so it needs no other software, and the app doesn't link to or recommend any.
+> No account is needed to test writing: on the first screen choose "Just use this computer for now" and start writing; notes are saved as Markdown files in Documents\Focus Notes. Signing in to GitHub is optional and backs notes up to the tester's own repository. Closing the window keeps Focus Notes running in the notification area; right-click its icon there and choose "Quit Focus Notes" to quit. The app declares runFullTrust because it's an Electron desktop app, the focus-notes: link scheme and the focus-notes command-line alias. The Store package includes Git and Git Credential Manager for saving and GitHub backup. Optional AI rewriting requires an AI app already running, an online service with the tester's own API key, or a supported installed and signed-in GitHub Copilot CLI. No AI model or Copilot CLI is bundled. Selected words and a prompt go to the chosen connection, which may use the cloud and its own terms. Select words, open Rewrite, enter a prompt and generate; stop restores the words, and undo restores a finished rewrite.
 
 ## Screenshots
 
@@ -91,22 +96,24 @@ App type: All other app types (not a game; not reference, news or education; not
 
 | Question | Draft answer |
 | --- | --- |
-| Violence, fear, sexuality, nudity, crude humour, offensive language, drugs, alcohol or tobacco | No |
+| Violence, fear, sexuality, nudity, crude humour, offensive language, drugs, alcohol or tobacco | Owner must reassess for optional AI-generated text and the selected providers; do not assume a provider always filters these subjects |
 | Gambling, simulated gambling, or real-money purchases | No |
 | Does the app let users interact or exchange content with each other? | No: notes are published only to the user's own GitHub Pages site, with no messaging, comments or chat in the app |
 | Does the app share the user's location with others? | No |
 | Does the app allow digital purchases? | No |
 | Does the app let users browse the internet freely? | No: links open in the user's own browser |
-| Does the app collect or share personal information with third parties? | No: nothing is collected (site/privacy.md) |
+| Does the app collect or share personal information with third parties? | Owner must answer from the current questionnaire: no telemetry, but optional GitHub backup and AI rewriting send user-selected content to chosen third-party services; selected text may contain personal information (site/privacy.md) |
 
-Expected: IARC 3+ (ESRB Everyone, PEGI 3), with no interactive elements.
+Expected: Not verified for 1.1.0. The owner must complete the current IARC questionnaire, including optional AI content and third-party processing; Partner Center determines the ratings and interactive elements..
 
 ## Privacy statement (from the privacy page)
 
-> Focus Notes collects nothing about you, and neither does this site.
+> Focus Notes has no telemetry, and this site has no tracking.
 >
 > - This site has no analytics, no cookies and no counters. Every page, font and picture comes from this site, and nothing is loaded from any other.
-> - The app talks only to your computer and to GitHub, with your own account, to save and back up your notes. There's no Focus Notes server and no Focus Notes account.
+> - The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. There's no Focus Notes server and no Focus Notes account.
+> - AI connections may run on this computer or use the cloud. Check the service, model and locality before generating; even an app on this computer can route to a cloud model. GitHub Copilot uses the cloud through a supported CLI you already installed and signed in to. Focus Notes does not install or run AI models. Online services have their own privacy terms, retention rules and charges.
+> - Your choice to send is made when you select words and choose Generate. There is no separate first-send permission dialog or private-note block: selected private words can also go to the chosen connection. Check the selection and connection before generating. Connection tests send a short made-up message, never your notes.
 > - Your private notes stay in your own private GitHub repository. Only sealed copies are published, and only the people you choose can open them.
 > - Feedback goes through GitHub issues you write yourself, in public. Nothing is sent without you.
 >
