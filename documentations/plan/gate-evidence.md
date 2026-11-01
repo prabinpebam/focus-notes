@@ -75,6 +75,22 @@ Zod 4.3.6, pinned by `@github/copilot-sdk` 1.0.28,
 The dependency audit blocked later unit/type steps, so their absence is not a
 passing full gate. Main stayed at clean `15760786f211cf0910cfc25226429a626e57bf60`.
 
+**Final outcome of that run:** failure only at the dependency audit. All four
+desktop shards passed: 76/87/69/62 journeys (294 total), with 6/3/0/15 explicit
+skips (24 total). Web journeys passed all 46. Repository checks, desktop build,
+unsigned placeholder Store manifest check and all budget checks passed.
+The unit/type gates were skipped after the audit failure, never counted as green.
+Shard times were 10.3/5.1/9.3/12.4 minutes; none exceeded twice the documented
+eight-minute upper usual duration. These results belong to the exact older
+`31140c03` head, not the forthcoming fixed-dependency head.
+
+`pnpm bench --check` in that run used its existing CI margin, unchanged here:
+cold/warm ready 667/549 ms; renderer overhead 9.9%; opening/saving 156/631 ms;
+10,000-note memory 304 MB and idle CPU 0.22%; unchanged-note reopen 31.9 ms.
+The complete log is retained at
+`E:\Projects\side-projects\focus-notes-work\scratch\prod-harden2-ci-initial.log`;
+no local benchmark success is substituted for this CI evidence.
+
 The correction keeps that official SDK and the supported CLI version unchanged.
 A **scoped** `@github/copilot-sdk>zod` override pins 4.6.6, replacing only its
 vulnerable schema validator; no unrelated package is upgraded. This is an explicit
