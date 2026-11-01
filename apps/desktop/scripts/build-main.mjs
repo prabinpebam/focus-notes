@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { templateResource } from "../../../tools/release/template.mjs";
 
 const root = join(import.meta.dirname, "..");
-const external = ["electron", ...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
+const external = ["electron", "koffi", ...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
 const one = (entry, format, file, empty) =>
   build({
     root,
@@ -14,7 +14,7 @@ const one = (entry, format, file, empty) =>
     logLevel: "warn",
     // The package carries no node_modules: a library the main process reads at run time is bundled
     // (mammoth, for Word files in Import, D-210).
-    ssr: { noExternal: ["mammoth"] },
+    ssr: { noExternal: ["mammoth", "@github/copilot-sdk", "vscode-jsonrpc", "zod"] },
     build: {
       outDir: "out/main",
       emptyOutDir: empty,

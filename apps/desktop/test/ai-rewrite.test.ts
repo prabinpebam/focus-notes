@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { aiProvider } from "@focus-notes/core/ai-providers";
 import { AiService, answerText, deltaText, generateCall, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
+import { CopilotIntegration } from "../src/main/ai-copilot.ts";
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
 /** Every note here is public: the private-note check is tested on its own. */
@@ -123,7 +124,7 @@ describe("AI connections (main process)", () => {
       if (url === "http://127.0.0.1:11434/api/tags") return new Response(JSON.stringify({ models: [{ name: "llama3" }, { name: "gpt-oss:cloud", remote_host: "https://ollama.com" }] }));
       throw new TypeError("refused");
     }) as unknown as typeof fetch;
-    const found = await new AiService(file(), crypt, write, fetcher).discover();
+    const found = await new AiService(file(), crypt, write, fetcher, {}, new CopilotIntegration({ binary: async () => undefined })).discover();
     expect(found).toEqual([{ provider: "ollama", endpoint: "http://127.0.0.1:11434", models: [{ id: "llama3", cloud: false }, { id: "gpt-oss:cloud", cloud: true }] }]);
   });
   it("moves the first version's single service into a connection", async () => {

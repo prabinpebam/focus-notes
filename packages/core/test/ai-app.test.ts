@@ -77,7 +77,7 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
     if (editor.at(-1) === "rewrite.begin") await commands.run("rewrite.began", { ok: true });
     await settle();
   };
-  return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
+  return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, ai, setSettings: (v: AiSettingsView) => { settings = v; }, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
 }
 
 describe("Rewrite in the window", () => {
@@ -302,6 +302,43 @@ describe("where text goes and which key goes with it (D-259)", () => {
     await local.commands.run("rewrite.captured", { text: "Old words." });
     await settle();
     expect(local.vm().consentText).toContain("127.0.0.1:11434 · This computer.");
+  });
+  describe("Copilot direct discovery (D-264)", () => {
+    it("reloads settings after discovery and names cloud inference without another setup form", async () => {
+      const t = setup();
+      const c = conn({ id: "copilot", provider: "copilot-cli", name: "GitHub Copilot (on this computer)", model: "auto", hasKey: false, consented: false });
+      t.ai.discover = async () => {
+        t.setSettings({ writer: c.id, connections: [c] });
+        return [{ provider: "copilot-cli", endpoint: "", models: [{ id: "auto", cloud: true }], status: "signed-in" }];
+      };
+      await t.commands.run("ai.discover");
+      expect(t.settingsVm().hasWriter).toBe(true);
+      expect(t.settingsVm().writerName).toBe(c.name);
+      expect(t.settingsVm().found).toEqual([]);
+      expect(t.settingsVm().discoverStatus).toBe(en["ai.found.copilot"]);
+      expect(t.settingsVm().connections).toEqual([expect.objectContaining({ icon: "aiCopilot", keyText: en["ai.key.notNeeded"], detail: expect.stringContaining("Cloud") })]);
+      await t.commands.run("rewrite.captured", { text: "Synthetic" });
+      await settle();
+      expect(t.vm()).toMatchObject({ writerKind: "copilot-cli", writerIcon: "aiCopilot", writerWhere: "Cloud" });
+      expect(t.vm().consentText).toContain("api.githubcopilot.com · Cloud");
+    });
+
+    it("shows a sign-in reason, not a ready/server claim or setup action", async () => {
+      const t = setup();
+      t.ai.discover = async () => [{ provider: "copilot-cli", endpoint: "", models: [], status: "signed-out", error: "cli-not-signed-in" }];
+      await t.commands.run("ai.discover");
+      expect(t.settingsVm().discoverStatus).toBe(en["ai.error.cli-not-signed-in"]);
+      expect(t.settingsVm().found).toEqual([]);
+      expect(reasonCode("Error: cli-missing")).toEqual({ code: "cli-missing" });
+      expect(reasonCode("Error: cli-unsupported")).toEqual({ code: "cli-unsupported" });
+    });
+
+    it("starts a manual Copilot form with auto, no key or endpoint and no own-key claim", async () => {
+      const t = setup();
+      await t.commands.run("ai.add");
+      await t.commands.run("ai.provider", { value: "copilot-cli" });
+      expect(t.settingsVm()).toMatchObject({ model: "auto", showKey: false, showEndpoint: false, cannotSave: false, providerNote: en["ai.note.copilot"] });
+    });
   });
   it("a typed Ollama model is local unless its name or model metadata identifies cloud routing", async () => {
     const t = setup({ connection: { ...ollama, model: "llama3.2" } });
