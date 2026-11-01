@@ -84,6 +84,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let discovering = false, discoverStatus = "";
   let status = "";
   let busy = false;
+  let choosingWriter = false;
   const testing = new Set<string>();
   const testErrors = new Map<string, string>();
 
@@ -141,16 +142,16 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     schema: { type: "object", properties: {
       ...Object.fromEntries([
         "writerName", "status", "formTitle", "providerName", "keyLabel", "keyState", "destination", "testInfo", "modelsStatus", "discoverStatus",
-        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote",
+        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup",
       ].map((k) => [k, { type: "string" as const }])),
       ...Object.fromEntries([
-        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField",
+        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter",
       ].map((k) => [k, { type: "boolean" as const }])),
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       modelMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       connections: { type: "array", items: { type: "object", properties: {
-        id: { type: "string" }, name: { type: "string" }, icon: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
+        id: { type: "string" }, name: { type: "string" }, choiceLabel: { type: "string" }, icon: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
         testText: { type: "string" }, testing: { type: "boolean" }, writer: { type: "boolean" }, notWriter: { type: "boolean" },
       } } },
       found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, detail: { type: "string" } } } },
@@ -161,9 +162,10 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       return {
         writerName: writerConnection()?.name ?? t("ai.writer.none"),
         hasWriter: Boolean(writerConnection()),
+        choiceGroup: "ai-default", choosingWriter, writerSaveText: choosingWriter ? t("rewrite.integration.saving") : "",
         writerMenu: [{ id: "writer", items: connections.map((c) => ({ id: c.id, label: c.name, checked: c.id === writer })) }],
         connections: connections.map((c) => ({
-          id: c.id, name: c.name, icon: aiConnectionIcon(c.provider), detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
+          id: c.id, name: c.name, choiceLabel: t("ai.default.choice", { name: c.name }), icon: aiConnectionIcon(c.provider), detail: describe(c), writer: c.id === writer, notWriter: c.id !== writer,
           badge: t(c.id === writer ? "ai.badge.writer" : "ai.badge.saved"),
           keyText: t(c.hasKey ? "ai.key.saved" : aiProvider(c.provider)!.key === "none" ? "ai.key.notNeeded" : "ai.key.none"),
           testText: testText(c), testing: testing.has(c.id),
@@ -191,7 +193,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         destination: t("ai.destination", { host: destination(draft.provider, draft.endpoint, draft.account), where: where(p.id, draft.endpoint || p.endpoint, draft.model, draftCloud()) }),
         testInfo: t("ai.test.info"),
         status,
-        cannotSave: busy || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
+        cannotSave: busy || choosingWriter || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
       };
     },
   });
@@ -238,7 +240,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
   });
   reg("ai.remove", async (a) => {
-    if (!ai || typeof a.value !== "string") return;
+    if (!ai || choosingWriter || typeof a.value !== "string") return;
     try {
       apply(await ai.remove(a.value));
       status = t("ai.removed");
@@ -247,16 +249,26 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
     changed();
   });
-  reg("ai.writer", async (a) => {
-    if (!ai || typeof a.value !== "string") return;
+  const chooseWriter = async (value: unknown, target: string) => {
+    if (!ai || choosingWriter || typeof value !== "string" || value === writer) return;
+    choosingWriter = true;
+    status = "";
+    changed();
+    const started = performance.now();
     try {
-      apply(await ai.writer(a.value));
+      apply(await tracker.run(target, "rewrite.integration.saving", () => ai.writer(value), "rewrite.integration.saved"));
       status = t("ai.writer.set", { name: writerConnection()?.name ?? "" });
+      announce(status);
     } catch (e) {
       status = reason(e, "ai.error.save");
+      toast(status, { tone: "error" });
+    } finally {
+      choosingWriter = false;
+      performance.measure("fn:ai.chooseWriter", { start: started, duration: performance.now() - started });
+      changed();
     }
-    changed();
-  });
+  };
+  reg("ai.writer", (a) => chooseWriter(a.value, "settings.writer"));
   reg("ai.test", async (a) => {
     const id = typeof a.value === "string" ? a.value : "";
     if (!ai || !id || testing.has(id)) return;
@@ -333,7 +345,6 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let confirmingDiscard = false, focusRequest = 0;
   /** The note the selection came from: a switch stops the rewrite. */
   let fromKey = "", fromPath = "";
-  let choosingWriter = false;
   /** The rewrite streaming into the note: its id, whether any text came, and the toast that says so. */
   let running: { id: string; got: boolean; off: () => void; toast: unknown } | undefined;
   const presetText = (p: (typeof PRESETS)[number]) => t(`rewrite.preset.${p}.prompt`);
@@ -455,21 +466,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   reg("rewrite.discardPrompt", () => { if (confirmingDiscard) closeModal(); });
   reg("rewrite.prompt", (a) => { prompt = String(a.value ?? ""); changed(); });
   reg("rewrite.writer", async (a) => {
-    if (!ai || !open || choosingWriter || typeof a.value !== "string" || a.value === writer) return;
-    const chosen = a.value;
-    choosingWriter = true;
-    changed();
-    const started = performance.now();
-    try {
-      apply(await tracker.run("rewrite.writer", "rewrite.integration.saving", () => ai.writer(chosen), "rewrite.integration.saved"));
-      announce(t("ai.writer.set", { name: writerConnection()?.name ?? "" }));
-    } catch (e) {
-      toast(reason(e, "ai.error.save"), { tone: "error" });
-    } finally {
-      choosingWriter = false;
-      performance.measure("fn:ai.chooseWriter", { start: started, duration: performance.now() - started });
-      changed();
-    }
+    if (open) await chooseWriter(a.value, "rewrite.writer");
   });
   reg("rewrite.preset", (a) => {
     const p = PRESETS.find((x) => x === a.value);

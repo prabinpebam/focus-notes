@@ -122,31 +122,10 @@
                         }
                       },
                       {
-                        "type": "MenuButton",
-                        "when": {
-                          "get": "vm.ai.hasWriter"
-                        },
+                        "type": "Text",
                         "props": {
-                          "label": {
-                            "t": "ai.writer.label"
-                          },
-                          "variant": "select",
-                          "text": {
-                            "get": "vm.ai.writerName"
-                          },
-                          "sections": {
-                            "get": "vm.ai.writerMenu"
-                          }
-                        },
-                        "on": {
-                          "action": {
-                            "run": "ai.writer",
-                            "args": {
-                              "value": {
-                                "get": "event.id"
-                              }
-                            }
-                          }
+                          "value": { "get": "vm.ai.writerSaveText" },
+                          "announce": true
                         }
                       },
                       {
@@ -168,7 +147,15 @@
                               "get": "c.badge"
                             },
                             "icon": { "get": "c.icon" },
+                            "choiceGroup": { "get": "vm.ai.choiceGroup" },
+                            "choiceValue": { "get": "c.id" },
+                            "selected": { "get": "c.writer" },
+                            "busy": { "get": "vm.ai.choosingWriter" },
+                            "label": { "get": "c.choiceLabel" },
                             "personal": "title"
+                          },
+                          "on": {
+                            "choose": { "run": "ai.writer", "args": { "value": { "get": "event.value" } } }
                           },
                           "children": [
                             {
@@ -209,6 +196,7 @@
                                         "label": {
                                           "t": "ai.test"
                                         },
+                                        "busy": { "get": "vm.ai.choosingWriter" },
                                         "size": "s",
                                         "disabled": {
                                           "get": "c.testing"
@@ -230,33 +218,11 @@
                                     },
                                     {
                                       "type": "Button",
-                                      "when": {
-                                        "get": "c.notWriter"
-                                      },
-                                      "props": {
-                                        "label": {
-                                          "t": "ai.useAsWriter"
-                                        },
-                                        "size": "s",
-                                        "variant": "subtle"
-                                      },
-                                      "on": {
-                                        "press": {
-                                          "run": "ai.writer",
-                                          "args": {
-                                            "value": {
-                                              "get": "c.id"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "Button",
                                       "props": {
                                         "label": {
                                           "t": "ai.change"
                                         },
+                                        "busy": { "get": "vm.ai.choosingWriter" },
                                         "size": "s",
                                         "variant": "subtle"
                                       },
@@ -277,6 +243,7 @@
                                         "label": {
                                           "t": "ai.remove"
                                         },
+                                        "busy": { "get": "vm.ai.choosingWriter" },
                                         "size": "s",
                                         "variant": "subtle"
                                       },
@@ -724,18 +691,6 @@
                         }
                       },
                       {
-                        "type": "Divider"
-                      },
-                      {
-                        "type": "Heading",
-                        "props": {
-                          "level": "3",
-                          "value": {
-                            "t": "ai.found.title"
-                          }
-                        }
-                      },
-                      {
                         "type": "Inline",
                         "props": {
                           "gap": "s"
@@ -784,11 +739,16 @@
                         }
                       },
                       {
+                        "type": "Text",
+                        "props": { "value": { "t": "ai.found.hint" }, "role": "caption", "tone": "muted" }
+                      },
+                      {
                         "each": {
                           "get": "vm.ai.found"
                         },
                         "as": "f",
                         "key": "f.id",
+                        "empty": { "type": "Text", "props": { "value": { "t": "ai.found.empty" }, "role": "caption", "tone": "muted" } },
                         "render": {
                           "type": "ItemCard",
                           "props": {
@@ -821,16 +781,6 @@
                               }
                             }
                           ]
-                        },
-                        "empty": {
-                          "type": "Text",
-                          "props": {
-                            "value": {
-                              "t": "ai.found.hint"
-                            },
-                            "role": "caption",
-                            "tone": "muted"
-                          }
                         }
                       }
                     ]

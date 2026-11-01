@@ -4360,6 +4360,19 @@
           "kind": "message",
           "required": true
         },
+        "choiceGroup": {
+          "kind": "text",
+          "description": "Native radio group name. Identity is the choice target; slot actions remain siblings (D-267)."
+        },
+        "choiceValue": {
+          "kind": "text",
+          "description": "The radio's stable value."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Saved radio selection, never optimistic."
+        },
         "detail": {
           "kind": "message"
         },
@@ -4427,7 +4440,12 @@
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "choose": {
+          "payload": {
+            "value": "text"
+          }
+        }
       },
       "slots": {
         "default": {
@@ -4435,7 +4453,9 @@
         }
       },
       "states": [
-        "rest"
+        "rest",
+        "selected",
+        "disabled"
       ],
       "tokens": "cmp.itemCard.*",
       "a11y": {
@@ -4443,6 +4463,62 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "selected radio with independent action",
+          "covers": [
+            "rest",
+            "selected"
+          ],
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "badge": {
+              "t": "ai.badge.writer"
+            },
+            "icon": "cloud",
+            "choiceGroup": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "choiceValue": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "selected": true
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "ai.change"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "pending radio",
+          "covers": [
+            "selected",
+            "disabled"
+          ],
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "choiceGroup": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "choiceValue": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "selected": true,
+            "busy": true
+          }
+        },
         {
           "name": "workspace",
           "props": {

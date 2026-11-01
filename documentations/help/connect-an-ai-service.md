@@ -5,7 +5,7 @@ Service icons help you recognize a connection. Some services use a neutral cloud
 Set up the AI service that rewrites your words: a server on this computer, GitHub Copilot you already use in your terminal, or an online service with your own key.
 
 > [!NOTE]
-> **TL;DR.** Open **Settings** → **AI**, then **Find on this computer**. A supported signed-in **GitHub Copilot** is added directly; local servers offer **Set up**. Copilot says **Cloud** because your words go to GitHub. Online APIs still use **Add connection** and your own key. **Test connection** sends only made-up text.
+> **TL;DR.** Open **Settings** → **AI**, then **Find on this PC**. A supported signed-in **GitHub Copilot** is added directly; local servers offer **Set up**. Copilot says **Cloud** because your words go to GitHub. Online APIs still use **Add connection** and your own key. **Test connection** sends only made-up text.
 
 **Applies to:** the desktop app on Windows, macOS and Linux.
 
@@ -20,20 +20,20 @@ Focus Notes doesn't install or run AI models. It connects to a service you alrea
 ## Connect a service on this computer
 
 1. Open **Settings**, then select **AI**.
-2. Select **Find on this computer**.
+2. Select **Find on this PC**.
 3. Next to the service found, select **Set up**.
 4. Check the **Model**. To pick another, select **Find models**, then **Choose a model**.
 5. Select **Save connection**.
 
-**Result:** the service is in **AI connections**, marked "This computer" for a local model or "Cloud" for a cloud model. The first one you save is the **Writer**, the one Rewrite uses.
+**Result:** the service is in **AI connections**, marked "This computer" for a local model or "Cloud" for a cloud model. The first one you save is marked **Default**, the one Rewrite uses.
 
 ## Connect GitHub Copilot on this computer
 
 1. Open **Settings** → **AI**.
-2. Select **Find on this computer**.
+2. Select **Find on this PC**.
 3. If a supported signed-in Copilot is found, it appears in your connections without pasting a key. It becomes the active integration only if you have not chosen one.
 
-**Result:** **GitHub Copilot (on this computer)** says **Cloud**. The installed program runs here; GitHub's service rewrites the words. Focus Notes uses the login the program already owns, not a copied token. Before your first rewrite it still asks whether to send the selected words. Finding Copilot never sends your notes or starts sign-in.
+**Result:** **GitHub Copilot (on this computer)** says **Cloud**. The installed program runs here; GitHub's service rewrites the words. Focus Notes uses the login the program already owns, not a copied token. Rewrite shows the active integration and Generate sends directly, including the first time. Finding Copilot never sends your notes or starts sign-in.
 
 If it says to sign in, use Copilot in your normal terminal, then look again. A login that cannot be used with isolated configuration is not activated. The supported version for this adapter is CLI **1.0.105**; Focus Notes does not download or update it.
 
@@ -58,7 +58,7 @@ Claude subscription logins are not reused. Gemini CLI login reuse is on hold, an
 
 ## Choose which one rewrites
 
-The single-list Settings update below is planned (D-267), not yet in the current owner build.
+The single-list Settings update is built on own-ai-default-list-build (D-267), pending integration into the owner's app.
 
 - In **Settings** → **AI**, select a connection row. Its **Default** badge shows which one Rewrite uses. With the keyboard, move between choices with the arrow keys and select with Space.
 - You can also choose **AI integration** in the Rewrite prompt when you have more than one connection. Both places change the same remembered choice on this computer; reopening Settings shows it.
@@ -66,7 +66,7 @@ The single-list Settings update below is planned (D-267), not yet in the current
 - While a choice is being remembered, the old default remains selected. If saving fails, the reason appears and you can try again.
 - Removing the default leaves no default. Choose another before rewriting.
 
-In this update, **Find on this PC** replaces **Find on this computer**, with one explanation: **Scans this PC for running AI services you can use.** There is no separate **On this computer** section. Discovery still does not send your notes; unsupported or unknown services are not claimed ready.
+Use **Find on this PC**, with one explanation: **Scans this PC for running AI services you can use.** There is no separate **On this computer** section. Discovery still does not send your notes; unsupported or unknown services are not claimed ready.
 
 ## Good to know
 
@@ -84,7 +84,7 @@ In this update, **Find on this PC** replaces **Find on this computer**, with one
 - "Couldn't reach the service." Start the app on this computer, or check that you're online. Then test again.
 - "The service refused the key." Paste the key again, then select **Save connection**.
 - "The server doesn't have that model." Select **Find models** and choose one it has.
-- Copilot not found: install or restore it yourself, then select **Find on this computer**. Focus Notes does not install it.
+- Copilot not found: install or restore it yourself, then select **Find on this PC**. Focus Notes does not install it.
 - Copilot not signed in: sign in in your normal terminal, then look again.
 - Copilot quota reached: check your Copilot plan or allowance, then try again. Your original words stay unchanged.
 

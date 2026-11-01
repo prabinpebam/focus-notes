@@ -5051,6 +5051,33 @@
                 }
               ]
             },
+            "choiceGroup": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "choiceValue": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "detail": {
               "anyOf": [
                 {
@@ -5315,6 +5342,9 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "choose": {
               "$ref": "#/$defs/actions"
             }
           }

@@ -74,6 +74,56 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
   return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, ai, setSettings: (v: AiSettingsView) => { settings = v; }, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
 }
 
+describe("Settings Default shares Rewrite's Writer (D-267)", () => {
+  it("changes the same ID in both directions without sending note text", async () => {
+    const t = setup({ connections: [conn(), conn({ id: "other", name: "Other" })] });
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.writer", { value: "other" });
+    expect(t.settingsVm()).toMatchObject({ writerName: "Other" });
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    expect(t.vm()).toMatchObject({ writerName: "Other" });
+    await t.commands.run("rewrite.writer", { value: "w" });
+    await t.commands.run("ai.load");
+    expect(t.settingsVm()).toMatchObject({ writerName: "OpenAI" });
+    expect(t.calls).toEqual(["writer:other", "writer:w"]);
+  });
+  it("retains the saved Default during persistence and rejects conflicting choices", async () => {
+    let release!: () => void;
+    const wait = new Promise<void>((resolve) => { release = resolve; });
+    const t = setup({ writerWait: wait, connections: [conn(), conn({ id: "other", name: "Other" })] });
+    await t.commands.run("ai.load");
+    const pending = t.commands.run("ai.writer", { value: "other" });
+    await settle();
+    expect(t.settingsVm()).toMatchObject({ writerName: "OpenAI", choosingWriter: true, writerSaveText: "Remembering your choice…" });
+    await t.commands.run("ai.writer", { value: "w" });
+    release();
+    await pending;
+    expect(t.settingsVm()).toMatchObject({ writerName: "Other", choosingWriter: false });
+    expect(t.calls).toEqual(["writer:other"]);
+  });
+  it("reports a failed save, retains Default and permits retry", async () => {
+    const t = setup({ writerError: true, connections: [conn(), conn({ id: "other", name: "Other" })] });
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.writer", { value: "other" });
+    expect(t.settingsVm()).toMatchObject({ writerName: "OpenAI", choosingWriter: false });
+    expect(t.toasts).toHaveLength(1);
+    expect(t.settingsVm().status).toBe(t.toasts[0]);
+    await t.commands.run("ai.writer", { value: "other" });
+    expect(t.calls).toEqual(["writer:other", "writer:other"]);
+  });
+  it("shows no Default after removing it or loading an empty list", async () => {
+    const t = setup();
+    await t.commands.run("ai.load");
+    t.ai.remove = async () => ({ writer: "", connections: [] });
+    await t.commands.run("ai.remove", { value: "w" });
+    expect(t.settingsVm()).toMatchObject({ hasWriter: false, connections: [] });
+    t.setSettings({ writer: "", connections: [conn({ id: "other" })] });
+    await t.commands.run("ai.load");
+    expect(t.settingsVm().hasWriter).toBe(false);
+    expect(t.settingsVm().connections).toMatchObject([{ writer: false }]);
+  });
+});
+
 describe("Rewrite prompt deselection (D-265)", () => {
   it("reopening an existing prompt focuses it without discarding its draft or capture", async () => {
     const t = setup();

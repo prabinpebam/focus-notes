@@ -251,6 +251,79 @@ test("AIS-13, AIS-14: a private note discloses its integration; Cancel sends not
   }
 });
 
+test("AIS-16: Settings Default is one list shared with Rewrite", async () => {
+  test.setTimeout(180_000);
+  const captureDir = process.env.FOCUS_NOTES_AI_LIST_CAPTURES;
+  if (captureDir) mkdirSync(captureDir, { recursive: true });
+  for (const [count, theme] of [[0, "light"], [1, "light"], [2, "light"], [2, "dark"], [30, "light"]] as const) {
+    const dirs = tempDirs();
+    const note = join(dirs.docs, "essay.md");
+    writeFileSync(note, "# Essay\n\nA few words to rewrite.\n");
+    writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note, appearance: theme }));
+    const aiFile = join(dirs.userData, DATA_FILES.ai);
+    const connections = Array.from({ length: count }, (_, i) => ({
+      id: `c${i}`, provider: "ollama", name: `Connection ${i}`, endpoint: "http://localhost:11434",
+      model: i === 1 ? "gpt-oss:120b-cloud" : "llama3.2",
+    }));
+    writeFileSync(aiFile, JSON.stringify({ version: 2, writer: count ? "c0" : "", connections }));
+    let l: Launched | undefined;
+    try {
+      l = await launch(dirs);
+      if (process.env.FOCUS_NOTES_AI_LIST_PIDS) appendFileSync(process.env.FOCUS_NOTES_AI_LIST_PIDS, `${l.pid}\n`);
+      const { page } = l;
+      const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+      const openSettings = async () => {
+        await page.keyboard.press(`${mod}+,`);
+        await expect(settings).toBeVisible();
+        await settings.getByRole("tab", { name: "AI", exact: true }).click();
+      };
+      await openSettings();
+      const radios = settings.getByRole("radio");
+      await expect(radios).toHaveCount(count);
+      await expect(settings.getByRole("button", { name: "Writer (used by Rewrite)" })).toHaveCount(0);
+      await expect(settings.getByRole("button", { name: "Use as Writer" })).toHaveCount(0);
+      await expect(settings.getByRole("heading", { name: "On this computer", exact: true })).toHaveCount(0);
+      await expect(settings.getByRole("button", { name: "Find on this PC", exact: true })).toHaveCount(1);
+      await expect(settings.getByText("Scans this PC for running AI services you can use.", { exact: true })).toBeVisible();
+      if (count) await expect(radios.first()).toBeChecked();
+      if (captureDir) await settings.screenshot({ path: join(captureDir, `settings-${count}-${theme}.png`), animations: "disabled" });
+      if (count >= 2) {
+        await radios.first().focus();
+        await page.keyboard.press("ArrowDown");
+        await expect(radios.nth(1)).toBeChecked();
+        await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c1");
+        await radios.first().focus();
+        await page.keyboard.press("Space");
+        await expect(radios.first()).toBeChecked();
+        await radios.nth(1).check();
+        await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c1");
+        const row = settings.locator("[data-item-card]").filter({ has: page.getByRole("radio", { name: "Default: Connection 0", exact: true }) });
+        await row.getByRole("button", { name: "Change", exact: true }).click();
+        expect(JSON.parse(readFileSync(aiFile, "utf8")).writer).toBe("c1");
+        await settings.getByRole("button", { name: "Cancel", exact: true }).click();
+        await page.keyboard.press("Escape");
+        await expect(settings).toBeHidden();
+        const dialog = await openRewrite(page, "A few words to rewrite.", "Keep my draft");
+        await expect(dialog.getByText("gpt-oss:120b-cloud", { exact: true })).toBeVisible();
+        await dialog.getByRole("button", { name: "AI integration", exact: true }).click();
+        await page.getByRole("menuitemcheckbox", { name: /Connection 0/ }).click();
+        await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c0");
+        await expect(dialog.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep my draft");
+        await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+        await openSettings();
+        await expect(radios.first()).toBeChecked();
+        await page.setViewportSize({ width: 480, height: 640 });
+        if (captureDir) await settings.screenshot({ path: join(captureDir, `settings-${count}-${theme}-narrow.png`), animations: "disabled" });
+        await row.getByRole("button", { name: "Remove", exact: true }).click();
+        await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("");
+        await expect(settings.locator('input[type="radio"]:checked')).toHaveCount(0);
+      }
+    } finally {
+      if (l) await quit(l);
+    }
+  }
+});
+
 test("AIS-04, AIS-13: the rewrite integration picker remembers its model and locality", async () => {
   test.setTimeout(120_000);
   const captureDir = process.env.FOCUS_NOTES_AI_PICKER_CAPTURES;

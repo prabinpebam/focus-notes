@@ -6,6 +6,9 @@ export const contract = defineContract({
   description: "One thing, shown rather than described (D-126, D-127): an account (its picture or initials, name and @login), a workspace (an icon, its name, when it was updated and a Public or Private badge), or an option. Its actions go in its slot.",
   props: {
     title: { kind: "message", required: true },
+    choiceGroup: { kind: "text", description: "Native radio group name. Identity is the choice target; slot actions remain siblings (D-267)." },
+    choiceValue: { kind: "text", description: "The radio's stable value." },
+    selected: { kind: "boolean", default: false, description: "Saved radio selection, never optimistic." },
     detail: { kind: "message" },
     badge: { kind: "message" },
     icon: { kind: "icon", description: "Shown in a tile, the card's visual anchor. Without an icon, a picture or initials show instead." },
@@ -21,12 +24,14 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false, description: "A pressable card takes focus when it appears: a first-run step's main action, so Enter continues." },
   },
   // press: with an action, the whole card is one button: one tab stop, its title the name, no slot actions (D-131).
-  events: { press: {} },
+  events: { press: {}, choose: { payload: { value: "text" } } },
   slots: { default: { accepts: "any" } },
-  states: ["rest"],
+  states: ["rest", "selected", "disabled"],
   tokens: "cmp.itemCard.*",
   a11y: { pattern: "group", name: "label" },
   fixtures: [
+    { name: "selected radio with independent action", covers: ["rest", "selected"], props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, badge: { t: "ai.badge.writer" }, icon: "cloud", choiceGroup: { get: "vm.gallery.optionFirst" }, choiceValue: { get: "vm.gallery.optionFirst" }, selected: true }, children: [{ type: "Button", props: { label: { t: "ai.change" } } }] },
+    { name: "pending radio", covers: ["selected", "disabled"], props: { title: { t: "gallery.sample" }, choiceGroup: { get: "vm.gallery.optionFirst" }, choiceValue: { get: "vm.gallery.optionFirst" }, selected: true, busy: true } },
     { name: "workspace", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.sample" }, badge: { t: "gallery.sample" }, icon: "folder", personal: "title" }, children: [{ type: "Button", props: { label: { t: "gallery.action" }, variant: "primary" } }] },
     { name: "profile", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.sample" }, mark: true, size: "l", personal: "all" } },
     { name: "github", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, icon: "github" } },

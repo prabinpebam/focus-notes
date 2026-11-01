@@ -13,7 +13,9 @@ Rewrite itself is in [Rewrite with AI](rewrite-with-ai.md). How each service is 
 
 ## The section
 
-### Single-list default choice (D-267, planned)
+<h3 id="single-list-default-choice-d-267-planned">Single-list default choice (D-267)</h3>
+
+**As built on own-ai-default-list-build:** this planned anatomy is now implemented with the ItemCard primitive's native radio choice area. Radio labels wrap identity only; Test/Change/Remove stay sibling actions. The native same-name group supports 30 rows, arrow keys and Space. Checked state remains bound to the saved Writer ID; shared `chooseWriter` uses the existing bridge and tracker, reports failures, and refreshes both view models. Deleting the default now clears the ID instead of silently choosing the first remaining connection; editing a remaining connection does not invent a new default. First-save selection is retained for a new first connection. See [measured checks](../plan/definition-of-done.md#settings-ai-single-list-stage). Owner acceptance and integration remain pending; the owner's running app is still 86631980, not this working copy.
 
 CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS / IA-CMP-AIDISCOVER → DD-RWR-07 / DD-RWR-08 → AIS-16, in WP-AI.15 / MAI.
 
@@ -29,7 +31,7 @@ This owner feedback supersedes the separate Writer menu, **Use as Writer** actio
 
 **One truth:** Default is the existing device-local Writer ID, not a second preference or store. Choosing a row calls the existing Writer command. Rewrite's remembered integration picker writes the same ID; reopening Settings reflects that choice, and choosing in Settings determines the next Rewrite. Neither discovery nor selecting a default sends note text.
 
-**Build boundary:** spec accepted for implementation; not yet built. This Settings slice must preserve the later D-265/D-266 Rewrite changes during serial integration and must not restore private-note blocking or first-send consent.
+**Build boundary:** implemented over immutable 86631980, preserving D-264/D-265/D-266, with no editor/geometry changes or restored private-note blocking/first-send consent.
 
 Connection rows now identify the service with its monochrome brand icon where permissive artwork is available, otherwise a neutral server, cloud or connection mark (D-263, AIS-03). Names, destinations and status stay visible: an icon never promises a working connection or on-device inference. This extends CP-RWR-01 → SC-RWR-04 → UC-RWR-05 → IA-VIEW-REWRITESETTINGS / IA-CMP-REWRITESTATUS → DD-RWR-07 → AIS-03, planned in WP-AI.11 / MAI.
 
@@ -44,7 +46,7 @@ Connection rows now identify the service with its monochrome brand icon where pe
 
 Docker, NVIDIA and Cloudflare logo terms require authorization; none has been obtained. OpenAI/Azure and the other neutral kinds have no approved artwork in this increment; that is an artwork gap, not an unsupported connection. The [component catalog](../design/system/components.md#integration-icons) and [D-263](../plan/decisions.md) record the source and terms. CLI identity aliases for Copilot, Claude Code, Codex and Gemini are available to the picker, but this icon change adds no CLI transport.
 
-Settings on the desktop always lists **AI** (AIS-01). From top to bottom:
+The historical pre-D-267 anatomy below is retained for comparison; the single-list anatomy above supersedes its Writer menu, Use as Writer action and local section.
 
 | Part | What it shows | Actions |
 | --- | --- | --- |
@@ -111,7 +113,7 @@ You type a key into the **API key** field (IA-CMP-AIKEY). It leaves the field on
 
 ### Supported CLI login discovery (D-264)
 
-The owner's **Find on this computer** action also checks the supported installed Copilot version and its runtime-owned authentication, with no prompt, login flow, cloud-model list or credential read. It keeps the earlier results while checking; the CLI probe has a 5 s failure bound plus bounded runtime shutdown. Signed-in Copilot is added directly, once, and becomes the active integration only if none is set. An existing choice is unchanged. First-send consent remains mandatory.
+The owner's **Find on this computer** action also checks the supported installed Copilot version and its runtime-owned authentication, with no prompt, login flow, cloud-model list or credential read. It keeps the earlier results while checking; the CLI probe has a 5 s failure bound plus bounded runtime shutdown. Signed-in Copilot is added directly, once, and becomes the active integration only if none is set. An existing choice is unchanged. Generate sends directly with the active integration disclosure (D-266); there is no first-send consent gate.
 
 The Copilot connection always says **Cloud**, has no API key or editable endpoint, and starts with model `auto` (the CLI default). **Find models** explicitly lists the GitHub service's models. Signed-out, unsupported and unknown results say why and do not claim readiness or activate. Sign-in stays in the person's normal terminal; the app never copies tokens or uses the person's active configuration as a fallback. Errors include CLI missing, unsupported version, not signed in and quota; original text is restored on Rewrite failure or Stop.
 

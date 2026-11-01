@@ -7,7 +7,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## Settings AI single-list stage
 
-**D-267 · WP-AI.15 / MAI · planned, not built.** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → AIS-16. The existing owner app remains at 52bf0dfe; this spec does not claim runtime acceptance.
+**D-267 · WP-AI.15 / MAI · built, verifying; owner acceptance pending.** CP-RWR-01 → SC-RWR-04 → UC-RWR-05 / UC-RWR-08 → AIS-16. Built on own-ai-default-list-build over 86631980; the owner app remains at 86631980 until coordinator integration.
 
 | Row | Done when | Evidence required |
 | --- | --- | --- |
@@ -30,7 +30,28 @@ Open Settings → AI with two fake connections. Select the second row, see **Def
 | `git diff --check` | Passed. |
 | `node E:\Projects\side-projects\focus-notes-work\scratch\own-list-render.mjs` | Passed 26 changed reader-page/theme cases in headless Edge on a private ephemeral port, never 8787. One H1 per page, theme and SVG fit assertions; new target headings rendered. Settings light/dark captures inspected, readable. Browser/server closed in finally. |
 
-**Runtime evidence is not yet available:** UX-LIST.1 to UX-LIST.5 remain open. Initial check found missing TypeScript; approved-feed offline frozen-lockfile install restored it without downloads or manifest changes. The next check needed generated tokens; `pnpm tokens` fixed that prerequisite, then the complete check passed. Build is queued because live POP owns overlapping core AI state, AI unit tests, message catalogue and generated schemas. No runtime, test, message or schema file was edited by this spec.
+**Historical spec-only boundary (145eb45c): runtime evidence was not yet available.** UX-LIST.1 to UX-LIST.5 remain open. Initial check found missing TypeScript; approved-feed offline frozen-lockfile install restored it without downloads or manifest changes. The next check needed generated tokens; `pnpm tokens` fixed that prerequisite, then the complete check passed. Build is queued because live POP owns overlapping core AI state, AI unit tests, message catalogue and generated schemas. No runtime, test, message or schema file was edited by this spec.
+
+### Settings implementation evidence, 1 November
+
+| Row | Checked evidence |
+| --- | --- |
+| UX-LIST.1 | `AIS-16: Settings Default is one list shared with Rewrite` passed: 0, 1, 2 and 30 rows; absent Writer menu/Use as Writer/local heading; one Find button and exact scan line. Captures include light/dark two-row views at normal and 480-wide viewport sizes. |
+| UX-LIST.2 | ItemCard units passed for 30 native radios, one checked value, action outside label and pending disabled selection. Journey passed ArrowDown, Space, direct selection and independent Change/Remove; explicit native radio names and checked state asserted. |
+| UX-LIST.3 | Core units and journey passed Settings → Rewrite → Settings with the same saved Writer ID, preserving Rewrite draft; no second preference or store. |
+| UX-LIST.4 | Core units passed delayed/rejected writes retaining the previous default and explicit error/retry; journey deletion clears the Writer and all checked rows. The first journey exposed the old implicit next-connection fallback; main removal now clears it, with main-service tests also proving an edit does not invent a replacement. |
+| UX-LIST.5 | Existing API/Copilot contract fake tests passed, including discovery outcome honesty; unchanged icon/locality/key/Test information checked in captures. Core round-trip records only Writer calls, no rewrite requests. |
+
+**Commands and results in the isolated worktree:**
+
+- `pnpm exec vitest run packages/core/test/ai-app.test.ts packages/ui/test/item-card-choice.test.tsx apps/desktop/test/ai-rewrite.test.ts apps/desktop/test/ai-contract.test.ts apps/desktop/test/ai-copilot-contract.test.ts`: **158 passed**.
+- `pnpm --filter @focus-notes/core run typecheck`, `pnpm --filter @focus-notes/ui run typecheck`, `pnpm --filter @focus-notes/desktop run typecheck`: **passed**.
+- `pnpm --filter @focus-notes/desktop run build`: **passed**, existing renderer chunk-size warning.
+- `pnpm --filter @focus-notes/desktop exec playwright test e2e/air-safeguards.spec.ts e2e/air-rewrite.spec.ts --workers=1 -g 'AIS-16: Settings Default|D-265, D-266: inline|AIS-13, AIS-14:|AIS-04, AIS-13:|AI Rewrite: streams'` with `FOCUS_NOTES_E2E=1`: **5 passed**, including four coupled POP/stream/direct-Generate/picker journeys.
+- `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`, `node tools/component-inventory.mjs`, `pnpm check`: **passed**, generated schemas/catalogue in this implementation commit; 396 documents, 71 contracts. Kit checks skipped because worktree submodules are unchecked.
+- Canonical Slate runtime check and `git diff --check`: **passed**.
+
+Captures are in `focus-notes-work\scratch\own-list-ui`; normal/narrow Settings light/dark images inspected. Native radio plus badge/border make selection visible without colour alone; actions remain sibling controls and wrap in narrow views. Test apps quit in finally; PID-scoped close-test-apps WhatIf then actual reported 0 leftovers. No owner app/settings/profile, notes/private content, Preview or 8787 changes. No real inference, full suite, CI wait or screen-level benchmark. Owner acceptance, full assistive-technology/forced-colours audit and integration remain pending.
 
 ## OWNER-TESTABLE Rewrite UX stage
 

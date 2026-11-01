@@ -92,11 +92,11 @@
   "workPackages": [
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
-      "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Spec first; build queued until overlapping POP runtime files are released. Preserve D-265/D-266 during serial integration.",
+      "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Built after POP release over 86631980: native ItemCard radio area, shared Writer bridge/tracker and explicit save failure/default deletion. UX-LIST evidence checked; integration and owner acceptance pending. D-264/D-265/D-266 preserved.",
       "requirements": ["AIS-16"],
       "dependsOn": ["WP-AI.11"], "touches": ["core", "ui", "views", "tests", "help", "spec"],
       "reviews": ["code", "design-system", "accessibility"], "specs": ["experience/ai-settings.md", "design/rewrite-with-ai.md", "plan/definition-of-done.md", "help/connect-an-ai-service.md"],
-      "lookahead": true, "status": "planned"
+      "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-AI.11", "stage": "MAI", "title": "Rewrite in place and AI connections",

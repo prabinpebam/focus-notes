@@ -82,11 +82,14 @@ describe("AI connections (main process)", () => {
     expect(JSON.parse(seen.at(-1)!.init.body as string)).toMatchObject({ stream: true });
     expect(seen.at(-1)!.url).toBe("https://api.anthropic.com/v1/messages");
     expect((seen.at(-1)!.init.headers as Record<string, string>)["x-api-key"]).toBe("secret");
-    // A second connection, made the Writer; removing it moves the Writer back.
+    // Removing the default leaves the remaining connections unselected.
     const two = await ai.save({ provider: "ollama", name: "Ollama", endpoint: "http://127.0.0.1:11434", model: "llama3" });
     const ollama = two.connections[1]!.id;
     expect((await ai.writer(ollama)).writer).toBe(ollama);
-    expect((await ai.remove(ollama)).writer).toBe(id);
+    expect((await ai.remove(ollama)).writer).toBe("");
+    expect((await ai.settings()).writer).toBe("");
+    expect((await ai.save({ id, provider: "anthropic", name: "Claude", model: "claude-y" })).writer).toBe("");
+    expect((await ai.writer(id)).writer).toBe(id);
   });
   it("Test records its result, and names a refused key and an unreachable service", async () => {
     const f = file();

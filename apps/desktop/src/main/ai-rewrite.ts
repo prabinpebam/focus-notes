@@ -460,11 +460,14 @@ export class AiService {
         if (s.connections.length >= MAX_CONNECTIONS) throw new Error("too-many");
         s.connections.push(c);
       }
-      s.writer ||= c.id;
+      if (!s.writer && s.connections.length === 1 && at < 0) s.writer = c.id;
     });
   }
   remove(id: unknown): Promise<AiSettings> {
-    return this.#change((s) => { s.connections = s.connections.filter((c) => c.id !== id); });
+    return this.#change((s) => {
+      s.connections = s.connections.filter((c) => c.id !== id);
+      if (s.writer === id) s.writer = "";
+    });
   }
   writer(id: unknown): Promise<AiSettings> {
     return this.#change((s) => {

@@ -9,6 +9,14 @@ export const base = style({
   fontFamily: t.font, lineHeight: t.lineHeight,
 });
 export const large = style({ padding: t.padding.l });
+export const choiceCard = style({
+  selectors: {
+    "&[data-selected]": { borderColor: t.action.border, backgroundColor: t.action.hover },
+    "&:focus-within": { outlineStyle: "solid", outlineColor: t.action.focusRing, outlineWidth: t.action.focusWidth, outlineOffset: t.action.focusOffset },
+  },
+});
+export const choice = style({ display: "flex", alignItems: "center", flexWrap: "wrap", gap: t.gap, flexGrow: 1, minWidth: 0, cursor: "default" });
+export const radio = style({ width: t.markSize, height: t.markSize, margin: 0, flexShrink: 0, accentColor: t.action.border });
 export const tile = style({
   flexShrink: 0, width: t.tile, height: t.tile, display: "flex", alignItems: "center", justifyContent: "center",
   backgroundColor: t.tileBackground, color: t.tileColor, borderRadius: t.tileRadius,
@@ -48,4 +56,3 @@ export const chevron = style({ width: t.markSize, height: t.markSize, flexShrink
 // The step's main action (D-142): its tile in the accent and its title large, so it outweighs the step's title.
 export const tileAction = style({ backgroundColor: t.action.tileBackground, color: t.action.tileColor });
 export const titleAction = style({ fontSize: t.action.title });
-
