@@ -48,9 +48,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows only until v1 is in the Microsoft Store (D-211, pausing D-196): macOS and Linux each
-        # ran every journey in one 25–30 minute job, which set the pace of every merge. To bring them
-        # back, add ubuntu-latest and macos-latest here; their steps below are kept.
+        # Windows remains the sole merge gate. D-268 restores macOS reporting in its independent
+        # job below, not in this required matrix (D-211 paused the D-196 cross-platform gate).
         os: [windows-latest]
     runs-on: ${{ matrix.os }}
     # A hung step fails the run in minutes instead of holding a runner for GitHub's six hours (D-113).
@@ -142,6 +141,120 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}
           path: test-results/
+
+  macos-report:
+    name: macOS arm64 (report only)
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    runs-on: macos-latest
+    continue-on-error: true
+    timeout-minutes: 75
+    defaults:
+      run:
+        shell: bash
+    env:
+      npm_config_registry: https://packagefeedproxy.microsoft.io/npm/
+      FOCUS_NOTES_E2E: "1"
+      FOCUS_NOTES_E2E_ALLOW_SCREEN: "1"
+      FOCUS_NOTES_LIVE_AI: "0"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify approved package source
+        run: |
+          test "$(npm config get registry)" = "$npm_config_registry"
+          test "$(npm config get @github:registry)" = "undefined"
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Verify runner architecture and effective install source
+        run: |
+          mkdir -p test-results/macos-report
+          test "$(uname -m)" = "arm64"
+          node -e "if (process.platform !== 'darwin' || process.arch !== 'arm64') throw new Error('Expected native macOS arm64 Node'); console.log(process.platform, process.arch)"
+          test "$(npm config get registry)" = "$npm_config_registry"
+          test "$(pnpm config get registry)" = "$npm_config_registry"
+          test "$(pnpm config get @github:registry)" = "undefined"
+      - run: pnpm install --frozen-lockfile
+      - run: node packages/tokens/build.mjs
+      - name: Typecheck
+        id: types
+        run: pnpm typecheck 2>&1 | tee test-results/macos-report/typecheck.log
+      - name: Build the desktop app
+        id: build
+        if: ${{ !cancelled() && steps.types.outcome != 'skipped' }}
+        run: pnpm --filter @focus-notes/desktop run build 2>&1 | tee test-results/macos-report/build.log
+      # Never launch the legacy SDK's native platform payload. A failing guard is reporting
+      # evidence, not permission to delete dependencies or weaken the Windows gate.
+      - name: Verify native SDK absence before executing tests
+        id: native
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          node --input-type=module <<'NODE' 2>&1 | tee test-results/macos-report/native-guard.log
+          import { readdirSync, readFileSync } from 'node:fs';
+          const forbidden = readdirSync('node_modules/.pnpm').filter(name =>
+            /copilot-sdk-platform|^koffi@|^@koromix\+koffi/.test(name));
+          const main = readdirSync('apps/desktop/out/main').filter(name => name.endsWith('.mjs'));
+          const bundled = main.filter(name =>
+            /copilot-sdk-platform|OneAuth|@koromix\/koffi|(?:from\s*|require\s*\()\s*["']koffi["']/.test(
+              readFileSync(`apps/desktop/out/main/${name}`, 'utf8')));
+          if (forbidden.length || bundled.length) {
+            console.error('Native SDK guard blocked execution:', { forbidden, bundled });
+            process.exit(1);
+          }
+          console.log('Native SDK absence verified; no platform SDK, OneAuth or Koffi payload.');
+          NODE
+      - name: Unit tests (synthetic providers, no live AI)
+        id: units
+        if: ${{ !cancelled() && steps.native.outcome == 'success' }}
+        run: pnpm test 2>&1 | tee test-results/macos-report/unit.log
+      - name: Fetch and verify native Electron
+        id: electron
+        if: ${{ !cancelled() && steps.native.outcome == 'success' }}
+        timeout-minutes: 10
+        working-directory: apps/desktop
+        run: |
+          node -e "console.log(require('electron'))"
+          executable="$(node -e "process.stdout.write(require('electron'))")"
+          file "$executable"
+          file "$executable" | grep -q arm64
+      - name: macOS journeys (report only)
+        id: journeys
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' }}
+        timeout-minutes: 45
+        working-directory: apps/desktop
+        run: pnpm test:e2e --trace=retain-on-failure 2>&1 | tee ../../test-results/macos-report/journeys.log
+      - name: Report actual outcomes
+        if: always()
+        env:
+          TYPES: ${{ steps.types.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          NATIVE: ${{ steps.native.outcome }}
+          UNITS: ${{ steps.units.outcome }}
+          ELECTRON: ${{ steps.electron.outcome }}
+          JOURNEYS: ${{ steps.journeys.outcome }}
+        run: |
+          {
+            echo "## macOS arm64 reporting only"
+            echo "Commit: $GITHUB_SHA"
+            echo "Windows remains the sole main merge gate; this job is never required by Windows jobs."
+            echo "| Check | Actual outcome |"
+            echo "| --- | --- |"
+            for check in TYPES BUILD NATIVE UNITS ELECTRON JOURNEYS; do
+              echo "| $check | ${!check} |"
+            done
+            echo "Skipped journeys are not passing evidence. No installer, signing, publishing or real account use."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep macOS logs, failure traces and screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-macos-arm64
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
 
   # The Windows desktop journeys gate every merge (D-112). One runner took about 18 minutes for
   # them, which made CI the constraint on every merge; four shards in parallel take a few

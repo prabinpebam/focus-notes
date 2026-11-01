@@ -125,6 +125,35 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 | Performance | Playwright traces plus `pnpm bench --check` against the budgets file | The budgets above (QLT-05) |
 | Publishing and sealing | A workflow test repository | The leak check, keyrings, expiry, withdrawal, and the name lookup |
 
+### CI gates and macOS reporting
+
+D-268 restores macOS cloud testing without restoring D-196's cross-platform merge gate.
+Windows remains the sole main merge gate; Linux remains paused under D-211.
+
+| CI track | Runner | Evidence | Blocks main? |
+| --- | --- | --- | --- |
+| Required checks and Windows journeys | Windows, four journey shards | Checks, types, unit tests, build, Store packaging and journeys on the exact candidate | Yes |
+| macOS reporting | `macos-latest`, native arm64 verified before install and Electron launch | Types, desktop build, native SDK absence guard, synthetic-provider unit tests and full macOS journeys when safe to execute | No: independent job with `continue-on-error: true` |
+
+Both tracks use the existing desktop-change classification. A work branch is compared with
+`origin/main`, so an evidence-only follow-up cannot hide the candidate's runtime changes.
+No required Windows job depends on the macOS report, and macOS never enters the required matrix.
+The reporting job checks the effective Microsoft npm proxy before package setup/cache and again
+before its frozen-lockfile install; it does not switch sources on failure.
+
+The report never executes bundled platform SDK, OneAuth or Koffi payloads: installed SDK-native
+dependencies and emitted main-process imports are checked before unit tests or Electron launch.
+If the guard fails, later runtime checks are **skipped**, not passed; the build and guard logs remain
+available. This may expose the unsafe legacy candidate before native omissions are integrated.
+The job creates no installer and makes no signing, distribution or licence-compliance claim.
+
+Every run writes actual step outcomes to its summary and always uploads `test-results-macos-arm64`
+(build and check logs, plus any journey failure traces and screenshots) for 14 days.
+Journeys use isolated test workspaces and synthetic providers, with live AI disabled; the screen
+permission flag is CI-only. A cloud failure is reported to the relevant platform worker, never used
+to hold an otherwise green Windows merge. Intel coverage and unsigned installer evidence belong to
+the separate macOS build track; an arm64 report alone does not establish Intel support.
+
 ### Testing pitfalls
 
 - **Optimistic changes:** a test of a change shown before it's saved holds back the bridge's write or commit reply, checks the screen, then releases the reply and checks that the change was confirmed, or put back with a message.
