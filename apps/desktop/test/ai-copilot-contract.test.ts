@@ -127,6 +127,17 @@ describe("Copilot CLI through the official SDK and a stdio protocol fake", () =>
     expect((await f.seen()).filter((s) => s.method === "session.send")[0]!.params.prompt).toBe("Reply with the single word OK.");
   });
 
+  it("bounds Find models to eight seconds and exits its owned runtime", async () => {
+    const f = await fixture("models-stall");
+    const started = performance.now();
+    await expect(f.ai.models({ id: f.id })).rejects.toMatchObject({ code: "timeout" });
+    expect(performance.now() - started).toBeGreaterThanOrEqual(7900);
+    expect(performance.now() - started).toBeLessThan(11_500);
+    const seen = await f.seen();
+    expect(seen.some((entry) => entry.method === "session.send")).toBe(false);
+    expect(() => process.kill(seen[0]!.pid, 0)).toThrow();
+  }, 15_000);
+
   it("does not inherit tokens, bypasses, plugins or auto-update overrides", () => {
     const env = copilotEnvironment();
     for (const key of ["GITHUB_TOKEN", "GH_TOKEN", "COPILOT_GITHUB_TOKEN", "COPILOT_HOME", "NODE_OPTIONS", "COPILOT_ALLOW_ALL"]) expect(env[key]).toBeUndefined();

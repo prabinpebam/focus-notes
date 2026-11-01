@@ -40,7 +40,10 @@ function request(message) {
     case "session.send":
       result = { messageId: "input" };
       break;
-    case "models.list": result = { models: [{ id: "model-a", name: "Model A", capabilities: {} }] }; break;
+    case "models.list":
+      if (mode === "models-stall") return;
+      result = { models: [{ id: "model-a", name: "Model A", capabilities: {} }] };
+      break;
     case "runtime.shutdown": clearInterval(interval); break;
     case "session.abort": clearInterval(interval); break;
   }

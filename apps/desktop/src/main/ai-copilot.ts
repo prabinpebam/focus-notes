@@ -161,7 +161,7 @@ export class CopilotIntegration {
   async models(): Promise<{ id: string; cloud: boolean }[]> {
     const started = performance.now();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(new AiError("timeout")), 10_000);
+    const timer = setTimeout(() => controller.abort(new AiError("timeout")), 8000);
     let close: (() => Promise<void>) | undefined;
     try {
       const runtime = await this.#open(controller.signal);
