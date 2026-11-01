@@ -1,0 +1,164 @@
+name: Mac testing DMGs
+on:
+  workflow_dispatch:
+  push:
+    branches: [mac-test-build]
+permissions:
+  contents: read
+concurrency:
+  group: mac-test-build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+            macho: arm64
+          - runner: macos-15-intel
+            arch: x64
+            macho: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      npm_config_registry: https://packagefeedproxy.microsoft.io/npm/
+      FOCUS_NOTES_E2E: "1"
+      BUILD_ARCH: ${{ matrix.arch }}
+      MACHO_ARCH: ${{ matrix.macho }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Verify approved package routing and install pinned pnpm
+        run: |
+          set -euo pipefail
+          test "$(npm config get registry)" = "https://packagefeedproxy.microsoft.io/npm/"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const lock = readFileSync('pnpm-lock.yaml', 'utf8');
+          const urls = [...lock.matchAll(/tarball:\s*(https:\/\/[^\s}]+)/g)].map(m => new URL(m[1]));
+          for (const url of urls) {
+            if (!['packagefeedproxy.microsoft.io', 'ms-feed-25.pkgs.visualstudio.com'].includes(url.hostname))
+              throw new Error(`Unapproved lockfile source host: ${url.hostname}`);
+          }
+          NODE
+          npm install --global pnpm@10.28.2 --registry=https://packagefeedproxy.microsoft.io/npm/
+          test "$(pnpm config get registry)" = "https://packagefeedproxy.microsoft.io/npm/"
+      - name: Restore frozen dependencies
+        timeout-minutes: 10
+        run: pnpm install --frozen-lockfile
+      - name: Build existing desktop entry points
+        run: |
+          node packages/tokens/build.mjs
+          pnpm --filter @focus-notes/desktop run build
+      - name: Package unsigned DMG without SDK runtime payload
+        timeout-minutes: 15
+        working-directory: apps/desktop
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const config = {
+            ...pkg.build,
+            files: [...pkg.build.files, '!node_modules/**'],
+            mac: { ...pkg.build.mac, target: ['dmg'], identity: null },
+          };
+          writeFileSync('mac-testing.json', JSON.stringify(config));
+          NODE
+          pnpm exec electron-builder --config mac-testing.json --mac dmg "--$BUILD_ARCH" --publish never
+      - name: Inspect mounted DMG and record exact source
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./apps/desktop/package.json').version")"
+          out="$RUNNER_TEMP/mac-artifacts"
+          mkdir -p "$out"
+          dmg="$(find apps/desktop/release -maxdepth 1 -name "*-$BUILD_ARCH.dmg" -print)"
+          test -n "$dmg" && test -f "$dmg"
+          mount="$RUNNER_TEMP/mac-dmg"
+          mkdir -p "$mount"
+          hdiutil verify "$dmg"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$dmg"
+          trap 'hdiutil detach "$mount"' EXIT
+          app="$mount/Focus Notes.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
+          executable="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+          test "$(lipo -archs "$app/Contents/MacOS/$executable")" = "$MACHO_ARCH"
+          resources="$app/Contents/Resources"
+          test -s "$resources/app.asar"
+          test -s "$resources/LICENSE.txt"
+          test -s "$resources/THIRD_PARTY_NOTICES.md"
+          test -s "$resources/bin/focus-notes"
+          test -s "$app/Contents/Frameworks/Electron Framework.framework/Resources/LICENSES.chromium.html"
+          APP_ASAR="$resources/app.asar" pnpm --filter @focus-notes/desktop exec node --input-type=module <<'NODE'
+          import { createRequire } from 'node:module';
+          const require = createRequire(import.meta.url);
+          const builder = createRequire(require.resolve('electron-builder'));
+          const appBuilder = createRequire(builder.resolve('app-builder-lib'));
+          const asar = appBuilder('@electron/asar');
+          const archive = process.env.APP_ASAR;
+          const files = asar.listPackage(archive).map(p => p.replaceAll('\\', '/'));
+          if (files.some(p => /\/node_modules\/|oneauth|koffi|copilot-(darwin|win32|linux)|\.node$/i.test(p)))
+            throw new Error('Forbidden SDK/native dependency in ASAR');
+          for (const file of ['out/main/main.mjs', 'out/main/preload.cjs', 'out/main/cli.mjs', 'out/main/mcp.mjs', 'out/main/icon.png', 'out/main/workspace-template.json', 'out/renderer/index.html']) {
+            if (!asar.extractFile(archive, file).length) throw new Error(`Missing resource: ${file}`);
+          }
+          const pkg = JSON.parse(asar.extractFile(archive, 'package.json').toString());
+          if (pkg.version !== '1.1.0') throw new Error('Unexpected packaged application version');
+          NODE
+          # Inventory every native file, not just the top-level app executable.
+          find "$app" -type f -exec file {} + > "$out/payload-$BUILD_ARCH.txt"
+          if grep -Ei 'oneauth|copilot-(darwin|win32|linux)|koffi|\.node:' "$out/payload-$BUILD_ARCH.txt"; then
+            echo "::error::Forbidden SDK or native FFI payload in mounted app"
+            exit 1
+          fi
+          while IFS= read -r native; do
+            test "$(lipo -archs "$native")" = "$MACHO_ARCH"
+            otool -L "$native"
+          done < <(find "$app" -type f -exec sh -c 'file "$1" | grep -q "Mach-O" && printf "%s\n" "$1" || true' sh {} \;) > "$out/native-dependencies-$BUILD_ARCH.txt"
+          if codesign -dv "$app" 2>"$out/signature-$BUILD_ARCH.txt"; then
+            grep -q 'Signature=adhoc' "$out/signature-$BUILD_ARCH.txt"
+          else
+            grep -q 'not signed at all' "$out/signature-$BUILD_ARCH.txt"
+          fi
+          APP_EXE="$app/Contents/MacOS/$executable" SMOKE_OUT="$out/cli-smoke-$BUILD_ARCH.txt" node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+          import { mkdtempSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          import { tmpdir } from 'node:os';
+          const data = mkdtempSync(join(tmpdir(), 'focus-notes-mac-smoke-'));
+          const result = spawnSync(process.env.APP_EXE, ['--cli', '--help', '--data', data], {
+            env: { ...process.env, FOCUS_NOTES_E2E: '1' },
+            encoding: 'utf8', timeout: 30000,
+          });
+          writeFileSync(process.env.SMOKE_OUT, `status=${result.status}\n${result.stdout ?? ''}\n${result.stderr ?? ''}`);
+          if (result.error) throw result.error;
+          if (result.status !== 0 || !/focus-notes|usage|commands/i.test(result.stdout))
+            throw new Error('Mounted packaged CLI smoke failed');
+          NODE
+          name="Focus-Notes-$version-macos-$BUILD_ARCH-testing-$SOURCE_SHA.dmg"
+          cp "$dmg" "$out/$name"
+          cp "$resources/THIRD_PARTY_NOTICES.md" "$out/THIRD_PARTY_NOTICES-$BUILD_ARCH.md"
+          cp "$app/Contents/Frameworks/Electron Framework.framework/Resources/LICENSES.chromium.html" "$out/LICENSES.chromium-$BUILD_ARCH.html"
+          printf 'source=%s\nversion=%s\narchitecture=%s\nsigning=unsigned-or-ad-hoc\nscope=testing-not-release\nsmoke=packaged-cli-help\nuntested=real-Mac-Gatekeeper-Git-login-cloud-and-writing-UI\n' "$SOURCE_SHA" "$version" "$BUILD_ARCH" > "$out/receipt-$BUILD_ARCH.txt"
+          (cd "$out" && shasum -a 256 "$name" > "SHA256SUMS-$BUILD_ARCH")
+          cat "$out/receipt-$BUILD_ARCH.txt" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload verified testing artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-testing-${{ matrix.arch }}-${{ github.sha }}
+          path: ${{ runner.temp }}/mac-artifacts/
+          if-no-files-found: error
+          retention-days: 14
