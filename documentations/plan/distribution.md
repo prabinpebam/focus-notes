@@ -138,12 +138,24 @@ first Git on `PATH` and no developer folder holds a real Git, the app treats Git
 as not installed and starts nothing (`appleGitShimWithoutTools`), so writing on
 this computer never raises an install prompt. Nothing is bundled or installed.
 
+**First review build (2 November).** Run 41419907783 built 1.1.0 at
+`4ac68d5b` (main `4fc3336f` plus this track) and both DMGs passed inspection and
+the startup proof. Both need **macOS 12 or later** (`LSMinimumSystemVersion` and
+every executable's `minos`). Every Mach-O file is thin for its architecture,
+signed ad hoc, and `spctl` rejects it as expected for a copy that isn't notarized.
+A CI-built copy has no quarantine flag, so the first-open steps below are proven
+only on a real Mac. Two gaps stay open for a public Mac release:
+`THIRD_PARTY_NOTICES.md` describes the D-269 runtime in Windows terms
+(`ffmpeg.dll`, DirectX) where the Mac app carries `libffmpeg.dylib`, and the app
+didn't end on `SIGTERM` within 10 seconds, so the proof stopped it after the note
+was on disk. Quitting with **Command-Q** is a real-Mac check.
+
 ### Open a review DMG on a Mac
 
 <ol class="slate-steps">
   <li class="slate-step">
     <p class="slate-step__title">Pick the architecture</p>
-    <p>About This Mac: <strong>Chip: Apple M-series</strong> takes the <code>arm64</code> DMG; <strong>Processor: Intel</strong> takes the <code>x64</code> DMG. Match the file's SHA-256 to its receipt.</p>
+    <p>About This Mac: <strong>Chip: Apple M-series</strong> takes the <code>arm64</code> DMG; <strong>Processor: Intel</strong> takes the <code>x64</code> DMG. Both need macOS 12 or later. Match the file's SHA-256 to its receipt.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Drag to Applications</p>
