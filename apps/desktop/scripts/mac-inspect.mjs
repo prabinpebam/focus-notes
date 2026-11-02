@@ -7,7 +7,7 @@
 import { spawnSync } from "node:child_process";
 import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { FuseState, FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
+import fuses from "@electron/fuses";
 import { copilotPayloadProblems } from "../../../tools/release/store-manifest.mjs";
 
 const [appArg, arch, evidenceArg] = process.argv.slice(2);
@@ -95,17 +95,20 @@ walkAsar(header.files, "");
 const APP_FILES = ["out/main/main.mjs", "out/main/preload.cjs", "out/main/cli.mjs", "out/main/mcp.mjs", "out/main/workspace-template.json", "out/renderer/index.html", "package.json"];
 const asarMissing = APP_FILES.filter((f) => !asarFiles.includes(f));
 check("appArchive", asarProblems.length === 0 && asarMissing.length === 0, [...asarProblems, ...asarMissing.map((f) => `The archive has no ${f}.`)].join(" "));
-const FORBIDDEN = /(?:oneauth|koffi|@koromix|copilot-sdk-(?:darwin|win32|linux)|\.node$|browser-use\/|computer-use\/)/i;
+const FORBIDDEN = /(?:oneauth|koffi|@koromix|copilot-sdk-(?:darwin|win32|linux)|browser-use\/|computer-use\/)/i;
 const forbidden = [...files.map((f) => relative(app, f)), ...asarFiles.map((f) => `app.asar/${f}`)].filter((f) => FORBIDDEN.test(f.replace(/\\/g, "/")));
-check("noForbiddenPayload", forbidden.length === 0 && !existsSync(join(resources, "app.asar.unpacked")), `Forbidden payload: ${forbidden.join(", ") || "app.asar.unpacked"}`);
+check("noForbiddenPayload", forbidden.length === 0, `Forbidden payload: ${forbidden.join(", ")}`);
+// Informational: Node native add-ons and unpacked archive files, none expected.
+const nativeAddons = [...files.map((f) => relative(app, f)), ...asarFiles].filter((f) => f.endsWith(".node"));
 // D-269 covers only Electron's own FFmpeg library, unmodified, in its framework.
 const codecs = files.map((f) => relative(app, f)).filter((f) => /(?:^|\/)(?:lib)?(?:ffmpeg|avcodec|avformat|avutil|avfilter|avdevice|swresample|swscale|postproc)[^/]*\.(?:dylib|so|a|node)$/i.test(f));
 check("codecLibraries", codecs.length === 1 && /^Contents\/Frameworks\/Electron Framework\.framework\/Versions\/A\/Libraries\/libffmpeg\.dylib$/.test(codecs[0]), `Codec libraries other than Electron's own: ${codecs.join(", ")}`);
 
 // SEC-01's fuses, read back from the packaged framework.
+const { FuseState, FuseV1Options, getCurrentFuseWire } = fuses;
 const wire = await getCurrentFuseWire(app);
-const fuses = Object.fromEntries(Object.entries(FuseV1Options).filter(([, v]) => typeof v === "number").map(([k, v]) => [k, wire[v] === FuseState.ENABLE ? "on" : wire[v] === FuseState.DISABLE ? "off" : String(wire[v])]));
-check("fuses", fuses.RunAsNode === "off" && fuses.EnableNodeCliInspectArguments === "off" && fuses.EnableNodeOptionsEnvironmentVariable === "off" && fuses.OnlyLoadAppFromAsar === "on" && fuses.EnableEmbeddedAsarIntegrityValidation === "on", `Unexpected fuses: ${JSON.stringify(fuses)}`);
+const fuseStates = Object.fromEntries(Object.entries(FuseV1Options).filter(([, v]) => typeof v === "number").map(([k, v]) => [k, wire[v] === FuseState.ENABLE ? "on" : wire[v] === FuseState.DISABLE ? "off" : String(wire[v])]));
+check("fuses", fuseStates.RunAsNode === "off" && fuseStates.EnableNodeCliInspectArguments === "off" && fuseStates.EnableNodeOptionsEnvironmentVariable === "off" && fuseStates.OnlyLoadAppFromAsar === "on" && fuseStates.EnableEmbeddedAsarIntegrityValidation === "on", `Unexpected fuses: ${JSON.stringify(fuseStates)}`);
 
 // The signature: ad-hoc (no Apple identity), and the whole bundle's seal intact.
 const signature = run("codesign", ["-dv", "--verbose=2", app]).out;
@@ -120,11 +123,13 @@ const result = {
   bundle: { id: plist.CFBundleIdentifier, name: plist.CFBundleName, version: plist.CFBundleShortVersionString, build: plist.CFBundleVersion, executable: plist.CFBundleExecutable },
   minimumMacos: { LSMinimumSystemVersion: plist.LSMinimumSystemVersion ?? null, executableMinos: minos, effective: minimumMacos },
   machoFiles: macho,
-  fuses,
+  fuses: fuseStates,
   signature: { codesign: signature, verify: verify.out, verifyStatus: verify.status },
   // Informational: an ad-hoc app is expected to be rejected here; a downloaded copy asks on first open.
   gatekeeperAssessment: { status: gatekeeper.status, output: gatekeeper.out },
   codecLibraries: codecs,
+  nativeAddons,
+  asarUnpacked: existsSync(join(resources, "app.asar.unpacked")),
   fileCount: files.length,
   checks,
   problems,

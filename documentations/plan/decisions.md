@@ -24,6 +24,13 @@ a public Mac release. Opening an unsigned app and real-Mac Git/login/cloud
 qualification are separate from cloud packaging evidence: do not claim them
 tested because a DMG built. See [Mac testing distribution](distribution.md#unsigned-mac-testing-d-268).
 
+Built (2 November): `mac-review.yml` ad-hoc signs each app (an Apple Silicon app
+with no signature at all is reported as damaged, with no Open Anyway) and keeps
+the hardened runtime off; neither needs an Apple account. Its startup proof opens
+the unmodified installed app on the matching runner and writes a note. On a Mac
+whose only Git is Apple's `/usr/bin/git` stand-in, the app treats Git as not
+installed rather than raising the Command Line Tools install prompt.
+
 ## D-267: one Settings list, one remembered default
 
 **D-265/D-266/D-267 production boundary, 1 November:** owner approval of exact

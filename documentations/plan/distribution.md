@@ -120,17 +120,50 @@ CI installs from lockfiles with frozen versions.
 
 | Step | Evidence or boundary |
 | --- | --- |
-| Build | `mac-test-build.yml`, on the named testing branch or by manual dispatch, builds arm64 and x64 DMGs on cloud Mac runners. Frozen package versions use the Microsoft npm proxy and the existing approved binary channels; no public-feed fallback. |
-| Inspect | Mount each DMG read-only. Check the contained app version, Mach-O architecture, native libraries, required renderer/main/template/CLI resources, full Electron notices and source attribution. No OneAuth, Copilot platform SDK or native FFI payload ships. |
-| Exercise | Record the actual local-note smoke result against a temporary profile. Real-Mac first launch, Gatekeeper, Git availability, sign-in and cloud operations remain distinct checks, not implied by a successful build. |
-| Hand over | Download to `focus-notes-work\release\macos-1.1.0\`, with architecture, app version and source commit in the file names, SHA-256 sums and a build receipt. Copy the app from the mounted DMG into Applications; no commands delete or overwrite the owner's notes. |
+| Build | `mac-review.yml`, on a `mac-review-*` branch or by manual dispatch, builds the arm64 DMG on `macos-latest` and the x64 DMG on `macos-15-intel` (`apps/desktop/scripts/dist-mac.mjs`). Frozen package versions use the Microsoft npm proxy and the existing approved binary channels; no public-feed fallback. Ad-hoc signed (no Apple identity), hardened runtime off, never notarized. |
+| Inspect | `scripts/mac-inspect.mjs` on each DMG, mounted read-only: the app's version and minimum macOS from its own metadata, every Mach-O file's architecture, Electron's `LICENSE.electron.txt` and `LICENSES.chromium.html` (electron-builder drops them on a Mac, so the build carries them into `Contents/Resources`), the third-party notices, the Electron fuses, the signature, and Electron's own `libffmpeg.dylib` as the only codec library. The Store's exact exclusions keep the Copilot platform SDK, `koffi` and `@koromix` out; no OneAuth payload ships. |
+| Exercise | `scripts/mac-smoke.mjs` copies the app out of the DMG into an Applications folder and opens it, unmodified, with new temporary data and notes folders, through Chromium's DevTools endpoint: the welcome, **Just use this computer for now**, the writing view, a note saved as Markdown on disk, then a second open straight back to writing. The result is `smoke.json` with screenshots. Real-Mac first launch, Gatekeeper, Git, sign-in and cloud operations remain distinct checks, not implied by it. |
+| Hand over | Download to `focus-notes-work\release\macos-1.1.0\`, with architecture, app version and source commit in the file names, SHA-256 sums and a build receipt. Only DMGs whose inspection and startup proof both passed are copied. |
 | Publish later | No release, tag, update channel, signing account or notarization action is performed by this workflow. Apple signing/account approval is a later owner decision. |
 
 The workflow sets `CSC_IDENTITY_AUTO_DISCOVERY=false`, uses `--publish never`,
-and uploads testing artifacts only. A work-branch DMG can be handed over before
+and uploads review artifacts only. A work-branch DMG can be handed over before
 Windows CI or integration, clearly labelled with its exact source and limitations.
 The [owner decision](decisions.md#d-268-unsigned-mac-testing-resumes-independently-of-the-store)
 amends D-211 only for this resumed Mac track. Linux remains paused.
+
+**Git on a Mac with no developer tools.** On a new Mac, `/usr/bin/git` is
+Apple's stand-in that offers to install the Command Line Tools. When it is the
+first Git on `PATH` and no developer folder holds a real Git, the app treats Git
+as not installed and starts nothing (`appleGitShimWithoutTools`), so writing on
+this computer never raises an install prompt. Nothing is bundled or installed.
+
+### Open a review DMG on a Mac
+
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Pick the architecture</p>
+    <p>About This Mac: <strong>Chip: Apple M-series</strong> takes the <code>arm64</code> DMG; <strong>Processor: Intel</strong> takes the <code>x64</code> DMG. Match the file's SHA-256 to its receipt.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Drag to Applications</p>
+    <p>Double-click the DMG, drag <strong>Focus Notes.app</strong> into <strong>Applications</strong>, eject the disk image, and open the Applications copy.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Allow this one app on first open</p>
+    <p>The first open is refused because the app isn't notarized. On macOS 15 and later, choose <strong>Done</strong>, then <strong>System Settings &gt; Privacy &amp; Security &gt; Open Anyway</strong> for Focus Notes. On macOS 14 and earlier, Control-click the app, choose <strong>Open</strong>, then <strong>Open</strong> again.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Start with disposable notes</p>
+    <p>Choose <strong>Just use this computer for now</strong> and write synthetic notes. Don't connect a real workspace, private vault or account for the first pass.</p>
+  </li>
+</ol>
+
+> [!WARNING]
+> **Never disable Gatekeeper globally.** If macOS reports the app as damaged or as
+> malware, stop and report the exact message. Only for a copy whose SHA-256 you
+> checked, and only if Open Anyway isn't offered, remove the quarantine from this
+> one app: `xattr -dr com.apple.quarantine "/Applications/Focus Notes.app"`.
 
 ## Release qualification
 

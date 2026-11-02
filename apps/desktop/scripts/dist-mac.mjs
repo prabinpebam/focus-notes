@@ -32,7 +32,8 @@ export function macReviewConfig(build = pkg.build, electron = electronDist()) {
       { from: join(electron, "LICENSE"), to: "LICENSE.electron.txt" },
       { from: join(electron, "LICENSES.chromium.html"), to: "LICENSES.chromium.html" },
     ],
-    mac: { ...build.mac, target: ["dmg"], identity: "-", hardenedRuntime: false, notarize: false },
+    // "Focus Notes.app", run by Contents/MacOS/Focus Notes, as the command-line launcher expects.
+    mac: { ...build.mac, executableName: build.productName, target: ["dmg"], identity: "-", hardenedRuntime: false, notarize: false },
   };
 }
 
