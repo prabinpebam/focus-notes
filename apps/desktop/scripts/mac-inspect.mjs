@@ -105,7 +105,9 @@ const codecs = files.map((f) => relative(app, f)).filter((f) => /(?:^|\/)(?:lib)
 check("codecLibraries", codecs.length === 1 && /^Contents\/Frameworks\/Electron Framework\.framework\/Versions\/A\/Libraries\/libffmpeg\.dylib$/.test(codecs[0]), `Codec libraries other than Electron's own: ${codecs.join(", ")}`);
 
 // SEC-01's fuses, read back from the packaged framework.
-const { FuseState, FuseV1Options, getCurrentFuseWire } = fuses;
+const { FuseV1Options, getCurrentFuseWire } = fuses;
+// The wire's bytes: '1' a fuse turned on, '0' turned off (@electron/fuses doesn't export its FuseState).
+const FuseState = { ENABLE: 0x31, DISABLE: 0x30 };
 const wire = await getCurrentFuseWire(app);
 const fuseStates = Object.fromEntries(Object.entries(FuseV1Options).filter(([, v]) => typeof v === "number").map(([k, v]) => [k, wire[v] === FuseState.ENABLE ? "on" : wire[v] === FuseState.DISABLE ? "off" : String(wire[v])]));
 check("fuses", fuseStates.RunAsNode === "off" && fuseStates.EnableNodeCliInspectArguments === "off" && fuseStates.EnableNodeOptionsEnvironmentVariable === "off" && fuseStates.OnlyLoadAppFromAsar === "on" && fuseStates.EnableEmbeddedAsarIntegrityValidation === "on", `Unexpected fuses: ${JSON.stringify(fuseStates)}`);
