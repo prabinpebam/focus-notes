@@ -205,6 +205,17 @@ describe("the Store target in the build configuration", () => {
     expect(desktop.scripts.dist).not.toMatch(/appx/);
   });
 
+  it("ships terms that keep Electron's Microsoft DirectX files under Microsoft's terms (D-271)", () => {
+    const terms = "build/license-terms.txt";
+    expect(desktop.build.extraResources).toContainEqual({ from: terms, to: "LICENSE.txt" });
+    expect(desktop.build.nsis.license).toBe(terms);
+    const text = read(`apps/desktop/${terms}`);
+    expect(text.startsWith(read("LICENSE").trimEnd())).toBe(true);
+    expect(text).toMatch(/d3dcompiler_47\.dll, dxcompiler\.dll, dxil\.dll\) are licensed\s+under Microsoft's terms/);
+    expect(text).toMatch(/^[\x00-\x7F]*$/);
+    expect(read("LICENSE")).not.toMatch(/DirectX/);
+  });
+
   it("holds the identity's obvious placeholders in build.appx, and the rest of the package's description", () => {
     expect(desktop.build.appx).toMatchObject({
       identityName: "Placeholder.FocusNotes", publisher: "CN=00000000-0000-0000-0000-000000000000",

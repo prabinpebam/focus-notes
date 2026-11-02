@@ -9,12 +9,12 @@
   "website": "https://prabinpebam.github.io/focus-notes/",
   "privacyPolicyUrl": "https://prabinpebam.github.io/focus-notes/privacy/",
   "supportUrl": "https://github.com/prabinpebam/focus-notes/issues",
-  "copyright": "© 2026 Prabin Pebam. MIT License.",
+  "copyright": "© 2026 Prabin Pebam. Focus Notes' own code is under the MIT License; the Microsoft DirectX files it includes are under Microsoft's terms.",
   "siteOnly": ["Pick a swatch to see one."],
   "about": [
     "Every note is a Markdown file in a folder you choose. Sign in with your own GitHub account and Focus Notes backs your notes up to your own repository, or keep them on this computer only.",
     "Rewrite selected words with a prompt or a preset. Connect an AI app you already run, an online service with your own API key, or GitHub Copilot, if you already use it in your terminal. Choose your default connection in Settings. Focus Notes does not install or run AI models; cloud services have their own terms and charges.",
-    "Free and open source, under the MIT License."
+    "Free and open source: Focus Notes' own code is under the MIT License. The Microsoft DirectX files it includes are under Microsoft's terms."
   ],
   "features": [
     "Works offline: notes are plain files on your computer, backed up to your own GitHub repository when you're online.",

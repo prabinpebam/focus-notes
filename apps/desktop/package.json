@@ -65,7 +65,7 @@
     },
     "extraResources": [
       { "from": "../../THIRD_PARTY_NOTICES.md", "to": "THIRD_PARTY_NOTICES.md" },
-      { "from": "../../LICENSE", "to": "LICENSE.txt" },
+      { "from": "build/license-terms.txt", "to": "LICENSE.txt" },
       { "from": "build/bin", "to": "bin" }
     ],
     "protocols": [
@@ -80,7 +80,8 @@
     "nsis": {
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "oneClick": false
+      "oneClick": false,
+      "license": "build/license-terms.txt"
     },
     "portable": {
       "splashImage": "build/portable-splash.bmp"

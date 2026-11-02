@@ -13,7 +13,7 @@
 | Privacy policy URL | https://prabinpebam.github.io/focus-notes/privacy/ |
 | Website | https://prabinpebam.github.io/focus-notes/ |
 | Support contact | https://github.com/prabinpebam/focus-notes/issues |
-| Copyright | © 2026 Prabin Pebam. MIT License. |
+| Copyright | © 2026 Prabin Pebam. Focus Notes' own code is under the MIT License; the Microsoft DirectX files it includes are under Microsoft's terms. |
 | System requirements | Windows 10 version 1809 or later, or Windows 11, on a 64-bit (x64) PC. |
 
 ## Short description
@@ -34,7 +34,7 @@
 >
 > Rewrite selected words with a prompt or a preset. Connect an AI app you already run, an online service with your own API key, or GitHub Copilot, if you already use it in your terminal. Choose your default connection in Settings. Focus Notes does not install or run AI models; cloud services have their own terms and charges.
 >
-> Free and open source, under the MIT License.
+> Free and open source: Focus Notes' own code is under the MIT License. The Microsoft DirectX files it includes are under Microsoft's terms.
 >
 > The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. There's no Focus Notes server and no Focus Notes account.
 >
