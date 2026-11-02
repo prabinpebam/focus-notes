@@ -7967,7 +7967,7 @@ DirectX Shader Compiler source: https://github.com/microsoft/DirectXShaderCompil
 
 ## Electron, Chromium and FFmpeg source and reciprocal licenses (D-269)
 
-The unmodified Electron 42.4.1 runtime carries a dynamically loaded, separately replaceable ffmpeg.dll under LGPL-2.1-or-later, plus Chromium code under MPL-2.0 and other licenses. This narrow repository-policy exception is proposed, not owner-approved; the owner must confirm it before Store submission. It does not authorize GPL-enabled FFmpeg, additional codec libraries or changes to these runtime components.
+The unmodified Electron 42.4.1 runtime carries a dynamically loaded, separately replaceable ffmpeg.dll under LGPL-2.1-or-later, plus Chromium code under MPL-2.0 and other licenses. This narrow repository-policy exception was accepted by the owner on 2 November 2026 (D-269). It does not authorize GPL-enabled FFmpeg, additional codec libraries or changes to these runtime components.
 
 Full license texts and copyright notices, including LGPL-2.1 and MPL-2.0, accompany the app in LICENSES.chromium.html; Electron's MIT text is in LICENSE.electron.txt. Keep both files and this notice with the runtime. Focus Notes does not prohibit reverse engineering for debugging modifications to LGPL components; the separately replaceable DLL must remain replaceable. MPL-covered source files remain under MPL-2.0. No modifications to those components are made by Focus Notes.
 

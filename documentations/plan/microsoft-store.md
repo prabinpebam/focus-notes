@@ -27,13 +27,13 @@ built on 1 November in `release\1.1.0` is superseded by the rebuild, never submi
 
 The [whole-payload license audit](gate-evidence.md#store-ai-copy-and-bundled-license-hold)
 leaves one question for the owner: Electron's `ffmpeg.dll` (LGPL) and Chromium's
-MPL-licensed parts sit outside the separate-Git exception, and D-269 proposes a
-narrow Electron-runtime exception for them. The owner confirms D-269 before the
-package is submitted. Don't remove Electron or its notices.
+MPL-licensed parts sit outside the separate-Git exception, and D-269 makes a
+narrow Electron-runtime exception for them, accepted by the owner on 2 November.
+Don't remove Electron or its notices.
 
 Electron's three Microsoft DirectX files may be redistributed under the Windows SDK
 terms; [each condition is checked](gate-evidence.md#directx-redistribution-conditions).
-D-271, applied in source and proposed for the owner to confirm, makes the package's
+D-271, accepted by the owner on 2 November, makes the package's
 `LICENSE.txt` and the installer's licence page `apps/desktop/build/license-terms.txt`:
 MIT for Focus Notes' own code, plus a clause keeping only the DirectX files under
 Microsoft's terms, leaving every other component's licence and the law's rights intact.

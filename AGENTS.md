@@ -71,7 +71,7 @@ Work runs on three kits, each owning one part and pinned at the repository's roo
      - The window stays draggable and takes the mouse in every state.
      - Direct manipulation is attached to the hand: a dragged window follows the pointer within a frame, with no queued moves (PRF-14, D-151).
      - Controls answer on pointer-down in the next frame, and the main process never blocks.
-7. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`). The one exception is the Microsoft Store package's own Git (GPL-2.0, a separate program the app starts, never linked; D-228).
+7. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`). The exceptions are the Microsoft Store package's own Git (GPL-2.0, a separate program the app starts, never linked; D-228) and the unmodified Electron runtime's separately replaceable FFmpeg DLL (LGPL-2.1+) and Chromium's MPL-2.0 code (D-269). Electron's Microsoft DirectX files ship under Microsoft's terms, stated in `apps/desktop/build/license-terms.txt` (D-271).
 8. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
 
 ## Working modes and throughput (D-113)
