@@ -32,12 +32,15 @@ narrow Electron-runtime exception for them. The owner confirms D-269 before the
 package is submitted. Don't remove Electron or its notices.
 
 Electron's three Microsoft DirectX files may be redistributed under the Windows SDK
-terms, and [every condition is met](gate-evidence.md#directx-redistribution-conditions).
-Since D-271 the package's `LICENSE.txt` and the installer's licence page are
-`apps/desktop/build/license-terms.txt`: MIT for Focus Notes' own code, plus a clause
-keeping the DirectX files under Microsoft's terms. In Partner Center, leave
-**Additional license terms** empty, so the Standard Application License Terms apply.
-A package built before D-271, including 1.1.0 r2, carries plain MIT until rebuilt.
+terms; [each condition is checked](gate-evidence.md#directx-redistribution-conditions).
+D-271, applied in source and proposed for the owner to confirm, makes the package's
+`LICENSE.txt` and the installer's licence page `apps/desktop/build/license-terms.txt`:
+MIT for Focus Notes' own code, plus a clause keeping only the DirectX files under
+Microsoft's terms, leaving every other component's licence and the law's rights intact.
+In Partner Center, leave **Additional license terms** empty, so the Standard
+Application License Terms apply. A package built before D-271, including 1.1.0 r2,
+carries plain MIT until rebuilt. What's fixed, held and the owner's is in the
+[release checklist](gate-evidence.md#store-1-1-0-release-checklist-live).
 
 The approved AI Rewrite and Settings runtime landed before this preparation, at
 `69a549d3bc2c4292da3ddccfc52f4dc882d1d4e6`, with its own

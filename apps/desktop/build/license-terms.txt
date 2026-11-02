@@ -25,5 +25,11 @@ Microsoft DirectX files
 The MIT License covers Focus Notes' own code. The Microsoft DirectX files
 included with it (d3dcompiler_47.dll, dxcompiler.dll, dxil.dll) are licensed
 under Microsoft's terms: use them only with Focus Notes on Windows, and don't
-reverse engineer, modify or redistribute them separately. Microsoft gives no
+reverse engineer them (except where applicable law permits it despite this
+limitation), modify them or redistribute them separately. Microsoft gives no
 warranty for them and has no liability for them.
+
+These limits apply only to those three files. They don't restrict any other
+component, which keeps its own license (see THIRD_PARTY_NOTICES.md,
+LICENSES.chromium.html and LICENSE.electron.txt), or any rights applicable
+law gives you.

@@ -212,6 +212,10 @@ describe("the Store target in the build configuration", () => {
     const text = read(`apps/desktop/${terms}`);
     expect(text.startsWith(read("LICENSE").trimEnd())).toBe(true);
     expect(text).toMatch(/d3dcompiler_47\.dll, dxcompiler\.dll, dxil\.dll\) are licensed\s+under Microsoft's terms/);
+    // The limits stop at those three files and keep the rights the law and other licenses give.
+    expect(text).toMatch(/except where applicable law permits it/);
+    expect(text).toMatch(/These limits apply only to those three files\. They don't restrict any other\s+component/);
+    expect(text).toMatch(/or any rights applicable\s+law gives you/);
     expect(text).toMatch(/^[\x00-\x7F]*$/);
     expect(read("LICENSE")).not.toMatch(/DirectX/);
   });
