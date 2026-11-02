@@ -259,10 +259,10 @@ export const SelectionGhost = Extension.create<{ className: string }>({
       state: {
         init: () => ({ on: false, from: 0, to: 0 }),
         apply: (tr, g) => {
-          const on = tr.getMeta(ghostKey) as boolean | undefined;
-          if (on) return { on, from: tr.selection.from, to: tr.selection.to };
+          const meta = tr.getMeta(ghostKey) as { on: boolean; capture: boolean } | undefined;
+          if (meta?.on && meta.capture) return { on: true, from: tr.selection.from, to: tr.selection.to };
           const from = tr.mapping.map(g.from, 1), to = Math.max(from, tr.mapping.map(g.to, -1));
-          return { on: on ?? g.on, from, to };
+          return { on: meta ? meta.on : g.on, from, to };
         },
       },
       props: {
@@ -275,11 +275,17 @@ export const SelectionGhost = Extension.create<{ className: string }>({
     })];
   },
 });
-export function setSelectionGhost(editor: Editor, on: boolean): void {
-  if (ghostKey.getState(editor.state)?.on === on) return;
+/**
+ * Shows or hides the ghost. With `capture` (the default when turning it on), it takes the current
+ * selection as its range, even when already on; without it, it only shows or hides the range it holds,
+ * so a late effect can't swap it for a selection that reads back collapsed once the field has focus (DEF-41).
+ */
+export function setSelectionGhost(editor: Editor, on: boolean, capture = on): void {
+  const take = on && capture;
+  if (ghostKey.getState(editor.state)?.on === on && !take) return;
   // Runs from an effect as the link editor closes: read any selection the keys just made first.
   syncSelection(editor);
-  editor.view.dispatch(editor.state.tr.setMeta(ghostKey, on).setMeta("addToHistory", false));
+  editor.view.dispatch(editor.state.tr.setMeta(ghostKey, { on, capture: take }).setMeta("addToHistory", false));
 }
 /** The range the link editor was opened on (its start, for a caret), kept as the note changes. */
 export function ghostRange(state: EditorState): { from: number; to: number } | null {

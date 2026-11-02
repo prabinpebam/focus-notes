@@ -177,6 +177,9 @@ export function EditorSurface({
   const rewriteRef = useRef({ onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect });
   rewriteRef.current = { onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect };
   const rewriteTarget = useRef<RewriteCapture | undefined>(undefined);
+  // Set once Mod+K has taken the link editor's range; the open and close effects then only show or hide
+  // it, so one arriving late can't retake a selection that reads back collapsed (DEF-41).
+  const linkCaptured = useRef(false);
   const rewriteStream = useRef<RewriteStream | undefined>(undefined);
   const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
   formatRef.current = { onFormat, onLinkEdit, onOpenLink, onPasteNotice };
@@ -445,7 +448,7 @@ export function EditorSurface({
   }, [editor]);
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    setSelectionGhost(editor, Boolean(linkEditing || rewriteTarget.current));
+    setSelectionGhost(editor, Boolean(linkEditing || rewriteTarget.current), !linkCaptured.current && !rewriteTarget.current);
     tracker.current?.holdSelection(Boolean(linkEditing));
   }, [editor, linkEditing]);
   // A press anywhere in the note while the link editor is open puts it away (EDT-13): the press then
@@ -540,7 +543,7 @@ export function EditorSurface({
     const releaseCapture = () => {
       rewriteTarget.current = undefined;
       anchors.set("rewrite", null);
-      setSelectionGhost(editor, Boolean(linkEditing));
+      setSelectionGhost(editor, Boolean(linkEditing), !linkCaptured.current);
     };
     const domRange = (fromPos: number, toPos: number) => {
       const from = editor.view.domAtPos(fromPos), to = editor.view.domAtPos(toPos);
@@ -752,7 +755,10 @@ export function EditorSurface({
           // Read the selection a drag just made, then the ghost takes it now, while the note still has
           // focus; read in the effect once the field has it, it could come back collapsed and Apply
           // inserted the address (DEF-31).
-          if (formatRef.current.onLinkEdit) setSelectionGhost(editor, true);
+          if (formatRef.current.onLinkEdit) {
+            setSelectionGhost(editor, true);
+            linkCaptured.current = true;
+          }
           const info = formatState(editor.state);
           formatRef.current.onLinkEdit?.({ href: info.link?.href ?? "", selected: !editor.state.selection.empty });
           return true;

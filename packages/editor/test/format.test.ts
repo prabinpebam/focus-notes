@@ -208,6 +208,22 @@ describe("links (EDT-13)", () => {
     expect(ghostRange(editor.state)).toEqual({ from: editor.state.selection.from, to: editor.state.selection.from });
   });
 
+  it("a late show or hide keeps the range Mod+K took, and Mod+K retakes it while shown (DEF-41)", () => {
+    const { editor } = open("Read the docs and the guide\n");
+    const text = () => { const r = ghostRange(editor.state)!; return editor.state.doc.textBetween(r.from, r.to); };
+    select(editor, "docs");
+    setSelectionGhost(editor, true);
+    // The close effect of an earlier editor, then its open effect, arrive once the field has focus.
+    editor.commands.setTextSelection(1);
+    setSelectionGhost(editor, false, false);
+    setSelectionGhost(editor, true, false);
+    expect(text()).toBe("docs");
+    // Mod+K on another selection while the ghost still shows takes the new range.
+    select(editor, "guide");
+    setSelectionGhost(editor, true);
+    expect(text()).toBe("guide");
+  });
+
   it("inserts a new link at the caret with its text, or the address as text", () => {
     const { editor, md } = open("Go\n");
     editor.commands.focus("end");
