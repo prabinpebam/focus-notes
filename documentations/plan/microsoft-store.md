@@ -38,8 +38,9 @@ D-271, accepted by the owner on 2 November, makes the package's
 MIT for Focus Notes' own code, plus a clause keeping only the DirectX files under
 Microsoft's terms, leaving every other component's licence and the law's rights intact.
 In Partner Center, leave **Additional license terms** empty, so the Standard
-Application License Terms apply. A package built before D-271, including 1.1.0 r2,
-carries plain MIT until rebuilt. What's fixed, held and the owner's is in the
+Application License Terms apply. The final package, built once from green `main` on
+2 November with these terms, is `release\1.1.0-r3`; the 1.1.0 and 1.1.0 r2 packages are
+superseded and never submitted. What's fixed and what's the owner's is in the
 [release checklist](gate-evidence.md#store-1-1-0-release-checklist-live).
 
 The approved AI Rewrite and Settings runtime landed before this preparation, at
@@ -51,7 +52,7 @@ Preparing a package does **not** authorize a tag, public release, Store upload o
 | --- | --- |
 | Version | Desktop **1.1.0**, MSIX **1.1.0.0**, x64. The installed Store app is 1.0.3.0; the observed latest stable GitHub release is v1.0.2. The root package's 0.0.0 is tooling, not the desktop version. |
 | Version reservation | **Owner:** confirm 1.1.0.0 exceeds the highest package version already submitted in Partner Center. Installed and public versions do not prove that value. No Store account was accessed during preparation. |
-| Package | Use `dist:store --require-identity --publish never` with the real repository identity variables. Keep the output in `focus-notes-work\release\1.1.0`, alongside its checksum, manifest evidence, listing and `whats-new.txt`. Build from the frozen release source; its exact version/build head must pass Windows CI before landing. |
+| Package | Use `dist:store --require-identity --publish never` with the real repository identity variables. Keep the output in a new release folder alongside its checksum, manifest evidence, listing and `whats-new.txt`; the final 1.1.0 package is `focus-notes-work\release\1.1.0-r3` (`1.1.0` and `1.1.0-r2` are superseded). Build from the frozen release source; its exact version/build head must pass Windows CI before landing. |
 | Privacy and listing | The canonical [privacy statement](../../site/privacy.md) and [listing source](../../store/listing.json) now describe optional selected-text and prompt transfer to the chosen AI connection, cloud routing and provider terms. Regenerate `store/listing.en-US.md`; never edit that output by hand. |
 | Age rating | **Owner:** reassess the current IARC questionnaire for AI-generated text and third-party processing. Do not reuse “nothing is shared”, assume provider filtering, or claim the old 3+ prediction is verified. |
 | Local validation | Check the unsigned package's manifest, contents and unpacked normal UI with synthetic notes. Do not install an update over the owner's app, change its certificate identity or trust store, or treat an unpacked smoke test as Store installation/certification. |

@@ -22,8 +22,8 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 #### Store 1.1.0 release checklist (live)
 
-Kept current on 2 November against the receipts in `focus-notes-work\release\1.1.0-r2` and the
-`fix-dx-terms` branch. *Fixed*: in source with its focused check passed. *Pending*: technical, still to
+Kept current on 2 November against the receipts in `focus-notes-work\release\1.1.0-r3` (the final
+package; r2 and r1 are superseded). *Fixed*: in source with its focused check passed. *Pending*: technical, still to
 run. *Owner*: only the owner can do it. Package preparation isn't Store approval.
 
 | Item | Status | Evidence or next step |
@@ -34,11 +34,11 @@ run. *Owner*: only the owner can do it. Package preparation isn't Store approval
 | Runtime notices, FFmpeg source pointers and codec scope | Fixed | r2 notices check; `THIRD_PARTY_NOTICES.md` D-269 section |
 | DirectX attribution and redistribution conditions | Fixed | [DirectX redistribution conditions](#directx-redistribution-conditions) |
 | DirectX end-user terms: the package's `LICENSE.txt`, the installer's licence page and the listing; limits scoped to the three files | Fixed; D-271 accepted by the owner (2 November 13:02) | `apps/desktop/build/license-terms.txt`; `tools/test/store-release.test.mjs` |
-| EDT-13 link race that failed `fix-dx-terms` CI shard 2 (DEF-41) | Fixed | `packages/editor/test/format.test.ts`; the final candidate's CI |
+| EDT-13 link race that failed `fix-dx-terms` CI shard 2 (DEF-41) | Fixed | `packages/editor/test/format.test.ts`; shard 2 green in the final candidate's CI |
 | Listing, privacy and terms agree | Fixed | Privacy statement unchanged since r2; listing differs from r2 only in its two licence lines; README's MIT names the repository's code |
 | D-269, the narrow Electron runtime exception (FFmpeg LGPL, Chromium MPL) | Accepted | The owner, 2 November 13:02: "Okay, consider the pending stuff approved", covering D-269 and D-271 |
-| Final candidate: push, exact-head Windows CI, land on `main` | In progress | One push of the consolidated `fix-dx-terms` head; its CI run and result go in the r3 receipt |
-| Final package `release\1.1.0-r3`, same version 1.1.0.0 | Pending | Built once from the green landed head. r2 carries plain MIT and predates DEF-41, so it's superseded |
+| Final candidate: push, exact-head Windows CI, land on `main` | Fixed | `8be6c066`: exact-head CI [41407737491](https://github.com/prabinpebam/focus-notes/actions/runs/41407737491) green on all jobs (shard 2 included); `main` fast-forwarded to it |
+| Final package `release\1.1.0-r3`, same version 1.1.0.0 | Fixed | Built once from `8be6c066`. MSIX SHA256 `33f84e83…a58ab4`; identity, both absence guards, notices and the shipped D-271 `LICENSE.txt` verified; one scoped packaged smoke passed (`release\1.1.0-r3\artifact-receipt.txt`). r1 and r2 are marked superseded. Prepared, not Store-approved |
 | Highest submitted Partner Center version; IARC for AI content | **Owner** | Before submission |
 | Publish the privacy update, upload, submit | **Owner** | No agent does these |
 | macOS and Linux | Not applicable | Not in this Windows Store release; the DirectX files aren't in their Electron distributions |
