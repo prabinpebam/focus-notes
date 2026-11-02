@@ -47,6 +47,7 @@ describe("Copilot CLI through the official SDK and a stdio protocol fake", () =>
     expect(create.state).not.toBe(process.env.COPILOT_HOME);
     await expect(readFile(join(create.state, "config.json"))).rejects.toMatchObject({ code: "ENOENT" });
     expect(seen.find((s) => s.method === "session.options.update")?.params).toMatchObject({ installedPlugins: [], includedBuiltinSkills: [] });
+    expect(seen.some((s) => s.method.startsWith("plugins.") || s.method.startsWith("session.plugins."))).toBe(false);
     expect(seen.findIndex((s) => s.method === "session.tools.getCurrentMetadata")).toBeLessThan(seen.findIndex((s) => s.method === "session.send"));
     expect(seen.some((s) => s.method === "runtime.shutdown")).toBe(true);
   });

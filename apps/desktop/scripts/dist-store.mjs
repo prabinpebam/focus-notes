@@ -42,7 +42,12 @@ export function storeVersionProblem(version) {
 
 /** The build configuration for the Store package: package.json's, with the bundled Git as a resource at `git`. */
 export function storeConfig(build = pkg.build, gitDir = VENDOR_DIR) {
-  return { ...build, extraResources: [...(build.extraResources ?? []), { from: relative(root, gitDir).replaceAll("\\", "/"), to: "git" }] };
+  return {
+    ...build,
+    // Copilot uses an explicit external CLI over stdio, never the SDK's native fallback or FFI.
+    files: [...(build.files ?? []), "!node_modules/@github/copilot-sdk-*/**", "!node_modules/@koromix/**", "!node_modules/koffi/**"],
+    extraResources: [...(build.extraResources ?? []), { from: relative(root, gitDir).replaceAll("\\", "/"), to: "git" }],
+  };
 }
 
 /** The `-c.appx.*` overrides the environment asks for, and whether the identity is still a placeholder. */

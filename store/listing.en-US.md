@@ -32,7 +32,7 @@
 >
 > Every note is a Markdown file in a folder you choose. Sign in with your own GitHub account and Focus Notes backs your notes up to your own repository, or keep them on this computer only.
 >
-> Rewrite selected words with a prompt or a preset. Connect an AI app you already run, an online service with your own API key, or a supported GitHub Copilot CLI already installed and signed in. Choose your default connection in Settings. Focus Notes does not install or run AI models; cloud services have their own terms and charges.
+> Rewrite selected words with a prompt or a preset. Connect an AI app you already run, an online service with your own API key, or GitHub Copilot, if you already use it in your terminal. Choose your default connection in Settings. Focus Notes does not install or run AI models; cloud services have their own terms and charges.
 >
 > Free and open source, under the MIT License.
 >
@@ -112,7 +112,7 @@ Expected: Not verified for 1.1.0. The owner must complete the current IARC quest
 >
 > - This site has no analytics, no cookies and no counters. Every page, font and picture comes from this site, and nothing is loaded from any other.
 > - The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. There's no Focus Notes server and no Focus Notes account.
-> - AI connections may run on this computer or use the cloud. Check the service, model and locality before generating; even an app on this computer can route to a cloud model. GitHub Copilot uses the cloud through a supported CLI you already installed and signed in to. Focus Notes does not install or run AI models. Online services have their own privacy terms, retention rules and charges.
+> - AI connections may run on this computer or use the cloud. Check the service, model and locality before generating; even an app on this computer can route to a cloud model. GitHub Copilot uses the cloud through the supported CLI you already use in your terminal, with its existing login. Focus Notes does not install or run AI models. Online services have their own privacy terms, retention rules and charges.
 > - Your choice to send is made when you select words and choose Generate. There is no separate first-send permission dialog or private-note block: selected private words can also go to the chosen connection. Check the selection and connection before generating. Connection tests send a short made-up message, never your notes.
 > - Your private notes stay in your own private GitHub repository. Only sealed copies are published, and only the people you choose can open them.
 > - Feedback goes through GitHub issues you write yourself, in public. Nothing is sent without you.

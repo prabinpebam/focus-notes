@@ -9,6 +9,28 @@ How to publish Focus Notes to the Microsoft Store by hand now, and optionally au
 
 ### Proposed 1.1.0 update
 
+**Store 1.1.0 rebuild (remedy B), 2 November.** The first Store rejection was about
+promoting software installed from outside the Store (D-228 fixed it by bundling Git).
+For 1.1.0 the owner approved two remedies:
+
+- **Copy:** messages, Help and the listing no longer suggest installing an AI tool,
+  and a static guard checks every locale and every AI-bound view.
+- **Payload (B):** the Store package leaves out the Copilot SDK's native runtime, its
+  browser and computer-use plugins and its FFI libraries. Copilot on this computer
+  keeps working through the Copilot CLI the person already has; the app starts that
+  CLI and never the SDK's own runtime. `store-manifest.mjs` fails a package whose
+  `app.asar` carries any of those files.
+
+Git Credential Manager's broker files, which may not be redistributed, are left out
+too, and its broker stays off (D-270). The version stays **1.1.0.0**. The package
+built on 1 November in `release\1.1.0` is superseded by the rebuild, never submitted.
+
+The [whole-payload license audit](gate-evidence.md#store-ai-copy-and-bundled-license-hold)
+leaves one question for the owner: Electron's `ffmpeg.dll` (LGPL) and Chromium's
+MPL-licensed parts sit outside the separate-Git exception, and D-269 proposes a
+narrow Electron-runtime exception for them. The owner confirms D-269 before the
+package is submitted. Don't remove Electron or its notices.
+
 The approved AI Rewrite and Settings runtime landed before this preparation, at
 `69a549d3bc2c4292da3ddccfc52f4dc882d1d4e6`, with its own
 [green Windows CI](https://github.com/prabinpebam/focus-notes/actions/runs/41327910905).

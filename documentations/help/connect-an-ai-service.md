@@ -12,7 +12,7 @@ Set up the AI service that rewrites your words: a server on this computer, GitHu
 **Before you start:** you need one of these:
 
 - an AI app running on this computer, like Ollama or LM Studio, with a model in it;
-- or a supported GitHub Copilot CLI already installed and signed in;
+- or GitHub Copilot, if you already use it in your terminal;
 - or an account with an online AI service, like OpenAI or Anthropic, and an API key from it. An API key is a long code the service gives you so it knows the requests are yours.
 
 Focus Notes doesn't install or run AI models. It connects to a service you already have.
@@ -84,7 +84,7 @@ Use **Find on this PC**, with one explanation: **Scans this PC for running AI se
 - "Couldn't reach the service." Start the app on this computer, or check that you're online. Then test again.
 - "The service refused the key." Paste the key again, then select **Save connection**.
 - "The server doesn't have that model." Select **Find models** and choose one it has.
-- Copilot not found: install or restore it yourself, then select **Find on this PC**. Focus Notes does not install it.
+- Copilot not found: choose another connection.
 - Copilot not signed in: sign in in your normal terminal, then look again.
 - Copilot quota reached: check your Copilot plan or allowance, then try again. Your original words stay unchanged.
 

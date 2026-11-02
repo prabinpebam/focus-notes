@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
-import { BUNDLED_GIT_FILES, bundledGitProblems, checkManifest, readManifest, readZipEntry, redistributionProblems, zipEntryNames } from "../release/store-manifest.mjs";
+import { BUNDLED_GIT_FILES, bundledGitProblems, checkManifest, copilotPayloadProblems, readManifest, readZipEntry, redistributionProblems, zipEntryNames } from "../release/store-manifest.mjs";
 import { identityArgs, storeConfig, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
 import { LIMITS, buildListing, overLimits, renderListing, screenshotProblems } from "../release/store-listing.mjs";
 
@@ -102,6 +102,24 @@ ${read("apps/desktop/build/appx-extensions.xml")}
 </Package>`;
 
 describe("the package's manifest, read back (store-manifest.mjs)", () => {
+  it("rejects forbidden packed and unpacked native/plugin ASAR paths, not just license labels", () => {
+    const archive = (files) => {
+      const header = Buffer.from(JSON.stringify({ files }));
+      const prefix = Buffer.alloc(16);
+      prefix.writeUInt32LE(header.length, 12);
+      return Buffer.concat([prefix, header]);
+    };
+    const main = { out: { files: { main: { files: { "main.mjs": { size: 1 } } } } } };
+    expect(copilotPayloadProblems(archive(main))).toEqual([]);
+    expect(copilotPayloadProblems(archive({ ...main, node_modules: { files: {
+      "@github": { files: { "copilot-sdk-win32-x64": { files: {
+        "OneAuthInterop.dll": { size: 1, unpacked: true },
+        "browser-use": { files: { "activate.mjs": { size: 1 } } },
+      } } } },
+    } } }))).toHaveLength(2);
+    expect(copilotPayloadProblems(undefined)).toEqual(["The package has no readable app.asar."]);
+    expect(copilotPayloadProblems(archive({}))).toEqual(["The ASAR has no desktop main entry."]);
+  });
   it("reads AppxManifest.xml from a stored, a deflated and a zip64 archive", () => {
     const dir = mkdtempSync(join(tmpdir(), "fn-store-"));
     for (const [i, [method, zip64]] of [[0, false], [8, false], [8, true]].entries()) {
@@ -206,6 +224,18 @@ describe("the Store target in the build configuration", () => {
     expect(read(".gitignore")).toMatch(/^apps\/desktop\/vendor\/$/m);
   });
 
+  it("PKG-13: excludes unused Copilot platform runtimes and plugins from the Store payload", () => {
+    const config = storeConfig(desktop.build, join(root, "apps", "desktop", "vendor", "git"));
+    expect(config.files).toContain("!node_modules/@github/copilot-sdk-*/**");
+    expect(config.files).toContain("!node_modules/@koromix/**");
+    expect(config.files).toContain("!node_modules/koffi/**");
+    expect(config.files).toEqual(expect.arrayContaining(desktop.build.files));
+    const adapter = read("apps/desktop/src/main/ai-copilot.ts");
+    expect(adapter).toContain("if (!binary) throw new AiError(\"cli-missing\")");
+    expect(adapter).toContain("RuntimeConnection.forStdio({ path: binary.path");
+    expect(adapter).toContain('mode: "empty"');
+    expect(adapter).not.toContain("RuntimeConnection.forInProcess");
+  });
 
   it("refuses, before building, a release build with the placeholders or a 0.x version", () => {
     const run = (env, ...args) => spawnSync(process.execPath, [join(root, "apps/desktop/scripts/dist-store.mjs"), "--require-identity", ...args], { env: { ...process.env, MSSTORE_IDENTITY_NAME: "", MSSTORE_PUBLISHER: "", ...env }, encoding: "utf8" });

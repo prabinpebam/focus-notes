@@ -147,6 +147,26 @@ export function bundledGitProblems(has) {
   return BUNDLED_GIT_FILES.filter((name) => !has(name)).map((name) => `The package has no ${name}: the Store package carries Git (PKG-13).`);
 }
 
+/** ASAR includes unpacked files in its header too, so native exclusions cover both payloads. */
+export function copilotPayloadProblems(archive) {
+  if (!archive || archive.length < 16) return ["The package has no readable app.asar."];
+  const length = archive.readUInt32LE(12);
+  if (length > archive.length - 16) return ["The package has a truncated ASAR header."];
+  const header = JSON.parse(archive.toString("utf8", 16, 16 + length));
+  if (!header.files || typeof header.files !== "object") return ["The ASAR header has no files."];
+  const paths = [];
+  const walk = (files, prefix) => {
+    for (const [name, entry] of Object.entries(files)) {
+      const path = prefix ? `${prefix}/${name}` : name;
+      if (entry.files) walk(entry.files, path);
+      else paths.push(path);
+    }
+  };
+  walk(header.files, "");
+  if (!paths.includes("out/main/main.mjs")) return ["The ASAR has no desktop main entry."];
+  return paths.filter((path) => /(?:^|\/)(?:@github\/copilot-sdk-(?:win32|darwin|linux)|@koromix\/|koffi\/|OneAuthInterop|browser-use\/|computer-use\/)/i.test(path))
+    .map((path) => `The Store package contains an unused Copilot native/FFI/plugin asset: ${path}.`);
+}
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = process.argv[2];
@@ -173,6 +193,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ...checkManifest(xml, { identityName: env.MSSTORE_IDENTITY_NAME || undefined, publisher: env.MSSTORE_PUBLISHER || undefined }),
     ...bundledGitProblems((name) => readZipEntry(file, name) !== undefined),
     ...redistributionProblems(zipEntryNames(file)),
+    ...copilotPayloadProblems(readZipEntry(file, "app/resources/app.asar")),
   ];
   const m = readManifest(xml);
   console.log(`${file}: ${m.identityName} ${m.version} ${m.architecture}, ${m.publisher}; protocol ${m.protocols.join(", ")}; alias ${m.aliases.join(", ")}; ${m.capabilities.join(", ")}.`);
