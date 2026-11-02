@@ -5,7 +5,7 @@
  * system's `git` from PATH runs as before (D-22).
  */
 import { existsSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { isAbsolute, join, posix } from "node:path";
 
 export interface GitBundle {
   /** The bundle's folder: `cmd`, `etc`, `ucrt64`, `usr`. */
@@ -41,6 +41,27 @@ export function findGitBundle(
     if (existsSync(git)) return { root, git, cmdDir: join(root, "cmd") };
   }
   return undefined;
+}
+
+/** Where Apple's `/usr/bin/git` finds a real Git: the selected developer folder, then the usual ones. */
+const APPLE_DEVELOPER_DIRS = ["/var/db/xcode_select_link", "/Library/Developer/CommandLineTools", "/Applications/Xcode.app/Contents/Developer"];
+
+/**
+ * Whether `git` would be Apple's stand-in with no developer tools behind it (D-268). On a Mac
+ * without the Command Line Tools, `/usr/bin/git` doesn't run Git: it opens the system's offer to
+ * download them. Git is optional (local notes never need it), so this counts as Git not installed
+ * and nothing is started; the first run's Git step explains the choice instead.
+ */
+export function appleGitShimWithoutTools(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+  exists: (path: string) => boolean = existsSync,
+): boolean {
+  if (platform !== "darwin") return false;
+  const first = (env.PATH ?? "").split(":").filter(Boolean).map((dir) => posix.join(dir, "git")).find((path) => exists(path));
+  if (first !== "/usr/bin/git") return false;
+  const dirs = [env.DEVELOPER_DIR?.trim(), ...APPLE_DEVELOPER_DIRS].filter((d): d is string => Boolean(d));
+  return !dirs.some((dir) => exists(posix.join(dir, "usr", "bin", "git")));
 }
 
 let cached: GitBundle | null | undefined;

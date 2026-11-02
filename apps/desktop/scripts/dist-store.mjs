@@ -40,12 +40,14 @@ export function storeVersionProblem(version) {
   return undefined;
 }
 
+/** Copilot uses an explicit external CLI over stdio, never the SDK's native fallback or FFI: no package carries them. */
+export const COPILOT_NATIVE_EXCLUDES = ["!node_modules/@github/copilot-sdk-*/**", "!node_modules/@koromix/**", "!node_modules/koffi/**"];
+
 /** The build configuration for the Store package: package.json's, with the bundled Git as a resource at `git`. */
 export function storeConfig(build = pkg.build, gitDir = VENDOR_DIR) {
   return {
     ...build,
-    // Copilot uses an explicit external CLI over stdio, never the SDK's native fallback or FFI.
-    files: [...(build.files ?? []), "!node_modules/@github/copilot-sdk-*/**", "!node_modules/@koromix/**", "!node_modules/koffi/**"],
+    files: [...(build.files ?? []), ...COPILOT_NATIVE_EXCLUDES],
     extraResources: [...(build.extraResources ?? []), { from: relative(root, gitDir).replaceAll("\\", "/"), to: "git" }],
   };
 }

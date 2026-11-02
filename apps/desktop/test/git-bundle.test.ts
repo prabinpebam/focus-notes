@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { bundleEnv, findGitBundle, type GitBundle } from "../src/main/git/bundle.ts";
+import { appleGitShimWithoutTools, bundleEnv, findGitBundle, type GitBundle } from "../src/main/git/bundle.ts";
 import { createRunner } from "../src/main/git/run.ts";
 
 /** A folder shaped like the bundle: `cmd\git.exe` (empty: these tests never start it). */
@@ -89,5 +89,31 @@ describe("PKG-13: the runner uses the bundled Git", () => {
     const files = (dir: string): string[] => readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? files(join(dir, n)) : n.endsWith(".ts") ? [join(dir, n)] : []));
     const offenders = files(src).filter((f) => /createRunner\(\{[^)]*\bgit:/.test(readFileSync(f, "utf8")));
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("D-268: Apple's stand-in git with no developer tools counts as Git not installed", () => {
+  const files = (...paths: string[]) => (p: string) => paths.includes(p);
+  const finder = { PATH: "/usr/bin:/bin:/usr/sbin:/sbin" };
+  it("only on a Mac whose first git on PATH is /usr/bin/git and no developer folder has Git", () => {
+    expect(appleGitShimWithoutTools(finder, "darwin", files("/usr/bin/git"))).toBe(true);
+    for (const tools of ["/var/db/xcode_select_link/usr/bin/git", "/Library/Developer/CommandLineTools/usr/bin/git", "/Applications/Xcode.app/Contents/Developer/usr/bin/git"])
+      expect(appleGitShimWithoutTools(finder, "darwin", files("/usr/bin/git", tools)), tools).toBe(false);
+    expect(appleGitShimWithoutTools({ ...finder, DEVELOPER_DIR: "/opt/dev" }, "darwin", files("/usr/bin/git", "/opt/dev/usr/bin/git"))).toBe(false);
+    // Another Git first on PATH (Homebrew's), no git at all, or not a Mac: Git runs as before.
+    expect(appleGitShimWithoutTools({ PATH: "/opt/homebrew/bin:/usr/bin" }, "darwin", files("/opt/homebrew/bin/git", "/usr/bin/git"))).toBe(false);
+    expect(appleGitShimWithoutTools(finder, "darwin", files())).toBe(false);
+    for (const platform of ["win32", "linux"] as const) expect(appleGitShimWithoutTools(finder, platform, files("/usr/bin/git"))).toBe(false);
+  });
+  it("the runner starts nothing then and answers as a missing Git, and starts Git once the tools are there", async () => {
+    const spawned: string[][] = [];
+    let tools = false;
+    const exists = (p: string) => p === "/usr/bin/git" || (tools && p === "/Library/Developer/CommandLineTools/usr/bin/git");
+    const run = createRunner({ env: finder, bundle: null, here: true, platform: "darwin", exists, onSpawn: (args) => spawned.push(args) });
+    expect(await run({ cwd: tmpdir(), args: ["--version"] })).toEqual({ code: -1, stdout: "", stderr: "\nENOENT" });
+    expect(spawned).toEqual([]);
+    tools = true;
+    await run({ cwd: tmpdir(), args: ["--version"] });
+    expect(spawned).toHaveLength(1);
   });
 });

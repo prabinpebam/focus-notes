@@ -1,0 +1,129 @@
+name: Mac review DMGs
+# D-268: unsigned (ad-hoc) DMGs for trying the app on a Mac, one per architecture, built and
+# proved on a Mac of that architecture. Never a release: no tag, no publishing, no Apple identity.
+on:
+  workflow_dispatch:
+  push:
+    branches: [mac-review-*]
+permissions:
+  contents: read
+concurrency:
+  group: mac-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      npm_config_registry: https://packagefeedproxy.microsoft.io/npm/
+      BUILD_ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Verify approved package routing and install pinned pnpm
+        run: |
+          set -euo pipefail
+          echo "EVIDENCE=$RUNNER_TEMP/mac-review/evidence" >> "$GITHUB_ENV"
+          test "$(npm config get registry)" = "https://packagefeedproxy.microsoft.io/npm/"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const lock = readFileSync('pnpm-lock.yaml', 'utf8');
+          const urls = [...lock.matchAll(/tarball:\s*(https:\/\/[^\s}]+)/g)].map(m => new URL(m[1]));
+          for (const url of urls) {
+            if (!['packagefeedproxy.microsoft.io', 'ms-feed-25.pkgs.visualstudio.com'].includes(url.hostname))
+              throw new Error(`Unapproved lockfile source host: ${url.hostname}`);
+          }
+          NODE
+          npm install --global pnpm@10.28.2 --registry=https://packagefeedproxy.microsoft.io/npm/
+          test "$(pnpm config get registry)" = "https://packagefeedproxy.microsoft.io/npm/"
+      - name: Restore frozen dependencies
+        timeout-minutes: 10
+        run: pnpm install --frozen-lockfile
+      - name: Build the desktop app
+        run: |
+          node packages/tokens/build.mjs
+          pnpm --filter @focus-notes/desktop run build
+      - name: Package the ${{ matrix.arch }} DMG (ad-hoc signed, no Copilot native payload)
+        timeout-minutes: 15
+        working-directory: apps/desktop
+        run: node scripts/dist-mac.mjs "--$BUILD_ARCH"
+      - name: Verify the DMG, inspect the app, and install it as a person would
+        working-directory: apps/desktop
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE"
+          dmg="$(find release -maxdepth 1 -name "*-$BUILD_ARCH.dmg" -print -quit)"
+          test -n "$dmg"
+          echo "DMG=$PWD/$dmg" >> "$GITHUB_ENV"
+          hdiutil verify "$dmg" 2>&1 | tee "$EVIDENCE/hdiutil-verify.txt"
+          mount="$RUNNER_TEMP/mac-review/mount"
+          mkdir -p "$mount"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$dmg"
+          trap 'hdiutil detach "$mount" || hdiutil detach -force "$mount"' EXIT
+          ls -la "$mount" | tee "$EVIDENCE/dmg-contents.txt"
+          app="$(find "$mount" -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$app"
+          node scripts/mac-inspect.mjs "$app" "$BUILD_ARCH" "$EVIDENCE"
+          # As a person installs it: copied out of the DMG into an Applications folder.
+          installed="$RUNNER_TEMP/mac-review/Applications"
+          mkdir -p "$installed"
+          ditto "$app" "$installed/$(basename "$app")"
+          codesign --verify --deep --strict "$installed/$(basename "$app")"
+          echo "INSTALLED_APP=$installed/$(basename "$app")" >> "$GITHUB_ENV"
+      - name: Open the installed app with a fresh profile, reach writing, save a note
+        timeout-minutes: 8
+        working-directory: apps/desktop
+        run: |
+          set -euo pipefail
+          exe="$INSTALLED_APP/Contents/MacOS/$(plutil -extract CFBundleExecutable raw "$INSTALLED_APP/Contents/Info.plist")"
+          node scripts/mac-smoke.mjs "$exe" "$EVIDENCE/smoke"
+      - name: Collect the review artifact
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          EVIDENCE="${EVIDENCE:-$RUNNER_TEMP/mac-review/evidence}"
+          out="$RUNNER_TEMP/mac-review/artifact"
+          mkdir -p "$out"
+          cp -R "$EVIDENCE" "$out/evidence-$BUILD_ARCH" || true
+          if [ -n "${DMG:-}" ] && [ -f "$EVIDENCE/smoke/smoke.json" ] && node -e "process.exit(require(process.argv[1]).passed && require(process.argv[2]).passed ? 0 : 1)" "$EVIDENCE/inspect.json" "$EVIDENCE/smoke/smoke.json"; then
+            version="$(node -p "require('./apps/desktop/package.json').version")"
+            name="Focus-Notes-$version-macos-$BUILD_ARCH-review-${SOURCE_SHA:0:8}.dmg"
+            cp "$DMG" "$out/$name"
+            (cd "$out" && shasum -a 256 "$name" > "$name.sha256")
+            node -e '
+              const i = require(process.argv[1]), s = require(process.argv[2]);
+              console.log(JSON.stringify({ source: process.argv[3], run: process.argv[4], architecture: process.argv[5], dmg: process.argv[6],
+                minimumMacos: i.minimumMacos, signature: "ad-hoc (no Apple identity), not notarized", inspect: i.checks, smoke: s.checks,
+                runner: s.runs?.[0]?.userAgent }, null, 2));' \
+              "$EVIDENCE/inspect.json" "$EVIDENCE/smoke/smoke.json" "$SOURCE_SHA" "$RUN_ID" "$BUILD_ARCH" "$name" > "$out/receipt-$BUILD_ARCH.json"
+            cat "$out/receipt-$BUILD_ARCH.json" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No verified DMG for $BUILD_ARCH: evidence only." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: mac-review-${{ matrix.arch }}-${{ github.sha }}
+          path: ${{ runner.temp }}/mac-review/artifact/
+          if-no-files-found: error
+          retention-days: 14

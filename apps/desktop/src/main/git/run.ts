@@ -5,7 +5,7 @@
  */
 import { execFile } from "node:child_process";
 import { Worker } from "node:worker_threads";
-import { bundleEnv, gitBundle, type GitBundle } from "./bundle.ts";
+import { appleGitShimWithoutTools, bundleEnv, gitBundle, type GitBundle } from "./bundle.ts";
 
 export interface GitCall {
   /** The repository's folder, passed as `-C`. */
@@ -161,11 +161,13 @@ function gitSpawner(): { post(s: Spawn): Promise<GitResult> } | undefined {
  * PATH. `onSpawn` sees every argument list and environment (tests check them). A `git` given here
  * (a test's fake) runs as given, with the environment as given.
  */
-export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; onSpawn?: (args: string[], env: NodeJS.ProcessEnv) => void; here?: boolean; bundle?: GitBundle | null } = {}): GitRunner {
+export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; onSpawn?: (args: string[], env: NodeJS.ProcessEnv) => void; here?: boolean; bundle?: GitBundle | null; platform?: NodeJS.Platform; exists?: (path: string) => boolean } = {}): GitRunner {
   const bundle = options.git ? undefined : options.bundle === undefined ? gitBundle() : options.bundle ?? undefined;
   const git = options.git ?? bundle?.git ?? "git";
   const base = bundle ? bundleEnv(options.env ?? process.env, bundle) : options.env ?? process.env;
   return (call) => {
+    // Checked on every call, so Git works as soon as the developer tools are installed.
+    if (!options.git && !bundle && appleGitShimWithoutTools(base, options.platform, options.exists)) return Promise.resolve({ code: -1, stdout: "", stderr: "\nENOENT" });
     const args = ["-C", call.cwd, ...call.args];
     const env = { ...gitEnv(base, call.read === true), ...call.env };
     options.onSpawn?.(args, env);
