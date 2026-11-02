@@ -31,6 +31,11 @@ MPL-licensed parts sit outside the separate-Git exception, and D-269 proposes a
 narrow Electron-runtime exception for them. The owner confirms D-269 before the
 package is submitted. Don't remove Electron or its notices.
 
+Electron's three Microsoft DirectX files may be redistributed under the Windows SDK
+terms, and [every condition was checked](gate-evidence.md#directx-redistribution-conditions):
+all are met except end-user terms that protect them, which needs one clause the
+owner decides on before submission.
+
 The approved AI Rewrite and Settings runtime landed before this preparation, at
 `69a549d3bc2c4292da3ddccfc52f4dc882d1d4e6`, with its own
 [green Windows CI](https://github.com/prabinpebam/focus-notes/actions/runs/41327910905).

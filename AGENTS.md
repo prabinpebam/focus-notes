@@ -95,7 +95,7 @@ The kit's full-suite trigger (`stage-validation`) applies. Here the full suite i
 
 ### Modes, gates and merges
 
-- **Attended** (*work with me*): the owner's feedback queue, one fix at a time, about 15 minutes from report to a visible fix, fast checks of 5 minutes or less. One builder; a second only when both tasks are the owner's, touch disjoint files, land on their own and are each testable within about 15 minutes. Never three. Each builder gets its own worktree and shell. Split a large request; the smallest visible slice lands first.
+- **Attended** (*work with me*): the owner's feedback queue, one fix at a time, about 15 minutes from report to a visible fix, fast checks of 5 minutes or less. Do only the item the owner named: never add the next items, a rebuild or a release to a brief unless the owner asks (the owner, 2 November). One builder; a second only when both tasks are the owner's, touch disjoint files, land on their own and are each testable within about 15 minutes. Never three. Each builder gets its own worktree and shell. Split a large request; the smallest visible slice lands first.
 - **Unattended** (*keep going unattended*): 45-minute time-boxes on the critical path, at most two builders on areas that don't overlap, desktop runtime work pushed to a work branch for CI and batched on one merge candidate, and a handoff for the owner's return.
 - **Candidate previews:** when CI is still running on a head the owner is waiting for and it saves 5 minutes or more, build that commit locally after the fast checks into `focus-notes-work\preview\candidates\<commit>`, label it "pending CI" and open it with a fresh profile. At most one is open.
 - **Gates match what changed (D-180, D-206, D-224).**
