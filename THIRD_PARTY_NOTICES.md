@@ -7956,3 +7956,23 @@ Homepage: https://github.com/desktop/dugite-native
 Source: https://github.com/desktop/dugite-native/tree/v2.56.0-2
 
 GitHub Desktop's build of the programs above, unmodified, as one archive.
+
+## Microsoft DirectX runtime libraries shipped with Electron
+
+Electron 42.4.1 for Windows carries d3dcompiler_47.dll (10.0.26100.7705), dxcompiler.dll (1.9.2602.0) and dxil.dll (1.8.2502.11). These are runtime binaries, not the MIT-licensed DirectX headers.
+
+Redistribution: Windows SDK Distributable Code terms and its REDIST list, https://learn.microsoft.com/en-us/legal/windows-sdk/redist (the x64 D3D entries). The Windows SDK license requires significant primary functionality, protective end-user terms, the distributor's copyright notice and indemnification of Microsoft; Windows-only distribution, trademark and Excluded License restrictions also apply. Focus Notes copyright: Copyright (c) 2026 Prabin Pebam.
+
+DirectX Shader Compiler source: https://github.com/microsoft/DirectXShaderCompiler/tree/v1.9.2602 (LICENSE.TXT includes the LLVM NCSA license). The v1.8.2502 binary release carries LICENSE-LLVM.txt (NCSA), LICENSE-MIT.txt and LICENSE-MS.txt (Microsoft distributable-code terms): https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.8.2502 . The Windows SDK terms/list above cover redistribution of the named binaries; source/header licenses are not a substitute. These terms are not replaced by Electron's MIT license.
+
+## Electron, Chromium and FFmpeg source and reciprocal licenses (D-269)
+
+The unmodified Electron 42.4.1 runtime carries a dynamically loaded, separately replaceable ffmpeg.dll under LGPL-2.1-or-later, plus Chromium code under MPL-2.0 and other licenses. This narrow repository-policy exception is proposed, not owner-approved; the owner must confirm it before Store submission. It does not authorize GPL-enabled FFmpeg, additional codec libraries or changes to these runtime components.
+
+Full license texts and copyright notices, including LGPL-2.1 and MPL-2.0, accompany the app in LICENSES.chromium.html; Electron's MIT text is in LICENSE.electron.txt. Keep both files and this notice with the runtime. Focus Notes does not prohibit reverse engineering for debugging modifications to LGPL components; the separately replaceable DLL must remain replaceable. MPL-covered source files remain under MPL-2.0. No modifications to those components are made by Focus Notes.
+
+Corresponding source for this runtime (not a moving branch):
+
+- Electron 42.4.1: https://github.com/electron/electron/tree/v42.4.1 ; dependency pins and build configuration: https://github.com/electron/electron/blob/v42.4.1/DEPS
+- Chromium 148.0.7778.265: https://chromium.googlesource.com/chromium/src/+/148.0.7778.265/ ; dependency pins: https://chromium.googlesource.com/chromium/src/+/148.0.7778.265/DEPS
+- FFmpeg f45bab87ce4c5fafc67fd53fcde777578d01bfa0 (pinned by that Chromium DEPS): https://chromium.googlesource.com/chromium/third_party/ffmpeg/+/f45bab87ce4c5fafc67fd53fcde777578d01bfa0/ ; source license: COPYING.LGPLv2.1 and README.chromium in that tree. Electron's patches and build scripts are in its exact tag above.

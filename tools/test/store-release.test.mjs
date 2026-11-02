@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
-import { BUNDLED_GIT_FILES, bundledGitProblems, checkManifest, copilotPayloadProblems, readManifest, readZipEntry, redistributionProblems, zipEntryNames } from "../release/store-manifest.mjs";
+import { BUNDLED_GIT_FILES, RUNTIME_NOTICE_FILES, bundledGitProblems, checkManifest, copilotPayloadProblems, readManifest, readZipEntry, redistributionProblems, runtimeLicenseProblems, zipEntryNames } from "../release/store-manifest.mjs";
 import { identityArgs, storeConfig, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
 import { LIMITS, buildListing, overLimits, renderListing, screenshotProblems } from "../release/store-listing.mjs";
 
@@ -102,6 +102,22 @@ ${read("apps/desktop/build/appx-extensions.xml")}
 </Package>`;
 
 describe("the package's manifest, read back (store-manifest.mjs)", () => {
+  it("D-269: requires runtime notices and rejects additional or misplaced codec libraries", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fn-store-runtime-"));
+    const clean = join(dir, "clean.msix"), forbidden = join(dir, "forbidden.msix");
+    const base = [...RUNTIME_NOTICE_FILES, "app/ffmpeg.dll", "app/dxcompiler.dll"];
+    writeFileSync(clean, zip(base.map((name) => [name, "x", 0]), { zip64: true }));
+    const extra = ["app/resources/ffmpeg.dll", "app/avcodec-62.dll", "app/resources/libavformat.so.62", "app/%61vutil.dll", "app/swresample.dll"];
+    writeFileSync(forbidden, zip([...base, ...extra].map((name) => [name, "x", 8])));
+    expect(runtimeLicenseProblems(zipEntryNames(clean))).toEqual([]);
+    expect(runtimeLicenseProblems(zipEntryNames(forbidden))).toHaveLength(extra.length);
+    for (const missing of RUNTIME_NOTICE_FILES) {
+      expect(runtimeLicenseProblems(base.filter((name) => name !== missing))).toEqual([
+        `The package has no ${missing}: runtime license notices must ship (D-269).`,
+      ]);
+    }
+    expect(read("tools/release/store-manifest.mjs")).toContain("...runtimeLicenseProblems(zipEntryNames(file)),");
+  });
   it("rejects forbidden packed and unpacked native/plugin ASAR paths, not just license labels", () => {
     const archive = (files) => {
       const header = Buffer.from(JSON.stringify({ files }));
@@ -111,6 +127,9 @@ describe("the package's manifest, read back (store-manifest.mjs)", () => {
     };
     const main = { out: { files: { main: { files: { "main.mjs": { size: 1 } } } } } };
     expect(copilotPayloadProblems(archive(main))).toEqual([]);
+    expect(copilotPayloadProblems(archive({ ...main, "ffmpeg.dll": { size: 1 } }))).toEqual([
+      "The package has an additional or misplaced codec library: app/resources/app.asar/ffmpeg.dll (D-269).",
+    ]);
     expect(copilotPayloadProblems(archive({ ...main, node_modules: { files: {
       "@github": { files: { "copilot-sdk-win32-x64": { files: {
         "OneAuthInterop.dll": { size: 1, unpacked: true },

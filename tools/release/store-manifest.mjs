@@ -147,6 +147,29 @@ export function bundledGitProblems(has) {
   return BUNDLED_GIT_FILES.filter((name) => !has(name)).map((name) => `The package has no ${name}: the Store package carries Git (PKG-13).`);
 }
 
+export const RUNTIME_NOTICE_FILES = ["app/LICENSES.chromium.html", "app/LICENSE.electron.txt", "app/resources/THIRD_PARTY_NOTICES.md"];
+
+/** D-269 is limited to Electron's root FFmpeg DLL, with all runtime notices retained. */
+export function runtimeLicenseProblems(names) {
+  return [
+    ...RUNTIME_NOTICE_FILES.filter((name) => !names.includes(name))
+      .map((name) => `The package has no ${name}: runtime license notices must ship (D-269).`),
+    ...codecLibraryProblems(names),
+  ];
+}
+
+function codecLibraryProblems(names) {
+  const problems = [];
+  for (const encoded of names) {
+    const name = decodeURIComponent(encoded).replace(/\\/g, "/");
+    const file = name.slice(name.lastIndexOf("/") + 1);
+    if (/^(?:lib)?(?:ffmpeg|avcodec|avformat|avutil|avfilter|avdevice|swresample|swscale|postproc).*?\.(?:dll|so(?:\.\d+)*|dylib|a|lib|node)$/i.test(file) && name !== "app/ffmpeg.dll") {
+      problems.push(`The package has an additional or misplaced codec library: ${name} (D-269).`);
+    }
+  }
+  return problems;
+}
+
 /** ASAR includes unpacked files in its header too, so native exclusions cover both payloads. */
 export function copilotPayloadProblems(archive) {
   if (!archive || archive.length < 16) return ["The package has no readable app.asar."];
@@ -164,8 +187,11 @@ export function copilotPayloadProblems(archive) {
   };
   walk(header.files, "");
   if (!paths.includes("out/main/main.mjs")) return ["The ASAR has no desktop main entry."];
-  return paths.filter((path) => /(?:^|\/)(?:@github\/copilot-sdk-(?:win32|darwin|linux)|@koromix\/|koffi\/|OneAuthInterop|browser-use\/|computer-use\/)/i.test(path))
-    .map((path) => `The Store package contains an unused Copilot native/FFI/plugin asset: ${path}.`);
+  return [
+    ...paths.filter((path) => /(?:^|\/)(?:@github\/copilot-sdk-(?:win32|darwin|linux)|@koromix\/|koffi\/|OneAuthInterop|browser-use\/|computer-use\/)/i.test(path))
+      .map((path) => `The Store package contains an unused Copilot native/FFI/plugin asset: ${path}.`),
+    ...codecLibraryProblems(paths.map((path) => `app/resources/app.asar/${path}`)),
+  ];
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -193,6 +219,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ...checkManifest(xml, { identityName: env.MSSTORE_IDENTITY_NAME || undefined, publisher: env.MSSTORE_PUBLISHER || undefined }),
     ...bundledGitProblems((name) => readZipEntry(file, name) !== undefined),
     ...redistributionProblems(zipEntryNames(file)),
+    ...runtimeLicenseProblems(zipEntryNames(file)),
     ...copilotPayloadProblems(readZipEntry(file, "app/resources/app.asar")),
   ];
   const m = readManifest(xml);
