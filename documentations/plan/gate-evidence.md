@@ -50,6 +50,23 @@ lands. Final outcomes belong in the persistent receipt after they actually run.
 | `node slate/scripts/runtime-host.mjs check --repo . --host documentations` using the pinned root Slate executable | Passed against the isolated release tree. |
 | Existing extracted Git cache | Rejected: tree digest `b66ed9b87870e0ca58c8cd601cb91f42a30123fc181b8ac66d77c0004e54f603` differs from its pinned marker `3d7f5ce28515e016ff22fa118a8be56ded4aadc16b19f3f4c85475f014070a23`. Read-only validation of the installed Store 1.0.3 bundle matches that exact marker and pinned archive SHA; copy and revalidate it in the worker's tree before packaging. No download workaround. |
 
+### Store GCM broker files (D-270)
+
+The Store 1.1.0 package carried two files of Git Credential Manager's Windows broker that may not be
+redistributed: `Microsoft.Identity.Client.NativeInterop.dll` and `msalruntime.dll` (D-270). The bundle
+step now leaves them out and keeps the broker off; the Store manifest check fails any package with
+them. Synthetic accounts and throwaway credential stores only; the owner's account and Windows
+Credential Manager were never used.
+
+| Check | Actual result, 2 November |
+| --- | --- |
+| `node tools/release/git-bundle.mjs` (real pinned archive) | Removed both files; smoke passed: Git 2.56.0.windows.4, GCM 2.9.1, LFS, `credential.helper=manager`, `credential.msauthUseBroker=false`. |
+| `pnpm exec vitest run apps/desktop/test/git-bundle.integration.test.ts apps/desktop/test/git-bundle.test.ts tools/test/git-bundle.test.mjs tools/test/store-release.test.mjs` | 52 passed, 1 skipped (CI-only) in 4 files. The real bundle commits, pushes, clones, rebases and adds a submodule; it has neither file, the broker setting is false, and GCM's GitHub provider stores, returns and erases a made-up github.com credential with the person's own broker setting turned on. |
+| Live GitHub probe, made-up token, prepared bundle | `git ls-remote` against github.com: GCM selected its GitHub provider, returned the stored credential and erased it once GitHub refused it; push without a credential stops with "user interactivity has been disabled", the same as the unmodified archive. |
+| `redistributionProblems` on the real `release\1.1.0` MSIX (read-only) | Fails, as it should: both GCM files, and a third `msalruntime.dll` under the Copilot SDK's native folder, which the Copilot payload exclusion removes from the Store package. |
+| Released 1.0.0, 1.0.1, 1.0.2 MSIX (central directories only) | 105 entries each, no `resources/git` and no MSAL files: Git arrived after them (D-228). |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check` | Passed. |
+
 ### Approved AI integration hardening (1 November, runtime validated)
 
 The owner approved both UX and UI of `d40b78a345b7fe79262116b270b3a908c0966eac`

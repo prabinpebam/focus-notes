@@ -12,6 +12,7 @@ import { closeSync, fstatSync, openSync, readdirSync, readSync, statSync } from 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { inflateRawSync } from "node:zlib";
+import { NOT_REDISTRIBUTABLE } from "./git-bundle.mjs";
 
 const read = (fd, at, length) => {
   const b = Buffer.alloc(length);
@@ -24,8 +25,11 @@ const read = (fd, at, length) => {
   return b;
 };
 
-/** One file's bytes from a zip archive, or undefined when it has no such file. */
-export function readZipEntry(file, name) {
+/**
+ * Walks a zip archive's central directory, calling `visit` with each file's name and a function that
+ * reads its bytes; stops at, and returns, the first value `visit` returns.
+ */
+function eachZipEntry(file, visit) {
   const fd = openSync(file, "r");
   try {
     const size = fstatSync(fd).size;
@@ -59,20 +63,34 @@ export function readZipEntry(file, name) {
         }
         x += 4 + len;
       }
-      if (entry === name) {
-        const h = read(fd, local, 30);
-        if (h.readUInt32LE(0) !== 0x04034b50) throw new Error(`A damaged entry: ${name}.`);
-        const data = read(fd, local + 30 + h.readUInt16LE(26) + h.readUInt16LE(28), csize);
+      const entryAt = local;
+      const result = visit(entry, () => {
+        const h = read(fd, entryAt, 30);
+        if (h.readUInt32LE(0) !== 0x04034b50) throw new Error(`A damaged entry: ${entry}.`);
+        const data = read(fd, entryAt + 30 + h.readUInt16LE(26) + h.readUInt16LE(28), csize);
         if (method === 0) return data;
         if (method === 8) return inflateRawSync(data);
-        throw new Error(`${name} uses compression method ${method}.`);
-      }
+        throw new Error(`${entry} uses compression method ${method}.`);
+      });
+      if (result !== undefined) return result;
       p += 46 + nameLen + extraLen + commentLen;
     }
     return undefined;
   } finally {
     closeSync(fd);
   }
+}
+
+/** One file's bytes from a zip archive, or undefined when it has no such file. */
+export function readZipEntry(file, name) {
+  return eachZipEntry(file, (entry, bytes) => (entry === name ? bytes() : undefined));
+}
+
+/** Every file's name in a zip archive, as the archive spells it. */
+export function zipEntryNames(file) {
+  const names = [];
+  eachZipEntry(file, (entry) => void names.push(entry));
+  return names;
 }
 
 const attrs = (tag) => Object.fromEntries([...tag.matchAll(/([\w:]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((m) => [m[1], m[2] ?? m[3]]));
@@ -105,6 +123,22 @@ export function checkManifest(xml, expected = {}) {
   return problems;
 }
 
+/**
+ * Every packaged file that may not be redistributed (D-270): Git Credential Manager's Windows broker
+ * natives, which git-bundle.mjs leaves out. Names are as the package spells them, percent-encoding
+ * undone.
+ */
+export function redistributionProblems(names) {
+  const decode = (n) => {
+    try {
+      return decodeURIComponent(n);
+    } catch {
+      return n;
+    }
+  };
+  return names.map(decode).filter((n) => NOT_REDISTRIBUTABLE.test(n)).map((n) => `The package has ${n}, which may not be redistributed (D-270).`);
+}
+
 /** The bundled Git's files the package can't do without: Git, its sign-in helper, and Git's license. */
 export const BUNDLED_GIT_FILES = ["app/resources/git/cmd/git.exe", "app/resources/git/ucrt64/bin/git-credential-manager.exe", "app/resources/git/LICENSE.txt"];
 
@@ -112,6 +146,7 @@ export const BUNDLED_GIT_FILES = ["app/resources/git/cmd/git.exe", "app/resource
 export function bundledGitProblems(has) {
   return BUNDLED_GIT_FILES.filter((name) => !has(name)).map((name) => `The package has no ${name}: the Store package carries Git (PKG-13).`);
 }
+
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = process.argv[2];
@@ -137,6 +172,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const problems = [
     ...checkManifest(xml, { identityName: env.MSSTORE_IDENTITY_NAME || undefined, publisher: env.MSSTORE_PUBLISHER || undefined }),
     ...bundledGitProblems((name) => readZipEntry(file, name) !== undefined),
+    ...redistributionProblems(zipEntryNames(file)),
   ];
   const m = readManifest(xml);
   console.log(`${file}: ${m.identityName} ${m.version} ${m.architecture}, ${m.publisher}; protocol ${m.protocols.join(", ")}; alias ${m.aliases.join(", ")}; ${m.capabilities.join(", ")}.`);

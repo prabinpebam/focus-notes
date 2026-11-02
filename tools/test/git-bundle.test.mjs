@@ -10,21 +10,26 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { archiveProblem, ensureGitBundle, isUnpacked, pinProblems, readPin, RISKY_SETTING, treeDigest } from "../release/git-bundle.mjs";
+import { archiveProblem, ensureGitBundle, isUnpacked, NOT_REDISTRIBUTABLE, notRedistributable, pinProblems, prepareBundle, readPin, RISKY_SETTING, treeDigest } from "../release/git-bundle.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const tar = process.platform === "win32" ? join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe") : "tar";
 const quiet = () => {};
 
 /** A small stand-in archive with the bundle's shape, and a pin that names it. */
-function fakeBundle() {
+function fakeBundle(extra = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fn-git-bundle-"));
   const src = join(dir, "src");
   mkdirSync(join(src, "cmd"), { recursive: true });
   writeFileSync(join(src, "cmd", "git.exe"), "not really git");
   writeFileSync(join(src, "LICENSE.txt"), "GPL-2.0");
+  for (const [rel, text] of Object.entries(extra)) {
+    mkdirSync(join(src, rel, ".."), { recursive: true });
+    writeFileSync(join(src, rel), text);
+  }
+  const tops = ["cmd", "LICENSE.txt", ...new Set(Object.keys(extra).map((rel) => rel.split("/")[0]))];
   const file = join(dir, "dugite-native-v0.0.0-test-windows-x64.tar.gz");
-  const r = spawnSync(tar, ["-czf", file, "-C", src, "cmd", "LICENSE.txt"], { encoding: "utf8" });
+  const r = spawnSync(tar, ["-czf", file, "-C", src, ...tops], { encoding: "utf8" });
   if (r.status !== 0) throw new Error(r.stderr);
   const bytes = readFileSync(file);
   const pin = {
@@ -114,5 +119,43 @@ describe("The Store package's Git bundle (PKG-13, D-228)", () => {
 
   it("PKG-13: the unpacked bundle never enters the repository", () => {
     expect(readFileSync(join(root, ".gitignore"), "utf8")).toMatch(/^apps\/desktop\/vendor\/$/m);
+  });
+
+  it("D-270: Git Credential Manager's broker natives are left out, the managed MSAL stays, and the broker is off", async () => {
+    const bin = "ucrt64/bin";
+    const { file, pin, dest } = fakeBundle({
+      [`${bin}/Microsoft.Identity.Client.NativeInterop.dll`]: "interop",
+      [`${bin}/msalruntime.dll`]: "runtime",
+      [`${bin}/msalruntime_arm64.dll`]: "runtime",
+      [`${bin}/Microsoft.Identity.Client.dll`]: "MIT",
+      [`${bin}/Microsoft.Identity.Client.Broker.dll`]: "MIT",
+      [`${bin}/git-credential-manager.exe`]: "gcm",
+      "etc/gitconfig": "[credential]\n\thelper = manager\n",
+    });
+    const logs = [];
+    await ensureGitBundle({ pin, dest, archive: file, smoke: false, log: (l) => logs.push(l) });
+    for (const gone of ["Microsoft.Identity.Client.NativeInterop.dll", "msalruntime.dll", "msalruntime_arm64.dll"]) expect(existsSync(join(dest, bin, gone)), gone).toBe(false);
+    for (const kept of ["Microsoft.Identity.Client.dll", "Microsoft.Identity.Client.Broker.dll", "git-credential-manager.exe"]) expect(existsSync(join(dest, bin, kept)), kept).toBe(true);
+    expect(notRedistributable(dest)).toEqual([]);
+    expect(readFileSync(join(dest, "etc", "gitconfig"), "utf8")).toBe("[credential]\n\thelper = manager\n[credential]\n\tmsauthUseBroker = false\n");
+    expect(logs.join("\n")).toMatch(/may not be redistributed \(D-270\): ucrt64\/bin\/Microsoft\.Identity\.Client\.NativeInterop\.dll, ucrt64\/bin\/msalruntime\.dll, ucrt64\/bin\/msalruntime_arm64\.dll/);
+    expect(await isUnpacked(dest, pin)).toBe(true);
+    // Preparing again changes nothing: the setting is written once.
+    expect(prepareBundle(dest)).toEqual([]);
+    expect(readFileSync(join(dest, "etc", "gitconfig"), "utf8").match(/msauthUseBroker/g)).toHaveLength(1);
+  });
+
+  it("D-270: a bundle unpacked before the broker natives were left out is unpacked again", async () => {
+    const { file, pin, dest } = fakeBundle({ "ucrt64/bin/msalruntime.dll": "runtime" });
+    await ensureGitBundle({ pin, dest, archive: file, smoke: false, log: quiet });
+    const marker = JSON.parse(readFileSync(join(dest, ".focus-notes-bundle"), "utf8"));
+    expect(marker.prepared).toBe("D-270");
+    writeFileSync(join(dest, ".focus-notes-bundle"), JSON.stringify({ sha256: marker.sha256, tree: marker.tree }));
+    expect(await isUnpacked(dest, pin)).toBe(false);
+  });
+
+  it("D-270: only the broker's natives are named, never Git Credential Manager or the managed MSAL", () => {
+    for (const bad of ["ucrt64/bin/msalruntime.dll", "ucrt64/bin/msalruntime_x86.dll", "ucrt64/bin/MSALRUNTIME.DLL", "ucrt64/bin/Microsoft.Identity.Client.NativeInterop.dll", "msalruntime.dll"]) expect(bad).toMatch(NOT_REDISTRIBUTABLE);
+    for (const ok of ["ucrt64/bin/Microsoft.Identity.Client.dll", "ucrt64/bin/Microsoft.Identity.Client.Broker.dll", "ucrt64/bin/Microsoft.Identity.Client.Extensions.Msal.dll", "ucrt64/bin/git-credential-manager.exe", "ucrt64/bin/gcmcore.dll", "ucrt64/doc/msalruntime.txt"]) expect(ok).not.toMatch(NOT_REDISTRIBUTABLE);
   });
 });

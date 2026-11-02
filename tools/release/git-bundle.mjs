@@ -1,6 +1,7 @@
 // The Git the Microsoft Store package carries (PKG-13, D-228): fetches the archive
 // apps/desktop/build/git-bundle.json pins, refuses it unless its SHA-256 and size are exactly the
-// pin's, unpacks it into apps/desktop/vendor/git and checks that Git, its sign-in helper and Git LFS
+// pin's, unpacks it into apps/desktop/vendor/git, leaves out the files that may not be redistributed
+// and turns Git Credential Manager's broker off (D-270), and checks that Git, its sign-in helper and Git LFS
 // run. dist-store.mjs calls ensureGitBundle before packing; nothing else ships it.
 //
 //   node tools/release/git-bundle.mjs                   fetch (or reuse) and check the bundle
@@ -17,6 +18,15 @@ const root = join(import.meta.dirname, "..", "..");
 export const PIN_FILE = join(root, "apps", "desktop", "build", "git-bundle.json");
 export const VENDOR_DIR = join(root, "apps", "desktop", "vendor", "git");
 const MARKER = ".focus-notes-bundle";
+/** Names the preparation below in the marker, so a bundle unpacked before it is unpacked again. */
+const PREPARED = "D-270";
+
+/**
+ * Files in the archive that may not be passed on (D-270): Git Credential Manager's Windows broker
+ * (WAM) natives, under Microsoft Software License Terms that forbid redistribution. The broker is
+ * only for Azure DevOps and off unless turned on; signing in to GitHub never uses it.
+ */
+export const NOT_REDISTRIBUTABLE = /(?:^|\/)(?:Microsoft\.Identity\.Client\.NativeInterop\.dll|msalruntime[\w.-]*\.dll)$/i;
 
 export const readPin = (file = PIN_FILE) => JSON.parse(readFileSync(file, "utf8"));
 
@@ -84,7 +94,7 @@ const readMarker = (dest) => {
 /** Whether `dest` holds exactly the unpacked bundle of this pin: the same archive, and no file changed since. */
 export async function isUnpacked(dest, pin) {
   const marker = readMarker(dest);
-  if (marker?.sha256 !== pin.sha256 || !existsSync(join(dest, "cmd", "git.exe"))) return false;
+  if (marker?.sha256 !== pin.sha256 || marker.prepared !== PREPARED || !existsSync(join(dest, "cmd", "git.exe"))) return false;
   try {
     return (await treeDigest(dest)) === marker.tree;
   } catch {
@@ -120,6 +130,38 @@ async function download(url, file, size, log) {
   renameSync(part, file);
 }
 
+/** Every file under `dir` NOT_REDISTRIBUTABLE names, as a path relative to it with forward slashes. */
+export function notRedistributable(dir) {
+  const found = [];
+  const walk = (d) => {
+    for (const name of readdirSync(d)) {
+      const p = join(d, name);
+      const rel = relative(dir, p).replaceAll("\\", "/");
+      if (lstatSync(p).isDirectory()) walk(p);
+      else if (NOT_REDISTRIBUTABLE.test(rel)) found.push(rel);
+    }
+  };
+  walk(dir);
+  return found.sort();
+}
+
+/**
+ * Readies an unpacked bundle for the package (D-270): removes every file that may not be passed on,
+ * and turns Git Credential Manager's broker off in the bundle's system settings, so it never looks
+ * for the files it would need. Returns what it removed.
+ */
+export function prepareBundle(dir) {
+  const removed = notRedistributable(dir);
+  for (const rel of removed) rmSync(join(dir, rel));
+  const config = join(dir, "etc", "gitconfig");
+  const text = existsSync(config) ? readFileSync(config, "utf8") : "";
+  if (!/^\s*msauthUseBroker\s*=\s*false\s*$/im.test(text)) {
+    mkdirSync(join(dir, "etc"), { recursive: true });
+    writeFileSync(config, `${text}${text && !text.endsWith("\n") ? "\n" : ""}[credential]\n\tmsauthUseBroker = false\n`);
+  }
+  return removed;
+}
+
 /** System settings a bundle must never bring: they'd trust every folder, run other programs, or pull in other settings. */
 export const RISKY_SETTING = /^(safe\.directory|core\.hookspath|core\.fsmonitor|core\.sshcommand|core\.pager|core\.editor|core\.askpass|include\.|includeif\.|url\..*\.insteadof|http\.sslverify=false|credential\.helper=(?!manager$))/i;
 
@@ -142,6 +184,9 @@ export function smokeProblems(dest, pin) {
   const helper = run("config", "--system", "--get-all", "credential.helper");
   if (helper !== "manager") problems.push(`The bundle's credential.helper is "${helper}", not manager.`);
   for (const line of run("config", "--system", "--list").split(/\r?\n/)) if (RISKY_SETTING.test(line)) problems.push(`The bundle's system settings have ${line}.`);
+  const broker = run("config", "--system", "--get", "credential.msauthUseBroker");
+  if (broker !== "false") problems.push(`The bundle's credential.msauthUseBroker is "${broker}", not false (D-270).`);
+  for (const rel of notRedistributable(dest)) problems.push(`The bundle has ${rel}, which may not be redistributed (D-270).`);
   return problems;
 }
 
@@ -178,6 +223,8 @@ export async function ensureGitBundle({ pin = readPin(), dest = VENDOR_DIR, arch
     rmSync(staging, { recursive: true, force: true });
     throw new Error("The Git bundle has no cmd/git.exe.");
   }
+  const removed = prepareBundle(staging);
+  if (removed.length) log(`Left out of the Git bundle, as they may not be redistributed (D-270): ${removed.join(", ")}.`);
   if (smoke) {
     const bad = smokeProblems(staging, pin);
     if (bad.length) {
@@ -192,7 +239,7 @@ export async function ensureGitBundle({ pin = readPin(), dest = VENDOR_DIR, arch
     rmSync(staging, { recursive: true, force: true });
     throw e;
   }
-  writeFileSync(join(staging, MARKER), `${JSON.stringify({ sha256: pin.sha256, tree })}\n`);
+  writeFileSync(join(staging, MARKER), `${JSON.stringify({ sha256: pin.sha256, prepared: PREPARED, tree })}\n`);
   rmSync(dest, { recursive: true, force: true });
   renameSync(staging, dest);
   log(`Git bundle ${pin.tag} (Git ${pin.versions.git}, Git Credential Manager ${pin.versions.gcm}, Git LFS ${pin.versions.lfs}) is in ${dest}.`);

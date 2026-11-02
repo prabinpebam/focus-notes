@@ -3,10 +3,13 @@
  * tools/release/git-bundle.mjs into apps/desktop/vendor/git, or named by FOCUS_NOTES_GIT_BUNDLE) does
  * everything Focus Notes asks of Git, on a PATH with no other Git: the first run's check, Git
  * Credential Manager, a commit whose hook runs `git`, a rebase, a submodule, a push, and notes kept
- * with LF endings. Skipped when the bundle hasn't been fetched (`node tools/release/git-bundle.mjs`).
+ * with LF endings. D-270: none of Git Credential Manager's broker files that may not be redistributed,
+ * the broker kept off, and a GitHub sign-in kept, given back and forgotten without it (a throwaway
+ * store and a made-up account, never the computer's own). Skipped when the bundle hasn't been fetched
+ * (`node tools/release/git-bundle.mjs`).
  */
 import { describe, expect, it } from "vitest";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Account } from "../src/main/first-run/account.ts";
@@ -107,5 +110,34 @@ describe.skipIf(!bundle)("PKG-13: the bundled Git, end to end", () => {
     expect((await git(a, "log", "--format=%s")).trim().split("\n")).toEqual(["Update note", "Add other", "Add lib as a submodule", "Add note"]);
     expect((await git(remote, "cat-file", "-p", "main:note.md")).replace(/\r\n/g, "\n")).toBe("# Note\n\nOne\nTwo\nThree\n");
     expect(await git(remote, "cat-file", "-p", "main:note.md")).not.toContain("\r");
+  }, 120_000);
+
+  it("D-270: carries none of the broker's files that may not be redistributed, and its settings keep the broker off", async () => {
+    const files = readdirSync(bundle!.root, { recursive: true }).map(String);
+    expect(files.filter((f) => /(?:^|[\\/])(?:Microsoft\.Identity\.Client\.NativeInterop\.dll|msalruntime[\w.-]*\.dll)$/i.test(f))).toEqual([]);
+    expect(files.some((f) => /[\\/]Microsoft\.Identity\.Client\.dll$/i.test(f)), "the managed MSAL stays").toBe(true);
+    expect((await git(home, "config", "--system", "--get", "credential.msauthUseBroker")).trim()).toBe("false");
+  });
+
+  it("D-270: Git Credential Manager keeps, gives back and forgets a GitHub sign-in without the broker, even when the person turned it on", async () => {
+    const gcmHome = mkdtempSync(join(tmpdir(), "fn-gcm-home-"));
+    writeFileSync(join(gcmHome, ".gitconfig"), "[credential]\n\tmsauthUseBroker = true\n");
+    const trace = join(gcmHome, "trace.log");
+    // Never the computer's own credential store: a throwaway plaintext one, and a made-up account.
+    const gcm = createRunner({ bundle: bundle!, env: { ...noOtherGit(gcmHome), GCM_CREDENTIAL_STORE: "plaintext", GCM_PLAINTEXT_STORE_PATH: join(gcmHome, "store"), GCM_TRACE: trace } });
+    const credential = async (action: string, input: string) => {
+      const r = await gcm({ cwd: gcmHome, args: ["credential", action], input, timeoutMs: 60_000 });
+      expect(r.code, `git credential ${action}: ${r.stderr}`).toBe(0);
+      return r.stdout;
+    };
+    const ask = "protocol=https\nhost=github.com\n\n";
+    await credential("approve", "protocol=https\nhost=github.com\nusername=fn-test\npassword=not-a-real-token\n\n");
+    expect(await credential("fill", ask)).toMatch(/^username=fn-test\npassword=not-a-real-token$/m);
+    await credential("reject", "protocol=https\nhost=github.com\nusername=fn-test\n\n");
+    const r = await gcm({ cwd: gcmHome, args: ["credential", "fill"], input: ask, timeoutMs: 60_000 });
+    expect(r.code).not.toBe(0);
+    const log = readFileSync(trace, "utf8");
+    expect(log).toContain("Host provider 'GitHub' was selected");
+    expect(log).not.toMatch(/msalruntime|NativeInterop/i);
   }, 120_000);
 });

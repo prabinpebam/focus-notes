@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
-import { BUNDLED_GIT_FILES, bundledGitProblems, checkManifest, readManifest, readZipEntry } from "../release/store-manifest.mjs";
+import { BUNDLED_GIT_FILES, bundledGitProblems, checkManifest, readManifest, readZipEntry, redistributionProblems, zipEntryNames } from "../release/store-manifest.mjs";
 import { identityArgs, storeConfig, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
 import { LIMITS, buildListing, overLimits, renderListing, screenshotProblems } from "../release/store-listing.mjs";
 
@@ -141,6 +141,24 @@ describe("the package's manifest, read back (store-manifest.mjs)", () => {
       "The package has no app/resources/git/ucrt64/bin/git-credential-manager.exe: the Store package carries Git (PKG-13).",
     ]);
   });
+
+  it("D-270: a package carrying Git Credential Manager's broker natives fails; one with only the managed MSAL passes", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fn-store-redist-"));
+    const bin = "app/resources/git/ucrt64/bin";
+    const clean = join(dir, "clean.msix"), forbidden = join(dir, "forbidden.msix");
+    const base = [["AppxManifest.xml", MANIFEST, 8], ...BUNDLED_GIT_FILES.map((n) => [n, "x", 0]), [`${bin}/Microsoft.Identity.Client.dll`, "MIT", 0], [`${bin}/Microsoft.Identity.Client.Broker.dll`, "MIT", 0]];
+    writeFileSync(clean, zip(base, { zip64: true }));
+    writeFileSync(forbidden, zip([...base, [`${bin}/Microsoft.Identity.Client.NativeInterop.dll`, "x", 8], [`${bin}/msalruntime.dll`, "x", 0], ["app/resources/git/ucrt64/bin/msalruntime%5Farm64.dll", "x", 0]]));
+    expect(zipEntryNames(clean)).toEqual(expect.arrayContaining(["AppxManifest.xml", `${bin}/Microsoft.Identity.Client.dll`]));
+    expect(redistributionProblems(zipEntryNames(clean))).toEqual([]);
+    expect(redistributionProblems(zipEntryNames(forbidden))).toEqual([
+      `The package has ${bin}/Microsoft.Identity.Client.NativeInterop.dll, which may not be redistributed (D-270).`,
+      `The package has ${bin}/msalruntime.dll, which may not be redistributed (D-270).`,
+      `The package has ${bin}/msalruntime_arm64.dll, which may not be redistributed (D-270).`,
+    ]);
+    // The check runs on every package release and CI build.
+    expect(read("tools/release/store-manifest.mjs")).toContain("...redistributionProblems(zipEntryNames(file)),");
+  });
 });
 
 describe("the Store target in the build configuration", () => {
@@ -187,6 +205,7 @@ describe("the Store target in the build configuration", () => {
     expect(JSON.stringify(desktop.build)).not.toMatch(/vendor\/git/);
     expect(read(".gitignore")).toMatch(/^apps\/desktop\/vendor\/$/m);
   });
+
 
   it("refuses, before building, a release build with the placeholders or a 0.x version", () => {
     const run = (env, ...args) => spawnSync(process.execPath, [join(root, "apps/desktop/scripts/dist-store.mjs"), "--require-identity", ...args], { env: { ...process.env, MSSTORE_IDENTITY_NAME: "", MSSTORE_PUBLISHER: "", ...env }, encoding: "utf8" });

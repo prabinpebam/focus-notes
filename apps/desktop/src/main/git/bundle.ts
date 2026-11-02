@@ -53,7 +53,9 @@ export function gitBundle(): GitBundle | undefined {
 /**
  * The environment a process runs in when Git is bundled: the bundle's `cmd` first on PATH, so the
  * sign-in helper and hooks that run `git` reach the same Git, and no inherited GIT_EXEC_PATH sends
- * it to another installation's programs.
+ * it to another installation's programs. Git Credential Manager's Windows broker stays off whatever
+ * the person's own Git settings say: the bundle leaves out the files it needs (D-270), and only Azure
+ * DevOps uses it, never GitHub.
  */
 export function bundleEnv(base: NodeJS.ProcessEnv, bundle: GitBundle | undefined = gitBundle()): NodeJS.ProcessEnv {
   if (!bundle) return base;
@@ -64,5 +66,6 @@ export function bundleEnv(base: NodeJS.ProcessEnv, bundle: GitBundle | undefined
   for (const k of keys) delete env[k];
   env[keys[0] ?? "Path"] = current ? `${bundle.cmdDir};${current}` : bundle.cmdDir;
   delete env.GIT_EXEC_PATH;
+  env.GCM_MSAUTH_USEBROKER = "false";
   return env;
 }

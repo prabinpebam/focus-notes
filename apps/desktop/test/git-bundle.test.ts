@@ -54,7 +54,10 @@ describe("PKG-13: the environment Git and its helpers get", () => {
     expect(env.Path).toBe("C:\\App\\resources\\git\\cmd;C:\\Windows");
     expect(env.GIT_EXEC_PATH).toBeUndefined();
     expect(env.HOME).toBe("C:\\Users\\ada");
-    expect(bundleEnv({}, bundle)).toEqual({ Path: "C:\\App\\resources\\git\\cmd" });
+    expect(bundleEnv({}, bundle)).toEqual({ Path: "C:\\App\\resources\\git\\cmd", GCM_MSAUTH_USEBROKER: "false" });
+  });
+  it("D-270: keeps Git Credential Manager's Windows broker off, even when the person turned it on", () => {
+    expect(bundleEnv({ GCM_MSAUTH_USEBROKER: "true" }, bundle).GCM_MSAUTH_USEBROKER).toBe("false");
   });
   it("leaves the environment as it is when there's no bundle", () => {
     const base = { PATH: "/usr/bin", GIT_EXEC_PATH: "/x" };
