@@ -6445,6 +6445,116 @@
       ]
     },
     {
+      "type": "FontChoice",
+      "tier": "primitive",
+      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name, a toggle pressed when chosen. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
+      "props": {
+        "font": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system"
+          ],
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The font's name, shown under the sample and its accessible name."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.fontChoice.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "font mono",
+          "props": {
+            "font": "mono",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "font sans",
+          "props": {
+            "font": "sans",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "font serif",
+          "props": {
+            "font": "serif",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "font hyperlegible",
+          "props": {
+            "font": "hyperlegible",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "font dyslexic",
+          "props": {
+            "font": "dyslexic",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "font system",
+          "props": {
+            "font": "system",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "selected",
+          "props": {
+            "font": "serif",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "selected": true
+          },
+          "covers": [
+            "selected"
+          ]
+        }
+      ]
+    },
+    {
       "type": "SiteLink",
       "tier": "primitive",
       "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
@@ -10567,7 +10677,7 @@
     {
       "type": "ProjectScope",
       "tier": "layout",
-      "description": "A project's look over what it holds (D-313): its accent as a modifier on the semantic accent roles, and its own Appearance when it has one. In the app it's the whole window; in the gallery, several windows side by side. The band part is the tinted title band and the Files heading.",
+      "description": "A project's look over what it holds (D-313, D-316): its accent as a modifier on the semantic accent roles, its own colour theme and writing font when it has them. In the app it's the whole window; in the gallery, several windows side by side or a live preview. The band part is the tinted title band and the Files heading.",
       "props": {
         "accent": {
           "kind": "enum",
@@ -10589,15 +10699,37 @@
           "default": "app",
           "description": "app: the accent around it."
         },
-        "appearance": {
+        "theme": {
           "kind": "enum",
           "values": [
-            "follow",
-            "light",
-            "dark"
+            "paper",
+            "sepia",
+            "harbor-light",
+            "forest-light",
+            "contrast-light",
+            "ink",
+            "dusk",
+            "harbor-dark",
+            "forest-dark",
+            "contrast-dark",
+            "app"
           ],
-          "default": "follow",
-          "description": "The project's Appearance (D-313): Follow app, or always Light or Dark, without touching the reading theme otherwise."
+          "default": "app",
+          "description": "The project's colour theme (D-316); app: Follow app, the app's theme and its light and dark switching."
+        },
+        "font": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system",
+            "app"
+          ],
+          "default": "app",
+          "description": "The project's writing font (D-316); app: the app's."
         },
         "part": {
           "kind": "enum",
@@ -10607,7 +10739,7 @@
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it, clipped to the window's shape. band: the accent's tint (the title band, the Files heading). plain: only the accent."
+          "description": "window: the canvas behind it, clipped to the window's shape. band: the accent's tint (the title band, the Files heading). plain: only the scope."
         },
         "grow": {
           "kind": "boolean",
@@ -10901,10 +11033,10 @@
           ]
         },
         {
-          "name": "appearance follow",
+          "name": "theme paper",
           "props": {
             "part": "window",
-            "appearance": "follow",
+            "theme": "paper",
             "accent": "violet"
           },
           "children": [
@@ -10920,10 +11052,10 @@
           ]
         },
         {
-          "name": "appearance light",
+          "name": "theme sepia",
           "props": {
             "part": "window",
-            "appearance": "light",
+            "theme": "sepia",
             "accent": "violet"
           },
           "children": [
@@ -10939,10 +11071,10 @@
           ]
         },
         {
-          "name": "appearance dark",
+          "name": "theme harbor-light",
           "props": {
             "part": "window",
-            "appearance": "dark",
+            "theme": "harbor-light",
             "accent": "violet"
           },
           "children": [
@@ -10953,6 +11085,277 @@
                   "t": "gallery.sample"
                 },
                 "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme forest-light",
+          "props": {
+            "part": "window",
+            "theme": "forest-light",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme contrast-light",
+          "props": {
+            "part": "window",
+            "theme": "contrast-light",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme ink",
+          "props": {
+            "part": "window",
+            "theme": "ink",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme dusk",
+          "props": {
+            "part": "window",
+            "theme": "dusk",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme harbor-dark",
+          "props": {
+            "part": "window",
+            "theme": "harbor-dark",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme forest-dark",
+          "props": {
+            "part": "window",
+            "theme": "forest-dark",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme contrast-dark",
+          "props": {
+            "part": "window",
+            "theme": "contrast-dark",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme app",
+          "props": {
+            "part": "window",
+            "theme": "app",
+            "accent": "violet"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.sample"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "font mono",
+          "props": {
+            "part": "window",
+            "font": "mono"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "font sans",
+          "props": {
+            "part": "window",
+            "font": "sans"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "font serif",
+          "props": {
+            "part": "window",
+            "font": "serif"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "font hyperlegible",
+          "props": {
+            "part": "window",
+            "font": "hyperlegible"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "font dyslexic",
+          "props": {
+            "part": "window",
+            "font": "dyslexic"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "font system",
+          "props": {
+            "part": "window",
+            "font": "system"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "font app",
+          "props": {
+            "part": "window",
+            "font": "app"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
               }
             }
           ]

@@ -1,0 +1,18 @@
+{ "cmp": { "fontChoice": {
+  "family": { "$type": "fontFamily", "$value": "{font.content}", "$description": "The font being offered: its scope sets it." },
+  "sampleSize": { "$type": "dimension", "$value": "{font.uiHeadingLarge}" },
+  "sampleLeading": { "$type": "number", "$value": "{font.headingLineHeight}" },
+  "nameSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
+  "gap": { "$type": "dimension", "$value": "{space.xxs}" },
+  "padding": { "$type": "dimension", "$value": "{space.s}" },
+  "minWidth": { "$type": "dimension", "$value": "{size.avatar}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "background": { "$type": "color", "$value": "{color.surfaceRaised}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "selectedRing": { "$type": "color", "$value": "{color.text}" },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "ringOffset": { "$type": "dimension", "$value": "{border.hairline}" }
+} } }

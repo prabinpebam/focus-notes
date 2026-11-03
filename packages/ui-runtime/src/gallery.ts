@@ -268,7 +268,10 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),
   });
-  app.viewModels.register({ id: "vm.mocks", schema: schemaOf(mockData) as never, select: () => mockData });
+  // Note blocks keep the editor's own block schema; everything else is read off the fake data.
+  const mockSchema = schemaOf(mockData) as { properties: Record<string, unknown> };
+  for (const k of Object.keys(mockSchema.properties)) if (k.endsWith("Blocks")) mockSchema.properties[k] = BLOCK_LIST_SCHEMA;
+  app.viewModels.register({ id: "vm.mocks", schema: mockSchema as never, select: () => mockData });
   app.commands.register<{ id: string }>({ id: "gallery.open", title: "gallery.title", run: ({ id }) => navigate(String(id)) });
 }
 

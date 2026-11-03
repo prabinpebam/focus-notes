@@ -329,6 +329,9 @@
           "$ref": "#/$defs/c_ImageFrame"
         },
         {
+          "$ref": "#/$defs/c_FontChoice"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -6660,6 +6663,102 @@
         }
       }
     },
+    "c_FontChoice": {
+      "type": "object",
+      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name, a toggle pressed when chosen. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "FontChoice"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "font": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "mono",
+                    "sans",
+                    "serif",
+                    "hyperlegible",
+                    "dyslexic",
+                    "system"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "font",
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
     "c_SiteLink": {
       "type": "object",
       "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
@@ -8768,7 +8867,7 @@
     },
     "c_ProjectScope": {
       "type": "object",
-      "description": "A project's look over what it holds (D-313): its accent as a modifier on the semantic accent roles, and its own Appearance when it has one. In the app it's the whole window; in the gallery, several windows side by side. The band part is the tinted title band and the Files heading.",
+      "description": "A project's look over what it holds (D-313, D-316): its accent as a modifier on the semantic accent roles, its own colour theme and writing font when it has them. In the app it's the whole window; in the gallery, several windows side by side or a live preview. The band part is the tinted title band and the Files heading.",
       "required": [
         "type"
       ],
@@ -8825,13 +8924,42 @@
                 }
               ]
             },
-            "appearance": {
+            "theme": {
               "anyOf": [
                 {
                   "enum": [
-                    "follow",
-                    "light",
-                    "dark"
+                    "paper",
+                    "sepia",
+                    "harbor-light",
+                    "forest-light",
+                    "contrast-light",
+                    "ink",
+                    "dusk",
+                    "harbor-dark",
+                    "forest-dark",
+                    "contrast-dark",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "font": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "mono",
+                    "sans",
+                    "serif",
+                    "hyperlegible",
+                    "dyslexic",
+                    "system",
+                    "app"
                   ]
                 },
                 {
