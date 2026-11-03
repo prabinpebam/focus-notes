@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. MP adds 15 planned packages for projects, simpler sharing and the read-only website/preview; none is built or accepted. Earlier release-path examples remain historical where superseded.
+> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. MP adds 18 planned packages for projects, simpler sharing and the read-only website/preview; none is built or accepted. Earlier release-path examples remain historical where superseded.
 
 ## How to read a work package
 
@@ -403,20 +403,23 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.1 | Decisive keyboard actions | SPT-10, RWR-91 | WP-4.2, WP-AI.14 | code, accessibility |
 | WP-P.2 | Write at caret | RWR-92 | WP-AI.14 | code, security, design-system |
 | WP-P.3 | Title and file name apart | FIL-18 | WP-2.3 | code |
-| WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03, PRJ-10, PRJ-11 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
+| WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
 | WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13 | WP-P.4 | security, design-system, accessibility |
 | WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07 | WP-P.4, WP-P.3 | code, design-system, accessibility |
 | WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
 | WP-P.8 | Quick notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
-| WP-P.9 | Item-first share dialog and Switch | SHR-13, SHR-14, SHR-15, SHR-16, DSY-15 | WP-5.3, WP-P.4 | code, security, design-system, accessibility |
+| WP-P.9 | Item-first share dialog | SHR-13, SHR-14, SHR-15, SHR-16 | WP-5.3, WP-P.16 | code, security, design-system, accessibility |
 | WP-P.10 | Shares without names or revealing identifiers | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |
 | WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
 | WP-P.12 | A website with its own theme | SHR-20 | WP-5.1, WP-P.4, WP-P.13 | code, security, design-system, accessibility |
 | WP-P.14 | Public home, sections and reading controls | SHR-21 | WP-P.12, WP-P.5, WP-P.9 | code, security, design-system, accessibility |
 | WP-P.15 | Preview site appearance locally | SHR-22 | WP-P.14 | code, security, design-system, accessibility |
 | WP-P.13 | Retire browser writing safely | WEB-01 | WP-5.1 | code, security, accessibility |
+| WP-P.16 | Switch primitive | DSY-15 | none | design-system, accessibility |
+| WP-P.17 | Call it a project | PRJ-11 | none | design-system, accessibility |
+| WP-P.18 | Turn sharing on and off | PRJ-10 | WP-P.4, WP-P.9, WP-P.12, WP-5.1 | code, security, design-system, accessibility |
 
-These are independently reviewable slices; lookahead permits design without unrelated stage gates. WP-P.4's migration deliverable is the [first-run/upgrade mental model and wording](../experience/projects.md#meeting-project-for-the-first-time), not a new storage system. WP-P.10 includes opaque link/code/path/file identifiers and the extended leak checks (MP.14). Accepted choices are recorded in [Next direction](next-direction.md#what-needs-the-owner); none of the six remain open.
+These are independently reviewable slices; lookahead permits design without unrelated stage gates. **Order (D-314):** the smallest owner-visible slices go first and don't wait for projects: WP-P.16 (Switch) and WP-P.9 (the owner's three share-dialog fixes on today's sharing), WP-P.1 to WP-P.3 (keys, write at caret, file names) and WP-P.17 (the [terminology move](../experience/projects.md#meeting-project-for-the-first-time), mostly words). Then WP-P.4 (windows and scope), WP-P.5 to WP-P.8, and the site work (WP-P.12 to WP-P.15, WP-P.18). Each slice gives the owner a view or behaviour to try within about an hour of work; larger ones are reviewed as JSON views first. WP-P.10 includes opaque link/code/path/file identifiers and the extended leak checks (MP.14). Accepted choices are recorded in [Next direction](next-direction.md#what-needs-the-owner); none of the six remain open.
 
 **GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has its named future evidence after design approval. Keep cancellation/no-side-effect checks, first-share/history copy, retained-repository removal and one-click owner-draft export proportionate to the accepted plans. Spec review is not implementation or execution acceptance.
 
@@ -435,11 +438,12 @@ These are independently reviewable slices; lookahead permits design without unre
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-9.3 | **Managed assets and encrypted media.** Relative/root-owned files, local sidecars, atomic copy/move/recovery and selected-media encryption/leak checks. | IMG-05, IMG-06 | WP-2.3, WP-5.1, WP-P.8, WP-P.10 | code, security |
+| WP-9.3 | **Managed image assets.** Relative/root-owned files, local sidecars, atomic copy/move/recovery. | IMG-05 | WP-2.3 | code, security |
 | WP-9.1 | **Inline image block and actions.** Drop/picker, three modes, remembered/bulk switches, clipboard/replace/export and portable shared renderer. | EXT-03, IMG-01, IMG-02, IMG-03, IMG-04, IMG-10 | WP-1.1, WP-9.3 | code, design-system, accessibility |
 | WP-9.4 | **Crop and rotate.** Preview dialog, keyboard crop, explicit destructive atomic save and conditional Git recovery. | IMG-07, IMG-08 | WP-9.1 | code, security, design-system, accessibility |
 | WP-9.5 | **Optional captions.** Existing image-capable integration, image-only payload and reviewed plain-text caption. | IMG-09 | WP-9.1, WP-AI.14 | code, security, design-system, accessibility |
 | WP-9.2 | **Gallery block**. A gallery block registration. | EXT-04 | WP-9.1 | code, design-system, accessibility |
+| WP-9.6 | **Encrypted image sharing.** The exact referenced media of a shared note, encrypted with opaque names; metadata stripped from published images. Until it lands, sharing a note with images says so and stops (D-314). | IMG-06 | WP-9.3, WP-P.10, WP-5.1 | code, security |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 

@@ -21,7 +21,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
-| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 29 |
+| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 32 |
 | **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 12 |
 
 ## Where we are
@@ -134,11 +134,11 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MP: Projects and simpler sharing (planned)</p>
-<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">15 work packages</a>; <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-13, FIL-17, FIL-18, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-23, DSY-15, WEB-01.</p>
+<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">18 work packages</a>, smallest visible slices first: the share-dialog fixes and the terminology move don't wait for projects (D-314); <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-13, FIL-17, FIL-18, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-23, DSY-15, WEB-01.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>
-<p><a href="../experience/images.md">Inline images</a>: managed local assets and encrypted sharing first (WP-9.3), then insertion/display/menu/bulk options (WP-9.1), explicit destructive crop/rotate (WP-9.4) and optional chosen-integration captions (WP-9.5). Gallery remains separate (WP-9.2). Five new scenarios and six capabilities trace the source to IMG-01 to IMG-10, EXT-03 and EXT-04. <a href="implementation-plan.md#later">Plan</a>; <a href="definition-of-done.md#inline-images-planned">Try it and evidence</a>. Specification only; no implementation or release date is claimed.</p>
+<p><a href="../experience/images.md">Inline images</a>: managed local assets first (WP-9.3), then insertion/display/menu/bulk options (WP-9.1), encrypted image sharing once shares have opaque names (WP-9.6, D-314), explicit destructive crop/rotate (WP-9.4) and optional chosen-integration captions (WP-9.5). Gallery remains separate (WP-9.2). Five new scenarios and six capabilities trace the source to IMG-01 to IMG-10, EXT-03 and EXT-04. <a href="implementation-plan.md#later">Plan</a>; <a href="definition-of-done.md#inline-images-planned">Try it and evidence</a>. Specification only; no implementation or release date is claimed.</p>
 </li>
 </ol>
 

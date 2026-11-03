@@ -3,7 +3,7 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 127 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
+> **TL;DR.** 128 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
 
 ## Inline images (planned)
 
@@ -125,6 +125,7 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | UC-SHARE-09 | invite a GitHub account to a project with an honest account of its access | SC-SHARE-05 | P1 | IA-CMP-PEOPLE | PRJ-12 | Organization roles reflect GitHub; personal collaborator warning names read/write access to the whole project and share secrets. |
 | UC-SHARE-10 | publish a read-only website whose appearance is independent of my app | SC-SHARE-06 | P1 | IA-VIEW-SHARE, IA-VIEW-PUBLIC | SHR-20, SHR-21, WEB-01 | Home/sections/counts/excerpts expose only public material; every public article reachable with theme/focus reading. No editor/demo/vault; old drafts recoverable. |
 | UC-SHARE-11 | preview my public site in the app and choose its theme, fonts and default size | SC-SHARE-07 | P1 | IA-VIEW-SITEPREVIEW | SHR-22 | Exact website renderer, no default private content/network upload. Apply saves only site settings; Cancel/error retains saved values and draft; personal app appearance unchanged. |
+| UC-SHARE-12 | turn sharing off for a project, knowing what stops working, what returns to private and what history keeps | SC-SHARE-08 | P1 | IA-CMP-FIRSTSHARE | PRJ-10 | Links and access codes stop and published notes return to private at the next publish; the site repository stays and holds no key to the private repository (D-305); offline or failed publishing stays pending, never claims removal. |
 
 <h2 data-reader-personas="product design">Find and keyboard</h2>
 

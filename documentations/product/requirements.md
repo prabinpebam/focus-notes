@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 308 tracked requirements, including superseded historical IDs. **P0** records the original first release, **P1** follows it, and **Later** marks extensions. Stage MP adds projects, simpler sharing and retirement of browser writing (D-272 to D-293). The browser-writing requirements below are historical, not deferred: WEB-01 removes those surfaces while preserving existing drafts. Superseded IDs are retained for traceability, never reused.
+> **TL;DR.** 322 tracked requirements, including superseded historical IDs. **P0** records the original first release, **P1** follows it, and **Later** marks extensions. Stage MP adds projects, simpler sharing and retirement of browser writing (D-272 to D-293). The browser-writing requirements below are historical, not deferred: WEB-01 removes those surfaces while preserving existing drafts. Superseded IDs are retained for traceability, never reused.
 
 ## Priority legend
 

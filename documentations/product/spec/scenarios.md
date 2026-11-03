@@ -3,7 +3,7 @@
 The situations in which each [customer promise](customer-promises.md) matters, written as jobs to be done. Each scenario names the behavior people should see and the user-can capabilities that deliver it.
 
 > [!NOTE]
-> **TL;DR.** 74 scenarios and 17 unsupported boundaries trace the promises to observable outcomes. Historical browser-writing/vault rows remain for old IDs only and are retired by D-292, not future acceptance obligations. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. Personas are in [The articulation chain](chain.md#personas-used-in-scenarios).
+> **TL;DR.** 75 scenarios and 17 unsupported boundaries trace the promises to observable outcomes. Historical browser-writing/vault rows remain for old IDs only and are retired by D-292, not future acceptance obligations. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. Personas are in [The articulation chain](chain.md#personas-used-in-scenarios).
 
 ## Inline images (planned)
 
@@ -76,6 +76,7 @@ Desktop only. Built on 31 October and in the owner's review build, not yet relea
 | SC-SHARE-05 | CP-SHARE-01 | When someone helps maintain a project, I want to invite their GitHub account with the permissions GitHub permits, so we can work in the same project. | Writer, Power user | Project → People shows actual GitHub permissions, warns about full private-project access and distinguishes personal-account collaborators from organization roles. | UC-SHARE-09 | IA-CMP-PEOPLE |
 | SC-SHARE-06 | CP-SHARE-01 | When a note is ready for everyone, I want to publish a clean website with its own look, so visitors see a site, not my editor. | Writer | Public-only home, folder sections/counts, article excerpts/pages, minimal navigation, theme and focus reading; no shared-only index metadata, browser writing or vault. | UC-SHARE-10 | IA-VIEW-SHARE, IA-VIEW-PUBLIC |
 | SC-SHARE-07 | CP-SHARE-01 | When choosing my site's appearance, I want to preview its real pages in the app, so I can choose fonts and theme without publishing by mistake. | Writer, Comfort | Local read-only preview of public home/section/article, theme/font/default size controls; Apply saves settings, Publish is separate, Cancel and failures lose no draft. | UC-SHARE-11 | IA-VIEW-SITEPREVIEW |
+| SC-SHARE-08 | CP-SHARE-01 | When I no longer want anything from a project readable outside it, I want to turn sharing off in one place, so links stop working and published notes come back to my private notes. | Writer | One confirmation names what stops and what returns; the site and its history stay; nothing is claimed removed until the next publish succeeds. | UC-SHARE-12 | IA-CMP-FIRSTSHARE |
 | SC-SHARE-04 | CP-SHARE-01 | When I need a note on paper or as a PDF (an agenda to hand out, a draft to mark up, a page to file), I want to print it as it reads, so it looks right without fixing it in another app. | Writer | *Print…* in ⋯ opens the system's print dialog with the note laid out for paper: dark on white, a heading never alone at a page's foot, page numbers when I want them, a new page where I asked for one. Printer, paper, copies and *Save as PDF* are the system's. | UC-SHARE-06 | IA-VIEW-CANVAS |
 
 <h2 data-reader-personas="product design">Find and keyboard</h2>
