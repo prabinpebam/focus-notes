@@ -323,6 +323,9 @@
           "$ref": "#/$defs/c_DatePicker"
         },
         {
+          "$ref": "#/$defs/c_ProjectMark"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -366,6 +369,9 @@
         },
         {
           "$ref": "#/$defs/c_Sheet"
+        },
+        {
+          "$ref": "#/$defs/c_ProjectScope"
         },
         {
           "$ref": "#/$defs/c_ReaderPage"
@@ -1013,7 +1019,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -1239,7 +1255,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -1518,7 +1544,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -2251,7 +2287,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -2671,7 +2717,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -4937,7 +4993,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -5212,7 +5278,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -5713,7 +5789,17 @@
                     "aiPerplexity",
                     "aiOpenrouter",
                     "aiHuggingface",
-                    "aiCopilot"
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
                   ]
                 },
                 {
@@ -6210,6 +6296,195 @@
           "additionalProperties": false,
           "properties": {
             "change": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_ProjectMark": {
+      "type": "object",
+      "description": "A project's identity (D-313): a preset logo or an uploaded one on its accent's tinted plate, or the project's first letter. Shown in the title band, the Files heading, Projects and the logo picker; as a watermark it sits faint on the canvas, outside the text. Decorative unless it has a label: the project's name beside it says who it is.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ProjectMark"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "logo": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "book",
+                    "briefcase",
+                    "beaker",
+                    "heart",
+                    "star",
+                    "leaf",
+                    "rocket",
+                    "lightbulb",
+                    "music",
+                    "camera",
+                    "people",
+                    "home",
+                    "airplane",
+                    "code",
+                    "brush",
+                    "trophy",
+                    "earth",
+                    "food",
+                    "building",
+                    "chat",
+                    "diamond",
+                    "flag",
+                    "sparkle",
+                    "pen",
+                    "upload",
+                    "none"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "initials": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "accent": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "orange",
+                    "amber",
+                    "lime",
+                    "green",
+                    "teal",
+                    "cyan",
+                    "blue",
+                    "indigo",
+                    "violet",
+                    "pink",
+                    "slate",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "plate": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "tint",
+                    "neutral",
+                    "solid"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "watermark"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -8318,6 +8593,128 @@
                 "$ref": "#/$defs/node"
               }
             }
+          }
+        }
+      }
+    },
+    "c_ProjectScope": {
+      "type": "object",
+      "description": "A project's look over what it holds (D-313): its accent as a modifier on the semantic accent roles, and its own Appearance when it has one. In the app it's the whole window; in the gallery, several windows side by side. The band part is the tinted title band and the Files heading.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ProjectScope"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "accent": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "orange",
+                    "amber",
+                    "lime",
+                    "green",
+                    "teal",
+                    "cyan",
+                    "blue",
+                    "indigo",
+                    "violet",
+                    "pink",
+                    "slate",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "appearance": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "follow",
+                    "light",
+                    "dark"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "part": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "window",
+                    "band",
+                    "plain"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "grow": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
           }
         }
       }

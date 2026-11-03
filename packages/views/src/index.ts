@@ -10,6 +10,7 @@ import index from "../views/index.view.json" with { type: "json" };
 import siteLanding from "../views/siteLanding.view.json" with { type: "json" };
 import sitePage from "../views/sitePage.view.json" with { type: "json" };
 import en from "../messages/en.json" with { type: "json" };
+import { mocks, mockData } from "../mocks/index.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
 export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewrite };
@@ -21,4 +22,8 @@ export const pages: Record<string, unknown> = { reader, index, share };
 /** The product site's pages (IA-VIEW-SITE, WP-10.1; help is in the Slate docs, D-181), rendered at build time by the site's renderer. */
 export const sitePages: Record<string, unknown> = { siteLanding, sitePage };
 export const fragments: Record<string, unknown> = {};
-export const messages: Record<string, Record<string, string>> = { en };
+export const messages: Record<string, Record<string, string>> = { en };/**
+ * UX mocks awaiting the owner's review (strict design): clickable flows on fake data, shown only in the
+ * gallery under "Mocks: Projects, files and images". Nothing here is wired into the app.
+ */
+export { mocks, mockData };

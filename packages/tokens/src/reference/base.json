@@ -2,6 +2,21 @@
   "ref": {
     "color": {
       "$type": "color",
+      "project": {
+        "$description": "Project accent presets (D-313): a strong shade for light contexts and a soft one for dark, each at least 4.5:1 on its canvas, and their tints.",
+        "red": { "strong": { "$value": "#b91c1c" }, "soft": { "$value": "#fca5a5" }, "strongTint": { "$value": "#b91c1c26" }, "softTint": { "$value": "#fca5a540" } },
+        "orange": { "strong": { "$value": "#c2410c" }, "soft": { "$value": "#fdba74" }, "strongTint": { "$value": "#c2410c26" }, "softTint": { "$value": "#fdba7440" } },
+        "amber": { "strong": { "$value": "#a16207" }, "soft": { "$value": "#fcd34d" }, "strongTint": { "$value": "#a1620726" }, "softTint": { "$value": "#fcd34d40" } },
+        "lime": { "strong": { "$value": "#4d7c0f" }, "soft": { "$value": "#bef264" }, "strongTint": { "$value": "#4d7c0f26" }, "softTint": { "$value": "#bef26440" } },
+        "green": { "strong": { "$value": "#15803d" }, "soft": { "$value": "#86efac" }, "strongTint": { "$value": "#15803d26" }, "softTint": { "$value": "#86efac40" } },
+        "teal": { "strong": { "$value": "#0f766e" }, "soft": { "$value": "#5eead4" }, "strongTint": { "$value": "#0f766e26" }, "softTint": { "$value": "#5eead440" } },
+        "cyan": { "strong": { "$value": "#0e7490" }, "soft": { "$value": "#67e8f9" }, "strongTint": { "$value": "#0e749026" }, "softTint": { "$value": "#67e8f940" } },
+        "blue": { "strong": { "$value": "#1d4ed8" }, "soft": { "$value": "#93c5fd" }, "strongTint": { "$value": "#1d4ed826" }, "softTint": { "$value": "#93c5fd40" } },
+        "indigo": { "strong": { "$value": "#4338ca" }, "soft": { "$value": "#a5b4fc" }, "strongTint": { "$value": "#4338ca26" }, "softTint": { "$value": "#a5b4fc40" } },
+        "violet": { "strong": { "$value": "#6d28d9" }, "soft": { "$value": "#c4b5fd" }, "strongTint": { "$value": "#6d28d926" }, "softTint": { "$value": "#c4b5fd40" } },
+        "pink": { "strong": { "$value": "#be185d" }, "soft": { "$value": "#f9a8d4" }, "strongTint": { "$value": "#be185d26" }, "softTint": { "$value": "#f9a8d440" } },
+        "slate": { "strong": { "$value": "#475569" }, "soft": { "$value": "#cbd5e1" }, "strongTint": { "$value": "#47556926" }, "softTint": { "$value": "#cbd5e140" } }
+      },
       "white": {
         "$value": "#ffffff"
       },

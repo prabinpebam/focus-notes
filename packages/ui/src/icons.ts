@@ -13,6 +13,8 @@ import {
   Cloud20Regular, CloudArrowUp20Regular, CloudCheckmark20Regular, CloudOff20Regular,
   ArrowDownload20Regular, Circle20Regular, Globe20Regular, CalendarLtr20Regular, ChevronLeft20Regular, Mail20Regular, Pin20Regular, PinOff20Regular,
   PersonFeedback20Regular, CheckmarkCircle20Regular, Print20Regular,
+  Image20Regular, ImageAdd20Regular, Crop20Regular, ArrowRotateClockwise20Regular, WindowNew20Regular, Notepad20Regular,
+  ArrowUpload20Regular, ClosedCaption20Regular, TextDescription20Regular, Sparkle20Regular,
 } from "@fluentui/react-icons";
 import type { ComponentType, SVGProps } from "react";
 import type { IconName } from "./icon-names.ts";
@@ -47,6 +49,10 @@ export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
   feedback: PersonFeedback20Regular, sent: CheckmarkCircle20Regular,
   // Print (D-230).
   print: Print20Regular,
+  // Projects, Quick notes and images (D-272 to D-313).
+  image: Image20Regular, imageAdd: ImageAdd20Regular, crop: Crop20Regular, rotate: ArrowRotateClockwise20Regular,
+  openWindow: WindowNew20Regular, quickNote: Notepad20Regular, upload: ArrowUpload20Regular, caption: ClosedCaption20Regular,
+  description: TextDescription20Regular, sparkle: Sparkle20Regular,
   // GitHub's own mark (Octicons, MIT), where the setup names GitHub (D-126).
   github: GitHubMark,
 };

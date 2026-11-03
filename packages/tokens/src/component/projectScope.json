@@ -1,0 +1,9 @@
+{ "cmp": { "projectScope": {
+  "band": { "$type": "color", "$value": "{color.accentMuted}", "$description": "The title band's tint: the project's accent (D-313), so two windows differ at a glance." },
+  "background": { "$type": "color", "$value": "{color.canvas}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "radius": { "$type": "dimension", "$value": "{radius.window}" },
+  "shadow": { "$type": "shadow", "$value": "{shadow.2}" }
+} } }

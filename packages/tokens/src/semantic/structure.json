@@ -573,6 +573,7 @@
   },
   "opacity": {
     "$type": "number",
+    "watermark": { "$value": 0.04, "$description": "A project's watermark on the canvas (D-313): barely there, outside the text." },
     "disabled": {
       "$value": 0.4
     },

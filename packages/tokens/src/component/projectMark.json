@@ -1,0 +1,17 @@
+{ "cmp": { "projectMark": {
+  "size": { "$type": "dimension", "s": { "$value": "{size.iconL}" }, "m": { "$value": "{size.statusMark}" }, "l": { "$value": "{size.appMarkM}" }, "xl": { "$value": "{size.avatar}" }, "watermark": { "$value": "{size.appMarkL}" } },
+  "glyph": { "$type": "dimension", "s": { "$value": "{size.iconS}" }, "m": { "$value": "{size.iconM}" }, "l": { "$value": "{size.iconL}" }, "xl": { "$value": "{size.stepMarkIcon}" }, "watermark": { "$value": "{size.appMarkM}" } },
+  "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "background": { "$type": "color", "$value": "{color.accentMuted}", "$description": "The plate: the project's accent, tinted (D-313)." },
+  "color": { "$type": "color", "$value": "{color.accent}" },
+  "plate": { "$type": "color", "$value": "{color.surfaceRaised}", "$description": "An uploaded logo's token-coloured plate, so it shows in light and dark." },
+  "plateBorder": { "$type": "color", "$value": "{color.border}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "onSolid": { "$type": "color", "$value": "{color.onAccent}", "$description": "A colour swatch's glyph, on the solid accent." },
+  "selectedRing": { "$type": "color", "$value": "{color.text}", "$description": "The chosen swatch or logo: a full ring in the text colour, clear on any accent." },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "focusOffset": { "$type": "dimension", "$value": "{border.hairline}" },
+  "watermarkOpacity": { "$type": "number", "$value": "{opacity.watermark}" }
+} } }
