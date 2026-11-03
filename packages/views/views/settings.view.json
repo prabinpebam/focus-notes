@@ -4856,6 +4856,246 @@
             ]
           }
         ]
+      },
+      {
+        "type": "Dialog",
+        "id": "sharingFirst",
+        "when": {
+          "get": "vm.sharingSettings.firstOpen"
+        },
+        "props": {
+          "title": {
+            "t": "share.settings.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingSettings.firstOpen"
+          },
+          "size": "m",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.firstClose"
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "m",
+                  "align": "center"
+                },
+                "children": [
+                  {
+                    "type": "StepMark",
+                    "props": {
+                      "icon": "share",
+                      "tone": "accent",
+                      "size": "compact"
+                    }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "2",
+                      "value": {
+                        "t": "sharing.first.title",
+                        "args": {
+                          "project": {
+                            "get": "vm.project.name"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "share.first.lead"
+                  },
+                  "role": "lead"
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.first.created"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.repo"
+                      },
+                      "detail": {
+                        "get": "vm.sharingSettings.repo"
+                      },
+                      "icon": "github"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.site"
+                      },
+                      "detail": {
+                        "get": "vm.sharingSettings.site"
+                      },
+                      "icon": "globe"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.first.see"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.shared"
+                      },
+                      "badge": {
+                        "t": "share.badge.shared"
+                      },
+                      "icon": "lock"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.published"
+                      },
+                      "badge": {
+                        "t": "share.badge.published"
+                      },
+                      "icon": "globe"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "share.first.history"
+                  },
+                  "tone": "muted"
+                }
+              },
+              {
+                "type": "Inline",
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.first.more"
+                      },
+                      "variant": "subtle",
+                      "size": "s",
+                      "bleed": true,
+                      "expanded": {
+                        "get": "vm.sharingSettings.more"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.firstMore"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.sharingSettings.more"
+                },
+                "props": {
+                  "value": {
+                    "t": "share.first.more.detail"
+                  },
+                  "tone": "muted",
+                  "role": "secondary"
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.cancel"
+                      },
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.firstClose"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.first.turnOn"
+                      },
+                      "variant": "primary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.firstAccept"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   }

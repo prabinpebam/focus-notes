@@ -23,6 +23,24 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   const settingsOpen = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
   reg<{ id?: string; kind: string }>("sharing.confirmOpen", ({ id = "", kind }) => { set({ dialog: kind, id, problem: "" }); settingsOpen(false); });
   reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); settingsOpen(true); } });
+  reg<{ resume?: boolean }>("sharing.firstOpen", ({ resume = false }) => {
+    if (!store.state.ui.share.listing?.localReview) throw new Error(catalog.format("share.item.unavailable"));
+    set({ dialog: "first", more: false, resume, problem: "" });
+    settingsOpen(false);
+    if (resume) store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, item: { ...s.ui.share.item, open: false } } } }));
+  });
+  reg<Record<string, never>>("sharing.firstMore", () => set({ more: !state().more }));
+  const firstClose = (accepted: boolean) => {
+    const resume = state().resume;
+    set({ dialog: "", ...(accepted ? { off: false } : {}) });
+    if (resume) store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, item: { ...s.ui.share.item, open: accepted } } } }));
+    else settingsOpen(true);
+  };
+  reg<Record<string, never>>("sharing.firstClose", () => firstClose(false));
+  reg<Record<string, never>>("sharing.firstAccept", () => {
+    if (!store.state.ui.share.listing?.localReview) throw new Error(catalog.format("share.item.unavailable"));
+    firstClose(true);
+  });
   const work = async (action: () => Promise<void>, status: string) => {
     if (state().busy) return;
     set({ busy: true, problem: "", status: "" });
@@ -77,6 +95,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     schema: { type: "object", properties: {
       project: str, site: str, on: bool, off: bool, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str,
       filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
+      firstOpen: bool, more: bool, repo: str,
       filters: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
       rows: { type: "array", items: { type: "object", properties: {
         id: str, item: str, detail: str, badge: str, icon: str, live: bool, copyMenu: menuSchema, extendMenu: menuSchema,
@@ -112,7 +131,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         site: listing?.site ?? s.workspace.site ?? "", on: Boolean(listing?.site && !m.off), off: m.off || !listing?.site,
         localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
-        problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: Boolean(m.dialog),
+        problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
+        firstOpen: m.dialog === "first", more: m.more, repo: s.workspace.repo ?? listing?.site ?? "",
         confirmTitle: catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(`share.${kind}.confirm`),
         filters: filters.map(id => ({ id, label: catalog.format(`sharing.filter.${id}`) })), rows,

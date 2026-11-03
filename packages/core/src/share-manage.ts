@@ -116,7 +116,7 @@ export interface ShareTemplateEditor {
   busy: boolean;
 }
 export interface ShareManageState {
-  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean };
+  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean };
   item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;
@@ -133,7 +133,7 @@ export interface ShareManageState {
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
-  settings: { filter: "all", query: "", status: "", problem: "", busy: false, dialog: "", id: "", off: false },
+  settings: { filter: "all", query: "", status: "", problem: "", busy: false, dialog: "", id: "", off: false, more: false, resume: false },
   item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
   template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings",

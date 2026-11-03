@@ -2854,5 +2854,6 @@
   "sharing.copy.accessCode": "Copy access code",
   "sharing.copy.information": "Copy share information",
   "sharing.row.detail": "{ways} · {expiry}",
-  "sharing.expires": "expires {date}"
+  "sharing.expires": "expires {date}",
+  "sharing.first.title": "Turn on sharing for “{project}”?"
 }

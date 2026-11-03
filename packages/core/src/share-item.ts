@@ -143,6 +143,9 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       try {
         const listing = await tracker.run("share.item.prepare", "share.item.preparing", () => access.load());
         if (current === generation) store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+        if (current === generation && listing.localReview && (store.state.ui.share.settings.off || !listing.site)) {
+          await commands.run("sharing.firstOpen", { resume: true });
+        }
       } catch {
         if (current === generation) set({ problem: catalog.format("share.item.unavailable") });
       }
