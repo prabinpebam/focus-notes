@@ -278,7 +278,11 @@
                                   "gap": "s",
                                   "align": "center"
                                 },
-                                "children": []
+                                "children": [
+                                  { "type": "ProjectMark", "when": { "expr": { "==": [{ "get": "vm.project.logo" }, "upload"] } }, "props": { "logo": "upload", "src": { "get": "vm.project.logoSrc" }, "accent": { "get": "vm.project.accent" }, "size": "m", "selected": true } },
+                                  { "type": "Button", "props": { "label": { "t": "project.settings.upload" }, "variant": "secondary" }, "on": { "press": { "run": "project.upload" } } },
+                                  { "type": "Text", "props": { "value": { "get": "vm.project.uploadError" }, "tone": "danger" } }
+                                ]
                               }
                             ]
                           }

@@ -128,6 +128,7 @@ export interface PlatformBridge {
   windows?: WindowsBridge;
   /** Local project windows, isolated from each other's workspace services. */
   projects?: {
+    upload(): Promise<string | undefined>;
     lastNote(): Promise<string | undefined>;
     position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
     remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;
@@ -175,6 +176,7 @@ export interface ProjectEntry {
   name: string;
   accent: string;
   logo: string;
+  logoSrc?: string;
   lastNote?: string;
   pinned?: boolean;
 }

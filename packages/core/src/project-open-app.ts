@@ -54,7 +54,7 @@ export function registerProjectOpen(ctx: {
     schema: { type: "object", properties: {
       open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, error: text, query: text, active: text,
       recent: { type: "array", items: item },
-      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text } } },
+      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text } } },
     } },
     select: (s: AppState) => {
       const entries = state.entries.filter((e) => `${e.name} ${e.folder} ${e.lastNote ?? ""}`.toLowerCase().includes(state.query.toLowerCase()));

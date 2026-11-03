@@ -1247,6 +1247,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
+  handle("projects:upload", () => projects.upload());
   handle("projects:lastNote", () => process.env.FOCUS_NOTES_PROJECT_NOTE || projects.lastNote());
   handle("projects:position", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");

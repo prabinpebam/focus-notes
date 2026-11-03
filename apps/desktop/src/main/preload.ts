@@ -121,6 +121,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   writeNote: (path: string, content: string, expected?: string) => ipcRenderer.invoke("note:write", path, content, expected),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
   projects: {
+    upload: () => ipcRenderer.invoke("projects:upload"),
     lastNote: () => ipcRenderer.invoke("projects:lastNote"),
     position: (path: string) => ipcRenderer.invoke("projects:position", path),
     remember: (path: string, position?: { from: number; to: number; scroll: number }) => ipcRenderer.invoke("projects:remember", path, position),

@@ -88,6 +88,8 @@ In the approved mock the missing-note recovery reads **“⟨Chapter 1⟩ isn't 
 
 > **Working preview, 3 November: launch position.** Closing or leaving a note captures its selection and vertical scroll alongside its path in the existing OS-protected launch record. Launch restores them after the editor is ready; a changed document clamps the selection to its available length. Older path-only records still open their note. This slice does not restore all previously open windows.
 
+> **Working preview, 3 November: SVG logo.** Settings → Project accepts SVG files up to 256 KB. The existing sanitizer keeps static shape and gradient geometry, removes scripts, event handlers, animation, CSS, embedded images and links, and permits only in-document paint references. The sanitized image is remembered in the project's local settings and reused by its pill, watermark and Open row. Preset choices remain available.
+
 **Open**, not switch. **Open** is the one view for going somewhere else (owner, 3 November; D-319): <kbd>Ctrl+Alt+O</kbd> (<kbd>⌥⌘O</kbd>), ⋯ → Open…, or Spotlight's **> Open…**. In a window it's a dialog; with no window open it fills the window. It isn't inside any project, so it may list other projects' files: opening one opens it in its own project's window, never in this one, and this window's Files, search and scope stay its own (this amends D-309, which kept cross-project Recent out of project windows).
 
 | Part | What it holds |

@@ -3984,6 +3984,7 @@
                 "props": {
                   "name": { "get": "vm.project.name" },
                   "logo": { "get": "vm.project.logo" },
+                  "src": { "get": "vm.project.logoSrc" },
                   "accent": { "get": "vm.project.accent" },
                   "label": { "t": "project.pill.label", "args": { "name": { "get": "vm.project.name" } } }
                 },
@@ -9404,6 +9405,7 @@
         "logo": {
           "get": "vm.project.logo"
         },
+        "src": { "get": "vm.project.logoSrc" },
         "accent": {
           "get": "vm.project.accent"
         },
@@ -9445,7 +9447,7 @@
               { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" } } }, "render": {
                 "type": "ProjectScope", "props": { "accent": { "get": "entry.accent" } }, "children": [
                   { "type": "ItemCard", "props": { "title": { "get": "entry.name" }, "detail": { "get": "entry.folder" }, "personal": "all" }, "children": [
-                    { "type": "ProjectMark", "props": { "logo": { "get": "entry.logo" }, "size": "s" } },
+                    { "type": "ProjectMark", "props": { "logo": { "get": "entry.logo" }, "src": { "get": "entry.logoSrc" }, "size": "s" } },
                     { "type": "Button", "props": { "label": { "t": "project.open" }, "variant": "primary", "size": "s" }, "on": { "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } } } }
                   ] }
                 ]
