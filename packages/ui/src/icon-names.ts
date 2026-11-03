@@ -14,5 +14,6 @@ export const ICON_NAMES = [
   "aiOllama", "aiLmStudio", "aiVllm", "aiAnthropic", "aiClaude", "aiClaudeCode",
   "aiGemini", "aiMistral", "aiDeepseek", "aiPerplexity",
   "aiOpenrouter", "aiHuggingface", "aiCopilot",
+  "image", "imageAdd", "crop", "rotate", "openWindow", "quickNote", "upload", "caption", "description", "sparkle",
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];

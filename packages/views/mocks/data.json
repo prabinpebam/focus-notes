@@ -1,0 +1,410 @@
+{
+ "list": [
+  {
+   "id": "mock.projects",
+   "label": "1 · Projects and opening a project"
+  },
+  {
+   "id": "mock.identity",
+   "label": "2 · Project window identity: accent, logo, watermark, Appearance"
+  },
+  {
+   "id": "mock.files",
+   "label": "3 · Files panel: pinned and recent"
+  },
+  {
+   "id": "mock.newNote",
+   "label": "4 · New note in… (Ctrl+Shift+N)"
+  },
+  {
+   "id": "mock.names",
+   "label": "5 · Names and titles"
+  },
+  {
+   "id": "mock.quick",
+   "label": "6 · Quick notes and a file on its own"
+  },
+  {
+   "id": "mock.migrate",
+   "label": "7 · Meeting Project for the first time"
+  },
+  {
+   "id": "mock.rewrite",
+   "label": "8 · Rewrite with AI and the Spotlight fix"
+  },
+  {
+   "id": "mock.images",
+   "label": "9 · Images"
+  }
+ ],
+ "logoSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='%23f2b134'/><path d='M14 44 L32 14 L50 44 Z' fill='%23264653'/><circle cx='32' cy='36' r='6' fill='%23f2f2f2'/></svg>",
+ "darkLogoSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M8 52 L32 10 L56 52 Z' fill='%23111111'/><rect x='26' y='34' width='12' height='18' fill='%23333333'/></svg>",
+ "keysOpen": [
+  "Ctrl",
+  "Alt",
+  "O"
+ ],
+ "keysOpenSpoken": "Control Alt O",
+ "pinned": [
+  {
+   "id": "work",
+   "name": "Work",
+   "accent": "indigo",
+   "logo": "briefcase",
+   "location": "Documents › Focus Notes › Work",
+   "state": "Open",
+   "sharing": "Sharing on"
+  },
+  {
+   "id": "book",
+   "name": "Book",
+   "accent": "teal",
+   "logo": "book",
+   "location": "Documents › Focus Notes › Book",
+   "state": "",
+   "sharing": "Private only"
+  }
+ ],
+ "others": [
+  {
+   "id": "club",
+   "name": "Reading club",
+   "accent": "pink",
+   "logo": "upload",
+   "location": "D: › Clubs › Reading club",
+   "state": "",
+   "sharing": "Private only"
+  },
+  {
+   "id": "recipes",
+   "name": "Recipes",
+   "accent": "orange",
+   "logo": "food",
+   "location": "Documents › Focus Notes › Recipes",
+   "state": "",
+   "sharing": "Sharing on"
+  }
+ ],
+ "recent": [
+  {
+   "id": "r1",
+   "label": "Plan",
+   "description": "Book · Drafts / Chapter 1",
+   "icon": "document"
+  },
+  {
+   "id": "r2",
+   "label": "Standup notes",
+   "description": "Work · Meetings",
+   "icon": "document"
+  },
+  {
+   "id": "r3",
+   "label": "Groceries",
+   "description": "Quick notes · Local only",
+   "icon": "quickNote"
+  },
+  {
+   "id": "r4",
+   "label": "reading-list.txt",
+   "description": "Downloads · Local only",
+   "icon": "text"
+  },
+  {
+   "id": "r5",
+   "label": "On focus",
+   "description": "Work · Root",
+   "icon": "document"
+  }
+ ],
+ "pinMenu": [
+  {
+   "id": "pin",
+   "items": [
+    {
+     "id": "unpin",
+     "label": "Unpin",
+     "icon": "pinOff"
+    },
+    {
+     "id": "folder",
+     "label": "Show in folder",
+     "icon": "folder"
+    },
+    {
+     "id": "remove",
+     "label": "Remove from this list",
+     "icon": "dismiss"
+    }
+   ]
+  }
+ ],
+ "unpinnedMenu": [
+  {
+   "id": "pin",
+   "items": [
+    {
+     "id": "pin",
+     "label": "Pin",
+     "icon": "pin"
+    },
+    {
+     "id": "folder",
+     "label": "Show in folder",
+     "icon": "folder"
+    },
+    {
+     "id": "remove",
+     "label": "Remove from this list",
+     "icon": "dismiss"
+    }
+   ]
+  }
+ ],
+ "owners": [
+  {
+   "id": "owner",
+   "items": [
+    {
+     "id": "prabin",
+     "label": "prabin",
+     "checked": true
+    },
+    {
+     "id": "club-org",
+     "label": "reading-club"
+    }
+   ]
+  }
+ ],
+ "createSteps": [
+  {
+   "id": "s1",
+   "label": "Created the private repository",
+   "icon": "check"
+  },
+  {
+   "id": "s2",
+   "label": "Downloading to Documents › Focus Notes › Book",
+   "icon": "download"
+  },
+  {
+   "id": "s3",
+   "label": "Opening the window",
+   "icon": "circle"
+  }
+ ],
+ "accents": [
+  {
+   "id": "red",
+   "label": "Red"
+  },
+  {
+   "id": "orange",
+   "label": "Orange"
+  },
+  {
+   "id": "amber",
+   "label": "Amber"
+  },
+  {
+   "id": "lime",
+   "label": "Lime"
+  },
+  {
+   "id": "green",
+   "label": "Green"
+  },
+  {
+   "id": "teal",
+   "label": "Teal"
+  },
+  {
+   "id": "cyan",
+   "label": "Cyan"
+  },
+  {
+   "id": "blue",
+   "label": "Blue"
+  },
+  {
+   "id": "indigo",
+   "label": "Indigo"
+  },
+  {
+   "id": "violet",
+   "label": "Violet"
+  },
+  {
+   "id": "pink",
+   "label": "Pink"
+  },
+  {
+   "id": "slate",
+   "label": "Slate"
+  }
+ ],
+ "logos": [
+  {
+   "id": "book",
+   "label": "Book"
+  },
+  {
+   "id": "briefcase",
+   "label": "Briefcase"
+  },
+  {
+   "id": "beaker",
+   "label": "Beaker"
+  },
+  {
+   "id": "heart",
+   "label": "Heart"
+  },
+  {
+   "id": "star",
+   "label": "Star"
+  },
+  {
+   "id": "leaf",
+   "label": "Leaf"
+  },
+  {
+   "id": "rocket",
+   "label": "Rocket"
+  },
+  {
+   "id": "lightbulb",
+   "label": "Lightbulb"
+  },
+  {
+   "id": "music",
+   "label": "Music"
+  },
+  {
+   "id": "camera",
+   "label": "Camera"
+  },
+  {
+   "id": "people",
+   "label": "People"
+  },
+  {
+   "id": "home",
+   "label": "Home"
+  },
+  {
+   "id": "airplane",
+   "label": "Airplane"
+  },
+  {
+   "id": "code",
+   "label": "Code"
+  },
+  {
+   "id": "brush",
+   "label": "Brush"
+  },
+  {
+   "id": "trophy",
+   "label": "Trophy"
+  },
+  {
+   "id": "earth",
+   "label": "Earth"
+  },
+  {
+   "id": "food",
+   "label": "Food"
+  },
+  {
+   "id": "building",
+   "label": "Building"
+  },
+  {
+   "id": "chat",
+   "label": "Chat"
+  },
+  {
+   "id": "diamond",
+   "label": "Diamond"
+  },
+  {
+   "id": "flag",
+   "label": "Flag"
+  },
+  {
+   "id": "sparkle",
+   "label": "Sparkle"
+  },
+  {
+   "id": "pen",
+   "label": "Pen"
+  }
+ ],
+ "displays": [
+  {
+   "id": "colour",
+   "label": "Colour"
+  },
+  {
+   "id": "badge",
+   "label": "Badge"
+  },
+  {
+   "id": "watermark",
+   "label": "Watermark"
+  },
+  {
+   "id": "off",
+   "label": "Off"
+  }
+ ],
+ "appearances": [
+  {
+   "id": "follow",
+   "label": "Follow app"
+  },
+  {
+   "id": "light",
+   "label": "Light"
+  },
+  {
+   "id": "dark",
+   "label": "Dark"
+  }
+ ],
+ "windows": [
+  {
+   "id": "w1",
+   "project": "Work",
+   "note": "Standup notes",
+   "accent": "indigo",
+   "logo": "briefcase",
+   "appearance": "follow",
+   "watermark": false,
+   "src": ""
+  },
+  {
+   "id": "w2",
+   "project": "Book",
+   "note": "Chapter 1",
+   "accent": "teal",
+   "logo": "book",
+   "appearance": "dark",
+   "watermark": true,
+   "src": ""
+  },
+  {
+   "id": "w3",
+   "project": "Reading club",
+   "note": "October picks",
+   "accent": "pink",
+   "logo": "upload",
+   "appearance": "light",
+   "watermark": false,
+   "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='%23f2b134'/><path d='M14 44 L32 14 L50 44 Z' fill='%23264653'/><circle cx='32' cy='36' r='6' fill='%23f2f2f2'/></svg>"
+  }
+ ],
+ "sampleNote": "The harbour was quiet that morning. Mara counted the boats twice, then wrote the number down before it could change."
+}

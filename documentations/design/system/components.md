@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **71 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **16 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **73 registered contracts**: **46 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch (planned)</h2>
 
@@ -41,7 +41,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**71 registered contracts:** 45 primitives, 5 host components, 16 layouts, 1 block component, 4 compound components.
+**73 registered contracts:** 46 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -86,6 +86,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | StrengthMeter | primitive | `rest` | 5 | None |
 | ProgressBar | primitive | `rest` | 3 | None |
 | DatePicker | primitive | `rest`, `focused`, `open`, `invalid` | 3 | `focused`, `open` |
+| ProjectMark | primitive | `rest`, `selected` | 37 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -106,6 +107,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Field | layout | `rest`, `error` | 2 | None |
 | Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
+| ProjectScope | layout | `rest` | 19 | None |
 | ReaderPage | layout | `rest` | 1 | None |
 | PrintPage | layout | `rest` | 2 | None |
 | SitePage | layout | `rest` | 3 | None |
@@ -216,6 +218,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **PillButton** | Implemented | `label` (required), event `press`. Muted caption text in a pill with no fill or border until pointed at or focused; full opacity, so it keeps AA contrast | Button | *Unlock* and the owner's name in the account pill (UI-12), *Use this app for yourself*, and *Read only · Copy to my notes* |
 | **ItemCard** | Implemented | `title` (required), `detail`, `badge`, `icon`, `avatar`, `initials`, `mark`, `size` m or l, `personal`, `label`, `busy`, `disabled`, `skeleton`, `autoFocus`; event `press`; a default slot for its actions. One thing shown rather than described: an account, a workspace, or an option (D-126, D-127); `cmp.itemCard.*` | Group, named by its label | The first run's account and workspace choices |
 | **AppMark** | Implemented | `size` m or l, `label`. The app icon drawn from the brand tokens, a dark tile in a dark theme (D-126, D-135); decorative unless labelled | Image | The full-window setup's hero |
+| **ProjectMark** | Implemented | `logo` one of 24 presets (Fluent geometry), `upload` (a sanitized SVG data URL in `src`) or `none` (`initials`); `accent` one of 12 presets or `app`; `plate` tint, neutral or solid; `size` s, m, l, xl or watermark; `selected`; pressable as a toggle in the logo and colour pickers. A project's identity (D-313); the watermark hides in more contrast, forced colours and reduced transparency; decorative unless labelled | Image, or toggle button | The title band, the Files heading, Projects, Settings → Project (mocks, awaiting approval) |
 | **StepMark** | Implemented | `icon` (required), `tone` neutral, accent, danger, or success, `size` hero or compact, `busy`, `label`. A setup step's icon in a large tile; while the step waits a ring turns around it, still with reduced motion (D-127, D-135, D-132); decorative unless labelled | Image | Setup steps, the backup card |
 | **StepDots** | Implemented | `current`, `total`, `label` (required). One dot per step, done steps filled, the current one longer (D-142); named as a whole ("Step 2 of 4") | Image | The first run |
 | **StatusRow** | Implemented | `message` (required), `tone` danger, warning, info, or success, `icon`. One status on a tinted row, announced politely when it appears (D-142) | Status | Setup problems |
@@ -261,6 +264,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Center** | Implemented | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |
 | **Split** | Planned | Two panes, optionally resizable | `start` and `end` sizes (tokens), `resizable`, `collapseBelow` (a size class) |
 | **Spacer** | Planned | Takes the remaining space in a Stack or Inline | None |
+| **ProjectScope** | Implemented | A project's accent and Appearance over a subtree (D-313): a modifier on the semantic accent roles, and Paper or Ink when the project has its own Appearance | `accent` 12 presets or app; `appearance` follow, light, dark; `part` window, band (the tinted title band and Files heading), plain |
 | **Surface** | Implemented | The only way to get a background, border, radius, or shadow | `variant` canvas, frost, raised, sunken, inverted. `shape` window, sheet, popover, control. `padding` |
 | **ScrollArea** | Planned | Scrolling with consistent scrollbars and edge fades | `axis`, `fade` |
 | **Layer** | Implemented | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark, and put the desktop title bar band under its content: the window's top `layout.titleBar` (44 px), the drag region, which its own content (the trigger) never is (DSK-02, D-106) | `layer`, `position` (topBand, topEnd (the window controls, in the 44 px band, D-104, D-106), belowTopBand, fill, center, bottomCenter, bottomStart), `landmark` (none, banner, main, complementary, region) with `label` (main: the first run's card, while no note shows, D-101), `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |

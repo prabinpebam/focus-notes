@@ -4,6 +4,7 @@
  */
 import { BLOCK_LIST_SCHEMA, type App } from "@focus-notes/core";
 import type { Contract } from "@focus-notes/ui/contracts";
+import { mocks, mockData } from "@focus-notes/views";
 import { VIEW_SCHEMA_URL } from "./migrate.ts";
 
 export interface GalleryFixture { id: string; type: string; label: string }
@@ -54,10 +55,12 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
       },
     };
   }
+  // The UX mocks awaiting the owner's review (strict design): clickable flows on fake data, nothing wired.
+  Object.assign(out, mocks);
   out["gallery.index"] = {
     $schema: VIEW_SCHEMA_URL,
     id: "gallery.index",
-    viewModels: ["vm.app", "vm.gallery"],
+    viewModels: ["vm.app", "vm.gallery", "vm.mocks"],
     focus: "gallery",
     root: {
       type: "AppRoot",
@@ -68,6 +71,13 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
           type: "Stack", id: "gallery", props: { gap: "s", padding: "xl" },
           children: [
             { type: "Heading", props: { level: "1", value: { t: "gallery.title" } } },
+            { type: "Heading", props: { level: "2", value: { t: "project.mock.section" } } },
+            {
+              each: { get: "vm.mocks.list" }, as: "mock", key: "mock.id",
+              render: { type: "Button", props: { label: { get: "mock.label" }, variant: "subtle", icon: "sparkle" }, on: { press: { run: "gallery.open", args: { id: { get: "mock.id" } } } } },
+              empty: { type: "Text", props: { value: { t: "gallery.empty" } } },
+            },
+            { type: "Heading", props: { level: "2", value: { t: "project.mock.components" } } },
             {
               each: { get: "vm.gallery.fixtures" }, as: "item", key: "item.id",
               render: { type: "Button", props: { label: { get: "item.label" }, variant: "subtle" }, on: { press: { run: "gallery.open", args: { id: { get: "item.id" } } } } },
@@ -186,6 +196,9 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     colorHex: "#2f5fd0",
     // A link's address (the product site's SiteLink, WP-10.1): the gallery itself, so following it goes nowhere new.
     href: "#gallery",
+    // An uploaded project logo after sanitizing (D-294): a passive SVG as a data URL.
+    logoSrc: mockData.logoSrc,
+    initials: "W",
     // The product site's theme swatches (SiteThemeShowcase, D-176).
     siteThemes: [
       { id: "paper", label: "Paper", scheme: "light", src: "#gallery", alt: "Paper" },
@@ -243,6 +256,8 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         themeDark: { type: "string" },
         colorHex: { type: "string" },
         href: { type: "string" },
+        logoSrc: { type: "string" },
+        initials: { type: "string" },
         siteThemes: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, scheme: { type: "string" }, src: { type: "string" }, alt: { type: "string" } } } },
         colorValues: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         snapLayouts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
@@ -251,5 +266,17 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),
   });
+  app.viewModels.register({ id: "vm.mocks", schema: schemaOf(mockData) as never, select: () => mockData });
   app.commands.register<{ id: string }>({ id: "gallery.open", title: "gallery.title", run: ({ id }) => navigate(String(id)) });
+}
+
+/** A JSON Schema read off fake data, so the mocks' view model needs no hand-kept schema. */
+function schemaOf(v: unknown): Record<string, unknown> {
+  if (Array.isArray(v)) {
+    const props: Record<string, unknown> = {};
+    for (const item of v) if (item && typeof item === "object" && !Array.isArray(item)) Object.assign(props, (schemaOf(item) as { properties: object }).properties);
+    return { type: "array", items: v.length && typeof v[0] !== "object" ? schemaOf(v[0]) : { type: "object", properties: props } };
+  }
+  if (v && typeof v === "object") return { type: "object", properties: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, schemaOf(x)])) };
+  return { type: typeof v === "number" ? "number" : typeof v === "boolean" ? "boolean" : "string" };
 }

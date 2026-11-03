@@ -63,6 +63,8 @@ import { VersionCompare } from "./primitives/VersionCompare/VersionCompare.tsx";
 import { StrengthMeter } from "./primitives/StrengthMeter/StrengthMeter.tsx";
 import { ProgressBar } from "./primitives/ProgressBar/ProgressBar.tsx";
 import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
+import { ProjectMark } from "./primitives/ProjectMark/ProjectMark.tsx";
+import { ProjectScope } from "./layouts/ProjectScope/ProjectScope.tsx";
 
 /**
  * The closed registry: the renderer can create these and nothing else (DSY-06). The product site's
@@ -71,8 +73,8 @@ import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
  */
 export const registry = defineRegistry({
   SecureKeyField,
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker,
-  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, PrintPage, NoteContent,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, ProjectMark,
+  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
 });
