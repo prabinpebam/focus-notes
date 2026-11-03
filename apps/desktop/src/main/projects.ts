@@ -36,6 +36,39 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   const known = new Map<string, string>();
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
   const lastNoteFile = join(app.getPath("userData"), DATA_FILES.projectLastNote);
+  type Recent = { rank: number; pinned: boolean; notes: { path: string; rank: number; pinned: boolean }[] };
+  const halfLife = 14 * 24 * 60 * 60 * 1000;
+  const addScore = (rank: number, points: number) => {
+    const now = Date.now();
+    return now + halfLife * Math.log2((rank ? Math.pow(2, (rank - now) / halfLife) : 0) + points);
+  };
+  async function recent(profile: string): Promise<Recent> {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
+      return JSON.parse(safeStorage.decryptString(Buffer.from(await readFile(join(profile, DATA_FILES.projectRecent), "utf8"), "base64")));
+    } catch (error) {
+      if (missing(error)) return { rank: 0, pinned: false, notes: [] };
+      throw error;
+    }
+  }
+  async function saveRecent(profile: string, record: Recent) {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
+    await atomicWrite(join(profile, DATA_FILES.projectRecent), safeStorage.encryptString(JSON.stringify(record)).toString("base64"));
+  }
+  let recentWrites = Promise.resolve();
+  function score(path: string, points: number) {
+    const write = recentWrites.then(async () => {
+      const profile = app.getPath("userData");
+      const record = await recent(profile);
+      const note = record.notes.find((n) => n.path === path) ?? { path, rank: 0, pinned: false };
+      note.rank = addScore(note.rank, points);
+      record.rank = addScore(record.rank, points);
+      record.notes = [...record.notes.filter((n) => n.path !== path), note].sort((a, b) => b.rank - a.rank).filter((n, i) => n.pinned || i < 50);
+      await saveRecent(profile, record);
+    });
+    recentWrites = write.catch(error => { console.error("Could not persist project ranking:", error instanceof Error ? error.name : "Error"); });
+    return write;
+  }
   async function lastRecord(): Promise<{ path: string; position?: { from: number; to: number; scroll: number } } | undefined> {
     let encrypted: string;
     try { encrypted = await readFile(lastNoteFile, "utf8"); }
@@ -54,6 +87,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
     const savedPosition = snapshot ?? await position(path);
     await atomicWrite(lastNoteFile, safeStorage.encryptString(JSON.stringify({ path, position: savedPosition })).toString("base64"));
+    if (!snapshot) await score(path, 1);
   }
   async function closed() {
     await atomicWrite(join(rootProfile, DATA_FILES.lastProject), `${JSON.stringify({ profile: app.getPath("userData") })}\n`);
@@ -89,8 +123,23 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     return Promise.all([...known].map(async ([folder, profile]) => {
       const saved = await state(profile);
       const identity = saved.projectSettings?.[folder];
-      return { folder, name: identity?.name ?? basename(folder), accent: identity?.accent ?? "teal", logo: identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: saved.lastNotePath };
+      const history = await recent(profile);
+      const lastPath = profile === app.getPath("userData") ? await lastNote() : undefined;
+      return { folder, name: identity?.name ?? basename(folder), accent: identity?.accent ?? "teal", logo: identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes };
     }));
+  }
+  async function pin(folder: string, path?: string) {
+    await list();
+    const profile = known.get(await realpath(folder));
+    if (!profile) throw new Error("Unknown project");
+    await recentWrites;
+    const record = await recent(profile);
+    if (path) {
+      const note = record.notes.find(n => n.path === path);
+      if (!note) throw new Error("Unknown recent note");
+      note.pinned = !note.pinned;
+    } else record.pinned = !record.pinned;
+    await saveRecent(profile, record);
   }
   async function open(folder: string, note?: string): Promise<void> {
     await list();
@@ -172,5 +221,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }), { flag: "wx" });
     return folder;
   }
-  return { list, open, choose, upload, parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  return { list, open, choose, upload, pin, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }
