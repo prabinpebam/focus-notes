@@ -28,6 +28,18 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 **Settings type ramp (1 November, D-258).** A low-risk refinement to DSY-01 / WP-0.3 (M0): the shared Heading/Text primitives separate section headers (20 px / 700), subsection labels (16 px / 600) and body/help text (14 px / 400). The [foundations](../design/foundations.md#type) record the complete ramp and chain; the owner's combined review build is prepared by the coordinator, not merged here.
 
+### Current state: MP build order (3 November, evening)
+
+The projects, Files, Local notes, images, sharing and publishing UX is approved (owner, 19:39; D-335 and the projects mocks). Built in this order, each package against its [Definition of Done rows](definition-of-done.md#projects-and-simpler-sharing):
+
+1. **WP-P.16** Switch primitive (landed on `main` at `2bc655a5`).
+2. **WP-P.9** item-first share dialog, in parallel with the general fixes **WP-P.1**, **WP-P.2**, **WP-P.7** (D-338, today's workspace) and **WP-P.3**.
+3. **WP-P.17**, **WP-P.4**, **WP-P.5**, **WP-P.19**, **WP-P.20**, **WP-P.6**.
+4. Files type ramp (FIL-19, D-332), then **WP-P.8** Local notes and the location pill.
+5. Images: **WP-9.1**, **WP-9.3**, **WP-9.4**.
+
+Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, then **WP-P.12**, **WP-P.14** and **WP-P.15**.
+
 ### Current state (16 October, evening)
 
 The short, current list for anyone picking up the work; the stage-by-stage history follows below. Statuses live in [`work-graph.json`](work-graph.json).
