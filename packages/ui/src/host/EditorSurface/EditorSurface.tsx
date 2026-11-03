@@ -74,7 +74,7 @@ export interface EditorSurfaceProps {
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
   onFindPrefill?: (payload: { value: string }) => void;
   /** Rewrite's capture: the selected text (empty when nothing is selected or the note is read-only). */
-  onRewriteCapture?: (payload: { text: string }) => void;
+  onRewriteCapture?: (payload: { text: string; caret?: boolean }) => void;
   /** Rewrite's Generate: whether the captured selection is now being rewritten (false when the note changed since). */
   onRewriteBegan?: (payload: { ok: boolean }) => void;
   /** Esc while a rewrite streams in: stop it. */
@@ -559,6 +559,10 @@ export function EditorSurface({
       const range = domRange(target.from, target.to);
       const fragments = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0)
         .map(({ left, right, top, bottom }) => ({ left, right, top, bottom }));
+      if (!fragments.length && target.from === target.to) {
+        const at = editor.view.coordsAtPos(target.from);
+        fragments.push({ left: at.left, right: at.right, top: at.top, bottom: at.bottom });
+      }
       if (!fragments.length) return null;
       return {
         left: Math.min(...fragments.map((r) => r.left)), right: Math.max(...fragments.map((r) => r.right)),
@@ -596,14 +600,15 @@ export function EditorSurface({
       }
       // Rewrite holds its own range while the document scrolls and prompt controls take focus.
       if (id === "rewrite.capture") {
+        syncSelection(editor);
         const { from, to, empty } = editor.state.selection;
         const text = empty || !editor.isEditable ? "" : editor.state.doc.textBetween(from, to, "\n\n");
-        rewriteTarget.current = text.trim() ? { doc: editor.state.doc, from, to } : undefined;
+        rewriteTarget.current = editor.isEditable && (empty || text.trim()) ? { doc: editor.state.doc, from, to } : undefined;
         if (rewriteTarget.current) {
           setSelectionGhost(editor, true);
           anchors.set("rewrite", selectionAnchor(), selectionAnchor);
         }
-        rewriteRef.current.onRewriteCapture?.({ text: rewriteTarget.current ? text : "" });
+        rewriteRef.current.onRewriteCapture?.({ text: rewriteTarget.current ? text : "", caret: Boolean(rewriteTarget.current && empty) });
         return;
       }
       if (id === "rewrite.release") {
@@ -611,7 +616,7 @@ export function EditorSurface({
         return;
       }
       if (id === "rewrite.restore") {
-        const range = ghostRange(editor.state);
+        const range = ghostRange(editor.state) ?? rewriteTarget.current;
         if (rewriteTarget.current && range) {
           editor.commands.setTextSelection(range);
           // While the modal still holds focus, ProseMirror doesn't restore the native range.
@@ -626,9 +631,9 @@ export function EditorSurface({
       if (id === "rewrite.begin") {
         // The captured selection, if the note hasn't changed since: locked, and shimmering while the answer comes.
         const target = rewriteTarget.current;
-        releaseCapture();
         rewriteStream.current?.abort();
         const ok = Boolean(target && editor.state.doc.eq(target.doc) && editor.isEditable);
+        if (ok) releaseCapture();
         rewriteStream.current = ok && target ? new RewriteStream(editor, target, s.rewriteClasses) : undefined;
         rewriteRef.current.onRewriteBegan?.({ ok });
         return;

@@ -8958,7 +8958,8 @@
             "pickerField",
             "formatToolbar",
             "linkEditor",
-            "firstRun"
+            "firstRun",
+            "rewritePrompt"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -9318,6 +9319,24 @@
           "name": "keyScope firstRun",
           "props": {
             "keyScope": "firstRun",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope rewritePrompt",
+          "props": {
+            "keyScope": "rewritePrompt",
             "padding": "l",
             "shape": "popover"
           },
@@ -12957,7 +12976,8 @@
         },
         "rewriteCapture": {
           "payload": {
-            "text": "text"
+            "text": "text",
+            "caret": "boolean"
           }
         },
         "rewriteBegan": {

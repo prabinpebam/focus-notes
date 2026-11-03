@@ -19,9 +19,15 @@ Already using GitHub Copilot in your terminal? **Find on this computer** can add
 2. Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (<kbd>⇧⌘R</kbd> on a Mac). Or right-click the words and select **Rewrite…**, or open the **Edit** menu and select **Rewrite…**.
 3. Check the service, model and **This computer** or **Cloud** card. With several connections, use **AI integration** to choose another. Your choice is remembered for the next rewrite.
 4. In **Prompt**, say what you want, like "Make it friendlier". Or select **Make concise**, **Make warmer** or **Fix grammar** to fill it in.
-5. Select **Generate**. The active integration is the disclosure: there is no first-time warning, disclaimer or extra **Send** confirmation.
+5. Select **Generate**, or press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> (<kbd>⌘Enter</kbd> on a Mac). Plain <kbd>Enter</kbd> adds a line. Composing with an input method never sends. The active integration is the disclosure: there is no first-time warning, disclaimer or extra **Send** confirmation.
 
 **Result:** the inline prompt closes and your note can't be edited for a moment. Your words shimmer, then the new words appear in their place, in rainbow colors. When it's done, the colors fade to normal text and you can type again.
+
+## Write at the caret
+
+With nothing selected, place your caret and use the same Rewrite shortcut. **Write with AI** opens there. Type your prompt and generate; only that prompt goes to the chosen integration, never the note, heading or surrounding words. Text-dependent presets are hidden. The answer is inserted at that captured caret. Stop restores the original; Undo removes the whole insertion in one step.
+
+If the note changed after capture, nothing is sent and your prompt stays available.
 
 ## Review the selection while writing the prompt
 

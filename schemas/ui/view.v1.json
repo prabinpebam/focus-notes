@@ -8214,7 +8214,8 @@
                     "pickerField",
                     "formatToolbar",
                     "linkEditor",
-                    "firstRun"
+                    "firstRun",
+                    "rewritePrompt"
                   ]
                 },
                 {

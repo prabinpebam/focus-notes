@@ -105,7 +105,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Stack | layout | `rest` | 18 | None |
 | Inline | layout | `rest` | 19 | None |
 | Columns | layout | `rest` | 2 | None |
-| Surface | layout | `rest` | 24 | None |
+| Surface | layout | `rest` | 25 | None |
 | Layer | layout | `rest` | 19 | None |
 | Center | layout | `rest` | 11 | None |
 | AppRoot | layout | `rest` | 29 | None |

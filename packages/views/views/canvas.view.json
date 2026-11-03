@@ -934,6 +934,7 @@
           "rewriteCapture": {
             "run": "rewrite.captured",
             "args": {
+              "caret": { "get": "event.caret" },
               "text": {
                 "get": "event.text"
               }

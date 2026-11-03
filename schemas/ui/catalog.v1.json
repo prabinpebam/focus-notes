@@ -3655,7 +3655,8 @@
             "pickerField",
             "formatToolbar",
             "linkEditor",
-            "firstRun"
+            "firstRun",
+            "rewritePrompt"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -3695,6 +3696,7 @@
         "keyScope formatToolbar",
         "keyScope linkEditor",
         "keyScope firstRun",
+        "keyScope rewritePrompt",
         "elevation 0",
         "elevation 1",
         "elevation 2",
@@ -4736,7 +4738,8 @@
         },
         "rewriteCapture": {
           "payload": {
-            "text": "text"
+            "text": "text",
+            "caret": "boolean"
           }
         },
         "rewriteBegan": {

@@ -175,7 +175,7 @@ export interface AiBridge {
    * `onRewriteEvent`. `path` identifies the source note. The visible integration and the person's
    * Generate action decide what is sent; private notes do not have a separate sending gate.
    */
-  rewriteStart(id: string, input: { text: string; instruction: string; path: string }): Promise<void>;
+  rewriteStart(id: string, input: { text: string; instruction: string; path: string; mode?: "write" }): Promise<void>;
   rewriteCancel(id: string): Promise<void>;
   onRewriteEvent(listener: (event: unknown) => void): () => void;
 }

@@ -102,14 +102,14 @@
       "summary": "Enter dismisses Spotlight after acting; Shift+Enter retains toggles. Ctrl+Enter generates from the AI prompt, not during composition.",
       "requirements": ["SPT-10", "RWR-91"], "dependsOn": ["WP-4.2", "WP-AI.14"],
       "touches": ["core", "views", "editor"], "reviews": ["code", "accessibility"],
-      "specs": ["experience/spotlight.html", "experience/rewrite-with-ai.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/spotlight.html", "experience/rewrite-with-ai.md"], "lookahead": true, "status": "built"
     },
     {
       "id": "WP-P.2", "stage": "MP", "title": "Write at caret",
       "summary": "Prompt-only AI insertion, exact cancellation and one undo; never sends surrounding note.",
       "requirements": ["RWR-92"], "dependsOn": ["WP-AI.14"],
       "touches": ["core", "editor", "views"], "reviews": ["code", "security", "design-system"],
-      "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md"], "lookahead": true, "status": "built"
     },
     {
       "id": "WP-P.3", "stage": "MP", "title": "Title and file name apart",

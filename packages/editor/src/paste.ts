@@ -326,7 +326,7 @@ export function safeLinks(nodes: PMNode[]): PMNode[] {
 }
 
 /** One line pasted between words keeps the spaces at its ends, which Markdown would trim. */
-function keepEdgeSpaces(text: string, blocks: PMNode[]): PMNode[] {
+export function keepEdgeSpaces(text: string, blocks: PMNode[]): PMNode[] {
   if (/[\r\n]/.test(text) || blocks.length !== 1 || blocks[0]!.type !== "paragraph") return blocks;
   const content = [...(blocks[0]!.content ?? [])];
   const lead = /^[ \t]+/.exec(text)?.[0] ?? "";

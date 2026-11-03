@@ -11,7 +11,7 @@ export const contract = defineContract({
     padding: { kind: "token", group: "space", default: "none" },
     shortPadding: { kind: "token", group: "space", description: "The padding in a short window (below breakpoint.short): the full-window setup tightens up (D-131)." },
     scroll: { kind: "boolean", default: false, description: "What it holds scrolls inside its padding when the surface is held shorter than its content: a dialog in the middle of a short window (D-123)." },
-    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun"], default: "none", description: "Keys registered for this scope work while focus is inside." },
+    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun", "rewritePrompt"], default: "none", description: "Keys registered for this scope work while focus is inside." },
   },
   events: {},
   slots: { default: { accepts: "any" } },
@@ -26,7 +26,7 @@ export const contract = defineContract({
     ...["none", "window", "sheet", "popover", "control", "round"].map((shape) => ({
       name: `shape ${shape}`, props: { shape, padding: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
-    ...["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun"].map((keyScope) => ({
+    ...["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun", "rewritePrompt"].map((keyScope) => ({
       name: `keyScope ${keyScope}`, props: { keyScope, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
     ...["0", "1", "2", "3"].map((elevation) => ({
