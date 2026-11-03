@@ -1,0 +1,73 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "projectNew",
+  "ia": "IA-VIEW-PROJECTS",
+  "overlay": true,
+  "viewModels": ["vm.projectNew", "vm.project"],
+  "focus": "projectName",
+  "root": { "type": "Stack", "children": [{
+    "type": "Dialog",
+    "when": { "get": "vm.projectNew.open" },
+    "props": { "title": { "t": "project.new.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.projectNew.open" }, "size": "m" },
+    "on": { "openChange": { "run": "projects.newClose" } },
+    "slots": { "toolbar": [{ "type": "StepDots", "props": { "current": { "get": "vm.projectNew.step" }, "total": 4, "label": { "get": "vm.projectNew.stepLabel" } } }] },
+    "children": [{
+      "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "switch": { "get": "vm.projectNew.stepName" }, "cases": {
+          "name": { "type": "TextField", "id": "projectName", "props": { "label": { "t": "project.new.name" }, "value": { "bind": "vm.projectNew.name" }, "description": { "t": "project.new.nameHint" }, "autoFocus": true } },
+          "private": { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "Heading", "props": { "value": { "t": "project.new.privateTitle" }, "level": "3" } },
+            { "type": "ItemCard", "props": { "title": { "t": "project.new.privateRepo" }, "icon": "lock" } },
+            { "type": "ItemCard", "props": { "title": { "t": "project.new.noSite" }, "detail": { "t": "project.new.noSiteDetail" }, "icon": "globe" } },
+            { "type": "ItemCard", "props": { "title": { "t": "project.new.ownFolder" }, "detail": { "get": "vm.projectNew.folder" }, "icon": "folder", "personal": "all" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }
+            ] }
+          ] },
+          "look": { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
+              { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
+              { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
+            ] },
+            { "type": "Field", "props": { "label": { "t": "project.settings.colour" } }, "children": [
+              { "type": "Inline", "props": { "gap": "xs", "wrap": true }, "children": [
+                { "each": { "get": "vm.project.accents" }, "as": "a", "key": "a.id", "empty": { "type": "Text", "props": { "value": { "t": "project.settings.colour" } } }, "render": {
+                  "type": "ProjectMark", "props": { "accent": { "get": "a.id" }, "plate": "solid", "label": { "get": "a.label" }, "selected": { "expr": { "==": [{ "get": "a.id" }, { "get": "vm.projectNew.accent" }] } } },
+                  "on": { "press": { "run": "projects.newaccent", "args": { "value": { "get": "a.id" } } } }
+                } }
+              ] }
+            ] },
+            { "type": "Field", "props": { "label": { "t": "project.settings.logo" } }, "children": [
+              { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
+                { "type": "Inline", "props": { "gap": "xs", "wrap": true }, "children": [
+                  { "each": { "get": "vm.project.logos" }, "as": "l", "key": "l.id", "empty": { "type": "Text", "props": { "value": { "t": "project.settings.logo" } } }, "render": {
+                    "type": "ProjectMark", "props": { "logo": { "get": "l.id" }, "label": { "get": "l.label" }, "selected": { "expr": { "==": [{ "get": "l.id" }, { "get": "vm.projectNew.logo" }] } } },
+                    "on": { "press": { "run": "projects.newlogo", "args": { "value": { "get": "l.id" } } } }
+                  } }
+                ] }
+              ] }
+            ] },
+            { "type": "Text", "props": { "value": { "t": "project.new.lookHint" }, "tone": "muted" } }
+          ] },
+          "confirm": { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
+              { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
+              { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
+            ] },
+            { "type": "Text", "props": { "value": { "t": "project.new.willMake" } } },
+            { "type": "ItemCard", "props": { "title": { "t": "project.new.makesFolder" }, "detail": { "get": "vm.projectNew.folder" }, "icon": "folder", "personal": "all" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }
+            ] },
+            { "type": "ItemCard", "props": { "title": { "t": "project.new.makesNoSite" }, "detail": { "t": "project.new.makesNoSiteDetail" }, "icon": "globe" } }
+          ] }
+        } },
+        { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projectNew.error" }, ""] } }, "props": { "value": { "get": "vm.projectNew.error" } } },
+        { "type": "Text", "when": { "expr": { "and": [{ "get": "vm.projectNew.pending" }, { "get": "vm.projectNew.confirm" }] } }, "props": { "value": { "t": "project.new.creating" } } },
+        { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+          { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "projects.newClose" } } },
+          { "type": "Button", "props": { "label": { "t": "project.back" }, "variant": "subtle", "disabled": { "get": "vm.projectNew.cannotBack" }, "disabledReason": { "t": "project.new.stepOf", "args": { "n": { "get": "vm.projectNew.step" } } } }, "on": { "press": { "run": "projects.newBack" } } },
+          { "type": "Button", "props": { "label": { "get": "vm.projectNew.nextLabel" }, "variant": "primary", "disabled": { "get": "vm.projectNew.cannotNext" }, "disabledReason": { "t": "project.new.fixName" } }, "on": { "press": { "run": "projects.newContinue" } } }
+        ] }
+      ]
+    }]
+  }] }
+}

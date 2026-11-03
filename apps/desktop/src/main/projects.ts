@@ -2,15 +2,17 @@ import { app, dialog } from "electron";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
+import { access, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { AppStateFile, ProjectEntry } from "@focus-notes/core";
-import { DATA_FILES } from "@focus-notes/core/inventory";
+import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
+import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { parseRecord } from "./workspace/record.ts";
 
 export function projectWindows(home: () => string) {
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
-  const profiles = join(rootProfile, "project-profiles");
+  const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
   const known = new Map<string, string>();
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
   async function state(profile: string): Promise<AppStateFile> {
@@ -25,20 +27,20 @@ export function projectWindows(home: () => string) {
     known.clear();
     known.set(await realpath(home()), app.getPath("userData"));
     await mkdir(profiles, { recursive: true });
-    if (app.getPath("userData") === rootProfile && !existsSync(join(rootProfile, "project-folder.txt"))) await writeFile(join(rootProfile, "project-folder.txt"), await realpath(home()), { flag: "wx" });
+    if (app.getPath("userData") === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder))) await writeFile(join(rootProfile, DATA_FILES.projectFolder), await realpath(home()), { flag: "wx" });
     const rootRecord = parseRecord(await readFile(join(rootProfile, DATA_FILES.workspace), "utf8").catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return "";
       throw error;
     }));
     if (rootRecord && existsSync(rootRecord.folder)) known.set(await realpath(rootRecord.folder), rootProfile);
-    else if (existsSync(join(rootProfile, "project-folder.txt"))) {
-      const folder = await readFile(join(rootProfile, "project-folder.txt"), "utf8");
+    else if (existsSync(join(rootProfile, DATA_FILES.projectFolder))) {
+      const folder = await readFile(join(rootProfile, DATA_FILES.projectFolder), "utf8");
       if (existsSync(folder)) known.set(await realpath(folder), rootProfile);
     }
     for (const name of await readdir(profiles)) {
       const profile = join(profiles, name);
       if (!(await stat(profile)).isDirectory()) continue;
-      const folder = await readFile(join(profile, "project-folder.txt"), "utf8");
+      const folder = await readFile(join(profile, DATA_FILES.projectFolder), "utf8");
       if (existsSync(folder)) known.set(await realpath(folder), profile);
     }
     return Promise.all([...known].map(async ([folder, profile]) => {
@@ -75,11 +77,50 @@ export function projectWindows(home: () => string) {
     if (!known.has(folder)) {
       const profile = join(profiles, key(folder));
       await mkdir(profile, { recursive: true });
-      await writeFile(join(profile, "project-folder.txt"), folder, { encoding: "utf8", flag: "wx" });
+      await writeFile(join(profile, DATA_FILES.projectFolder), folder, { encoding: "utf8", flag: "wx" });
       await writeFile(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done" }), { encoding: "utf8", flag: "wx" });
       await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { encoding: "utf8", flag: "wx" });
     }
     return folder;
   }
-  return { list, open, choose };
+  async function chooseParent(parent: string): Promise<string | undefined> {
+    const result = await dialog.showOpenDialog({ properties: ["openDirectory"], defaultPath: parent });
+    return result.canceled || !result.filePaths[0] ? undefined : realpath(result.filePaths[0]);
+  }
+  async function check(parent: string, name: string): Promise<{ folder: string; problem: string }> {
+    const folder = join(parent, name);
+    if (!name.trim() || name !== name.trim() || /[\\/:*?"<>|\u0000-\u001f]/.test(name) || /[. ]$/.test(name) || name.length > 100 || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(name)) return { folder, problem: "name" };
+    const canonical = await realpath(parent);
+    for (let ancestor = canonical; ; ancestor = dirname(ancestor)) {
+      if (existsSync(join(ancestor, ".focus-notes", "workspace.json"))) return { folder, problem: "nested" };
+      if (ancestor === dirname(ancestor)) break;
+    }
+    await list();
+    for (const project of known.keys()) {
+      const rel = relative(project, canonical);
+      if (!rel || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))) return { folder, problem: "nested" };
+    }
+    if (existsSync(folder)) return { folder, problem: "exists" };
+    try { await access(canonical, constants.W_OK); }
+    catch { return { folder, problem: "access" }; }
+    return { folder: join(canonical, name), problem: "" };
+  }
+  async function create(input: { parent: string; name: string; accent: string; logo: string }): Promise<string> {
+    if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
+    const result = await check(input.parent, input.name);
+    if (result.problem) throw new Error(`Project folder refused: ${result.problem}`);
+    // Exclusive creation is intentional: never adopt or overwrite an existing folder, even an empty one.
+    await mkdir(result.folder);
+    await mkdir(join(result.folder, "notes"));
+    const folder = await realpath(result.folder);
+    const profile = join(profiles, key(folder));
+    await mkdir(profile);
+    await writeFile(join(profile, DATA_FILES.projectFolder), folder, { flag: "wx" });
+    await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { flag: "wx" });
+    await writeFile(join(profile, DATA_FILES.state), JSON.stringify({
+      version: 1, firstRun: "done", projectSettings: { [folder]: { name: input.name, accent: input.accent, logo: input.logo, watermark: "off", font: "app", theme: "app" } },
+    }), { flag: "wx" });
+    return folder;
+  }
+  return { list, open, choose, parent: async () => dirname(home()), chooseParent, check, create };
 }

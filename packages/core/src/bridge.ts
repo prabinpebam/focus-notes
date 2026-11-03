@@ -130,6 +130,10 @@ export interface PlatformBridge {
     open(folder: string, note?: string): Promise<void>;
     choose(): Promise<string | undefined>;
     onNote?(listener: (path: string) => void): () => void;
+    parent(): Promise<string>;
+    chooseParent(parent: string): Promise<string | undefined>;
+    check(parent: string, name: string): Promise<{ folder: string; problem: string }>;
+    create(input: { parent: string; name: string; accent: string; logo: string }): Promise<string>;
   };
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;
