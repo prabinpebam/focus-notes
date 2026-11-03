@@ -81,6 +81,16 @@ The first run's workspace is the main process's to choose, never the renderer's 
 
 ## Creating a workspace
 
+**Superseded for new projects by D-272/D-274/D-292.** The nine-step flow below is historical as-built documentation, not the creation plan. New project creation signs in, creates one private project repository, initializes notes/settings and opens it in its own local window. It does **not** create a public repository, deploy key, Pages site or owner-vault grant. First Share/Publish explicitly confirms and creates the optional public site, installs its least-privilege read-only deploy key and resumes the original item. Partial remote results are reconciled on retry, never blindly recreated or deleted. [Projects](../experience/projects.md) specifies input, cancellation, failures and the proposed existing-instance migration.
+
+### Per-project process boundary (planned)
+
+Each window carries a stable project identity; watchers, autosave lanes, Git status caches, locks, sync/conflicts, history, agent permissions and canonical path checks are keyed to it. Do not share a mutable “current workspace” across windows. Services may share a process, not authority. Opening an already-open project focuses its window instead of acquiring a second writer. Preserve one-writer-per-repository locking, including external process contention.
+
+Files/search/links/move/import cannot escape the canonical project root through traversal, symlinks or foreign IDs. A place picker explicitly choosing a different project routes to that project's window. Local Quick notes and standalone files use local journals/atomic writes, never implicit Git/repository creation or upload. Title edits never enqueue Git renames; explicit Rename file… owns the path/link batch (FIL-18).
+
+### Historical instance creation
+
 A new user gets an isolated, self-owned instance in their own account (FRE-08). Everything below runs in the app on their computer, using their credential. People who already copied the template and wrote in the browser keep their instance: the app finds that repository, clones it, and does only the steps still missing (usually the private repository, the deploy key, and the vault passphrase).
 
 <ol class="slate-steps">
@@ -125,6 +135,8 @@ A new user gets an isolated, self-owned instance in their own account (FRE-08). 
 Each step reports **pending**, **running**, **done**, **failed** with a problem code (for example *permission*: "Your sign-in doesn't allow this…"), or **skipped**, and can be retried on its own once the steps before it are done; retrying a done step changes nothing. Every step is idempotent: it looks first, then does only what's missing, so a setup that stopped anywhere runs again safely. Progress is kept in `setup.json` in the app's data folder (names, the folder, the login, the site's address, and step states, never the token, passphrase, or key), so quitting halfway resumes at the same step, and a step that was running when the app quit runs again. The engine is in the desktop's main process (`apps/desktop/src/main/setup/`), its types in `packages/core` (`setup.ts`), and the app shows it as `vm.setup` (D-98). Publishing, share links, and the vault can be skipped and turned on later in **Settings → Workspace**, where the vault passphrase can also be changed.
 
 ## Importing notes from a browser
+
+**Retired by D-292, not deferred.** There is no browser-writing product or ease-in/export/import funnel. The historical protocol below is needed only to preserve existing browser drafts during WEB-01's one-time local recovery; keep drafts until a verified export exists and never clear storage automatically. Ordinary file import remains a separate desktop capability.
 
 Notes written in a browser stay in that browser until they're moved (FRE-10, PKG-11). In the browser, *Export my notes…* saves them as one file, `focus-notes-export-<date>.json` ([Web app → Moving notes](web-app.md#moving-notes-between-the-browser-and-github)). The desktop app's first run offers to import one, and *Import notes…* in its ⋯ menu does it later:
 

@@ -30,6 +30,16 @@ Also part of this work: the owner's **modal scroll-to-edges** fix (be8807f9, on 
 
 ## States
 
+### Write at caret and prompt submission (planned, D-282)
+
+UC-RWR-12 uses the existing IA-CMP-REWRITEPROMPT and IA-CMP-REWRITEREVIEW. With no selection, capture a stable caret plus document version and open **Write with AI**; same disclosed integration/model/locality and remembered choice. Hide presets requiring source text. The request contains the prompt only, no note/body/title context. On generation lock editing, insert only at that caret, keep outside bytes exact, and commit one undo step on success. Stop, error, window close or stale capture restores the original and never saves a partial answer.
+
+Ctrl+Enter / ⌘Enter maps to the existing Generate action only inside the prompt, when valid and not already pending. Enter remains newline; IME composition is never submission. A stale/removed caret or changed note keeps the prompt and asks the person to place the caret again before sending. Moving from caret mode to a selection with a written prompt uses the existing loss-preservation path; never silently retarget a prepared request.
+
+| ID | Choice | Serves | Why |
+| --- | --- | --- | --- |
+| DD-RWR-12 | One prompt, selection or caret mode; Generate shortcut scoped to prompt | UC-RWR-01, UC-RWR-12 | No duplicate command or surrounding-content disclosure; exact Undo and cancellation stay invariant |
+
 ### Rewrite popover
 
 | State | Shows | Primary action |

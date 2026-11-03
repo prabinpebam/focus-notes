@@ -148,4 +148,4 @@ These are irreversible or change an owner decision, so they're proposed, not bui
 | Pinned folders, not only notes | [Projects → Recent and pinned](../experience/projects.md#recent-and-pinned), [Files](../design/views/files.html) | D-293 |
 | Drop browser writing, browser notes and the ease-in plan; Pages is a website | [Repository and publishing](../architecture/repository-and-publishing.html), [Distribution](distribution.md), [Product site and help](../product/site-and-help.md) | D-292 |
 
-All of it is planned in stage **MP: Projects and simpler sharing** of the [roadmap](roadmap.md), as work packages WP-P.1 to WP-P.12 in the [implementation plan](implementation-plan.md#mp).
+All of it is planned in stage **MP: Projects and simpler sharing** of the [roadmap](roadmap.md), as work packages WP-P.1 to WP-P.13 in the [implementation plan](implementation-plan.md#mp).

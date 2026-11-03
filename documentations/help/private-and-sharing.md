@@ -10,7 +10,7 @@ Keep notes private, make them public, and share one with a passcode.
 - Public and private notes
 - Make a note public or private
 - Share a private note with a passcode
-- Read your private notes in a browser
+- Read a shared note with a link or access code
 - What Focus Notes can and can't see
 
 [Back to Help](index.md)

@@ -1,5 +1,23 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Project and sharing waits (planned)
+
+The MP flows are specified, not implemented or measured. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Open local project | Responsive → waiting; keep old window, prepare complete replacement | Project row: Opening “⟨project⟩”…; Retry on failure | `fn:project.open`; acknowledgement ≤100 ms, indicator after 300 ms |
+| Create/download project | Long; background steps Checking / Creating / Downloading / Opening | Projects task row, elapsed; leave without losing input, no blind duplicate creation | `fn:project.create`; UI stays usable; no remote-completion deadline claim |
+| Save project look/pins | Responsive; persisted state retained while writing | Chosen control: Saving project look… / Saving pins…; explicit error/retry | `fn:project.settings`; acknowledgement ≤100 ms |
+| Review folder contents | Waiting for large trees; chrome now, existing counts retained while updating | Review dialog: Reading ⟨count⟩ items…; refresh/changed-scope notice | `fn:share.reviewContents`; result before claiming reviewed |
+| First-share site setup | Long; named steps Creating site / Setting up publishing | Share task, preserved draft; partial results and Continue setup | `fn:project.enableSharing`; no remote action before confirmation |
+| Create/update/withdraw share | Long; commit, backup, seal, publish | Share status: Preparing share… / Waiting to publish / Ready to share; Retry publishing | `fn:share.publish`; ready only after exact deployment succeeds |
+| Invite collaborator | Waiting/long; request then reconcile actual invitation state | People row: Sending invite… → Pending; errors keep username and role | `fn:project.invite`; no accepted claim from pending response |
+| Standalone/Quick note save | Responsive; journal and atomic disk save | File state: Saving here… / Saved here; write refusal offers Save as… | `fn:file.saveLocal`; disk confirmation ≤ existing 1 s save target, retain journal otherwise |
+| Clipboard/OS share | Responsive; explicit result or cancellation | Copy action status / Ready to share when fresh gesture is required | `fn:share.handoff`; never claim copied/opened on refusal |
+
+Existing browser-writing waits below are historical and retired by D-292; share-reader decrypt and read-only website waits remain. Ordinary AI-stream waits also cover Write at caret, with “Writing” instead of “Rewriting”.
+
 **D-267 revision, 17:29 feedback:** reuse the device-local Writer write and `fn:ai.chooseWriter`, not a second save lane. Keep the old checked Default until persistence applies. Pending radio choices use inert `aria-disabled`, never native disabling that loses focus. The mounted **Remembering your choice…** LiveRegion stays outside layout, so progress and success do not shift the entire list; success is announced, not repeated below it. Shared selected row paint/badge updates leave the editor, panel, scroll and input mounted. Failure retains the old choice and shows its sanitized reason. No note/model request occurs. Find and its scan explanation form one related group above the list; prior results remain during discovery. No latency improvement is claimed or measured; ordinary synthetic UI observation and permitted static/build/type checks are the evidence, with owner acceptance pending.
 
 How Focus Notes stays calm while work takes time. It covers what a person must see within 100 ms, 1 s and 10 s, which feedback pattern each kind of wait gets, how windows and views change without a blank or white frame, and the inventory of every wait in the app with its pattern and measure. It's the design half of performance. The measuring half, with the budgets and the benchmark, is [Performance and quality](performance-and-quality.md), and the signs themselves are [Feedback and dialogs → Waits](../design/components/feedback-and-dialogs.md#waits). Adapted from the owner's perceived-performance framework for his personal site (D-149).

@@ -7,6 +7,8 @@ The views people open now and then: Settings, Send feedback, Share and visibilit
 
 <h2 id="settings" data-reader-personas="design product">Settings</h2>
 
+**3 November planned replacement:** Settings is scoped to the current project. **Project** replaces Workspace's project-management surface: display Name (not repository rename), Colour, Logo (Badge/Watermark/Off), local Folder, People, Sharing (Private only / On), Site theme and On GitHub. Open project… opens a different window, never replaces this one. Private-only shows no Pages/vault setup; first share explains the public site before creation. People uses actual GitHub permissions and warns about all private notes/share secrets. Sharing lists **All shares by item**, never “All people with access”. Account, AI, Appearance and keyboard preferences remain device-level where they already are. No browser Settings/editor/vault is planned (D-292); historical As built text below describes the unchanged old app only.
+
 **IA-VIEW-SETTINGS.** Serves UC-KEY-03 and UC-SETUP-03, and is the home for rare preferences. It opens from ⋯ → Settings, <kbd>Mod</kbd>+<kbd>,</kbd>, or Spotlight (any setting is also reachable directly in Spotlight).
 
 **Layout:** a centered dialog, 760 &times; up to 600 px, solid surface. A category list on the left (200 px) and the category's settings on the right. The search field at the top filters across every category and highlights matches. There's no Save button: changes apply at once, the way macOS settings do. <kbd>Esc</kbd> closes it.
@@ -14,10 +16,10 @@ The views people open now and then: Settings, Send feedback, Share and visibilit
 | Category | Settings |
 | --- | --- |
 | **Account** | Avatar, name, and @login. *Signed in through:* Git Credential Manager, GitHub CLI, or a token, with what that means ("Also used by Git in your terminal"). [Switch account] and [Sign out] (signs Git out too, and says so). A link to GitHub's settings to revoke a token or authorization fully. |
-| **Workspace** | Folder location ([Show in Finder/Explorer], [Change…], which moves or re-clones). The notes and private repositories in the user's account (reachable, branch, last sync). *Publishing:* the GitHub Pages address and status, with [Turn on] if it was skipped. *Private share links:* on or off, with [Set up] if skipped. *Sync:* automatically after 30 s, 60 s (default), or 5 min without typing, or only when I press <kbd>Mod</kbd>+<kbd>S</kbd>. [Sync now]. [Run setup again]. |
+| **Project** | Name, Colour, Logo, Folder, People, Sharing, Site theme and On GitHub. Sharing starts Private only; Site theme is independent of Appearance. Open project… opens another window. Existing folder moves and backup policies remain lossless; no owner-vault passphrase. [Projects](../../experience/projects.md). |
 | **Editor** | *New notes go in:* the current folder (default) or the Private root. *Open focus mode on start* (on). *Markdown shortcuts while typing* (on). *Smart punctuation* (on: curly quotes and dashes). *Spelling:* uses the OS spell checker, with a language list. *Paste:* keep formatting (default) or always paste as plain text. |
 | **Appearance** | A summary ("System · Paper / Ink · 18 px Serif") with [Open theme manager]. *Interface size:* 90–150%. *Transparency:* follow the system (default) or always solid. *Sync appearance across computers* (off). |
-| **Sharing** | *All people with access*: every audience with its name, ways in, what it opens, expiry, and state, with filters and actions. The invite template. Share-link publishing status, with [Set up] if skipped. See [Sharing and visibility](sharing.md#settings-sharing). |
+| **Sharing** | All shares by item, opening methods, expiry and state, with Extend/Withdraw/Delete record. Share-information template without recipient names. See [Sharing](sharing.md#settings-sharing). |
 | **Agents** | *Agents can connect*, read and edit permissions, folder limits, a line saying the command-line tool acts as you, *Connect an agent* snippets, *Install command-line tool*, and *Recent agent changes*. See [Agents and automation](../../architecture/agents.md#permissions). |
 | **Keyboard** | Search bindings. Every command with its keys, with [Change] (P1) and per-row Reset. [Reset all]. [Open cheat sheet]. Conflicts are flagged inline ("Also used by Duplicate block"). |
 | **About** | Version, update status and channel (Stable or Beta, P1), license (MIT), third-party notices, *Copy diagnostic report*, *Report a problem* (opens [Send feedback](#send-feedback) with Problem chosen), and links to these docs and the privacy statement. |
@@ -85,7 +87,7 @@ The views people open now and then: Settings, Send feedback, Share and visibilit
 
 <h2 id="share-and-visibility" data-reader-personas="design product">Share and visibility</h2>
 
-**IA-VIEW-SHARE** now has its own page: [Sharing and visibility](sharing.md). It covers the three visibility levels, audiences with magic links and passcodes, the invite, withdraw and extend, and the share reader.
+**IA-VIEW-SHARE** has its own page: [Sharing](sharing.md). It specifies the direct fixed-item dialog, nested contents review, Link/Passcode switches, four actions, access codes without names, legacy compatibility, withdrawal/expiry and the read-only reader. No person-first flow or list of who received a link.
 
 <h2 id="note-history" data-reader-personas="design product">Note history</h2>
 

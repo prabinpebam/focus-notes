@@ -75,7 +75,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 <ol class="slate-steps">
   <li class="slate-step">
     <p class="slate-step__title">Select and open</p>
-    <p>Select text in an editable note, then press <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd>), choose <strong>Rewrite…</strong> in the text menu (Windows and Linux) or the Edit menu, or run it from Spotlight. With nothing selected, nothing opens and the screen reader hears "Select some text to rewrite first." (RWR-72)</p>
+    <p>Select text in an editable note, then press <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd>), choose <strong>Rewrite…</strong> in the text menu (Windows and Linux) or the Edit menu, or run it from Spotlight. Planned D-282 / RWR-92: without a selection the same command opens <strong>Write with AI</strong> at the caret, not an error. It sends the prompt alone and inserts the answer there; no surrounding note context. Text-dependent presets are hidden. The original selection mode remains unchanged.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Prompt</p>
@@ -84,7 +84,7 @@ Official documentation, checked 30 October 2026. These products show the interac
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Generate</p>
-    <p><strong>Generate</strong> closes the popover and sends directly to the visible integration, including on first use. The note becomes read-only and the selection shimmers in the AI rainbow. A toast says "Rewriting with Ollama… Press Esc to stop." with <strong>Stop</strong>. If the note changed since you selected, nothing is sent: "The note changed after you selected the text. Select it again and rewrite." (RWR-75, RWR-76, AIS-14)</p>
+    <p><strong>Generate</strong> or planned <kbd>Ctrl+Enter</kbd> (<kbd>⌘Enter</kbd>) sends once to the visible integration. Plain Enter adds a line; composition never submits. The note becomes read-only and the affected range shimmers. A toast names <strong>Rewriting with ⟨service⟩…</strong> or <strong>Writing with ⟨service⟩…</strong>, with Stop. If the note changed since capture, send nothing and preserve the prompt: choose the selection/caret again. In Write mode only the prompt goes out; success is one insertion/undo step, and Stop/error restores the exact note, with no partial insertion saved (RWR-91, RWR-92).</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Stream in place</p>

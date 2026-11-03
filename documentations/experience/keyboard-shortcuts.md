@@ -61,6 +61,8 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 
 ## App and window
 
+**3 November planned key changes (KEY-09, RWR-91, SPT-10):** desktop only; browser writing and its substitute keymap are retired by D-292. Historical web-substitute columns below do not promise browser editing.
+
 | Action | macOS / iPadOS | Windows / Linux | Web substitute | Layer | Precedent |
 | --- | --- | --- | --- | --- | --- |
 | Open Spotlight | <kbd>⌘/</kbd> | <kbd>Ctrl+/</kbd> | | Power | Owner decision (D-16) |
@@ -68,7 +70,9 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Quick open a note | <kbd>⌘P</kbd> | <kbd>Ctrl+P</kbd> |  | Power | VS Code |
 | Open… (Files panel) | <kbd>⌘O</kbd> | <kbd>Ctrl+O</kbd> |  | Basic | Universal |
 | New note | <kbd>⌘N</kbd> | <kbd>Ctrl+N</kbd> | <kbd>⌃⌥N</kbd> / <kbd>Ctrl+Alt+N</kbd> | Basic | Universal |
-| New window (desktop) | <kbd>⇧⌘N</kbd> | <kbd>Ctrl+Shift+N</kbd> | Not available | Power | VS Code |
+| New note in… (project then folder) | <kbd>⇧⌘N</kbd> | <kbd>Ctrl+Shift+N</kbd> | Not available | Writer | D-280; retires New window's binding |
+| Open project… (separate window) | <kbd>⌥⌘O</kbd> | <kbd>Ctrl+Alt+O</kbd> | Not available | Power | D-273, D-280 |
+| Generate in AI prompt | <kbd>⌘Enter</kbd> | <kbd>Ctrl+Enter</kbd> | Not available | Writer | D-282; Enter stays newline, IME never sends |
 | Save to cloud (write, commit, push) | <kbd>⇧⌘S</kbd> or <kbd>⌘S</kbd> | <kbd>Ctrl+Shift+S</kbd> or <kbd>Ctrl+S</kbd> |  | Basic | Universal (<kbd>⌘S</kbd>); <kbd>⇧⌘S</kbd> is free, as there's no Save As (D-132) |
 | Close note / window | <kbd>⌘W</kbd> | <kbd>Ctrl+W</kbd> | Not available | Basic | Universal |
 | Reopen closed note | <kbd>⇧⌘T</kbd> | <kbd>Ctrl+Shift+T</kbd> | Spotlight | Power | Browsers, VS Code |
@@ -195,7 +199,8 @@ These apply while [Spotlight](spotlight.html) is open.
 | Action | macOS / iPadOS | Windows / Linux | Layer | Precedent |
 | --- | --- | --- | --- | --- |
 | Move through results | <kbd>↑</kbd> / <kbd>↓</kbd> (also <kbd>⌃P</kbd> / <kbd>⌃N</kbd>) | <kbd>↑</kbd> / <kbd>↓</kbd> | Basic | macOS Spotlight, Emacs |
-| Run the default action | <kbd>Enter</kbd> | <kbd>Enter</kbd> | Basic | Universal |
+| Run the default action and close | <kbd>Enter</kbd> | <kbd>Enter</kbd> | Basic | D-283 |
+| Toggle/set while keeping Spotlight open | <kbd>⇧Enter</kbd> | <kbd>Shift+Enter</kbd> | Power | D-283; other result kinds use normal action |
 | Alternative action (for example, open in a new window) | <kbd>⌘Enter</kbd> | <kbd>Ctrl+Enter</kbd> | Power | macOS Spotlight, Raycast |
 | Show the actions for the selected result | <kbd>→</kbd> or <kbd>⌘K</kbd> | <kbd>→</kbd> or <kbd>Ctrl+K</kbd> | Power | Raycast |
 | Back out of the action list | <kbd>←</kbd> or <kbd>Esc</kbd> | <kbd>←</kbd> or <kbd>Esc</kbd> | Power | Raycast |
@@ -220,7 +225,7 @@ The keys follow each platform's file manager (Finder or Explorer), because that'
 | Jump to an item by typing its name | Type letters | Type letters | Basic | Finder, Explorer |
 | Select a range / add or remove one | <kbd>Shift</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> or <kbd>Shift</kbd>+click / <kbd>⌘</kbd>+click | <kbd>Shift</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> or <kbd>Shift</kbd>+click / <kbd>Ctrl</kbd>+click, <kbd>Ctrl</kbd>+<kbd>Space</kbd> | Basic | Finder, Explorer |
 | Select everything shown | <kbd>⌘A</kbd> | <kbd>Ctrl+A</kbd> | Basic | Finder, Explorer |
-| New note in this folder / new folder | <kbd>⌘N</kbd> / <kbd>⇧⌘N</kbd> | <kbd>Ctrl+N</kbd> / <kbd>Ctrl+Shift+N</kbd> | Writer | Finder, Explorer |
+| New note in this folder / new folder | <kbd>⌘N</kbd> / <kbd>⌥⌘N</kbd> | <kbd>Ctrl+N</kbd> / <kbd>Ctrl+Alt+N</kbd> | Writer | D-280; Mod+Shift+N is New note in… |
 | Delete (with confirmation and Undo) | <kbd>⌘⌫</kbd> | <kbd>Delete</kbd> | Basic | Finder, Explorer |
 | Copy, to paste in a folder, a mail or a chat (desktop) | <kbd>⌘C</kbd> | <kbd>Ctrl+C</kbd> | Basic | Finder, Explorer |
 | Copy as path (desktop) | <kbd>⌥⌘C</kbd> | <kbd>Shift+Alt+C</kbd> | Pro | VS Code |

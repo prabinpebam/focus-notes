@@ -7,6 +7,16 @@ This page defines what's on disk: how notes and folders are laid out, what a not
 
 ## Workspace layout
 
+### Project layout (planned replacement)
+
+D-272/D-274 separates a private project from its optional public site. Notes, grants, appearance settings and history belong to the private project; `.focus-notes/project.json` stores its display name, preset colour/logo and Badge/Watermark/Off choice, while `.focus-notes/pins.json` stores note/folder pins. Device-local Projects/Recent records reference stable project/item IDs; they never merge trees or search across projects.
+
+New projects have one private repository and no public notes root until website publishing is explicitly enabled. Quick notes is an ordinary local Documents folder; standalone supported text files remain where opened. Both retain byte-preserving content/journal/conflict rules without a Git backup claim. Old instance/private layouts below remain the compatibility layout until the owner approves migration; no initial disk move, implicit ID rewrite, private-to-public copy or history rewrite is allowed.
+
+`access.json` changes for new name-free grants and share codes in WP-P.10, with legacy records read unchanged. It never contains public recipient metadata; no new owner-vault grant is made. D-292 removes the browser note store from the planned content model entirely.
+
+### Historical instance layout
+
 Each user's workspace is **their instance repository** (the notes repository), copied from the Focus Notes template repository into their GitHub account (see [Repository and publishing → Who owns what](repository-and-publishing.html#who-owns-what)):
 
 ```text
@@ -39,7 +49,7 @@ A clone without access to the private repository (FRE-06) has no `private/notes/
 
 ## The workspace model
 
-The web app and the desktop app share one workspace model (`packages/core`, `workspace.ts`): the workspace's **roots** as one tree of notes and folders, and every operation on it as a pure plan (D-92).
+The as-built web and desktop shells share one workspace model (`packages/core`, `workspace.ts`), roots as one tree and operations as pure plans (D-92). D-292 retires the web editing shell; D-273 makes every desktop model instance project-scoped, not a global current tree.
 
 | Shell | Roots |
 | --- | --- |

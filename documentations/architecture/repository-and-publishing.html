@@ -1,13 +1,28 @@
 <header class="slate-hero">
   <p class="slate-hero__eyebrow">Architecture</p>
   <h1 class="slate-hero__title">Repository and publishing</h1>
-  <p class="slate-hero__summary">Each user owns their whole instance: one repository with their public notes, a private submodule, and a Deploy app workflow that publishes the app to their own GitHub Pages, with private notes only as ciphertext.</p>
+  <p class="slate-hero__summary">Each project owns its private repository and history. Sharing explicitly adds a public site; Pages serves a clean read-only website, never a browser writing app.</p>
 </header>
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Every user's Focus Notes is <strong>their own, isolated instance</strong> in their own GitHub account (D-38, D-84, D-87). An instance is <strong>one repository</strong> (the <strong>notes repository</strong>): public notes in <code>notes/</code>, a <strong>private repository linked at <code>private/</code></strong> as a Git submodule (private notes in its <code>notes/</code>, synced settings in <code>.focus-notes/</code>, grants in <code>access.json</code>), the same pattern as the <code>personal-site</code> project, and a <em>Deploy app</em> workflow. People who just want to use Focus Notes copy the small <strong>template repository</strong> (not the source repository) to make their instance; its workflow deploys the released web app bundle at a pinned version, checked by SHA-256 and attestation (D-48). The <strong>project repository</strong> is the owner's own instance and builds the app from source. Only the <strong>desktop app writes</strong> to either repository; the browser only reads the deployed site (D-90). On each push, the workflow checks out both repositories (the private one with a read-only deploy key), publishes the app and public notes, <strong>seals the vault and shared notes</strong> with AES-256-GCM, checks that no plaintext leaked, and deploys to <em>that instance's own</em> GitHub Pages site. <strong>The vault is a share grant with an audience of one</strong>: every private note, opened in the browser by the owner's passphrase. Ciphertext exists only in the deployed site, never in Git history, with fresh keys every build. Nothing runs on a server.</p>
+  <p><strong>Planned:</strong> one private repository per project; first Share/Publish explicitly adds its optional public site. Public notes become plaintext read-only pages; active private shares become ciphertext with fresh keys and a leak check. No browser writing app, browser-local note store or owner vault remains (D-292). Existing instance/submodule layouts and named-share formats below are compatibility references, not the new-project plan. No runtime or stored data is changed by this specification.</p>
 </aside>
+
+<h2 id="project-model">Projects and sites (planned, 3 November)</h2>
+<p><strong>This section supersedes the earlier instance/browser clauses below</strong> (D-272 to D-293). The remaining pipeline/format detail records the current implementation and compatibility formats, not a second product plan. The existing build has not yet been changed.</p>
+<table>
+<thead><tr><th>Boundary</th><th>Planned contract</th></tr></thead>
+<tbody>
+<tr><td>Private project</td><td>One private GitHub repository, its own notes/settings/history and window. No public footprint, Pages, owner vault or encrypted mirror of every private note at setup.</td></tr>
+<tr><td>First share/publish</td><td>Before creation, explain public owner/name and Pages URL, sealed versus plaintext output, and Cancel without side effects. Optional site repository proposed as ⟨project⟩-site. Install its read-only private-content deploy key only after confirmation.</td></tr>
+<tr><td>Site</td><td>Public source for published notes and a deployment that emits only read-only website pages and ciphertext for active shares. App/editor/demo/browser note stores and the owner's vault are absent (D-292).</td></tr>
+<tr><td>Existing pair</td><td>Proposed private repository → project, instance repository → site; preserve disk layout first. Owner-approved snapshot/mapping, byte/ID/link/history inventory and rollback precede any migration. No private content is copied to public plaintext.</td></tr>
+<tr><td>Deploy safety</td><td>Private commit pushed before the public pointer; pinned build/attestation checks before private checkout; least-privilege key cleanup and output leak checks remain. No automatic deletion on partial setup. Expiry/withdrawal state is pending until exact successful deployment.</td></tr>
+<tr><td>Publishing appearance</td><td>Site theme is separate from app Appearance and project accent; proposed Paper, with accessible light/dark reading. Publish confirms public text/history, which cannot later be recalled.</td></tr>
+</tbody>
+</table>
+<p>See <a href="../experience/projects.md">Projects</a>, <a href="../design/views/sharing.md">Sharing</a> and <a href="web-app.md">Website and browser retirement</a>. Historical diagrams below show the old vault-inclusive pipeline, not new-project output.</p>
 
 <figure class="slate-figure">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" role="img"
@@ -103,6 +118,7 @@
 <p>The desktop app is the only client that writes to either repository (D-90). It works on a local clone and runs the user's own <code>git</code>: commit in <code>private/</code> and push, then commit and push the notes repository, moving the pointer to the pushed private commit (D-07). <code>push.recurseSubmodules=check</code> stops a public push whose pointer refers to an unpushed private commit. Details are in <a href="desktop-and-git.md#save-and-sync">Desktop and Git</a>.</p>
 
 <h3>What the browser reads</h3>
+<p><strong>Planned replacement (WEB-01):</strong> the browser reads public website pages and, on /s/, only the encrypted files a link/access code authorizes. It never writes notes, offers Copy to my notes, unlocks an owner vault or signs in to GitHub. Browser writing/owner-vault steps in the historical protocol below are retired completely. One-time recovery of old local drafts is a migration safeguard, not an ongoing app.</p>
 <p>The web app (MW, D-80) never signs in to GitHub and never calls its API (D-90). Everything it shows of the instance comes from the deployed site, on its own origin:</p>
 <ol>
   <li><strong>The site manifest</strong>, <code>/focus-notes.json</code>: the current build ID, where the public index is, and whether the site has a vault.</li>
@@ -132,6 +148,7 @@
 </dl>
 
 <h2 id="sealing-and-share-links">Sealing and share links</h2>
+<p><strong>D-285 replacement for new shares:</strong> fixed note/folder scope, no recipient name. Each grant adds a collision-checked random 8-character share code (identifier only); the access code combines it with the secret passcode in one reader field. A versioned share-code lookup replaces normalized-name lookup for new grants; keep the existing authenticated keyring/KDF/size/salt checks and fresh keys. The new schema, lookup normalization and migration must be updated together in WP-P.10, with fixture evidence before publication. No public recipient metadata or “who”. Do not reinterpret a legacy envelope as a new one. Legacy named grants keep their existing lookup and reader until expiry/withdrawal; old secrets are not rotated silently. The format table below documents that legacy path. The owner vault is retired by D-292: future builds do not seal unshared private notes at all.</p>
 <p>This follows the <code>personal-site</code> access design (grants, keyrings, fresh keys every build, and a nightly deploy), adapted to Focus Notes: an audience is just a <strong>name</strong>, and it can have a magic link, a passcode, or both (D-41). The owner's own access to private notes in the browser uses the same scheme: <a href="#the-vault">the vault</a> is a built-in grant for "You" (D-90). The experience is in <a href="../design/views/sharing.md">Sharing and visibility</a>.</p>
 
 <h3>Grant record (<code>private/access.json</code>)</h3>
@@ -185,6 +202,7 @@
 <p>The protections and limits are listed in the threat model below and in <a href="security-and-privacy.md">Security and privacy</a>.</p>
 
 <h2 id="the-vault">The vault</h2>
+<p><strong>Retired completely by D-292.</strong> No owner-vault unlock UI, new owner grants or all-private-note sealing belongs in the website plan. This section preserves the old wire-format reference for understanding existing deployments only. WEB-01 removes the production routes/output while preserving old browser drafts. Read-only share-reader session keys remain separate from that retired product.</p>
 <p><strong>The vault is a share grant with an audience of one</strong> (D-90): a built-in grant for the owner whose scope is every private note and whose passcode is the <strong>vault passphrase</strong>. The desktop app's setup asks for the passphrase and stores only its derived key in <code>private/access.json</code> (FRE-08, as built in WP-3.1). From a terminal, <code>node packages/seal/src/cli.ts vault-init --private private</code> creates the same grant with the same code (<code>withVaultGrant</code> in <code>packages/seal</code>): it reads the passphrase from standard input (never from arguments), refuses weak ones, and writes only the derived key. The instance's own <em>Deploy app</em> workflow, which already checks out <code>private/</code> with the read-only deploy key, seals it on every deploy with fresh keys. Ciphertext exists only in the deployed Pages artifact, never in Git history. Paths stay readable in the private repository and are opaque on the site. A browser opens it with the passphrase, read-only (<a href="web-app.md#unlocking-private-notes">Web app → Unlocking private notes</a>).</p>
 
 <ol class="slate-steps">

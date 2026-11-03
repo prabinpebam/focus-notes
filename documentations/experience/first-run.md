@@ -1,22 +1,21 @@
 # First run and sign-in
 
-The first run depends on where you start. In the browser, the primary way to reach Focus Notes (D-80), you've already copied the template repository to make your instance and opened its site, so there's no setup at all: you read and write at once, and nothing signs in (D-90). The desktop app, the only client that saves to GitHub, sets itself up in three short screens and a fourth that says it's ready, in words anyone understands, even someone who has never heard of GitHub (D-124). Nothing either sets up depends on any service run by the Focus Notes project.
+The desktop app is where writing starts. Planned D-272/D-274/D-292 replaces browser-first setup with private projects; the remaining desktop screen inventory below records the as-built version, not approval to create a public site or vault during setup.
 
 > [!NOTE]
-> **TL;DR.** **In the browser** (FRE-09): the app knows its instance from its own address. A first visit opens the newest public note, read-only, or a **welcome note kept in this browser**, which says that notes written here stay in this browser and that the desktop app saves to GitHub. There's nothing to sign in to: the bottom-left corner offers **Unlock** (when the site has private notes) and **Use this app for yourself** ([Web app](../architecture/web-app.md)). **In the desktop app**: four steps, **Welcome → Connect → Your notes → Ready**, each one screen, resumable, and keyboard-operable (D-124). **Welcome** offers *Get started*, or *Just use this computer for now* with no account. **Connect** checks Git silently (it shows only when Git is missing or too old) and connects the person's GitHub account through Git's own sign-in tools that the user owns, **Git Credential Manager** (included with Git for Windows) or the **GitHub CLI**, so one sign-in serves the app and the terminal and Focus Notes needs no OAuth app and no server (D-21). *Connect to GitHub* is a **device code** from that helper, shown large in the app with *Copy code and open GitHub* (D-142); the helper's browser sign-in, a **fine-grained token**, and other tools sit under *Having trouble?*. The name and email on saved changes come from the account, with GitHub's private noreply address, for the notes only. **Your notes** shows the notes the account already has (*We found your notes*, each with *Open*), or *Create my notes* in the person's own GitHub account (FRE-08) with sensible defaults; names, the folder, publishing, the browser passphrase, and opening any other repository sit under *More options*. **Ready** features focus mode with its keys, offers the theme, and offers to **import notes exported from a browser**, private by default (FRE-10). Covers FRE-01 to FRE-10 in the [requirements](../product/requirements.md).
+> **TL;DR.** Planned: start in the desktop app with a private project, Open project… or local Quick notes. Existing Git/credential detection, device-code sign-in, safe folder selection and resumable errors remain. Create no public repository, Pages or vault during setup; confirm the optional site on first Share/Publish. Browser writing, owner Unlock and the ease-in import offer are retired by D-292. Historical screen descriptions below are retained only where they explain the current implementation.
 
 ## The web first run
 
-On an instance's own GitHub Pages site there's nothing to install, no Git, and nothing to sign in to (FRE-09, [D-90](../plan/decisions.md)). The app reads its instance from its own address: on `https://you.github.io/notes/` it reads that site's `/focus-notes.json`. There's no dialog:
+**Retired completely (D-292):** no browser welcome/editor, Copy to my notes, owner Unlock or export/import ease-in. Visitors read the website or a sealed share and can download the desktop app. [Website and browser retirement](../architecture/web-app.md) specifies preservation of already-written browser drafts.
 
-| Situation | What opens |
-| --- | --- |
-| **The site has public notes** | The newest public note, read-only, with the quiet *Read only · Copy to my notes* pill in the bottom-left corner. |
-| **No public notes yet** | A **welcome note kept in this browser**: "Notes you write here stay in this browser, offline, with no account. To save them to your GitHub repositories, use the desktop app." Typing in it, or pressing *New*, starts writing at once. |
-| **The site has a vault** | A quiet **Unlock** link in the bottom-left corner. The owner's passphrase opens the private notes, read-only ([Web app → Unlocking private notes](../architecture/web-app.md#unlocking-private-notes)). |
-| **Until a browser unlocks** | A quiet **Use this app for yourself** in the same corner, for anyone who wants their own instance ([the dialog](../design/views/get-started.md)). |
+## Projects first (planned)
 
-The ⋯ menu has **Export my notes…** and **Import notes…** at any time, so notes written in a browser can be moved to the desktop app or another browser (PKG-11). The browser never asks for a token or a GitHub sign-in (SEC-03).
+Welcome offers **Create project**, **Open project…** and **Quick notes**. Quick notes starts in its local Documents folder without sign-in or a public site. A standalone file can open directly with no setup.
+
+Create/Open uses existing Git/credential detection and plain-language account steps. Creating a project creates one **private** repository, explains backup, picks a safe local folder and opens the project window; no Pages, deploy key, public repo or vault passphrase. Existing projects open in their own windows. Ready offers ordinary desktop import, not a browser-writing funnel. First Share/Publish confirms the optional public site separately. Existing-workspace mapping remains an owner decision, never automatic conversion. See [Projects](projects.md#opening-a-project).
+
+The old TL;DR/desktop screenshots below are historical where they mention publishing/vault/browser import; these clauses are superseded, while sign-in, resumable errors, folder safety and keyboard rules remain.
 
 ## Principles of the desktop first run
 

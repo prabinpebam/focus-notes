@@ -10,7 +10,7 @@ Install Focus Notes, connect your GitHub account, and write your first note.
 - Get started with Focus Notes
 - Install Focus Notes on Windows, macOS or Linux
 - Connect your GitHub account
-- Try Focus Notes in your browser
+- Preview the desktop app in screenshots
 - Is Focus Notes right for me?
 
 [Back to Help](index.md)

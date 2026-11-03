@@ -109,7 +109,7 @@ A share is identified by its item, opening methods, expiry and state, **not by w
 
 Existing named grants are **legacy compatibility only**: keep their old links and passcodes working until expiry/withdrawal, list them by item, and retain a clearly separated legacy reader path for old details. New grants and the main reader never ask a name. Do not silently rotate old secrets, publish names, auto-convert access or remove the compatibility reader before those grants end. D-285 remains an owner decision because it supersedes their D-41.
 
-### Settings → Sharing
+<h3 id="settings-sharing">Settings → Sharing</h3>
 
 **All shares**, grouped by item, shows Link/Passcode, expiry and Active / Expires soon (within 3 days) / Expired / Withdrawn / Waiting to publish. Filter by state and find by item title. There is no **All people with access**, **Share with someone** or Add people.
 

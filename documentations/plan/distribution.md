@@ -3,9 +3,15 @@
 How this repository becomes what people use: the repository layout, what gets built, how releases are made, signed, and delivered, and how users' instances stay in step, with nothing hosted beyond GitHub Pages and GitHub Releases.
 
 > [!NOTE]
-> **TL;DR.** This repository (`focus-notes`) is a **monorepo**: desktop app, web app, shared core, publishing tools, MCP server and command-line tool, the template's source, JSON Schemas, and these docs. It's also **the owner's own instance**: its *Deploy app* workflow builds the web app from source and publishes it, the owner's public notes, and these docs to its own GitHub Pages (D-87). People who want to improve Focus Notes fork it. People who just want to use it copy the small **template repository** (not this one) to make their instance; its *Deploy app* workflow deploys the released **web app bundle** at a pinned version, checked by checksum and attestation, so they never build the app themselves (D-48, DST-06). They can also download the **desktop app** from **GitHub Releases**, winget, or Homebrew (D-51). A tagged release builds the desktop installers, the web app bundle, **checksums**, an **SBOM**, and **attestations** into a GitHub Release, from which the owner republishes the template repository. Desktop apps update themselves; instances get pull requests that move the pinned version. The layout and toolchain are D-49.
+> **TL;DR.** The monorepo ships desktop installers, publishing/reader tools, checksums, an SBOM and attestations. Planned D-292 retires browser writing, its demo, owner vault and ease-in product completely; future Pages deployments are websites and read-only share readers. Desktop setup creates a private project; optional public site creation comes later. The existing web-bundle/template release inventory below is historical until WP-P.12/P.13 replace its output safely. Desktop signing/update rules and pinned integrity checks remain.
 
 ## Repositories
+
+### Projects and website-only distribution (planned)
+
+D-272/D-274/D-292 supersede the browser-first installation path in this page's historical build inventory. A user installs the desktop app, creates one private project repository, and only on first Share/Publish confirms the optional public site. No browser editor, writing demo, IndexedDB-note product, owner vault or browser-to-desktop ease-in plan remains. The project/template tables and web bundle filenames below describe existing artifacts, not continuing commitments to distribute an editor.
+
+WP-P.13 retires editor/demo entry points and owner-vault sealing while preserving old browser drafts through one-time local recovery/export. Public pages, the sealed read-only share reader and publishing tools still need integrity-checked, pinned distribution; WP-P.12 records the new website-only bundle manifest/output list before changing release tooling. Do not silently drop attestations, template compatibility, old public URLs or existing shares. Existing template repositories get an explicit migration path, never a forced public-data rewrite. Desktop installer/update/signing rules are unchanged.
 
 | Repository | Visibility | Purpose |
 | --- | --- | --- |

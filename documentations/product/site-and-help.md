@@ -1,12 +1,12 @@
 # Product site and help
 
-The public face of Focus Notes: the page a person lands on before they install anything, the help centre the app links to when something needs more than a sentence, and a demo they can try in the browser. All three are written for people who write, not for people who build software.
+The public face of Focus Notes: the page a person lands on before installing, screenshots they can examine, and Help when a task needs more than a sentence. Written for people who write, not people who build software.
 
 > [!NOTE]
 > **TL;DR.** The project repository's GitHub Pages site becomes the product site (D-167).
-> - **`/` is the landing page,** visual first (D-174): a headline of a few words, a large scene of the app with a real note, up to five featured sections with a screenshot each, a grid of small tiles, downloads and *Try the demo*. The explanations live in the help centre.
+> - **`/` is the landing page,** visual first (D-174): a short headline, a large app scene, featured screenshots, small tiles and downloads. The explanations live in Help.
 > - **Help is a section of these docs** (D-181): [Help](../help/index.md), about 40 articles in eight sections named by what the reader wants to do, each one a single content type from the [writing guide](../design/help-writing.md). `/help/` on the site sends visitors there.
-> - **`/demo/` is the web app** with sample notes, kept in the visitor's browser, with no sign-in.
+> - **No browser writing demo** (D-292). `/demo/` and `/app/` retire to the clean website; preserve existing drafts through local recovery first.
 > - **The app links into the help centre** by article ID (*Learn more*, *How to fix this*). CI fails on any ID or anchor that doesn't exist.
 > - **Screenshots are captured from the release build in CI** with the demo workspace, in light and dark (D-169).
 > - **The site follows the app's rules:** the design system's tokens and components, no tracking, no requests to other sites, WCAG 2.2 AA.
@@ -30,9 +30,9 @@ The specification under `/documentations/` stays for people building Focus Notes
 | --- | --- | --- |
 | `/` | [The landing page](#the-landing-page) | Was the owner's Focus Notes app until D-167 |
 | `/help/` | A redirect to [Help](../help/index.md) in these docs, at `/documentations/#help/index.md` (D-181) | `/help/<section>/` redirects to that section's page |
-| `/demo/` | [The demo](#the-demo) | The web app with sample notes |
+| `/demo/` | [Retired demo route](#the-demo) | Clean website/download route after existing-draft recovery; no editor |
 | `/#download` | Downloads for each system: the landing page's last section (D-184) | Links to the latest GitHub Release, with its checksums; the old `/download/` redirects here |
-| `/app/` | The owner's own Focus Notes, as `/` served before D-167 | Public note pages stay at `/n/` so their addresses don't change |
+| `/app/` | Retired browser editor (D-292) | Redirect to website; public pages stay at `/n/` |
 | `/n/` | The owner's public notes (D-139) | Unchanged |
 | `/s/` | The share reader, where share links point | Unchanged: it reads the sealed files from the site's root, as before |
 | `/documentations/`, `/schemas/`, `/llms.txt` | The specification, the JSON Schemas, the map for language models | Unchanged |
@@ -44,10 +44,10 @@ Visual first, in the manner of apple.com's product pages (D-174). Pictures carry
 
 | # | Section | Content |
 | --- | --- | --- |
-| 1 | **Hero** | One headline of at most 6 words in large display type ("Write. Nothing else."), one line of at most 14 words, *Download* and *Try the demo*, and a large scene of the app with a real note open, in light mode, with focus mode off so the whole note reads at full contrast. |
+| 1 | **Hero** | One headline of at most 6 words, one line of at most 14 words, Download and See how it works, and a large desktop scene with a real note open and fully legible. |
 | 2 | **Featured sections** | At most 5, the strongest first: focus mode, Spotlight, files and folders, private notes and sealed sharing, light and dark. Each has an optional eyebrow, a headline of at most 5 words, one line of at most 14 words, and a large screenshot, or a short loop if motion sells it. |
 | 3 | **Tiles** | One grid of small tiles, an icon and at most 4 words each: plain Markdown files, works offline, free and open source (MIT), private notes stay private, light and dark, nothing tracked, MCP for AI agents. |
-| 4 | **Closing** | One line, the downloads again, *Try the demo*, and one small *Learn how it works* link to the help centre. |
+| 4 | **Closing** | One line, downloads again and one Learn how it works link to Help; no writing demo. |
 | 5 | **Download** (`#download`, D-184) | An eyebrow, a headline, one tile per system (Windows, macOS, Linux) with its file, *Download from GitHub* to the latest release, and a caption that the builds aren't signed yet and list their checksums. Every *Download* on the site goes here. |
 
 **Not on the landing page:** prose paragraphs and bulleted prose. The questions people ask before installing, *Is it for you?* and how it works are help centre articles, reached through *Learn how it works*.
@@ -91,6 +91,8 @@ The app links into the help centre wherever a setting, a step or a message needs
 - **The check:** CI fails when a view document names an ID that isn't in the registry, the registry names an article or anchor that doesn't exist, or a link anywhere on the site is broken (HLP-03).
 
 <h2 id="the-demo">The demo</h2>
+
+**Retired, not deferred (D-292).** The implementation inventory below is historical. Future product pages use screenshots/read-only website examples and downloads, never Try the demo, Reset demo or a browser-writing funnel. WEB-01 preserves existing local drafts before removing runtime/routes/caches; it does not clear a visitor's store. This is specification only: the published site has not been changed by this task.
 
 **Rewrite Help (HLP-10):** [Rewrite selected text with AI](../help/rewrite-with-ai.md) and [Connect an AI service](../help/connect-an-ai-service.md), linked from [Write](../help/write.md). They say Rewrite is desktop only and never advise installing or hosting a model inside Focus Notes.
 

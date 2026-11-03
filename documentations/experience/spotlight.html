@@ -133,10 +133,11 @@
 </table>
 <div class="slate-callout slate-callout--tip" role="note">
   <p class="slate-callout__title">Commands show their state</p>
-  <p>Toggles show the current value right in the row ("Focus mode · On", "Theme · System"), so Spotlight doubles as a quick settings panel. Running one leaves Spotlight open and updates the row. <kbd>Esc</kbd> closes it when you're done.</p>
+  <p>Toggles show the current value right in the row ("Focus mode · On", "Theme · System"). Planned D-283 / SPT-10: <kbd>Enter</kbd> or pointer activation runs once and closes Spotlight, toggles/settings included; focus goes to the destination or note. <kbd>Shift+Enter</kbd> toggles/sets while keeping the query and focused result for repeated adjustments. On failure retain the query and show what happened with Retry; never silently close on refusal.</p>
 </div>
 
 <h2>Prefixes and filters</h2>
+<p>Project scope (D-273): note/heading/text/folder results, create destinations, links and actions come only from the active project. Open project… is an explicit action to open a separate window, never cross-project note search. Share… on a single result opens the fixed-item dialog directly. Historical What's built/browser descriptions below are superseded by D-292 and SPT-10 for future work.</p>
 <table>
   <thead><tr><th>Type</th><th>Effect</th><th>Example</th><th>Priority</th></tr></thead>
   <tbody>

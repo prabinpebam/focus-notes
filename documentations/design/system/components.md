@@ -11,6 +11,22 @@ The design system's components: what each one is for, its variants and key props
 > [!NOTE]
 > **TL;DR.** **71 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **16 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
+<h2 id="switch" data-reader-personas="design engineering">Switch (planned)</h2>
+
+**DSY-15 · IA-CMP-SWITCH · UC-SHARE-03.** Not a registered contract yet; do not use it in a view until WP-P.9 adds the sealed primitive, tokens, documented props, state stories and generated schema. Reuse existing control sizing, focus, label and pending conventions; do not draw switches in views or repurpose low-contrast chips.
+
+| Contract | Required behaviour |
+| --- | --- |
+| Meaning | A binary on/off choice, not a radio option or action button. Link/Passcode in Share and boolean Settings rows use it. |
+| Anatomy | Visible text label, track, thumb, On/Off text twin; checked fill plus thumb position. No one-sided accent border. All colours, dimensions, opacity and motion are tokens. |
+| Semantics | Native checkbox with switch semantics or equivalent APG switch; accessible name matches label; checked exposed; Space toggles once, Tab follows ordinary form order. |
+| States | Off/on, rest, hover, pressed, focus-visible, disabled, pending and refused change. No native disabled focus loss during pending; retain the persisted value until confirmed, with named tracker feedback. |
+| Contrast/size | Essential non-text 3:1, text 4.5:1 on its actual surface; visible focus and minimum 44 px target; light, dark, more contrast/forced colours. No colour-only meaning. |
+| Motion | Short token thumb transition, instant under reduced motion. No looping animation or layout shift. |
+| Validation | At least one share method stays on; a refusal explains why without silently toggling it back. Stories show that error plus long labels at 320 px. |
+
+Gallery and component checks follow design approval, not this docs-only design task. Generated implemented-inventory counts below remain unchanged.
+
 <h2 id="inventory" data-reader-personas="design engineering">Implemented inventory</h2>
 
 The table below is generated from the registered contracts (`schemas/ui/catalog.v1.json`, which `ui:check` keeps equal to the contracts in `packages/ui`). Don't edit it by hand: run `node tools/component-inventory.mjs`. `pnpm check` runs it with `--check`, which fails when the table is stale, when the TL;DR's counts differ, when a guidance row marked *Implemented* names a component that isn't registered in that tier, when a *Composed* or *Planned* row names one that is, or when a registered component has no *Implemented* row (D-200).
