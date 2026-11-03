@@ -163,7 +163,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       const root = JSON.parse(await readFile(join(rootProfile, CHROMIUM_FOLDERS.session, "Local State"), "utf8")) as { os_crypt?: { encrypted_key?: unknown } };
       if (typeof root.os_crypt?.encrypted_key !== "string") throw new Error("Protected project storage is unavailable.");
       await mkdir(dirname(localState), { recursive: true });
-      await writeFile(localState, JSON.stringify({ os_crypt: { encrypted_key: root.os_crypt.encrypted_key } }), { flag: "wx" });
+      await writeFile(localState, JSON.stringify({ os_crypt: root.os_crypt }), { flag: "wx" });
     }
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(note ? ["--project-note", note] : [])];
     const child = spawn(process.execPath, args, {
