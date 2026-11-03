@@ -6,6 +6,7 @@
     "vm.app",
     "vm.project",
     "vm.projects",
+    "vm.projectIntro",
     "vm.canvas",
     "vm.toolbar",
     "vm.shortcuts",
@@ -9335,6 +9336,23 @@
       }
     }
   ]
+},
+{
+  "type": "Layer",
+  "when": { "get": "vm.projectIntro.notice" },
+  "props": { "layer": "toast", "position": "bottomCenter" },
+  "children": [{
+    "type": "Surface", "props": { "variant": "raised", "shape": "popover", "elevation": "2", "padding": "m" },
+    "children": [{
+      "type": "Inline", "props": { "gap": "m", "align": "center", "wrap": true },
+      "children": [
+        { "type": "StepMark", "props": { "icon": "info", "tone": "accent", "size": "compact" } },
+        { "type": "Text", "props": { "value": { "t": "migrate.notice" }, "role": "label" } },
+        { "type": "Button", "props": { "label": { "t": "migrate.learn" }, "variant": "secondary" }, "on": { "press": { "run": "projects.learn" } } },
+        { "type": "Button", "props": { "label": { "t": "migrate.dismiss" }, "variant": "subtle" }, "on": { "press": { "run": "projects.dismissIntro" } } }
+      ]
+    }]
+  }]
 },
 {
   "type": "Layer",

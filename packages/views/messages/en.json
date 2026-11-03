@@ -89,6 +89,7 @@
   "migrate.moved": "If you used a workspace before, it is now called a project. Your files have not moved.",
   "migrate.newSettings": "Settings → Project",
   "migrate.notice": "Your workspace is now called a project. Your notes and files are in the same place.",
+  "project.intro.saveFailed": "Couldn't remember the dismissal. Try again.",
   "migrate.oldFiles": "Files",
   "migrate.oldSettings": "Settings",
   "migrate.openHelp": "Open Help",

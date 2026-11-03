@@ -579,6 +579,7 @@ export interface DemoBridge {
 
 export interface AppStateFile {
   version: 1;
+  projectIntroSeen?: boolean;
   /** Per-workspace identity kept only on this device while the project UX is being reviewed. */
   projectSettings?: Record<string, import("./project-app.ts").ProjectSettings>;
   lastNotePath?: string;

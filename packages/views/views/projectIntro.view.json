@@ -1,0 +1,58 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "projectIntro",
+  "ia": "IA-VIEW-PROJECTS",
+  "overlay": true,
+  "viewModels": ["vm.projectIntro"],
+  "focus": "projectIntroDismiss",
+  "root": {
+    "type": "Stack",
+    "children": [{
+    "type": "Dialog",
+    "props": { "open": { "get": "vm.projectIntro.open" }, "size": "l", "height": "content", "title": { "t": "migrate.explainer.title" }, "closeLabel": { "t": "dialog.close" } },
+    "on": { "openChange": { "run": "projects.introClose" } },
+    "children": [{
+      "type": "Stack", "props": { "gap": "m" }, "children": [
+        { "type": "Text", "props": { "value": { "t": "migrate.help" } } },
+        { "type": "Columns", "props": { "gap": "s" }, "children": [
+          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
+            { "type": "Stack", "props": { "gap": "xs" }, "children": [
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.window" }, "role": "label" } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.window1" } } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.window2" } } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.windowFoot" }, "role": "caption", "tone": "muted" } }
+            ] }
+          ] },
+          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
+            { "type": "Stack", "props": { "gap": "xs" }, "children": [
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.private" }, "role": "label" } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.private1" } } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.private2" } } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.privateFoot" }, "role": "caption", "tone": "muted" } }
+            ] }
+          ] },
+          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
+            { "type": "Stack", "props": { "gap": "xs" }, "children": [
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.site" }, "role": "label" } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.site1" } } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.site2" } } },
+              { "type": "Text", "props": { "value": { "t": "migrate.fig.siteFoot" }, "role": "caption", "tone": "muted" } }
+            ] }
+          ] }
+        ] },
+        { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
+          { "type": "Inline", "props": { "gap": "s", "align": "center" }, "children": [
+            { "type": "Icon", "props": { "name": "quickNote", "size": "m" } },
+            { "type": "Text", "props": { "value": { "t": "migrate.fig.local" } } }
+          ] }
+        ] },
+        { "type": "StatusRow", "props": { "message": { "t": "migrate.moved" }, "tone": "info", "icon": "folder" } },
+        { "type": "Text", "props": { "value": { "get": "vm.projectIntro.error" }, "tone": "danger" } },
+        { "type": "Inline", "props": { "justify": "end" }, "children": [
+          { "type": "Button", "id": "projectIntroDismiss", "props": { "label": { "t": "migrate.gotIt" }, "variant": "primary" }, "on": { "press": { "run": "projects.dismissIntro" } } }
+        ] }
+      ]
+    }]
+    }]
+  }
+}
