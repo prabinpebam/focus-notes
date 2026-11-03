@@ -17,7 +17,8 @@
     "vm.keyboard",
     "vm.ai",
     "vm.project",
-    "vm.sharingSettings"
+    "vm.sharingSettings",
+    "vm.sharingPeople"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -705,6 +706,133 @@
                             }
                           }
                         ]
+                      },
+                      {
+                        "type": "Divider",
+                        "when": {
+                          "get": "vm.sharingPeople.available"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "l"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "justify": "between",
+                              "align": "center",
+                              "gap": "m",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "level": "3",
+                                  "value": {
+                                    "t": "share.invite.people"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "share.invite.open"
+                                  },
+                                  "variant": "primary",
+                                  "icon": "add"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "sharing.inviteOpen"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "share.invite.notShare"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "vm.sharingPeople.people"
+                                },
+                                "as": "p",
+                                "key": "p.id",
+                                "render": {
+                                  "type": "ItemCard",
+                                  "props": {
+                                    "title": {
+                                      "get": "p.login"
+                                    },
+                                    "initials": {
+                                      "get": "p.initials"
+                                    },
+                                    "detail": {
+                                      "get": "p.detail"
+                                    },
+                                    "badge": {
+                                      "get": "p.badge"
+                                    },
+                                    "personal": "title"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "label": {
+                                          "t": "share.invite.cancelInvite"
+                                        },
+                                        "size": "s",
+                                        "busy": {
+                                          "get": "vm.sharingPeople.busy"
+                                        }
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "sharing.inviteCancel",
+                                          "args": {
+                                            "id": {
+                                              "get": "p.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "share.invite.empty"
+                                    },
+                                    "tone": "muted"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "when": {
+                          "get": "vm.sharingPeople.available"
+                        }
                       }
                     ]
                   },
@@ -5090,6 +5218,278 @@
                         "run": "sharing.firstAccept"
                       }
                     }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "inviteDialog",
+        "when": {
+          "get": "vm.sharingPeople.open"
+        },
+        "props": {
+          "title": {
+            "t": "sharing.invite.title",
+            "args": {
+              "project": {
+                "get": "vm.project.name"
+              }
+            }
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingPeople.open"
+          },
+          "size": "m",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.inviteClose"
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "TextField",
+                "props": {
+                  "label": {
+                    "t": "share.invite.user"
+                  },
+                  "description": {
+                    "t": "share.invite.user.detail"
+                  },
+                  "placeholder": {
+                    "t": "share.invite.user.placeholder"
+                  },
+                  "value": {
+                    "bind": "vm.sharingPeople.user"
+                  },
+                  "autoFocus": true
+                }
+              },
+              {
+                "type": "ItemCard",
+                "when": {
+                  "expr": {
+                    "!=": [
+                      {
+                        "get": "vm.sharingPeople.user"
+                      },
+                      ""
+                    ]
+                  }
+                },
+                "props": {
+                  "title": {
+                    "get": "vm.sharingPeople.user"
+                  },
+                  "detail": {
+                    "t": "share.invite.account"
+                  },
+                  "icon": "github",
+                  "personal": "title"
+                }
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.sharingPeople.owner"
+                      },
+                      "org"
+                    ]
+                  }
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "SegmentedControl",
+                    "props": {
+                      "label": {
+                        "t": "share.invite.role"
+                      },
+                      "options": {
+                        "get": "vm.sharingPeople.roles"
+                      },
+                      "value": {
+                        "bind": "vm.sharingPeople.role"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.invite.roleDetail",
+                        "args": {
+                          "role": {
+                            "get": "vm.sharingPeople.role"
+                          }
+                        }
+                      },
+                      "tone": "muted",
+                      "role": "secondary"
+                    }
+                  },
+                  {
+                    "type": "StatusRow",
+                    "props": {
+                      "message": {
+                        "t": "share.invite.orgNote"
+                      },
+                      "tone": "info",
+                      "icon": "info"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.sharingPeople.owner"
+                      },
+                      "personal"
+                    ]
+                  }
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.invite.collaborator"
+                      },
+                      "detail": {
+                        "t": "share.invite.collaborator.detail"
+                      },
+                      "badge": {
+                        "t": "share.invite.onlyChoice"
+                      },
+                      "icon": "lock"
+                    }
+                  },
+                  {
+                    "type": "StatusRow",
+                    "props": {
+                      "message": {
+                        "t": "share.invite.personalNote"
+                      },
+                      "tone": "warning",
+                      "icon": "warning"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.sharingPeople.problem"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.sharingPeople.problem"
+                  },
+                  "tone": "danger",
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "between",
+                  "gap": "s",
+                  "wrap": true,
+                  "align": "center"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.invite.manage"
+                      },
+                      "variant": "subtle",
+                      "icon": "github",
+                      "bleed": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.inviteManage"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.cancel"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "sharing.inviteClose"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.invite.send"
+                          },
+                          "variant": "primary",
+                          "disabled": {
+                            "expr": {
+                              "==": [
+                                {
+                                  "get": "vm.sharingPeople.user"
+                                },
+                                ""
+                              ]
+                            }
+                          },
+                          "disabledReason": {
+                            "t": "share.invite.needUser"
+                          },
+                          "busy": {
+                            "get": "vm.sharingPeople.busy"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "sharing.inviteSend"
+                          }
+                        }
+                      }
+                    ]
                   }
                 ]
               }

@@ -2855,5 +2855,14 @@
   "sharing.copy.information": "Copy share information",
   "sharing.row.detail": "{ways} · {expiry}",
   "sharing.expires": "expires {date}",
-  "sharing.first.title": "Turn on sharing for “{project}”?"
+  "sharing.first.title": "Turn on sharing for “{project}”?",
+  "sharing.invite.title": "Invite to “{project}”",
+  "sharing.invite.saving": "Saving invitation…",
+  "sharing.invite.invalid": "That isn’t a GitHub username. Use letters, numbers and hyphens.",
+  "sharing.invite.localOnly": "This preview saves invitations locally. It doesn’t contact GitHub.",
+  "sharing.role.read": "Read",
+  "sharing.role.triage": "Triage",
+  "sharing.role.write": "Write",
+  "sharing.role.maintain": "Maintain",
+  "sharing.role.admin": "Admin"
 }

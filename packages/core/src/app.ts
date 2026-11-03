@@ -40,6 +40,7 @@ import { registerAi } from "./ai-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerItemShare } from "./share-item.ts";
 import { registerSharingSettings } from "./sharing-settings.ts";
+import { registerSharingPeople } from "./sharing-people.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
@@ -438,6 +439,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
+  registerSharingPeople({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).

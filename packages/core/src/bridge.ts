@@ -571,6 +571,7 @@ export interface DemoBridge {
 }
 
 export interface AppStateFile {
+  sharingDrafts?: Record<string, import("./sharing-people.ts").SharingDraft>;
   version: 1;
   /** Per-workspace identity kept only on this device while the project UX is being reviewed. */
   projectSettings?: Record<string, import("./project-app.ts").ProjectSettings>;
