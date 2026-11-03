@@ -9,6 +9,10 @@
         "$type": "dimension",
         "$value": "{size.controlL}"
       },
+      "numberWidth": {
+        "$type": "dimension",
+        "$value": "{size.numberField}"
+      },
       "heightCompact": {
         "$type": "dimension",
         "$value": "{size.controlM}"

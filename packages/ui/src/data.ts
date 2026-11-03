@@ -114,6 +114,8 @@ export interface ColorValue {
 export interface Option {
   id: string;
   label: string;
+  /** An icon-only segment in an actions group: the label becomes its accessible name and tooltip. */
+  icon?: string;
 }
 
 /** An editor key binding from the command registry: a chord ("Mod+B") and the command it runs. */

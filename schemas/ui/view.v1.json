@@ -2782,7 +2782,7 @@
     },
     "c_SegmentedControl": {
       "type": "object",
-      "description": "Two to five mutually exclusive choices drawn as segments, with a visible label.",
+      "description": "Two to five mutually exclusive choices drawn as segments, with a visible label. With actions, the same track holds a group of related actions (a toolbar of buttons; an option with an icon is icon-only, its label the accessible name and tooltip), such as Rotate left, Rotate right and Reset.",
       "required": [
         "type",
         "props"
@@ -2855,6 +2855,19 @@
                 }
               ]
             },
+            "actions": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "readOnly": {
               "anyOf": [
                 {
@@ -2879,6 +2892,9 @@
           "additionalProperties": false,
           "properties": {
             "change": {
+              "$ref": "#/$defs/actions"
+            },
+            "action": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -3893,6 +3909,22 @@
                   "enum": [
                     "m",
                     "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "fill",
+                    "number"
                   ]
                 },
                 {

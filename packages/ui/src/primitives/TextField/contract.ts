@@ -16,6 +16,7 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false },
     focusRequest: { kind: "number", min: 0 },
     size: { kind: "enum", values: ["m", "l"], default: "l", description: "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px." },
+    width: { kind: "enum", values: ["fill", "number"], default: "fill", description: "number: a short number field (four or five digits), so several sit in one row beside their controls (Edit image, owner 3 November)." },
     readOnly: { kind: "boolean", default: false, description: "Shown and focusable but not editable, while what it holds is being sent (Send feedback, D-203)." },
     multiline: { kind: "boolean", default: false, description: "Several lines, growing from about six (the invite message, D-143): Enter starts a new line." },
     compactMultiline: { kind: "boolean", default: false, description: "Two lines initially, growing to the token maximum; only the textarea scrolls (D-265)." },
@@ -29,6 +30,7 @@ export const contract = defineContract({
   a11y: { pattern: "text box", name: "label" },
   uncovered: { focused: GAP.focused },
   fixtures: [
+    { name: "width number", props: { label: { t: "gallery.sample" }, size: "m", width: "number" } },
     { name: "type text", props: { label: { t: "unlock.passphrase" }, type: "text", description: { t: "unlock.intro" } } },
     { name: "type password", props: { label: { t: "unlock.passphrase" }, type: "password" } },
     { name: "type url", props: { label: { t: "unlock.passphrase" }, type: "url" } },

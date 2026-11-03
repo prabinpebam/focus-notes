@@ -109,6 +109,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
   ];
   const extras = {
     options: [{ id: "all", label: "All" }, { id: "basic", label: "Basic" }, { id: "writer", label: "Writer" }, { id: "power", label: "Power" }],
+    actionOptions: [{ id: "left", label: "Rotate left", icon: "undo" }, { id: "right", label: "Rotate right", icon: "rotate" }, { id: "reset", label: "Reset" }],
     optionFirst: "all",
     optionLast: "power",
     query: "bold",
@@ -232,6 +233,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         toolbar: { type: "array", items: ITEM },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
         options: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
+        actionOptions: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, icon: { type: "string" } } } },
         optionFirst: { type: "string" },
         optionLast: { type: "string" },
         query: { type: "string" },

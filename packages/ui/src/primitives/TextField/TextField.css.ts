@@ -28,6 +28,8 @@ export const input = style({
 });
 /** As tall as the 32 px buttons beside it in a bar (the link editor), or the 40 px field of a dialog or panel (D-111). */
 export const size = styleVariants({ m: { height: t.heightCompact }, l: {} });
+/** fill: as wide as what holds it. number: a short number (four or five digits), so several sit in one row. */
+export const width = styleVariants({ fill: {}, number: { width: t.numberWidth, flex: "0 0 auto" } });
 export const description = style({ color: t.description, fontSize: t.captionSize });
 export const error = style({ color: t.error, fontSize: t.fontSize });
 /** A label for screen readers only. */
