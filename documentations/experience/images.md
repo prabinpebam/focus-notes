@@ -100,16 +100,21 @@ The proposed tokenized **Fit height** cap is the smaller of **36 rem** and **70%
 
 ## Image menu and selection
 
-Right-click, the image's focused menu button, or Shift+F10 opens the same contextual menu, never an always-visible toolbar.
+**This is a text editor, not app UI** (owner, 3 November 2026; D-326): "Don't show 3 dots menu above the image. This is a text editor not app UI. You right click on the image to get that menu." The image menu opens only as a context menu at the pointer: **right-click** the image, or press the keyboard's context-menu key or **Shift+F10** while the image is selected. Nothing is drawn on, above or around an image: no ⋯ button, hover toolbar, overlay button, border or frame.
+
+- **No placeholder** (owner): "Why is there 'No description' text under the image? If it's not there don't show it." With no description or caption, nothing shows under the image; a caption line shows only when the Markdown has one.
+- **No border** (owner): "Do not add border around the image." None at rest, on hover or when selected.
+- **Selection is the editor's** (D-326): a selected image, on its own or inside a text selection, takes the editor's normal selection tint over its pixels (`cmp.imageFrame.selectedTint` → `color.selection`), the way selected text does, never a ring, outline or frame.
+- **Transparent images as they are** (owner): "Leave transparent images as is without border and bg color." No backdrop, fill or checkerboard behind transparent pixels, in light or dark.
 
 | Group | Action | Contract |
 | --- | --- | --- |
 | Clipboard | **Cut**, **Copy** | Copy selected image pixels plus safe rich image representation/alt/caption, not private absolute paths or secrets. Cut removes the node only after clipboard success, one normal note Undo; never deletes the asset/source file. Failure says **“Couldn't copy this image. Try again.”** and keeps it. |
 | File | **Replace image…** | Picker imports a new managed file at the same position; retain caption, alt and display choices until explicitly edited. Undo restores the previous reference; never overwrite the selected external file. |
 | File | **Save image…** | OS Save dialog writes an explicit copy of the current decoded asset at the chosen destination; Cancel changes nothing, taken destination asks before overwrite. No silent name/path disclosure through clipboard metadata. |
-| Words | **Edit description…** | Opens a small dialog with **Image description** (alt text) and **Caption**, both plain text; one undoable edit. A dropped image starts with an empty description, shows an author-only **No description** hint and is read as decorative until described. Sharing or publishing a note with undescribed images lists them once (**2 images have no description**) with **Describe** / **Continue**; it never blocks. |
+| Words | **Edit description…** | Opens a small dialog with **Image description** (alt text) and **Caption**, both plain text; one undoable edit. A dropped image starts with an empty description, shows nothing in its place (no hint or placeholder) and is read as decorative until described. Sharing or publishing a note with undescribed images lists them once (**2 images have no description**) with **Describe** / **Continue**; it never blocks. |
 | Words | **Add caption** / **Edit caption** | Puts the caret in the caption line directly below the image; typing there is ordinary editing. Removing all its text removes the caption. |
-| Assistance | **Auto caption…** | Opens the caption flow below for this image only. No sending from menu open or hover. |
+| Assistance | **Auto caption with AI…** | With the AI (sparkle) icon used by Rewrite. Opens the caption flow below for this image only. No sending from menu open or hover. |
 | Pixels | **Edit image…** | Crop/rotate dialog; separate destructive save, not a display mode. |
 | Display | **Column**, **Wide**, **Actual size** | Single-choice checked/radio menu; one normal undoable note transaction. |
 | Display | **Rounded corners**, **Fit height** | Checked menu items with text/semantic checked state, not colour alone. Rounded defaults off until a successful prior choice; Fit height defaults on. Both remembered device-locally for subsequent insertions; each existing image keeps its saved values. |
@@ -152,7 +157,7 @@ For versioned assets **View image history…** offers existing Git history. Reco
 
 ## Auto caption using AI
 
-**Auto caption…** reuses the established AI integration/model identity and This computer / Cloud disclosure. Show only explicitly image-capable existing integrations; do not infer vision from a model name. If the chosen Writer cannot accept images, retain it for rewriting and offer **Choose integration** for this one caption action, or **Write caption**. No silent fallback, connection, upload, download or hosted model.
+**Auto caption with AI…** is labelled as AI everywhere (owner, 3 November: "Auto caption should indicate it's going to be done by AI."): the menu item and the dialog title **Auto caption with AI** carry the AI icon, and the dialog names the connected AI that writes it (**/model identity and This computer / Cloud disclosure. Show only explicitly image-capable existing integrations; do not infer vision from a model name. If the chosen Writer cannot accept images, retain it for rewriting and offer **Choose integration** for this one caption action, or **Write caption**. No silent fallback, connection, upload, download or hosted model.
 
 Show the selected image thumbnail, editable instruction **“Write a short caption for this image.”**, integration/model/destination and **Generate caption** / Cancel. Generate sends only this image and that instruction using the supported image request, not the surrounding note, path, title, other assets, EXIF/GPS or secrets. Use a metadata-stripped bounded raster payload; no public upload URL or new network destination. Follow the existing no-extra-first-send-consent rule, not a new privacy wall; the explicit Generate action and visible destination are the control.
 
@@ -192,9 +197,9 @@ The ImageBlock, image menu, edit dialog and caption surface use sealed primitive
 | Editing/saving | Keep old pixels until the complete new image is ready; **Saving image…** only past the responsive delay; prevent duplicate commits, keep Cancel safe until committing. |
 | Caption unavailable/error | Clear reason, chosen integration retained, retry/manual caption available; original caption/note untouched. |
 | Read-only share/site | Display only; no edit, crop, AI, filesystem path or owner context menu. |
-| Keyboard/screen reader | Focus image as one block; menu button labelled **Image options**; Shift+F10 and ordinary text navigation work; crop fields provide a non-drag path. Alt describes the image; captions use figure/caption semantics, not duplicated accessible text. |
+| Keyboard/screen reader | Focus image as one block; its context menu is named **Image options**; the context-menu key, Shift+F10 and ordinary text navigation work; crop fields provide a non-drag path. Alt describes the image; captions use figure/caption semantics, not duplicated accessible text. |
 | Mixed selection | Announce number of selected images and Mixed checked state; changing image options leaves selected text byte-equivalent. |
-| Light/dark/contrast/narrow | Token borders/focus/checked states, 44 px controls, reduced motion; intrinsic pixel colours never theme-inverted. A transparent image sits on an optional token backdrop (`cmp.image.backdrop`) in dark mode so line art stays visible. Fit within 320 px with no horizontal scrolling. |
+| Light/dark/contrast/narrow | Token focus/checked states in menus and dialogs, 44 px controls, reduced motion; intrinsic pixel colours never theme-inverted. Transparent images are drawn as they are, with no backdrop, border or checkerboard, in light and dark (D-326). Fit within 320 px with no horizontal scrolling. |
 
 **Help copy:** “Drop an image into your note or choose Insert image. Column fits the text, Wide uses extra space, and Actual size keeps small images small. Turn off Fit height for a tall image. Crop and rotate change the saved image and cannot be undone; Git history may have an older version. Sharing a private note encrypts its images too.”
 
