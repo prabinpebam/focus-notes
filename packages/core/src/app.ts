@@ -427,7 +427,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
-  registerProject({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
+  registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
   const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });

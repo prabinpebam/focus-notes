@@ -1,7 +1,7 @@
 /** The renderer entry: connects the preload bridge to the app core and mounts the canvas view. */
 import { createApp, resolvedScheme, resolvedTheme, type App, type PlatformBridge } from "@focus-notes/core";
 import { mountApp, swapApp, flushApp } from "@focus-notes/ui-runtime";
-import { afterFirstThemedFrame, bootTheme, htmlToMarkdown } from "@focus-notes/ui";
+import { afterFirstThemedFrame, bootTheme, htmlToMarkdown, sanitizeSvgLogo } from "@focus-notes/ui";
 import { views, messages } from "@focus-notes/views";
 import { createSearchWorker, startSearch, type SearchService } from "@focus-notes/core/search";
 import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
@@ -28,7 +28,14 @@ declare global {
 // The first frame is the theme's canvas, never Chromium's white (DSK-09, D-148).
 bootTheme(location.search);
 
-const base = window.focusNotes;
+const raw = window.focusNotes;
+const base = {
+  ...raw,
+  ...(raw.projects ? { projects: { ...raw.projects, upload: async () => {
+    const svg = await raw.projects!.upload();
+    return svg === undefined ? undefined : sanitizeSvgLogo(svg);
+  } } } : {}),
+};
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root in the entry document");
 const OVERLAYS = ["settings", "theme", "history", "feedback", "rewrite", "newNote", "projects", "projectNew"] as const;

@@ -1,5 +1,5 @@
 import type { AppState, App } from "./app.ts";
-import type { AppStateFile } from "./bridge.ts";
+import type { AppStateFile, PlatformBridge } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import { BUILT_IN_THEMES, CONTENT_FONTS, themeById } from "./themes.ts";
 import { themeTilesOf } from "./theme-manager-app.ts";
@@ -10,6 +10,7 @@ export interface ProjectSettings {
   name: string;
   accent: string;
   logo: string;
+  logoSrc?: string;
   watermark: "off" | "on";
   font: string;
   theme: string;
@@ -18,9 +19,10 @@ export interface ProjectSettings {
 export function registerProject(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"]; catalog: MessageCatalog;
   appState: () => AppStateFile; persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
+  bridge: PlatformBridge;
 }) {
   const { store, commands, viewModels, catalog } = ctx;
-  const transient = { fontOpen: "no", themeOpen: "no", fontHover: "", themeHover: "" };
+  const transient = { fontOpen: "no", themeOpen: "no", fontHover: "", themeHover: "", uploadError: "" };
   const folder = () => store.state.workspace.folder ?? "";
   const settings = (): ProjectSettings => ctx.appState().projectSettings?.[folder()] ?? {
     name: folder().split(/[\\/]/).filter(Boolean).at(-1) ?? catalog.format("project.settings.title"),
@@ -50,6 +52,20 @@ export function registerProject(ctx: {
   });
   for (const field of ["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)]) reg(field);
   commands.register({
+    id: "project.upload", title: "project.settings.upload", enabled: () => Boolean(ctx.bridge.projects),
+    run: async () => {
+      transient.uploadError = ""; changed();
+      try {
+        const logoSrc = await ctx.bridge.projects!.upload();
+        if (logoSrc === undefined) return;
+        await ctx.persistAppState({ projectSettings: { ...ctx.appState().projectSettings, [folder()]: { ...settings(), logo: "upload", logoSrc } } });
+      } catch {
+        transient.uploadError = catalog.format("project.settings.uploadFailed");
+      }
+      changed();
+    },
+  });
+  commands.register({
     id: "project.settings", title: "project.settings.title", group: "app",
     run: async () => { await commands.run("settings.setSection", { value: "project" }); await commands.run("settings.open"); },
   });
@@ -60,7 +76,7 @@ export function registerProject(ctx: {
     setters: Object.fromEntries(["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)].map((field) => [field, `project.${field}`])),
     schema: { type: "object", properties: {
       available: { type: "boolean" }, watermarkOn: { type: "boolean" },
-      ...Object.fromEntries(["name", "accent", "logo", "watermark", "font", "theme", "fontValue", "themeValue", "scopeFont", "scopeTheme", ...Object.keys(transient)].map((field) => [field, text])),
+      ...Object.fromEntries(["name", "accent", "logo", "logoSrc", "watermark", "font", "theme", "fontValue", "themeValue", "scopeFont", "scopeTheme", ...Object.keys(transient)].map((field) => [field, text])),
       accents: { type: "array", items: option }, logos: { type: "array", items: option },
       fonts: { type: "array", items: option }, watermarkOptions: { type: "array", items: option },
       themeTiles: { type: "array", items: { type: "object", properties: {

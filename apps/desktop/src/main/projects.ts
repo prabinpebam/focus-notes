@@ -89,7 +89,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     return Promise.all([...known].map(async ([folder, profile]) => {
       const saved = await state(profile);
       const identity = saved.projectSettings?.[folder];
-      return { folder, name: identity?.name ?? basename(folder), accent: identity?.accent ?? "teal", logo: identity?.logo ?? "book", lastNote: saved.lastNotePath };
+      return { folder, name: identity?.name ?? basename(folder), accent: identity?.accent ?? "teal", logo: identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: saved.lastNotePath };
     }));
   }
   async function open(folder: string, note?: string): Promise<void> {
@@ -125,6 +125,13 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { encoding: "utf8", flag: "wx" });
     }
     return folder;
+  }
+  async function upload(): Promise<string | undefined> {
+    const result = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "SVG", extensions: ["svg"] }] });
+    const file = result.filePaths[0];
+    if (result.canceled || !file) return;
+    if (extname(file).toLowerCase() !== ".svg" || (await stat(file)).size > 262144) throw new Error("Choose an SVG logo smaller than 256 KB.");
+    return readFile(file, "utf8");
   }
   async function chooseParent(parent: string): Promise<string | undefined> {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"], defaultPath: parent });
@@ -165,5 +172,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }), { flag: "wx" });
     return folder;
   }
-  return { list, open, choose, parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  return { list, open, choose, upload, parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }

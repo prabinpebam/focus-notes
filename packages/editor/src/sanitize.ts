@@ -73,6 +73,27 @@ export function sanitizePastedHtml(html: string): string {
   }
 }
 
+/** Static SVG geometry only: no CSS, links, embedded media, animation or external paint servers. */
+export function sanitizeSvgLogo(svg: string): string {
+  if (svg.length > 262144 || /<!DOCTYPE|<!ENTITY/i.test(svg)) throw new Error("Invalid SVG logo");
+  const clean = DOMPurify.sanitize(svg, {
+    ALLOWED_TAGS: ["svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "defs", "linearGradient", "radialGradient", "stop", "clipPath"],
+    ALLOWED_ATTR: ["xmlns", "viewBox", "width", "height", "d", "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry", "points", "transform", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "fill-rule", "clip-rule", "opacity", "fill-opacity", "stroke-opacity", "id", "offset", "stop-color", "stop-opacity", "gradientUnits", "gradientTransform", "clip-path"],
+    ALLOW_DATA_ATTR: false, ALLOW_ARIA_ATTR: false, RETURN_TRUSTED_TYPE: false,
+  }) as string;
+  const doc = new DOMParser().parseFromString(clean, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root.localName !== "svg" || root.namespaceURI !== "http://www.w3.org/2000/svg" || doc.querySelector("parsererror")) throw new Error("Invalid SVG logo");
+  for (const element of [root, ...Array.from(root.querySelectorAll("*"))]) {
+    for (const attribute of Array.from(element.attributes)) {
+      if (["fill", "stroke", "stop-color", "clip-path"].includes(attribute.name)
+        && !/^(?:none|currentColor|transparent|[a-z]+|#[\da-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([\d.% ,+-]+\)|url\(#[\w-]+\))$/i.test(attribute.value.trim())) element.removeAttribute(attribute.name);
+    }
+  }
+  root.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  return `data:image/svg+xml,${encodeURIComponent(new XMLSerializer().serializeToString(root))}`;
+}
+
 /**
  * The only policy names the Content Security Policy allows (`trusted-types default dompurify
  * search-worker`). `search-worker` is the search index's (core's search/client.ts, D-107).
