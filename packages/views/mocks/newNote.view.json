@@ -178,65 +178,91 @@
           },
           "cases": {
            "closed": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "accent": "teal",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "ProjectScope",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "part": "window",
+               "accent": "teal",
                "grow": true
               },
               "children": [
                {
-                "type": "Inline",
+                "type": "Stack",
                 "props": {
-                 "gap": "s",
-                 "align": "center"
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
                 },
                 "children": [
                  {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "pick"
-                   }
-                  },
+                  "type": "Heading",
                   "props": {
-                   "label": {
-                    "t": "newNote.in"
+                   "value": {
+                    "t": "project.mock.noteChapter"
                    },
-                   "variant": "primary",
-                   "icon": "newNote"
+                   "level": "2"
                   }
                  },
                  {
-                  "type": "Shortcut",
+                  "type": "Text",
                   "props": {
-                   "keys": {
-                    "get": "vm.mocks.keysNewIn"
+                   "value": {
+                    "get": "vm.mocks.sampleNote"
                    },
-                   "label": {
-                    "get": "vm.mocks.keysNewInSpoken"
-                   }
+                   "personal": true
                   }
                  }
                 ]
                },
                {
-                "type": "Text",
+                "type": "Inline",
                 "props": {
-                 "value": {
-                  "get": "vm.mocks.sampleNote"
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "SaveState",
+                  "props": {
+                   "state": "synced",
+                   "label": {
+                    "t": "project.mock.backedUp"
+                   }
+                  }
                  },
-                 "personal": true
-                }
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "t": "project.mock.bookName"
+                   },
+                   "logo": "book",
+                   "accent": "teal",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
                }
               ]
              },
@@ -244,42 +270,34 @@
               "type": "Inline",
               "props": {
                "gap": "s",
-               "align": "center",
-               "padding": "s"
+               "align": "center"
               },
               "children": [
                {
-                "type": "SaveState",
-                "props": {
-                 "state": "synced",
-                 "label": {
-                  "t": "project.mock.backedUp"
-                 }
-                }
-               },
-               {
-                "type": "ProjectPill",
+                "type": "Button",
                 "on": {
                  "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
+                  "set": "local.step",
+                  "to": "pick"
                  }
                 },
                 "props": {
-                 "name": {
-                  "t": "project.mock.bookName"
-                 },
-                 "logo": "book",
-                 "accent": "teal",
                  "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.bookName"
-                   }
-                  }
+                  "t": "newNote.in"
+                 },
+                 "variant": "secondary",
+                 "icon": "newNote",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Shortcut",
+                "props": {
+                 "keys": {
+                  "get": "vm.mocks.keysNewIn"
+                 },
+                 "label": {
+                  "get": "vm.mocks.keysNewInSpoken"
                  }
                 }
                }
@@ -1100,114 +1118,107 @@
             ]
            },
            "created": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "accent": "teal",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "ProjectScope",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "part": "window",
+               "accent": "teal",
                "grow": true
               },
               "children": [
                {
-                "type": "Text",
+                "type": "Stack",
                 "props": {
-                 "value": {
-                  "t": "newNote.untitled"
-                 },
-                 "role": "title",
-                 "tone": "muted"
-                }
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "newNote.untitled"
+                   },
+                   "role": "title",
+                   "tone": "muted"
+                  }
+                 }
+                ]
                },
                {
-                "type": "Text",
+                "type": "Inline",
                 "props": {
-                 "value": {
-                  "t": "newNote.whereFolder",
-                  "args": {
-                   "folder": {
-                    "get": "local.folder"
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "SaveState",
+                  "props": {
+                   "state": "synced",
+                   "label": {
+                    "t": "project.mock.backedUp"
                    }
                   }
                  },
-                 "role": "caption",
-                 "tone": "muted"
-                }
-               },
-               {
-                "type": "Button",
-                "on": {
-                 "press": [
-                  {
-                   "set": "local.folder",
-                   "to": "Drafts"
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
+                   }
                   },
-                  {
-                   "set": "local.step",
-                   "to": "closed"
+                  "props": {
+                   "name": {
+                    "t": "project.mock.bookName"
+                   },
+                   "logo": "book",
+                   "accent": "teal",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   }
                   }
-                 ]
-                },
-                "props": {
-                 "label": {
-                  "t": "project.mock.again"
-                 },
-                 "variant": "subtle",
-                 "size": "s"
-                }
+                 }
+                ]
                }
               ]
              },
              {
-              "type": "Inline",
-              "props": {
-               "gap": "s",
-               "align": "center",
-               "padding": "s"
-              },
-              "children": [
-               {
-                "type": "SaveState",
-                "props": {
-                 "state": "synced",
-                 "label": {
-                  "t": "project.mock.backedUp"
-                 }
-                }
-               },
-               {
-                "type": "ProjectPill",
-                "on": {
-                 "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
-                 }
+              "type": "Button",
+              "on": {
+               "press": [
+                {
+                 "set": "local.folder",
+                 "to": "Drafts"
                 },
-                "props": {
-                 "name": {
-                  "t": "project.mock.bookName"
-                 },
-                 "logo": "book",
-                 "accent": "teal",
-                 "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.bookName"
-                   }
-                  }
-                 }
+                {
+                 "set": "local.step",
+                 "to": "closed"
                 }
-               }
-              ]
+               ]
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "subtle",
+               "size": "s"
+              }
              }
             ]
            },
@@ -1245,72 +1256,82 @@
             ]
            },
            "quick": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "Surface",
               "props": {
-               "gap": "m",
-               "padding": "l",
-               "grow": true
+               "variant": "raised",
+               "shape": "sheet",
+               "padding": "none"
               },
               "children": [
                {
-                "type": "Inline",
+                "type": "Stack",
                 "props": {
-                 "gap": "s",
-                 "align": "center"
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
                 },
                 "children": [
                  {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "quickNew"
-                   }
-                  },
+                  "type": "Heading",
                   "props": {
-                   "label": {
-                    "t": "project.mock.newNote"
+                   "value": {
+                    "t": "quick.note"
                    },
-                   "variant": "primary",
-                   "icon": "newNote"
+                   "level": "2"
                   }
                  },
                  {
-                  "type": "Shortcut",
+                  "type": "Text",
                   "props": {
-                   "keys": {
-                    "get": "vm.mocks.keysNewIn"
+                   "value": {
+                    "t": "quick.body"
                    },
-                   "label": {
-                    "get": "vm.mocks.keysNewInSpoken"
-                   }
+                   "personal": true
                   }
                  }
                 ]
-               },
+               }
+              ]
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center"
+              },
+              "children": [
                {
-                "type": "Heading",
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.step",
+                  "to": "quickNew"
+                 }
+                },
                 "props": {
-                 "value": {
-                  "t": "quick.note"
+                 "label": {
+                  "t": "project.mock.newNote"
                  },
-                 "level": "2"
+                 "variant": "secondary",
+                 "icon": "newNote",
+                 "size": "s"
                 }
                },
                {
-                "type": "Text",
+                "type": "Shortcut",
                 "props": {
-                 "value": {
-                  "t": "quick.body"
+                 "keys": {
+                  "get": "vm.mocks.keysNewIn"
                  },
-                 "personal": true
+                 "label": {
+                  "get": "vm.mocks.keysNewInSpoken"
+                 }
                 }
                }
               ]
@@ -1318,67 +1339,56 @@
             ]
            },
            "quickNew": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "Surface",
               "props": {
-               "gap": "m",
-               "padding": "l",
-               "grow": true
+               "variant": "raised",
+               "shape": "sheet",
+               "padding": "none"
               },
               "children": [
                {
-                "type": "Text",
+                "type": "Stack",
                 "props": {
-                 "value": {
-                  "t": "newNote.untitled"
-                 },
-                 "role": "title",
-                 "tone": "muted"
-                }
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "t": "quick.newWhere"
-                 },
-                 "role": "caption",
-                 "tone": "muted"
-                }
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "t": "quick.noPicker"
-                 },
-                 "role": "caption",
-                 "tone": "muted"
-                }
-               },
-               {
-                "type": "Button",
-                "on": {
-                 "press": {
-                  "set": "local.step",
-                  "to": "quick"
-                 }
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
                 },
-                "props": {
-                 "label": {
-                  "t": "project.mock.again"
-                 },
-                 "variant": "subtle",
-                 "size": "s"
-                }
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "newNote.untitled"
+                   },
+                   "role": "title",
+                   "tone": "muted"
+                  }
+                 }
+                ]
                }
               ]
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "quick"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "subtle",
+               "size": "s"
+              }
              }
             ]
            }

@@ -322,224 +322,142 @@
           },
           "cases": {
            "insert": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "accent": "teal",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "ProjectScope",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "part": "window",
+               "accent": "teal",
                "grow": true
               },
               "children": [
                {
-                "type": "Center",
+                "type": "Stack",
                 "props": {
-                 "maxWidth": "measure"
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
                 },
                 "children": [
                  {
-                  "type": "Stack",
+                  "type": "Center",
                   "props": {
-                   "gap": "m",
-                   "padding": "l"
+                   "maxWidth": "measure"
                   },
                   "children": [
                    {
-                    "type": "Text",
+                    "type": "Stack",
                     "props": {
-                     "value": {
-                      "t": "image.mock.para1"
-                     },
-                     "personal": true
-                    }
-                   },
-                   {
-                    "type": "Surface",
-                    "props": {
-                     "variant": "sunken",
-                     "shape": "control",
-                     "padding": "m"
+                     "gap": "m",
+                     "padding": "l"
                     },
                     "children": [
                      {
-                      "type": "Inline",
+                      "type": "Text",
                       "props": {
-                       "gap": "s",
-                       "align": "center",
-                       "justify": "center"
+                       "value": {
+                        "t": "image.mock.para1"
+                       },
+                       "personal": true
+                      }
+                     },
+                     {
+                      "type": "Surface",
+                      "props": {
+                       "variant": "sunken",
+                       "shape": "control",
+                       "padding": "m"
                       },
                       "children": [
                        {
-                        "type": "Icon",
+                        "type": "Inline",
                         "props": {
-                         "name": "imageAdd",
-                         "size": "m"
-                        }
-                       },
-                       {
-                        "type": "Text",
-                        "props": {
-                         "value": {
-                          "t": "image.drop"
-                         },
-                         "role": "label"
-                        }
-                       }
-                      ]
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "image.mock.para2"
-                     },
-                     "personal": true
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "image.insertHint"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "s",
-                     "wrap": true
-                    },
-                    "children": [
-                     {
-                      "type": "Button",
-                      "on": {
-                       "press": [
-                        {
-                         "set": "local.step",
-                         "to": "image"
+                         "gap": "s",
+                         "align": "center",
+                         "justify": "center"
                         },
-                        {
-                         "set": "local.mode",
-                         "to": "column"
-                        }
-                       ]
-                      },
-                      "props": {
-                       "label": {
-                        "t": "image.mock.dropGood"
-                       },
-                       "variant": "primary",
-                       "icon": "image"
-                      }
+                        "children": [
+                         {
+                          "type": "Icon",
+                          "props": {
+                           "name": "imageAdd",
+                           "size": "m"
+                          }
+                         },
+                         {
+                          "type": "Text",
+                          "props": {
+                           "value": {
+                            "t": "image.drop"
+                           },
+                           "role": "label"
+                          }
+                         }
+                        ]
+                       }
+                      ]
                      },
                      {
-                      "type": "Button",
-                      "on": {
-                       "press": {
-                        "set": "local.last",
-                        "to": "bad"
-                       }
-                      },
+                      "type": "Text",
                       "props": {
-                       "label": {
-                        "t": "image.mock.dropBad"
+                       "value": {
+                        "t": "image.mock.para2"
                        },
-                       "variant": "secondary"
-                      }
-                     },
-                     {
-                      "type": "Button",
-                      "on": {
-                       "press": {
-                        "set": "local.last",
-                        "to": "batch"
-                       }
-                      },
-                      "props": {
-                       "label": {
-                        "t": "image.mock.dropBatch"
-                       },
-                       "variant": "secondary"
+                       "personal": true
                       }
                      }
                     ]
-                   },
-                   {
-                    "type": "StatusRow",
-                    "props": {
-                     "message": {
-                      "t": "image.error.type"
-                     },
-                     "tone": "danger",
-                     "icon": "error"
-                    },
-                    "when": {
-                     "expr": {
-                      "==": [
-                       {
-                        "get": "local.last"
-                       },
-                       "bad"
-                      ]
-                     }
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "SaveState",
+                  "props": {
+                   "state": "synced",
+                   "label": {
+                    "t": "project.mock.backedUp"
+                   }
+                  }
+                 },
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
                     }
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "t": "project.mock.bookName"
                    },
-                   {
-                    "type": "Stack",
-                    "props": {
-                     "gap": "s"
-                    },
-                    "children": [
-                     {
-                      "type": "StatusRow",
-                      "props": {
-                       "message": {
-                        "t": "image.error.batch"
-                       },
-                       "tone": "danger",
-                       "icon": "error"
-                      }
-                     },
-                     {
-                      "type": "Button",
-                      "on": {
-                       "press": {
-                        "set": "local.last",
-                        "to": ""
-                       }
-                      },
-                      "props": {
-                       "label": {
-                        "t": "image.choose"
-                       },
-                       "variant": "secondary",
-                       "size": "s"
-                      }
-                     }
-                    ],
-                    "when": {
-                     "expr": {
-                      "==": [
-                       {
-                        "get": "local.last"
-                       },
-                       "batch"
-                      ]
+                   "logo": "book",
+                   "accent": "teal",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.bookName"
                      }
                     }
                    }
-                  ]
+                  }
                  }
                 ]
                }
@@ -549,46 +467,129 @@
               "type": "Inline",
               "props": {
                "gap": "s",
-               "align": "center",
-               "padding": "s"
+               "wrap": true
               },
               "children": [
                {
-                "type": "SaveState",
+                "type": "Button",
+                "on": {
+                 "press": [
+                  {
+                   "set": "local.step",
+                   "to": "image"
+                  },
+                  {
+                   "set": "local.mode",
+                   "to": "column"
+                  }
+                 ]
+                },
                 "props": {
-                 "state": "synced",
                  "label": {
-                  "t": "project.mock.backedUp"
-                 }
+                  "t": "image.mock.dropGood"
+                 },
+                 "variant": "secondary",
+                 "icon": "image",
+                 "size": "s"
                 }
                },
                {
-                "type": "ProjectPill",
+                "type": "Button",
                 "on": {
                  "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
+                  "set": "local.last",
+                  "to": "bad"
                  }
                 },
                 "props": {
-                 "name": {
-                  "t": "project.mock.bookName"
-                 },
-                 "logo": "book",
-                 "accent": "teal",
                  "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.bookName"
-                   }
-                  }
+                  "t": "image.mock.dropBad"
+                 },
+                 "variant": "subtle",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.last",
+                  "to": "batch"
                  }
+                },
+                "props": {
+                 "label": {
+                  "t": "image.mock.dropBatch"
+                 },
+                 "variant": "subtle",
+                 "size": "s"
                 }
                }
               ]
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "image.error.type"
+               },
+               "tone": "danger",
+               "icon": "error"
+              },
+              "when": {
+               "expr": {
+                "==": [
+                 {
+                  "get": "local.last"
+                 },
+                 "bad"
+                ]
+               }
+              }
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "StatusRow",
+                "props": {
+                 "message": {
+                  "t": "image.error.batch"
+                 },
+                 "tone": "danger",
+                 "icon": "error"
+                }
+               },
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.last",
+                  "to": ""
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "image.choose"
+                 },
+                 "variant": "secondary",
+                 "size": "s"
+                }
+               }
+              ],
+              "when": {
+               "expr": {
+                "==": [
+                 {
+                  "get": "local.last"
+                 },
+                 "batch"
+                ]
+               }
+              }
              }
             ]
            },

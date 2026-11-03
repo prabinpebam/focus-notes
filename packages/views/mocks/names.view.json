@@ -280,16 +280,6 @@
                   "get": "vm.mocks.filesMenu"
                  }
                 }
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "t": "project.names.hint"
-                 },
-                 "role": "caption",
-                 "tone": "muted"
-                }
                }
               ]
              }
@@ -323,9 +313,20 @@
                   },
                   "cases": {
                    "overview": {
-                    "type": "Stack",
+                    "type": "Heading",
                     "props": {
-                     "gap": "xs"
+                     "value": {
+                      "t": "project.names.title"
+                     },
+                     "level": "1"
+                    }
+                   },
+                   "renameTitle": {
+                    "type": "Surface",
+                    "props": {
+                     "variant": "sunken",
+                     "shape": "control",
+                     "padding": "xs"
                     },
                     "children": [
                      {
@@ -335,144 +336,36 @@
                         "t": "project.names.title"
                        },
                        "level": "1"
-                      }
-                     },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.names.file"
-                       },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
-                     }
-                    ]
-                   },
-                   "renameTitle": {
-                    "type": "Stack",
-                    "props": {
-                     "gap": "xs"
-                    },
-                    "children": [
-                     {
-                      "type": "TextField",
-                      "props": {
-                       "label": {
-                        "t": "project.names.titleField"
-                       },
-                       "value": {
-                        "get": "vm.mocks.titleValue"
-                       },
-                       "autoFocus": true,
-                       "size": "l",
-                       "description": {
-                        "t": "project.names.titleHint"
-                       }
                       }
                      }
                     ]
                    },
                    "renameFile": {
-                    "type": "Stack",
+                    "type": "Heading",
                     "props": {
-                     "gap": "xs"
-                    },
-                    "children": [
-                     {
-                      "type": "Heading",
-                      "props": {
-                       "value": {
-                        "t": "project.names.title"
-                       },
-                       "level": "1"
-                      }
+                     "value": {
+                      "t": "project.names.title"
                      },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.names.file"
-                       },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
-                     }
-                    ]
+                     "level": "1"
+                    }
                    },
                    "published": {
-                    "type": "Stack",
+                    "type": "Heading",
                     "props": {
-                     "gap": "xs"
-                    },
-                    "children": [
-                     {
-                      "type": "Heading",
-                      "props": {
-                       "value": {
-                        "t": "project.names.aboutTitle"
-                       },
-                       "level": "1"
-                      }
+                     "value": {
+                      "t": "project.names.aboutTitle"
                      },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.names.aboutFile"
-                       },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
-                     }
-                    ]
+                     "level": "1"
+                    }
                    },
                    "renamed": {
-                    "type": "Stack",
+                    "type": "Heading",
                     "props": {
-                     "gap": "xs"
-                    },
-                    "children": [
-                     {
-                      "type": "Heading",
-                      "props": {
-                       "value": {
-                        "t": "project.names.title"
-                       },
-                       "level": "1"
-                      }
+                     "value": {
+                      "t": "project.names.title"
                      },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.names.renamedFile",
-                        "args": {
-                         "file": {
-                          "get": "local.file"
-                         }
-                        }
-                       },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
-                     },
-                     {
-                      "type": "StatusRow",
-                      "props": {
-                       "message": {
-                        "t": "project.names.renamed",
-                        "args": {
-                         "file": {
-                          "get": "local.file"
-                         }
-                        }
-                       },
-                       "tone": "success",
-                       "icon": "check"
-                      }
-                     }
-                    ]
+                     "level": "1"
+                    }
                    }
                   }
                  },
@@ -533,6 +426,31 @@
                 ]
                }
               ]
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "project.names.renamed",
+                "args": {
+                 "file": {
+                  "get": "local.file"
+                 }
+                }
+               },
+               "tone": "success",
+               "icon": "check"
+              },
+              "when": {
+               "expr": {
+                "==": [
+                 {
+                  "get": "local.step"
+                 },
+                 "renamed"
+                ]
+               }
+              }
              }
             ]
            }
