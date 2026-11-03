@@ -7,6 +7,8 @@ Separate places for separate work, without making every thought choose a project
 
 ## What a project is for
 
+This is specification/planning only. Real project/site creation, invitations, owner-note deletion/migration and publication are critical actions: ask through the original main chat before execution. Browser retirement and recovery-data disposal remain owner decisions; reversible defaults and headless checks do not wait.
+
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
 <!-- Visual thesis: private project scope exists before any public site; sharing adds a separate, explicitly enabled surface. No icons are needed: containment and branching carry the meaning. -->
@@ -136,7 +138,7 @@ No one-sided accent stripes. Use fills, full outlines and badges. A window is na
 
 New notes autosave with the ordinary journal and appear in Recent. A failed write keeps the dirty text in recovery and says **“Couldn't save this quick note. Choose another folder or try again.”** No success state until disk confirms. Later **Import into project…** chooses a project/folder and copies the note; keep the local original until the person explicitly deletes it. A folder missing at launch uses recovery, never a silently empty replacement.
 
-**Delete/restore without Git (D-298):** before deleting a note/folder, durably store exact bytes, identity, original path and deletion time in the app's device-local recovery store. Only then unlink/move to OS trash. Failed retention means no delete and a Retry error. Undo restores the whole operation, including links, without requiring Git; Recently deleted retains copies for 30 days across restarts. Restore uses the original folder, otherwise Quick notes root; a taken name is numbered, never overwritten. Confirm folders/counts as in Files. Recovery is not a second synced notes folder or a claim of remote backup. A standalone window has no Delete file action; externally missing files keep their journal and require an explicit save/restore destination.
+**Delete/restore without Git (D-298):** before an explicitly requested delete, durably store exact bytes, identity, original path and deletion time locally. Failed retention means no delete and a Retry error. Undo restores the whole operation/links without Git; Recently deleted's proposed 30 days is a minimum across restarts, not automatic purge authority. Any real owner-data deletion/migration or disposal policy needs prior owner approval. Restore uses the original folder, otherwise Quick notes root; number taken names, never overwrite. Confirm folders/counts as in Files. Recovery is not remote backup. Standalone windows have no Delete file; externally missing files keep journals and need an explicit restore/save destination.
 
 ## A file on its own
 

@@ -7,6 +7,8 @@ A public home, sections and articles, not the writing app on the web.
 
 ## What belongs on the site
 
+Before any real publication, public ciphertext commit, account/repository operation or browser retirement, obtain the owner's explicit decision through the original main chat. This page specifies the intended outcome only; choosing a reversible theme/font/layout in a local preview does not authorize deployment or data changes.
+
 | Kind | Stored/output | Discoverable here? |
 | --- | --- | --- |
 | Published note/folder | Plaintext in the paired public repository and website | Yes: home, section navigation, search/index, article title/excerpt/count |
@@ -80,7 +82,7 @@ Settings → Project → **Preview site…**, ⋯ → Preview site… and Spotli
 
 1. Prepare the current project's **public** inventory and website renderer locally. With no site enabled, allow a synthetic sample or empty state; never choose real private notes as samples.
 2. Show Home / a section / an article with the exact production renderer, navigation, sanitized logo and desktop/narrow width choice. If entered from a prepared Publish action, the explicitly chosen prospective-public target may be included with **Not published**; do not include any other private content.
-3. Offer Site theme (proposed Paper), approved bundled font families and default size presets from reading tokens. Live preview changes the local draft only, not the app's personal Appearance or another project's settings. No remote font URL, CSS, arbitrary script or third-party asset fetch.
+3. Offer Site theme (Paper by default), approved bundled font families and default size presets from reading tokens. This reversible default is chosen, not an owner blocker. Live preview changes the local draft only, not personal app Appearance or another project's settings. No remote font URL, CSS, arbitrary script or third-party asset fetch.
 4. **Apply** atomically saves the validated site settings in the private project's `.focus-notes/site.json`; only allowlisted appearance fields/assets reach the public build. It does not publish or create a site/share. **Cancel**/Return with dirty settings offers Keep editing / Discard changes. Saved settings remain until an explicit Publish applies them to the live site.
 5. Saving/render failure keeps the last good preview and controls/draft with Retry. Missing/invalid fonts show the named bundled fallback, not an invisible page. Theme/size controls answer within a frame; slow rendering has one named wait and cannot eat input.
 

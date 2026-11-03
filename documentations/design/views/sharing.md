@@ -7,6 +7,8 @@ Start from the note or folder. See what it contains, choose how it opens, then s
 
 ## Three levels of visibility
 
+The flow below is a design, not permission to publish real notes, create/delete repositories, invite real accounts or migrate grants. Those critical actions require the owner's prior decision through the original main chat. Public ciphertext storage and browser retirement/recovery are explicitly pending execution decisions; all checks here remain headless and synthetic.
+
 | Level | Who can read | Storage | Website output |
 | --- | --- | --- | --- |
 | Private | Accounts with access to the private project | Private repository | None; no owner vault (D-292) |

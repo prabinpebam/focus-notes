@@ -78,6 +78,10 @@ Work runs on three kits, each owning one part and pinned at the repository's roo
 
 The `orchestrate` skill's pre-action checklist, the mode ladder in `execution-modes` and the guard hook apply as written; this section adds only what's specific to Focus Notes. Run the smallest check that covers the change: a CSS, token or padding change gets `pnpm check` and a visual look; a view JSON change gets `ui:check`; runtime code gets its typecheck, related unit tests and one related journey.
 
+Agents never block on inconsequential prompts (browser-tab sharing, pickers, wording); they decide and record. Critical or irreversible actions (owner data, publishing, real accounts, releases, licences) always ask the owner first (the owner, 3 November).
+
+Documentation rendering checks are headless only: the Slate runtime check, requests to the existing local server, or headless Playwright. Never invoke browser-tab sharing or another interactive tool for these checks; close every process started. Workers route critical decisions through the owner's original main chat, not a blocking picker.
+
 - **Set the mode** for the guard in each worktree: `node .github/hooks/orchestration-clock.mjs mark mode design|ux-sooner|assumption|production-ready`, or write the value in `.agent-orchestration/mode` (ignored by Git). The owner's main chat marks itself `mark role main` and the coordinator `mark role coordinator` (D-261).
 - **Strict design here:** screens built from view documents and fragments in `packages/views` with the real design system, shown in the gallery (`pnpm gallery`) or as a candidate preview from a `vq-*` branch. No wiring in `packages/core`, the main process, preload or IPC until the owner approves the design.
 
@@ -126,7 +130,7 @@ Check the Slate runtime:
 node .\slate\scripts\runtime-host.mjs check --repo . --host documentations
 ```
 
-Then check in a browser that every changed page renders with one H1, that its links and anchors resolve, and that figures fit and stay legible in light and dark themes.
+Then check headlessly that every changed page renders with one H1, that its links and anchors resolve, and that figures fit and stay legible in light and dark themes. Do not open or share an interactive browser tab.
 
 ## Build and test
 

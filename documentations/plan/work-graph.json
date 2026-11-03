@@ -185,7 +185,7 @@
     },
     {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
-      "summary": "D-292: remove browser editor, IndexedDB-note product, owner vault, demo and ease-in routes/copy/caches; preserve existing drafts through one-time local recovery/export, never automatic clearing. Historical MW IDs stay retired.",
+      "summary": "D-292: specify website-only direction and recovery inventory first. Owner approval of exact draft-preservation/rollout/rollback is required before real runtime/routes/caches/data changes. No automatic clearing. Historical MW IDs are not future promises or deletion authority.",
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
       "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
       "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"

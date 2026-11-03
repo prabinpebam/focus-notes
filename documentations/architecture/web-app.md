@@ -5,6 +5,8 @@ GitHub Pages is a clean website, not a second place to write.
 > [!NOTE]
 > **TL;DR.** The owner dropped browser writing, browser-local IndexedDB notes, the owner vault, the editor demo and the browser-to-desktop ease-in plan completely on 3 November (D-292). Keep public read-only pages and the sealed read-only share reader, with the site's own theme. The current build still contains the old web app; WEB-01 / WP-P.13 removes it safely, without clearing existing drafts. This page replaces the old browser-app architecture; the stable route remains to preserve links.
 
+**Owner decision required before retirement:** the source records an intended direction, not permission to remove existing runtime/routes/caches or alter drafts. The 12:38 correction requires the owner to approve the exact inventory, verified local recovery/export, rollout and rollback first, through the original main chat. No destructive step is authorized by this page; no automatic clearing or migration. Read-only research and this specification continue without blocking on trivial choices.
+
 ## What remains
 
 | Surface | Contract |
@@ -26,7 +28,7 @@ Keep published note URLs and `/s/` share links working. New access-code grants a
 
 ## Preserving existing drafts
 
-Before removing runtime:
+Proposed sequence, subject to that owner decision before any real retirement or data change:
 
 1. Inventory old origin/database names, draft schemas, service workers and export formats from the implementation, not guesses. Private browser drafts never become public site files or logs.
 2. Provide an isolated one-time local recovery/export on the original origin, including offline/cached installations. Do not require GitHub sign-in or upload. Keep notes recoverable until an export is verified.

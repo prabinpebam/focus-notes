@@ -392,6 +392,8 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 <h2 id="mp" data-reader-personas="product design engineering">MP: Projects and simpler sharing</h2>
 
+**Current authorization: specification and planning only.** Lookahead flags do not authorize runtime, tests, package changes or actions on real data/accounts. Reversible choices are decided and recorded without prompts. Explicit owner decisions through the original main chat precede real publication/ciphertext commits, repository/invite actions, migration/deletion, browser retirement, releases, licence changes and force-pushes. Browser recovery/disposal and rollout remain pending owner decisions, not settled by the source's intended direction.
+
 **Planned, strict design; no runtime built.** The [3 November direction](next-direction.md) supersedes browser writing and named sharing. Earlier MW/browser/demo packages describe historical work only, not a second roadmap. D-292 retires that product completely; WP-P.13 preserves existing drafts before removing its runtime. Ordinary file import remains, not a browser ease-in plan.
 
 **You can:** keep unrelated projects in distinct windows, find recent files by place, pin folders/projects, jot locally or edit a stray file, share one item without recipients and publish a clean website. Delivers UC-PROJ-01 to UC-PROJ-08, UC-FILE-12, UC-RWR-12 and UC-SHARE-07 to UC-SHARE-10, plus the revised existing writing/sharing capabilities.
@@ -416,7 +418,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 These are independently reviewable slices; lookahead permits design without waiting for unrelated stage gates. No real repository creation, invite, deletion or migration is authorized by a spec. Owner choices stay in [Next direction](next-direction.md#what-needs-the-owner).
 
-**GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has the named evidence after design approval; privacy/data-preservation checks precede any migration or publication. Spec review is not implementation acceptance.
+**GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has its named future evidence after design approval. Specific owner approval plus privacy/recovery/rollback evidence precede any real migration, retirement or publication. No-approval/cancel paths must cause no critical side effects. Spec review is not implementation or execution acceptance.
 
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 
