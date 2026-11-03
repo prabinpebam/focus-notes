@@ -16,11 +16,12 @@ export function registerProjectOpen(ctx: {
     catch { state.error = ctx.catalog.format("project.open.failed"); }
     finally { state.pending = false; changed(); }
   }
-  commands.register({ id: "projects.open", title: "project.open.button", icon: "open", group: "app", layer: "basic", shortcut: { default: "Ctrl+Alt+O", macos: "Mod+Alt+O" }, enabled: () => Boolean(bridge.projects), run: () => refresh() });
+  commands.register({ id: "projects.open", title: "project.open.button", icon: "open", group: "app", layer: "basic", shortcut: { default: "Ctrl+Alt+O", macos: "Mod+Alt+O" }, enabled: () => Boolean(bridge.projects), run: () => refresh(!store.state.note.path) });
   commands.register({ id: "projects.close", title: "project.cancel", run: close });
   commands.register<{value: string}>({ id: "projects.query", title: "project.open.search", run: ({value}) => { state.query = value; changed(); } });
   commands.register<{id: string}>({ id: "projects.active", title: "recent.title", run: ({id}) => { state.active = id; changed(); } });
   bridge.projects?.onNote?.((path) => { void ctx.load(path); });
+  store.subscribe(() => { if (state.open && state.full && store.state.note.path && store.state.note.status === "ready") close(); });
   commands.register<{id: string}>({
     id: "projects.launch", title: "project.open", run: async ({ id }) => {
       const [entryId, kind] = id.split("|");
@@ -51,13 +52,13 @@ export function registerProjectOpen(ctx: {
   viewModels.register({
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
     schema: { type: "object", properties: {
-      open: { type: "boolean" }, full: { type: "boolean" }, pending: { type: "boolean" }, error: text, query: text, active: text,
+      open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, error: text, query: text, active: text,
       recent: { type: "array", items: item },
       entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text } } },
     } },
     select: (s: AppState) => {
       const entries = state.entries.filter((e) => `${e.name} ${e.folder} ${e.lastNote ?? ""}`.toLowerCase().includes(state.query.toLowerCase()));
-      return { ...state, entries: entries.map((e) => ({ ...e, id: e.folder })),
+      return { ...state, dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder })),
         recent: entries.filter((e) => e.folder !== s.workspace.folder && e.lastNote).map((e) => ({
           id: `${e.folder}|note`, label: e.lastNote!.split(/[\\/]/).at(-1)!.replace(/\.(md|markdown)$/i, ""), description: e.name, icon: "newNote",
         })),

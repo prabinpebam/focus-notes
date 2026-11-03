@@ -5,6 +5,7 @@
   "viewModels": [
     "vm.app",
     "vm.project",
+    "vm.projects",
     "vm.canvas",
     "vm.toolbar",
     "vm.shortcuts",
@@ -9323,6 +9324,50 @@
       }
     }
   ]
+},
+{
+  "type": "Layer",
+  "when": { "expr": { "and": [{ "get": "vm.projects.open" }, { "get": "vm.projects.full" }] } },
+  "props": { "layer": "panel", "position": "window", "landmark": "region", "label": { "t": "project.open.title" } },
+  "children": [{
+    "type": "Surface", "props": { "variant": "canvas", "scroll": true, "padding": "xl" },
+    "children": [{
+      "type": "Center", "props": { "maxWidth": "wideContent" },
+      "children": [{
+        "type": "Stack", "props": { "gap": "l" },
+        "children": [
+          { "type": "Heading", "props": { "value": { "t": "project.open.title" }, "level": "1" } },
+          { "type": "SearchField", "id": "projectSearchFull", "props": { "label": { "t": "project.open.search" }, "placeholder": { "t": "project.open.search" }, "clearLabel": { "t": "newNote.clear" }, "value": { "bind": "vm.projects.query" }, "autoFocus": true } },
+          { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "project.open.newLocal" }, "variant": "secondary", "icon": "quickNote", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+            { "type": "Button", "props": { "label": { "t": "project.openFile" }, "variant": "subtle", "icon": "open", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+            { "type": "Button", "props": { "label": { "t": "project.openFromGitHub" }, "variant": "subtle", "icon": "github", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+            { "type": "Button", "props": { "label": { "t": "project.new" }, "variant": "subtle", "icon": "add" }, "on": { "press": { "run": "projects.new" } } },
+            { "type": "Button", "props": { "label": { "t": "project.openProject" }, "variant": "subtle", "icon": "folder" }, "on": { "press": { "run": "projects.choose" } } }
+          ] },
+          { "type": "Columns", "props": { "gap": "l" }, "children": [
+            { "type": "Stack", "props": { "gap": "s" }, "children": [
+              { "type": "Heading", "props": { "value": { "t": "recent.title" }, "level": "3" } },
+              { "type": "ResultList", "id": "projectRecentFull", "props": { "label": { "t": "recent.title" }, "items": { "get": "vm.projects.recent" }, "activeId": { "get": "vm.projects.active" } }, "on": { "action": { "run": "projects.launch", "args": { "id": { "get": "event.id" } } }, "activeChange": { "run": "projects.active", "args": { "id": { "get": "event.id" } } } } }
+            ] },
+            { "type": "Stack", "props": { "gap": "s" }, "children": [
+              { "type": "Heading", "props": { "value": { "t": "project.list.title" }, "level": "3" } },
+              { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" } } }, "render": {
+                "type": "ProjectScope", "props": { "accent": { "get": "entry.accent" } }, "children": [
+                  { "type": "ItemCard", "props": { "title": { "get": "entry.name" }, "detail": { "get": "entry.folder" }, "personal": "all" }, "children": [
+                    { "type": "ProjectMark", "props": { "logo": { "get": "entry.logo" }, "size": "s" } },
+                    { "type": "Button", "props": { "label": { "t": "project.open" }, "variant": "primary", "size": "s" }, "on": { "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } } } }
+                  ] }
+                ]
+              } }
+            ] }
+          ] },
+          { "type": "Text", "when": { "get": "vm.projects.pending" }, "props": { "value": { "t": "project.open.preparing" } } },
+          { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projects.error" }, ""] } }, "props": { "value": { "get": "vm.projects.error" } } }
+        ]
+      }]
+    }]
+  }]
 }
 ]
 }
