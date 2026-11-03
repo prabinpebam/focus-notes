@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-10-24",
+  "updated": "2026-11-03",
   "stages": [
     {
       "id": "M0",
@@ -81,6 +81,13 @@
       "gate": "GATE-MAI"
     },
     {
+      "id": "MP",
+      "title": "Projects and simpler sharing",
+      "outcome": "Open isolated private projects in their own windows, pin projects/folders/notes, capture locally, share one item without recipients and publish a clean website. Retire browser writing without losing old drafts (D-272 to D-293).",
+      "channel": "Planned desktop 1.x and read-only sites",
+      "gate": "GATE-MP"
+    },
+    {
       "id": "Later",
       "title": "Components",
       "outcome": "Image, then gallery, each added as one block registration with directive syntax.",
@@ -90,6 +97,99 @@
   ],
   "implicitDependency": "Every work package depends on the gate of the previous stage, unless lookahead is true.",
   "workPackages": [
+    {
+      "id": "WP-P.1", "stage": "MP", "title": "Decisive keyboard actions",
+      "summary": "Enter dismisses Spotlight after acting; Shift+Enter retains toggles. Ctrl+Enter generates from the AI prompt, not during composition.",
+      "requirements": ["SPT-10", "RWR-91"], "dependsOn": ["WP-4.2", "WP-AI.14"],
+      "touches": ["core", "views", "editor"], "reviews": ["code", "accessibility"],
+      "specs": ["experience/spotlight.html", "experience/rewrite-with-ai.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.2", "stage": "MP", "title": "Write at caret",
+      "summary": "Prompt-only AI insertion, exact cancellation and one undo; never sends surrounding note.",
+      "requirements": ["RWR-92"], "dependsOn": ["WP-AI.14"],
+      "touches": ["core", "editor", "views"], "reviews": ["code", "security", "design-system"],
+      "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.3", "stage": "MP", "title": "Title and file name apart",
+      "summary": "Name once on first save, explicit Rename file, atomic link updates and preserved identity.",
+      "requirements": ["FIL-18"], "dependsOn": ["WP-2.3"],
+      "touches": ["core", "views"], "reviews": ["code"],
+      "specs": ["design/views/files.html"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
+      "summary": "Per-project repositories, window and path scoping, first-share confirmation and lossless approved migration. No real repository creation or deletion during design.",
+      "requirements": ["PRJ-01", "PRJ-02", "PRJ-03", "PRJ-10", "PRJ-11"],
+      "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
+      "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/projects.md", "architecture/repository-and-publishing.html", "architecture/desktop-and-git.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.5", "stage": "MP", "title": "Recognizable project windows",
+      "summary": "Project name, token accent presets and preset logos, badge/watermark/off; no colour-only identity.",
+      "requirements": ["PRJ-04"], "dependsOn": ["WP-P.4"],
+      "touches": ["ui", "views", "tokens"], "reviews": ["design-system", "accessibility"],
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.6", "stage": "MP", "title": "Projects, recent and pins",
+      "summary": "Projects list, recent files with location and stable shortcuts to projects, folders and notes.",
+      "requirements": ["PRJ-05", "PRJ-06", "PRJ-07"], "dependsOn": ["WP-P.4", "WP-P.3"],
+      "touches": ["core", "views", "schemas"], "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["experience/projects.md", "design/views/files.html"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.7", "stage": "MP", "title": "Choose a place before writing",
+      "summary": "New note in project/folder picker and collision-free platform key changes; regular New note unchanged.",
+      "requirements": ["FIL-17", "KEY-09"], "dependsOn": ["WP-P.4"],
+      "touches": ["core", "views"], "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["design/views/files.html", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.8", "stage": "MP", "title": "Quick notes and standalone files",
+      "summary": "Local-only capture and Open with, autosave/recovery/conflicts without implicit project import.",
+      "requirements": ["PRJ-08", "PRJ-09"], "dependsOn": ["WP-P.6"],
+      "touches": ["desktop", "core", "views"], "reviews": ["code", "security", "accessibility"],
+      "specs": ["experience/projects.md", "experience/notes-folder.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.9", "stage": "MP", "title": "Item-first share dialog and Switch",
+      "summary": "Fixed item, counts, nested review tree, labelled switches and four actions; first action publishes, not opening the dialog.",
+      "requirements": ["SHR-13", "SHR-14", "SHR-15", "SHR-16", "DSY-15"], "dependsOn": ["WP-5.3", "WP-P.4"],
+      "touches": ["core", "ui", "views"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["design/views/sharing.md", "design/system/components.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
+      "summary": "Share/access codes, item-based history and template; preserve old grants until expiry or withdrawal.",
+      "requirements": ["SHR-17", "SHR-18", "SHR-19"], "dependsOn": ["WP-P.9", "WP-5.4"],
+      "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
+      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.11", "stage": "MP", "title": "GitHub collaborators",
+      "summary": "Account-backed invites with real personal/organization roles, full-scope warning and safe pending/failure states.",
+      "requirements": ["PRJ-12"], "dependsOn": ["WP-P.4"],
+      "touches": ["github", "core", "views"], "reviews": ["code", "security", "design-system"],
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.12", "stage": "MP", "title": "A website with its own theme",
+      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation.",
+      "requirements": ["SHR-20"], "dependsOn": ["WP-5.1", "WP-P.4", "WP-P.13"],
+      "touches": ["web", "views", "tokens"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
+      "summary": "D-292: remove browser editor, IndexedDB-note product, owner vault, demo and ease-in routes/copy/caches; preserve existing drafts through one-time local recovery/export, never automatic clearing. Historical MW IDs stay retired.",
+      "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
+      "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
+      "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"
+    },
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
       "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Built after POP release over 86631980: native ItemCard radio area, shared Writer bridge/tracker and explicit save failure/default deletion. UX-LIST evidence checked; integration and owner acceptance pending. D-264/D-265/D-266 preserved.",

@@ -1,6 +1,6 @@
 # Customer promises
 
-The twelve promises Focus Notes makes. Every scenario, capability, screen, and decision traces back to one of them. If something serves none of them, it doesn't belong in the product.
+The promises Focus Notes makes. Every scenario, capability, screen, and decision traces back to one of them. If something serves none of them, it doesn't belong in the product. The 3 November direction adds project scope and retires browser writing (D-292); historical browser scenarios are retained only for traceability, not delivery.
 
 > [!NOTE]
 > **TL;DR.** **Calm**, **focus**, **fluent editing**, **reach**, **order**, **safety**, **ownership**, **deliberate sharing**, **comfort**, **ready in minutes**, **agents on your terms**, and **know what you're getting**. Each promise below states what the customer experiences, why it matters, how it can be broken (the test any design must pass), and its scenarios. The promises come from the [seed spec](../../seed-specs.md) and the owner's decisions of 2026-10-13 and 2026-10-16. The "signals" are proposed measures, not data.
@@ -13,15 +13,16 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-FOCUS-01` | Your eye stays on the paragraph you're writing | Seed: focus mode; paragraph unit amended by the owner (D-232) | SC-WRITE-02 |
 | `CP-FLOW-01` | Shaping text and tables feels fluid | Seed: Notion/Loop editing, tables; owner: Loop tables, contextual toolbar | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04 |
 | `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-06 |
-| `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04 |
+| `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04, SC-FILE-07 |
 | `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07 |
 | `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
-| `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-04 |
+| `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-06 |
 | `CP-YOURS-01` | Comfortable and yours in a minute | Seed: change theme, colors, fonts; owner: light/dark/system, theme management | SC-THEME-01 to SC-THEME-07 |
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
 | `CP-KNOW-01` | Know what you're getting, and get help when you need it | Owner: product site, support articles, demo (2026-10-16) | SC-HELP-01 to SC-HELP-04 |
-| `CP-RWR-01` | Rewrite my words without giving up control | Owner: Rewrite with AI (2026-10-30; as built 2026-10-31, D-256, D-257) | SC-RWR-01, SC-RWR-03, SC-RWR-04 |
+| `CP-RWR-01` | Ask AI for words without giving up control | Owner: optional writing and rewriting (D-282) | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05 |
+| `CP-SCOPE-01` | One project, one focus | Owner: isolated projects, 3 November | SC-PROJ-01 to SC-PROJ-05 |
 
 <h2 data-reader-personas="product">The promises</h2>
 
@@ -29,11 +30,21 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 
 | Field | Value |
 | --- | --- |
-| Customer promise | I can ask an AI service I chose to rewrite words I've selected, watch the new words arrive in place, and get my exact original back with one undo, without Focus Notes running a model or sending my words anywhere else. |
+| Customer promise | I can ask an AI service I chose to rewrite selected words or write at my caret, watch the words arrive in place, and restore the exact original with one undo, without Focus Notes running a model or sending my words anywhere else. |
 | Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged. Before sending, the person sees the integration, model and where it runs, chooses which connection sees their words, and decides whether to send even from a private note (D-261, D-262). |
 | Breaks when | A rewrite loses the original or changes text outside the selection; Stop or an error leaves half-written text; text goes to any service other than the chosen Writer, or anything beyond the prompt and the selection is sent; a key shows in the window, a file in the notes or a log; Focus Notes installs, downloads or runs a model. |
 | Signals | Unit tests prove one undo step, an exact restore on Stop and errors, each service's request shape and that keys stay in the main process; the owner tries it on their own notes with their own service. No telemetry is collected to measure use. |
-| Scenarios | SC-RWR-01, SC-RWR-03, SC-RWR-04 |
+| Scenarios | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05 |
+
+### CP-SCOPE-01 — One project, one focus
+
+| Field | Value |
+| --- | --- |
+| Customer promise | Each project has its own place, history and window, so I never mix one part of my life with another; I can still jot a quick note or open a file without choosing a project. |
+| Why it matters | A book, a job and a club should not share search results, commits or permissions by accident. |
+| Breaks when | A project window searches or changes another project's notes; opening another project loses a draft; a local file is imported or uploaded without asking; window identity depends on colour alone. |
+| Signals | Two-project scope checks, exact saved-draft recovery, distinct labelled windows and local-only capture tried by the owner. |
+| Scenarios | SC-PROJ-01, SC-PROJ-02, SC-PROJ-03, SC-PROJ-04, SC-PROJ-05 |
 
 ### CP-CALM-01 — Calm canvas
 
@@ -83,7 +94,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | Why it matters | People capture first and organize later. Fear of breaking links or losing files stops them from tidying. |
 | Breaks when | Creating a note forces a decision about where it goes, or a rename or move breaks a link or loses history. |
 | Signals | Notes left in the root against notes filed. Moves and renames that are undone. |
-| Scenarios | SC-FILE-01, SC-FILE-02, SC-FILE-03, SC-FILE-04 |
+| Scenarios | SC-FILE-01, SC-FILE-02, SC-FILE-03, SC-FILE-04, SC-FILE-07 |
 
 ### CP-SAFE-01 — Never lose, never leak
 
@@ -109,11 +120,11 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 
 | Field | Value |
 | --- | --- |
-| Customer promise | Sharing is a deliberate, reversible act, and you always know who can read what. |
+| Customer promise | Sharing is deliberate, and you always know what's readable and how; withdrawing access cannot erase copies already downloaded. |
 | Why it matters | A note is written for its audience. Accidental audiences change what people dare to write. |
 | Breaks when | Visibility is unclear, a share happens as a side effect, or a link can't be withdrawn. |
 | Signals | Visibility visible at a glance. Private links revoked when no longer needed. |
-| Scenarios | SC-FILE-06, SC-SHARE-01, SC-SHARE-02, SC-SHARE-03, SC-SHARE-04 |
+| Scenarios | SC-FILE-06, SC-SHARE-01, SC-SHARE-02, SC-SHARE-03, SC-SHARE-04, SC-SHARE-05, SC-SHARE-06 |
 
 ### CP-YOURS-01 — Made comfortable
 
@@ -129,7 +140,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 
 | Field | Value |
 | --- | --- |
-| Customer promise | From first visit to writing in a few minutes: in the browser with nothing to install, or in the desktop app with one sign-in that also sets up Git. |
+| Customer promise | From download to writing in a few minutes in the desktop app, with one sign-in that also sets up Git. Websites are for reading, not writing (D-292). |
 | Why it matters | Git-backed tools usually ask for setup expertise. The first five minutes decide whether people stay. |
 | Breaks when | Setup asks for things the browser or computer already knows, needs the terminal or a build, or leaves the instance or Git half-configured. |
 | Signals | Time from first visit or install to first note. Setup steps skipped because they were detected. |
@@ -149,7 +160,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 
 | Field | Value |
 | --- | --- |
-| Customer promise | Before you download anything, you can see what Focus Notes does, what it looks like, and whether it suits you, and try it in your browser. Once you use it, a plain answer is one click from wherever you are. |
+| Customer promise | Before you download anything, you can see what Focus Notes does, what it looks like, and whether it suits you. Once you use it, a plain answer is one action from wherever you are. No browser editor or ease-in plan is promised (D-292). |
 | Why it matters | Focus Notes asks for a GitHub account and keeps notes in your own repositories, which is unusual. People decide whether to install from the first page they see, and a writer who's stuck in setup or sync needs steps they can follow, not a developer's spec. |
 | Breaks when | The first page uses jargon or overpromises; a screenshot doesn't match the app; the demo needs a sign-in or loses the visitor; a *Learn more* link from the app goes nowhere or to the wrong article; an error in the app has no fix anyone without Git knowledge can follow; or the site tracks its visitors. |
 | Signals | Every in-app help link resolves (checked in CI). Articles read at about grade 8 or below. Unaided task success in the help usability test. Issues opened from *Was this helpful?* (no telemetry). |

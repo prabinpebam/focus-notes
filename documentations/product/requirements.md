@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 225 requirements in 26 areas. **P0** means the first usable release of its channel (the web app, then the desktop app), **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 308 tracked requirements, including superseded historical IDs. **P0** records the original first release, **P1** follows it, and **Later** marks extensions. Stage MP adds projects, simpler sharing and retirement of browser writing (D-272 to D-293). The browser-writing requirements below are historical, not deferred: WEB-01 removes those surfaces while preserving existing drafts. Superseded IDs are retained for traceability, never reused.
 
 ## Priority legend
 
@@ -109,7 +109,7 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-04 | Quick open: fuzzy search notes by title or path (<kbd>Mod</kbd>+<kbd>P</kbd>, part of [Spotlight](../experience/spotlight.html)). | P0 |
 | FIL-05 | Every file operation is a Git commit with a readable message. Deletes can be recovered from history. | P0 |
 | FIL-06 | Moving a note between public and private changes its storage repository (see SHR-02). | P0 |
-| FIL-07 | A note's file name follows its title until the note is first published, then stays fixed unless renamed on purpose. See [Files panel](../design/views/files.html). | P0 |
+| FIL-07 | **Superseded by FIL-18 (D-281).** Historical automatic title-to-file renaming; not the planned behaviour. | P0 |
 | FIL-08 | Multi-select in the Files panel (<kbd>Mod</kbd>/<kbd>Shift</kbd>+click, <kbd>Shift</kbd>+arrows), with move, delete, and visibility changes applied as one commit. | P0 |
 | FIL-09 | Renaming or moving notes and folders updates relative links in other notes in the same commit. | P0 |
 | FIL-10 | Recently deleted: notes deleted in the last 30 days, found from Git history, can be restored in place or to a chosen folder. | P0 |
@@ -118,6 +118,48 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-13 | Note history: a note's versions from Git, with time and author (agent changes labeled), comparison, and restore as a new commit. | P1 |
 | FIL-14 | Backup by repository: each Files section (Private, Public) shows its repository's backup state at its heading's trailing end, counting what waits there, folders included (empty ones too), and its card backs up everything waiting in that repository's notes on request, keeping empty folders with a `.gitkeep` (D-191). | P1 |
 | FIL-15 | Import files: a folder's or section's menu imports Markdown, text, HTML and Word (`.docx`) files as new notes in it, as one batch with Undo, numbering a taken name and replacing nothing. Only the shell reads the files; HTML and Word are read as a paste is (sanitized, images left out) (D-210). | P1 |
+
+## Projects (PRJ)
+
+Owner's 3 November notes; [Projects](../experience/projects.md). All planned, not built.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| PRJ-01 | Each new project is its own private GitHub repository, with notes, settings, history and sync isolated. No public site is created at setup. | P1 |
+| PRJ-02 | Open projects in their own windows; one project per window. Reopen focuses the existing window; restore last-open windows without losing drafts. | P1 |
+| PRJ-03 | Files, Spotlight, find, links, recent, move/import, history and agents stay inside the project; canonical path checks reject traversal, symlink escape and another project's IDs. Opening another project is an explicit separate-window action. | P1 |
+| PRJ-04 | Project name, 12 token accent presets and 24 preset SVG logos identify the window. Badge / Watermark (4%, clear of text) / Off; name remains visible on request and in window identity. Store project choices in `.focus-notes/project.json`; contrast-safe in light/dark/contrast. | P1 |
+| PRJ-05 | Projects lists pinned projects and recent files, with New project…, Open project…, Quick notes and Open file…; it is a dialog in an open window, full-window when none is open. | P1 |
+| PRJ-06 | Recent contains files only, newest first; project and folder distinguish identical titles globally, folder alone inside a project. Missing files offer Locate/Remove without recreating or downloading them silently. | P1 |
+| PRJ-07 | Pin projects on the device and folders/notes in `.focus-notes/pins.json`. Pins are shortcuts, follow renames/moves and never copy or delete content; no Favourites list. | P1 |
+| PRJ-08 | Quick notes is a local-only plain folder under Documents → Focus Notes → Quick notes, with its own window, autosave and Recent. It needs no GitHub account. Import into a project copies first; no automatic deletion or upload. | P1 |
+| PRJ-09 | Open with Focus Notes handles `.md`, `.markdown`, `.txt` in a standalone file window and saves in place; a file inside an open project goes to that window. No project controls, upload or conversion without asking. Preserve encoding/line endings, dirty recovery and external-conflict handling. | P1 |
+| PRJ-10 | Private only until first share/publish. Explicit confirmation names the public site repository, Pages URL, sealed versus plaintext content and consequences before creation; Cancel has no remote effect. Turning off sharing requires separate confirmation and never deletes project notes. | P1 |
+| PRJ-11 | Existing instance/private pairs map to site/project only after an explained migration, owner approval and recoverable snapshot; preserve every file, ID, link, secret and history. No automatic disk move or plaintext publication. | P1 |
+| PRJ-12 | Settings → Project → People invites GitHub users. Organization repos expose actual supported Read/Triage/Write/Maintain/Admin permissions; personal repos expose Collaborator with full read/write warning, never fictional Read-only. Show that project access includes private notes and share secrets. | P1 |
+
+## New writing and sharing direction
+
+These extend the areas above/below without reusing retired FIL-16. [Next direction](../plan/next-direction.md) is the source map.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| FIL-17 | New note in… (Ctrl+Shift+N / ⇧⌘N) chooses a project and folder first, then creates a private note in that project's window. Cancel writes nothing; ordinary New note stays immediate. | P1 |
+| FIL-18 | Set a file name once at first save from the current title or Untitled plus a collision suffix. Later title edits never rename it; Rename file… changes only the path and updates links atomically. | P1 |
+| KEY-09 | New note in… uses Mod+Shift+N; New folder moves to Ctrl+Alt+N / ⌥⌘N; Open project… uses Ctrl+Alt+O / ⌥⌘O. Retire New window's old binding; menu, cheat sheet, Spotlight and customization conflicts agree. | P1 |
+| RWR-91 | Ctrl+Enter / ⌘Enter in the prompt runs Generate exactly once when valid; plain Enter adds a line, composition never sends, and pending generation cannot submit again. | P1 |
+| RWR-92 | With no selection, Rewrite opens Write at caret. Send only the prompt, insert at a captured caret, lock the note while streaming, preserve outside bytes, and make completion one undo step. Stop/error/cancel restores the exact note; no fallback service or model hosting. Amends RWR-72. | P1 |
+| SPT-10 | Enter acts on the selected Spotlight result and dismisses on success, including toggles; Shift+Enter toggles while retaining the panel/query/focus. Failure remains explicit with the query retained. Supersedes D-111's lingering toggles. | P1 |
+| SHR-13 | Share… from one Files row, ⋯ or Spotlight opens that item's share dialog directly; target fixed, no state interstitial, recipient chooser or multi-item picker. | P1 |
+| SHR-14 | Folder share shows file/folder counts and Review contents: scrollable read-only tree in a nested dialog; close/Escape restores the unchanged share draft and focus. Recheck contents before publication, never silently widen a previously reviewed scope. | P1 |
+| SHR-15 | Link and Passcode use labelled Switch controls, at least one on, default Link on and Passcode off. Expiry defaults to 30 days. Passcode reveals Generated/Custom and strength validation; all-off is blocked explicitly. | P1 |
+| SHR-16 | Share…, Copy link, Copy access code and Copy share information create the share on the first action, not dialog open. Wait for publish confirmation before “ready”; repeat actions reuse it. OS sharing falls back to copying only when unavailable, not on user cancellation or errors. | P1 |
+| SHR-17 | Replace named lookup with a random 8-character share code (e.g. K7QM-4DRP); one access code combines share code and passcode. Collision-check per project; code is an identifier, not security entropy. Generic reader errors, strong passcodes and key derivation unchanged. Existing named grants continue until expiry/withdrawal; no automatic conversion invalidates them. | P1 |
+| SHR-18 | Settings → Sharing lists shares by item, opening methods, expiry and state; extend, withdraw and delete record. No recipients, delivery/open tracking or person-first flow. “Shared before” on the item discloses history without an interstitial. | P1 |
+| SHR-19 | Editable share-information template uses `{title}`, `{link}`, `{accessCode}`, `{expires}`, `{site}`; no `{name}`. Include enabled methods only and the plain forwarding/expiry limitation. Never log codes or put them in public metadata. | P1 |
+| SHR-20 | Publish plaintext read-only pages as a website; its own site theme (proposed Paper) is independent of the app theme. First publish confirms site creation and public history; no editor, owner vault, browser note store or ease-in funnel on Pages. | P1 |
+| DSY-15 | Switch is a sealed labelled primitive with checked semantics, visible thumb position and On/Off text, Space activation, focus, disabled and pending states, light/dark/contrast and reduced motion. Link/passcode choices do not use low-contrast toggle chips. | P1 |
+| WEB-01 | Retire browser writing, IndexedDB notes, owner-vault UI, interactive demo and browser-to-desktop funnel completely (D-292). Remove production routes, navigation, downloads copy, service-worker caches and contradictory Help; preserve existing drafts through a one-time local recovery/export, never automatic storage clearing. Retired IDs remain historical only. | P1 |
 
 ## Sharing and visibility (SHR)
 
@@ -129,12 +171,12 @@ Seed: *"Sharing of public links… content can be made public or private… Priv
 | SHR-02 | Public notes are stored in the public repository; private notes are stored in the private content repository, mounted as a submodule. | P0 |
 | SHR-03 | A public note has a stable, read-only public URL on GitHub Pages. "Copy public link" (in ⋯, Share, and Spotlight) copies it. | P0 |
 | SHR-04 | Private notes are never published in plaintext. | P0 |
-| SHR-05 | Private notes and folders can be shared with an **audience identified only by a name**, through a magic link, a passcode, or both (D-41). See [Sharing and visibility](../design/views/sharing.md). | P0 |
+| SHR-05 | **Superseded in part by SHR-13 and SHR-17 (D-285).** Item sharing remains; named audiences are retired for new shares. Existing grants remain valid until they end. | P0 |
 | SHR-06 | Public and share-link pages follow the reader's light or dark preference and are readable from 320 px wide. Share-link errors never reveal whether a note exists. | P0 |
 | SHR-07 | Passcodes are generated (four EFF words, about 52 bits) or chosen by the owner. Custom passcodes must be at least 12 characters and rated strong. Keys are derived with PBKDF2-SHA256 at 600,000 iterations and a salt per grant. | P0 |
-| SHR-08 | Audiences can be listed, with what they open, their expiry (default 30 days), and their state, then extended, withdrawn (keeping the record), or deleted. | P0 |
-| SHR-09 | A copyable invite built from an editable template (`{name}`, `{title}`, `{link}`, `{passcode}`, `{expires}`, `{site}`), stored in the private repository. | P0 |
-| SHR-10 | The share reader opens with a magic link (the fragment is removed at once), or with name plus passcode. The session is per tab by default, remembered on the device on request, and Sign out reaches every tab. Errors are generic. | P0 |
+| SHR-08 | **Superseded in part by SHR-18.** List shares by item, not audience name; expiry, extend and withdraw remain. | P0 |
+| SHR-09 | **Superseded in part by SHR-19.** Editable copy template remains in the private project; new templates omit `{name}`. | P0 |
+| SHR-10 | **Superseded in part by SHR-17.** Link fragment removed at once; one access-code field replaces new name/passcode lookup. Per-tab default, opt-in remembrance and all-tab Sign out remain. | P0 |
 | SHR-11 | Sealing per build: fresh keys every build, keyrings only for active grants, name lookup by salted hash, a nightly deploy for expiry, and a warning before GitHub's 60-day schedule shutoff. | P0 |
 | SHR-12 | **Print** the open note from ⋯ → Note, the command list, Spotlight and the macOS File menu, through the system's own print dialog, which keeps the printer, paper, orientation, copies, pages and *Save as PDF*. On paper the note is in Paper's colors whatever the theme on screen, at 12 pt, with the note's title as the job's name, no front matter, and, when *Page numbers when printing* is on beside *Print…* (off by default, kept on the device), the page number and count at the foot of every page (D-231). A heading stays with what follows it, and a code line, a table row and a task don't split across pages; a line with only a page break (`<!-- pagebreak -->`, or an empty `<div style="page-break-after: always"></div>` as other Markdown editors write it) starts a new page (D-230). See [Print](../experience/print.md). | P1 |
 
@@ -438,7 +480,7 @@ Rewrite sends selected text and a prompt to an AI service the person chose, and 
 | --- | --- | --- | --- |
 | RWR-70 | **Integration only.** Rewrite calls a service the person runs or pays for, from the desktop main process. Focus Notes never installs, downloads, launches, hosts or runs a model, and has no server or account of its own in the path. | P1 | Built |
 | RWR-71 | **Desktop only.** The browser app has no Rewrite command, menu item or AI settings; the command is disabled where the desktop bridge has no AI service. | P1 | Built |
-| RWR-72 | **Open.** With text selected in an editable note, Ctrl+Shift+R (⇧⌘R on macOS), *Rewrite…* in the text menu (Windows and Linux) or *Rewrite…* in the Edit menu opens the Rewrite popover with that selection captured. With nothing selected, it opens nothing and announces "Select some text to rewrite first." The command is enabled only while a note is open and ready. | P1 | Built |
+| RWR-72 | **Open; amended by RWR-92 (D-282), not built.** Selected text opens Rewrite as before; no selection opens Write at caret rather than refusing. Menu/key entry and ready-note restriction remain. | P1 | Original selection mode built; amendment planned |
 | RWR-73 | **Prompt and integration disclosure.** Accessible region name *Rewrite*; an integration line with icon, service name, model and *This computer* or *Cloud*. With more than one configured connection, an *AI integration* menu selects another Writer, remembers it on this device, updates the line and uses it next time. With one connection, no picker. A save keeps the prompt intact, shows "Remembering your choice…" and disables Generate until saved; a failure keeps the old integration and reports the error. Then a focused multi-line *Prompt*, three preset toggles and *Cancel*/*Generate*. No result tabs or Accept step. The inline container has no passage preview or disclaimer (D-262, D-265, D-266; AIS-03, AIS-13, AIS-14; RWR-87 to RWR-90). | P1 | Built; local UX evidence, WP-AI.14 |
 | RWR-74 | **No Writer yet.** The popover says "Rewrite needs an AI service. Add one in Settings → AI." and offers *Set up AI*, which closes it and opens Settings at AI, instead of *Generate*. | P1 | Built |
 | RWR-75 | **Generate.** *Generate* closes the popover and starts the rewrite on the captured selection. If the note changed since the selection was captured, nothing is sent and an error toast says "The note changed after you selected the text. Select it again and rewrite." | P1 | Built |

@@ -390,6 +390,32 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 **GATE-MAI:** every [MAI done row](definition-of-done.md#mai-rewrite-definition-of-done) and [acceptance row](rewrite-acceptance.md) has evidence, and the owner has accepted the feature in the review build. Before it merges to `main`, the desktop gate applies (D-206, sized by D-255).
 
+<h2 id="mp" data-reader-personas="product design engineering">MP: Projects and simpler sharing</h2>
+
+**Planned, strict design; no runtime built.** The [3 November direction](next-direction.md) supersedes browser writing and named sharing. Earlier MW/browser/demo packages describe historical work only, not a second roadmap. D-292 retires that product completely; WP-P.13 preserves existing drafts before removing its runtime. Ordinary file import remains, not a browser ease-in plan.
+
+**You can:** keep unrelated projects in distinct windows, find recent files by place, pin folders/projects, jot locally or edit a stray file, share one item without recipients and publish a clean website. Delivers UC-PROJ-01 to UC-PROJ-08, UC-FILE-12, UC-RWR-12 and UC-SHARE-07 to UC-SHARE-10, plus the revised existing writing/sharing capabilities.
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-P.1 | Decisive keyboard actions | SPT-10, RWR-91 | WP-4.2, WP-AI.14 | code, accessibility |
+| WP-P.2 | Write at caret | RWR-92 | WP-AI.14 | code, security, design-system |
+| WP-P.3 | Title and file name apart | FIL-18 | WP-2.3 | code |
+| WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03, PRJ-10, PRJ-11 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
+| WP-P.5 | Recognizable project windows | PRJ-04 | WP-P.4 | design-system, accessibility |
+| WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07 | WP-P.4, WP-P.3 | code, design-system, accessibility |
+| WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
+| WP-P.8 | Quick notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
+| WP-P.9 | Item-first share dialog and Switch | SHR-13, SHR-14, SHR-15, SHR-16, DSY-15 | WP-5.3, WP-P.4 | code, security, design-system, accessibility |
+| WP-P.10 | Shares without names | SHR-17, SHR-18, SHR-19 | WP-P.9, WP-5.4 | code, security, accessibility |
+| WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
+| WP-P.12 | A website with its own theme | SHR-20 | WP-5.1, WP-P.4, WP-P.13 | code, security, design-system, accessibility |
+| WP-P.13 | Retire browser writing safely | WEB-01 | WP-5.1 | code, security, accessibility |
+
+These are independently reviewable slices; lookahead permits design without waiting for unrelated stage gates. No real repository creation, invite, deletion or migration is authorized by a spec. Owner choices stay in [Next direction](next-direction.md#what-needs-the-owner).
+
+**GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has the named evidence after design approval; privacy/data-preservation checks precede any migration or publication. Spec review is not implementation acceptance.
+
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 
 **You can:** Image, then gallery, each added as one block registration with directive syntax.

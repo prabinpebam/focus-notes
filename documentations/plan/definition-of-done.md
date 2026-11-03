@@ -5,6 +5,27 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The owner approved exact d40b78a3 Rewrite/Settings UX and UI on 1 November; its combined runtime/test/config head passed complete Windows CI 41325681712. The **MAI** rows add CP-RWR-01 to the production bar and still retain the explicitly unmeasured renderer, screen-reader, contrast and live-account certification gaps. Runtime hardening proof is not complete stage or release certification.
 
+## Projects and simpler sharing
+
+**MP is specified only. No UX or implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
+
+**Try it (after approval/build):** open two projects called Work and Book. Search in Work for a Book-only phrase; nothing appears. Create a note in Book with New note in…, change its heading, pin its folder, reopen it from Recent and confirm the filename stayed. Capture a Quick note and open a `.txt` in place while signed out. Share a folder, review its contents, cancel once, then enable sharing with the public-site explanation and send an access code. Read it on the website, withdraw it and inspect pending publication honestly. Publish a different page with Paper while the app stays dark.
+
+| Row | Done when | Evidence required |
+| --- | --- | --- |
+| MP.1 | UC-PROJ-01 to UC-PROJ-03: separate histories/windows; traversal, symlinks, links, search, import/move and agents cannot escape scope; opening/closing loses no draft. | Two-project journey, canonical-path negative units, crash/restore and migration byte inventory |
+| MP.2 | UC-PROJ-04 to UC-PROJ-06: name survives colour/logo Off; Recent distinguishes same titles; project/folder/note pins follow moves and unpin deletes nothing. | Light/dark/contrast/narrow visual review, keyboard/screen-reader pass, pin identity units |
+| MP.3 | UC-PROJ-07 and UC-PROJ-08: local files survive restart, failed writes and external edits; no implicit network/upload; Save as leaves original intact. | Local-only filesystem/network journey, encoding corpus, denied-write/conflict/crash checks |
+| MP.4 | UC-FILE-02 and UC-FILE-12: first-save name remains after title edits; picker cancel creates nothing; explicit rename updates links exactly once. | File-operation units and project/folder picker journey |
+| MP.5 | UC-RWR-01, UC-RWR-12 and UC-FIND-03: Ctrl+Enter generates once, IME never sends; caret mode sends no note context and exact Undo/Stop restores; Enter dismisses Spotlight. | Prompt/request-shape units and focused keyboard journey |
+| MP.6 | UC-SHARE-03, UC-SHARE-05, UC-SHARE-07 and UC-SHARE-08: fixed target, review tree, counts, switches, cancel with no grant/site, explicit first-share confirmation and honest publish wait. | Approved dialog view states in both themes and narrow size; controlled publish failure and nested-focus journey |
+| MP.7 | UC-SHARE-04 and UC-READ-02: new access codes, generic errors, expiry/withdrawal and old grant compatibility; no plaintext or secret in public output/logs. | Sealed-reader fixtures, build-output leak scan, security review and legacy-grant migration corpus |
+| MP.8 | UC-SHARE-09: GitHub roles are actual permissions; collaborator warning includes all private notes and secrets; no fake personal Read role. | API protocol fakes; owner-authorized live organization/personal smoke before real invites (owner supplies accounts) |
+| MP.9 | UC-SHARE-10: public website independent of app theme; no browser-writing/demo/vault routes, navigation or caches; old browser drafts not cleared. | Site route inventory, website visual review, seeded old-storage recovery/export byte check |
+| MP.10 | CP-SAFE-01 and CP-SHARE-01: no automatic site deletion or migration; downloaded public/share copies cannot be recalled and the UI says so. | Owner approval for proposed migration/public-site choices; negative cancellation and rollback evidence |
+
+**Against the promise:** nothing in MP is built yet. The highest-risk blockers are migration without loss, repository-wide collaborator access and draft preservation during browser retirement; validate those before production wiring. The existing browser capabilities in older sections are retired by D-292.
+
 ## Settings AI single-list stage
 
 **Approved at 19:59, 1 November:** the owner accepted UX and UI of exact `d40b78a345b7fe79262116b270b3a908c0966eac`, including shared centering/opaque hover, discovery grouping, prominent Default, stable focused row/editor/scroll and Add last. Production hardening has 217 targeted passing units and six passing real-app journeys, plus the complete green Windows runtime/test/config gate on `ece4c25c722f96c572232c5c58398c9f25d74260`; [current gate evidence](gate-evidence.md#current-production-candidate-checks) supplies its exact commands/results/run and retains live-account/assistive-technology limitations. Earlier evidence below is historical, not a claim that the revised design remains unapproved.

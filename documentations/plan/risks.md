@@ -39,6 +39,25 @@ What could make Focus Notes fail, how likely and how bad each risk is, and what 
 | R-31 | **Store capabilities and public privacy claims no longer describe optional AI traffic.** | Medium | High | Before Rewrite ships in a release: the privacy page and Store listing say that Rewrite sends selected text to the service the person sets up, and nowhere else. Not before; the review build isn't a release. | MAI gate |
 | R-32 | **Desktop-only rewrite is mistaken for browser support.** | High | Medium | The web build has no AI bridge, so Rewrite is absent there (RWR-71); Help says desktop only. | MAI, WP-AI.11 |
 
+## Project and website risks
+
+| ID | Risk | Likelihood | Impact | Mitigation and criterion | Checked in |
+| --- | --- | --- | --- | --- | --- |
+| R-33 | Personal-account collaborators do not have organization-style roles. | Certain | High | Display actual GitHub access; no fictional Read role. Protocol fake rejects unsupported permission; owner settles personal invites before live use. | MP, WP-P.11 |
+| R-34 | Existing two-repository instances lose files, links or history when mapped to projects. | Medium | Severe | No automatic move. Owner-approved mapping, recoverable snapshot and byte/ID/link/history inventory equal before/after; rollback leaves old instance usable. | MP, WP-P.4 |
+| R-35 | A public site per project multiplies Pages builds, Actions minutes and 60-day schedule shutoffs. | High | High | No site until asked; status/warning per site, expiry deployment must succeed before revocation is claimed. Check current account limits before creating a site; don't promise a fixed completion time. | MP, WP-P.4 / WP-P.12 |
+| R-36 | A collaborator reads share keys and passcodes in project records. | Certain | Severe | Before invite say access includes all private notes and share secrets. Read access is not limited to app UI; withdraw cannot revoke old clones or copied keys. | MP, WP-P.11 |
+| R-37 | One Electron window per project uses too much RAM. | Medium | High | Reuse open window, share process services, lazy mount; measure 1/2/5 windows against the existing idle-memory budget before shipping. If failing, reduce background work, never silently merge scopes. | MP, WP-P.4 |
+| R-38 | Standalone/Quick notes have no Git recovery safety net. | High | High | Local journal, crash recovery, exact atomic save, external-conflict handling and clear Local only state; never claim backed up. Reject destructive overwrite and preserve original on import. | MP, WP-P.8 |
+| R-39 | A short share code is mistaken for a strong passcode. | Medium | Severe | Code identifies the keyring only; generated passcode and existing strength/KDF rules remain. Offline guesses cannot be rate-limited; prove code collision handling and keep secret out of URLs/logs except intentional fragment link. | MP, WP-P.10 |
+| R-40 | Removing browser writing destroys existing browser-only drafts. | Medium | Severe | Inventory old stores and service workers, one-time local recovery/export, no automatic clearing. Seed old data and prove byte-equal recovery before retiring routes; retain recovery if migration is incomplete. | MP, WP-P.13 |
+
+| Assumption | Kind / impact / evidence | Criterion and cheapest check | Decision changed by failure |
+| --- | --- | --- | --- |
+| A-PRJ-01: windows isolate context without becoming clutter. | Usability / high / owner's stated preference, not tried | Owner identifies and reopens the right one among 3 labelled project windows without reading note text. Prototype review first. | Change identity/Projects navigation, not scope |
+| A-PRJ-02: Pinned folders and file-only Recent cover returning to work. | Usability / medium / source notes only | Owner finds a pinned folder and 2 same-title notes from their displayed places without help. | Revise location wording and grouping |
+| A-PRJ-03: local Quick notes can be found again. | Desirability/usability / high / source use case | Owner captures signed out, restarts and reopens it unaided from Recent. | Revise launch/default entry before wiring |
+
 ## Rewrite assumptions to validate
 
 These are hypotheses unless an evidence boundary is explicitly resolved below. The 30 October history-bounds hypothesis was dropped with D-256. See [decisions](decisions.md#rewrite-with-ai-as-built-31-october-2026) and the [owner-testable stage](definition-of-done.md#owner-testable-rewrite-ux-stage).
