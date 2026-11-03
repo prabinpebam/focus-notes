@@ -2,16 +2,14 @@
 
 The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-304).
 
-**Second source, relayed 13:36:** the exact nested [image notes](../experience/images.md#the-owners-image-notes-3-november-2026), detailed flows, two figures, storage/Markdown/encrypted-media contract and image editor/caption UX are on their own durable page. D-300 to D-304, SC-IMG-01 to SC-IMG-05, UC-IMG-01 to UC-IMG-06 and IMG-01 to IMG-10 trace that source to the Later-stage plan and future evidence. No critical image decision needs the owner; reversible default ambiguity is recorded in D-300.
+**Second source:** the owner's [image notes](../experience/images.md#the-owners-image-notes-3-november-2026), kept word for word with their flows, figures and storage, sharing and editing contract on their own page (D-300 to D-304, SC-IMG-01 to SC-IMG-05, UC-IMG-01 to UC-IMG-06, IMG-01 to IMG-10).
 
 > [!NOTE]
 > **TL;DR.** The owner's notes ask for writing fixes, recognizable projects, pins and item-first sharing, with Pages as a reading website. All six follow-up decisions were **accepted by the owner on 3 November at 13:35**: keep the site repository when turning sharing off, accept retained Git history, use opaque names-free shares, permit personal-account invites, make the project migration UX-led and simplify browser retirement. This remains specification/planning, not a current-build or execution claim.
 
 ## The owner's notes (3 November 2026)
 
-Captured from the owner's authoritative product-notes file on 3 November, including the final reread's SVG and website/preview additions. Only Focus Notes product content is present; no non-product lines were omitted. The source remains untouched. Everything below and on the linked pages interprets these notes; when they disagree, the notes win.
-
-The relayed 12:45 source update was re-read and diffed after the corrections arrived: it matches the capture exactly. All SVG-logo, website navigation/reading and in-app site-preview additions are already in the linked specification and MP plan.
+Captured from the owner's product-notes file on 3 November. Only Focus Notes product content is present and no product line is omitted. Everything below and on the linked pages interprets these notes; when they disagree, the notes win.
 
 ```text
 # Focus notes features
@@ -155,7 +153,7 @@ These are the recorded design answers; the six follow-up product choices below w
 | Project terminology (D-272) | [UX-led migration](../experience/projects.md#meeting-project-for-the-first-time), mostly naming; existing repositories/files stay in place. |
 | Browser retirement (D-292, D-298) | Approved to plan; one-click local export of the owner's drafts, if any, before removal. No heavy inventory, byte-equivalence or 30-day gates. |
 
-Paper, suggested site name, wording/layout and bounds are reversible defaults, not owner blockers. This task remains **specification/planning only**: no real account action, publication of notes, migration, deletion, release or implementation is performed. Product acceptance does not turn this documentation task into permission to execute those operations.
+Paper, suggested site name, wording/layout and bounds are reversible defaults, not owner blockers. Everything here is specified and planned, not built; no account, publication, migration or deletion has happened.
 
 ## Where each note is specified
 
@@ -185,3 +183,36 @@ Paper, suggested site name, wording/layout and bounds are reversible defaults, n
 | Crop/rotate modal and destructive-save/Git recovery boundary | [Images → Crop and rotate](../experience/images.md#crop-and-rotate-dialog) | D-304 |
 
 The first source is planned in **MP: Projects and simpler sharing**, WP-P.1 to WP-P.15. Images extend the existing **Later: Components** stage: assets/encryption WP-9.3, inline image/display/actions WP-9.1, crop/rotate WP-9.4 and optional captions WP-9.5; gallery WP-9.2 stays separate. See [roadmap](roadmap.md), [MP plan](implementation-plan.md#mp) and [image plan](implementation-plan.md#later). All are specification/planning, not built or approved UI.
+
+## Review, 3 November
+
+A critique of everything above and on the linked pages, made the same afternoon: a grounding critique of the chain, a design-system audit of the view specs, and a review of fidelity, feasibility and the plan, with external facts checked against their sources. Both source captures still match the owner's files exactly. Fixes are made on the pages themselves; reversible choices are recorded as decisions D-305 onward.
+
+**In progress.** Findings and fixes are added here as each section lands.
+
+### Critical
+
+| Finding | Fix |
+| --- | --- |
+| Images were to be stored as a `::image{…}` directive, which a plain Markdown viewer such as GitHub shows as text, not a picture. That breaks the ownership promise ("breaks when the app writes anything a plain Markdown viewer can't show"). | Pending: standard image syntax with an attribute block. |
+| The visibility table said a share is stored in the private repository, while D-299 commits its ciphertext to the public site repository. Who seals it, and when, wasn't decided; re-sealing with fresh keys on every build would commit new ciphertext every night and grow the public repository towards GitHub's 1 GB limit. | Table corrected in [Sharing](../design/views/sharing.md#three-levels-of-visibility). Sealing pending. |
+| The first-share confirmation was a dialog stacked on the share dialog, which the one-panel rule doesn't allow, and scored about 48 on the visual vs verbose score: five sentences of prose, no anchor. | Now an in-place step with the project mark, two "what's created" rows, two badge rows and one history line, about 78 ([Projects](../experience/projects.md#private-only-until-the-first-share)). |
+| Images had no way to write a description (alt text) or a caption by hand; only AI captions. | Added **Edit description…** and **Add caption** to the [image menu](../experience/images.md#image-menu-and-selection), with an empty-description hint and a non-blocking reminder at share time. |
+
+### Major
+
+| Finding | Fix |
+| --- | --- |
+| Existing workspaces nest the private repository *inside* the public one; new projects are the other way round, and where a new project's site lives on disk wasn't said. | Pending. |
+| Windows has no Electron API for the system share sheet (Electron's `ShareMenu` is macOS only), so the owner's primary Share button on the owner's own platform rests on an unproven native bridge. Not in the risk register. | Pending. |
+| "Multiple instances" per project wasn't reconciled with the existing single-instance lock, *Open with* routing, or closing to the tray (D-217). | Pending. |
+| Pressing Share… on an item that's already shared didn't say whether it shows the same link or makes a new one. | Pending. |
+| The plan made the owner's three share-dialog fixes wait for all of projects, made inline images wait for encrypted sharing, and packed five deep requirements into one package (WP-P.4). | Pending. |
+| Components named as "existing" (Switch, Select, Disclosure, Tree, Badge) aren't all built; the share dialog had no offline, no-permission or sharing-off states, focus order, or named status element. | Pending. |
+
+### Minor
+
+| Finding | Fix |
+| --- | --- |
+| Process notes ("this task performs no…", relay times) sat in product pages. | Removed from Projects, Sharing, Published website, Repository and publishing, Web app, Product site and Definition of done. |
+

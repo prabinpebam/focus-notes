@@ -5,7 +5,7 @@ GitHub Pages is a clean website, not a second place to write.
 > [!NOTE]
 > **TL;DR.** The owner dropped browser writing, browser-local IndexedDB notes, the owner vault, the editor demo and the browser-to-desktop ease-in plan completely on 3 November (D-292). Keep public read-only pages and the sealed read-only share reader, with the site's own theme. The current build still contains the old web app; WEB-01 / WP-P.13 removes it safely, without clearing existing drafts. This page replaces the old browser-app architecture; the stable route remains to preserve links.
 
-**ACCEPTED by the owner on 3 November, 13:35:** retirement is approved to plan. There are no users; do not build a speculative migration programme. Keep one safety step: one-click local export of the owner's browser drafts, if any, before removal. No heavy storage inventory, byte-equivalent export or 30-day recovery gate. This task remains specification/planning only.
+**ACCEPTED by the owner on 3 November, 13:35:** retirement is approved to plan. There are no users; do not build a speculative migration programme. Keep one safety step: one-click local export of the owner's browser drafts, if any, before removal. No heavy storage inventory, byte-equivalent export or 30-day recovery gate.
 
 ## What remains
 
@@ -64,4 +64,4 @@ The ease-in plan is retired, not deferred. Recovery exports old drafts locally; 
 
 ## Validation boundary
 
-UC-SHARE-10 / WEB-01 / [MP.9](../plan/definition-of-done.md#projects-and-simpler-sharing) requires absent retired routes/navigation, intact public/share links, no owner-vault output and one-click owner-draft export when drafts exist. No runtime, real account or data migration is performed by this documentation slice.
+UC-SHARE-10 / WEB-01 / [MP.9](../plan/definition-of-done.md#projects-and-simpler-sharing) requires absent retired routes/navigation, intact public/share links, no owner-vault output and one-click owner-draft export when drafts exist.

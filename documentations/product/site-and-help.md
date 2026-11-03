@@ -94,7 +94,7 @@ The app links into the help centre wherever a setting, a step or a message needs
 
 <h2 id="the-demo">The demo</h2>
 
-**Retired, not deferred (D-292).** The implementation inventory below is historical. Future product pages use screenshots/read-only website examples and downloads, never Try the demo, Reset demo or a browser-writing funnel. WEB-01 preserves existing local drafts before removing runtime/routes/caches; it does not clear a visitor's store. This is specification only: the published site has not been changed by this task.
+**Retired, not deferred (D-292).** The implementation inventory below is historical. Future product pages use screenshots/read-only website examples and downloads, never Try the demo, Reset demo or a browser-writing funnel. WEB-01 preserves existing local drafts before removing runtime/routes/caches; it does not clear a visitor's store. Planned; the published site hasn't changed yet.
 
 **Rewrite Help (HLP-10):** [Rewrite selected text with AI](../help/rewrite-with-ai.md) and [Connect an AI service](../help/connect-an-ai-service.md), linked from [Write](../help/write.md). They say Rewrite is desktop only and never advise installing or hosting a model inside Focus Notes.
 

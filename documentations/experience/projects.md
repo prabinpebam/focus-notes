@@ -7,8 +7,6 @@ Separate places for separate work, without making every thought choose a project
 
 ## What a project is for
 
-This is specification/planning only. The six follow-up product choices are accepted by the owner on 3 November; this task performs no real project/site creation, invitation, deletion or publication. Browser retirement is approved to plan with one-click local export, not a data-migration programme.
-
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
 <!-- Visual thesis: private project scope exists before any public site; sharing adds a separate, explicitly enabled surface. No icons are needed: containment and branching carry the meaning. -->
@@ -117,13 +115,19 @@ Files, Spotlight, find across notes, link suggestions, Recent inside Files, Move
 
 ## Private only until the first share
 
-A new project has no public repository, Pages site, browser vault or share output. **Share…** and **Publish…** first ask:
+A new project has no public repository, Pages site, browser vault or share output. The first **Share…**, **Publish…** or **Turn on sharing** asks once. From Share… or Publish… it's an **in-place step inside that dialog**, not a dialog stacked on top (DD-IA-04 allows only Review contents to stack); Cancel returns to the untouched draft. From Settings → Project → Sharing it's a single alert dialog.
 
-> **Turn on sharing for “Book”?**  
-> This creates the public GitHub repository “Book-site” and its website. Shared notes are encrypted and open with a link or access code. Published notes can be read by anyone. Your other notes stay private. Git history keeps earlier published and encrypted content indefinitely; it cannot be recalled.
-> **Cancel** · **Turn on sharing**
+| Part | Content |
+| --- | --- |
+| Anchor | The project's mark (48 px) and the title **Turn on sharing for “Book”?** |
+| One sentence | **Your other notes stay private.** |
+| What's created (two rows, each with an icon) | **Public copy on GitHub** · `prabin/Book-site` · **Website** · `prabin.github.io/Book-site` (the real owner, name and address, never the example) |
+| What people can see (two badge rows) | **Shared** badge: encrypted, opens only with a link or access code · **Published** badge: anyone can read it |
+| History (one visible line) | **Anything you share or publish stays in GitHub's history, even after you remove it.** |
+| More details (disclosure) | It's a public GitHub repository served by GitHub Pages; shared notes are kept there only as encrypted files with random names. |
+| Actions | **Cancel** (initial focus) · **Turn on sharing** |
 
-Show the actual repository owner/name and Pages address before confirming, not only the example. Do not create a repository, upload content or enable Pages before confirmation. On success resume the original item and untouched share draft. If site creation fails part-way, list what was created, keep the project private-only until setup is complete, and offer **Continue setup**; never silently create another site.
+About 40 words visible; estimated VVS 78 (anchor, rows and badges carry the meaning). Focus returns to the action that started it. Do not create a repository, upload content or enable Pages before confirmation. On success resume the original item and untouched share draft. If site creation fails part-way, list what was created, keep the project private-only until setup is complete, and offer **Continue setup**; never silently create another site.
 
 **Turn off sharing** is separate from making one note Private. Confirmation copy: **“Turn off sharing? Shared and published content will be removed from your site repository and website at the next successful publish. The repository and your private notes stay. Git history keeps earlier content.”** Actions **Cancel** / **Turn off sharing**. Withdraw every share and remove published/shared content, related assets and discoverability entries from current output; leave an empty reading-site shell/repository, never delete the repository. Until successful publish show **Turning sharing off…** or **Waiting to publish** with Retry publishing; offline/failure must not claim removal. Re-enable reuses the same site, and nothing withdrawn is republished without an explicit action.
 

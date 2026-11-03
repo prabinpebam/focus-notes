@@ -7,13 +7,11 @@ Start from the note or folder. See what it contains, choose how it opens, then s
 
 ## Three levels of visibility
 
-The six follow-up product choices are accepted by the owner on 3 November, including public ciphertext history, names-free shares and personal-account invites. This is still a design task, not execution on real notes/accounts. Browser retirement is approved to plan; all checks here remain headless and synthetic.
-
-| Level | Who can read | Storage | Website output |
+| Level | Who can read | Where it's kept | What the website serves |
 | --- | --- | --- | --- |
-| Private | Accounts with access to the private project | Private repository | None; no owner vault (D-292) |
-| Shared | Anyone holding a working link or access code | Private repository; grant secrets stay there | Encrypted pages/keyrings for that share only |
-| Public | Anyone, including GitHub repository visitors | Site repository's public notes | Plain read-only pages |
+| Private | Accounts with access to the private project | Private repository | Nothing; no owner vault (D-292) |
+| Shared | Anyone holding a working link or access code | Source and grant secrets in the private repository; **ciphertext only**, under opaque names, committed to the site repository (D-299, D-305) | Encrypted pages for that share, opened by the share reader; never listed |
+| Public | Anyone, including GitHub repository visitors | Plain Markdown in the site repository | Plain read-only pages, listed on the home page |
 
 New notes and projects are Private. Shared is a private note with a grant, not a move to public storage. Publishing plaintext always confirms the audience and warns about public Git history. Making it private again removes the hosted page at the next successful publication; it cannot erase history, caches or downloaded copies.
 
@@ -88,7 +86,7 @@ Passcodes default to four random EFF words (about 52 bits). Keep the as-built cu
 ## Actions
 
 1. Validate fixed scope, date, method and strength without side effects.
-2. If Private only, show [first-share confirmation](../../experience/projects.md#private-only-until-the-first-share); Cancel creates no site or grant and restores the draft.
+2. If Private only, show the [first-share confirmation](../../experience/projects.md#private-only-until-the-first-share) as an in-place step of this dialog, not a second dialog; Cancel creates no site or grant and returns to the draft.
 3. The first action creates one grant in the private project, backs it up and publishes the sealed output. Opening/cancelling the dialog creates no grant. A repeated action reuses the same grant, not a second share; changed parameters update it explicitly and await publication.
 4. Once ready, complete the requested action. If publication fails, keep the same record as **Waiting to publish**, preserve its parameters and offer **Retry publishing**; no duplicate grant or success-shaped copy.
 
