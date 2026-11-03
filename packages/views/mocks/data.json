@@ -639,93 +639,153 @@
    ]
   }
  ],
- "pickProjects": [
+ "pickTree": [
   {
-   "id": "h:this",
-   "label": "This window",
-   "header": true
-  },
-  {
-   "id": "book",
+   "id": "Root",
+   "kind": "section",
+   "level": 1,
    "label": "Book",
-   "description": "Choose a folder next",
-   "icon": "document",
-   "state": "Here"
+   "expanded": true,
+   "hasChildren": true
   },
   {
-   "id": "h:other",
-   "label": "Other projects",
-   "header": true
-  },
-  {
-   "id": "work",
-   "label": "Work",
-   "description": "Opens in its own window",
-   "icon": "openWindow"
-  },
-  {
-   "id": "club",
-   "label": "Reading club",
-   "description": "Opens in its own window",
-   "icon": "openWindow"
-  },
-  {
-   "id": "recipes",
-   "label": "Recipes",
-   "description": "Offline: GitHub isn't needed to start a note",
-   "icon": "openWindow"
-  }
- ],
- "pickFolders": [
-  {
-   "id": "h:book",
-   "label": "Book",
-   "header": true
-  },
-  {
-   "id": "root",
-   "label": "Root",
-   "icon": "folder"
-  },
-  {
-   "id": "drafts",
+   "id": "Drafts",
+   "kind": "folder",
+   "level": 2,
    "label": "Drafts",
-   "icon": "folder",
-   "state": "Current folder"
+   "parent": "Root",
+   "expanded": false,
+   "hasChildren": false,
+   "selected": true,
+   "description": "Current folder"
   },
   {
-   "id": "notes",
+   "id": "Notes",
+   "kind": "folder",
+   "level": 2,
    "label": "Notes",
-   "icon": "folder"
+   "parent": "Root",
+   "expanded": true,
+   "hasChildren": true
   },
   {
-   "id": "notes/people",
-   "label": "Notes / People",
-   "icon": "folder"
+   "id": "Notes / People",
+   "kind": "folder",
+   "level": 3,
+   "label": "People",
+   "parent": "Notes",
+   "hasChildren": false
+  },
+  {
+   "id": "Notes / Places",
+   "kind": "folder",
+   "level": 3,
+   "label": "Places",
+   "parent": "Notes",
+   "hasChildren": false
+  },
+  {
+   "id": "Research",
+   "kind": "folder",
+   "level": 2,
+   "label": "Research",
+   "parent": "Root",
+   "hasChildren": false,
+   "description": "Public"
   }
  ],
- "pickFoldersWork": [
+ "pickTreeNew": [
   {
-   "id": "h:work",
-   "label": "Work",
-   "header": true
+   "id": "Root",
+   "kind": "section",
+   "level": 1,
+   "label": "Book",
+   "expanded": true,
+   "hasChildren": true
   },
   {
-   "id": "root",
-   "label": "Root",
-   "icon": "folder"
+   "id": "Drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "Root",
+   "expanded": true,
+   "hasChildren": true,
+   "selected": true
   },
   {
-   "id": "meetings",
-   "label": "Meetings",
-   "icon": "folder"
+   "id": "new:",
+   "kind": "folder",
+   "level": 3,
+   "label": "Scenes",
+   "parent": "Drafts",
+   "editing": true
   },
   {
-   "id": "plans",
-   "label": "Plans",
-   "icon": "folder"
+   "id": "Notes",
+   "kind": "folder",
+   "level": 2,
+   "label": "Notes",
+   "parent": "Root",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "Research",
+   "kind": "folder",
+   "level": 2,
+   "label": "Research",
+   "parent": "Root",
+   "hasChildren": false
   }
  ],
+ "pickTreeScenes": [
+  {
+   "id": "Root",
+   "kind": "section",
+   "level": 1,
+   "label": "Book",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "Drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "Root",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "Drafts / Scenes",
+   "kind": "folder",
+   "level": 3,
+   "label": "Scenes",
+   "parent": "Drafts",
+   "selected": true,
+   "description": "New"
+  },
+  {
+   "id": "Notes",
+   "kind": "folder",
+   "level": 2,
+   "label": "Notes",
+   "parent": "Root",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "Research",
+   "kind": "folder",
+   "level": 2,
+   "label": "Research",
+   "parent": "Root",
+   "hasChildren": false
+  }
+ ],
+ "newFolderName": "Scenes",
+ "newFolderLabel": "Folder name",
  "keysNewIn": [
   "Ctrl",
   "Shift",
