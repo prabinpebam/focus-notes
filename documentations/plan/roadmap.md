@@ -21,7 +21,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
-| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, item-first sharing and a clean website. Browser writing retired (D-292). | Desktop writers and website readers | Planned 1.x | 28 |
+| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 29 |
 | **Later: Components** | Rich components. | Anyone | Later releases | 2 |
 
 ## Where we are
@@ -134,7 +134,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MP: Projects and simpler sharing (planned)</p>
-<p>The <a href="next-direction.md">3 November direction</a> adds isolated project windows, safe SVG logos, folder/project pins, Quick notes, standalone files, direct item sharing without names, and a public website with sections/articles, theme/focus reading and an in-app appearance preview. Browser writing, browser-local notes, owner vault and the ease-in/demo plan are retired completely, not deferred. Existing drafts must remain recoverable before removal. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">15 work packages</a>; <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-13, FIL-17, FIL-18, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-22, DSY-15, WEB-01.</p>
+<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">15 work packages</a>; <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-13, FIL-17, FIL-18, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-23, DSY-15, WEB-01.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

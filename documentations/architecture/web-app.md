@@ -5,7 +5,7 @@ GitHub Pages is a clean website, not a second place to write.
 > [!NOTE]
 > **TL;DR.** The owner dropped browser writing, browser-local IndexedDB notes, the owner vault, the editor demo and the browser-to-desktop ease-in plan completely on 3 November (D-292). Keep public read-only pages and the sealed read-only share reader, with the site's own theme. The current build still contains the old web app; WEB-01 / WP-P.13 removes it safely, without clearing existing drafts. This page replaces the old browser-app architecture; the stable route remains to preserve links.
 
-**Owner decision required before retirement:** the source records an intended direction, not permission to remove existing runtime/routes/caches or alter drafts. The 12:38 correction requires the owner to approve the exact inventory, verified local recovery/export, rollout and rollback first, through the original main chat. No destructive step is authorized by this page; no automatic clearing or migration. Read-only research and this specification continue without blocking on trivial choices.
+**ACCEPTED by the owner on 3 November, 13:35:** retirement is approved to plan. There are no users; do not build a speculative migration programme. Keep one safety step: one-click local export of the owner's browser drafts, if any, before removal. No heavy storage inventory, byte-equivalent export or 30-day recovery gate. This task remains specification/planning only.
 
 ## What remains
 
@@ -22,20 +22,17 @@ The in-app **Preview site…** uses the exact website renderer with local theme/
 
 ## Removing the old surfaces
 
-WP-P.13 must inventory and remove `/app/`, `/demo/`, root editor entry points in copied instances, writing navigation, Copy to my notes, browser welcome notes, owner Unlock and vault output, browser-export/import marketing, install-as-browser-app messaging and obsolete service-worker caches. Old URLs lead to the clean website with an honest download/help route, not a hidden editor. Redirects must not destroy or consume share fragments.
+WP-P.13 removes `/app/`, `/demo/`, root editor entry points in copied instances, writing navigation, Copy to my notes, browser welcome notes, owner Unlock and vault output, browser-export/import marketing, install-as-browser-app messaging and obsolete editor caches after the draft-export opportunity. Old URLs lead to the clean website with an honest download/help route, not a hidden editor. Redirects must not destroy or consume share fragments.
 
 Keep published note URLs and `/s/` share links working. New access-code grants and legacy named grants use explicitly versioned readers; no new recipient names. See [Sharing](../design/views/sharing.md#the-share-reader).
 
 ## Preserving existing drafts
 
-Proposed sequence, subject to that owner decision before any real retirement or data change:
+1. If this browser has the owner's drafts, show **“Save your browser drafts before browser writing is removed.”** with **Export drafts**. One action downloads the existing drafts locally in the supported export format; no sign-in, upload or per-note wizard.
+2. If export fails/cancels, keep the drafts and offer **“Couldn't export your drafts. Try again.”** Do not remove the owner’s draft access on that failure. No drafts means no export step.
+3. Then remove the retired editing surfaces/caches; do not clear note stores or share-reader remembered keys as a side effect. Keep only the small one-time export route if needed for the owner's remaining drafts, not an indefinite support/migration system.
 
-1. Inventory old origin/database names, draft schemas, service workers and export formats from the implementation, not guesses. Private browser drafts never become public site files or logs.
-2. Provide an isolated one-time local recovery/export on the original origin, including offline/cached installations. Do not require GitHub sign-in or upload. Keep notes recoverable until an export is verified.
-3. Check seeded old stores with multiple notes, Unicode, crashes and failed exports. Export byte-equivalent content and metadata sufficient to recover identity. Never automatically delete, clear, reset or overwrite old stores.
-4. Once safe, retire obsolete runtime routes/caches without touching share-reader remembered keys or downloaded files. Keep recovery reachable as long as old drafts might remain; it is not marketed as browser writing.
-
-The exact implementation inventory belongs in WEB-01's evidence before changing any storage, not a speculative database migration in this spec. If a browser cannot expose its old data, explain the limitation and keep the old store untouched.
+The scope is the owner's own data, not a hypothetical user population. An export download/open check and failed-export preservation are sufficient planned evidence; no byte-equivalence corpus or fixed recovery-retention period.
 
 ## Three kinds of note
 
@@ -67,4 +64,4 @@ The ease-in plan is retired, not deferred. Recovery exports old drafts locally; 
 
 ## Validation boundary
 
-UC-SHARE-10 / WEB-01 / [MP.9](../plan/definition-of-done.md#projects-and-simpler-sharing) requires route/navigation/cache absence, intact public/share links, no owner-vault output and byte-equivalent old-draft recovery after design approval. No runtime, real account or data migration is performed by this documentation slice.
+UC-SHARE-10 / WEB-01 / [MP.9](../plan/definition-of-done.md#projects-and-simpler-sharing) requires absent retired routes/navigation, intact public/share links, no owner-vault output and one-click owner-draft export when drafts exist. No runtime, real account or data migration is performed by this documentation slice.

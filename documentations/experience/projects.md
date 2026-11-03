@@ -7,7 +7,7 @@ Separate places for separate work, without making every thought choose a project
 
 ## What a project is for
 
-This is specification/planning only. Real project/site creation, invitations, owner-note deletion/migration and publication are critical actions: ask through the original main chat before execution. Browser retirement and recovery-data disposal remain owner decisions; reversible defaults and headless checks do not wait.
+This is specification/planning only. The six follow-up product choices are accepted by the owner on 3 November; this task performs no real project/site creation, invitation, deletion or publication. Browser retirement is approved to plan with one-click local export, not a data-migration programme.
 
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
@@ -44,10 +44,28 @@ Work, a book and a club each need their own context. A folder groups notes insid
 <text x="44" y="333" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnproj-model__localbox" data-slate-fit-padding="16">Outside projects: Quick notes and standalone files · saved locally · never uploaded automatically</text>
 </g>
 </svg>
-<figcaption>Project and repository model (D-272, D-274, D-292). The dashed connection does not exist until the person enables sharing.</figcaption>
+<figcaption>Project = private repository; its site = public repository (D-272, D-274). Existing pairs keep those repositories in place; only their on-screen names change. For new projects the dashed connection appears only after sharing is enabled.</figcaption>
 </figure>
 
 The figure's text alternative is the model itself: a project window owns one private repository and may also edit its explicitly paired site's Public notes. The site receives selected plaintext publications or ciphertext shares. This authorized pair is one project context, not permission to browse any sibling repository. Only Publish/Make private crosses its two roots, with visibility confirmation; another project's roots/IDs are always rejected. Local capture and external files belong to neither repository.
+
+## Meeting Project for the first time
+
+**Accepted migration plan (owner, 3 November; D-272).** This is predominantly a vocabulary and UX change, not a storage redesign. The figure above is the explainer used by the upgrade note and Help: a project is the existing private repository; its site is the existing public repository. Existing public/private note locations, repository URLs, `.git`/submodule arrangement, IDs, relative links, credentials, commits, pending saves and publishing settings stay where they are. Never re-clone, move notes, create a replacement repository or silently turn sharing on.
+
+| Moment | What the person sees | Behaviour |
+| --- | --- | --- |
+| Existing owner/user upgrades | Non-blocking one-time notice: **“Your workspace is now called a project. Your notes and files are in the same place.”** Actions **Learn about projects** / **Dismiss** | Show after restoring the same note/caret, not before saving or behind a setup wizard. Keep working; dismiss is remembered on this device. |
+| First run, no existing workspace | **“Keep related notes together in a project. Each project has its own files and history.”** New project… / Open project… / Quick notes | Show the repository/site explainer in Learn more; GitHub terminology only when choosing GitHub. Quick notes needs no account. |
+| Existing paired workspace | Existing project display name and **Sharing on**, with its current site address | Reuse the known private/site mapping; no new setup or public-site consent because nothing new is being created/published. If mapping is unavailable, show Find folder…; do not make an empty replacement. |
+| Project picker and Files | **Projects**, **Open project…**; Files heading **⟨project⟩**, Public/Private sections keep their visibility labels | A folder is inside a project, not another project; Recent retains locations and pins. No change to note title or disk filename. |
+| Settings | **Project** replaces Workspace; **Name**, **Folder**, **People**, **Sharing**, **Site theme**, **On GitHub** | Name is display-only. Folder shows the unchanged local location; site controls clearly describe the separate public surface. |
+| Title bar / OS windows | **⟨note title⟩ — ⟨project⟩ — Focus Notes** | Update accessible window name at the same time; no scope reload, blank frame or lost caret. |
+| Help and old links | **“A project keeps related notes, their history and GitHub access together. It is your private repository. Its site is the separate public repository used for published pages and encrypted shares.”** | Follow with **“If you used a workspace before, it is now called a project. Your files have not moved.”** Preserve old workspace Help anchors with a short terminology pointer. |
+
+**Safety:** retain the existing configuration snapshot; rollback restores the old labels/configuration against the same unmoved files.
+
+No automatic tour, forced sign-in or new modal for upgrading. A read-only/offline project still gets the new words; failed preference writes keep the notice dismissible for this session and report the save failure, never block writing. At narrow widths put the project name on its own line; keyboard/screen-reader labels use the same noun. Acceptance is the owner explaining Project versus its site from the figure and finding their existing note/settings without relocating anything (PRJ-11 / MP.15).
 
 ## Opening a project
 
@@ -102,14 +120,14 @@ Files, Spotlight, find across notes, link suggestions, Recent inside Files, Move
 A new project has no public repository, Pages site, browser vault or share output. **Share…** and **Publish…** first ask:
 
 > **Turn on sharing for “Book”?**  
-> This creates the public GitHub repository “Book-site” and its website. Shared notes are encrypted and open with a link or access code. Published notes can be read by anyone. Your other notes stay private.  
+> This creates the public GitHub repository “Book-site” and its website. Shared notes are encrypted and open with a link or access code. Published notes can be read by anyone. Your other notes stay private. Git history keeps earlier published and encrypted content indefinitely; it cannot be recalled.
 > **Cancel** · **Turn on sharing**
 
 Show the actual repository owner/name and Pages address before confirming, not only the example. Do not create a repository, upload content or enable Pages before confirmation. On success resume the original item and untouched share draft. If site creation fails part-way, list what was created, keep the project private-only until setup is complete, and offer **Continue setup**; never silently create another site.
 
-**Turn off sharing** is separate from changing a note to Private. It warns that every hosted share/public page will stop after the site is removed, downloaded copies and Git history cannot be recalled, and private project notes remain intact. Proposed site deletion requires the owner's approval before implementation; do not delete any real repository during this design task.
+**Turn off sharing** is separate from making one note Private. Confirmation copy: **“Turn off sharing? Shared and published content will be removed from your site repository and website at the next successful publish. The repository and your private notes stay. Git history keeps earlier content.”** Actions **Cancel** / **Turn off sharing**. Withdraw every share and remove published/shared content, related assets and discoverability entries from current output; leave an empty reading-site shell/repository, never delete the repository. Until successful publish show **Turning sharing off…** or **Waiting to publish** with Retry publishing; offline/failure must not claim removal. Re-enable reuses the same site, and nothing withdrawn is republished without an explicit action.
 
-Existing workspaces are proposed to map private repository → project and instance repository → site without moving files. Before any migration: owner approval, recoverable snapshot, explicit mapping, byte/ID/link/history inventory, rollback and supported old-grant reader. An absent private repository never becomes a new empty project silently.
+Existing pairs follow the [UX-led terminology migration](#meeting-project-for-the-first-time); no disk move or new site is required.
 
 ## Telling projects apart
 
@@ -138,7 +156,7 @@ No one-sided accent stripes. Use fills, full outlines and badges. A window is na
 
 New notes autosave with the ordinary journal and appear in Recent. A failed write keeps the dirty text in recovery and says **“Couldn't save this quick note. Choose another folder or try again.”** No success state until disk confirms. Later **Import into project…** chooses a project/folder and copies the note; keep the local original until the person explicitly deletes it. A folder missing at launch uses recovery, never a silently empty replacement.
 
-**Delete/restore without Git (D-298):** before an explicitly requested delete, durably store exact bytes, identity, original path and deletion time locally. Failed retention means no delete and a Retry error. Undo restores the whole operation/links without Git; Recently deleted's proposed 30 days is a minimum across restarts, not automatic purge authority. Any real owner-data deletion/migration or disposal policy needs prior owner approval. Restore uses the original folder, otherwise Quick notes root; number taken names, never overwrite. Confirm folders/counts as in Files. Recovery is not remote backup. Standalone windows have no Delete file; externally missing files keep journals and need an explicit restore/save destination.
+**Delete/restore without Git (D-298):** before an explicitly requested delete, keep a durable local recoverable copy with its identity/path/time. Failed retention means no delete and a Retry error. Undo/Recently deleted survive restart; no bespoke 30-day retention gate or timed purge. Restore uses the original folder, otherwise Quick notes root; number taken names, never overwrite. Confirm folders/counts as in Files. Recovery is not remote backup. Standalone windows have no Delete file; externally missing files keep journals and need an explicit restore/save destination.
 
 ## A file on its own
 
@@ -156,6 +174,8 @@ Inviting is not sharing. Settings → Project → People lists GitHub accounts a
 | --- | --- | --- |
 | Organization | Read, Triage, Write, Maintain, Admin as permitted by the caller and organization policy | Role applies to the whole repository, not a chosen folder; Read sees every private note and access record |
 | Personal account | Collaborator (can read and change everything) | No Read-only/Triage/Maintain/Admin picker; GitHub does not offer that role model here |
+
+**Personal-account message (exact UI copy):** “This project belongs to a personal GitHub account. A collaborator can read and change everything in this project, including private notes and sharing settings. GitHub does not offer read-only access here.” Actions **Cancel** / **Invite person**. The account username and project name remain visible; the confirmation also names access to share secrets. Do not equate this with organization Admin or promise repository-management powers GitHub has not returned.
 
 Source: [GitHub REST collaborator permissions](https://docs.github.com/en/rest/collaborators/collaborators#add-a-repository-collaborator), whose `permission` parameter is only valid on organization-owned repositories; checked for D-290. The UI must use returned permissions and display **Manage on GitHub** when the current account cannot invite or policy blocks it.
 
@@ -200,5 +220,6 @@ Projects/Recent rows have text names and location, keyboard arrows and Enter; Pi
 | DD-PROJ-04 | Local Quick notes and standalone files are explicit non-project scopes | UC-PROJ-07, UC-PROJ-08 | No accidental import, upload or Git setup |
 | DD-PROJ-05 | Fixed destination picker, private-first creation | UC-FILE-12, UC-SHARE-08 | Cancel has no effect; first share explains public footprint |
 | DD-PROJ-06 | Actual GitHub roles and full-project warning | UC-SHARE-09 | Never imply folder-only or personal-account Read-only access |
+| DD-PROJ-07 | Explain Project at upgrade/first run; leave files and repositories in place | UC-PROJ-01 | A naming change needs consistent words and a mental-model figure, not a storage migration (PRJ-11) |
 
 **Evidence still required:** [MP done rows](../plan/definition-of-done.md#projects-and-simpler-sharing). These flow/figure specs do not substitute for approved JSON view documents or working runtime.

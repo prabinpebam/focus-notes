@@ -120,7 +120,7 @@
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
-      "summary": "Per-project repositories, window and path scoping, first-share confirmation and lossless approved migration. No real repository creation or deletion during design.",
+      "summary": "Per-project windows/scoping and first-share confirmation. Existing workspace migration is mostly UX terminology: upgrade/first-run explainer, Settings/Files/title bars/Help; no disk moves or storage redesign. Turn off removes site content after publish, never the repository.",
       "requirements": ["PRJ-01", "PRJ-02", "PRJ-03", "PRJ-10", "PRJ-11"],
       "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
       "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],
@@ -164,8 +164,8 @@
     },
     {
       "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
-      "summary": "Share/access codes, item-based history and template; preserve old grants until expiry or withdrawal.",
-      "requirements": ["SHR-17", "SHR-18", "SHR-19"], "dependsOn": ["WP-P.9", "WP-5.4"],
+      "summary": "Opaque random share/access identifiers, item-based history and template; no source-name-derived links/paths/files, including media. Extend pre-commit/deploy leak checks; preserve old grants without new revealing aliases.",
+      "requirements": ["SHR-17", "SHR-18", "SHR-19", "SHR-23"], "dependsOn": ["WP-P.9", "WP-5.4"],
       "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
       "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
     },
@@ -185,7 +185,7 @@
     },
     {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
-      "summary": "D-292: specify website-only direction and recovery inventory first. Owner approval of exact draft-preservation/rollout/rollback is required before real runtime/routes/caches/data changes. No automatic clearing. Historical MW IDs are not future promises or deletion authority.",
+      "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched.",
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
       "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
       "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"

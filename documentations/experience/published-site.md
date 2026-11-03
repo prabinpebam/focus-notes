@@ -7,7 +7,7 @@ A public home, sections and articles, not the writing app on the web.
 
 ## What belongs on the site
 
-Before any real publication, public ciphertext commit, account/repository operation or browser retirement, obtain the owner's explicit decision through the original main chat. This page specifies the intended outcome only; choosing a reversible theme/font/layout in a local preview does not authorize deployment or data changes.
+The owner accepted the public-site/history and simplified browser-retirement plans on 3 November. Turning sharing off removes current shared/published content at the next successful publish but keeps the repository and Git history. This page specifies outcomes only; a local appearance preview and this documentation task perform no deployment or data changes.
 
 | Kind | Stored/output | Discoverable here? |
 | --- | --- | --- |

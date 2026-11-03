@@ -392,7 +392,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 <h2 id="mp" data-reader-personas="product design engineering">MP: Projects and simpler sharing</h2>
 
-**Current authorization: specification and planning only.** Lookahead flags do not authorize runtime, tests, package changes or actions on real data/accounts. Reversible choices are decided and recorded without prompts. Explicit owner decisions through the original main chat precede real publication/ciphertext commits, repository/invite actions, migration/deletion, browser retirement, releases, licence changes and force-pushes. Browser recovery/disposal and rollout remain pending owner decisions, not settled by the source's intended direction.
+**Current authorization: specification and planning only.** All six follow-up product choices are accepted by the owner on 3 November, 13:35. Lookahead does not authorize implementation, tests, package changes or actions on real data/accounts. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates.
 
 **Planned, strict design; no runtime built.** The [3 November direction](next-direction.md) supersedes browser writing and named sharing. Earlier MW/browser/demo packages describe historical work only, not a second roadmap. D-292 retires that product completely; WP-P.13 preserves existing drafts before removing its runtime. Ordinary file import remains, not a browser ease-in plan.
 
@@ -409,16 +409,16 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
 | WP-P.8 | Quick notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
 | WP-P.9 | Item-first share dialog and Switch | SHR-13, SHR-14, SHR-15, SHR-16, DSY-15 | WP-5.3, WP-P.4 | code, security, design-system, accessibility |
-| WP-P.10 | Shares without names | SHR-17, SHR-18, SHR-19 | WP-P.9, WP-5.4 | code, security, accessibility |
+| WP-P.10 | Shares without names or revealing identifiers | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |
 | WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
 | WP-P.12 | A website with its own theme | SHR-20 | WP-5.1, WP-P.4, WP-P.13 | code, security, design-system, accessibility |
 | WP-P.14 | Public home, sections and reading controls | SHR-21 | WP-P.12, WP-P.5, WP-P.9 | code, security, design-system, accessibility |
 | WP-P.15 | Preview site appearance locally | SHR-22 | WP-P.14 | code, security, design-system, accessibility |
 | WP-P.13 | Retire browser writing safely | WEB-01 | WP-5.1 | code, security, accessibility |
 
-These are independently reviewable slices; lookahead permits design without waiting for unrelated stage gates. No real repository creation, invite, deletion or migration is authorized by a spec. Owner choices stay in [Next direction](next-direction.md#what-needs-the-owner).
+These are independently reviewable slices; lookahead permits design without unrelated stage gates. WP-P.4's migration deliverable is the [first-run/upgrade mental model and wording](../experience/projects.md#meeting-project-for-the-first-time), not a new storage system. WP-P.10 includes opaque link/code/path/file identifiers and the extended leak checks (MP.14). Accepted choices are recorded in [Next direction](next-direction.md#what-needs-the-owner); none of the six remain open.
 
-**GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has its named future evidence after design approval. Specific owner approval plus privacy/recovery/rollback evidence precede any real migration, retirement or publication. No-approval/cancel paths must cause no critical side effects. Spec review is not implementation or execution acceptance.
+**GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has its named future evidence after design approval. Keep cancellation/no-side-effect checks, first-share/history copy, retained-repository removal and one-click owner-draft export proportionate to the accepted plans. Spec review is not implementation or execution acceptance.
 
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 

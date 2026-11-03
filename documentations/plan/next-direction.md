@@ -3,7 +3,7 @@
 The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-299).
 
 > [!NOTE]
-> **TL;DR.** The owner's authoritative notes ask for everyday writing fixes, isolated projects with preset/uploaded logos, pinned folders/projects and an item-first share dialog. GitHub Pages is planned as a clean website: public home, sections/articles, theme/focus controls and in-app site preview. The direction retires browser writing, browser-local notes and the ease-in plan; execution and old-draft disposal still need the owner's decision. The capture preserves exact nesting; D-272 to D-299 record interpretation, not a current-build claim.
+> **TL;DR.** The owner's notes ask for writing fixes, recognizable projects, pins and item-first sharing, with Pages as a reading website. All six follow-up decisions were **accepted by the owner on 3 November at 13:35**: keep the site repository when turning sharing off, accept retained Git history, use opaque names-free shares, permit personal-account invites, make the project migration UX-led and simplify browser retirement. This remains specification/planning, not a current-build or execution claim.
 
 ## The owner's notes (3 November 2026)
 
@@ -128,7 +128,7 @@ The sections below answer the owner's questions, then map every note to where it
 
 ## Answers to the owner's questions
 
-Each answer is a proposed decision: it's the plan until the owner changes it.
+These are the recorded design answers; the six follow-up product choices below were accepted by the owner at 13:35. Other reversible defaults remain adjustable.
 
 | Question | Answer | Why | Rejected | Decision |
 | --- | --- | --- | --- | --- |
@@ -142,16 +142,18 @@ Each answer is a proposed decision: it's the plan until the owner changes it.
 
 ## What needs the owner
 
-The 12:38 correction distinguishes product direction from permission to perform an irreversible action. These need explicit owner decisions **through the original main chat** before execution; the specification can continue meanwhile. No note deletion/migration, real-account/repository action, publication, release, licence change or force-push is authorized by this page or its examples.
+**None remain for these six product decisions.** All were **ACCEPTED by the owner on 3 November 2026**, relayed at 13:35:
 
-1. **What turning sharing on/off does** (D-274): a *public* repository called *⟨project⟩-site* plus Pages, made on first share/publish; agree its name and whether Turn off removes that site repository. Notes remain private unless deliberately published; plaintext and encrypted Git history/copies cannot be recalled. Free-account Pages needs a public repository.
-2. **Shares without names** (D-285): a share is recorded by what it opens, never for whom, and readers use the link or an *access code* (a share code plus the passcode). This replaces the owner's earlier D-41 audiences by name.
-3. **Inviting people on personal accounts** (D-290): GitHub offers Read, Triage, Maintain and Admin only for repositories owned by an organization; on a personal account every collaborator can change everything. Offer invites there anyway, with that said plainly, or only for organization projects?
-4. **Moving today's workspace into the project model** (D-272): proposed as "the private repository is the project, the instance repository is its site". Approve the exact mapping, snapshot and rollback evidence before changing any owner data, even if the first step moves nothing on disk.
-5. **Browser retirement and owner-data recovery** (D-292, D-298): the source records the intended website-only direction, not permission to remove existing routes/caches, alter browser drafts or purge local recovery data. Approve an inventory, byte-equivalent local export/recovery evidence and rollout/rollback plan first. No automatic clearing or deletion; 30-day local recovery is a minimum retention proposal, not automatic disposal authority.
-6. **Encrypted shares in public Git history** (D-299): approve the exact publication/migration plan before committing ciphertext from real notes publicly. History retains old encrypted builds indefinitely; expiry/withdrawal cannot recall old ciphertext or keys/copies held by a reader. The source's public-repository intent does not substitute for this informed execution decision.
+| Accepted choice | Specified outcome |
+| --- | --- |
+| Turn sharing off (D-274) | Remove shared/published content at the next successful publish; retain the repository. Never delete it. |
+| Public Git history (D-274, D-299) | Indefinite plaintext/ciphertext history is accepted; first-share confirmation has one honest history sentence. |
+| Shares without names (D-285) | No recipients or note-derived link/code/path/file names; opaque random identifiers only. [Leak contract](../architecture/repository-and-publishing.html#opaque-share-identifiers) and MP.14 cover this. |
+| Personal-account invites (D-290) | Offer Collaborator with an explicit “can read and change everything” message; organizations get supported roles. |
+| Project terminology (D-272) | [UX-led migration](../experience/projects.md#meeting-project-for-the-first-time), mostly naming; existing repositories/files stay in place. |
+| Browser retirement (D-292, D-298) | Approved to plan; one-click local export of the owner's drafts, if any, before removal. No heavy inventory, byte-equivalence or 30-day gates. |
 
-**Reversible design choices do not wait:** Paper is the chosen site-theme default; presets, wording, layout and passive-SVG validation bounds stay recorded design defaults, open to later adjustment. Headless checks do not ask for a browser tab or another inconsequential confirmation. Real invites and repository changes still need owner approval even after a design policy is chosen.
+Paper, suggested site name, wording/layout and bounds are reversible defaults, not owner blockers. This task remains **specification/planning only**: no real account action, publication of notes, migration, deletion, release or implementation is performed. Product acceptance does not turn this documentation task into permission to execute those operations.
 
 ## Where each note is specified
 

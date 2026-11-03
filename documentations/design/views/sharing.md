@@ -7,7 +7,7 @@ Start from the note or folder. See what it contains, choose how it opens, then s
 
 ## Three levels of visibility
 
-The flow below is a design, not permission to publish real notes, create/delete repositories, invite real accounts or migrate grants. Those critical actions require the owner's prior decision through the original main chat. Public ciphertext storage and browser retirement/recovery are explicitly pending execution decisions; all checks here remain headless and synthetic.
+The six follow-up product choices are accepted by the owner on 3 November, including public ciphertext history, names-free shares and personal-account invites. This is still a design task, not execution on real notes/accounts. Browser retirement is approved to plan; all checks here remain headless and synthetic.
 
 | Level | Who can read | Storage | Website output |
 | --- | --- | --- | --- |
@@ -109,7 +109,9 @@ A share is identified by its item, opening methods, expiry and state, **not by w
 
 **Share code** is a non-secret random 8-character identifier, displayed as `K7QM-4DRP`. Use an unambiguous alphabet and collision-check against the project's records. **Access code** is that identifier plus the secret passcode in one field/string, for example `K7QM-4DRP harbor-maple-river-cloud`. Parsing normalizes only the identifier's separators/case; the passcode keeps its exact content. The share code finds one keyring; its entropy does not strengthen a weak passcode. The site's share page supplies the project context.
 
-Existing named grants are **legacy compatibility only**: keep their old links and passcodes working until expiry/withdrawal, list them by item, and retain a clearly separated legacy reader path for old details. New grants and the main reader never ask a name. Do not silently rotate old secrets, publish names, auto-convert access or remove the compatibility reader before those grants end. D-285 remains an owner decision because it supersedes their D-41.
+**Opaque identity (D-285 / SHR-23):** every new share link, code, published share path and file name is generated from cryptographically random identifiers only. No note/folder name, title or path, including initials, slugs, encodings or hashes derived from them. The generic `/s/` route and site origin are fixed infrastructure, not an item-derived slug. Private item labels and authorized decrypted content may contain titles; unauthenticated URLs/keyrings/public metadata may not. Renaming the source never changes a share's public identifier. Shared media uses the same opaque rule.
+
+Existing named grants are **legacy compatibility only**: keep their old links and passcodes working until expiry/withdrawal, list them by item, and retain a clearly separated legacy reader path. Emit no new name-derived alias, even for an old grant. New grants and the main reader never ask a name. D-285 superseding D-41 is accepted by the owner on 3 November; it is not an open decision.
 
 <h3 id="settings-sharing">Settings → Sharing</h3>
 
@@ -184,3 +186,4 @@ Older links land here for continuity. D-284 replaces the popover/state interstit
 | DD-SHARE-12 | Switch for on/off; choice for passcode type | UC-SHARE-03 | Position/text, not ambiguous chip colour |
 | DD-SHARE-13 | First action creates; ready output only after publish | UC-SHARE-05, UC-SHARE-08 | No empty shares on cancel or unready invitations |
 | DD-SHARE-14 | Site theme independent of app; no browser-writing product | UC-SHARE-10 | A clean website, not a second editor |
+| DD-SHARE-15 | Random opaque share URLs/codes/paths/files, never source-derived | UC-SHARE-03 | A link must not disclose what it opens before authorization; slugs/hashes are not substitutes for random identifiers (SHR-23) |
