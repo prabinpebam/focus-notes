@@ -120,7 +120,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   chooseNote: () => ipcRenderer.invoke("note:choose"),
   projects: {
     lastNote: () => ipcRenderer.invoke("projects:lastNote"),
-    remember: (path: string) => ipcRenderer.invoke("projects:remember", path),
+    position: (path: string) => ipcRenderer.invoke("projects:position", path),
+    remember: (path: string, position?: { from: number; to: number; scroll: number }) => ipcRenderer.invoke("projects:remember", path, position),
     list: () => ipcRenderer.invoke("projects:list"),
     choose: () => ipcRenderer.invoke("projects:choose"),
     parent: () => ipcRenderer.invoke("projects:parent"),

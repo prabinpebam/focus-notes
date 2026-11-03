@@ -36,17 +36,24 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   const known = new Map<string, string>();
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
   const lastNoteFile = join(app.getPath("userData"), DATA_FILES.projectLastNote);
-  async function lastNote(): Promise<string | undefined> {
+  async function lastRecord(): Promise<{ path: string; position?: { from: number; to: number; scroll: number } } | undefined> {
     let encrypted: string;
     try { encrypted = await readFile(lastNoteFile, "utf8"); }
     catch (error) { if (missing(error)) return; throw error; }
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-    return safeStorage.decryptString(Buffer.from(encrypted, "base64"));
+    const value = safeStorage.decryptString(Buffer.from(encrypted, "base64"));
+    return value.startsWith("{") ? JSON.parse(value) : { path: value };
   }
-  async function remember(path: string) {
+  async function lastNote() { return (await lastRecord())?.path; }
+  async function position(path: string) {
+    const record = await lastRecord();
+    return record?.path === path ? record.position : undefined;
+  }
+  async function remember(path: string, snapshot?: { from: number; to: number; scroll: number }) {
     if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-    await atomicWrite(lastNoteFile, safeStorage.encryptString(path).toString("base64"));
+    const savedPosition = snapshot ?? await position(path);
+    await atomicWrite(lastNoteFile, safeStorage.encryptString(JSON.stringify({ path, position: savedPosition })).toString("base64"));
   }
   async function closed() {
     await atomicWrite(join(rootProfile, DATA_FILES.lastProject), `${JSON.stringify({ profile: app.getPath("userData") })}\n`);
@@ -158,5 +165,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }), { flag: "wx" });
     return folder;
   }
-  return { list, open, choose, parent: async () => dirname(home()), chooseParent, check, create, lastNote, remember, closed };
+  return { list, open, choose, parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }

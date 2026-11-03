@@ -83,6 +83,7 @@ export interface EditorSurfaceProps {
   /** Whether text was selected as the find bar opened: find in selection's scope (FND-03). */
   onFindScope?: (payload: { scoped: boolean }) => void;
   onReady?: () => void;
+  onPosition?: (payload: { key: string; from: number; to: number; scroll: number }) => void;
   /** What the formatting toolbar and link hover card show, whenever it changes (EDT-12, EDT-13). */
   onFormat?: (payload: FormatPayload) => void;
   /** Answers the link editor's open request with the link and whether text was selected. */
@@ -161,7 +162,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  id, onChange, onReady, onPosition, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -485,6 +486,8 @@ export function EditorSurface({
     const flush = () => {
       // A rewrite still streaming is never written: the note on disk stays as it was until it ends.
       if (!editor || editor.isDestroyed || rewriteStream.current?.active) return;
+      const { from, to } = editor.state.selection;
+      onPosition?.({ key: documentKey, from, to, scroll: scrollerRef.current?.scrollTop ?? 0 });
       clearTimeout(timer.current);
       timer.current = undefined;
       pendingSince.current = undefined;
@@ -585,6 +588,14 @@ export function EditorSurface({
       const id = String(detail?.id);
       const args = detail?.args ?? {};
       if (!editor || editor.isDestroyed) return;
+      if (id === "note.restorePosition") {
+        if (args.key !== documentKey || typeof args.from !== "number" || typeof args.to !== "number" || typeof args.scroll !== "number") return;
+        const max = editor.state.doc.content.size;
+        editor.commands.setTextSelection({ from: Math.min(max, Math.max(1, args.from)), to: Math.min(max, Math.max(1, args.to)) });
+        editor.view.focus();
+        if (scrollerRef.current) scrollerRef.current.scrollTop = args.scroll;
+        return;
+      }
       if (id === "outline.show") {
         minimapRef.current?.openFromKeyboard();
         return;

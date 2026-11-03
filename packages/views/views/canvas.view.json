@@ -913,6 +913,15 @@
               }
             }
           },
+          "position": {
+            "run": "note.position",
+            "args": {
+              "key": { "get": "event.key" },
+              "from": { "get": "event.from" },
+              "to": { "get": "event.to" },
+              "scroll": { "get": "event.scroll" }
+            }
+          },
           "ready": {
             "run": "app.ready"
           },

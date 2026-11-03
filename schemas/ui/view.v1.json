@@ -10342,6 +10342,9 @@
             "ready": {
               "$ref": "#/$defs/actions"
             },
+            "position": {
+              "$ref": "#/$defs/actions"
+            },
             "findResult": {
               "$ref": "#/$defs/actions"
             },

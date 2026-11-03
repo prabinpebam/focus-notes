@@ -127,7 +127,8 @@ export interface PlatformBridge {
   /** Local project windows, isolated from each other's workspace services. */
   projects?: {
     lastNote(): Promise<string | undefined>;
-    remember(path: string): Promise<void>;
+    position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
+    remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;
     list(): Promise<ProjectEntry[]>;
     open(folder: string, note?: string): Promise<void>;
     choose(): Promise<string | undefined>;
