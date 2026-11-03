@@ -107,7 +107,14 @@ No automatic tour, forced sign-in or new modal for upgrading. A read-only/offlin
 
 ### Creating and closing
 
-**New project…** asks **Project name**, GitHub owner (only when more than one is available) and local folder. Explain **Private only** beside the action. Validate the name/collision before creating; preserve all input on refusal. **Create project** creates only the private repository and local notes, never a site. Report any partial remote result with its link and **Continue setup**; never retry a creation blindly or delete the result automatically. Cancel before the remote request creates nothing; once accepted, leave the tracked operation visible until its outcome is known.
+**New project is a deliberate action of its own** (owner's correction, 3 November; D-315). It's reachable only from **New project…** in Projects (and its empty and first-run states) and from Spotlight's **> New project…**, never from New note, New note in… (which only picks a folder in this project) or Quick notes. It opens a short stepped dialog with step dots, **Back**, **Next** and **Cancel** on every step:
+
+1. **Name:** **Project name**, then GitHub owner (only when more than one is available). Validate the name and collisions here; keep all input on refusal.
+2. **Private only:** three rows, each with an icon: **Only you, and people you invite, can see it** · **No website until you turn on sharing** · **Its own folder and history**, with the local folder (**Change…**).
+3. **Look:** the accent and logo pickers from Settings → Project, with the project's mark as a live preview; **You can change these later in Settings → Project.**
+4. **Confirm:** the mark and name, then **Create project will make:** **A new private repository on GitHub** (⟨owner⟩/⟨name⟩) · **A folder on this computer** (its path) · **No website** (Nothing is public until you turn on sharing).
+
+Nothing is created, and no request leaves the computer, until the final **Create project**. **Create project** creates only the private repository and local notes, never a site. Report any partial remote result with its link and **Continue setup**; never retry a creation blindly or delete the result automatically. Cancel before the remote request creates nothing; once accepted, leave the tracked operation visible until its outcome is known.
 
 **Close project** flushes local saves and recovery before closing that window; offline backup may wait and must say so. Quit restores the last-open projects on next launch, not additional windows for individual notes. Existing note-window behaviour remains inside the same project identity, never an escape into another scope.
 

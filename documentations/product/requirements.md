@@ -162,7 +162,7 @@ These extend the areas above/below without reusing retired FIL-16. [Next directi
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| FIL-17 | New note in… (Ctrl+Shift+N / ⇧⌘N) chooses a project and folder, or Quick notes, first, then creates a private note in that project's window (or a Quick notes window). Cancel writes nothing; ordinary New note stays immediate. | P1 |
+| FIL-17 | New note in… (Ctrl+Shift+N / ⇧⌘N) in a project window chooses a folder of this project first (the current or last-used folder preselected, New folder… inline), then creates the note there. It never lists other projects, Quick notes or New project…. In a Quick notes window it starts a new quick note with no picker. Cancel writes nothing; ordinary New note stays immediate. | P1 |
 | FIL-18 | Set a file name once at first save from the current title or Untitled ⟨date⟩, adding a collision suffix when needed. Later title edits never rename it; Rename file… changes only the path and updates links atomically. | P1 |
 | KEY-09 | New note in… uses Mod+Shift+N; New folder moves to Ctrl+Alt+N / ⌥⌘N; Open project… uses Ctrl+Alt+O / ⌥⌘O. Retire New window's old binding; menu, cheat sheet, Spotlight and customization conflicts agree. | P1 |
 | RWR-91 | Ctrl+Enter / ⌘Enter in the prompt runs Generate exactly once when valid; plain Enter adds a line, composition never sends, and pending generation cannot submit again. | P1 |

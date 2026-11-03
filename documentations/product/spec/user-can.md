@@ -50,7 +50,7 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | UC-PROJ-06 | pin projects, folders and notes without copying them | SC-PROJ-03 | P1 | IA-VIEW-PROJECTS, IA-VIEW-FILES | PRJ-07 | Unpin leaves content intact; moved folder's shortcut follows its identity; no favourites list. |
 | UC-PROJ-07 | jot a note without picking a project and find it later | SC-PROJ-04 | P1 | IA-VIEW-PROJECTS | PRJ-08 | Quick notes is local only, autosaved, in Recent; later import into a project copies first and removes nothing. |
 | UC-PROJ-08 | open a supported file on its own and save it in place | SC-PROJ-05 | P1 | IA-VIEW-FILEWINDOW | PRJ-09 | Markdown/text round-trip; no implicit upload, project creation or format change; external conflicts never silently overwrite. |
-| UC-FILE-12 | choose a project's folder, or Quick notes, before creating a note | SC-FILE-07 | P1 | IA-CMP-PLACEPICKER | FIL-17, KEY-09 | Ctrl+Shift+N opens the place picker, Cancel writes nothing, destination project opens separately; plain New note remains immediate. |
+| UC-FILE-12 | choose a folder in this project before creating a note | SC-FILE-07 | P1 | IA-CMP-PLACEPICKER | FIL-17, KEY-09 | Ctrl+Shift+N opens the folder picker with the current folder chosen; Enter creates there; Cancel writes nothing; it never lists or makes projects; plain New note remains immediate. |
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
