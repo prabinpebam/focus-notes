@@ -6497,6 +6497,7 @@
               "anyOf": [
                 {
                   "enum": [
+                    "inline",
                     "s",
                     "m",
                     "l",

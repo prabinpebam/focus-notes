@@ -282,6 +282,8 @@
     "pickerTileHeight": { "$value": "{ref.size.96}", "$description": "A picker tile's fixed height." },
     "fontGridCell": { "$value": "{ref.size.110}", "$description": "A font cell's width in the font picker's grid." },
     "pillMax": { "$value": "{ref.size.200}", "$description": "A project pill's widest; a longer name ends in an ellipsis." },
+    "pillInsetStart": { "$value": "{ref.size.4}", "$description": "A pill's start padding before its icon: with the icon's own 1.5 to 2 px side bearing, the visible inset is about 6 px, as at the top, bottom and end (owner, 3 November 19:08)." },
+    "pillInsetEnd": { "$value": "{ref.size.6}", "$description": "A pill's end padding after its text: the visible inset matches the start, top and bottom (about 6 px in a 24 px pill)." },
     "imageThumb": { "$value": "{ref.size.96}", "$description": "An image's thumbnail in a dialog (Auto caption)." },
     "numberField": {
       "$value": "{ref.size.80}",

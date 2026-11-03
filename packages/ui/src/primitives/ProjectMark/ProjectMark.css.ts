@@ -8,11 +8,11 @@ export const base = style({
   borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: "transparent",
 });
 export const size = styleVariants({
-  s: { width: t.size.s, height: t.size.s }, m: { width: t.size.m, height: t.size.m }, l: { width: t.size.l, height: t.size.l },
+  inline: { width: t.size.inline, height: t.size.inline }, s: { width: t.size.s, height: t.size.s }, m: { width: t.size.m, height: t.size.m }, l: { width: t.size.l, height: t.size.l },
   xl: { width: t.size.xl, height: t.size.xl }, watermark: { width: t.size.watermark, height: t.size.watermark },
 });
 export const glyphSize = styleVariants({
-  s: { width: t.glyph.s, height: t.glyph.s }, m: { width: t.glyph.m, height: t.glyph.m }, l: { width: t.glyph.l, height: t.glyph.l },
+  inline: { width: t.glyph.inline, height: t.glyph.inline }, s: { width: t.glyph.s, height: t.glyph.s }, m: { width: t.glyph.m, height: t.glyph.m }, l: { width: t.glyph.l, height: t.glyph.l },
   xl: { width: t.glyph.xl, height: t.glyph.xl }, watermark: { width: t.glyph.watermark, height: t.glyph.watermark },
 });
 export const plate = styleVariants({

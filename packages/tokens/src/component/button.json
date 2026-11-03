@@ -3,6 +3,7 @@
   "height": { "$type": "dimension", "s": { "$value": "{size.controlS}" }, "m": { "$value": "{size.controlM}" }, "l": { "$value": "{size.controlL}" } },
   "paddingInline": { "$type": "dimension", "s": { "$value": "{space.s}" }, "m": { "$value": "{space.m}" }, "l": { "$value": "{space.xl}" } },
   "gap": { "$type": "dimension", "$value": "{space.xs}" },
+  "iconBearing": { "$type": "dimension", "$value": "{space.xxs}", "$description": "An icon's own side bearing inside its 16 px box: taken off the padding on the icon's side, so the visible inset matches the text side (owner, 3 November 19:08)." },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
   "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
     "fontSizeL": { "$type": "dimension", "$value": "{font.uiEmphasis}", "$description": "A large button (an onboarding step's main action, D-126)." },

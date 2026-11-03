@@ -11,7 +11,7 @@ export const contract = defineContract({
     initials: { kind: "text", description: "Shown when there's no logo: the project name's first letter." },
     accent: { kind: "enum", values: [...PROJECT_ACCENTS, "app"], default: "app", description: "The project's accent preset; app: the accent around it (inside a ProjectScope, the project's)." },
     plate: { kind: "enum", values: ["tint", "neutral", "solid", "bare"], default: "tint", description: "tint: the accent's tinted plate, the glyph in the accent. neutral: a raised plate, for an uploaded logo in its own colours. solid: the accent itself, a colour swatch. bare: no plate (inside a ProjectPill)." },
-    size: { kind: "enum", values: ["s", "m", "l", "xl", "watermark"], default: "m", description: "watermark: large and at opacity.watermark, hidden in more contrast, forced colours and reduced transparency." },
+    size: { kind: "enum", values: ["inline", "s", "m", "l", "xl", "watermark"], default: "m", description: "inline: the box is the glyph, no room around it (in a ProjectPill). watermark: large and at opacity.watermark, hidden in more contrast, forced colours and reduced transparency." },
     selected: { kind: "boolean", default: false, description: "The chosen preset in the logo picker: a full outline, never a one-sided stripe." },
     label: { kind: "message" },
   },
@@ -21,7 +21,7 @@ export const contract = defineContract({
   tokens: "cmp.projectMark.*",
   a11y: { pattern: "img", name: "label" },
   fixtures: [
-    ...["s", "m", "l", "xl"].map((size) => ({ name: `size ${size}`, props: { size, logo: "book", accent: "teal" } })),
+    ...["inline", "s", "m", "l", "xl"].map((size) => ({ name: `size ${size}`, props: { size, logo: "book", accent: "teal" } })),
     { name: "initials", props: { initials: { get: "vm.gallery.initials" }, accent: "indigo", size: "l" } },
     { name: "upload on a plate", props: { logo: "upload", plate: "neutral", size: "l", src: { get: "vm.gallery.logoSrc" } } },
     { name: "selected", props: { logo: "rocket", accent: "pink", size: "l", selected: true }, covers: ["selected"] },

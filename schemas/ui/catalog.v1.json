@@ -2705,6 +2705,7 @@
         "size": {
           "kind": "enum",
           "values": [
+            "inline",
             "s",
             "m",
             "l",
@@ -2712,7 +2713,7 @@
             "watermark"
           ],
           "default": "m",
-          "description": "watermark: large and at opacity.watermark, hidden in more contrast, forced colours and reduced transparency."
+          "description": "inline: the box is the glyph, no room around it (in a ProjectPill). watermark: large and at opacity.watermark, hidden in more contrast, forced colours and reduced transparency."
         },
         "selected": {
           "kind": "boolean",
@@ -2737,6 +2738,7 @@
         "name": "label"
       },
       "fixtures": [
+        "size inline",
         "size s",
         "size m",
         "size l",
@@ -5424,6 +5426,8 @@
       "pickerTileHeight",
       "fontGridCell",
       "pillMax",
+      "pillInsetStart",
+      "pillInsetEnd",
       "imageThumb",
       "numberField",
       "textAreaMax",

@@ -40,6 +40,17 @@ export const size = styleVariants({
   // An onboarding step's main action (Get started, D-126).
   l: { minHeight: t.height.l, paddingInline: t.paddingInline.l, fontSize: t.fontSizeL },
 });
+/** An icon at one end: that end's padding is smaller by the icon's side bearing, so the visible inset is the same at both ends (owner, 3 November 19:08). */
+export const iconStart = styleVariants({
+  s: { paddingInlineStart: `calc(${t.paddingInline.s} - ${t.iconBearing})` },
+  m: { paddingInlineStart: `calc(${t.paddingInline.m} - ${t.iconBearing})` },
+  l: { paddingInlineStart: `calc(${t.paddingInline.l} - ${t.iconBearing})` },
+});
+export const iconEnd = styleVariants({
+  s: { paddingInlineEnd: `calc(${t.paddingInline.s} - ${t.iconBearing})` },
+  m: { paddingInlineEnd: `calc(${t.paddingInline.m} - ${t.iconBearing})` },
+  l: { paddingInlineEnd: `calc(${t.paddingInline.l} - ${t.iconBearing})` },
+});
 /** A subtle button at the start of the content: its label lines up with the edge, its hit area reaching into the padding (D-111, D-123). */
 export const bleed = styleVariants({
   s: { marginInlineStart: `calc(-1 * ${t.paddingInline.s})` },
