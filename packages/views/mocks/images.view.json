@@ -21,7 +21,8 @@
   "captioned": false,
   "rot": "0",
   "saved": false,
-  "bulkRounded": false
+  "bulkR": "mixed",
+  "bulkFit": true
  },
  "root": {
   "type": "AppRoot",
@@ -3135,7 +3136,7 @@
                     },
                     "props": {
                      "label": {
-                      "t": "image.fit"
+                      "t": "image.limit"
                      },
                      "variant": "subtle",
                      "size": "s",
@@ -3143,6 +3144,28 @@
                      "pressed": {
                       "get": "local.fit"
                      }
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": [
+                      {
+                       "set": "local.step",
+                       "to": "bulk"
+                      },
+                      {
+                       "set": "local.bulkR",
+                       "to": "mixed"
+                      }
+                     ]
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.mock.selectAll"
+                     },
+                     "variant": "subtle",
+                     "size": "s"
                     }
                    },
                    {
@@ -3656,7 +3679,17 @@
                            },
                            "selected": true,
                            "rounded": {
-                            "get": "local.bulkRounded"
+                            "expr": {
+                             "==": [
+                              {
+                               "get": "local.bulkR"
+                              },
+                              "on"
+                             ]
+                            }
+                           },
+                           "fitHeight": {
+                            "get": "local.bulkFit"
                            }
                           }
                          },
@@ -3693,11 +3726,22 @@
                           },
                           "props": {
                            "src": {
-                            "get": "vm.mocks.smallSrc"
+                            "get": "vm.mocks.tallSrc"
                            },
-                           "mode": "actual",
                            "selected": true,
-                           "rounded": true
+                           "rounded": {
+                            "expr": {
+                             "!=": [
+                              {
+                               "get": "local.bulkR"
+                              },
+                              "off"
+                             ]
+                            }
+                           },
+                           "fitHeight": {
+                            "get": "local.bulkFit"
+                           }
                           }
                          }
                         ]
@@ -3759,74 +3803,435 @@
              },
              {
               "switch": {
-               "get": "local.bulkRounded"
+               "get": "local.bulkR"
               },
               "cases": {
-               "false": {
-                "type": "TextMenu",
-                "on": {
-                 "action": [
-                  {
-                   "set": "local.bulkRounded",
-                   "to": true
-                  },
-                  {
-                   "set": "local.bulkMenu",
-                   "to": false
-                  }
-                 ],
-                 "close": {
-                  "set": "local.bulkMenu",
-                  "to": false
-                 }
+               "mixed": {
+                "switch": {
+                 "get": "local.bulkFit"
                 },
-                "props": {
-                 "label": {
-                  "t": "image.bulk.menu"
+                "cases": {
+                 "true": {
+                  "type": "TextMenu",
+                  "on": {
+                   "close": {
+                    "set": "local.bulkMenu",
+                    "to": false
+                   },
+                   "action": [
+                    {
+                     "set": "local.bulkMenu",
+                     "to": false
+                    },
+                    {
+                     "set": "local.bulkR",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "rounded"
+                         ]
+                        },
+                        "on",
+                        "mixed"
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.bulkFit",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "fit"
+                         ]
+                        },
+                        false,
+                        true
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.bulk.menu"
+                   },
+                   "sections": {
+                    "get": "vm.mocks.bulkMenus.mixedF1"
+                   },
+                   "open": true,
+                   "x": {
+                    "get": "local.mx"
+                   },
+                   "y": {
+                    "get": "local.my"
+                   }
+                  }
                  },
-                 "sections": {
-                  "get": "vm.mocks.bulkMenu"
-                 },
-                 "open": true,
-                 "x": {
-                  "get": "local.mx"
-                 },
-                 "y": {
-                  "get": "local.my"
+                 "false": {
+                  "type": "TextMenu",
+                  "on": {
+                   "close": {
+                    "set": "local.bulkMenu",
+                    "to": false
+                   },
+                   "action": [
+                    {
+                     "set": "local.bulkMenu",
+                     "to": false
+                    },
+                    {
+                     "set": "local.bulkR",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "rounded"
+                         ]
+                        },
+                        "on",
+                        "mixed"
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.bulkFit",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "fit"
+                         ]
+                        },
+                        true,
+                        false
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.bulk.menu"
+                   },
+                   "sections": {
+                    "get": "vm.mocks.bulkMenus.mixedF0"
+                   },
+                   "open": true,
+                   "x": {
+                    "get": "local.mx"
+                   },
+                   "y": {
+                    "get": "local.my"
+                   }
+                  }
                  }
                 }
                },
-               "true": {
-                "type": "TextMenu",
-                "on": {
-                 "action": [
-                  {
-                   "set": "local.bulkRounded",
-                   "to": false
-                  },
-                  {
-                   "set": "local.bulkMenu",
-                   "to": false
-                  }
-                 ],
-                 "close": {
-                  "set": "local.bulkMenu",
-                  "to": false
-                 }
+               "off": {
+                "switch": {
+                 "get": "local.bulkFit"
                 },
-                "props": {
-                 "label": {
-                  "t": "image.bulk.menu"
+                "cases": {
+                 "true": {
+                  "type": "TextMenu",
+                  "on": {
+                   "close": {
+                    "set": "local.bulkMenu",
+                    "to": false
+                   },
+                   "action": [
+                    {
+                     "set": "local.bulkMenu",
+                     "to": false
+                    },
+                    {
+                     "set": "local.bulkR",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "rounded"
+                         ]
+                        },
+                        "on",
+                        "off"
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.bulkFit",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "fit"
+                         ]
+                        },
+                        false,
+                        true
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.bulk.menu"
+                   },
+                   "sections": {
+                    "get": "vm.mocks.bulkMenus.offF1"
+                   },
+                   "open": true,
+                   "x": {
+                    "get": "local.mx"
+                   },
+                   "y": {
+                    "get": "local.my"
+                   }
+                  }
                  },
-                 "sections": {
-                  "get": "vm.mocks.bulkMenuOn"
+                 "false": {
+                  "type": "TextMenu",
+                  "on": {
+                   "close": {
+                    "set": "local.bulkMenu",
+                    "to": false
+                   },
+                   "action": [
+                    {
+                     "set": "local.bulkMenu",
+                     "to": false
+                    },
+                    {
+                     "set": "local.bulkR",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "rounded"
+                         ]
+                        },
+                        "on",
+                        "off"
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.bulkFit",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "fit"
+                         ]
+                        },
+                        true,
+                        false
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.bulk.menu"
+                   },
+                   "sections": {
+                    "get": "vm.mocks.bulkMenus.offF0"
+                   },
+                   "open": true,
+                   "x": {
+                    "get": "local.mx"
+                   },
+                   "y": {
+                    "get": "local.my"
+                   }
+                  }
+                 }
+                }
+               },
+               "on": {
+                "switch": {
+                 "get": "local.bulkFit"
+                },
+                "cases": {
+                 "true": {
+                  "type": "TextMenu",
+                  "on": {
+                   "close": {
+                    "set": "local.bulkMenu",
+                    "to": false
+                   },
+                   "action": [
+                    {
+                     "set": "local.bulkMenu",
+                     "to": false
+                    },
+                    {
+                     "set": "local.bulkR",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "rounded"
+                         ]
+                        },
+                        "off",
+                        "on"
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.bulkFit",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "fit"
+                         ]
+                        },
+                        false,
+                        true
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.bulk.menu"
+                   },
+                   "sections": {
+                    "get": "vm.mocks.bulkMenus.onF1"
+                   },
+                   "open": true,
+                   "x": {
+                    "get": "local.mx"
+                   },
+                   "y": {
+                    "get": "local.my"
+                   }
+                  }
                  },
-                 "open": true,
-                 "x": {
-                  "get": "local.mx"
-                 },
-                 "y": {
-                  "get": "local.my"
+                 "false": {
+                  "type": "TextMenu",
+                  "on": {
+                   "close": {
+                    "set": "local.bulkMenu",
+                    "to": false
+                   },
+                   "action": [
+                    {
+                     "set": "local.bulkMenu",
+                     "to": false
+                    },
+                    {
+                     "set": "local.bulkR",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "rounded"
+                         ]
+                        },
+                        "off",
+                        "on"
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.bulkFit",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "fit"
+                         ]
+                        },
+                        true,
+                        false
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.bulk.menu"
+                   },
+                   "sections": {
+                    "get": "vm.mocks.bulkMenus.onF0"
+                   },
+                   "open": true,
+                   "x": {
+                    "get": "local.mx"
+                   },
+                   "y": {
+                    "get": "local.my"
+                   }
+                  }
                  }
                 }
                }
@@ -3839,7 +4244,7 @@
               "type": "Text",
               "props": {
                "value": {
-                "t": "image.bulk.hint2"
+                "t": "image.bulk.hint3"
                },
                "role": "caption",
                "tone": "muted"

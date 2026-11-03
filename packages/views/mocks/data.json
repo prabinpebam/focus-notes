@@ -1387,48 +1387,124 @@
     },
     {
      "id": "fit",
-     "label": "Fit height",
+     "label": "Limit height",
      "checked": true
     }
    ]
   }
  ],
- "bulkMenu": [
-  {
-   "id": "images",
-   "label": "Images · 2 selected",
-   "items": [
-    {
-     "id": "rounded",
-     "label": "Rounded corners · Mixed",
-     "checked": false
-    },
-    {
-     "id": "fit",
-     "label": "Fit height",
-     "checked": true
-    }
-   ]
-  }
- ],
- "bulkMenuOn": [
-  {
-   "id": "images",
-   "label": "Images · 2 selected",
-   "items": [
-    {
-     "id": "rounded",
-     "label": "Rounded corners",
-     "checked": true
-    },
-    {
-     "id": "fit",
-     "label": "Fit height",
-     "checked": true
-    }
-   ]
-  }
- ],
+ "bulkMenus": {
+  "mixedF1": [
+   {
+    "id": "images",
+    "label": "Images · 2 selected",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false,
+      "mixed": true
+     },
+     {
+      "id": "fit",
+      "label": "Limit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "mixedF0": [
+   {
+    "id": "images",
+    "label": "Images · 2 selected",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false,
+      "mixed": true
+     },
+     {
+      "id": "fit",
+      "label": "Limit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "onF1": [
+   {
+    "id": "images",
+    "label": "Images · 2 selected",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Limit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "onF0": [
+   {
+    "id": "images",
+    "label": "Images · 2 selected",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Limit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "offF1": [
+   {
+    "id": "images",
+    "label": "Images · 2 selected",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Limit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "offF0": [
+   {
+    "id": "images",
+    "label": "Images · 2 selected",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Limit height",
+      "checked": false
+     }
+    ]
+   }
+  ]
+ },
  "modes": [
   {
    "id": "column",
@@ -1561,7 +1637,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": true
      }
     ]
@@ -1660,7 +1736,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": false
      }
     ]
@@ -1759,7 +1835,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": true
      }
     ]
@@ -1858,7 +1934,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": false
      }
     ]
@@ -1957,7 +2033,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": true
      }
     ]
@@ -2056,7 +2132,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": false
      }
     ]
@@ -2155,7 +2231,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": true
      }
     ]
@@ -2254,7 +2330,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": false
      }
     ]
@@ -2353,7 +2429,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": true
      }
     ]
@@ -2452,7 +2528,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": false
      }
     ]
@@ -2551,7 +2627,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": true
      }
     ]
@@ -2650,7 +2726,7 @@
      },
      {
       "id": "fit",
-      "label": "Fit height",
+      "label": "Limit height",
       "checked": false
      }
     ]
