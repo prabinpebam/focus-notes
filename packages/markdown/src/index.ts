@@ -55,6 +55,7 @@ const KEPT_ATTRS: Record<string, string[]> = {
   tableHeader: ["align"],
   tableCell: ["align"],
   link: ["href", "title"],
+  image: ["src", "alt", "title", "rounded", "fitHeight", "mode"],
 };
 
 /**
@@ -119,6 +120,16 @@ export function parseMarkdown(input: string): Parsed {
     // A table's settings comment (D-182), on the line right before it, belongs to that table.
     const next = tree.children[i + 1];
     const settings = child.type === "html" ? parseTableNote(child.value) : undefined;
+    const imageSettings = child.type === "html" ? /^<!-- image: (.*?) -->$/.exec(child.value.trim()) : undefined;
+    if (imageSettings && next?.type === "paragraph" && next.children.length === 1 && next.children[0]?.type === "image") {
+      node = convertBlock(next);
+      if (node) {
+        const parts = imageSettings[1]!.split(" ");
+        node.attrs = { ...node.attrs, rounded: parts.includes("rounded"), fitHeight: !parts.includes("unlimited"), mode: parts.includes("wide") ? "wide" : parts.includes("actual") ? "actual" : "column" };
+        end = next.position?.end.offset ?? end;
+        i++;
+      }
+    }
     if (settings && next?.type === "table" && /^\r?\n$/.test(source.slice(end, next.position?.start.offset ?? end))) {
       const table = convertTable(next);
       if (table) {
@@ -149,6 +160,10 @@ function blockFromMdast(node: Md.RootContent, src: string): PMNode {
 function convertBlock(node: Md.RootContent): PMNode | undefined {
   switch (node.type) {
     case "paragraph": {
+      if (node.children.length === 1 && node.children[0]?.type === "image") {
+        const image = node.children[0];
+        return { type: "image", attrs: { src: image.url, alt: image.alt ?? "", title: image.title ?? null, rounded: false, fitHeight: true, mode: "column" } };
+      }
       const inline = convertInline(node.children, []);
       return inline ? para(inline) : undefined;
     }
@@ -412,11 +427,17 @@ export function blockToMarkdown(node: PMNode): string {
   const text = toMarkdown(mdast, MD_OPTIONS).replace(/\n+$/, "");
   // A table's layout and set widths go on the line before it (D-182).
   const note = node.type === "table" ? tableNote(tableSettingsOf(node)) : undefined;
+  if (node.type === "image") {
+    const parts = [node.attrs?.rounded ? "rounded" : "", node.attrs?.fitHeight === false ? "unlimited" : "", node.attrs?.mode !== "column" ? node.attrs?.mode : ""].filter(Boolean);
+    return parts.length ? `<!-- image: ${parts.join(" ")} -->\n${text}` : text;
+  }
   return note ? `${note}\n${text}` : text;
 }
 
 function toMdastBlock(node: PMNode): Md.RootContent {
   switch (node.type) {
+    case "image":
+      return { type: "paragraph", children: [{ type: "image", url: String(node.attrs?.src ?? ""), alt: String(node.attrs?.alt ?? ""), title: typeof node.attrs?.title === "string" ? node.attrs.title : null }] };
     case "paragraph":
       return { type: "paragraph", children: toMdastInline(node.content ?? []) };
     case "heading":

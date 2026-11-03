@@ -5,6 +5,10 @@ export const contract = defineContract({
   tier: "host",
   description: "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
   props: {
+    imageSources: { kind: "list", of: "colorValues" },
+    imageMenu: { kind: "list", of: "menuSections" },
+    imageMenuLabel: { kind: "message" },
+    imageMissing: { kind: "message" },
     documentKey: { kind: "text", required: true },
     initialValue: { kind: "text", required: true },
     label: { kind: "message", required: true },
@@ -35,6 +39,11 @@ export const contract = defineContract({
     filesWidth: { kind: "number", default: 0, description: "Docked Files' width in px, as resized; 0: its default." },
   },
   events: {
+    imageRead: { payload: { src: "text" } },
+    imageSelect: { payload: { pos: "number", src: "text", rounded: "boolean", fitHeight: "boolean", mode: "text", width: "number", height: "number", from: "number", to: "number", count: "number", roundMixed: "boolean", limitMixed: "boolean" } },
+    imageAction: { payload: { id: "text" } },
+    imageEdited: { payload: { src: "text", data: "text" } },
+    imageEditError: {},
     change: { payload: { value: "text" } },
     ready: {},
     findResult: { payload: { count: "number", current: "number", invalid: "boolean", wrapped: "boolean", replaced: "number" } },

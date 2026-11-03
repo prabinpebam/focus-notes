@@ -5,7 +5,8 @@ import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
   focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
-import type { KeyBinding } from "../../data.ts";
+import type { ColorValue, KeyBinding, MenuSection } from "../../data.ts";
+import { imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { keepClearOfPinned } from "./pinned-column.ts";
@@ -24,6 +25,15 @@ import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./EditorSurface.css.ts";
 
 export interface EditorSurfaceProps {
+  imageSources?: ColorValue[];
+  imageMenu?: MenuSection[];
+  imageMenuLabel?: string;
+  imageMissing?: string;
+  onImageRead?: (payload: { src: string }) => void;
+  onImageSelect?: (payload: ImagePayload) => void;
+  onImageAction?: (payload: { id: string }) => void;
+  onImageEdited?: (payload: { src: string; data: string }) => void;
+  onImageEditError?: () => void;
   /** Changes when a different note is loaded. The editor resets only then. */
   documentKey: string;
   initialValue: string;
@@ -157,6 +167,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
+  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", onImageRead, onImageSelect, onImageAction, onImageEdited, onImageEditError,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
@@ -165,6 +176,12 @@ export function EditorSurface({
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
+  const imageRenders = useRef(new Set<() => void>());
+  const imageOptions = useRef({ sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, read: onImageRead, select: onImageSelect, action: onImageAction });
+  imageOptions.current = { sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, read: onImageRead, select: onImageSelect, action: onImageAction };
+  const imageEditRef = useRef({ onImageEdited, onImageEditError });
+  imageEditRef.current = { onImageEdited, onImageEditError };
+  useEffect(() => { for (const render of imageRenders.current) render(); }, [imageSources, imageMenu]);
   const scrollerRef = useRef<HTMLElement | null>(null);
   const minimapRef = useRef<DocMinimapHandle | null>(null);
   useAutoHideScrollbar(scrollerRef);
@@ -234,6 +251,7 @@ export function EditorSurface({
       ...EDITOR_OPTIONS,
       extensions: [
         ...coreExtensions(keymap ?? [], {
+          imageView: imageView(() => imageOptions.current, imageRenders.current),
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
           findScopeClass: s.findScope,
@@ -648,6 +666,24 @@ export function EditorSurface({
         if (id === "rewrite.abort") stream.abort();
         else if (stream.finish() && window.matchMedia("(prefers-reduced-motion: reduce)").matches) stream.clear();
         editor.view.focus();
+        return;
+      }
+      if (id === "image.set") {
+        const pos = Number(args.pos);
+        const node = editor.state.doc.nodeAt(pos);
+        if (!editor.isEditable || node?.type.name !== "image" || node.attrs.src !== args.src) return;
+        const transaction = editor.state.tr;
+        const from = Number(args.from), to = Number(args.to);
+        const patch = { ...(typeof args.rounded === "boolean" ? { rounded: args.rounded } : {}), ...(typeof args.fitHeight === "boolean" ? { fitHeight: args.fitHeight } : {}), ...(typeof args.mode === "string" ? { mode: args.mode } : {}) };
+        if (Number.isInteger(from) && Number.isInteger(to) && from >= 0 && to <= editor.state.doc.content.size && to > from) {
+          editor.state.doc.nodesBetween(from, to, (image, at) => { if (image.type.name === "image") transaction.setNodeMarkup(at, undefined, { ...image.attrs, ...patch }); });
+        } else transaction.setNodeMarkup(pos, undefined, { ...node.attrs, ...patch });
+        editor.view.dispatch(transaction);
+        return;
+      }
+      if (id === "image.renderEdit") {
+        void renderImageEdit(String(args.data), Number(args.x), Number(args.y), Number(args.width), Number(args.height), Number(args.rotation))
+          .then((data) => imageEditRef.current.onImageEdited?.({ src: String(args.src), data }), () => imageEditRef.current.onImageEditError?.());
         return;
       }
       syncSelection(editor);

@@ -2901,6 +2901,18 @@
             "270"
           ],
           "default": "0"
+        },
+        "cropX": {
+          "kind": "number"
+        },
+        "cropY": {
+          "kind": "number"
+        },
+        "cropWidth": {
+          "kind": "number"
+        },
+        "cropHeight": {
+          "kind": "number"
         }
       },
       "events": {
@@ -2908,6 +2920,12 @@
           "payload": {
             "x": "number",
             "y": "number"
+          }
+        },
+        "size": {
+          "payload": {
+            "width": "number",
+            "height": "number"
           }
         }
       },
@@ -4661,6 +4679,20 @@
       "tier": "host",
       "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
       "props": {
+        "imageSources": {
+          "kind": "list",
+          "of": "colorValues"
+        },
+        "imageMenu": {
+          "kind": "list",
+          "of": "menuSections"
+        },
+        "imageMenuLabel": {
+          "kind": "message"
+        },
+        "imageMissing": {
+          "kind": "message"
+        },
         "documentKey": {
           "kind": "text",
           "required": true
@@ -4780,6 +4812,39 @@
         }
       },
       "events": {
+        "imageRead": {
+          "payload": {
+            "src": "text"
+          }
+        },
+        "imageSelect": {
+          "payload": {
+            "pos": "number",
+            "src": "text",
+            "rounded": "boolean",
+            "fitHeight": "boolean",
+            "mode": "text",
+            "width": "number",
+            "height": "number",
+            "from": "number",
+            "to": "number",
+            "count": "number",
+            "roundMixed": "boolean",
+            "limitMixed": "boolean"
+          }
+        },
+        "imageAction": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "imageEdited": {
+          "payload": {
+            "src": "text",
+            "data": "text"
+          }
+        },
+        "imageEditError": {},
         "change": {
           "payload": {
             "value": "text"
@@ -5745,6 +5810,7 @@
         "vm.format",
         "vm.slash",
         "vm.table",
+        "vm.images",
         "vm.block",
         "vm.feedback",
         "vm.picker",

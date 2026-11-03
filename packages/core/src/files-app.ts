@@ -1344,7 +1344,7 @@ export function registerFiles(ctx: Ctx) {
     const repo = s.workspace.repo ?? "";
     const [owner = "", name = ""] = repo.split("/");
     const folder = (s.workspace.folder ?? "").split(/[\\/]/).filter(Boolean).pop() ?? "";
-    const title = repo ? (login && owner.toLowerCase() === login.toLowerCase() ? name : repo) : folder;
+    const title = repo ? name : folder;
     if (!title) return NO_SOURCE;
     const at = login ? catalog.format("files.source.login", { login }) : "";
     return {
@@ -1423,7 +1423,7 @@ export function registerFiles(ctx: Ctx) {
           const label = titleOfNode(found.node);
           if (f.filter && !label.toLocaleLowerCase().includes(f.filter.toLocaleLowerCase())) return [];
           return [{ id: path, kind: found.node.kind, label, level: 2, parent: id,
-            detail: dirOf(path).replace(`${found.root.path}/`, ""), description: "", title: path,
+            detail: dirOf(path).slice(found.root.path.length).replace(/^[\\/]+/, "") || catalog.format("files.location.root"), description: "", title: path,
             selected: selected.has(path), current: path === s.note.path, expanded: false, hasChildren: false }];
         });
         shortcuts.push({ id, kind: "section", label: catalog.format(section === "pinned" ? "project.pinned" : "recent.title"), level: 1, expanded, hasChildren: entries.length > 0 });

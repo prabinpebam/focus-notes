@@ -6850,6 +6850,46 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "cropX": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "cropY": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "cropWidth": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "cropHeight": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": [
@@ -6861,6 +6901,9 @@
           "additionalProperties": false,
           "properties": {
             "contextMenu": {
+              "$ref": "#/$defs/actions"
+            },
+            "size": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -9988,6 +10031,38 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "imageSources": {
+              "$ref": "#/$defs/read"
+            },
+            "imageMenu": {
+              "$ref": "#/$defs/read"
+            },
+            "imageMenuLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "imageMissing": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "documentKey": {
               "anyOf": [
                 {
@@ -10308,6 +10383,21 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "imageRead": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageSelect": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageAction": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageEdited": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageEditError": {
+              "$ref": "#/$defs/actions"
+            },
             "change": {
               "$ref": "#/$defs/actions"
             },

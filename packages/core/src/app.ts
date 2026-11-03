@@ -45,6 +45,7 @@ import type { SearchService } from "./search/feed.ts";
 import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
 import { customThemesOf, isCustomId } from "./custom-themes.ts";
 import { headingCount } from "./outline.ts";
+import { registerImages, IMAGES_CLOSED, type ImagesState } from "./images-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -75,6 +76,7 @@ export interface AppState {
   /** How the window is composited, as the shell reports it (D-121): in software the note's edges fade without the blur. */
   compositing: Compositing;
   ui: {
+    images: ImagesState;
     toolbarOpen: boolean;
     /** The keyboard shortcut cheat sheet (IA-VIEW-SHORTCUTS). */
     shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
@@ -316,7 +318,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED, print: PRINT_CLOSED },
+    ui: { images: IMAGES_CLOSED, toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED, print: PRINT_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -1121,6 +1123,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m),
     announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
   });
+  registerImages({ store, bridge, catalog, commands, viewModels, editorAction, toast, itemSchema: ITEM_SCHEMA, describeItem });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
     loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), holds: (path) => conflicts.holds(path),

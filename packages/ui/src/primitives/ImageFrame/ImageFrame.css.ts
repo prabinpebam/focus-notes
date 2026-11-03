@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { createVar, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.imageFrame;
@@ -29,6 +29,11 @@ export const crop = style({
   position: "absolute", inset: "10%", outlineStyle: "solid", outlineWidth: t.ringWidth, outlineColor: t.cropLine,
   boxShadow: `0 0 0 ${t.shadeReach} ${t.cropShade}`,
 });
+export const cropX = createVar();
+export const cropY = createVar();
+export const cropWidth = createVar();
+export const cropHeight = createVar();
+export const cropCustom = style({ inset: "auto", left: cropX, top: cropY, width: cropWidth, height: cropHeight });
 export const handle = style({ position: "absolute", width: t.handle, height: t.handle, display: "flex", alignItems: "center", justifyContent: "center",
   "::after": { content: "\"\"", width: "40%", height: "40%", borderRadius: "50%", backgroundColor: t.handleFill, outlineStyle: "solid", outlineWidth: t.ringWidth, outlineColor: t.cropLine } });
 export const corner = styleVariants({

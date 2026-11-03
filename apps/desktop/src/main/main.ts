@@ -1198,6 +1198,39 @@ async function slowSeam(channel: string): Promise<void> {
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
+  const imagePath = async (note: unknown, src: unknown) => {
+    if (typeof src !== "string" || /^[a-z][a-z\d+.-]*:/i.test(src) || isAbsolute(src)) throw new Error("invalid-image");
+    const parent = await realpath(dirname(notePath(note)));
+    const path = await realpath(resolve(parent, src));
+    const rel = relative(parent, path);
+    if (rel.startsWith(`..${sep}`) || rel === ".." || isAbsolute(rel)) throw new Error("invalid-image");
+    return path;
+  };
+  const imageMime = (path: string) => {
+    const mime = ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif" })[extname(path).toLowerCase()];
+    if (!mime) throw new Error("invalid-image");
+    return mime;
+  };
+  handle("image:read", async (note, src) => {
+    if (typeof src === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(src) && src.length <= 28 * 1024 * 1024) return src;
+    const path = await imagePath(note, src);
+    const info = await stat(path);
+    if (!info.isFile() || info.size > 20 * 1024 * 1024) throw new Error("image-too-large");
+    return `data:${imageMime(path)};base64,${(await readFile(path)).toString("base64")}`;
+  });
+  handle("image:write", async (note, src, data, expected) => {
+    const path = await imagePath(note, src);
+    const mime = imageMime(path);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(mime) || typeof data !== "string" || !data.startsWith(`data:${mime};base64,`) || data.length > 28 * 1024 * 1024 || typeof expected !== "string") throw new Error("invalid-image");
+    const original = `data:${mime};base64,${(await readFile(path)).toString("base64")}`;
+    if (original !== expected) throw new Error("image-changed");
+    const temp = `${path}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temp, Buffer.from(data.slice(data.indexOf(",") + 1), "base64"), { flag: "wx" });
+      if (!Buffer.from(expected.slice(expected.indexOf(",") + 1), "base64").equals(await readFile(path))) throw new Error("image-changed");
+      await rename(temp, path);
+    } finally { await rm(temp, { force: true }); }
+  });
   handle("note:read", async (p) => {
     try {
       return (await readParsed(notePath(p))).text;

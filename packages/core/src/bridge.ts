@@ -21,6 +21,8 @@ import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.t
 export interface PlatformBridge {
   platform: Platform;
   readNote(path: string): Promise<string>;
+  readImage?(note: string, src: string): Promise<string>;
+  writeImage?(note: string, src: string, data: string, expected: string): Promise<void>;
   /** As readNote, but only a missing file is null; permission and other read failures still reject. */
   readNoteIfExists?(path: string): Promise<string | null>;
   /**

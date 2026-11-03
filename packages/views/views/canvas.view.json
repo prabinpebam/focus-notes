@@ -11,6 +11,7 @@
     "vm.format",
     "vm.slash",
     "vm.table",
+    "vm.images",
     "vm.block",
     "vm.feedback",
     "vm.picker",
@@ -797,6 +798,10 @@
           }
         },
         "props": {
+          "imageSources": { "get": "vm.images.sources" },
+          "imageMenu": { "get": "vm.images.menu" },
+          "imageMenuLabel": { "t": "image.menu" },
+          "imageMissing": { "t": "image.read.failed" },
           "documentKey": {
             "get": "vm.canvas.noteKey"
           },
@@ -923,6 +928,17 @@
               }
             }
           },
+          "imageRead": { "run": "image.read", "args": { "src": { "get": "event.src" } } },
+          "imageSelect": { "run": "image.select", "args": {
+            "pos": { "get": "event.pos" }, "src": { "get": "event.src" },
+            "rounded": { "get": "event.rounded" }, "fitHeight": { "get": "event.fitHeight" }, "mode": { "get": "event.mode" },
+            "width": { "get": "event.width" }, "height": { "get": "event.height" },
+            "from": { "get": "event.from" }, "to": { "get": "event.to" }, "count": { "get": "event.count" },
+            "roundMixed": { "get": "event.roundMixed" }, "limitMixed": { "get": "event.limitMixed" }
+          } },
+          "imageAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } },
+          "imageEdited": { "run": "image.edited", "args": { "src": { "get": "event.src" }, "data": { "get": "event.data" } } },
+          "imageEditError": { "run": "image.edit.failed" },
           "findScope": {
             "run": "find.setScope",
             "args": {
@@ -1186,6 +1202,41 @@
             }
           }
         }
+      },
+      {
+        "type": "DialogPanel",
+        "id": "imageEdit",
+        "props": { "label": { "t": "image.edit.title" }, "open": { "get": "vm.images.edit" }, "size": "m", "height": "content" },
+        "on": { "openChange": { "run": "image.edit.close" } },
+        "slots": {
+          "header": [{ "type": "Heading", "props": { "level": "2", "value": { "t": "image.edit.title" } } }],
+          "footer": [{
+            "type": "Inline", "props": { "justify": "end", "gap": "s" },
+            "children": [
+              { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle", "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.close" } } },
+              { "type": "Button", "props": { "label": { "t": "image.edit.save" }, "variant": "primary", "busy": { "get": "vm.images.saving" }, "disabled": { "get": "vm.images.invalid" }, "disabledReason": { "t": "image.edit.invalid" } }, "on": { "press": { "run": "image.edit.save" } } }
+            ]
+          }]
+        },
+        "children": [{
+          "type": "Stack", "props": { "gap": "m" }, "children": [
+            { "type": "ImageFrame", "props": {
+              "src": { "get": "vm.images.src" }, "crop": true, "rotation": { "get": "vm.images.rotation" },
+              "cropX": { "get": "vm.images.cropX" }, "cropY": { "get": "vm.images.cropY" },
+              "cropWidth": { "get": "vm.images.cropWidth" }, "cropHeight": { "get": "vm.images.cropHeight" }
+            } },
+            { "type": "Inline", "props": { "gap": "s", "wrap": true, "align": "end" }, "children": [
+              { "type": "TextField", "props": { "label": { "t": "image.edit.left" }, "value": { "bind": "vm.images.x" }, "size": "m", "width": "number", "autoFocus": true } },
+              { "type": "TextField", "props": { "label": { "t": "image.edit.top" }, "value": { "bind": "vm.images.y" }, "size": "m", "width": "number" } },
+              { "type": "TextField", "props": { "label": { "t": "image.edit.width" }, "value": { "bind": "vm.images.width" }, "size": "m", "width": "number" } },
+              { "type": "TextField", "props": { "label": { "t": "image.edit.height" }, "value": { "bind": "vm.images.height" }, "size": "m", "width": "number" } },
+              { "type": "SegmentedControl", "props": { "label": { "t": "image.edit.turn" }, "options": { "get": "vm.images.rotations" }, "actions": true }, "on": { "action": { "run": "image.edit.rotate", "args": { "id": { "get": "event.id" } } } } }
+            ] },
+            { "type": "Text", "when": { "get": "vm.images.invalid" }, "props": { "value": { "t": "image.edit.invalid" }, "tone": "danger" } },
+            { "type": "Text", "props": { "value": { "get": "vm.images.error" }, "tone": "danger" } },
+            { "type": "Text", "props": { "value": { "t": "image.edit.warning" }, "role": "caption", "tone": "muted" } }
+          ]
+        }]
       },
       {
         "type": "TableControls",
@@ -4579,6 +4630,7 @@
             "props": {
               "label": { "t": "files.heading" },
               "items": { "get": "vm.files.shortcuts" },
+              "focusId": { "get": "vm.files.focusId" },
               "menu": { "get": "vm.files.menu" },
               "menuLabel": { "get": "vm.files.menuLabel" }
             },

@@ -1,4 +1,4 @@
-import type { MouseEvent, KeyboardEvent } from "react";
+import type { CSSProperties, MouseEvent, KeyboardEvent } from "react";
 import * as s from "./ImageFrame.css.ts";
 
 export interface ImageFrameProps {
@@ -14,12 +14,17 @@ export interface ImageFrameProps {
   /** Edit image: the crop frame over the preview. */
   crop?: boolean;
   rotation?: keyof typeof s.rotation;
+  cropX?: number;
+  cropY?: number;
+  cropWidth?: number;
+  cropHeight?: number;
+  onSize?: (p: { width: number; height: number }) => void;
   /** The image menu: right-click, or the context-menu key or Shift+F10 while it's selected (owner, 3 November). */
   onContextMenu?: (p: { x: number; y: number }) => void;
 }
 
 /** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, crop = false, rotation = "0", onContextMenu }: ImageFrameProps) {
+export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
   const safe = src.startsWith("data:image/") ? src : undefined;
   const menu = onContextMenu ? {
     onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }); },
@@ -35,9 +40,9 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
   return (
     <span className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
       <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
-        {safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} /> : null}
+        {safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} onLoad={(e) => onSize?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} /> : null}
         {crop ? (
-          <span className={s.crop} aria-hidden="true">
+          <span className={`${s.crop}${cropWidth === undefined ? "" : ` ${s.cropCustom}`}`} style={cropWidth === undefined ? undefined : { [s.cropX.slice(4, -1)]: `${cropX ?? 0}%`, [s.cropY.slice(4, -1)]: `${cropY ?? 0}%`, [s.cropWidth.slice(4, -1)]: `${cropWidth}%`, [s.cropHeight.slice(4, -1)]: `${cropHeight ?? 100}%` } as CSSProperties} aria-hidden="true">
             {(["tl", "tr", "bl", "br"] as const).map((c) => <span key={c} className={`${s.handle} ${s.corner[c]}`} />)}
           </span>
         ) : null}
