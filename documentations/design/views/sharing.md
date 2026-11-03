@@ -25,7 +25,7 @@ New notes and projects are Private. Shared is a private note with a grant, not a
 <figure class="slate-figure">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-labelledby="fnshare-dialog__title fnshare-dialog__desc" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="fnshare-dialog__title">One item-first share dialog, with review outside its main flow</title>
-<desc id="fnshare-dialog__desc">Share Book drafts. First region: the folder name and counts, 12 notes and 3 folders, and Review contents. Second: expiry, Link on, Passcode off and its generated/custom options when enabled. Third: Share, Copy link, Copy access code when enabled, and Copy share information. Shared before is a disclosure below, never an intermediate screen. Review contents branches to a scrollable read-only folder tree and returns to the intact draft.</desc>
+<desc id="fnshare-dialog__desc">Share Book drafts. First region: the folder name and counts, 12 notes and 3 folders, and Review contents. Second: expiry, the Link switch on, the Passcode switch off, and Include notes added later off. Third: the primary Share button and a group of three copy buttons; where the system has no share sheet the primary reads Copy share information. Shared before lists earlier shares of this item, each with its own actions; it is never an intermediate screen. Review contents branches to a scrollable read-only folder tree and returns to the intact draft.</desc>
 <g id="fnshare-dialog__main" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="fnshare-dialog__item" x="24" y="24" width="594" height="116" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
 <text x="46" y="64" font-size="21" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__item" data-slate-fit-padding="16">Share “Book drafts”</text>
@@ -33,14 +33,22 @@ New notes and projects are Private. Shared is a private note with a grant, not a
 <text x="46" y="120" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__item" data-slate-fit-padding="16">Review contents</text>
 <rect id="fnshare-dialog__methods" x="24" y="160" width="594" height="168" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
 <text x="46" y="196" font-size="20" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">How it opens</text>
-<text x="46" y="232" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Expires in 30 days</text>
-<text x="46" y="268" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Link: On · Passcode: Off</text>
-<text x="46" y="306" font-size="16" fill="var(--color-neutral-fg-2)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Passcode on → Generated or Custom; strength checked</text>
+<text x="46" y="230" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Expires in 30 days</text>
+<rect x="46" y="248" width="44" height="24" rx="12" fill="var(--color-brand-bg)" />
+<circle cx="78" cy="260" r="9" fill="var(--color-neutral-bg-1)" />
+<text x="102" y="266" font-size="17" fill="var(--color-neutral-fg-1)">Link · On</text>
+<rect x="300" y="248" width="44" height="24" rx="12" fill="var(--color-neutral-bg-3)" stroke="var(--color-neutral-stroke-1)" />
+<circle cx="312" cy="260" r="9" fill="var(--color-neutral-fg-2)" />
+<text x="356" y="266" font-size="17" fill="var(--color-neutral-fg-1)">Passcode · Off</text>
+<text x="46" y="308" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Include notes added later · Off</text>
 <rect id="fnshare-dialog__actions" x="24" y="348" width="594" height="112" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
-<text x="46" y="386" font-size="18" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__actions" data-slate-fit-padding="16">Share… · Copy link · Copy share information</text>
-<text x="46" y="430" font-size="16" fill="var(--color-neutral-fg-2)" data-slate-fit-target="fnshare-dialog__actions" data-slate-fit-padding="16">Copy access code appears when Passcode is on</text>
+<rect x="46" y="368" width="112" height="36" rx="8" fill="var(--color-brand-bg)" />
+<text x="66" y="392" font-size="17" font-weight="600" fill="var(--color-neutral-bg-1)">Share…</text>
+<rect x="172" y="368" width="424" height="36" rx="8" fill="none" stroke="var(--color-neutral-stroke-1)" />
+<text x="186" y="391" font-size="15" fill="var(--color-neutral-fg-1)">Copy link · Copy access code · Copy share information</text>
+<text x="46" y="438" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__actions" data-slate-fit-padding="16">No share sheet on this system → the primary reads Copy share information</text>
 <rect id="fnshare-dialog__history" x="24" y="480" width="594" height="56" rx="12" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
-<text x="46" y="514" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__history" data-slate-fit-padding="16">Shared before · disclosure, not another step</text>
+<text x="46" y="514" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__history" data-slate-fit-padding="16">Shared before · each share with Copy, Change…, Withdraw</text>
 </g>
 <g id="fnshare-dialog__review" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
 <path d="M618 104 H662" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
@@ -87,7 +95,7 @@ Use the sealed [Switch primitive](../system/components.md#switch) (DSY-15): labe
 
 Default **Link on**, **Passcode off**, **30 days**. At least one opening method stays on: trying to turn off the last shows **“Keep Link or Passcode on to share this item.”** A date in the past cannot generate; keep the draft and focus the date error. Never is explicit with **“This share keeps working until you withdraw it.”**
 
-Passcodes default to four random EFF words (about 52 bits). Keep the as-built custom strength guard (D-134: 16 or more characters or at least 3 distinct words, then strong rating), never weaken it because a share code exists. PBKDF2-SHA256 at 600,000 iterations and per-grant salt remain; public ciphertext allows unlimited offline guesses. The older SHR-07 12-character wording is a minimum, not a reason to lower the stronger built guard.
+Passcodes default to four random EFF words (about 52 bits). Keep the as-built custom strength guard (D-134: 16 or more characters or at least 3 distinct words, then strong rating), never weaken it because a share code exists. PBKDF2-SHA256 at 600,000 iterations and per-grant salt remain; public ciphertext allows unlimited offline guesses.
 
 ## Actions
 

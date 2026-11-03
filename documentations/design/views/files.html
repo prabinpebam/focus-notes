@@ -138,7 +138,7 @@
 <h2 data-reader-personas="design product">Renaming</h2>
 <ul>
   <li><kbd>F2</kbd> (Windows and Linux), <kbd>Enter</kbd> (macOS), ⋯ → Rename, or a slow second click on a selected row.</li>
-  <li><strong>Note:</strong> Rename title edits the H1 only. <strong>Rename file…</strong> edits the filename only, validates it and updates links atomically. For a published file show that its public path will change; do not promise a redirect until the deployment actually provides one. These are separate actions, never a hidden automatic coupling.</li>
+  <li><strong>Note:</strong> Rename title edits the H1 only. <strong>Rename file…</strong> edits the filename only, validates it and updates links atomically. For a published file say that its public address changes and the old one redirects: the site build writes a redirect page from a rename map (D-312). These are separate actions, never a hidden automatic coupling.</li>
   <li><strong>Folder:</strong> the field edits the folder name.</li>
   <li><kbd>Enter</kbd> saves and <kbd>Esc</kbd> cancels. Links to the note, or to anything in the folder, are updated in the same commit (FIL-09), and the toast says "Renamed to “Plans”. Updated links in 4 notes." with <strong>Undo</strong>. <a href="../../experience/files-and-sharing.md#links-that-follow">Links that follow</a> lists exactly what changes.</li>
 </ul>
@@ -174,9 +174,9 @@
   <thead><tr><th>Acted on</th><th>Items, in order</th></tr></thead>
   <tbody>
     <tr><td>A note</td><td>Open · Pin/Unpin · Share… · Open containing folder · Copy · Copy as path · Copy text · Rename title · Rename file… · Duplicate · Move to… · Publish… or Make private · Copy public link (public note) · Delete</td></tr>
-    <tr><td>A folder</td><td>New note · New note in… · New folder (Ctrl+Alt+N / ⌥⌘N) · Pin/Unpin · Share… · Import files… · Open in File Explorer (Finder / file manager) · Copy · Copy as path · Rename · Move to… · Make public or Make private · Delete</td></tr>
+    <tr><td>A folder</td><td>New note · New note in… · New folder (Ctrl+Alt+N / ⌥⌘N) · Pin/Unpin · Share… · Import files… · Open in File Explorer (Finder / file manager) · Copy · Copy as path · Rename · Move to… · Publish… or Make private · Delete</td></tr>
     <tr><td>A section (Private, Public)</td><td>New note · New folder · Import files… · Open in File Explorer (Finder, file manager) · Copy as path (all three desktop)</td></tr>
-    <tr><td>Several selected</td><td>Duplicate (only notes are copied) · Move to… · Copy · Copy as path (both desktop) · Make public or Make private · Delete, each acting on the selection</td></tr>
+    <tr><td>Several selected</td><td>Duplicate (only notes are copied) · Move to… · Copy · Copy as path (both desktop) · Publish… or Make private · Delete, each acting on the selection; no Share…, because a share starts from one note or folder (D-284)</td></tr>
   </tbody>
 </table>
 <p>Each item shows its shortcut. An unavailable item stays in the menu, reachable, with the reason under it ("Notes here can't be changed"); a read-only section offers only what can be done there: Open, Open containing folder or Open in File Explorer, the copies, and Copy public link on a public note. The file system's items (D-192), desktop only:</p>

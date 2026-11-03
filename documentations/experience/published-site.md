@@ -61,7 +61,7 @@ A section lists its child sections and direct articles. An article entry shows t
 
 Navigation uses semantic links and disclosures, not a writing-app FileTree with editing menus. Deep paths use breadcrumbs and expandable branches. Proposed scale bound: 50 direct entries per page with Next/Previous links and a stable page URL; never download/render an unbounded note body/tree to show home. Every public item stays reachable. Long titles wrap; sections with no published descendants are omitted unless explicitly published as an empty section, which says **No articles yet**.
 
-An unpublished local preview says **No published articles yet** with Return to notes, not an invitation to start a browser note. A missing public page shows **This page isn't available** and Home; a section/page load failure keeps its prior content with Retry, not an empty success state. No private item names appear in errors.
+A live site with nothing published (for example after Turn off sharing) shows the site name, the project mark or a 64 px illustration and **Nothing published yet**; the same empty state appears in an unpublished local preview, with Return to notes, never an invitation to start a browser note. Counts use plural rules: **1 article**, **12 articles**. A missing public page shows **This page isn't available** and Home; a section/page load failure keeps its prior content with Retry, not an empty success state. No private item names appear in errors.
 
 ## Reading controls
 
@@ -80,13 +80,17 @@ Public navigation never lists a share. The sealed reader uses these site typogra
 
 Settings → Project → **Preview site…**, ⋯ → Preview site… and Spotlight open IA-VIEW-SITEPREVIEW inside the project window, leaving its note and caret intact. The website preview is a separate read-only view, labelled **Unpublished preview**; Return to notes restores the exact note/caret. No browser writing surface, external server or remote upload is involved.
 
-1. Prepare the current project's **public** inventory and website renderer locally. With no site enabled, allow a synthetic sample or empty state; never choose real private notes as samples.
+1. Prepare the current project's **public** inventory and website renderer locally. With nothing published, show the empty state; **Show sample** swaps in synthetic sample pages, each marked with a **Sample** badge. Never choose real private notes as samples.
 2. Show Home / a section / an article with the exact production renderer, navigation, sanitized logo and desktop/narrow width choice. If entered from a prepared Publish action, the explicitly chosen prospective-public target may be included with **Not published**; do not include any other private content.
 3. Offer Site theme (Paper by default), approved bundled font families and default size presets from reading tokens. This reversible default is chosen, not an owner blocker. Live preview changes the local draft only, not personal app Appearance or another project's settings. No remote font URL, CSS, arbitrary script or third-party asset fetch.
 4. **Apply** atomically saves the validated site settings in the private project's `.focus-notes/site.json`; only allowlisted appearance fields/assets reach the public build. It does not publish or create a site/share. **Cancel**/Return with dirty settings offers Keep editing / Discard changes. Saved settings remain until an explicit Publish applies them to the live site.
 5. Saving/render failure keeps the last good preview and controls/draft with Retry. Missing/invalid fonts show the named bundled fallback, not an invisible page. Theme/size controls answer within a frame; slow rendering has one named wait and cannot eat input.
 
 Initial focus is the preview heading, then controls, navigation, content and Return to notes in ordinary Tab order. Escape returns when clean, or opens the dirty-settings choice. Pending save retains focus and the previous persisted values. Preview has no live credential-bearing navigation; Markdown links stay within the local public preview or open as explicit normal external links through the desktop's existing allowlist.
+
+## Site components
+
+The website extends the existing ReaderPage layout with site components specified with WP-P.14, read from the public index only: **SiteNav** (name, optional mark, top-level sections, Sections overflow), **SiteThemeChoice** (Light / Dark / System radio group), **SiteFocusToggle** (a checkbox with the switch role, shown only when scripts run), **SiteBreadcrumb**, **SiteSectionList** (ItemCard rows with a 48 px folder cue on the home page and a count badge) and **SitePager** (Next / Previous). A grouped control rounds only its outer corners.
 
 ## Design and future evidence
 
