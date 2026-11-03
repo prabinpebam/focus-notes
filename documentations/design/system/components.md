@@ -111,7 +111,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Field | layout | `rest`, `error` | 2 | None |
 | Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
-| ProjectScope | layout | `rest` | 34 | None |
+| ProjectScope | layout | `rest` | 33 | None |
 | ReaderPage | layout | `rest` | 1 | None |
 | PrintPage | layout | `rest` | 2 | None |
 | SitePage | layout | `rest` | 3 | None |
@@ -272,7 +272,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Center** | Implemented | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |
 | **Split** | Planned | Two panes, optionally resizable | `start` and `end` sizes (tokens), `resizable`, `collapseBelow` (a size class) |
 | **Spacer** | Planned | Takes the remaining space in a Stack or Inline | None |
-| **ProjectScope** | Implemented | A project's accent, colour theme and writing font over a subtree (D-313, D-316): token scopes on the semantic roles, so several project looks or a live preview can sit side by side | `accent` 12 presets or app; `theme` any app theme or app (Follow app); `font` any writing font or app; `part` window, band (the tinted title band and Files heading), plain |
+| **ProjectScope** | Implemented | A project's accent, colour theme and writing font over a subtree (D-313, D-316): token scopes on the semantic roles, so several project looks or a live preview can sit side by side | `accent` 12 presets or app; `theme` any app theme or app (Follow app); `font` any writing font or app; `part` window (the subtle colour outline) or plain; never a tinted title bar (D-324) |
 | **Surface** | Implemented | The only way to get a background, border, radius, or shadow | `variant` canvas, frost, raised, sunken, inverted. `shape` window, sheet, popover, control. `padding` |
 | **ScrollArea** | Planned | Scrolling with consistent scrollbars and edge fades | `axis`, `fade` |
 | **Layer** | Implemented | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark, and put the desktop title bar band under its content: the window's top `layout.titleBar` (44 px), the drag region, which its own content (the trigger) never is (DSK-02, D-106) | `layer`, `position` (topBand, topEnd (the window controls, in the 44 px band, D-104, D-106), belowTopBand, fill, center, bottomCenter, bottomStart), `landmark` (none, banner, main, complementary, region) with `label` (main: the first run's card, while no note shows, D-101), `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |

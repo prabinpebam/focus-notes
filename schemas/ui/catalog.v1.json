@@ -4222,7 +4222,7 @@
     {
       "type": "ProjectScope",
       "tier": "layout",
-      "description": "A project's look over what it holds (D-313, D-316): its accent as a modifier on the semantic accent roles, its own colour theme and writing font when it has them. In the app it's the whole window; in the gallery, several windows side by side or a live preview. The band part is the tinted title band and the Files heading.",
+      "description": "A project's look over what it holds (D-313, D-316): its accent as a modifier on the semantic accent roles, its own colour theme and writing font when it has them. In the app it's the whole window; in the gallery, several windows side by side or a live preview. It never tints a title bar, a dialog or a heading (D-324).",
       "props": {
         "accent": {
           "kind": "enum",
@@ -4280,11 +4280,10 @@
           "kind": "enum",
           "values": [
             "window",
-            "band",
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it, clipped to the window's shape. band: the accent's tint (the title band, the Files heading). plain: only the scope."
+          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
         },
         "grow": {
           "kind": "boolean",
@@ -4306,7 +4305,6 @@
       },
       "fixtures": [
         "part window",
-        "part band",
         "part plain",
         "accent red",
         "accent orange",

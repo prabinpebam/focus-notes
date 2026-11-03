@@ -1,5 +1,4 @@
 { "cmp": { "projectScope": {
-  "band": { "$type": "color", "$value": "{color.accentMuted}", "$description": "The title band's tint: the project's accent (D-313), so two windows differ at a glance." },
   "background": { "$type": "color", "$value": "{color.canvas}" },
   "text": { "$type": "color", "$value": "{color.text}" },
   "border": { "$type": "color", "$value": "{color.accentMuted}", "$description": "A subtle outline in the project's accent around the whole window (D-317): a full outline, never a stripe." },
