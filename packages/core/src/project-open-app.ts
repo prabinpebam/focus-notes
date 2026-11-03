@@ -40,7 +40,7 @@ export function registerProjectOpen(ctx: {
   });
   commands.register({id: "local.importClose", title: "project.cancel", enabled: () => !localImport.pending, run: () => {localImport.open = false; changed();}});
   commands.register<{id: string}>({
-    id: "local.copyTo", title: "quick.import.button", enabled: () => !localImport.pending,
+    id: "local.copyTo", title: "quick.import.button", enabled: () => localImport.open && !localImport.pending,
     run: async ({id}) => {
       localImport.pending = true; localImport.error = ""; changed();
       try {
