@@ -404,8 +404,8 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.2 | Write at caret | RWR-92 | WP-AI.14 | code, security, design-system |
 | WP-P.3 | Title and file name apart | FIL-18 | WP-2.3 | code |
 | WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
-| WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13 | WP-P.4 | security, design-system, accessibility |
-| WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07 | WP-P.4, WP-P.3 | code, design-system, accessibility |
+| WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13, PRJ-18, PRJ-19 | WP-P.4 | security, design-system, accessibility |
+| WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07, FIL-19 | WP-P.4, WP-P.3 | code, design-system, accessibility |
 | WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
 | WP-P.8 | Local notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
 | WP-P.9 | Item-first share dialog | SHR-13, SHR-14, SHR-15, SHR-16 | WP-5.3, WP-P.16 | code, security, design-system, accessibility |
@@ -441,7 +441,7 @@ These are independently reviewable slices; lookahead permits design without unre
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-9.3 | **Managed image assets.** Relative/root-owned files, local sidecars, atomic copy/move/recovery. | IMG-05 | WP-2.3 | code, security |
-| WP-9.1 | **Inline image block and actions.** Drop/picker, three modes, remembered/bulk switches, clipboard/replace/export and portable shared renderer. | EXT-03, IMG-01, IMG-02, IMG-03, IMG-04, IMG-10 | WP-1.1, WP-9.3 | code, design-system, accessibility |
+| WP-9.1 | **Inline image block and actions.** Drop/picker, three modes, remembered/bulk switches, clipboard/replace/export and portable shared renderer. | EXT-03, IMG-01, IMG-02, IMG-03, IMG-04, IMG-10, IMG-11 | WP-1.1, WP-9.3 | code, design-system, accessibility |
 | WP-9.4 | **Crop and rotate.** Preview dialog, keyboard crop, explicit destructive atomic save and conditional Git recovery. | IMG-07, IMG-08 | WP-9.1 | code, security, design-system, accessibility |
 | WP-9.5 | **Optional captions.** Existing image-capable integration, image-only payload and reviewed plain-text caption. | IMG-09 | WP-9.1, WP-AI.14 | code, security, design-system, accessibility |
 | WP-9.2 | **Gallery block**. A gallery block registration. | EXT-04 | WP-9.1 | code, design-system, accessibility |

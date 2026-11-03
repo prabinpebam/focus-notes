@@ -105,7 +105,7 @@ Pasting and dropping text work the same way (EDT-09, SEC-02):
 
 ### Planned inline images
 
-The owner's [3 November image source, flows and figures](images.md) now details EXT-03: drop/picker insertion, Column/Wide/Actual size, remembered Rounded/Fit height options, mixed-selection toggles, image actions, optional AI caption and destructive crop/rotate preview. An image is an inline-flow media block; no float or second canvas.
+The owner's [3 November image source, flows and figures](images.md) now details EXT-03: drop/picker insertion, Column/Wide/Actual size, remembered Rounded/Limit height options, mixed-selection toggles, image actions, optional AI caption and destructive crop/rotate preview. An image is an inline-flow media block; no float or second canvas.
 
 The paste/import statements above describe the current build. Shipping the image slice adds explicit local file-drop/picker and same-app rich-image copy paths, not automatic remote HTML image downloading. HTML/Word import remains image-free under FIL-15 until separately expanded; alt text and explicit omission feedback remain. Existing Markdown images/unsupported table cells are preserved, not silently rewritten.
 

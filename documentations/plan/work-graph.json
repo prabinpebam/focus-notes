@@ -129,15 +129,15 @@
     },
     {
       "id": "WP-P.5", "stage": "MP", "title": "Recognizable project windows",
-      "summary": "Project name, token accents, preset/uploaded passive SVG logos, badge/watermark/off; no colour-only identity or raw-upload rendering.",
-      "requirements": ["PRJ-04", "PRJ-13"], "dependsOn": ["WP-P.4"],
+      "summary": "Window identity only as the colour outline, the project pill after Backed up and the optional watermark; Settings → Project with Font and Theme tiles and popovers reusing the app's tiles; the local-drive pill outside projects; passive SVG logos, no raw-upload rendering (mocks approved, owner 3 November 19:39).",
+      "requirements": ["PRJ-04", "PRJ-13", "PRJ-18", "PRJ-19"], "dependsOn": ["WP-P.4"],
       "touches": ["desktop", "core", "ui", "views", "tokens", "schemas"], "reviews": ["security", "design-system", "accessibility"],
       "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-P.6", "stage": "MP", "title": "Projects, recent and pins",
       "summary": "Projects list, recent files with location and stable shortcuts to projects, folders and notes.",
-      "requirements": ["PRJ-05", "PRJ-06", "PRJ-07"], "dependsOn": ["WP-P.4", "WP-P.3"],
+      "requirements": ["PRJ-05", "PRJ-06", "PRJ-07", "FIL-19"], "dependsOn": ["WP-P.4", "WP-P.3"],
       "touches": ["core", "views", "schemas"], "reviews": ["code", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "design/views/files.html"], "lookahead": true, "status": "planned"
     },
@@ -2699,7 +2699,7 @@
       "title": "Image block",
       "summary": "Registered inline-flow image insertion, Column/Wide/Actual geometry, remembered and mixed-selection switches, safe menu/clipboard/replace/export, lossless attributes and shared accessible rendering. JSON design review before runtime.",
       "requirements": [
-        "EXT-03", "IMG-01", "IMG-02", "IMG-03", "IMG-04", "IMG-10"
+        "EXT-03", "IMG-01", "IMG-02", "IMG-03", "IMG-04", "IMG-10", "IMG-11"
       ],
       "dependsOn": [
         "WP-1.1", "WP-9.3"

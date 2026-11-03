@@ -43,7 +43,7 @@ What could make Focus Notes fail, how likely and how bad each risk is, and what 
 
 ## Image risks and assumptions
 
-The [image source/experience](../experience/images.md) is owner-requested; formats, bounds and positive Fit height wording are reversible design choices, not proven usability or performance.
+The [image source/experience](../experience/images.md) is owner-requested; formats, bounds and positive Limit height wording are reversible design choices, not proven usability or performance.
 
 | ID | Risk | Likelihood | Impact | Mitigation and criterion | Checked in |
 | --- | --- | --- | --- | --- | --- |
@@ -55,7 +55,7 @@ The [image source/experience](../experience/images.md) is owner-requested; forma
 
 | Assumption | Kind / impact / evidence | Criterion and cheapest future check | Decision changed by failure |
 | --- | --- | --- | --- |
-| A-IMG-01: positive Fit height and three modes explain tall/small images. | Usability / medium / source has conflicting default wording | Owner chooses the requested tall and small result from three JSON-view examples without explaining the double negative. | Adjust wording/default/geometry, not ask for an irreversible decision |
+| A-IMG-01: positive Limit height and three modes explain tall/small images. | Usability / medium / source has conflicting default wording | Owner chooses the requested tall and small result from three JSON-view examples without explaining the double negative. | Adjust wording/default/geometry, not ask for an irreversible decision |
 | A-IMG-02: chosen existing integrations expose reliable image capability. | Feasibility / high / text integrations exist; vision not proven here | Supported protocol fake accepts one raster/instruction; incapable integration refuses without a request/fallback. | Narrow caption availability and keep manual captions |
 | A-IMG-03: bounded decode/encode is viable within current desktop budgets. | Feasibility/viability / high / no image measurement yet | After approval, observe one cap-sized synthetic image and malformed input in isolated worker, compare existing budgets; no full benchmark before a design review. | Lower reversible limits/downsample more, never block UI or add a model |
 

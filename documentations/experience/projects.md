@@ -5,6 +5,9 @@ Separate places for separate work, without making every thought choose a project
 > [!NOTE]
 > **TL;DR.** A project is one private GitHub repository, opened in its own window. Its files, search, history, people and commits never mix with another project's. Open several; identify them by name, colour and logo. Pin projects and folders, return to recent files with their place, jot in local Local notes, or open a file on its own. A project starts **Private only**; its first share explains the public site before creating anything. This is a **planned specification**, not the current build. Source: [the owner's nested notes](../plan/next-direction.md), decisions D-272 to D-293.
 
+> [!NOTE]
+> **Design approved (owner, 3 November 2026, 19:39): "The UI and UX looks good."** The mocks' exact words are in the branch's `packages/views/messages/en.json` (keys `project.`, `quick.`, `newNote.`, `migrate.`, `recent.`, `pin.`; `*.mock.*` keys are gallery chrome, not product copy). Mocks 1 to 8 in the gallery at <http://127.0.0.1:5211>, branch `vq-project-mocks`, are the approved design for: Launch and the Open view, New project, window identity (outline, pill, watermark) and Settings → Project with its Font and Theme tiles, Files (pinned and recent), New note in…, names and titles, Local notes and a file on its own with the local-drive pill, Meeting Project for the first time, and Rewrite and Spotlight. Not covered by this approval and still specification only: [Private only until the first share](#private-only-until-the-first-share) and [People in a project](#people-in-a-project) (reviewed with the sharing mocks), the frecency ranking and pin sync rules (not visible in a mock), and the waits and failure states in [States, waits and accessibility](#states-waits-and-accessibility) that no mock shows.
+
 ## What a project is for
 
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
@@ -70,6 +73,8 @@ No automatic tour, forced sign-in or new modal for upgrading. A read-only/offlin
 ## Launch
 
 **Starting Focus Notes opens the note you were last editing** (owner, 3 November; D-318): its project's window, the note, its caret and its scroll, with no Projects or Open screen first. With several windows open, the **last project and file closed** count as the last edited, because the last window closed held the last word. Quitting the app with several open reopens all of them (PRJ-02), and the last one closed comes forward. A Local note or a file on its own counts the same way. If the note was deleted or moved outside Focus Notes, its project opens on the missing-file recovery; it never makes an empty note. With nothing to reopen (first run, or every window closed with nothing ever written), the Open view fills the window.
+
+In the approved mock the missing-note recovery reads **“⟨Chapter 1⟩ isn't in ⟨Book⟩ any more. It may have been moved or deleted outside Focus Notes.”** with **Find it…** and **Recently deleted**; nothing new is created.
 
 ## The Open view
 
@@ -219,6 +224,8 @@ Pinning a file in Open never pins it in its project's Files, and the other way r
 New notes autosave with the ordinary journal and appear in Recent. A failed write keeps the dirty text in recovery and says **“Couldn't save this local note. Choose another folder or try again.”** No success state until disk confirms. Later **Import into project…** chooses a project/folder and copies the note; keep the local original until the person explicitly deletes it. A folder missing at launch uses recovery, never a silently empty replacement.
 
 **Delete/restore without Git (D-298):** before an explicitly requested delete, keep a durable local recoverable copy with its identity/path/time. Failed retention means no delete and a Retry error. Undo/Recently deleted survive restart; no bespoke 30-day retention gate or timed purge. Restore uses the original folder, otherwise Local notes root; number taken names, never overwrite. Confirm folders/counts as in Files. Recovery is not remote backup. Standalone windows have no Delete file; externally missing files keep journals and need an explicit restore/save destination.
+
+In the approved mock (mock 6) a Local notes window is its list, headed **Local notes** in the title role, beside the open note with its ⋯ menu, and the local-drive pill at the bottom. A failed save shows the error with **Choose folder…** and **Try again**; **Import into project…** is in the note's ⋯ menu and opens a dialog listing where to copy it.
 
 ## A file on its own
 
