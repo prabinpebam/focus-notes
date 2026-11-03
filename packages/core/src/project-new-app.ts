@@ -33,7 +33,10 @@ export function registerProjectNew(ctx: {
       finally { state.pending = false; changed(); }
     },
   });
-  commands.register({ id: "projects.newClose", title: "project.cancel", enabled: () => !state.pending, run: () => { state.open = false; revision++; changed(); } });
+  commands.register({ id: "projects.newClose", title: "project.cancel", enabled: () => !state.pending, run: async () => {
+    state.open = false; revision++; changed();
+    if (!store.state.note.path) await commands.run("projects.open");
+  } });
   commands.register({ id: "projects.newBack", title: "project.back", enabled: () => !state.pending && state.step > 1, run: () => { state.step--; changed(); } });
   commands.register({
     id: "projects.newNext", title: "project.next", enabled: () => !state.pending && Boolean(state.name.trim()) && !state.problem,

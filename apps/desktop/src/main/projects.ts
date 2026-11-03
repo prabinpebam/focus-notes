@@ -1,7 +1,7 @@
-import { app, dialog } from "electron";
+import { app, dialog, safeStorage } from "electron";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { access, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -10,11 +10,47 @@ import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { parseRecord } from "./workspace/record.ts";
 
-export function projectWindows(home: () => string) {
+function missing(error: unknown) {
+  return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
+}
+
+export function resumeProjectProfile(root: string): { profile: string; folder: string } | undefined {
+  try {
+    const record = JSON.parse(readFileSync(join(root, DATA_FILES.lastProject), "utf8")) as { profile?: unknown };
+    if (typeof record.profile !== "string") throw new Error("Invalid saved project.");
+    const profile = resolve(record.profile);
+    if (profile === resolve(root)) return;
+    if (dirname(profile) !== resolve(root, DATA_FOLDERS.projectProfiles)) throw new Error("Invalid saved project profile.");
+    const folder = readFileSync(join(profile, DATA_FILES.projectFolder), "utf8").trim();
+    if (!isAbsolute(folder) || !existsSync(folder)) throw new Error("Saved project folder is unavailable.");
+    return { profile, folder };
+  } catch (error) {
+    if (!missing(error)) console.error("Could not restore the last project.");
+    return;
+  }
+}
+
+export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>) {
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
   const known = new Map<string, string>();
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
+  const lastNoteFile = join(app.getPath("userData"), DATA_FILES.projectLastNote);
+  async function lastNote(): Promise<string | undefined> {
+    let encrypted: string;
+    try { encrypted = await readFile(lastNoteFile, "utf8"); }
+    catch (error) { if (missing(error)) return; throw error; }
+    if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
+    return safeStorage.decryptString(Buffer.from(encrypted, "base64"));
+  }
+  async function remember(path: string) {
+    if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
+    if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
+    await atomicWrite(lastNoteFile, safeStorage.encryptString(path).toString("base64"));
+  }
+  async function closed() {
+    await atomicWrite(join(rootProfile, DATA_FILES.lastProject), `${JSON.stringify({ profile: app.getPath("userData") })}\n`);
+  }
   async function state(profile: string): Promise<AppStateFile> {
     try {
       return JSON.parse(await readFile(join(profile, DATA_FILES.state), "utf8"));
@@ -122,5 +158,5 @@ export function projectWindows(home: () => string) {
     }), { flag: "wx" });
     return folder;
   }
-  return { list, open, choose, parent: async () => dirname(home()), chooseParent, check, create };
+  return { list, open, choose, parent: async () => dirname(home()), chooseParent, check, create, lastNote, remember, closed };
 }

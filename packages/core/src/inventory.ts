@@ -25,6 +25,8 @@ export const DATA_FILES = {
   state: "state.json",
   /** Local project preview's folder pointer; no note text or credentials. */
   projectFolder: "project-folder.txt",
+  projectLastNote: "last-project-note.dat",
+  lastProject: "last-project.json",
   /** The workspace folder the first run opened. */
   workspace: "workspace.json",
   /** A name and email for only the notes workspace, until the workspace has them. */
@@ -93,6 +95,8 @@ export interface InventoryItem {
 export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "deviceSettings", path: DATA_FILES.state, removedBy: ["deleteDataFolder"] },
   { id: "projectFolder", path: DATA_FILES.projectFolder, removedBy: ["deleteDataFolder"] },
+  { id: "projectLastNote", path: DATA_FILES.projectLastNote, removedBy: ["deleteDataFolder"] },
+  { id: "lastProject", path: DATA_FILES.lastProject, removedBy: ["deleteDataFolder"] },
   { id: "projectProfiles", path: `${DATA_FOLDERS.projectProfiles}/`, removedBy: ["deleteDataFolder"] },
   { id: "recentItems", path: `${DATA_FILES.state}#lastNotePath`, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "workspaceFolder", path: DATA_FILES.workspace, removedBy: ["removeWorkspace", "deleteDataFolder"] },

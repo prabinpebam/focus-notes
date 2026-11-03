@@ -5851,6 +5851,7 @@
       "viewModels": [
         "vm.app",
         "vm.project",
+        "vm.projects",
         "vm.canvas",
         "vm.toolbar",
         "vm.shortcuts",

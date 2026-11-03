@@ -587,6 +587,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       drafts.opened(path, md);
       // A private note's name is private: it's never written to this browser's storage (D-90).
       if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
+      if (bridge.projects) {
+        try { await bridge.projects.remember(path); }
+        catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
+      }
       return true;
     } catch {
       setNote({ status: "error" });
@@ -1629,7 +1633,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // else the app's own note, in the Private root (D-171, SHR-01).
         const folder = store.state.workspace.folder;
         // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
-        const last = bridge.windows?.initialNote ?? appState.lastNotePath;
+        let remembered: string | undefined;
+        if (bridge.projects && !bridge.windows?.initialNote) {
+          try { remembered = await bridge.projects.lastNote(); }
+          catch { toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
+        }
+        const last = bridge.windows?.initialNote ?? remembered ?? appState.lastNotePath;
         const reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
         if (!reopened && bridge.projects) await projects.start();
         else if (!reopened) await load(await bridge.defaultNotePath());

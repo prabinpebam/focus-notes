@@ -20,7 +20,7 @@ import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { spawn } from "node:child_process";
-import { projectWindows } from "./projects.ts";
+import { projectWindows, resumeProjectProfile } from "./projects.ts";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -87,6 +87,15 @@ const frameKind = frameKindFor(platform, process.argv, process.env);
 let windowFrame: AppWindowFrame | undefined;
 
 if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
+if (!process.env.FOCUS_NOTES_PROJECTS_PROFILE && !process.env.FOCUS_NOTES_PROJECT_NOTE) {
+  const rootProfile = app.getPath("userData");
+  const resume = resumeProjectProfile(rootProfile);
+  if (resume) {
+    process.env.FOCUS_NOTES_PROJECTS_PROFILE = rootProfile;
+    process.env.FOCUS_NOTES_DOCS = resume.folder;
+    app.setPath("userData", resume.profile);
+  }
+}
 /** A file in the app's data folder: only those the data inventory names (PRV-02). */
 const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
 // Chromium's working files go in one folder of the data folder, which the inventory lists as one item.
@@ -1198,6 +1207,7 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
+let rememberClosedProject: (() => Promise<void>) | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
   const imagePath = async (note: unknown, src: unknown) => {
     if (typeof src !== "string" || /^[a-z][a-z\d+.-]*:/i.test(src) || isAbsolute(src)) throw new Error("invalid-image");
@@ -1232,8 +1242,16 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       await rename(temp, path);
     } finally { await rm(temp, { force: true }); }
   });
-  const projects = projectWindows(notesHome);
+  const projects = projectWindows(notesHome, async (path, content) => {
+    if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
+  });
+  rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
+  handle("projects:lastNote", () => process.env.FOCUS_NOTES_PROJECT_NOTE || projects.lastNote());
+  handle("projects:remember", (path: unknown) => {
+    if (typeof path !== "string") throw new Error("Invalid recent note");
+    return projects.remember(path);
+  });
   handle("projects:choose", () => projects.choose());
   handle("projects:parent", () => projects.parent());
   handle("projects:chooseParent", (parent: unknown) => {
@@ -2586,10 +2604,11 @@ app.on("window-all-closed", () => {
 // then commits and pushes (D-23) and releases the workspace's lock.
 let gitQuit = false;
 let draftsSettled = false;
+let projectRemembered = false;
 const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
   osSpelling?.dispose();
-  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (draftsSettled || !drafts)) return;
+  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (draftsSettled || !drafts) && projectRemembered) return;
   e.preventDefault();
   void Promise.allSettled([...writeQueues.values()])
     .then(async () => {
@@ -2603,6 +2622,13 @@ app.on("will-quit", (e) => {
     .then(async () => {
       if (!draftsSettled) await drafts?.settled().catch(() => {});
       draftsSettled = true;
+    })
+    .then(async () => {
+      if (!projectRemembered) {
+        try { await rememberClosedProject?.(); }
+        catch { console.error("Could not remember the last project."); }
+        projectRemembered = true;
+      }
     })
     .then(() => app.quit());
 });

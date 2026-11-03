@@ -9,7 +9,7 @@
     "type": "Stack",
     "children": [{
     "type": "Dialog",
-    "when": { "get": "vm.projects.open" },
+    "when": { "get": "vm.projects.dialog" },
     "props": { "title": { "t": "project.open.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.projects.open" }, "size": "xl", "height": "content" },
     "on": { "openChange": { "run": "projects.close" } },
     "children": [{
