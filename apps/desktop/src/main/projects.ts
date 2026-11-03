@@ -7,7 +7,7 @@ import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { AppStateFile, ProjectEntry } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
-import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
+import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { parseRecord } from "./workspace/record.ts";
 
 function missing(error: unknown) {
@@ -156,6 +156,15 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (canonical === await realpath(home()) && !note) return;
     // One process and single-instance lock per project keep all existing workspace services scoped.
     if (profile === app.getPath("userData") && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
+    const localState = join(profile, CHROMIUM_FOLDERS.session, "Local State");
+    if (process.platform === "win32" && profile !== rootProfile && !existsSync(localState)) {
+      // New profiles share the OS-protected key so Open can read their encrypted ranking.
+      // Never replace an existing profile's key or its protected data.
+      const root = JSON.parse(await readFile(join(rootProfile, CHROMIUM_FOLDERS.session, "Local State"), "utf8")) as { os_crypt?: { encrypted_key?: unknown } };
+      if (typeof root.os_crypt?.encrypted_key !== "string") throw new Error("Protected project storage is unavailable.");
+      await mkdir(dirname(localState), { recursive: true });
+      await writeFile(localState, JSON.stringify({ os_crypt: { encrypted_key: root.os_crypt.encrypted_key } }), { flag: "wx" });
+    }
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(note ? ["--project-note", note] : [])];
     const child = spawn(process.execPath, args, {
       env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", ...(note ? { FOCUS_NOTES_PROJECT_NOTE: note } : { FOCUS_NOTES_PROJECT_NOTE: "" }) },
