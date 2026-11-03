@@ -46,6 +46,7 @@ export const contract = defineContract({
     imageEditError: {},
     change: { payload: { value: "text" } },
     ready: {},
+    position: { payload: { key: "text", from: "number", to: "number", scroll: "number" } },
     findResult: { payload: { count: "number", current: "number", invalid: "boolean", wrapped: "boolean", replaced: "number" } },
     findPrefill: { payload: { value: "text" } },
     findScope: { payload: { scoped: "boolean" } },

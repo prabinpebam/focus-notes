@@ -552,6 +552,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
 
   let opening: number | undefined;
+  type NotePosition = { key: string; from: number; to: number; scroll: number };
+  let notePosition: NotePosition | undefined;
+  let restorePosition: NotePosition | undefined;
   const slashed = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
   /** Whether a path is in the workspace's Public root (`notes/`). */
   const publicInWorkspace = (path: string, folder: string) => slashed(path).startsWith(`${slashed(folder)}/notes/`);
@@ -577,7 +580,18 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     try {
       const md = await bridge.readNote(path);
       if (opts.accept && !opts.accept(md)) return false;
-      setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
+      const key = `${path}#${Date.now()}`;
+      if (bridge.projects) {
+        try {
+          const position = await bridge.projects.position(path);
+          restorePosition = position ? { ...position, key } : undefined;
+        } catch {
+          restorePosition = undefined;
+          toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+        }
+      }
+      notePosition = undefined;
+      setNote({ path, key, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.sawOnDisk(path, md);
       workspace.loaded(path, md);
       visited(path);
@@ -600,8 +614,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   /** Writes any unsaved or previously failed change now. Resolves to whether the note is saved. */
   async function flush(): Promise<boolean> {
+    editorAction(FLUSH_EDITOR);
     if (saveTimer || store.state.note.saveState === "unsaved" || store.state.note.saveState === "error") saving = saving.then(writeNow);
     await saving;
+    const path = store.state.note.path;
+    if (bridge.projects && path && notePosition?.key === store.state.note.key) {
+      try { await bridge.projects.remember(path, notePosition); }
+      catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
+    }
     // Text that can't be written without overwriting the other version asks for a choice instead.
     if (conflicts.holds(store.state.note.path) && store.state.note.saveState !== "saved") {
       conflicts.offer(store.state.note.path);
@@ -1084,6 +1104,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     });
   }
 
+  commands.register<NotePosition>({
+    id: "note.position", title: "command.app.ready",
+    run: (position) => {
+      if (position.key === store.state.note.key) notePosition = position;
+    },
+  });
   commands.register({
     id: "app.ready",
     title: "command.app.ready",
@@ -1096,6 +1122,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The caret is ready: the warm-up may begin (PRF-10).
       warmUp.start();
       drafts.editorReady();
+      const position = restorePosition;
+      restorePosition = undefined;
+      if (position) afterPaint(() => editorAction("note.restorePosition", position));
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;

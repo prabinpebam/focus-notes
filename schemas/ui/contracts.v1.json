@@ -13476,6 +13476,14 @@
           }
         },
         "ready": {},
+        "position": {
+          "payload": {
+            "key": "text",
+            "from": "number",
+            "to": "number",
+            "scroll": "number"
+          }
+        },
         "findResult": {
           "payload": {
             "count": "number",

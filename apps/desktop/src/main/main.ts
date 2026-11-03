@@ -1248,9 +1248,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
   handle("projects:lastNote", () => process.env.FOCUS_NOTES_PROJECT_NOTE || projects.lastNote());
-  handle("projects:remember", (path: unknown) => {
+  handle("projects:position", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");
-    return projects.remember(path);
+    return projects.position(path);
+  });
+  handle("projects:remember", (path: unknown, position: unknown) => {
+    if (typeof path !== "string") throw new Error("Invalid recent note");
+    if (position === undefined) return projects.remember(path);
+    if (!position || typeof position !== "object" || !("from" in position) || !("to" in position) || !("scroll" in position)
+      || typeof position.from !== "number" || !Number.isInteger(position.from) || position.from < 0
+      || typeof position.to !== "number" || !Number.isInteger(position.to) || position.to < 0
+      || typeof position.scroll !== "number" || !Number.isFinite(position.scroll) || position.scroll < 0) throw new Error("Invalid note position");
+    return projects.remember(path, { from: position.from, to: position.to, scroll: position.scroll });
   });
   handle("projects:choose", () => projects.choose());
   handle("projects:parent", () => projects.parent());
