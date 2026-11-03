@@ -498,6 +498,15 @@
       "group": "Architecture"
     },
     {
+      "path": "plan/next-direction.md",
+      "title": "Next direction: projects and sharing",
+      "order": 499,
+      "icon": "explore",
+      "status": "draft",
+      "updated": "2026-11-03",
+      "group": "Plan"
+    },
+    {
       "path": "plan/roadmap.md",
       "title": "Roadmap",
       "order": 500,
