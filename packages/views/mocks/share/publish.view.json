@@ -1,5 +1,5 @@
 {
- "focus": "page",
+ "focus": "preview",
  "local": {
   "kind": "note",
   "open": "",
@@ -15,495 +15,13 @@
   "applied": false
  },
  "root": {
-  "switch": {
-   "get": "local.preview"
+  "type": "Stack",
+  "id": "preview",
+  "props": {
+   "gap": "none"
   },
-  "cases": {
-   "false": {
-    "type": "AppRoot",
-    "props": {
-     "scheme": "light",
-     "platform": {
-      "get": "vm.app.platform"
-     }
-    },
-    "children": [
-     {
-      "type": "Stack",
-      "id": "page",
-      "props": {
-       "gap": "l",
-       "padding": "xl"
-      },
-      "children": [
-       {
-        "type": "Surface",
-        "props": {
-         "variant": "sunken",
-         "shape": "control",
-         "padding": "m"
-        },
-        "children": [
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "m"
-          },
-          "children": [
-           {
-            "type": "Inline",
-            "props": {
-             "justify": "between",
-             "align": "center",
-             "wrap": true,
-             "gap": "m"
-            },
-            "children": [
-             {
-              "type": "Text",
-              "props": {
-               "value": {
-                "t": "share.mock.publishBar"
-               },
-               "role": "emphasis"
-              }
-             },
-             {
-              "type": "Button",
-              "props": {
-               "label": {
-                "t": "share.mock.allMocks"
-               },
-               "variant": "subtle",
-               "size": "s",
-               "icon": "chevronLeft"
-              },
-              "on": {
-               "press": {
-                "run": "gallery.open",
-                "args": {
-                 "id": "index"
-                }
-               }
-              }
-             }
-            ]
-           },
-           {
-            "type": "SegmentedControl",
-            "props": {
-             "label": {
-              "t": "share.mock.publishing"
-             },
-             "options": {
-              "get": "vm.mockShare.itemOptions"
-             },
-             "value": {
-              "bind": "local.kind"
-             }
-            }
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "Surface",
-        "props": {
-         "variant": "raised",
-         "shape": "control",
-         "padding": "l"
-        },
-        "children": [
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "m"
-          },
-          "children": [
-           {
-            "type": "Inline",
-            "props": {
-             "justify": "between",
-             "align": "center",
-             "wrap": true,
-             "gap": "m"
-            },
-            "children": [
-             {
-              "type": "Heading",
-              "props": {
-               "level": "1",
-               "value": {
-                "t": "publish.name",
-                "args": {
-                 "kind": {
-                  "get": "local.kind"
-                 }
-                }
-               }
-              }
-             },
-             {
-              "type": "Inline",
-              "props": {
-               "gap": "s",
-               "wrap": true
-              },
-              "children": [
-               {
-                "type": "Button",
-                "props": {
-                 "label": {
-                  "t": "site.preview.open"
-                 },
-                 "icon": "globe"
-                },
-                "on": {
-                 "press": [
-                  {
-                   "set": "local.sitePage",
-                   "to": "home"
-                  },
-                  {
-                   "set": "local.preview",
-                   "to": true
-                  }
-                 ]
-                }
-               },
-               {
-                "type": "Button",
-                "props": {
-                 "label": {
-                  "t": "publish.open"
-                 },
-                 "variant": "primary"
-                },
-                "on": {
-                 "press": [
-                  {
-                   "set": "local.status",
-                   "to": ""
-                  },
-                  {
-                   "set": "local.open",
-                   "to": "confirm"
-                  }
-                 ]
-                }
-               }
-              ]
-             }
-            ]
-           },
-           {
-            "type": "Text",
-            "props": {
-             "value": {
-              "t": "share.mock.publishHint"
-             },
-             "tone": "muted"
-            }
-           },
-           {
-            "type": "Inline",
-            "when": {
-             "expr": {
-              "==": [
-               {
-                "get": "local.status"
-               },
-               "publishing"
-              ]
-             }
-            },
-            "props": {
-             "gap": "s",
-             "align": "center",
-             "wrap": true
-            },
-            "children": [
-             {
-              "type": "Spinner",
-              "props": {
-               "label": {
-                "t": "publish.working",
-                "args": {
-                 "kind": {
-                  "get": "local.kind"
-                 }
-                }
-               },
-               "size": "s"
-              }
-             },
-             {
-              "type": "Text",
-              "props": {
-               "value": {
-                "t": "publish.working",
-                "args": {
-                 "kind": {
-                  "get": "local.kind"
-                 }
-                }
-               },
-               "role": "secondary",
-               "announce": true
-              }
-             },
-             {
-              "type": "Button",
-              "props": {
-               "label": {
-                "t": "share.mock.finish"
-               },
-               "variant": "subtle",
-               "size": "s"
-              },
-              "on": {
-               "press": {
-                "set": "local.status",
-                "to": "done"
-               }
-              }
-             }
-            ]
-           },
-           {
-            "type": "StatusRow",
-            "when": {
-             "expr": {
-              "==": [
-               {
-                "get": "local.status"
-               },
-               "done"
-              ]
-             }
-            },
-            "props": {
-             "message": {
-              "t": "publish.done",
-              "args": {
-               "kind": {
-                "get": "local.kind"
-               }
-              }
-             },
-             "tone": "success",
-             "icon": "check"
-            }
-           },
-           {
-            "type": "StatusRow",
-            "when": {
-             "get": "local.applied"
-            },
-            "props": {
-             "message": {
-              "t": "site.preview.applied"
-             },
-             "tone": "success",
-             "icon": "check"
-            }
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "Dialog",
-        "id": "publishDialog",
-        "when": {
-         "expr": {
-          "==": [
-           {
-            "get": "local.open"
-           },
-           "confirm"
-          ]
-         }
-        },
-        "props": {
-         "title": {
-          "t": "publish.title",
-          "args": {
-           "kind": {
-            "get": "local.kind"
-           }
-          }
-         },
-         "closeLabel": {
-          "t": "dialog.close"
-         },
-         "open": {
-          "expr": {
-           "==": [
-            {
-             "get": "local.open"
-            },
-            "confirm"
-           ]
-          }
-         },
-         "size": "s",
-         "height": "content"
-        },
-        "on": {
-         "openChange": {
-          "set": "local.open",
-          "to": ""
-         }
-        },
-        "children": [
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "l"
-          },
-          "children": [
-           {
-            "type": "ItemCard",
-            "when": {
-             "expr": {
-              "==": [
-               {
-                "get": "local.kind"
-               },
-               "note"
-              ]
-             }
-            },
-            "props": {
-             "title": {
-              "t": "publish.name",
-              "args": {
-               "kind": "note"
-              }
-             },
-             "detail": {
-              "t": "publish.detail",
-              "args": {
-               "kind": "note"
-              }
-             },
-             "badge": {
-              "t": "publish.badge"
-             },
-             "icon": "document"
-            }
-           },
-           {
-            "type": "ItemCard",
-            "when": {
-             "expr": {
-              "==": [
-               {
-                "get": "local.kind"
-               },
-               "folder"
-              ]
-             }
-            },
-            "props": {
-             "title": {
-              "t": "publish.name",
-              "args": {
-               "kind": "folder"
-              }
-             },
-             "detail": {
-              "t": "publish.detail",
-              "args": {
-               "kind": "folder"
-              }
-             },
-             "badge": {
-              "t": "publish.badge"
-             },
-             "icon": "folder"
-            }
-           },
-           {
-            "type": "Text",
-            "props": {
-             "value": {
-              "t": "publish.text",
-              "args": {
-               "kind": {
-                "get": "local.kind"
-               }
-              }
-             }
-            }
-           },
-           {
-            "type": "StatusRow",
-            "props": {
-             "message": {
-              "t": "publish.sharesKeep"
-             },
-             "tone": "info",
-             "icon": "info"
-            }
-           },
-           {
-            "type": "Inline",
-            "props": {
-             "justify": "end",
-             "gap": "s"
-            },
-            "children": [
-             {
-              "type": "Button",
-              "props": {
-               "label": {
-                "t": "share.cancel"
-               },
-               "autoFocus": true
-              },
-              "on": {
-               "press": {
-                "set": "local.open",
-                "to": ""
-               }
-              }
-             },
-             {
-              "type": "Button",
-              "props": {
-               "label": {
-                "t": "publish.confirm"
-               },
-               "variant": "primary",
-               "icon": "globe"
-              },
-              "on": {
-               "press": [
-                {
-                 "set": "local.status",
-                 "to": "publishing"
-                },
-                {
-                 "set": "local.open",
-                 "to": ""
-                }
-               ]
-              }
-             }
-            ]
-           }
-          ]
-         }
-        ]
-       }
-      ]
-     }
-    ]
-   },
-   "true": {
+  "children": [
+   {
     "switch": {
      "get": "local.size"
     },
@@ -533,170 +51,163 @@
         },
         "children": [
          {
-          "type": "Surface",
+          "type": "Stack",
           "props": {
-           "variant": "raised",
+           "gap": "s",
            "padding": "m"
           },
           "children": [
            {
-            "type": "Stack",
+            "type": "Inline",
             "props": {
-             "gap": "s"
+             "justify": "between",
+             "align": "center",
+             "wrap": true,
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Inline",
+              "type": "Heading",
               "props": {
-               "justify": "between",
-               "align": "center",
-               "wrap": true,
-               "gap": "m"
-              },
-              "children": [
-               {
-                "type": "Heading",
-                "props": {
-                 "level": "2",
-                 "value": {
-                  "t": "site.preview.title"
-                 }
-                }
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s"
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "site.preview.close"
-                   }
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.preview",
-                    "to": false
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "site.preview.apply"
-                   },
-                   "variant": "primary"
-                  },
-                  "on": {
-                   "press": [
-                    {
-                     "set": "local.applied",
-                     "to": true
-                    },
-                    {
-                     "set": "local.preview",
-                     "to": false
-                    }
-                   ]
-                  }
-                 }
-                ]
+               "level": "2",
+               "value": {
+                "t": "site.preview.title"
                }
-              ]
+              }
              },
              {
               "type": "Inline",
               "props": {
-               "gap": "l",
-               "wrap": true,
-               "align": "end"
+               "gap": "s"
               },
               "children": [
                {
-                "type": "SegmentedControl",
+                "type": "Button",
                 "props": {
                  "label": {
-                  "t": "site.preview.theme"
-                 },
-                 "options": {
-                  "get": "vm.mockShare.siteThemeOptions"
-                 },
-                 "value": {
-                  "bind": "local.theme"
+                  "t": "site.preview.close"
                  }
                 },
                 "on": {
-                 "change": {
-                  "set": "local.scheme",
-                  "to": {
-                   "expr": {
-                    "if": [
-                     {
-                      "in": [
-                       {
-                        "get": "event.value"
-                       },
-                       [
-                        "ink",
-                        "dusk"
-                       ]
-                      ]
-                     },
-                     "dark",
-                     "light"
-                    ]
-                   }
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
                   }
                  }
                 }
                },
                {
-                "type": "SegmentedControl",
+                "type": "Button",
                 "props": {
                  "label": {
-                  "t": "site.preview.font"
+                  "t": "site.preview.apply"
                  },
-                 "options": {
-                  "get": "vm.mockShare.siteFontOptions"
-                 },
-                 "value": {
-                  "bind": "local.font"
-                 }
-                }
-               },
-               {
-                "type": "SegmentedControl",
-                "props": {
-                 "label": {
-                  "t": "site.preview.size"
-                 },
-                 "options": {
-                  "get": "vm.mockShare.siteSizeOptions"
-                 },
-                 "value": {
-                  "bind": "local.size"
+                 "variant": "primary"
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
                  }
                 }
                }
               ]
+             }
+            ]
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "l",
+             "wrap": true,
+             "align": "end"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.theme"
+               },
+               "options": {
+                "get": "vm.mockShare.siteThemeOptions"
+               },
+               "value": {
+                "bind": "local.theme"
+               }
+              },
+              "on": {
+               "change": {
+                "set": "local.scheme",
+                "to": {
+                 "expr": {
+                  "if": [
+                   {
+                    "in": [
+                     {
+                      "get": "event.value"
+                     },
+                     [
+                      "ink",
+                      "dusk"
+                     ]
+                    ]
+                   },
+                   "dark",
+                   "light"
+                  ]
+                 }
+                }
+               }
+              }
              },
              {
-              "type": "Text",
+              "type": "SegmentedControl",
               "props": {
-               "value": {
-                "t": "site.preview.note"
+               "label": {
+                "t": "site.preview.font"
                },
-               "tone": "muted",
-               "role": "secondary"
+               "options": {
+                "get": "vm.mockShare.siteFontOptions"
+               },
+               "value": {
+                "bind": "local.font"
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.size"
+               },
+               "options": {
+                "get": "vm.mockShare.siteSizeOptions"
+               },
+               "value": {
+                "bind": "local.size"
+               }
               }
              }
             ]
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "site.preview.note"
+             },
+             "tone": "muted",
+             "role": "secondary"
+            }
            }
           ]
+         },
+         {
+          "type": "Divider"
          },
          {
           "type": "Center",
@@ -1152,170 +663,163 @@
         },
         "children": [
          {
-          "type": "Surface",
+          "type": "Stack",
           "props": {
-           "variant": "raised",
+           "gap": "s",
            "padding": "m"
           },
           "children": [
            {
-            "type": "Stack",
+            "type": "Inline",
             "props": {
-             "gap": "s"
+             "justify": "between",
+             "align": "center",
+             "wrap": true,
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Inline",
+              "type": "Heading",
               "props": {
-               "justify": "between",
-               "align": "center",
-               "wrap": true,
-               "gap": "m"
-              },
-              "children": [
-               {
-                "type": "Heading",
-                "props": {
-                 "level": "2",
-                 "value": {
-                  "t": "site.preview.title"
-                 }
-                }
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s"
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "site.preview.close"
-                   }
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.preview",
-                    "to": false
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "site.preview.apply"
-                   },
-                   "variant": "primary"
-                  },
-                  "on": {
-                   "press": [
-                    {
-                     "set": "local.applied",
-                     "to": true
-                    },
-                    {
-                     "set": "local.preview",
-                     "to": false
-                    }
-                   ]
-                  }
-                 }
-                ]
+               "level": "2",
+               "value": {
+                "t": "site.preview.title"
                }
-              ]
+              }
              },
              {
               "type": "Inline",
               "props": {
-               "gap": "l",
-               "wrap": true,
-               "align": "end"
+               "gap": "s"
               },
               "children": [
                {
-                "type": "SegmentedControl",
+                "type": "Button",
                 "props": {
                  "label": {
-                  "t": "site.preview.theme"
-                 },
-                 "options": {
-                  "get": "vm.mockShare.siteThemeOptions"
-                 },
-                 "value": {
-                  "bind": "local.theme"
+                  "t": "site.preview.close"
                  }
                 },
                 "on": {
-                 "change": {
-                  "set": "local.scheme",
-                  "to": {
-                   "expr": {
-                    "if": [
-                     {
-                      "in": [
-                       {
-                        "get": "event.value"
-                       },
-                       [
-                        "ink",
-                        "dusk"
-                       ]
-                      ]
-                     },
-                     "dark",
-                     "light"
-                    ]
-                   }
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
                   }
                  }
                 }
                },
                {
-                "type": "SegmentedControl",
+                "type": "Button",
                 "props": {
                  "label": {
-                  "t": "site.preview.font"
+                  "t": "site.preview.apply"
                  },
-                 "options": {
-                  "get": "vm.mockShare.siteFontOptions"
-                 },
-                 "value": {
-                  "bind": "local.font"
-                 }
-                }
-               },
-               {
-                "type": "SegmentedControl",
-                "props": {
-                 "label": {
-                  "t": "site.preview.size"
-                 },
-                 "options": {
-                  "get": "vm.mockShare.siteSizeOptions"
-                 },
-                 "value": {
-                  "bind": "local.size"
+                 "variant": "primary"
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
                  }
                 }
                }
               ]
+             }
+            ]
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "l",
+             "wrap": true,
+             "align": "end"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.theme"
+               },
+               "options": {
+                "get": "vm.mockShare.siteThemeOptions"
+               },
+               "value": {
+                "bind": "local.theme"
+               }
+              },
+              "on": {
+               "change": {
+                "set": "local.scheme",
+                "to": {
+                 "expr": {
+                  "if": [
+                   {
+                    "in": [
+                     {
+                      "get": "event.value"
+                     },
+                     [
+                      "ink",
+                      "dusk"
+                     ]
+                    ]
+                   },
+                   "dark",
+                   "light"
+                  ]
+                 }
+                }
+               }
+              }
              },
              {
-              "type": "Text",
+              "type": "SegmentedControl",
               "props": {
-               "value": {
-                "t": "site.preview.note"
+               "label": {
+                "t": "site.preview.font"
                },
-               "tone": "muted",
-               "role": "secondary"
+               "options": {
+                "get": "vm.mockShare.siteFontOptions"
+               },
+               "value": {
+                "bind": "local.font"
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.size"
+               },
+               "options": {
+                "get": "vm.mockShare.siteSizeOptions"
+               },
+               "value": {
+                "bind": "local.size"
+               }
               }
              }
             ]
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "site.preview.note"
+             },
+             "tone": "muted",
+             "role": "secondary"
+            }
            }
           ]
+         },
+         {
+          "type": "Divider"
          },
          {
           "type": "Center",
@@ -1771,170 +1275,163 @@
         },
         "children": [
          {
-          "type": "Surface",
+          "type": "Stack",
           "props": {
-           "variant": "raised",
+           "gap": "s",
            "padding": "m"
           },
           "children": [
            {
-            "type": "Stack",
+            "type": "Inline",
             "props": {
-             "gap": "s"
+             "justify": "between",
+             "align": "center",
+             "wrap": true,
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Inline",
+              "type": "Heading",
               "props": {
-               "justify": "between",
-               "align": "center",
-               "wrap": true,
-               "gap": "m"
-              },
-              "children": [
-               {
-                "type": "Heading",
-                "props": {
-                 "level": "2",
-                 "value": {
-                  "t": "site.preview.title"
-                 }
-                }
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s"
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "site.preview.close"
-                   }
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.preview",
-                    "to": false
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "site.preview.apply"
-                   },
-                   "variant": "primary"
-                  },
-                  "on": {
-                   "press": [
-                    {
-                     "set": "local.applied",
-                     "to": true
-                    },
-                    {
-                     "set": "local.preview",
-                     "to": false
-                    }
-                   ]
-                  }
-                 }
-                ]
+               "level": "2",
+               "value": {
+                "t": "site.preview.title"
                }
-              ]
+              }
              },
              {
               "type": "Inline",
               "props": {
-               "gap": "l",
-               "wrap": true,
-               "align": "end"
+               "gap": "s"
               },
               "children": [
                {
-                "type": "SegmentedControl",
+                "type": "Button",
                 "props": {
                  "label": {
-                  "t": "site.preview.theme"
-                 },
-                 "options": {
-                  "get": "vm.mockShare.siteThemeOptions"
-                 },
-                 "value": {
-                  "bind": "local.theme"
+                  "t": "site.preview.close"
                  }
                 },
                 "on": {
-                 "change": {
-                  "set": "local.scheme",
-                  "to": {
-                   "expr": {
-                    "if": [
-                     {
-                      "in": [
-                       {
-                        "get": "event.value"
-                       },
-                       [
-                        "ink",
-                        "dusk"
-                       ]
-                      ]
-                     },
-                     "dark",
-                     "light"
-                    ]
-                   }
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
                   }
                  }
                 }
                },
                {
-                "type": "SegmentedControl",
+                "type": "Button",
                 "props": {
                  "label": {
-                  "t": "site.preview.font"
+                  "t": "site.preview.apply"
                  },
-                 "options": {
-                  "get": "vm.mockShare.siteFontOptions"
-                 },
-                 "value": {
-                  "bind": "local.font"
-                 }
-                }
-               },
-               {
-                "type": "SegmentedControl",
-                "props": {
-                 "label": {
-                  "t": "site.preview.size"
-                 },
-                 "options": {
-                  "get": "vm.mockShare.siteSizeOptions"
-                 },
-                 "value": {
-                  "bind": "local.size"
+                 "variant": "primary"
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
                  }
                 }
                }
               ]
+             }
+            ]
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "l",
+             "wrap": true,
+             "align": "end"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.theme"
+               },
+               "options": {
+                "get": "vm.mockShare.siteThemeOptions"
+               },
+               "value": {
+                "bind": "local.theme"
+               }
+              },
+              "on": {
+               "change": {
+                "set": "local.scheme",
+                "to": {
+                 "expr": {
+                  "if": [
+                   {
+                    "in": [
+                     {
+                      "get": "event.value"
+                     },
+                     [
+                      "ink",
+                      "dusk"
+                     ]
+                    ]
+                   },
+                   "dark",
+                   "light"
+                  ]
+                 }
+                }
+               }
+              }
              },
              {
-              "type": "Text",
+              "type": "SegmentedControl",
               "props": {
-               "value": {
-                "t": "site.preview.note"
+               "label": {
+                "t": "site.preview.font"
                },
-               "tone": "muted",
-               "role": "secondary"
+               "options": {
+                "get": "vm.mockShare.siteFontOptions"
+               },
+               "value": {
+                "bind": "local.font"
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.size"
+               },
+               "options": {
+                "get": "vm.mockShare.siteSizeOptions"
+               },
+               "value": {
+                "bind": "local.size"
+               }
               }
              }
             ]
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "site.preview.note"
+             },
+             "tone": "muted",
+             "role": "secondary"
+            }
            }
           ]
+         },
+         {
+          "type": "Divider"
          },
          {
           "type": "Center",
@@ -2367,6 +1864,6 @@
      }
     }
    }
-  }
+  ]
  }
 }

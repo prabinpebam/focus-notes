@@ -1,251 +1,2418 @@
 {
-  "focus": "files",
-  "local": {
-    "open": "",
-    "target": "book",
-    "scenario": "normal",
-    "system": "windows",
-    "sharingOn": true,
-    "step": "draft",
-    "review": false,
-    "later": false,
-    "expiry": "30",
-    "link": true,
-    "passcode": false,
-    "passType": "generated",
-    "own": "",
-    "status": "",
-    "history": true,
-    "more": false
+ "focus": "files",
+ "local": {
+  "open": "",
+  "target": "book",
+  "scenario": "normal",
+  "system": "windows",
+  "sharingOn": true,
+  "step": "draft",
+  "review": false,
+  "later": false,
+  "expiry": "30",
+  "link": true,
+  "passcode": false,
+  "passType": "generated",
+  "own": "",
+  "status": "",
+  "history": true,
+  "more": false
+ },
+ "root": {
+  "type": "Stack",
+  "props": {
+   "gap": "l",
+   "padding": "xl"
   },
-  "root": { "type": "Stack", "props": { "gap": "l", "padding": "xl" }, "children": [
-    { "type": "Surface", "props": { "variant": "sunken", "shape": "control", "padding": "m" }, "children": [
-      { "type": "Stack", "props": { "gap": "m" }, "children": [
-        { "type": "Inline", "props": { "justify": "between", "align": "center", "wrap": true, "gap": "m" }, "children": [
-          { "type": "Text", "props": { "value": { "t": "share.mock.bar" }, "role": "emphasis" } },
-          { "type": "Button", "props": { "label": { "t": "share.mock.allMocks" }, "variant": "subtle", "size": "s", "icon": "chevronLeft" }, "on": { "press": { "run": "gallery.open", "args": { "id": "index" } } } }
-        ] },
-        { "type": "Inline", "props": { "gap": "l", "wrap": true, "align": "end" }, "children": [
-          { "type": "SegmentedControl", "props": { "label": { "t": "share.mock.situation" }, "options": { "get": "vm.mockShare.scenarioOptions" }, "value": { "bind": "local.scenario" } } },
-          { "type": "SegmentedControl", "props": { "label": { "t": "share.mock.system" }, "options": { "get": "vm.mockShare.systemOptions" }, "value": { "bind": "local.system" } } },
-          { "type": "Switch", "props": { "label": { "t": "share.mock.sharingOn" }, "checked": { "bind": "local.sharingOn" }, "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" } } }
-        ] }
-      ] }
-    ] },
-    { "type": "Text", "props": { "value": { "t": "share.mock.hint" }, "tone": "muted" } },
-    { "type": "Columns", "props": { "gap": "l" }, "children": [
-      { "type": "Surface", "props": { "variant": "raised", "shape": "control", "padding": "m" }, "children": [
-        { "type": "Stack", "props": { "gap": "s" }, "children": [
-          { "type": "Text", "props": { "value": { "t": "share.mock.files" }, "role": "label" } },
-          { "type": "FileTree", "id": "files", "props": { "label": { "t": "share.mock.files" }, "items": { "get": "vm.mockShare.tree" }, "focusId": { "get": "local.target" }, "menu": { "get": "vm.mockShare.rowMenu" }, "menuLabel": { "get": "vm.mockShare.rowMenuLabel" } },
-            "on": { "select": { "set": "local.target", "to": { "get": "event.id" } }, "menuAction": [{ "set": "local.link", "to": true }, { "set": "local.passcode", "to": false }, { "set": "local.passType", "to": "generated" }, { "set": "local.own", "to": "" }, { "set": "local.expiry", "to": "30" }, { "set": "local.later", "to": false }, { "set": "local.step", "to": "draft" }, { "set": "local.status", "to": "" }, { "set": "local.open", "to": { "get": "event.id" } }] } }
-        ] }
-      ] },
-      { "type": "Surface", "props": { "variant": "raised", "shape": "control", "padding": "l" }, "children": [
-        { "type": "Stack", "props": { "gap": "m" }, "children": [
-          { "type": "Inline", "props": { "justify": "between", "align": "center", "gap": "m" }, "children": [
-            { "type": "Heading", "props": { "level": "1", "value": { "t": "share.mock.name", "args": { "target": "focus" } } } },
-            { "type": "MenuButton", "props": { "icon": "more", "label": { "t": "share.mock.more" }, "sections": { "get": "vm.mockShare.moreMenu" } },
-              "on": { "action": [{ "set": "local.target", "to": "focus" }, { "set": "local.link", "to": true }, { "set": "local.passcode", "to": false }, { "set": "local.passType", "to": "generated" }, { "set": "local.own", "to": "" }, { "set": "local.expiry", "to": "30" }, { "set": "local.later", "to": false }, { "set": "local.step", "to": "draft" }, { "set": "local.status", "to": "" }, { "set": "local.open", "to": { "get": "event.id" } }] } }
-          ] },
-          { "type": "NoteContent", "props": { "blocks": { "get": "vm.mockShare.noteBlocks" } } }
-        ] }
-      ] }
-    ] },
-
-    { "type": "Dialog", "id": "shareDialog", "when": { "expr": { "==": [{ "get": "local.open" }, "share"] } },
-      "props": { "title": { "t": "share.dialog.title", "args": { "target": { "get": "local.target" } } }, "closeLabel": { "t": "dialog.close" }, "open": { "expr": { "==": [{ "get": "local.open" }, "share"] } }, "size": "m", "height": "content" },
-      "on": { "openChange": { "set": "local.open", "to": { "expr": { "if": [{ "get": "event.open" }, "share", ""] } } } },
+  "children": [
+   {
+    "type": "Columns",
+    "props": {
+     "gap": "l"
+    },
+    "children": [
+     {
+      "type": "Surface",
+      "props": {
+       "variant": "raised",
+       "shape": "control",
+       "padding": "s"
+      },
       "children": [
-        { "switch": { "get": "local.step" }, "cases": {
-          "draft": { "type": "Stack", "props": { "gap": "l" }, "children": [
-
-            { "type": "Stack", "props": { "gap": "s" }, "children": [
-              { "type": "ItemCard", "when": { "expr": { "in": [{ "get": "local.target" }, ["book", "ch1", "ch2"]] } }, "props": {
-                  "title": { "t": "share.mock.name", "args": { "target": { "get": "local.target" } } },
-                  "detail": { "t": "share.dialog.detail", "args": { "target": { "get": "local.target" }, "scenario": { "get": "local.scenario" } } },
-                  "icon": "folder", "badge": { "t": "share.dialog.private" } },
+       {
+        "type": "FileTree",
+        "id": "files",
+        "props": {
+         "label": {
+          "t": "share.mock.files"
+         },
+         "items": {
+          "get": "vm.mockShare.tree"
+         },
+         "focusId": {
+          "get": "local.target"
+         },
+         "menu": {
+          "get": "vm.mockShare.rowMenu"
+         },
+         "menuLabel": {
+          "get": "vm.mockShare.rowMenuLabel"
+         }
+        },
+        "on": {
+         "select": {
+          "set": "local.target",
+          "to": {
+           "get": "event.id"
+          }
+         },
+         "menuAction": [
+          {
+           "set": "local.link",
+           "to": true
+          },
+          {
+           "set": "local.passcode",
+           "to": false
+          },
+          {
+           "set": "local.passType",
+           "to": "generated"
+          },
+          {
+           "set": "local.own",
+           "to": ""
+          },
+          {
+           "set": "local.expiry",
+           "to": "30"
+          },
+          {
+           "set": "local.later",
+           "to": false
+          },
+          {
+           "set": "local.step",
+           "to": "draft"
+          },
+          {
+           "set": "local.status",
+           "to": ""
+          },
+          {
+           "set": "local.open",
+           "to": {
+            "get": "event.id"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "type": "Surface",
+      "props": {
+       "variant": "raised",
+       "shape": "control",
+       "padding": "l"
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "m"
+        },
+        "children": [
+         {
+          "type": "Inline",
+          "props": {
+           "justify": "end"
+          },
+          "children": [
+           {
+            "type": "MenuButton",
+            "props": {
+             "icon": "more",
+             "label": {
+              "t": "share.mock.more"
+             },
+             "sections": {
+              "get": "vm.mockShare.moreMenu"
+             }
+            },
+            "on": {
+             "action": [
+              {
+               "set": "local.target",
+               "to": "focus"
+              },
+              {
+               "set": "local.link",
+               "to": true
+              },
+              {
+               "set": "local.passcode",
+               "to": false
+              },
+              {
+               "set": "local.passType",
+               "to": "generated"
+              },
+              {
+               "set": "local.own",
+               "to": ""
+              },
+              {
+               "set": "local.expiry",
+               "to": "30"
+              },
+              {
+               "set": "local.later",
+               "to": false
+              },
+              {
+               "set": "local.step",
+               "to": "draft"
+              },
+              {
+               "set": "local.status",
+               "to": ""
+              },
+              {
+               "set": "local.open",
+               "to": {
+                "get": "event.id"
+               }
+              }
+             ]
+            }
+           }
+          ]
+         },
+         {
+          "type": "NoteContent",
+          "props": {
+           "blocks": {
+            "get": "vm.mockShare.noteBlocks"
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "Dialog",
+    "id": "shareDialog",
+    "when": {
+     "expr": {
+      "==": [
+       {
+        "get": "local.open"
+       },
+       "share"
+      ]
+     }
+    },
+    "props": {
+     "title": {
+      "t": "share.dialog.title",
+      "args": {
+       "target": {
+        "get": "local.target"
+       }
+      }
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "expr": {
+       "==": [
+        {
+         "get": "local.open"
+        },
+        "share"
+       ]
+      }
+     },
+     "size": "m",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "set": "local.open",
+      "to": {
+       "expr": {
+        "if": [
+         {
+          "get": "event.open"
+         },
+         "share",
+         ""
+        ]
+       }
+      }
+     }
+    },
+    "children": [
+     {
+      "switch": {
+       "get": "local.step"
+      },
+      "cases": {
+       "draft": {
+        "type": "Stack",
+        "props": {
+         "gap": "l"
+        },
+        "children": [
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "s"
+          },
+          "children": [
+           {
+            "type": "ItemCard",
+            "when": {
+             "expr": {
+              "in": [
+               {
+                "get": "local.target"
+               },
+               [
+                "book",
+                "ch1",
+                "ch2"
+               ]
+              ]
+             }
+            },
+            "props": {
+             "title": {
+              "t": "share.mock.name",
+              "args": {
+               "target": {
+                "get": "local.target"
+               }
+              }
+             },
+             "detail": {
+              "t": "share.dialog.detail",
+              "args": {
+               "target": {
+                "get": "local.target"
+               },
+               "scenario": {
+                "get": "local.scenario"
+               }
+              }
+             },
+             "icon": "folder",
+             "badge": {
+              "t": "share.dialog.private"
+             }
+            },
+            "children": [
+             {
+              "type": "Button",
+              "props": {
+               "label": {
+                "t": "share.dialog.review"
+               },
+               "size": "s"
+              },
+              "on": {
+               "press": {
+                "set": "local.review",
+                "to": true
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "ItemCard",
+            "when": {
+             "expr": {
+              "!": {
+               "in": [
+                {
+                 "get": "local.target"
+                },
+                [
+                 "book",
+                 "ch1",
+                 "ch2"
+                ]
+               ]
+              }
+             }
+            },
+            "props": {
+             "title": {
+              "t": "share.mock.name",
+              "args": {
+               "target": {
+                "get": "local.target"
+               }
+              }
+             },
+             "detail": {
+              "t": "share.dialog.detail",
+              "args": {
+               "target": {
+                "get": "local.target"
+               },
+               "scenario": {
+                "get": "local.scenario"
+               }
+              }
+             },
+             "icon": "document",
+             "badge": {
+              "t": "share.dialog.private"
+             }
+            }
+           },
+           {
+            "type": "Inline",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.scenario"
+               },
+               "large"
+              ]
+             }
+            },
+            "props": {
+             "gap": "s",
+             "align": "center"
+            },
+            "children": [
+             {
+              "type": "Spinner",
+              "props": {
+               "label": {
+                "t": "share.dialog.counting"
+               },
+               "size": "s"
+              }
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "share.dialog.counting"
+               },
+               "tone": "muted",
+               "role": "secondary"
+              }
+             }
+            ]
+           },
+           {
+            "type": "Switch",
+            "when": {
+             "expr": {
+              "in": [
+               {
+                "get": "local.target"
+               },
+               [
+                "book",
+                "ch1",
+                "ch2"
+               ]
+              ]
+             }
+            },
+            "props": {
+             "label": {
+              "t": "share.dialog.later"
+             },
+             "description": {
+              "t": "share.dialog.later.detail",
+              "args": {
+               "on": {
+                "expr": {
+                 "if": [
+                  {
+                   "get": "local.later"
+                  },
+                  "yes",
+                  "no"
+                 ]
+                }
+               }
+              }
+             },
+             "checked": {
+              "bind": "local.later"
+             },
+             "onLabel": {
+              "t": "switch.on"
+             },
+             "offLabel": {
+              "t": "switch.off"
+             }
+            }
+           }
+          ]
+         },
+         {
+          "type": "Divider"
+         },
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "Heading",
+            "props": {
+             "level": "3",
+             "value": {
+              "t": "share.dialog.how"
+             }
+            }
+           },
+           {
+            "type": "SegmentedControl",
+            "props": {
+             "label": {
+              "t": "share.dialog.expires"
+             },
+             "options": {
+              "get": "vm.mockShare.expiryOptions"
+             },
+             "value": {
+              "bind": "local.expiry"
+             }
+            }
+           },
+           {
+            "type": "DatePicker",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.expiry"
+               },
+               "date"
+              ]
+             }
+            },
+            "props": {
+             "label": {
+              "t": "share.dialog.expiresOn"
+             },
+             "description": {
+              "t": "share.dialog.expiresOn.detail"
+             }
+            }
+           },
+           {
+            "type": "StatusRow",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.expiry"
+               },
+               "never"
+              ]
+             }
+            },
+            "props": {
+             "message": {
+              "t": "share.dialog.never"
+             },
+             "tone": "warning",
+             "icon": "warning"
+            }
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "xl",
+             "wrap": true
+            },
+            "children": [
+             {
+              "type": "Switch",
+              "props": {
+               "label": {
+                "t": "share.dialog.link"
+               },
+               "description": {
+                "t": "share.dialog.link.detail"
+               },
+               "checked": {
+                "bind": "local.link"
+               },
+               "onLabel": {
+                "t": "switch.on"
+               },
+               "offLabel": {
+                "t": "switch.off"
+               }
+              }
+             },
+             {
+              "type": "Switch",
+              "props": {
+               "label": {
+                "t": "share.dialog.passcode"
+               },
+               "description": {
+                "t": "share.dialog.passcode.detail"
+               },
+               "checked": {
+                "bind": "local.passcode"
+               },
+               "onLabel": {
+                "t": "switch.on"
+               },
+               "offLabel": {
+                "t": "switch.off"
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "StatusRow",
+            "when": {
+             "expr": {
+              "and": [
+               {
+                "!": {
+                 "get": "local.link"
+                }
+               },
+               {
+                "!": {
+                 "get": "local.passcode"
+                }
+               }
+              ]
+             }
+            },
+            "props": {
+             "message": {
+              "t": "share.dialog.keepOne"
+             },
+             "tone": "warning",
+             "icon": "warning"
+            }
+           },
+           {
+            "type": "Stack",
+            "when": {
+             "get": "local.passcode"
+            },
+            "props": {
+             "gap": "s"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "share.dialog.passType"
+               },
+               "options": {
+                "get": "vm.mockShare.passOptions"
+               },
+               "value": {
+                "bind": "local.passType"
+               }
+              }
+             },
+             {
+              "type": "Inline",
+              "when": {
+               "expr": {
+                "==": [
+                 {
+                  "get": "local.passType"
+                 },
+                 "generated"
+                ]
+               }
+              },
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "wrap": true
+              },
+              "children": [
+               {
+                "type": "CodeBlock",
+                "props": {
+                 "value": {
+                  "get": "vm.mockShare.generated"
+                 },
+                 "label": {
+                  "t": "share.dialog.passcode"
+                 },
+                 "copyLabel": {
+                  "t": "share.dialog.copyPasscode"
+                 }
+                }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.dialog.newWords"
+                 },
+                 "size": "s",
+                 "icon": "sync"
+                }
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "when": {
+               "expr": {
+                "==": [
+                 {
+                  "get": "local.passType"
+                 },
+                 "own"
+                ]
+               }
+              },
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "TextField",
+                "props": {
+                 "label": {
+                  "t": "share.dialog.own"
+                 },
+                 "type": "password",
+                 "value": {
+                  "bind": "local.own"
+                 },
+                 "description": {
+                  "t": "share.dialog.own.rule"
+                 }
+                }
+               },
+               {
+                "type": "StrengthMeter",
+                "when": {
+                 "expr": {
+                  "==": [
+                   {
+                    "get": "local.own"
+                   },
+                   ""
+                  ]
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "share.dialog.strength"
+                 },
+                 "value": 0,
+                 "valueText": {
+                  "t": "share.dialog.strength.value",
+                  "args": {
+                   "s": 0
+                  }
+                 }
+                }
+               },
+               {
+                "type": "StrengthMeter",
+                "when": {
+                 "expr": {
+                  "and": [
+                   {
+                    "!=": [
+                     {
+                      "get": "local.own"
+                     },
+                     ""
+                    ]
+                   },
+                   {
+                    "!": {
+                     "in": [
+                      "-",
+                      {
+                       "get": "local.own"
+                      }
+                     ]
+                    }
+                   },
+                   {
+                    "!": {
+                     "in": [
+                      " ",
+                      {
+                       "get": "local.own"
+                      }
+                     ]
+                    }
+                   }
+                  ]
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "share.dialog.strength"
+                 },
+                 "value": 1,
+                 "valueText": {
+                  "t": "share.dialog.strength.value",
+                  "args": {
+                   "s": 1
+                  }
+                 }
+                }
+               },
+               {
+                "type": "StrengthMeter",
+                "when": {
+                 "expr": {
+                  "or": [
+                   {
+                    "in": [
+                     "-",
+                     {
+                      "get": "local.own"
+                     }
+                    ]
+                   },
+                   {
+                    "in": [
+                     " ",
+                     {
+                      "get": "local.own"
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "share.dialog.strength"
+                 },
+                 "value": 4,
+                 "valueText": {
+                  "t": "share.dialog.strength.value",
+                  "args": {
+                   "s": 4
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "Divider"
+         },
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "StatusRow",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.scenario"
+               },
+               "offline"
+              ]
+             }
+            },
+            "props": {
+             "message": {
+              "t": "share.state.offline"
+             },
+             "tone": "warning",
+             "icon": "warning"
+            }
+           },
+           {
+            "type": "Inline",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.scenario"
+               },
+               "signedOut"
+              ]
+             }
+            },
+            "props": {
+             "gap": "s",
+             "align": "center",
+             "wrap": true
+            },
+            "children": [
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "share.state.signedOut"
+               },
+               "tone": "warning",
+               "icon": "warning"
+              }
+             },
+             {
+              "type": "Button",
+              "props": {
+               "label": {
+                "t": "share.state.signIn"
+               },
+               "size": "s",
+               "icon": "github"
+              },
+              "on": {
+               "press": {
+                "set": "local.scenario",
+                "to": "normal"
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.scenario"
+               },
+               "deleted"
+              ]
+             }
+            },
+            "props": {
+             "gap": "s"
+            },
+            "children": [
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "share.state.deleted"
+               },
+               "tone": "danger",
+               "icon": "error"
+              }
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "wrap": true
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.state.restore"
+                 },
+                 "size": "s"
+                },
+                "on": {
+                 "press": {
+                  "set": "local.scenario",
+                  "to": "normal"
+                 }
+                }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.state.close"
+                 },
+                 "size": "s"
+                },
+                "on": {
+                 "press": {
+                  "set": "local.open",
+                  "to": ""
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "switch": {
+             "get": "local.sharingOn"
+            },
+            "cases": {
+             "true": {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "wrap": true,
+               "align": "center"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.dialog.primary",
+                  "args": {
+                   "system": {
+                    "get": "local.system"
+                   }
+                  }
+                 },
+                 "variant": "primary",
+                 "disabled": {
+                  "expr": {
+                   "or": [
+                    {
+                     "==": [
+                      {
+                       "get": "local.scenario"
+                      },
+                      "deleted"
+                     ]
+                    },
+                    {
+                     "and": [
+                      {
+                       "!": {
+                        "get": "local.link"
+                       }
+                      },
+                      {
+                       "!": {
+                        "get": "local.passcode"
+                       }
+                      }
+                     ]
+                    }
+                   ]
+                  }
+                 },
+                 "disabledReason": {
+                  "t": "share.dialog.blocked",
+                  "args": {
+                   "scenario": {
+                    "get": "local.scenario"
+                   }
+                  }
+                 }
+                },
+                "on": {
+                 "press": {
+                  "set": "local.status",
+                  "to": {
+                   "expr": {
+                    "if": [
+                     {
+                      "==": [
+                       {
+                        "get": "local.scenario"
+                       },
+                       "offline"
+                      ]
+                     },
+                     "waiting",
+                     "publishing"
+                    ]
+                   }
+                  }
+                 }
+                }
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "related": true,
+                 "label": {
+                  "t": "share.dialog.copyGroup"
+                 }
+                },
                 "children": [
-                  { "type": "Button", "props": { "label": { "t": "share.dialog.review" }, "size": "s" }, "on": { "press": { "set": "local.review", "to": true } } }
-                ] },
-              { "type": "ItemCard", "when": { "expr": { "!": { "in": [{ "get": "local.target" }, ["book", "ch1", "ch2"]] } } }, "props": {
-                  "title": { "t": "share.mock.name", "args": { "target": { "get": "local.target" } } },
-                  "detail": { "t": "share.dialog.detail", "args": { "target": { "get": "local.target" }, "scenario": { "get": "local.scenario" } } },
-                  "icon": "document", "badge": { "t": "share.dialog.private" } } },
-              { "type": "Inline", "when": { "expr": { "==": [{ "get": "local.scenario" }, "large"] } }, "props": { "gap": "s", "align": "center" }, "children": [
-                { "type": "Spinner", "props": { "label": { "t": "share.dialog.counting" }, "size": "s" } },
-                { "type": "Text", "props": { "value": { "t": "share.dialog.counting" }, "tone": "muted", "role": "secondary" } }
-              ] },
-              { "type": "Switch", "when": { "expr": { "in": [{ "get": "local.target" }, ["book", "ch1", "ch2"]] } }, "props": { "label": { "t": "share.dialog.later" }, "description": { "t": "share.dialog.later.detail", "args": { "on": { "expr": { "if": [{ "get": "local.later" }, "yes", "no"] } } } }, "checked": { "bind": "local.later" }, "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" } } }
-            ] },
-
-            { "type": "Divider" },
-            { "type": "Stack", "props": { "gap": "m" }, "children": [
-              { "type": "Heading", "props": { "level": "3", "value": { "t": "share.dialog.how" } } },
-              { "type": "SegmentedControl", "props": { "label": { "t": "share.dialog.expires" }, "options": { "get": "vm.mockShare.expiryOptions" }, "value": { "bind": "local.expiry" } } },
-              { "type": "DatePicker", "when": { "expr": { "==": [{ "get": "local.expiry" }, "date"] } }, "props": { "label": { "t": "share.dialog.expiresOn" }, "description": { "t": "share.dialog.expiresOn.detail" } } },
-              { "type": "StatusRow", "when": { "expr": { "==": [{ "get": "local.expiry" }, "never"] } }, "props": { "message": { "t": "share.dialog.never" }, "tone": "warning", "icon": "warning" } },
-              { "type": "Inline", "props": { "gap": "xl", "wrap": true }, "children": [
-                { "type": "Switch", "props": { "label": { "t": "share.dialog.link" }, "description": { "t": "share.dialog.link.detail" }, "checked": { "bind": "local.link" }, "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" } } },
-                { "type": "Switch", "props": { "label": { "t": "share.dialog.passcode" }, "description": { "t": "share.dialog.passcode.detail" }, "checked": { "bind": "local.passcode" }, "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" } } }
-              ] },
-              { "type": "StatusRow", "when": { "expr": { "and": [{ "!": { "get": "local.link" } }, { "!": { "get": "local.passcode" } }] } }, "props": { "message": { "t": "share.dialog.keepOne" }, "tone": "warning", "icon": "warning" } },
-              { "type": "Stack", "when": { "get": "local.passcode" }, "props": { "gap": "s" }, "children": [
-                { "type": "SegmentedControl", "props": { "label": { "t": "share.dialog.passType" }, "options": { "get": "vm.mockShare.passOptions" }, "value": { "bind": "local.passType" } } },
-                { "type": "Inline", "when": { "expr": { "==": [{ "get": "local.passType" }, "generated"] } }, "props": { "gap": "s", "align": "center", "wrap": true }, "children": [
-                  { "type": "CodeBlock", "props": { "value": { "get": "vm.mockShare.generated" }, "label": { "t": "share.dialog.passcode" }, "copyLabel": { "t": "share.dialog.copyPasscode" } } },
-                  { "type": "Button", "props": { "label": { "t": "share.dialog.newWords" }, "size": "s", "icon": "sync" } }
-                ] },
-                { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.passType" }, "own"] } }, "props": { "gap": "s" }, "children": [
-                  { "type": "TextField", "props": { "label": { "t": "share.dialog.own" }, "type": "password", "value": { "bind": "local.own" }, "description": { "t": "share.dialog.own.rule" } } },
-                  { "type": "StrengthMeter", "when": { "expr": { "==": [{ "get": "local.own" }, ""] } }, "props": { "label": { "t": "share.dialog.strength" }, "value": 0, "valueText": { "t": "share.dialog.strength.value", "args": { "s": 0 } } } },
-                  { "type": "StrengthMeter", "when": { "expr": { "and": [{ "!=": [{ "get": "local.own" }, ""] }, { "!": { "in": ["-", { "get": "local.own" }] } }, { "!": { "in": [" ", { "get": "local.own" }] } }] } }, "props": { "label": { "t": "share.dialog.strength" }, "value": 1, "valueText": { "t": "share.dialog.strength.value", "args": { "s": 1 } } } },
-                  { "type": "StrengthMeter", "when": { "expr": { "or": [{ "in": ["-", { "get": "local.own" }] }, { "in": [" ", { "get": "local.own" }] }] } }, "props": { "label": { "t": "share.dialog.strength" }, "value": 4, "valueText": { "t": "share.dialog.strength.value", "args": { "s": 4 } } } }
-                ] }
-              ] }
-            ] },
-
-            { "type": "Divider" },
-            { "type": "Stack", "props": { "gap": "m" }, "children": [
-              { "type": "StatusRow", "when": { "expr": { "==": [{ "get": "local.scenario" }, "offline"] } }, "props": { "message": { "t": "share.state.offline" }, "tone": "warning", "icon": "warning" } },
-              { "type": "Inline", "when": { "expr": { "==": [{ "get": "local.scenario" }, "signedOut"] } }, "props": { "gap": "s", "align": "center", "wrap": true }, "children": [
-                { "type": "StatusRow", "props": { "message": { "t": "share.state.signedOut" }, "tone": "warning", "icon": "warning" } },
-                { "type": "Button", "props": { "label": { "t": "share.state.signIn" }, "size": "s", "icon": "github" }, "on": { "press": { "set": "local.scenario", "to": "normal" } } }
-              ] },
-              { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.scenario" }, "deleted"] } }, "props": { "gap": "s" }, "children": [
-                { "type": "StatusRow", "props": { "message": { "t": "share.state.deleted" }, "tone": "danger", "icon": "error" } },
-                { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
-                  { "type": "Button", "props": { "label": { "t": "share.state.restore" }, "size": "s" }, "on": { "press": { "set": "local.scenario", "to": "normal" } } },
-                  { "type": "Button", "props": { "label": { "t": "share.state.close" }, "size": "s" }, "on": { "press": { "set": "local.open", "to": "" } } }
-                ] }
-              ] },
-              { "switch": { "get": "local.sharingOn" }, "cases": {
-                "true": { "type": "Inline", "props": { "gap": "s", "wrap": true, "align": "center" }, "children": [
-                  { "type": "Button", "props": { "label": { "t": "share.dialog.primary", "args": { "system": { "get": "local.system" } } }, "variant": "primary",
-                      "disabled": { "expr": { "or": [{ "==": [{ "get": "local.scenario" }, "deleted"] }, { "and": [{ "!": { "get": "local.link" } }, { "!": { "get": "local.passcode" } }] }] } },
-                      "disabledReason": { "t": "share.dialog.blocked", "args": { "scenario": { "get": "local.scenario" } } } },
-                    "on": { "press": { "set": "local.status", "to": { "expr": { "if": [{ "==": [{ "get": "local.scenario" }, "offline"] }, "waiting", "publishing"] } } } } },
-                  { "type": "Inline", "props": { "related": true, "label": { "t": "share.dialog.copyGroup" } }, "children": [
-                    { "type": "Button", "when": { "get": "local.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "icon": "link", "disabled": { "expr": { "==": [{ "get": "local.scenario" }, "deleted"] } }, "disabledReason": { "t": "share.dialog.blocked", "args": { "scenario": { "get": "local.scenario" } } } }, "on": { "press": { "set": "local.status", "to": { "expr": { "if": [{ "==": [{ "get": "local.scenario" }, "offline"] }, "waiting", "publishing"] } } } } },
-                    { "type": "Button", "when": { "get": "local.passcode" }, "props": { "label": { "t": "share.dialog.copyCode" }, "icon": "lock", "disabled": { "expr": { "==": [{ "get": "local.scenario" }, "deleted"] } }, "disabledReason": { "t": "share.dialog.blocked", "args": { "scenario": { "get": "local.scenario" } } } }, "on": { "press": { "set": "local.status", "to": { "expr": { "if": [{ "==": [{ "get": "local.scenario" }, "offline"] }, "waiting", "publishing"] } } } } },
-                    { "type": "Button", "when": { "expr": { "==": [{ "get": "local.system" }, "macos"] } }, "props": { "label": { "t": "share.dialog.copyInfo" }, "icon": "copy", "disabled": { "expr": { "==": [{ "get": "local.scenario" }, "deleted"] } }, "disabledReason": { "t": "share.dialog.blocked", "args": { "scenario": { "get": "local.scenario" } } } }, "on": { "press": { "set": "local.status", "to": { "expr": { "if": [{ "==": [{ "get": "local.scenario" }, "offline"] }, "waiting", "publishing"] } } } } }
-                  ] }
-                ] },
-                "false": { "type": "Inline", "props": { "gap": "s", "wrap": true, "align": "center" }, "children": [
-                  { "type": "Button", "props": { "label": { "t": "share.dialog.primary", "args": { "system": { "get": "local.system" } } }, "variant": "primary",
-                      "disabled": { "expr": { "or": [{ "==": [{ "get": "local.scenario" }, "deleted"] }, { "==": [{ "get": "local.scenario" }, "offline"] }, { "and": [{ "!": { "get": "local.link" } }, { "!": { "get": "local.passcode" } }] }] } },
-                      "disabledReason": { "t": "share.dialog.blockedFirst", "args": { "scenario": { "get": "local.scenario" } } } },
-                    "on": { "press": { "set": "local.step", "to": "first" } } },
-                  { "type": "Inline", "props": { "related": true, "label": { "t": "share.dialog.copyGroup" } }, "children": [
-                    { "type": "Button", "when": { "get": "local.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "icon": "link" }, "on": { "press": { "set": "local.step", "to": "first" } } },
-                    { "type": "Button", "when": { "get": "local.passcode" }, "props": { "label": { "t": "share.dialog.copyCode" }, "icon": "lock" }, "on": { "press": { "set": "local.step", "to": "first" } } },
-                    { "type": "Button", "when": { "expr": { "==": [{ "get": "local.system" }, "macos"] } }, "props": { "label": { "t": "share.dialog.copyInfo" }, "icon": "copy" }, "on": { "press": { "set": "local.step", "to": "first" } } }
-                  ] }
-                ] }
-              } },
-              { "type": "Inline", "when": { "expr": { "in": [{ "get": "local.status" }, ["publishing", "creating"]] } }, "props": { "gap": "s", "align": "center", "wrap": true }, "children": [
-                { "type": "Spinner", "props": { "label": { "t": "share.status.working", "args": { "status": { "get": "local.status" } } }, "size": "s" } },
-                { "type": "Text", "props": { "value": { "t": "share.status.working", "args": { "status": { "get": "local.status" } } }, "role": "secondary", "announce": true } },
-                { "type": "Button", "props": { "label": { "t": "share.mock.finish" }, "variant": "subtle", "size": "s" }, "on": { "press": { "set": "local.status", "to": "done" } } }
-              ] },
-              { "type": "StatusRow", "when": { "expr": { "==": [{ "get": "local.status" }, "waiting"] } }, "props": { "message": { "t": "share.status.waiting" }, "tone": "info", "icon": "cloudOff" } },
-              { "type": "StatusRow", "when": { "expr": { "==": [{ "get": "local.status" }, "done"] } }, "props": { "message": { "t": "share.status.done", "args": { "system": { "get": "local.system" } } }, "tone": "success", "icon": "check" } },
-              { "type": "Stack", "when": { "expr": { "or": [{ "get": "local.link" }, { "get": "local.passcode" }] } }, "props": { "gap": "xs" }, "children": [
-                { "type": "Text", "props": { "value": { "t": "share.dialog.preview" }, "role": "label" } },
-                { "type": "Surface", "props": { "variant": "sunken", "shape": "control", "padding": "m" }, "children": [
-                  { "type": "Stack", "props": { "gap": "xs" }, "children": [
-                    { "type": "Text", "props": { "value": { "t": "share.info.title", "args": { "target": { "get": "local.target" } } }, "role": "secondary" } },
-                    { "type": "Text", "when": { "get": "local.link" }, "props": { "value": { "t": "share.info.link" }, "role": "secondary" } },
-                    { "type": "Text", "when": { "get": "local.passcode" }, "props": { "value": { "t": "share.info.code", "args": { "both": { "expr": { "if": [{ "get": "local.link" }, "yes", "no"] } } } }, "role": "secondary" } },
-                    { "type": "Text", "props": { "value": { "t": "share.info.until" }, "role": "secondary" } },
-                    { "type": "Text", "props": { "value": { "t": "share.info.forward" }, "role": "secondary" } },
-                    { "type": "Text", "props": { "value": { "t": "share.info.copies" }, "role": "secondary" } }
-                  ] }
-                ] }
-              ] }
-            ] },
-
-            { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.target" }, "book"] } }, "props": { "gap": "s" }, "children": [
-              { "type": "Divider" },
-              { "type": "Inline", "children": [{ "type": "Button", "props": { "label": { "t": "share.dialog.before", "args": { "count": 2 } }, "variant": "subtle", "expanded": { "get": "local.history" }, "bleed": true },
-                "on": { "press": { "set": "local.history", "to": { "expr": { "!": { "get": "local.history" } } } } } }] },
-              { "type": "Stack", "when": { "get": "local.history" }, "props": { "gap": "s" }, "children": [
-                { "type": "Inline", "props": { "gap": "s", "align": "center", "wrap": true }, "children": [
-                  { "type": "StatusRow", "props": { "message": { "t": "share.dialog.newer", "args": { "count": 3 } }, "tone": "info", "icon": "info" } },
-                  { "type": "Button", "props": { "label": { "t": "share.dialog.addThem" }, "size": "s" } }
-                ] },
-                { "each": { "get": "vm.mockShare.sharesBefore" }, "as": "row", "key": "row.id",
-                  "render": { "type": "ItemCard", "props": { "title": { "get": "row.methods" }, "detail": { "get": "row.detail" }, "badge": { "get": "row.state" }, "icon": { "get": "row.icon" } }, "children": [
-                    { "type": "Inline", "props": { "gap": "xs", "wrap": true }, "children": [
-                      { "type": "Button", "props": { "label": { "t": "share.dialog.copyLink" }, "size": "s" } },
-                      { "type": "Button", "props": { "label": { "t": "share.row.change" }, "size": "s" } },
-                      { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s" } }
-                    ] }
-                  ] },
-                  "empty": { "type": "Text", "props": { "value": { "t": "share.list.empty" }, "tone": "muted" } } }
-              ] }
-            ] }
-          ] },
-
-          "first": { "type": "Stack", "props": { "gap": "l" }, "children": [
-            { "type": "Inline", "props": { "gap": "m", "align": "center" }, "children": [
-              { "type": "StepMark", "props": { "icon": "share", "tone": "accent", "size": "compact" } },
-              { "type": "Heading", "props": { "level": "2", "value": { "t": "share.first.title" } } }
-            ] },
-            { "type": "Text", "props": { "value": { "t": "share.first.lead" }, "role": "lead" } },
-            { "type": "Stack", "props": { "gap": "s" }, "children": [
-              { "type": "Text", "props": { "value": { "t": "share.first.created" }, "role": "label" } },
-              { "type": "ItemCard", "props": { "title": { "t": "share.first.repo" }, "detail": { "t": "share.first.repo.detail" }, "icon": "github" } },
-              { "type": "ItemCard", "props": { "title": { "t": "share.first.site" }, "detail": { "t": "share.first.site.detail" }, "icon": "globe" } }
-            ] },
-            { "type": "Stack", "props": { "gap": "s" }, "children": [
-              { "type": "Text", "props": { "value": { "t": "share.first.see" }, "role": "label" } },
-              { "type": "ItemCard", "props": { "title": { "t": "share.first.shared" }, "badge": { "t": "share.badge.shared" }, "icon": "lock" } },
-              { "type": "ItemCard", "props": { "title": { "t": "share.first.published" }, "badge": { "t": "share.badge.published" }, "icon": "globe" } }
-            ] },
-            { "type": "Text", "props": { "value": { "t": "share.first.history" }, "tone": "muted" } },
-            { "type": "Inline", "children": [{ "type": "Button", "props": { "label": { "t": "share.first.more" }, "variant": "subtle", "size": "s", "bleed": true, "expanded": { "get": "local.more" } },
-              "on": { "press": { "set": "local.more", "to": { "expr": { "!": { "get": "local.more" } } } } } }] },
-            { "type": "Text", "when": { "get": "local.more" }, "props": { "value": { "t": "share.first.more.detail" }, "tone": "muted", "role": "secondary" } },
-            { "type": "Inline", "props": { "justify": "end", "gap": "s" }, "children": [
-              { "type": "Button", "props": { "label": { "t": "share.cancel" }, "autoFocus": true }, "on": { "press": { "set": "local.step", "to": "draft" } } },
-              { "type": "Button", "props": { "label": { "t": "share.first.turnOn" }, "variant": "primary" },
-                "on": { "press": [{ "set": "local.sharingOn", "to": true }, { "set": "local.step", "to": "draft" }, { "set": "local.status", "to": "creating" }] } }
-            ] }
-          ] }
-        } }
-      ] },
-
-    { "type": "Dialog", "id": "reviewDialog", "when": { "get": "local.review" },
-      "props": { "title": { "t": "share.review.title", "args": { "target": { "get": "local.target" } } }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "local.review" }, "size": "m", "height": "stable" },
-      "on": { "openChange": { "set": "local.review", "to": { "get": "event.open" } } },
+                 {
+                  "type": "Button",
+                  "when": {
+                   "get": "local.link"
+                  },
+                  "props": {
+                   "label": {
+                    "t": "share.dialog.copyLink"
+                   },
+                   "icon": "link",
+                   "disabled": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.scenario"
+                      },
+                      "deleted"
+                     ]
+                    }
+                   },
+                   "disabledReason": {
+                    "t": "share.dialog.blocked",
+                    "args": {
+                     "scenario": {
+                      "get": "local.scenario"
+                     }
+                    }
+                   }
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.status",
+                    "to": {
+                     "expr": {
+                      "if": [
+                       {
+                        "==": [
+                         {
+                          "get": "local.scenario"
+                         },
+                         "offline"
+                        ]
+                       },
+                       "waiting",
+                       "publishing"
+                      ]
+                     }
+                    }
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "when": {
+                   "get": "local.passcode"
+                  },
+                  "props": {
+                   "label": {
+                    "t": "share.dialog.copyCode"
+                   },
+                   "icon": "lock",
+                   "disabled": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.scenario"
+                      },
+                      "deleted"
+                     ]
+                    }
+                   },
+                   "disabledReason": {
+                    "t": "share.dialog.blocked",
+                    "args": {
+                     "scenario": {
+                      "get": "local.scenario"
+                     }
+                    }
+                   }
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.status",
+                    "to": {
+                     "expr": {
+                      "if": [
+                       {
+                        "==": [
+                         {
+                          "get": "local.scenario"
+                         },
+                         "offline"
+                        ]
+                       },
+                       "waiting",
+                       "publishing"
+                      ]
+                     }
+                    }
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "when": {
+                   "expr": {
+                    "==": [
+                     {
+                      "get": "local.system"
+                     },
+                     "macos"
+                    ]
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "share.dialog.copyInfo"
+                   },
+                   "icon": "copy",
+                   "disabled": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.scenario"
+                      },
+                      "deleted"
+                     ]
+                    }
+                   },
+                   "disabledReason": {
+                    "t": "share.dialog.blocked",
+                    "args": {
+                     "scenario": {
+                      "get": "local.scenario"
+                     }
+                    }
+                   }
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.status",
+                    "to": {
+                     "expr": {
+                      "if": [
+                       {
+                        "==": [
+                         {
+                          "get": "local.scenario"
+                         },
+                         "offline"
+                        ]
+                       },
+                       "waiting",
+                       "publishing"
+                      ]
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             "false": {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "wrap": true,
+               "align": "center"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.dialog.primary",
+                  "args": {
+                   "system": {
+                    "get": "local.system"
+                   }
+                  }
+                 },
+                 "variant": "primary",
+                 "disabled": {
+                  "expr": {
+                   "or": [
+                    {
+                     "==": [
+                      {
+                       "get": "local.scenario"
+                      },
+                      "deleted"
+                     ]
+                    },
+                    {
+                     "==": [
+                      {
+                       "get": "local.scenario"
+                      },
+                      "offline"
+                     ]
+                    },
+                    {
+                     "and": [
+                      {
+                       "!": {
+                        "get": "local.link"
+                       }
+                      },
+                      {
+                       "!": {
+                        "get": "local.passcode"
+                       }
+                      }
+                     ]
+                    }
+                   ]
+                  }
+                 },
+                 "disabledReason": {
+                  "t": "share.dialog.blockedFirst",
+                  "args": {
+                   "scenario": {
+                    "get": "local.scenario"
+                   }
+                  }
+                 }
+                },
+                "on": {
+                 "press": {
+                  "set": "local.step",
+                  "to": "first"
+                 }
+                }
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "related": true,
+                 "label": {
+                  "t": "share.dialog.copyGroup"
+                 }
+                },
+                "children": [
+                 {
+                  "type": "Button",
+                  "when": {
+                   "get": "local.link"
+                  },
+                  "props": {
+                   "label": {
+                    "t": "share.dialog.copyLink"
+                   },
+                   "icon": "link"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.step",
+                    "to": "first"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "when": {
+                   "get": "local.passcode"
+                  },
+                  "props": {
+                   "label": {
+                    "t": "share.dialog.copyCode"
+                   },
+                   "icon": "lock"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.step",
+                    "to": "first"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "when": {
+                   "expr": {
+                    "==": [
+                     {
+                      "get": "local.system"
+                     },
+                     "macos"
+                    ]
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "share.dialog.copyInfo"
+                   },
+                   "icon": "copy"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.step",
+                    "to": "first"
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           },
+           {
+            "type": "Inline",
+            "when": {
+             "expr": {
+              "in": [
+               {
+                "get": "local.status"
+               },
+               [
+                "publishing",
+                "creating"
+               ]
+              ]
+             }
+            },
+            "props": {
+             "gap": "s",
+             "align": "center",
+             "wrap": true
+            },
+            "children": [
+             {
+              "type": "Spinner",
+              "props": {
+               "label": {
+                "t": "share.status.working",
+                "args": {
+                 "status": {
+                  "get": "local.status"
+                 }
+                }
+               },
+               "size": "s"
+              }
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "share.status.working",
+                "args": {
+                 "status": {
+                  "get": "local.status"
+                 }
+                }
+               },
+               "role": "secondary",
+               "announce": true
+              }
+             },
+             {
+              "type": "Button",
+              "props": {
+               "label": {
+                "t": "share.mock.finish"
+               },
+               "variant": "subtle",
+               "size": "s"
+              },
+              "on": {
+               "press": {
+                "set": "local.status",
+                "to": "done"
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "StatusRow",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.status"
+               },
+               "waiting"
+              ]
+             }
+            },
+            "props": {
+             "message": {
+              "t": "share.status.waiting"
+             },
+             "tone": "info",
+             "icon": "cloudOff"
+            }
+           },
+           {
+            "type": "StatusRow",
+            "when": {
+             "expr": {
+              "==": [
+               {
+                "get": "local.status"
+               },
+               "done"
+              ]
+             }
+            },
+            "props": {
+             "message": {
+              "t": "share.status.done",
+              "args": {
+               "system": {
+                "get": "local.system"
+               }
+              }
+             },
+             "tone": "success",
+             "icon": "check"
+            }
+           },
+           {
+            "type": "Stack",
+            "when": {
+             "expr": {
+              "or": [
+               {
+                "get": "local.link"
+               },
+               {
+                "get": "local.passcode"
+               }
+              ]
+             }
+            },
+            "props": {
+             "gap": "xs"
+            },
+            "children": [
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "share.dialog.preview"
+               },
+               "role": "label"
+              }
+             },
+             {
+              "type": "Surface",
+              "props": {
+               "variant": "sunken",
+               "shape": "control",
+               "padding": "m"
+              },
+              "children": [
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "xs"
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "share.info.title",
+                    "args": {
+                     "target": {
+                      "get": "local.target"
+                     }
+                    }
+                   },
+                   "role": "secondary"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "when": {
+                   "get": "local.link"
+                  },
+                  "props": {
+                   "value": {
+                    "t": "share.info.link"
+                   },
+                   "role": "secondary"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "when": {
+                   "get": "local.passcode"
+                  },
+                  "props": {
+                   "value": {
+                    "t": "share.info.code",
+                    "args": {
+                     "both": {
+                      "expr": {
+                       "if": [
+                        {
+                         "get": "local.link"
+                        },
+                        "yes",
+                        "no"
+                       ]
+                      }
+                     }
+                    }
+                   },
+                   "role": "secondary"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "share.info.until"
+                   },
+                   "role": "secondary"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "share.info.forward"
+                   },
+                   "role": "secondary"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "share.info.copies"
+                   },
+                   "role": "secondary"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "type": "Stack",
+          "when": {
+           "expr": {
+            "==": [
+             {
+              "get": "local.target"
+             },
+             "book"
+            ]
+           }
+          },
+          "props": {
+           "gap": "s"
+          },
+          "children": [
+           {
+            "type": "Divider"
+           },
+           {
+            "type": "Inline",
+            "children": [
+             {
+              "type": "Button",
+              "props": {
+               "label": {
+                "t": "share.dialog.before",
+                "args": {
+                 "count": 2
+                }
+               },
+               "variant": "subtle",
+               "expanded": {
+                "get": "local.history"
+               },
+               "bleed": true
+              },
+              "on": {
+               "press": {
+                "set": "local.history",
+                "to": {
+                 "expr": {
+                  "!": {
+                   "get": "local.history"
+                  }
+                 }
+                }
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "when": {
+             "get": "local.history"
+            },
+            "props": {
+             "gap": "s"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "wrap": true
+              },
+              "children": [
+               {
+                "type": "StatusRow",
+                "props": {
+                 "message": {
+                  "t": "share.dialog.newer",
+                  "args": {
+                   "count": 3
+                  }
+                 },
+                 "tone": "info",
+                 "icon": "info"
+                }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.dialog.addThem"
+                 },
+                 "size": "s"
+                }
+               }
+              ]
+             },
+             {
+              "each": {
+               "get": "vm.mockShare.sharesBefore"
+              },
+              "as": "row",
+              "key": "row.id",
+              "render": {
+               "type": "ItemCard",
+               "props": {
+                "title": {
+                 "get": "row.methods"
+                },
+                "detail": {
+                 "get": "row.detail"
+                },
+                "badge": {
+                 "get": "row.state"
+                },
+                "icon": {
+                 "get": "row.icon"
+                }
+               },
+               "children": [
+                {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "xs",
+                  "wrap": true
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "props": {
+                    "label": {
+                     "t": "share.dialog.copyLink"
+                    },
+                    "size": "s"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "props": {
+                    "label": {
+                     "t": "share.row.change"
+                    },
+                    "size": "s"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "props": {
+                    "label": {
+                     "t": "share.row.withdraw"
+                    },
+                    "size": "s"
+                   }
+                  }
+                 ]
+                }
+               ]
+              },
+              "empty": {
+               "type": "Text",
+               "props": {
+                "value": {
+                 "t": "share.list.empty"
+                },
+                "tone": "muted"
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       "first": {
+        "type": "Stack",
+        "props": {
+         "gap": "l"
+        },
+        "children": [
+         {
+          "type": "Inline",
+          "props": {
+           "gap": "m",
+           "align": "center"
+          },
+          "children": [
+           {
+            "type": "StepMark",
+            "props": {
+             "icon": "share",
+             "tone": "accent",
+             "size": "compact"
+            }
+           },
+           {
+            "type": "Heading",
+            "props": {
+             "level": "2",
+             "value": {
+              "t": "share.first.title"
+             }
+            }
+           }
+          ]
+         },
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "share.first.lead"
+           },
+           "role": "lead"
+          }
+         },
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "s"
+          },
+          "children": [
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "share.first.created"
+             },
+             "role": "label"
+            }
+           },
+           {
+            "type": "ItemCard",
+            "props": {
+             "title": {
+              "t": "share.first.repo"
+             },
+             "detail": {
+              "t": "share.first.repo.detail"
+             },
+             "icon": "github"
+            }
+           },
+           {
+            "type": "ItemCard",
+            "props": {
+             "title": {
+              "t": "share.first.site"
+             },
+             "detail": {
+              "t": "share.first.site.detail"
+             },
+             "icon": "globe"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "s"
+          },
+          "children": [
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "share.first.see"
+             },
+             "role": "label"
+            }
+           },
+           {
+            "type": "ItemCard",
+            "props": {
+             "title": {
+              "t": "share.first.shared"
+             },
+             "badge": {
+              "t": "share.badge.shared"
+             },
+             "icon": "lock"
+            }
+           },
+           {
+            "type": "ItemCard",
+            "props": {
+             "title": {
+              "t": "share.first.published"
+             },
+             "badge": {
+              "t": "share.badge.published"
+             },
+             "icon": "globe"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "share.first.history"
+           },
+           "tone": "muted"
+          }
+         },
+         {
+          "type": "Inline",
+          "children": [
+           {
+            "type": "Button",
+            "props": {
+             "label": {
+              "t": "share.first.more"
+             },
+             "variant": "subtle",
+             "size": "s",
+             "bleed": true,
+             "expanded": {
+              "get": "local.more"
+             }
+            },
+            "on": {
+             "press": {
+              "set": "local.more",
+              "to": {
+               "expr": {
+                "!": {
+                 "get": "local.more"
+                }
+               }
+              }
+             }
+            }
+           }
+          ]
+         },
+         {
+          "type": "Text",
+          "when": {
+           "get": "local.more"
+          },
+          "props": {
+           "value": {
+            "t": "share.first.more.detail"
+           },
+           "tone": "muted",
+           "role": "secondary"
+          }
+         },
+         {
+          "type": "Inline",
+          "props": {
+           "justify": "end",
+           "gap": "s"
+          },
+          "children": [
+           {
+            "type": "Button",
+            "props": {
+             "label": {
+              "t": "share.cancel"
+             },
+             "autoFocus": true
+            },
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "draft"
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "props": {
+             "label": {
+              "t": "share.first.turnOn"
+             },
+             "variant": "primary"
+            },
+            "on": {
+             "press": [
+              {
+               "set": "local.sharingOn",
+               "to": true
+              },
+              {
+               "set": "local.step",
+               "to": "draft"
+              },
+              {
+               "set": "local.status",
+               "to": "creating"
+              }
+             ]
+            }
+           }
+          ]
+         }
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "type": "Dialog",
+    "id": "reviewDialog",
+    "when": {
+     "get": "local.review"
+    },
+    "props": {
+     "title": {
+      "t": "share.review.title",
+      "args": {
+       "target": {
+        "get": "local.target"
+       }
+      }
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "get": "local.review"
+     },
+     "size": "m",
+     "height": "stable"
+    },
+    "on": {
+     "openChange": {
+      "set": "local.review",
+      "to": {
+       "get": "event.open"
+      }
+     }
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "m"
+      },
       "children": [
-        { "type": "Stack", "props": { "gap": "m" }, "children": [
-          { "type": "Text", "props": { "value": { "t": "share.review.summary", "args": { "scenario": { "get": "local.scenario" } } }, "tone": "muted" } },
-          { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.scenario" }, "large"] } }, "props": { "gap": "s" }, "children": [
-            { "type": "Skeleton", "props": { "width": "long" } },
-            { "type": "Skeleton", "props": { "width": "medium" } },
-            { "type": "Skeleton", "props": { "width": "long" } },
-            { "type": "Skeleton", "props": { "width": "short" } }
-          ] },
-          { "type": "FileTree", "id": "reviewTree", "when": { "expr": { "!=": [{ "get": "local.scenario" }, "large"] } }, "props": { "label": { "t": "share.review.tree" }, "items": { "get": "vm.mockShare.reviewTree" } } },
-          { "type": "Inline", "props": { "justify": "end" }, "children": [
-            { "type": "Button", "props": { "label": { "t": "share.review.done" }, "variant": "primary" }, "on": { "press": { "set": "local.review", "to": false } } }
-          ] }
-        ] }
-      ] },
-
-    { "type": "Dialog", "id": "publishPointer", "when": { "expr": { "==": [{ "get": "local.open" }, "publish"] } },
-      "props": { "title": { "t": "publish.pointer.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "expr": { "==": [{ "get": "local.open" }, "publish"] } }, "size": "s", "height": "content" },
-      "on": { "openChange": { "set": "local.open", "to": "" } },
+       {
+        "type": "Text",
+        "props": {
+         "value": {
+          "t": "share.review.summary",
+          "args": {
+           "scenario": {
+            "get": "local.scenario"
+           }
+          }
+         },
+         "tone": "muted"
+        }
+       },
+       {
+        "type": "Stack",
+        "when": {
+         "expr": {
+          "==": [
+           {
+            "get": "local.scenario"
+           },
+           "large"
+          ]
+         }
+        },
+        "props": {
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "Skeleton",
+          "props": {
+           "width": "long"
+          }
+         },
+         {
+          "type": "Skeleton",
+          "props": {
+           "width": "medium"
+          }
+         },
+         {
+          "type": "Skeleton",
+          "props": {
+           "width": "long"
+          }
+         },
+         {
+          "type": "Skeleton",
+          "props": {
+           "width": "short"
+          }
+         }
+        ]
+       },
+       {
+        "type": "FileTree",
+        "id": "reviewTree",
+        "when": {
+         "expr": {
+          "!=": [
+           {
+            "get": "local.scenario"
+           },
+           "large"
+          ]
+         }
+        },
+        "props": {
+         "label": {
+          "t": "share.review.tree"
+         },
+         "items": {
+          "get": "vm.mockShare.reviewTree"
+         }
+        }
+       },
+       {
+        "type": "Inline",
+        "props": {
+         "justify": "end"
+        },
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "share.review.done"
+           },
+           "variant": "primary"
+          },
+          "on": {
+           "press": {
+            "set": "local.review",
+            "to": false
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "Dialog",
+    "id": "publishDialog",
+    "when": {
+     "expr": {
+      "==": [
+       {
+        "get": "local.open"
+       },
+       "publish"
+      ]
+     }
+    },
+    "props": {
+     "title": {
+      "t": "publish.title",
+      "args": {
+       "target": {
+        "get": "local.target"
+       }
+      }
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "expr": {
+       "==": [
+        {
+         "get": "local.open"
+        },
+        "publish"
+       ]
+      }
+     },
+     "size": "s",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "set": "local.open",
+      "to": ""
+     }
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "l"
+      },
       "children": [
-        { "type": "Stack", "props": { "gap": "m" }, "children": [
-          { "type": "Text", "props": { "value": { "t": "publish.pointer.text" } } },
-          { "type": "Inline", "props": { "justify": "end", "gap": "s" }, "children": [
-            { "type": "Button", "props": { "label": { "t": "share.cancel" } }, "on": { "press": { "set": "local.open", "to": "" } } },
-            { "type": "Button", "props": { "label": { "t": "publish.pointer.open" }, "variant": "primary" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.share.publish" } } } }
-          ] }
-        ] }
-      ] }
-  ] }
+       {
+        "type": "ItemCard",
+        "when": {
+         "expr": {
+          "in": [
+           {
+            "get": "local.target"
+           },
+           [
+            "book",
+            "ch1",
+            "ch2"
+           ]
+          ]
+         }
+        },
+        "props": {
+         "title": {
+          "t": "share.mock.name",
+          "args": {
+           "target": {
+            "get": "local.target"
+           }
+          }
+         },
+         "detail": {
+          "t": "share.dialog.detail",
+          "args": {
+           "target": {
+            "get": "local.target"
+           },
+           "scenario": "normal"
+          }
+         },
+         "badge": {
+          "t": "publish.badge"
+         },
+         "icon": "folder"
+        }
+       },
+       {
+        "type": "ItemCard",
+        "when": {
+         "expr": {
+          "!": {
+           "in": [
+            {
+             "get": "local.target"
+            },
+            [
+             "book",
+             "ch1",
+             "ch2"
+            ]
+           ]
+          }
+         }
+        },
+        "props": {
+         "title": {
+          "t": "share.mock.name",
+          "args": {
+           "target": {
+            "get": "local.target"
+           }
+          }
+         },
+         "detail": {
+          "t": "share.dialog.detail",
+          "args": {
+           "target": {
+            "get": "local.target"
+           },
+           "scenario": "normal"
+          }
+         },
+         "badge": {
+          "t": "publish.badge"
+         },
+         "icon": "document"
+        }
+       },
+       {
+        "type": "Text",
+        "props": {
+         "value": {
+          "t": "publish.text",
+          "args": {
+           "target": {
+            "get": "local.target"
+           }
+          }
+         }
+        }
+       },
+       {
+        "type": "StatusRow",
+        "when": {
+         "expr": {
+          "==": [
+           {
+            "get": "local.target"
+           },
+           "book"
+          ]
+         }
+        },
+        "props": {
+         "message": {
+          "t": "publish.sharesKeep"
+         },
+         "tone": "info",
+         "icon": "info"
+        }
+       },
+       {
+        "type": "Inline",
+        "props": {
+         "justify": "end",
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "share.cancel"
+           },
+           "autoFocus": true
+          },
+          "on": {
+           "press": {
+            "set": "local.open",
+            "to": ""
+           }
+          }
+         },
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "publish.confirm"
+           },
+           "variant": "primary"
+          },
+          "on": {
+           "press": [
+            {
+             "set": "local.status",
+             "to": "published"
+            },
+            {
+             "set": "local.open",
+             "to": ""
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "Layer",
+    "id": "toasts",
+    "when": {
+     "expr": {
+      "==": [
+       {
+        "get": "local.status"
+       },
+       "published"
+      ]
+     }
+    },
+    "props": {
+     "layer": "toast",
+     "position": "bottomCenter"
+    },
+    "children": [
+     {
+      "type": "Toast",
+      "props": {
+       "message": {
+        "get": "vm.mockShare.toasts.published"
+       },
+       "dismissLabel": {
+        "t": "toast.dismiss"
+       }
+      },
+      "on": {
+       "dismiss": {
+        "set": "local.status",
+        "to": ""
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
 }
