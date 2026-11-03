@@ -281,6 +281,10 @@
     "fontGridCell": { "$value": "{ref.size.110}", "$description": "A font cell's width in the font picker's grid." },
     "pillMax": { "$value": "{ref.size.200}", "$description": "A project pill's widest; a longer name ends in an ellipsis." },
     "imageThumb": { "$value": "{ref.size.96}", "$description": "An image's thumbnail in a dialog (Auto caption)." },
+    "numberField": {
+      "$value": "{ref.size.80}",
+      "$description": "A short number field (Edit image's Left, Top, Width, Height): four or five digits, so a row of them fits beside their controls."
+    },
     "textAreaMax": {
       "$value": "{ref.size.25vh}",
       "$description": "A read-only multi-line field's most height before it scrolls: the report Send feedback posts (D-203)."

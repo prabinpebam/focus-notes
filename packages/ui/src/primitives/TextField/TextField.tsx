@@ -18,6 +18,7 @@ export interface TextFieldProps {
   focusRequest?: number;
   /** 32 px tall beside 32 px buttons in a bar (the link editor); 40 px otherwise. */
   size?: keyof typeof s.size;
+  width?: keyof typeof s.width;
   /** Several lines (the invite message, D-143): Enter starts a new line, and it grows from about six lines. */
   multiline?: boolean;
   /** A two-line prompt that grows to the token maximum; only the field scrolls beyond it. */
@@ -35,7 +36,7 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", multiline, compactMultiline, readOnly, scrolls, required, id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const area = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -43,7 +44,7 @@ export function TextField({ label, value, placeholder, description, type = "text
   }, [focusRequest]);
   return (
     <AriaTextField
-      className={s.root}
+      className={`${s.root} ${s.width[width]}`}
       value={value ?? ""}
       onChange={(v) => onChange?.({ value: v })}
       type={type}

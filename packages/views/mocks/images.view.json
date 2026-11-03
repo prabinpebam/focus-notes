@@ -4112,7 +4112,9 @@
                      "value": {
                       "get": "vm.mocks.cropLeft"
                      },
-                     "autoFocus": true
+                     "autoFocus": true,
+                     "size": "m",
+                     "width": "number"
                     }
                    },
                    {
@@ -4123,7 +4125,9 @@
                      },
                      "value": {
                       "get": "vm.mocks.cropTop"
-                     }
+                     },
+                     "size": "m",
+                     "width": "number"
                     }
                    },
                    {
@@ -4134,7 +4138,9 @@
                      },
                      "value": {
                       "get": "vm.mocks.cropWidth"
-                     }
+                     },
+                     "size": "m",
+                     "width": "number"
                     }
                    },
                    {
@@ -4145,128 +4151,184 @@
                      },
                      "value": {
                       "get": "vm.mocks.cropHeight"
-                     }
-                    }
-                   }
-                  ]
-                 },
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center"
-                  },
-                  "children": [
-                   {
-                    "type": "IconButton",
-                    "on": {
-                     "press": {
-                      "set": "local.rot",
-                      "to": {
-                       "expr": {
-                        "if": [
-                         {
-                          "==": [
-                           {
-                            "get": "local.rot"
-                           },
-                           "0"
-                          ]
-                         },
-                         "270",
-                         {
-                          "==": [
-                           {
-                            "get": "local.rot"
-                           },
-                           "270"
-                          ]
-                         },
-                         "180",
-                         {
-                          "==": [
-                           {
-                            "get": "local.rot"
-                           },
-                           "180"
-                          ]
-                         },
-                         "90",
-                         "0"
-                        ]
-                       }
-                      }
-                     }
-                    },
-                    "props": {
-                     "icon": "undo",
-                     "label": {
-                      "t": "image.edit.rotateLeft"
-                     }
-                    }
-                   },
-                   {
-                    "type": "IconButton",
-                    "on": {
-                     "press": {
-                      "set": "local.rot",
-                      "to": {
-                       "expr": {
-                        "if": [
-                         {
-                          "==": [
-                           {
-                            "get": "local.rot"
-                           },
-                           "0"
-                          ]
-                         },
-                         "90",
-                         {
-                          "==": [
-                           {
-                            "get": "local.rot"
-                           },
-                           "90"
-                          ]
-                         },
-                         "180",
-                         {
-                          "==": [
-                           {
-                            "get": "local.rot"
-                           },
-                           "180"
-                          ]
-                         },
-                         "270",
-                         "0"
-                        ]
-                       }
-                      }
-                     }
-                    },
-                    "props": {
-                     "icon": "rotate",
-                     "label": {
-                      "t": "image.edit.rotateRight"
-                     }
-                    }
-                   },
-                   {
-                    "type": "Button",
-                    "on": {
-                     "press": {
-                      "set": "local.rot",
-                      "to": "0"
-                     }
-                    },
-                    "props": {
-                     "label": {
-                      "t": "image.edit.reset"
                      },
-                     "variant": "subtle",
-                     "size": "s"
+                     "size": "m",
+                     "width": "number"
+                    }
+                   },
+                   {
+                    "switch": {
+                     "get": "local.rot"
+                    },
+                    "cases": {
+                     "0": {
+                      "type": "SegmentedControl",
+                      "on": {
+                       "action": {
+                        "set": "local.rot",
+                        "to": {
+                         "expr": {
+                          "if": [
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "left"
+                            ]
+                           },
+                           "270",
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "right"
+                            ]
+                           },
+                           "90",
+                           "0"
+                          ]
+                         }
+                        }
+                       }
+                      },
+                      "props": {
+                       "label": {
+                        "t": "image.edit.turn"
+                       },
+                       "options": {
+                        "get": "vm.mocks.rotateActions"
+                       },
+                       "actions": true
+                      }
+                     },
+                     "90": {
+                      "type": "SegmentedControl",
+                      "on": {
+                       "action": {
+                        "set": "local.rot",
+                        "to": {
+                         "expr": {
+                          "if": [
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "left"
+                            ]
+                           },
+                           "0",
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "right"
+                            ]
+                           },
+                           "180",
+                           "0"
+                          ]
+                         }
+                        }
+                       }
+                      },
+                      "props": {
+                       "label": {
+                        "t": "image.edit.turn"
+                       },
+                       "options": {
+                        "get": "vm.mocks.rotateActions"
+                       },
+                       "actions": true
+                      }
+                     },
+                     "180": {
+                      "type": "SegmentedControl",
+                      "on": {
+                       "action": {
+                        "set": "local.rot",
+                        "to": {
+                         "expr": {
+                          "if": [
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "left"
+                            ]
+                           },
+                           "90",
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "right"
+                            ]
+                           },
+                           "270",
+                           "0"
+                          ]
+                         }
+                        }
+                       }
+                      },
+                      "props": {
+                       "label": {
+                        "t": "image.edit.turn"
+                       },
+                       "options": {
+                        "get": "vm.mocks.rotateActions"
+                       },
+                       "actions": true
+                      }
+                     },
+                     "270": {
+                      "type": "SegmentedControl",
+                      "on": {
+                       "action": {
+                        "set": "local.rot",
+                        "to": {
+                         "expr": {
+                          "if": [
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "left"
+                            ]
+                           },
+                           "180",
+                           {
+                            "==": [
+                             {
+                              "get": "event.id"
+                             },
+                             "right"
+                            ]
+                           },
+                           "0",
+                           "0"
+                          ]
+                         }
+                        }
+                       }
+                      },
+                      "props": {
+                       "label": {
+                        "t": "image.edit.turn"
+                       },
+                       "options": {
+                        "get": "vm.mocks.rotateActions"
+                       },
+                       "actions": true
+                      }
+                     }
                     }
                    }
                   ]

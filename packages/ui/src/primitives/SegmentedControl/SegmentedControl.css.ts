@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { tokens, breakpoints } from "@focus-notes/tokens";
+import { controlMetrics } from "../control.css.ts";
 
 const t = tokens.cmp.segmentedControl;
 
@@ -59,6 +60,7 @@ const segmentBase = style({
   transitionTimingFunction: t.easing,
   selectors: {
     "&[data-hovered]": { backgroundColor: t.hover },
+    "&[data-pressed]": { backgroundColor: t.selected },
     "&[data-selected]": { backgroundColor: t.selected, color: t.selectedText, boxShadow: t.shadow },
     // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
@@ -76,3 +78,8 @@ export const segment = {
     overflow: "visible",
   }]),
 };
+
+// An action segment is a button: no browser chrome, the track's font, its words centred like every control.
+export const actionSegment = style({ ...controlMetrics, borderStyle: "none", backgroundColor: "transparent", fontFamily: t.font, fontSize: t.fontSize });
+// An icon-only action segment: square, as wide as the track is tall inside its padding.
+export const iconSegment = style({ flex: "0 0 auto", aspectRatio: "1", paddingInline: 0 });

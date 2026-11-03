@@ -42,7 +42,7 @@ export const ITEM_SHAPES: Readonly<Record<ListOf, ItemShape | typeof STRING_ITEM
     items: "array?", busy: "boolean?", busyLabel: "string?", loading: "boolean?",
   }, { items: "commandItems" }),
   menuSections: shape<MenuSection>({ id: "string", label: "string?", items: "array" }, { items: "commandItems" }),
-  options: shape<Option>({ id: "string", label: "string" }),
+  options: shape<Option>({ id: "string", label: "string", icon: "string?" }),
   keyCaps: STRING_ITEMS,
   keyBindings: shape<KeyBinding>({ id: "string", chord: "string" }),
   resultItems: shape<ResultItem>({
