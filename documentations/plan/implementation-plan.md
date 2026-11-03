@@ -407,7 +407,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13 | WP-P.4 | security, design-system, accessibility |
 | WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07 | WP-P.4, WP-P.3 | code, design-system, accessibility |
 | WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
-| WP-P.8 | Quick notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
+| WP-P.8 | Local notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
 | WP-P.9 | Item-first share dialog | SHR-13, SHR-14, SHR-15, SHR-16 | WP-5.3, WP-P.16 | code, security, design-system, accessibility |
 | WP-P.10 | Shares without names or revealing identifiers | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |
 | WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
@@ -418,6 +418,8 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.16 | Switch primitive | DSY-15 | none | design-system, accessibility |
 | WP-P.17 | Call it a project | PRJ-11 | none | design-system, accessibility |
 | WP-P.18 | Turn sharing on and off | PRJ-10 | WP-P.4, WP-P.9, WP-P.12, WP-5.1 | code, security, design-system, accessibility |
+| WP-P.19 | Launch where I left off | PRJ-14 | WP-P.4 | code |
+| WP-P.20 | The Open view | PRJ-15, PRJ-16, PRJ-17 | WP-P.6, WP-P.8 | code, design-system, accessibility |
 
 These are independently reviewable slices; lookahead permits design without unrelated stage gates. **Order (D-314):** the smallest owner-visible slices go first and don't wait for projects: WP-P.16 (Switch) and WP-P.9 (the owner's three share-dialog fixes on today's sharing), WP-P.1 to WP-P.3 (keys, write at caret, file names) and WP-P.17 (the [terminology move](../experience/projects.md#meeting-project-for-the-first-time), mostly words). Then WP-P.4 (windows and scope), WP-P.5 to WP-P.8, and the site work (WP-P.12 to WP-P.15, WP-P.18). Each slice gives the owner a view or behaviour to try within about an hour of work; larger ones are reviewed as JSON views first. WP-P.10 includes opaque link/code/path/file identifiers and the extended leak checks (MP.14). Accepted choices are recorded in [Next direction](next-direction.md#what-needs-the-owner); none of the six remain open.
 

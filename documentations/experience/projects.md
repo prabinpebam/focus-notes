@@ -3,7 +3,7 @@
 Separate places for separate work, without making every thought choose a project first.
 
 > [!NOTE]
-> **TL;DR.** A project is one private GitHub repository, opened in its own window. Its files, search, history, people and commits never mix with another project's. Open several; identify them by name, colour and logo. Pin projects and folders, return to recent files with their place, jot in local Quick notes, or open a file on its own. A project starts **Private only**; its first share explains the public site before creating anything. This is a **planned specification**, not the current build. Source: [the owner's nested notes](../plan/next-direction.md), decisions D-272 to D-293.
+> **TL;DR.** A project is one private GitHub repository, opened in its own window. Its files, search, history, people and commits never mix with another project's. Open several; identify them by name, colour and logo. Pin projects and folders, return to recent files with their place, jot in local Local notes, or open a file on its own. A project starts **Private only**; its first share explains the public site before creating anything. This is a **planned specification**, not the current build. Source: [the owner's nested notes](../plan/next-direction.md), decisions D-272 to D-293.
 
 ## What a project is for
 
@@ -13,7 +13,7 @@ Work, a book and a club each need their own context. A folder groups notes insid
 <figure class="slate-figure">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 390" role="img" aria-labelledby="fnproj-model__title fnproj-model__desc" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="fnproj-model__title">One private project; a public site only when you enable sharing</title>
-<desc id="fnproj-model__desc">The project window contains notes, files, search and history and saves only to its own private GitHub repository. A separate public site repository is created only after the first-share confirmation. Shared notes leave as encrypted pages; published notes are readable by anyone. Quick notes and external files stay local, outside the project.</desc>
+<desc id="fnproj-model__desc">The project window contains notes, files, search and history and saves only to its own private GitHub repository. A separate public site repository is created only after the first-share confirmation. Shared notes leave as encrypted pages; published notes are readable by anyone. Local notes and external files stay local, outside the project.</desc>
 <g id="fnproj-model__project" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="fnproj-model__window" x="24" y="32" width="284" height="226" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
 <text x="44" y="68" font-size="20" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnproj-model__window" data-slate-fit-padding="16">Book · project window</text>
@@ -39,7 +39,7 @@ Work, a book and a club each need their own context. A folder groups notes insid
 </g>
 <g id="fnproj-model__local" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
 <rect id="fnproj-model__localbox" x="24" y="294" width="952" height="64" rx="12" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
-<text x="44" y="333" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnproj-model__localbox" data-slate-fit-padding="16">Outside projects: Quick notes and standalone files · saved locally · never uploaded automatically</text>
+<text x="44" y="333" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnproj-model__localbox" data-slate-fit-padding="16">Outside projects: Local notes and standalone files · saved locally · never uploaded automatically</text>
 </g>
 </svg>
 <figcaption>Project = private repository; its site = public repository (D-272, D-274). Existing pairs keep those repositories in place; only their on-screen names change. For new projects the dashed connection appears only after sharing is enabled.</figcaption>
@@ -56,7 +56,7 @@ The figure's text alternative is the model itself: a project window owns one pri
 | Moment | What the person sees | Behaviour |
 | --- | --- | --- |
 | Existing owner/user upgrades | Non-blocking one-time notice: **“Your workspace is now called a project. Your notes and files are in the same place.”** Actions **Learn about projects** / **Dismiss** | Show after restoring the same note/caret, not before saving or behind a setup wizard. Keep working; dismiss is remembered on this device. |
-| First run, no existing workspace | **“Keep related notes together in a project. Each project has its own files and history.”** New project… / Open project… / Quick notes | Show the repository/site explainer in Learn more; GitHub terminology only when choosing GitHub. Quick notes needs no account. |
+| First run, no existing workspace | **“Keep related notes together in a project. Each project has its own files and history.”** New project… / Open project… / Local notes | Show the repository/site explainer in Learn more; GitHub terminology only when choosing GitHub. Local notes needs no account. |
 | Existing paired workspace | Existing project display name and **Sharing on**, with its current site address | Reuse the known private/site mapping; no new setup or public-site consent because nothing new is being created/published. If mapping is unavailable, show Find folder…; do not make an empty replacement. |
 | Project picker and Files | **Projects**, **Open project…**; Files heading **⟨project⟩**, Public/Private sections keep their visibility labels | A folder is inside a project, not another project; Recent retains locations and pins. No change to note title or disk filename. |
 | Settings | **Project** replaces Workspace; **Name**, **Folder**, **People**, **Sharing**, **Site theme**, **On GitHub** | Name is display-only. Folder shows the unchanged local location; site controls clearly describe the separate public surface. |
@@ -67,9 +67,28 @@ The figure's text alternative is the model itself: a project window owns one pri
 
 No automatic tour, forced sign-in or new modal for upgrading. A read-only/offline project still gets the new words; failed preference writes keep the notice dismissible for this session and report the save failure, never block writing. At narrow widths put the project name on its own line; keyboard/screen-reader labels use the same noun. Acceptance is the owner explaining Project versus its site from the figure and finding their existing note/settings without relocating anything (PRJ-11 / MP.15).
 
-## Opening a project
+## Launch
 
-**Open**, not switch. **Open project…** (Ctrl+Alt+O / ⌥⌘O), ⋯ → Projects, or Spotlight opens Projects. In an existing window this is a dialog; with no project open it fills the window. It offers **New project…**, existing and pinned projects, **Quick notes** and **Open file…**. Inside a project window it lists project names only, never another project's files: cross-project **Recent** appears only in the window shown when no project is open (D-309), because the owner's rule is that a project window can't browse outside its project. The list is a listbox of ItemCard rows (name, location, mark) with arrows, Home/End and type-ahead; Pin/Unpin is a separate menu button on each row. Opening a project from here never reveals that project's notes in this window.
+**Starting Focus Notes opens the note you were last editing** (owner, 3 November; D-318): its project's window, the note, its caret and its scroll, with no Projects or Open screen first. With several windows open, the **last project and file closed** count as the last edited, because the last window closed held the last word. Quitting the app with several open reopens all of them (PRJ-02), and the last one closed comes forward. A Local note or a file on its own counts the same way. If the note was deleted or moved outside Focus Notes, its project opens on the missing-file recovery; it never makes an empty note. With nothing to reopen (first run, or every window closed with nothing ever written), the Open view fills the window.
+
+## The Open view
+
+**Open**, not switch. **Open** is the one view for going somewhere else (owner, 3 November; D-319): <kbd>Ctrl+Alt+O</kbd> (<kbd>⌥⌘O</kbd>), ⋯ → Open…, or Spotlight's **> Open…**. In a window it's a dialog; with no window open it fills the window. It isn't inside any project, so it may list other projects' files: opening one opens it in its own project's window, never in this one, and this window's Files, search and scope stay its own (this amends D-309, which kept cross-project Recent out of project windows).
+
+| Part | What it holds |
+| --- | --- |
+| Top | A search field over both columns (titles, file names, project names), then **New Local note**, **Open file…**, **Open from GitHub…** and **New project…** (the deliberate flow below). |
+| Column 1: **Recent** | Files from other projects, Local notes, and files opened on their own, never folders. **Pinned files** first, then the rest ranked by frecency. A row reads **Plan** with **Book · Drafts** below, or **Local notes** / **Downloads · On its own**. The current window's project is left out; its files are in its own Files. |
+| Column 2: **Projects** | **Pinned projects**, then **Other projects** ranked by the same frecency, each an ItemCard row with its mark, name and place, Pin/Unpin and **Open**. |
+
+The owner keeps the word **Recent** even though it's ranked by more than recency: it's simple, and "Recommended" sounds pretentious. Each column is a listbox: arrows move within it, <kbd>Tab</kbd> moves between the search field and the columns, <kbd>Enter</kbd> opens, type-ahead works, and Pin/Unpin is each row's own menu button, never nested in the row. Below 640 px the columns stack, Recent first. The jobs it answers: open a file in another project, open a project, find a file or project, make a Local note, open a file, and New project.
+
+### How Recent and Projects are ranked
+
+Files and projects rank by **exponential-decay frecency** (D-321): each open adds 1 point and each editing session 2, and every score halves every **14 days**, so a note opened daily outranks one opened often months ago, and a burst of use fades smoothly rather than at a bucket edge. It's stored as one number per item (the date its score would decay to 1), so no visit history is kept and nothing is recomputed. Pinned items sit above the ranking in the order they were pinned. Removing a row from Recent forgets its score; it never deletes a file.
+
+**Opening a project from Open**
+
 
 1. Choose a known project, a local project folder, or **Open from GitHub…**. Signed out, sign in only for the GitHub path. Existing local projects open offline.
 2. If already open, bring its window forward. Do not mount another watcher or copy the working folder.
@@ -107,7 +126,7 @@ No automatic tour, forced sign-in or new modal for upgrading. A read-only/offlin
 
 ### Creating and closing
 
-**New project is a deliberate action of its own** (owner's correction, 3 November; D-315). It's reachable only from **New project…** in Projects (and its empty and first-run states) and from Spotlight's **> New project…**, never from New note, New note in… (which only picks a folder in this project) or Quick notes. It opens a short stepped dialog with step dots, **Back**, **Next** and **Cancel** on every step:
+**New project is a deliberate action of its own** (owner's correction, 3 November; D-315). It's reachable only from **New project…** in Projects (and its empty and first-run states) and from Spotlight's **> New project…**, never from New note, New note in… (which only picks a folder in this project) or Local notes. It opens a short stepped dialog with step dots, **Back**, **Next** and **Cancel** on every step:
 
 1. **Name:** **Project name**, then GitHub owner (only when more than one is available). Validate the name and collisions here; keep all input on refusal.
 2. **Private only:** three rows, each with an icon: **Only you, and people you invite, can see it** · **No website until you turn on sharing** · **Its own folder and history**, with the local folder (**Change…**).
@@ -157,7 +176,7 @@ Settings → Project offers 12 contrast-safe accent presets, 24 generic preset S
 - **Font:** **Follow app** or one of the app's writing fonts (Mono, Serif, Sans, Atkinson Hyperlegible, OpenDyslexic, System), each option drawn in its own font.
 - **Colour theme:** **Follow app, light and dark included** or one of the app's themes (Paper, Sepia, Harbor, Forest, High contrast, Ink, Dusk and their pairs), shown as the theme manager's tiles. Choosing a theme fixes this project's look, light or dark; Follow app keeps the app's theme and its switch between light and dark. This replaces the separate Appearance control (Follow app, Light, Dark) of D-313: one choice says the same thing with fewer controls, and a dark theme is how a project becomes dark.
 - **A live preview beside the controls** (above them in a narrow window), never in another dialog: a realistic sample of this project's window, with its title band, logo and accent, a heading, a paragraph with a link, a list, a quote and a code line, in the chosen font and theme. It changes on every choice at once, so the choice is made by eye, not by name.
-- **Text size is per project and remembered for it**, but isn't a setting here: <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd> (and <kbd>Ctrl</kbd>+wheel or pinch) in a project's window change only that project, and its windows open at that size next time. A window with no project (Quick notes, a file on its own) uses the app's size. The panel only says so in one line under the preview.
+- **Text size is per project and remembered for it**, but isn't a setting here: <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd> (and <kbd>Ctrl</kbd>+wheel or pinch) in a project's window change only that project, and its windows open at that size next time. A window with no project (Local notes, a file on its own) uses the app's size. The panel only says so in one line under the preview.
 
 **A project window says whose it is in three quiet places** (owner, 3 November; D-317):
 
@@ -182,17 +201,28 @@ No one-sided accent stripes. Use fills, full outlines and badges. A window is na
 
 ## Recent and pinned
 
-**Recent** is files, never folders, newest first. In Projects a row reads **Plan** with **Book · Drafts / Chapter 1** below; in Book's Files, only **Drafts / Chapter 1**. Show **Root** for the root folder. Quick notes and standalone files have explicit **Local only** location labels. Full path is available on focus/tooltip and through **Show in folder**, not forced into the row.
+**Recent** is files, never folders, newest first. In Projects a row reads **Plan** with **Book · Drafts / Chapter 1** below; in Book's Files, only **Drafts / Chapter 1**. Show **Root** for the root folder. Local notes and standalone files have explicit **Local only** location labels. Full path is available on focus/tooltip and through **Show in folder**, not forced into the row.
 
-**Pinned projects** lead Projects on this device. **Pinned folders and notes** lead Files inside the project, kept per account in `.focus-notes/pins/<account>.json`, so they follow the owner across devices but aren't imposed on collaborators (D-313). Recent keeps the 50 newest files, dropping the oldest. A pinned folder is a shortcut into its real expandable subtree, not a second copy; selecting it reveals that folder. Pin/Unpin is in row menus and Spotlight. Stable identity follows rename/move; deletion removes the shortcut, and undo restores it with the item. Missing external files offer **Locate file…** or **Remove from Recent**; removing a history row never deletes a file.
+**Two pin scopes, never mixed** (owner, 3 November; D-322):
 
-## Quick notes
+| | Pinned in **Open** | Pinned in a project's **Files** |
+| --- | --- | --- |
+| What | Projects, and files from anywhere: another project, Local notes, a file on its own | Folders and notes of this project |
+| Where it shows | The top of Open's two columns | The top of that project's Files |
+| Kept | On this device | Per account, in `.focus-notes/pins/<account>.json` (D-313) |
+| Changes the other? | No | No |
 
-**Quick notes** opens a local folder window under `Documents\Focus Notes\Quick notes`. The OS-resolved Documents location is used, not a hardcoded English directory. No sign-in, repository, share controls or implicit upload. If Documents is cloud-synced, state the detected service as the existing [notes-folder policy](notes-folder.md) does; “Local only” means no Focus Notes/GitHub backup, not a promise that another service never syncs it.
+Pinning a file in Open never pins it in its project's Files, and the other way round; the row menus say which (**Pin in Open**, **Pin in Files**).
 
-New notes autosave with the ordinary journal and appear in Recent. A failed write keeps the dirty text in recovery and says **“Couldn't save this quick note. Choose another folder or try again.”** No success state until disk confirms. Later **Import into project…** chooses a project/folder and copies the note; keep the local original until the person explicitly deletes it. A folder missing at launch uses recovery, never a silently empty replacement.
+**Pinned projects** lead Open on this device. **Pinned folders and notes** lead Files inside the project, kept per account in `.focus-notes/pins/<account>.json`, so they follow the owner across devices but aren't imposed on collaborators (D-313). Recent keeps the 50 highest-ranked files (D-321), dropping the lowest. A pinned folder is a shortcut into its real expandable subtree, not a second copy; selecting it reveals that folder. Pin/Unpin is in row menus and Spotlight. Stable identity follows rename/move; deletion removes the shortcut, and undo restores it with the item. Missing external files offer **Locate file…** or **Remove from Recent**; removing a history row never deletes a file.
 
-**Delete/restore without Git (D-298):** before an explicitly requested delete, keep a durable local recoverable copy with its identity/path/time. Failed retention means no delete and a Retry error. Undo/Recently deleted survive restart; no bespoke 30-day retention gate or timed purge. Restore uses the original folder, otherwise Quick notes root; number taken names, never overwrite. Confirm folders/counts as in Files. Recovery is not remote backup. Standalone windows have no Delete file; externally missing files keep journals and need an explicit restore/save destination.
+## Local notes
+
+**Local notes are notes that aren't part of any project** (renamed from Quick notes, owner, 3 November; D-320: "this note is not quicker than creating notes in a proper project"). **New Local note** is in Open. **Local notes** opens a local folder window under `Documents\Focus Notes\Local notes`. The OS-resolved Documents location is used, not a hardcoded English directory. No sign-in, repository, share controls or implicit upload. If Documents is cloud-synced, state the detected service as the existing [notes-folder policy](notes-folder.md) does; “Local only” means no Focus Notes/GitHub backup, not a promise that another service never syncs it.
+
+New notes autosave with the ordinary journal and appear in Recent. A failed write keeps the dirty text in recovery and says **“Couldn't save this local note. Choose another folder or try again.”** No success state until disk confirms. Later **Import into project…** chooses a project/folder and copies the note; keep the local original until the person explicitly deletes it. A folder missing at launch uses recovery, never a silently empty replacement.
+
+**Delete/restore without Git (D-298):** before an explicitly requested delete, keep a durable local recoverable copy with its identity/path/time. Failed retention means no delete and a Retry error. Undo/Recently deleted survive restart; no bespoke 30-day retention gate or timed purge. Restore uses the original folder, otherwise Local notes root; number taken names, never overwrite. Confirm folders/counts as in Files. Recovery is not remote backup. Standalone windows have no Delete file; externally missing files keep journals and need an explicit restore/save destination.
 
 ## A file on its own
 
@@ -226,7 +256,7 @@ Settings → **Project** contains **Name**, **Font**, **Colour theme** (with the
 | Project | One private scope, history and window | Workspace / repository on the main path |
 | Open project | Open or focus its separate window | Switch project |
 | Pinned | Shortcut kept at the top | Favourites |
-| Quick notes | Local capture, no GitHub setup | Temporary / unsaved notes |
+| Local notes | Local capture, no GitHub setup | Temporary / unsaved notes |
 | Share | Read-only link or access code to an item | Invite people |
 | Invite | Account-backed GitHub access to the project | Share a folder with Write |
 
@@ -236,7 +266,7 @@ Project selection/pin feedback answers within 100 ms. Prepare/open/create/invite
 
 | State | Visible result and way forward |
 | --- | --- |
-| Empty | App mark (64 px), **No projects yet**, **New project…** (primary) and **Quick notes**; no sign-in wall for local capture. Estimated VVS 82 |
+| Empty | App mark (64 px), **No projects yet**, **New project…** (primary) and **Local notes**; no sign-in wall for local capture. Estimated VVS 82 |
 | Opening / creating | **Opening “Book”…** / **Creating “Book”…** in the chosen row/task, elapsed/steps when long |
 | Missing folder | Recovery names the folder, Find folder… / Download again where appropriate; no automatic creation |
 | Offline | Local project opens; remote creation/invites unavailable with reason; keep all input |
@@ -258,7 +288,7 @@ Projects/Recent rows have text names and location, keyboard arrows and Enter; Pi
 | DD-PROJ-01 | One project per window; open, never replace | UC-PROJ-01, UC-PROJ-02, UC-PROJ-03 | Makes scope and history visible; tabs mix contexts |
 | DD-PROJ-02 | Name, accent (title band, a subtle window outline and the project pill; D-317), an optional per-project font and colour theme with a live preview, text size remembered per project, and a preset or passive uploaded logo (D-313, D-316) | UC-PROJ-04 | Colour alone excludes users; a forced whole-project theme would override personal comfort, so it's opt-in |
 | DD-PROJ-03 | File-only Recent and real folder/project pins | UC-PROJ-05, UC-PROJ-06 | Return to work without another favourites collection |
-| DD-PROJ-04 | Local Quick notes and standalone files are explicit non-project scopes | UC-PROJ-07, UC-PROJ-08 | No accidental import, upload or Git setup |
+| DD-PROJ-04 | Local Local notes and standalone files are explicit non-project scopes | UC-PROJ-07, UC-PROJ-08 | No accidental import, upload or Git setup |
 | DD-PROJ-05 | Fixed destination picker, private-first creation | UC-FILE-12, UC-SHARE-08 | Cancel has no effect; first share explains public footprint |
 | DD-PROJ-06 | Actual GitHub roles and full-project warning | UC-SHARE-09 | Never imply folder-only or personal-account Read-only access |
 | DD-PROJ-07 | Explain Project at upgrade/first run; leave files and repositories in place | UC-PROJ-01 | A naming change needs consistent words and a mental-model figure, not a storage migration (PRJ-11) |

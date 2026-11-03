@@ -149,7 +149,7 @@
       "specs": ["design/views/files.html", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "planned"
     },
     {
-      "id": "WP-P.8", "stage": "MP", "title": "Quick notes and standalone files",
+      "id": "WP-P.8", "stage": "MP", "title": "Local notes and standalone files",
       "summary": "Local-only capture and Open with, autosave/recovery/conflicts without implicit project import.",
       "requirements": ["PRJ-08", "PRJ-09"], "dependsOn": ["WP-P.6"],
       "touches": ["desktop", "core", "views"], "reviews": ["code", "security", "accessibility"],
@@ -224,6 +224,20 @@
       "requirements": ["PRJ-10"], "dependsOn": ["WP-P.4", "WP-P.9", "WP-P.12", "WP-5.1"],
       "touches": ["core", "desktop", "seal"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.19", "stage": "MP", "title": "Launch where I left off",
+      "summary": "Launch reopens the last-edited note (the last window closed) at its caret, in its project's window; recovery for a missing note; Open when there's nothing to reopen (D-318).",
+      "requirements": ["PRJ-14"], "dependsOn": ["WP-P.4"],
+      "touches": ["desktop", "core"], "reviews": ["code"],
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.20", "stage": "MP", "title": "The Open view",
+      "summary": "Ctrl+Alt+O opens Open: search, New Local note, Open file…, Open from GitHub…, New project…; Recent files and Projects in two columns ranked by exponential-decay frecency; pins in Open apart from pins in Files (D-319, D-321, D-322).",
+      "requirements": ["PRJ-15", "PRJ-16", "PRJ-17"], "dependsOn": ["WP-P.6", "WP-P.8"],
+      "touches": ["core", "views", "ui"], "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["experience/projects.md", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",

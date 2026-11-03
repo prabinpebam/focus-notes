@@ -18,7 +18,7 @@ Manage notes inside one project, then choose deliberately whether anything leave
 | Public (sharing enabled) | Explicitly published source in the site's repository |
 | Recently deleted / Recovered | Restore Git history or crash drafts without overwriting newer text |
 
-See [Files panel](../design/views/files.html) for the full interaction. [Projects](projects.md) owns project selection, Quick notes, standalone files and People.
+See [Files panel](../design/views/files.html) for the full interaction. [Projects](projects.md) owns project selection, Local notes, standalone files and People.
 
 ## Operations
 
@@ -59,6 +59,6 @@ Settings → Sharing lists **All shares** by item/expiry/state; extend and withd
 
 <h2 id="conflicts-and-offline">Offline, conflicts and recovery</h2>
 
-Project writing continues in the local clone; offline changes queue without claiming backed up. Conflicts show both versions before choosing; never silently overwrite external edits or leave half a rebase. Quick notes and standalone files have local journals but no Git safety net, so their state says Saved here / Local only.
+Project writing continues in the local clone; offline changes queue without claiming backed up. Conflicts show both versions before choosing; never silently overwrite external edits or leave half a rebase. Local notes and standalone files have local journals but no Git safety net, so their state says Saved here / Local only.
 
 The website is read-only, with its own site theme, not a browser app or ease-in plan. Old browser-only drafts must remain recoverable before [retiring the old runtime](../architecture/web-app.md); ordinary import remains independent of that retired funnel.

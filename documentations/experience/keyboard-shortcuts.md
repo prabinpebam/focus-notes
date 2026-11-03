@@ -70,8 +70,8 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Quick open a note | <kbd>⌘P</kbd> | <kbd>Ctrl+P</kbd> |  | Power | VS Code |
 | Open… (Files panel) | <kbd>⌘O</kbd> | <kbd>Ctrl+O</kbd> |  | Basic | Universal |
 | New note | <kbd>⌘N</kbd> | <kbd>Ctrl+N</kbd> | <kbd>⌃⌥N</kbd> / <kbd>Ctrl+Alt+N</kbd> | Basic | Universal |
-| New note in… (a folder in this project; in Quick notes, a new quick note) | <kbd>⇧⌘N</kbd> | <kbd>Ctrl+Shift+N</kbd> | Not available | Writer | D-280, the owner's correction of 3 November: it never lists or makes projects; retires New window's binding |
-| Open project… (separate window) | <kbd>⌥⌘O</kbd> | <kbd>Ctrl+Alt+O</kbd> | Not available | Power | D-273, D-280 |
+| New note in… (a folder in this project; in Local notes, a new local note) | <kbd>⇧⌘N</kbd> | <kbd>Ctrl+Shift+N</kbd> | Not available | Writer | D-280, the owner's correction of 3 November: it never lists or makes projects; retires New window's binding |
+| Open: other projects, recent files, Local notes, New project… | <kbd>⌥⌘O</kbd> | <kbd>Ctrl+Alt+O</kbd> | Not available | Basic | D-319: Ctrl+O is Files and Ctrl+Shift+O is Go to heading, so the key reserved for Open project… (D-273) opens the whole view |
 | Generate in AI prompt | <kbd>⌘Enter</kbd> | <kbd>Ctrl+Enter</kbd> | Not available | Writer | D-282; Enter stays newline, IME never sends |
 | Save to cloud (write, commit, push) | <kbd>⇧⌘S</kbd> or <kbd>⌘S</kbd> | <kbd>Ctrl+Shift+S</kbd> or <kbd>Ctrl+S</kbd> |  | Basic | Universal (<kbd>⌘S</kbd>); <kbd>⇧⌘S</kbd> is free, as there's no Save As (D-132) |
 | Close note / window | <kbd>⌘W</kbd> | <kbd>Ctrl+W</kbd> | Not available | Basic | Universal |

@@ -3,7 +3,7 @@
 The desktop app is where writing starts. Planned D-272/D-274/D-292 replaces browser-first setup with private projects; the remaining desktop screen inventory below records the as-built version, not approval to create a public site or vault during setup.
 
 > [!NOTE]
-> **TL;DR.** Planned: start in the desktop app with a private project, Open project… or local Quick notes. Existing Git/credential detection, device-code sign-in, safe folder selection and resumable errors remain. Create no public repository, Pages or vault during setup; confirm the optional site on first Share/Publish. Browser writing, owner Unlock and the ease-in import offer are retired by D-292. Historical screen descriptions below are retained only where they explain the current implementation.
+> **TL;DR.** Planned: start in the desktop app with a private project, Open project… or local Local notes. Existing Git/credential detection, device-code sign-in, safe folder selection and resumable errors remain. Create no public repository, Pages or vault during setup; confirm the optional site on first Share/Publish. Browser writing, owner Unlock and the ease-in import offer are retired by D-292. Historical screen descriptions below are retained only where they explain the current implementation.
 
 ## The web first run
 
@@ -11,9 +11,9 @@ The desktop app is where writing starts. Planned D-272/D-274/D-292 replaces brow
 
 ## Projects first (planned)
 
-Welcome offers **Create project**, **Open project…** and **Quick notes**. Quick notes starts in its local Documents folder without sign-in or a public site. A standalone file can open directly with no setup.
+Welcome offers **Create project**, **Open project…** and **Local notes**. Local notes starts in its local Documents folder without sign-in or a public site. A standalone file can open directly with no setup.
 
-Create/Open uses existing Git/credential detection and plain-language account steps. Creating a project creates one **private** repository, explains backup, picks a safe local folder and opens the project window; no Pages, deploy key, public repo or vault passphrase. Existing projects open in their own windows. Ready offers ordinary desktop import, not a browser-writing funnel. First Share/Publish confirms the optional public site separately. Existing-workspace mapping remains an owner decision, never automatic conversion. See [Projects](projects.md#opening-a-project).
+Create/Open uses existing Git/credential detection and plain-language account steps. Creating a project creates one **private** repository, explains backup, picks a safe local folder and opens the project window; no Pages, deploy key, public repo or vault passphrase. Existing projects open in their own windows. Ready offers ordinary desktop import, not a browser-writing funnel. First Share/Publish confirms the optional public site separately. Existing-workspace mapping remains an owner decision, never automatic conversion. See [Projects](projects.md#the-open-view).
 
 The old TL;DR/desktop screenshots below are historical where they mention publishing/vault/browser import; these clauses are superseded, while sign-in, resumable errors, folder safety and keyboard rules remain.
 

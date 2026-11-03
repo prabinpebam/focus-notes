@@ -116,6 +116,53 @@ Captured from the owner's product-notes file on 3 November. Only Focus Notes pro
 - A "Preview site" mode in the app where user can preview what their site will look like, choose theme and default font size and fonts etc.&#x20;
 ```
 
+## The owner's launch notes (3 November 2026, 18:01)
+
+Captured word for word, with their nesting, from the owner's product-notes file `focus-notes-launch.md`, relayed at 18:01. The source is never edited, moved or committed. When this page and the notes disagree, the notes win.
+
+```text
+# Focus notes launch
+
+- Launching of focus notes immediately launches the last note was was being edited.
+- Since we can have multiple instance of Focus note, the last project and file that was closed, will be considered the last edited file.
+
+## Opening other projects
+
+We need a shortcut to open this view.\
+What are the main JTBD in this view
+
+- Open a file in an another project
+- Open a project
+- Find a file/project and open it.
+- Create new "Local notes"
+  - "Local notes" are notes that are not part of any project.
+  - Let's not call this "Quick notes", this note is not quicker than creating notes in a proper project.
+- Open a file
+- New project.
+- We need a 2 column layout
+- 1st column
+  - Recent files from other projects, other local notes and files which are not from any specific projects that were opened. (While it's not just strictly recent, the term is simple to understand for users. "Recommended" sounds pretentious. So just keep the term as "recent".)
+    - Combination of recency and frequency. This is a solved problem, research online for what algorithm works best for this use case and use that algo.
+  - You can pin files too
+    - Pinning them here is different from pinning inside a project
+- 2nd Column
+  - Pinned projects
+  - Other projects
+    - Use the same recent and frequency/quantity of engagement logic from earlier for projects too.
+```
+
+### Answers to the launch notes
+
+| Note | Answer | Decision |
+| --- | --- | --- |
+| Launch opens the last note being edited | Starting Focus Notes opens the note last edited, at its caret and scroll, in its project's window, with no Projects screen first. With several windows, the last one **closed** is the last edited, because it held the last word. If that note is gone, its project opens on its missing-file recovery; never an empty note. | [D-318](decisions.md) |
+| A shortcut for the view that opens other projects | **Open** (the view that was Projects) is <kbd>Ctrl+Alt+O</kbd> (<kbd>⌥⌘O</kbd>). <kbd>Ctrl+O</kbd> is Files and <kbd>Ctrl+Shift+O</kbd> is Go to heading, so the key already reserved for Open project… (D-273) moves to the whole view. | D-319 |
+| Its jobs: open a file in another project, open a project, find a file or project, new Local note, open a file, New project | All six from one view: a search field across both columns, **Recent** files on the left, **Projects** on the right, and four actions on top: **New Local note**, **Open file…**, **Open from GitHub…** and **New project…** (the deliberate flow, D-315). | D-319 |
+| Call them Local notes, not Quick notes | Renamed everywhere: **Local notes** are notes that aren't part of any project, saved on this computer. | D-320 |
+| Two columns: Recent, then Projects | Column 1 **Recent** (the owner's word; "Recommended" rejected): files from other projects, Local notes and files opened on their own, with **pinned files** first. Column 2: **Pinned projects**, then **Other projects**. | D-319 |
+| Recency and frequency combined: research the algorithm, use the best one | **Exponential-decay frecency** with a 14-day half-life, one stored number per item, for files and projects alike. Researched against Firefox's bucketed frecency and zoxide's aging; sources in the decision. | D-321 |
+| Pinning here differs from pinning inside a project | Two pin scopes: **Pinned in Open** (files from anywhere, on this device) and **Pinned in Files** (folders and notes of one project, per account). Neither changes the other. | D-322 |
+
 ## How the notes become the spec
 
 Each note is specified in three places, in this order, so the chain stays true:
@@ -137,7 +184,7 @@ These are the recorded design answers; the six follow-up product choices below w
 | **Pinned or favourites?** | **Pinned.** Pin projects in Projects, and folders or notes in the project's Files panel. Pinned folders open their existing tree, not a duplicate collection. | The actual nesting explicitly asks for pinned **folders and projects**; notes are an additional convenience, not a replacement for folders. | Favourites; notes-only pinning. | D-277, D-293 |
 | **Recent folders or files?** | **Files only**, newest first. | A note is what people return to; its folder is one step away (*Show in Files*). | Recent folders as a second list. | D-276 |
 | **Show the folder's location?** | **Yes**, as muted text after the title: *⟨project⟩ · ⟨folder⟩* across projects, the folder alone inside a project. | Two notes called "Plan" are only told apart by their place. | Full paths (long and noisy). | D-276 |
-| **What are the use cases for files outside a project?** | Two, each with its own home. **Quick notes**: write now, decide where later, in a plain local folder that opens in its own window and keeps every note in Recent. **A file on its own**: *Open with Focus Notes* on a `.md` or `.txt` opens it in a file window, saved in place, with no project features. | They're the owner's two use cases, and neither should pull a stray file into a project's scope. | Saving quick notes into the last project; importing an opened file into a project first. | D-278, D-279 |
+| **What are the use cases for files outside a project?** | Two, each with its own home. **Local notes**: write now, decide where later, in a plain local folder that opens in its own window and keeps every note in Recent. **A file on its own**: *Open with Focus Notes* on a `.md` or `.txt` opens it in a file window, saved in place, with no project features. | They're the owner's two use cases, and neither should pull a stray file into a project's scope. | Saving local notes into the last project; importing an opened file into a project first. | D-278, D-279 |
 | **What remains on the web?** | A clean read-only website: published pages and the sealed share reader. No writing app, browser-local note store, private owner vault, demo editor or browser-to-desktop import funnel. | The owner has explicitly dropped both browser-writing models. This is a product choice, not a claim that static browser editing is technically impossible. | Rewording the browser app as a preview, offline mode or later feature. | D-292 |
 
 ## What needs the owner
@@ -165,7 +212,8 @@ Paper, suggested site name, wording/layout and bounds are reversible defaults, n
 | Spotlight closes after Enter | [Spotlight](../experience/spotlight.html) | D-283 |
 | Projects: what, why, open, scope, look, private only | [Projects](../experience/projects.md) | D-272 to D-275 |
 | Recent files and pinning | [Projects → Recent and pinned](../experience/projects.md#recent-and-pinned) | D-276, D-277 |
-| Quick notes; Open with Focus Notes | [Projects → Quick notes](../experience/projects.md#quick-notes), [A file on its own](../experience/projects.md#a-file-on-its-own) | D-278, D-279 |
+| Launch reopens the last note; the Open view; Local notes; frecency; two pin scopes | [Projects → Launch](../experience/projects.md#launch), [The Open view](../experience/projects.md#the-open-view), [Recent and pinned](../experience/projects.md#recent-and-pinned) | D-318 to D-322 |
+| Local notes; Open with Focus Notes | [Projects → Local notes](../experience/projects.md#local-notes), [A file on its own](../experience/projects.md#a-file-on-its-own) | D-278, D-279 |
 | Share Flow 1, the share dialog, review contents, switches, actions | [Sharing and visibility](../design/views/sharing.md) | D-284, D-286 to D-288 |
 | No "who"; no Flow 2 | [Sharing → Shares without names](../design/views/sharing.md#shares-without-names), [Scenarios](../product/spec/scenarios.md) | D-285, D-289 |
 | Inviting GitHub collaborators with roles | [Projects → People in a project](../experience/projects.md#people-in-a-project) | D-290 |
@@ -204,7 +252,7 @@ A critique of everything above and on the linked pages, made the same afternoon:
 | Finding | Fix |
 | --- | --- |
 | Windows has no Electron share-sheet API ([ShareMenu](https://www.electronjs.org/docs/latest/api/share-menu) is macOS only), so the owner's Share button on Windows rested on an unproven bridge. | D-308: a one-hour spike (A-SHR-01) first; until proven, the button honestly reads Copy share information (R-51, MP.19). |
-| "Multiple instances" wasn't reconciled with the single-instance lock, *Open with* routing or the tray; a project window's Projects list showed other projects' files. | One running app, one window per project, paths routed to the owning window; no other project's files inside a window ([D-309](../experience/projects.md#opening-a-project), MP.20). |
+| "Multiple instances" wasn't reconciled with the single-instance lock, *Open with* routing or the tray; a project window's Projects list showed other projects' files. | One running app, one window per project, paths routed to the owning window; no other project's files inside a window ([D-309](../experience/projects.md#the-open-view), MP.20). |
 | Existing workspaces nest the private repository inside the public one, the opposite of new projects, and a new site's place on disk was unstated. | D-306: a new project is one folder with its site at `public\`; existing layouts don't move. |
 | "Separate color theming" was narrowed to an accent; pins synced to collaborators. | Accent on the title band and Files heading plus an optional per-project Appearance; per-account pins (D-313). |
 | The plan made the owner's three share-dialog fixes wait for all of projects, made inline images wait for encrypted sharing, and packed five deep requirements into WP-P.4. | D-314: Switch (WP-P.16) and the share dialog (WP-P.9) first, the terminology move (WP-P.17) early, WP-P.4 split, turn on/off as WP-P.18, image storage apart from image sharing (WP-9.6). |
@@ -216,7 +264,7 @@ A critique of everything above and on the linked pages, made the same afternoon:
 
 | Finding | Fix |
 | --- | --- |
-| Stale or contradictory text: D-277's "folders can't be pinned", 30-day Quick notes recovery, SHR-01/SHR-11 named audiences, SHR-07's 12-character passcode, Mod+Shift+N as New window, "Make public" labels, the redirect contradiction, the live demo view, retired browser packages still marked building or verifying, "workspace" in user-can rows. | Each corrected or marked superseded; retired packages marked retired; redirects come from a rename map (D-312). |
+| Stale or contradictory text: D-277's "folders can't be pinned", 30-day Local notes recovery, SHR-01/SHR-11 named audiences, SHR-07's 12-character passcode, Mod+Shift+N as New window, "Make public" labels, the redirect contradiction, the live demo view, retired browser packages still marked building or verifying, "workspace" in user-can rows. | Each corrected or marked superseded; retired packages marked retired; redirects come from a rename map (D-312). |
 | Image details: the error didn't state the limits, crop focus was unclear, transparent images vanished in dark mode, figure corners were rounded by default, and pasting wasn't specified. | Copy with limits, focus on the Left field, a token backdrop, square figure corners, paste follows the drop path. |
 | Process notes ("this task performs no…", relay times) sat in product pages. | Removed. |
 
