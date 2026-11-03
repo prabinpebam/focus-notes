@@ -313,6 +313,14 @@
       "$value": "{ref.size.4}",
       "$description": "A strength meter's segments (D-142)."
     },
+    "switchTrack": {
+      "$value": "{ref.size.40}",
+      "$description": "A switch's track width: long enough that the thumb's two positions read as off and on (DSY-15)."
+    },
+    "switchThumb": {
+      "$value": "{ref.size.18}",
+      "$description": "A switch's thumb, inside a track as tall as a large icon (DSY-15)."
+    },
     "triggerDot": {
       "$value": "{ref.size.10}"
     },

@@ -1,0 +1,634 @@
+{
+ "tree": [
+  {
+   "id": "root",
+   "kind": "section",
+   "level": 1,
+   "label": "Book",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "book",
+   "kind": "folder",
+   "level": 2,
+   "label": "Book drafts",
+   "parent": "root",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "ch1",
+   "kind": "folder",
+   "level": 3,
+   "label": "Chapter 1",
+   "parent": "book",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "ch2",
+   "kind": "folder",
+   "level": 3,
+   "label": "Chapter 2",
+   "parent": "book",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "outline",
+   "kind": "note",
+   "level": 3,
+   "label": "Outline",
+   "parent": "book",
+   "title": "Outline.md"
+  },
+  {
+   "id": "focus",
+   "kind": "note",
+   "level": 2,
+   "label": "On focus",
+   "parent": "root",
+   "title": "On focus.md",
+   "current": true
+  },
+  {
+   "id": "ideas",
+   "kind": "note",
+   "level": 2,
+   "label": "Ideas",
+   "parent": "root",
+   "title": "Ideas.md"
+  }
+ ],
+ "rowMenu": [
+  {
+   "id": "create",
+   "items": [
+    {
+     "id": "newNote",
+     "label": "New note",
+     "icon": "newNote"
+    },
+    {
+     "id": "newFolder",
+     "label": "New folder",
+     "icon": "newFolder"
+    }
+   ]
+  },
+  {
+   "id": "share",
+   "items": [
+    {
+     "id": "share",
+     "label": "Share…",
+     "icon": "share"
+    },
+    {
+     "id": "publish",
+     "label": "Publish…",
+     "icon": "globe"
+    }
+   ]
+  },
+  {
+   "id": "edit",
+   "items": [
+    {
+     "id": "rename",
+     "label": "Rename",
+     "icon": "rename"
+    },
+    {
+     "id": "delete",
+     "label": "Delete",
+     "icon": "delete"
+    }
+   ]
+  }
+ ],
+ "rowMenuLabel": "Actions for this row",
+ "moreMenu": [
+  {
+   "id": "note",
+   "label": "Note",
+   "items": [
+    {
+     "id": "share",
+     "label": "Share…",
+     "icon": "share"
+    },
+    {
+     "id": "publish",
+     "label": "Publish…",
+     "icon": "globe"
+    },
+    {
+     "id": "history",
+     "label": "Version history",
+     "icon": "history"
+    },
+    {
+     "id": "print",
+     "label": "Print…",
+     "icon": "print"
+    }
+   ]
+  },
+  {
+   "id": "app",
+   "items": [
+    {
+     "id": "settings",
+     "label": "Settings",
+     "icon": "settings"
+    }
+   ]
+  }
+ ],
+ "noteBlocks": [
+  {
+   "type": "heading",
+   "attrs": {
+    "level": 1
+   },
+   "content": [
+    {
+     "type": "text",
+     "text": "On focus"
+    }
+   ]
+  },
+  {
+   "type": "paragraph",
+   "content": [
+    {
+     "type": "text",
+     "text": "Writing needs room to think. A quiet page, one paragraph at a time, and nothing asking for attention."
+    }
+   ]
+  },
+  {
+   "type": "paragraph",
+   "content": [
+    {
+     "type": "text",
+     "text": "Focus is less about shutting things out than about choosing what stays in."
+    }
+   ]
+  }
+ ],
+ "expiryOptions": [
+  {
+   "id": "7",
+   "label": "7 days"
+  },
+  {
+   "id": "30",
+   "label": "30 days"
+  },
+  {
+   "id": "90",
+   "label": "90 days"
+  },
+  {
+   "id": "date",
+   "label": "A date"
+  },
+  {
+   "id": "never",
+   "label": "Never"
+  }
+ ],
+ "passOptions": [
+  {
+   "id": "generated",
+   "label": "Generated"
+  },
+  {
+   "id": "own",
+   "label": "Your own"
+  }
+ ],
+ "generated": "harbor-maple-river-cloud",
+ "sharesBefore": [
+  {
+   "id": "s1",
+   "methods": "Link and passcode",
+   "detail": "Shared 28 Oct · expires 27 Nov",
+   "state": "Active",
+   "icon": "link"
+  },
+  {
+   "id": "s2",
+   "methods": "Link",
+   "detail": "Shared 12 Oct · expires 5 Nov",
+   "state": "Expires soon",
+   "icon": "link"
+  }
+ ],
+ "reviewTree": [
+  {
+   "id": "r:book",
+   "kind": "folder",
+   "level": 1,
+   "label": "Book drafts",
+   "expanded": true,
+   "hasChildren": true,
+   "readOnly": true
+  },
+  {
+   "id": "r:ch1",
+   "kind": "folder",
+   "level": 2,
+   "label": "Chapter 1",
+   "parent": "r:book",
+   "expanded": true,
+   "hasChildren": true,
+   "readOnly": true
+  },
+  {
+   "id": "r:ch1a",
+   "kind": "note",
+   "level": 3,
+   "label": "Opening",
+   "parent": "r:ch1",
+   "title": "Opening.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch1b",
+   "kind": "note",
+   "level": 3,
+   "label": "The harbour",
+   "parent": "r:ch1",
+   "title": "The harbour.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch1c",
+   "kind": "note",
+   "level": 3,
+   "label": "First letter",
+   "parent": "r:ch1",
+   "title": "First letter.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch1d",
+   "kind": "note",
+   "level": 3,
+   "label": "Night train",
+   "parent": "r:ch1",
+   "title": "Night train.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2",
+   "kind": "folder",
+   "level": 2,
+   "label": "Chapter 2",
+   "parent": "r:book",
+   "expanded": true,
+   "hasChildren": true,
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2a",
+   "kind": "note",
+   "level": 3,
+   "label": "The return",
+   "parent": "r:ch2",
+   "title": "The return.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2b",
+   "kind": "note",
+   "level": 3,
+   "label": "Maple street",
+   "parent": "r:ch2",
+   "title": "Maple street.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2c",
+   "kind": "note",
+   "level": 3,
+   "label": "Rain",
+   "parent": "r:ch2",
+   "title": "Rain.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2d",
+   "kind": "folder",
+   "level": 3,
+   "label": "Cut scenes",
+   "parent": "r:ch2",
+   "expanded": true,
+   "hasChildren": true,
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2e",
+   "kind": "note",
+   "level": 4,
+   "label": "Lighthouse",
+   "parent": "r:ch2d",
+   "title": "Lighthouse.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:ch2f",
+   "kind": "note",
+   "level": 4,
+   "label": "Ferry",
+   "parent": "r:ch2d",
+   "title": "Ferry.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:outline",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "r:book",
+   "title": "Outline.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:notes",
+   "kind": "note",
+   "level": 2,
+   "label": "Research notes",
+   "parent": "r:book",
+   "title": "Research notes.md",
+   "readOnly": true
+  },
+  {
+   "id": "r:cast",
+   "kind": "note",
+   "level": 2,
+   "label": "Cast",
+   "parent": "r:book",
+   "title": "Cast.md",
+   "readOnly": true
+  }
+ ],
+ "filterOptions": [
+  {
+   "id": "all",
+   "label": "All"
+  },
+  {
+   "id": "active",
+   "label": "Active"
+  },
+  {
+   "id": "soon",
+   "label": "Expires soon"
+  },
+  {
+   "id": "expired",
+   "label": "Expired"
+  },
+  {
+   "id": "withdrawn",
+   "label": "Withdrawn"
+  }
+ ],
+ "allShares": [
+  {
+   "id": "a1",
+   "item": "Book drafts",
+   "icon": "folder",
+   "detail": "Link and passcode · expires 27 Nov",
+   "state": "Active",
+   "stateId": "active",
+   "live": true
+  },
+  {
+   "id": "a2",
+   "item": "Book drafts",
+   "icon": "folder",
+   "detail": "Link · expires 5 Nov",
+   "state": "Expires soon",
+   "stateId": "soon",
+   "live": true
+  },
+  {
+   "id": "a3",
+   "item": "On focus",
+   "icon": "document",
+   "detail": "Passcode · never expires",
+   "state": "Active",
+   "stateId": "active",
+   "live": true
+  },
+  {
+   "id": "a4",
+   "item": "Travel journal",
+   "icon": "folder",
+   "detail": "Link · expired 30 Oct",
+   "state": "Expired",
+   "stateId": "expired",
+   "live": false
+  },
+  {
+   "id": "a5",
+   "item": "Ideas",
+   "icon": "document",
+   "detail": "Link · withdrawn 1 Nov",
+   "state": "Withdrawn",
+   "stateId": "withdrawn",
+   "live": false
+  },
+  {
+   "id": "a6",
+   "item": "Item deleted",
+   "icon": "delete",
+   "detail": "Link · withdrawn at the next publish",
+   "state": "Waiting to publish",
+   "stateId": "withdrawn",
+   "live": false
+  }
+ ],
+ "copyMenu": [
+  {
+   "id": "copy",
+   "items": [
+    {
+     "id": "link",
+     "label": "Copy link",
+     "icon": "link"
+    },
+    {
+     "id": "code",
+     "label": "Copy access code",
+     "icon": "lock"
+    },
+    {
+     "id": "info",
+     "label": "Copy share information",
+     "icon": "copy"
+    }
+   ]
+  }
+ ],
+ "extendMenu": [
+  {
+   "id": "extend",
+   "label": "Extend by",
+   "items": [
+    {
+     "id": "7",
+     "label": "7 days"
+    },
+    {
+     "id": "30",
+     "label": "30 days"
+    },
+    {
+     "id": "90",
+     "label": "90 days"
+    },
+    {
+     "id": "never",
+     "label": "Never expire"
+    }
+   ]
+  }
+ ],
+ "roleOptions": [
+  {
+   "id": "read",
+   "label": "Read"
+  },
+  {
+   "id": "triage",
+   "label": "Triage"
+  },
+  {
+   "id": "write",
+   "label": "Write"
+  },
+  {
+   "id": "maintain",
+   "label": "Maintain"
+  },
+  {
+   "id": "admin",
+   "label": "Admin"
+  }
+ ],
+ "people": [
+  {
+   "id": "p1",
+   "login": "@prabinpebam",
+   "initials": "PP",
+   "detail": "Owner",
+   "badge": "Admin"
+  }
+ ],
+ "siteThemeOptions": [
+  {
+   "id": "paper",
+   "label": "Paper"
+  },
+  {
+   "id": "sepia",
+   "label": "Sepia"
+  },
+  {
+   "id": "ink",
+   "label": "Ink"
+  },
+  {
+   "id": "dusk",
+   "label": "Dusk"
+  }
+ ],
+ "siteFontOptions": [
+  {
+   "id": "serif",
+   "label": "Serif"
+  },
+  {
+   "id": "sans",
+   "label": "Sans"
+  },
+  {
+   "id": "hyperlegible",
+   "label": "Hyperlegible"
+  }
+ ],
+ "siteSizeOptions": [
+  {
+   "id": "16",
+   "label": "Small"
+  },
+  {
+   "id": "18",
+   "label": "Medium"
+  },
+  {
+   "id": "20",
+   "label": "Large"
+  }
+ ],
+ "siteSections": [
+  {
+   "id": "essays",
+   "title": "Essays",
+   "count": "2 articles",
+   "icon": "folder"
+  },
+  {
+   "id": "travel",
+   "title": "Travel",
+   "count": "5 articles",
+   "icon": "folder"
+  },
+  {
+   "id": "about",
+   "title": "About",
+   "count": "Article",
+   "icon": "document"
+  }
+ ],
+ "siteArticles": [
+  {
+   "id": "focus",
+   "title": "On focus",
+   "excerpt": "Writing needs room to think. A quiet page, one paragraph at a time, and nothing asking for attention."
+  },
+  {
+   "id": "quiet",
+   "title": "Quiet tools",
+   "excerpt": "The best tools disappear while you work and come back the moment you need them."
+  }
+ ],
+ "labels": {
+  "copyAgain": "Copy again",
+  "extend": "Extend"
+ },
+ "readerThemeOptions": [
+  {
+   "id": "light",
+   "label": "Light"
+  },
+  {
+   "id": "dark",
+   "label": "Dark"
+  },
+  {
+   "id": "system",
+   "label": "System"
+  }
+ ],
+ "toasts": {
+  "published": "Published. Anyone can read it on your website."
+ }
+}

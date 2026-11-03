@@ -1,0 +1,1869 @@
+{
+ "focus": "preview",
+ "local": {
+  "kind": "note",
+  "open": "",
+  "status": "",
+  "preview": false,
+  "sitePage": "home",
+  "theme": "paper",
+  "scheme": "light",
+  "font": "serif",
+  "size": "18",
+  "readerTheme": "system",
+  "readerFocus": false,
+  "applied": false
+ },
+ "root": {
+  "type": "Stack",
+  "id": "preview",
+  "props": {
+   "gap": "none"
+  },
+  "children": [
+   {
+    "switch": {
+     "get": "local.size"
+    },
+    "cases": {
+     "16": {
+      "type": "AppRoot",
+      "props": {
+       "scheme": {
+        "get": "local.scheme"
+       },
+       "platform": {
+        "get": "vm.app.platform"
+       },
+       "theme": {
+        "get": "local.theme"
+       },
+       "contentFont": {
+        "get": "local.font"
+       },
+       "contentSize": 16
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "none"
+        },
+        "children": [
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "s",
+           "padding": "m"
+          },
+          "children": [
+           {
+            "type": "Inline",
+            "props": {
+             "justify": "between",
+             "align": "center",
+             "wrap": true,
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "Heading",
+              "props": {
+               "level": "2",
+               "value": {
+                "t": "site.preview.title"
+               }
+              }
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "site.preview.close"
+                 }
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
+                 }
+                }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "site.preview.apply"
+                 },
+                 "variant": "primary"
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "l",
+             "wrap": true,
+             "align": "end"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.theme"
+               },
+               "options": {
+                "get": "vm.mockShare.siteThemeOptions"
+               },
+               "value": {
+                "bind": "local.theme"
+               }
+              },
+              "on": {
+               "change": {
+                "set": "local.scheme",
+                "to": {
+                 "expr": {
+                  "if": [
+                   {
+                    "in": [
+                     {
+                      "get": "event.value"
+                     },
+                     [
+                      "ink",
+                      "dusk"
+                     ]
+                    ]
+                   },
+                   "dark",
+                   "light"
+                  ]
+                 }
+                }
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.font"
+               },
+               "options": {
+                "get": "vm.mockShare.siteFontOptions"
+               },
+               "value": {
+                "bind": "local.font"
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.size"
+               },
+               "options": {
+                "get": "vm.mockShare.siteSizeOptions"
+               },
+               "value": {
+                "bind": "local.size"
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "site.preview.note"
+             },
+             "tone": "muted",
+             "role": "secondary"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Divider"
+         },
+         {
+          "type": "Center",
+          "props": {
+           "maxWidth": "wideContent"
+          },
+          "children": [
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "l",
+             "padding": "xl"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "justify": "between",
+               "align": "center",
+               "wrap": true,
+               "gap": "m"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.name"
+                   },
+                   "variant": "subtle",
+                   "bleed": true
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "home"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.essays"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "section"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.travel"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "section"
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "m",
+                 "align": "center",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "SegmentedControl",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.readerTheme"
+                   },
+                   "options": {
+                    "get": "vm.mockShare.readerThemeOptions"
+                   },
+                   "value": {
+                    "bind": "local.readerTheme"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Switch",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.focus"
+                   },
+                   "checked": {
+                    "bind": "local.readerFocus"
+                   },
+                   "onLabel": {
+                    "t": "switch.on"
+                   },
+                   "offLabel": {
+                    "t": "switch.off"
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Divider"
+             },
+             {
+              "switch": {
+               "get": "local.sitePage"
+              },
+              "cases": {
+               "home": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.name"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.tagline"
+                     },
+                     "tone": "muted",
+                     "role": "lead"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "s"
+                  },
+                  "children": [
+                   {
+                    "each": {
+                     "get": "vm.mockShare.siteSections"
+                    },
+                    "as": "s",
+                    "key": "s.id",
+                    "render": {
+                     "type": "ItemCard",
+                     "props": {
+                      "title": {
+                       "get": "s.title"
+                      },
+                      "detail": {
+                       "get": "s.count"
+                      },
+                      "icon": {
+                       "get": "s.icon"
+                      }
+                     },
+                     "on": {
+                      "press": {
+                       "set": "local.sitePage",
+                       "to": "section"
+                      }
+                     }
+                    },
+                    "empty": {
+                     "type": "Text",
+                     "props": {
+                      "value": {
+                       "t": "site.preview.empty"
+                      },
+                      "tone": "muted"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               "section": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.home"
+                     },
+                     "variant": "subtle",
+                     "size": "s",
+                     "bleed": true
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "home"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.sep"
+                     },
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.essays"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.count",
+                      "args": {
+                       "count": 2
+                      }
+                     },
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "l"
+                  },
+                  "children": [
+                   {
+                    "each": {
+                     "get": "vm.mockShare.siteArticles"
+                    },
+                    "as": "a",
+                    "key": "a.id",
+                    "render": {
+                     "type": "ItemCard",
+                     "props": {
+                      "title": {
+                       "get": "a.title"
+                      },
+                      "detail": {
+                       "get": "a.excerpt"
+                      },
+                      "icon": "document"
+                     },
+                     "on": {
+                      "press": {
+                       "set": "local.sitePage",
+                       "to": "article"
+                      }
+                     }
+                    },
+                    "empty": {
+                     "type": "Text",
+                     "props": {
+                      "value": {
+                       "t": "site.preview.noArticles"
+                      },
+                      "tone": "muted"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               "article": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center",
+                   "wrap": true
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.home"
+                     },
+                     "variant": "subtle",
+                     "size": "s",
+                     "bleed": true
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "home"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.sep"
+                     },
+                     "tone": "muted"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.essays"
+                     },
+                     "variant": "subtle",
+                     "size": "s"
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "section"
+                     }
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.article"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.updated"
+                     },
+                     "tone": "muted",
+                     "role": "secondary"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "NoteContent",
+                  "props": {
+                   "blocks": {
+                    "get": "vm.mockShare.noteBlocks"
+                   }
+                  }
+                 }
+                ]
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "18": {
+      "type": "AppRoot",
+      "props": {
+       "scheme": {
+        "get": "local.scheme"
+       },
+       "platform": {
+        "get": "vm.app.platform"
+       },
+       "theme": {
+        "get": "local.theme"
+       },
+       "contentFont": {
+        "get": "local.font"
+       },
+       "contentSize": 18
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "none"
+        },
+        "children": [
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "s",
+           "padding": "m"
+          },
+          "children": [
+           {
+            "type": "Inline",
+            "props": {
+             "justify": "between",
+             "align": "center",
+             "wrap": true,
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "Heading",
+              "props": {
+               "level": "2",
+               "value": {
+                "t": "site.preview.title"
+               }
+              }
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "site.preview.close"
+                 }
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
+                 }
+                }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "site.preview.apply"
+                 },
+                 "variant": "primary"
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "l",
+             "wrap": true,
+             "align": "end"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.theme"
+               },
+               "options": {
+                "get": "vm.mockShare.siteThemeOptions"
+               },
+               "value": {
+                "bind": "local.theme"
+               }
+              },
+              "on": {
+               "change": {
+                "set": "local.scheme",
+                "to": {
+                 "expr": {
+                  "if": [
+                   {
+                    "in": [
+                     {
+                      "get": "event.value"
+                     },
+                     [
+                      "ink",
+                      "dusk"
+                     ]
+                    ]
+                   },
+                   "dark",
+                   "light"
+                  ]
+                 }
+                }
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.font"
+               },
+               "options": {
+                "get": "vm.mockShare.siteFontOptions"
+               },
+               "value": {
+                "bind": "local.font"
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.size"
+               },
+               "options": {
+                "get": "vm.mockShare.siteSizeOptions"
+               },
+               "value": {
+                "bind": "local.size"
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "site.preview.note"
+             },
+             "tone": "muted",
+             "role": "secondary"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Divider"
+         },
+         {
+          "type": "Center",
+          "props": {
+           "maxWidth": "wideContent"
+          },
+          "children": [
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "l",
+             "padding": "xl"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "justify": "between",
+               "align": "center",
+               "wrap": true,
+               "gap": "m"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.name"
+                   },
+                   "variant": "subtle",
+                   "bleed": true
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "home"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.essays"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "section"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.travel"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "section"
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "m",
+                 "align": "center",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "SegmentedControl",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.readerTheme"
+                   },
+                   "options": {
+                    "get": "vm.mockShare.readerThemeOptions"
+                   },
+                   "value": {
+                    "bind": "local.readerTheme"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Switch",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.focus"
+                   },
+                   "checked": {
+                    "bind": "local.readerFocus"
+                   },
+                   "onLabel": {
+                    "t": "switch.on"
+                   },
+                   "offLabel": {
+                    "t": "switch.off"
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Divider"
+             },
+             {
+              "switch": {
+               "get": "local.sitePage"
+              },
+              "cases": {
+               "home": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.name"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.tagline"
+                     },
+                     "tone": "muted",
+                     "role": "lead"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "s"
+                  },
+                  "children": [
+                   {
+                    "each": {
+                     "get": "vm.mockShare.siteSections"
+                    },
+                    "as": "s",
+                    "key": "s.id",
+                    "render": {
+                     "type": "ItemCard",
+                     "props": {
+                      "title": {
+                       "get": "s.title"
+                      },
+                      "detail": {
+                       "get": "s.count"
+                      },
+                      "icon": {
+                       "get": "s.icon"
+                      }
+                     },
+                     "on": {
+                      "press": {
+                       "set": "local.sitePage",
+                       "to": "section"
+                      }
+                     }
+                    },
+                    "empty": {
+                     "type": "Text",
+                     "props": {
+                      "value": {
+                       "t": "site.preview.empty"
+                      },
+                      "tone": "muted"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               "section": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.home"
+                     },
+                     "variant": "subtle",
+                     "size": "s",
+                     "bleed": true
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "home"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.sep"
+                     },
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.essays"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.count",
+                      "args": {
+                       "count": 2
+                      }
+                     },
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "l"
+                  },
+                  "children": [
+                   {
+                    "each": {
+                     "get": "vm.mockShare.siteArticles"
+                    },
+                    "as": "a",
+                    "key": "a.id",
+                    "render": {
+                     "type": "ItemCard",
+                     "props": {
+                      "title": {
+                       "get": "a.title"
+                      },
+                      "detail": {
+                       "get": "a.excerpt"
+                      },
+                      "icon": "document"
+                     },
+                     "on": {
+                      "press": {
+                       "set": "local.sitePage",
+                       "to": "article"
+                      }
+                     }
+                    },
+                    "empty": {
+                     "type": "Text",
+                     "props": {
+                      "value": {
+                       "t": "site.preview.noArticles"
+                      },
+                      "tone": "muted"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               "article": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center",
+                   "wrap": true
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.home"
+                     },
+                     "variant": "subtle",
+                     "size": "s",
+                     "bleed": true
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "home"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.sep"
+                     },
+                     "tone": "muted"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.essays"
+                     },
+                     "variant": "subtle",
+                     "size": "s"
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "section"
+                     }
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.article"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.updated"
+                     },
+                     "tone": "muted",
+                     "role": "secondary"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "NoteContent",
+                  "props": {
+                   "blocks": {
+                    "get": "vm.mockShare.noteBlocks"
+                   }
+                  }
+                 }
+                ]
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "20": {
+      "type": "AppRoot",
+      "props": {
+       "scheme": {
+        "get": "local.scheme"
+       },
+       "platform": {
+        "get": "vm.app.platform"
+       },
+       "theme": {
+        "get": "local.theme"
+       },
+       "contentFont": {
+        "get": "local.font"
+       },
+       "contentSize": 20
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "none"
+        },
+        "children": [
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "s",
+           "padding": "m"
+          },
+          "children": [
+           {
+            "type": "Inline",
+            "props": {
+             "justify": "between",
+             "align": "center",
+             "wrap": true,
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "Heading",
+              "props": {
+               "level": "2",
+               "value": {
+                "t": "site.preview.title"
+               }
+              }
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "site.preview.close"
+                 }
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
+                 }
+                }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "site.preview.apply"
+                 },
+                 "variant": "primary"
+                },
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.share.list"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "l",
+             "wrap": true,
+             "align": "end"
+            },
+            "children": [
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.theme"
+               },
+               "options": {
+                "get": "vm.mockShare.siteThemeOptions"
+               },
+               "value": {
+                "bind": "local.theme"
+               }
+              },
+              "on": {
+               "change": {
+                "set": "local.scheme",
+                "to": {
+                 "expr": {
+                  "if": [
+                   {
+                    "in": [
+                     {
+                      "get": "event.value"
+                     },
+                     [
+                      "ink",
+                      "dusk"
+                     ]
+                    ]
+                   },
+                   "dark",
+                   "light"
+                  ]
+                 }
+                }
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.font"
+               },
+               "options": {
+                "get": "vm.mockShare.siteFontOptions"
+               },
+               "value": {
+                "bind": "local.font"
+               }
+              }
+             },
+             {
+              "type": "SegmentedControl",
+              "props": {
+               "label": {
+                "t": "site.preview.size"
+               },
+               "options": {
+                "get": "vm.mockShare.siteSizeOptions"
+               },
+               "value": {
+                "bind": "local.size"
+               }
+              }
+             }
+            ]
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "site.preview.note"
+             },
+             "tone": "muted",
+             "role": "secondary"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Divider"
+         },
+         {
+          "type": "Center",
+          "props": {
+           "maxWidth": "wideContent"
+          },
+          "children": [
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "l",
+             "padding": "xl"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "justify": "between",
+               "align": "center",
+               "wrap": true,
+               "gap": "m"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.name"
+                   },
+                   "variant": "subtle",
+                   "bleed": true
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "home"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.essays"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "section"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.travel"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  },
+                  "on": {
+                   "press": {
+                    "set": "local.sitePage",
+                    "to": "section"
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "m",
+                 "align": "center",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "SegmentedControl",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.readerTheme"
+                   },
+                   "options": {
+                    "get": "vm.mockShare.readerThemeOptions"
+                   },
+                   "value": {
+                    "bind": "local.readerTheme"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Switch",
+                  "props": {
+                   "label": {
+                    "t": "site.preview.focus"
+                   },
+                   "checked": {
+                    "bind": "local.readerFocus"
+                   },
+                   "onLabel": {
+                    "t": "switch.on"
+                   },
+                   "offLabel": {
+                    "t": "switch.off"
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Divider"
+             },
+             {
+              "switch": {
+               "get": "local.sitePage"
+              },
+              "cases": {
+               "home": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.name"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.tagline"
+                     },
+                     "tone": "muted",
+                     "role": "lead"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "s"
+                  },
+                  "children": [
+                   {
+                    "each": {
+                     "get": "vm.mockShare.siteSections"
+                    },
+                    "as": "s",
+                    "key": "s.id",
+                    "render": {
+                     "type": "ItemCard",
+                     "props": {
+                      "title": {
+                       "get": "s.title"
+                      },
+                      "detail": {
+                       "get": "s.count"
+                      },
+                      "icon": {
+                       "get": "s.icon"
+                      }
+                     },
+                     "on": {
+                      "press": {
+                       "set": "local.sitePage",
+                       "to": "section"
+                      }
+                     }
+                    },
+                    "empty": {
+                     "type": "Text",
+                     "props": {
+                      "value": {
+                       "t": "site.preview.empty"
+                      },
+                      "tone": "muted"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               "section": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.home"
+                     },
+                     "variant": "subtle",
+                     "size": "s",
+                     "bleed": true
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "home"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.sep"
+                     },
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.essays"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.count",
+                      "args": {
+                       "count": 2
+                      }
+                     },
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "l"
+                  },
+                  "children": [
+                   {
+                    "each": {
+                     "get": "vm.mockShare.siteArticles"
+                    },
+                    "as": "a",
+                    "key": "a.id",
+                    "render": {
+                     "type": "ItemCard",
+                     "props": {
+                      "title": {
+                       "get": "a.title"
+                      },
+                      "detail": {
+                       "get": "a.excerpt"
+                      },
+                      "icon": "document"
+                     },
+                     "on": {
+                      "press": {
+                       "set": "local.sitePage",
+                       "to": "article"
+                      }
+                     }
+                    },
+                    "empty": {
+                     "type": "Text",
+                     "props": {
+                      "value": {
+                       "t": "site.preview.noArticles"
+                      },
+                      "tone": "muted"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               "article": {
+                "type": "Stack",
+                "props": {
+                 "gap": "l"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center",
+                   "wrap": true
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.home"
+                     },
+                     "variant": "subtle",
+                     "size": "s",
+                     "bleed": true
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "home"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.sep"
+                     },
+                     "tone": "muted"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "props": {
+                     "label": {
+                      "t": "site.preview.essays"
+                     },
+                     "variant": "subtle",
+                     "size": "s"
+                    },
+                    "on": {
+                     "press": {
+                      "set": "local.sitePage",
+                      "to": "section"
+                     }
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "xs"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "level": "1",
+                     "value": {
+                      "t": "site.preview.article"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "site.preview.updated"
+                     },
+                     "tone": "muted",
+                     "role": "secondary"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "NoteContent",
+                  "props": {
+                   "blocks": {
+                    "get": "vm.mockShare.noteBlocks"
+                   }
+                  }
+                 }
+                ]
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

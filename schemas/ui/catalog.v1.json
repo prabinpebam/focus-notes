@@ -2538,6 +2538,73 @@
       ]
     },
     {
+      "type": "Switch",
+      "tier": "primitive",
+      "description": "An on/off setting that takes effect as it changes (DSY-15): a track and thumb whose position, fill and On or Off word say the state. Not for a choice between named options (use SegmentedControl) or an action (use Button).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The setting's name: Link, Passcode."
+        },
+        "checked": {
+          "kind": "boolean",
+          "default": false,
+          "bindable": true
+        },
+        "onLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The word beside the track when on: On."
+        },
+        "offLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The word beside the track when off: Off."
+        },
+        "description": {
+          "kind": "message",
+          "description": "One line under the name about what it does."
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabledReason": {
+          "kind": "message",
+          "requiredWhen": "disabled",
+          "description": "Why it can't change now, shown in place of the description."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "boolean"
+          },
+          "binds": "checked"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "checked",
+        "disabled",
+        "hover",
+        "focusVisible"
+      ],
+      "tokens": "cmp.switch.*",
+      "a11y": {
+        "pattern": "switch",
+        "name": "label"
+      },
+      "fixtures": [
+        "off",
+        "on",
+        "with description",
+        "disabled with reason"
+      ]
+    },
+    {
       "type": "ProgressBar",
       "tier": "primitive",
       "description": "How far long work has got, when the work reports it (PRF-13, D-149): a thin determinate bar, its value read out as a percentage. The words beside it say what the work is; the bar never stands alone.",
@@ -5454,6 +5521,8 @@
       "stepDot",
       "stepDotCurrent",
       "meter",
+      "switchTrack",
+      "switchThumb",
       "triggerDot",
       "triggerRing",
       "scrollbar"

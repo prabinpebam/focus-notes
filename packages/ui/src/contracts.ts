@@ -63,6 +63,7 @@ import { contract as StatusRow } from "./primitives/StatusRow/contract.ts";
 import { contract as CodeBlock } from "./primitives/CodeBlock/contract.ts";
 import { contract as VersionCompare } from "./primitives/VersionCompare/contract.ts";
 import { contract as StrengthMeter } from "./primitives/StrengthMeter/contract.ts";
+import { contract as Switch } from "./primitives/Switch/contract.ts";
 import { contract as ProgressBar } from "./primitives/ProgressBar/contract.ts";
 import { contract as DatePicker } from "./primitives/DatePicker/contract.ts";
 import { contract as SiteLink } from "./primitives/SiteLink/contract.ts";
@@ -82,7 +83,7 @@ import { contract as ProjectScope } from "./layouts/ProjectScope/contract.ts";
 /** Each contract by its type, with its literal types, so the registry checks components against it (D-199). */
 export const contractsByType = {
   SecureKeyField,
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
