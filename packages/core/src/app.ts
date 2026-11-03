@@ -32,6 +32,7 @@ import { registerToolbarCustomize, TOOLBAR_CUSTOMIZE_CLOSED, validPinned, type T
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
+import { registerProject } from "./project-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerAi } from "./ai-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
@@ -424,6 +425,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
+  registerProject({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({

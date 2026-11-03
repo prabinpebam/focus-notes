@@ -15,7 +15,8 @@
     "vm.shareNote",
     "vm.agents",
     "vm.keyboard",
-    "vm.ai"
+    "vm.ai",
+    "vm.project"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -98,6 +99,614 @@
                   "get": "vm.settings.section"
                 },
                 "cases": {
+                  "project": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "m"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "value": {
+                            "t": "project.settings.title"
+                          },
+                          "level": "2"
+                        }
+                      },
+                      {
+                        "type": "TextField",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.name"
+                          },
+                          "value": {
+                            "bind": "vm.project.name"
+                          },
+                          "description": {
+                            "t": "project.settings.nameHint"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Field",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.colour"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "xs",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "vm.project.accents"
+                                },
+                                "as": "a",
+                                "key": "a.id",
+                                "render": {
+                                  "type": "ProjectMark",
+                                  "on": {
+                                    "press": {
+                                      "run": "project.accent",
+                                      "args": {
+                                        "value": {
+                                          "get": "a.id"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "props": {
+                                    "accent": {
+                                      "get": "a.id"
+                                    },
+                                    "plate": "solid",
+                                    "size": "m",
+                                    "label": {
+                                      "get": "a.label"
+                                    },
+                                    "selected": {
+                                      "expr": {
+                                        "==": [
+                                          {
+                                            "get": "vm.project.accent"
+                                          },
+                                          {
+                                            "get": "a.id"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "project.mock.none"
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Field",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.logo"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "xs",
+                                  "wrap": true
+                                },
+                                "children": [
+                                  {
+                                    "each": {
+                                      "get": "vm.project.logos"
+                                    },
+                                    "as": "l",
+                                    "key": "l.id",
+                                    "render": {
+                                      "type": "ProjectMark",
+                                      "on": {
+                                        "press": {
+                                          "run": "project.logo",
+                                          "args": {
+                                            "value": {
+                                              "get": "l.id"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "props": {
+                                        "logo": {
+                                          "get": "l.id"
+                                        },
+                                        "accent": {
+                                          "get": "vm.project.accent"
+                                        },
+                                        "size": "m",
+                                        "label": {
+                                          "get": "l.label"
+                                        },
+                                        "selected": {
+                                          "expr": {
+                                            "==": [
+                                              {
+                                                "get": "vm.project.logo"
+                                              },
+                                              {
+                                                "get": "l.id"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "empty": {
+                                      "type": "Text",
+                                      "props": {
+                                        "value": {
+                                          "t": "project.mock.none"
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "s",
+                                  "align": "center"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SegmentedControl",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.watermark"
+                          },
+                          "options": {
+                            "get": "vm.project.watermarkOptions"
+                          },
+                          "value": {
+                            "bind": "vm.project.watermark"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "align": "start",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "none"
+                                },
+                                "children": [
+                                  {
+                                    "type": "PopoverPanel",
+                                    "on": {
+                                      "openChange": [
+                                        {
+                                          "run": "project.fontOpen",
+                                          "args": {
+                                            "value": {
+                                              "expr": {
+                                                "if": [
+                                                  {
+                                                    "get": "event.open"
+                                                  },
+                                                  "yes",
+                                                  "no"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "run": "project.fontHover",
+                                          "args": {
+                                            "value": ""
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "slots": {
+                                      "trigger": [
+                                        {
+                                          "type": "PickerButton",
+                                          "props": {
+                                            "variant": "fontTile",
+                                            "label": {
+                                              "t": "project.settings.fontShort"
+                                            },
+                                            "value": {
+                                              "get": "vm.project.fontValue"
+                                            },
+                                            "font": {
+                                              "get": "vm.project.scopeFont"
+                                            }
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "project.fontOpen",
+                                              "args": {
+                                                "value": "yes"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "content": [
+                                        {
+                                          "type": "Stack",
+                                          "props": {
+                                            "gap": "s"
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "Columns",
+                                              "props": {
+                                                "gap": "xs",
+                                                "cell": "choice"
+                                              },
+                                              "children": [
+                                                {
+                                                  "each": {
+                                                    "get": "vm.project.fonts"
+                                                  },
+                                                  "as": "f",
+                                                  "key": "f.id",
+                                                  "render": {
+                                                    "type": "FontChoice",
+                                                    "on": {
+                                                      "press": [
+                                                        {
+                                                          "run": "project.font",
+                                                          "args": {
+                                                            "value": {
+                                                              "get": "f.id"
+                                                            }
+                                                          }
+                                                        },
+                                                        {
+                                                          "run": "project.fontHover",
+                                                          "args": {
+                                                            "value": ""
+                                                          }
+                                                        },
+                                                        {
+                                                          "run": "project.fontOpen",
+                                                          "args": {
+                                                            "value": "no"
+                                                          }
+                                                        }
+                                                      ],
+                                                      "preview": {
+                                                        "run": "project.fontHover",
+                                                        "args": {
+                                                          "value": {
+                                                            "get": "f.id"
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    "props": {
+                                                      "font": {
+                                                        "get": "f.id"
+                                                      },
+                                                      "label": {
+                                                        "get": "f.label"
+                                                      },
+                                                      "selected": {
+                                                        "expr": {
+                                                          "==": [
+                                                            {
+                                                              "get": "vm.project.font"
+                                                            },
+                                                            {
+                                                              "get": "f.id"
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  "empty": {
+                                                    "type": "Text",
+                                                    "props": {
+                                                      "value": {
+                                                        "t": "project.mock.none"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "Button",
+                                              "on": {
+                                                "press": [
+                                                  {
+                                                    "run": "project.font",
+                                                    "args": {
+                                                      "value": "app"
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.fontHover",
+                                                    "args": {
+                                                      "value": ""
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.fontOpen",
+                                                    "args": {
+                                                      "value": "no"
+                                                    }
+                                                  }
+                                                ]
+                                              },
+                                              "props": {
+                                                "label": {
+                                                  "t": "project.settings.reset"
+                                                },
+                                                "variant": "subtle",
+                                                "size": "s",
+                                                "icon": "undo"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "props": {
+                                      "label": {
+                                        "t": "project.settings.font"
+                                      },
+                                      "open": {
+                                        "expr": {
+                                          "==": [
+                                            {
+                                              "get": "vm.project.fontOpen"
+                                            },
+                                            "yes"
+                                          ]
+                                        }
+                                      },
+                                      "placement": "top start",
+                                      "width": "tiles"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "none"
+                                },
+                                "children": [
+                                  {
+                                    "type": "PopoverPanel",
+                                    "on": {
+                                      "openChange": [
+                                        {
+                                          "run": "project.themeOpen",
+                                          "args": {
+                                            "value": {
+                                              "expr": {
+                                                "if": [
+                                                  {
+                                                    "get": "event.open"
+                                                  },
+                                                  "yes",
+                                                  "no"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "run": "project.themeHover",
+                                          "args": {
+                                            "value": ""
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "slots": {
+                                      "trigger": [
+                                        {
+                                          "type": "PickerButton",
+                                          "props": {
+                                            "variant": "themeTile",
+                                            "label": {
+                                              "t": "project.settings.themeShort"
+                                            },
+                                            "value": {
+                                              "get": "vm.project.themeValue"
+                                            },
+                                            "theme": {
+                                              "get": "vm.project.scopeTheme"
+                                            }
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "project.themeOpen",
+                                              "args": {
+                                                "value": "yes"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "content": [
+                                        {
+                                          "type": "Stack",
+                                          "props": {
+                                            "gap": "s"
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "ThemeGallery",
+                                              "on": {
+                                                "choose": [
+                                                  {
+                                                    "run": "project.theme",
+                                                    "args": {
+                                                      "value": {
+                                                        "get": "event.id"
+                                                      }
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeHover",
+                                                    "args": {
+                                                      "value": ""
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeOpen",
+                                                    "args": {
+                                                      "value": "no"
+                                                    }
+                                                  }
+                                                ],
+                                                "preview": {
+                                                  "run": "project.themeHover",
+                                                  "args": {
+                                                    "value": {
+                                                      "get": "event.id"
+                                                    }
+                                                  }
+                                                },
+                                                "revert": {
+                                                  "run": "project.themeHover",
+                                                  "args": {
+                                                    "value": ""
+                                                  }
+                                                }
+                                              },
+                                              "props": {
+                                                "label": {
+                                                  "t": "project.settings.theme"
+                                                },
+                                                "items": {
+                                                  "get": "vm.project.themeTiles"
+                                                },
+                                                "value": {
+                                                  "get": "vm.project.theme"
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "Button",
+                                              "on": {
+                                                "press": [
+                                                  {
+                                                    "run": "project.theme",
+                                                    "args": {
+                                                      "value": "app"
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeHover",
+                                                    "args": {
+                                                      "value": ""
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeOpen",
+                                                    "args": {
+                                                      "value": "no"
+                                                    }
+                                                  }
+                                                ]
+                                              },
+                                              "props": {
+                                                "label": {
+                                                  "t": "project.settings.reset"
+                                                },
+                                                "variant": "subtle",
+                                                "size": "s",
+                                                "icon": "undo"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "props": {
+                                      "label": {
+                                        "t": "project.settings.theme"
+                                      },
+                                      "open": {
+                                        "expr": {
+                                          "==": [
+                                            {
+                                              "get": "vm.project.themeOpen"
+                                            },
+                                            "yes"
+                                          ]
+                                        }
+                                      },
+                                      "placement": "top start",
+                                      "width": "tiles"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "project.settings.optionalHint"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   "ai": {
                     "type": "Stack",
                     "id": "aiConnections",

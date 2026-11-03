@@ -56,7 +56,9 @@
       "description": "The docked Files panel's width in px, as resized on this device (D-187)."
     },
     "filesSort": {
-      "enum": ["changed"],
+      "enum": [
+        "changed"
+      ],
       "description": "The Files tree sorted by last change on this device; absent: by name (FIL-11, D-175)."
     },
     "lightTheme": {
@@ -132,6 +134,41 @@
       "items": {
         "type": "string",
         "pattern": "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*)+$"
+      }
+    },
+    "projectSettings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "accent",
+          "logo",
+          "watermark",
+          "font",
+          "theme"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "accent": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "watermark": {
+            "type": "string"
+          },
+          "font": {
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       }
     }
   },

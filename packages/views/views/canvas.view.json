@@ -4,6 +4,7 @@
   "ia": "IA-VIEW-CANVAS",
   "viewModels": [
     "vm.app",
+    "vm.project",
     "vm.canvas",
     "vm.toolbar",
     "vm.shortcuts",
@@ -86,6 +87,22 @@
       }
     },
     "children": [
+{
+  "type": "ProjectScope",
+  "props": {
+    "part": "window",
+    "grow": true,
+    "accent": {
+      "get": "vm.project.accent"
+    },
+    "font": {
+      "get": "vm.project.scopeFont"
+    },
+    "theme": {
+      "get": "vm.project.scopeTheme"
+    }
+  },
+"children": [
       {
         "type": "WindowFrame",
         "when": {
@@ -3830,7 +3847,37 @@
                         "label": { "get": "vm.saveState.label" },
                         "interactive": { "get": "vm.saveState.interactive" }
                       }
-                    }
+                    },
+{
+  "type": "ProjectPill",
+  "when": {
+    "get": "vm.project.available"
+  },
+  "props": {
+    "name": {
+      "get": "vm.project.name"
+    },
+    "logo": {
+      "get": "vm.project.logo"
+    },
+    "accent": {
+      "get": "vm.project.accent"
+    },
+    "label": {
+      "t": "project.pill.label",
+      "args": {
+        "name": {
+          "get": "vm.project.name"
+        }
+      }
+    }
+  },
+  "on": {
+    "press": {
+      "run": "project.settings"
+    }
+  }
+}
                   ],
                   "content": [
                     {
@@ -9262,6 +9309,36 @@
           }
         ]
       }
-    ]
+    ,
+{
+  "type": "Layer",
+  "when": {
+    "get": "vm.project.watermarkOn"
+  },
+  "props": {
+    "layer": "panel",
+    "position": "bottomEnd"
+  },
+  "children": [
+    {
+      "type": "ProjectMark",
+      "props": {
+        "logo": {
+          "get": "vm.project.logo"
+        },
+        "accent": {
+          "get": "vm.project.accent"
+        },
+        "initials": {
+          "get": "vm.project.name"
+        },
+        "size": "watermark"
+      }
+    }
+  ]
+}
+]
+}
+]
   }
 }

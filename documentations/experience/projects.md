@@ -10,6 +10,9 @@ Separate places for separate work, without making every thought choose a project
 
 ## What a project is for
 
+> [!NOTE]
+> **Working preview, 3 November: identity slice.** The `vq-projects` candidate applies the approved colour outline, project pill, optional watermark and Settings → Project to today's workspace. Name, the 12 colours, 24 preset logos, watermark and the existing Font and Theme tiles are real choices, remembered per folder in the candidate's local profile; they do not rename folders, move notes or change app-wide defaults. The theme tiles reuse the theme manager's data and component, limited to the built-in themes for this first slice. SVG upload, Launch/Open and stepped New project are not wired in this increment. This is an unhardened owner-review build: typecheck and desktop build only, no tests, journeys or CI; General fixes hardening remains parked.
+
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
 <!-- Visual thesis: private project scope exists before any public site; sharing adds a separate, explicitly enabled surface. No icons are needed: containment and branching carry the meaning. -->
