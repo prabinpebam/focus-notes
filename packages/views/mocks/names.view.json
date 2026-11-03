@@ -254,7 +254,7 @@
                  "value": {
                   "t": "project.mock.bookName"
                  },
-                 "role": "label"
+                 "role": "title"
                 }
                }
               ]

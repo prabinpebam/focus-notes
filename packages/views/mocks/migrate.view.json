@@ -817,7 +817,7 @@
                        "value": {
                         "t": "project.mock.workName"
                        },
-                       "role": "label"
+                       "role": "title"
                       }
                      }
                     ]

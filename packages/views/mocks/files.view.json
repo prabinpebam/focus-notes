@@ -134,7 +134,7 @@
                  "value": {
                   "t": "project.mock.bookName"
                  },
-                 "role": "label"
+                 "role": "title"
                 }
                }
               ]
@@ -177,59 +177,6 @@
                 ]
                },
                {
-                "type": "FileTree",
-                "id": "pinnedTree",
-                "on": {
-                 "select": {
-                  "set": "local.reveal",
-                  "to": "yes"
-                 }
-                },
-                "props": {
-                 "label": {
-                  "t": "pin.title"
-                 },
-                 "items": {
-                  "get": "vm.mocks.filesPinned"
-                 },
-                 "menu": {
-                  "get": "vm.mocks.pinnedMenu"
-                 }
-                }
-               },
-               {
-                "type": "Heading",
-                "props": {
-                 "value": {
-                  "t": "recent.title"
-                 },
-                 "level": "3"
-                }
-               },
-               {
-                "type": "ResultList",
-                "id": "filesRecent",
-                "on": {
-                 "action": {
-                  "set": "local.opened",
-                  "to": {
-                   "get": "event.id"
-                  }
-                 }
-                },
-                "props": {
-                 "label": {
-                  "t": "recent.title"
-                 },
-                 "items": {
-                  "get": "vm.mocks.filesRecent"
-                 }
-                }
-               },
-               {
-                "type": "Divider"
-               },
-               {
                 "switch": {
                  "get": "local.reveal"
                 },
@@ -237,12 +184,60 @@
                  "no": {
                   "type": "FileTree",
                   "id": "allFiles",
+                  "on": {
+                   "select": [
+                    {
+                     "set": "local.reveal",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "==": [
+                          {
+                           "get": "event.id"
+                          },
+                          "pin:drafts"
+                         ]
+                        },
+                        "yes",
+                        {
+                         "get": "local.reveal"
+                        }
+                       ]
+                      }
+                     }
+                    },
+                    {
+                     "set": "local.opened",
+                     "to": {
+                      "expr": {
+                       "if": [
+                        {
+                         "in": [
+                          "recent:",
+                          {
+                           "get": "event.id"
+                          }
+                         ]
+                        },
+                        {
+                         "get": "event.id"
+                        },
+                        {
+                         "get": "local.opened"
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  },
                   "props": {
                    "label": {
                     "t": "project.files.tree"
                    },
                    "items": {
-                    "get": "vm.mocks.filesTree"
+                    "get": "vm.mocks.filesAll"
                    },
                    "menu": {
                     "get": "vm.mocks.filesMenu"
@@ -257,7 +252,7 @@
                     "t": "project.files.tree"
                    },
                    "items": {
-                    "get": "vm.mocks.filesTreeRevealed"
+                    "get": "vm.mocks.filesAllRevealed"
                    },
                    "menu": {
                     "get": "vm.mocks.filesMenu"
