@@ -243,7 +243,7 @@
              {
               "type": "ProjectScope",
               "props": {
-               "part": "band",
+               "part": "plain",
                "accent": "teal"
               },
               "children": [
@@ -544,6 +544,51 @@
                     "get": "vm.mocks.sampleNote"
                    },
                    "personal": true
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "SaveState",
+                  "props": {
+                   "state": "synced",
+                   "label": {
+                    "t": "project.mock.backedUp"
+                   }
+                  }
+                 },
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "t": "project.mock.bookName"
+                   },
+                   "logo": "book",
+                   "accent": "teal",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   }
                   }
                  }
                 ]

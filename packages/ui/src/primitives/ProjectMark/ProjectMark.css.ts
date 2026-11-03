@@ -19,6 +19,8 @@ export const plate = styleVariants({
   tint: { backgroundColor: t.background, color: t.color },
   neutral: { backgroundColor: t.plate, borderColor: t.plateBorder, color: t.color },
   solid: { backgroundColor: t.color, color: t.onSolid },
+  // Bare: no plate, the glyph in the accent (inside a ProjectPill, which is the plate).
+  bare: { color: t.color },
 });
 // The chosen preset: a full ring around it (no one-sided stripes).
 export const selected = style({ outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.selectedRing, outlineOffset: t.focusOffset });

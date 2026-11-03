@@ -66,6 +66,7 @@ import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
 import { ProjectMark } from "./primitives/ProjectMark/ProjectMark.tsx";
 import { ImageFrame } from "./primitives/ImageFrame/ImageFrame.tsx";
 import { FontChoice } from "./primitives/FontChoice/FontChoice.tsx";
+import { ProjectPill } from "./primitives/ProjectPill/ProjectPill.tsx";
 import { ProjectScope } from "./layouts/ProjectScope/ProjectScope.tsx";
 
 /**
@@ -75,7 +76,7 @@ import { ProjectScope } from "./layouts/ProjectScope/ProjectScope.tsx";
  */
 export const registry = defineRegistry({
   SecureKeyField,
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,

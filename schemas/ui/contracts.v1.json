@@ -5832,10 +5832,11 @@
           "values": [
             "tint",
             "neutral",
-            "solid"
+            "solid",
+            "bare"
           ],
           "default": "tint",
-          "description": "tint: the accent's tinted plate, the glyph in the accent. neutral: a raised plate, for an uploaded logo in its own colours. solid: the accent itself, a colour swatch."
+          "description": "tint: the accent's tinted plate, the glyph in the accent. neutral: a raised plate, for an uploaded logo in its own colours. solid: the accent itself, a colour swatch. bare: no plate (inside a ProjectPill)."
         },
         "size": {
           "kind": "enum",
@@ -6245,6 +6246,14 @@
           }
         },
         {
+          "name": "plate bare",
+          "props": {
+            "logo": "home",
+            "plate": "bare",
+            "size": "m"
+          }
+        },
+        {
           "name": "accent app",
           "props": {
             "logo": "chat",
@@ -6551,6 +6560,354 @@
           "covers": [
             "selected"
           ]
+        }
+      ]
+    },
+    {
+      "type": "ProjectPill",
+      "tier": "primitive",
+      "description": "Which project a window belongs to, at the end of its status row (D-317): the project's logo and name on a soft fill of its accent. Pressing it opens Settings → Project. The name truncates with an ellipsis; the text keeps the text colour so it always passes contrast.",
+      "props": {
+        "name": {
+          "kind": "message",
+          "required": true,
+          "description": "The project's name: the person's own words."
+        },
+        "logo": {
+          "kind": "enum",
+          "values": [
+            "book",
+            "briefcase",
+            "beaker",
+            "heart",
+            "star",
+            "leaf",
+            "rocket",
+            "lightbulb",
+            "music",
+            "camera",
+            "people",
+            "home",
+            "airplane",
+            "code",
+            "brush",
+            "trophy",
+            "earth",
+            "food",
+            "building",
+            "chat",
+            "diamond",
+            "flag",
+            "sparkle",
+            "pen",
+            "upload",
+            "none"
+          ],
+          "default": "none"
+        },
+        "src": {
+          "kind": "text",
+          "description": "An uploaded logo's sanitized SVG data URL."
+        },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app"
+        },
+        "label": {
+          "kind": "message",
+          "description": "Its accessible name when it can be pressed (Project settings for Book)."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.projectPill.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "logo book",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "red",
+            "logo": "book"
+          }
+        },
+        {
+          "name": "logo briefcase",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "orange",
+            "logo": "briefcase"
+          }
+        },
+        {
+          "name": "logo beaker",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "amber",
+            "logo": "beaker"
+          }
+        },
+        {
+          "name": "logo heart",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "lime",
+            "logo": "heart"
+          }
+        },
+        {
+          "name": "logo star",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "green",
+            "logo": "star"
+          }
+        },
+        {
+          "name": "logo leaf",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "teal",
+            "logo": "leaf"
+          }
+        },
+        {
+          "name": "logo rocket",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "cyan",
+            "logo": "rocket"
+          }
+        },
+        {
+          "name": "logo lightbulb",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "blue",
+            "logo": "lightbulb"
+          }
+        },
+        {
+          "name": "logo music",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "indigo",
+            "logo": "music"
+          }
+        },
+        {
+          "name": "logo camera",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "violet",
+            "logo": "camera"
+          }
+        },
+        {
+          "name": "logo people",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "pink",
+            "logo": "people"
+          }
+        },
+        {
+          "name": "logo home",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "slate",
+            "logo": "home"
+          }
+        },
+        {
+          "name": "logo airplane",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "red",
+            "logo": "airplane"
+          }
+        },
+        {
+          "name": "logo code",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "orange",
+            "logo": "code"
+          }
+        },
+        {
+          "name": "logo brush",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "amber",
+            "logo": "brush"
+          }
+        },
+        {
+          "name": "logo trophy",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "lime",
+            "logo": "trophy"
+          }
+        },
+        {
+          "name": "logo earth",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "green",
+            "logo": "earth"
+          }
+        },
+        {
+          "name": "logo food",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "teal",
+            "logo": "food"
+          }
+        },
+        {
+          "name": "logo building",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "cyan",
+            "logo": "building"
+          }
+        },
+        {
+          "name": "logo chat",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "blue",
+            "logo": "chat"
+          }
+        },
+        {
+          "name": "logo diamond",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "indigo",
+            "logo": "diamond"
+          }
+        },
+        {
+          "name": "logo flag",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "violet",
+            "logo": "flag"
+          }
+        },
+        {
+          "name": "logo sparkle",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "pink",
+            "logo": "sparkle"
+          }
+        },
+        {
+          "name": "logo pen",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "slate",
+            "logo": "pen"
+          }
+        },
+        {
+          "name": "accent app, no logo",
+          "props": {
+            "name": {
+              "t": "gallery.long"
+            },
+            "accent": "app",
+            "logo": "none"
+          }
+        },
+        {
+          "name": "uploaded logo",
+          "props": {
+            "name": {
+              "t": "gallery.sample"
+            },
+            "accent": "pink",
+            "logo": "upload",
+            "src": {
+              "get": "vm.gallery.logoSrc"
+            }
+          }
         }
       ]
     },
