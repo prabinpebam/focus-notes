@@ -8,7 +8,7 @@
 import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { instance, write } from "./instance.ts";
 import { fixtureNotes } from "../../../tools/bench/fixtures.ts";
@@ -140,11 +140,11 @@ test("SPT-01: Mod+/ opens Spotlight from the Files panel and from Settings; focu
   const { page } = l;
   const files = page.getByRole("complementary", { name: "Files" });
   await page.keyboard.press(`${mod}+O`);
-  await expect(files.getByRole("treeitem", { name: "Welcome", exact: true })).toBeFocused();
+  await expect(fileRow(files, "Welcome")).toBeFocused();
   await open(page);
   await page.keyboard.press("Escape");
   await expect(spotlight(page)).toBeHidden();
-  await expect(files.getByRole("treeitem", { name: "Welcome", exact: true })).toBeFocused();
+  await expect(fileRow(files, "Welcome")).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(files).toBeHidden();
   await expect(editor(page)).toBeFocused();

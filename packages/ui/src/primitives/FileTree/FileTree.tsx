@@ -292,8 +292,8 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
               if (el && menuAt?.id === item.id && menuAt.at === "row") anchor.current = el;
             }}
             role="treeitem"
-            aria-labelledby={labelId ? [labelId, descriptionId].filter(Boolean).join(" ") : undefined}
-            aria-describedby={detailId}
+            aria-labelledby={labelId ? [labelId, descriptionId, detailId].filter(Boolean).join(" ") : undefined}
+            aria-description={detailId ? item.title || undefined : undefined}
             aria-level={item.level}
             aria-selected={item.selected}
             aria-expanded={folder ? item.expanded : undefined}
@@ -349,8 +349,8 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
               <span className={s.label} id={labelId} dir="auto">{item.label}{item.description ? <span className={s.srOnly}>,</span> : null}</span>
             )}
             {/* The name is the row's text: "About, public" (Files → Accessibility). */}
-            {item.description && !item.editing ? <span id={descriptionId} className={s.description}>{item.description}</span> : null}
-            {item.detail && !item.editing ? <span id={detailId} className={s.description}>{item.detail}</span> : null}
+            {item.description && !item.editing ? <span id={descriptionId} className={s.description}> {item.description}</span> : null}
+            {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
             {end ? (
               // Its own control, not the row's: its keys, clicks and presses stay with it (D-191).

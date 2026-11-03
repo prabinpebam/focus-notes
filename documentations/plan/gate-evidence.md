@@ -33,6 +33,15 @@ head must have green Windows CI before main fast-forwards.
 Every local journey launch was invisible and followed by PID-scoped
 `close-test-apps.ps1 -WhatIf` and actual cleanup; no app instance remains.
 
+The combined branch includes main `6dcd3ab7`. Its final focused run passed
+268 units and all ten selected journeys:
+`pnpm --filter @focus-notes/desktop exec playwright test new-note-in.spec.ts mw-workspace.spec.ts air-safeguards.spec.ts m4-spotlight.spec.ts mw-files.spec.ts mw-links.spec.ts mw-files-menu.spec.ts --workers=1 -g 'FIL-17:|FIL-18:|D-265, D-266:|SPT-10:|SPT-01: Mod|FIL-01, FIL-02:|FIL-09:|D-192:|D-162:|D-161:'`.
+`pnpm check`, `pnpm typecheck` and the desktop build passed. The Files axe
+journey includes visible filename details: the accessible name contains all
+visible words, with actual text separators between spans; the full path is an
+accessible description, not zero-size text erroneously included in the visible
+label. Candidate verification and exact-head CI remain pending.
+
 #### Scoped CI quarantines, expires 10 November 2026
 
 Authorized by the implementation coordinator, not considered fixed. Only these

@@ -8,7 +8,7 @@
 import { test, expect, screenAllowed } from "./fixtures.ts";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, placed, PROMPTLY, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, placed, PROMPTLY, quit, tempDirs, type Launched } from "./helpers.ts";
 import { crash, draftAhead, LOSS_BUDGET_MS, START, typedPart, typeTimed } from "./recovery.ts";
 import { axeViolations } from "./axe.ts";
 
@@ -52,7 +52,7 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
   await page.keyboard.press("Control+O");
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => fileRow(tree, name);
   await expect(row("Welcome to Focus Notes")).toBeFocused();
   await page.keyboard.press("Home");
   await page.keyboard.press("Control+Alt+N");

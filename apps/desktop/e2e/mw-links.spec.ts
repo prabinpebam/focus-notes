@@ -8,7 +8,7 @@
 import { test, expect } from "./fixtures.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs } from "./helpers.ts";
+import { caret, fileRow, launch, quit, tempDirs } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const rename = process.platform === "darwin" ? "Enter" : "F2";
@@ -37,7 +37,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   await expect(editor).toBeFocused();
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => fileRow(tree, name);
   const toast = (text: string) => page.locator("#toasts").getByText(text);
 
   // Typing in the open note, then moving a note it links to: what was typed is kept (saved first).

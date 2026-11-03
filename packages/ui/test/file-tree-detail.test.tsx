@@ -9,7 +9,7 @@ let root: Root | undefined;
 let host: HTMLElement | undefined;
 afterEach(() => { act(() => root?.unmount()); host?.remove(); });
 
-it("FIL-18: filename detail describes the row without replacing its title and visibility name", () => {
+it("FIL-18: the row names its visible title, visibility and filename, with the full path as its description", () => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -17,8 +17,9 @@ it("FIL-18: filename detail describes the row without replacing its title and vi
     { id: "plan", kind: "note", level: 1, label: "Plan", description: "public", detail: "original.md", title: "notes/original.md" },
   ] })));
   const row = host.querySelector<HTMLElement>('[role="treeitem"]')!;
-  const named = row.getAttribute("aria-labelledby")!.split(" ").map((id) => document.getElementById(id)!.textContent).join(" ");
-  expect(named).toBe("Plan, public");
-  expect(document.getElementById(row.getAttribute("aria-describedby")!)!.textContent).toBe("original.md");
+  const named = row.getAttribute("aria-labelledby")!.split(" ").map((id) => document.getElementById(id)!.textContent).join(" ").replace(/\s+/g, " ");
+  expect(named).toBe("Plan, public original.md");
+  expect(row.textContent).toBe("Plan, public original.md");
+  expect(row.getAttribute("aria-description")).toBe("notes/original.md");
   expect(row.title).toBe("notes/original.md");
 });

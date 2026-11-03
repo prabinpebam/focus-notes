@@ -1,4 +1,4 @@
-import { _electron as electron, expect, type ElectronApplication, type Page } from "@playwright/test";
+import { _electron as electron, expect, type ElectronApplication, type Locator, type Page } from "@playwright/test";
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { flipFuses, FuseV1Options, FuseVersion } from "@electron/fuses";
 import { tmpdir } from "node:os";
@@ -21,6 +21,13 @@ export interface Launched {
  * slow. A wait is never the budget: a journey that has one measures the time and asserts that.
  */
 export const PROMPTLY = { timeout: 10_000, intervals: [50] };
+
+/** Selects a Files row by its exact visible title; its accessible name may also include a filename (FIL-18). */
+export function fileRow(tree: Locator, title: string | RegExp): Locator {
+  if (typeof title !== "string") return tree.getByRole("treeitem", { name: title });
+  const label = new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},?$`);
+  return tree.getByRole("treeitem").filter({ has: tree.page().locator('span[dir="auto"]').filter({ hasText: label }) });
+}
 
 /** Waits for `text` to be in the file on disk (see `PROMPTLY`). */
 export const onDisk = (file: string, text: string) => expect.poll(() => readFileSync(file, "utf8"), PROMPTLY).toContain(text);

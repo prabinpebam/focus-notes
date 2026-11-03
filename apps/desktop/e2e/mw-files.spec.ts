@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -65,7 +65,7 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   await expect(editor).toBeFocused();
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string | RegExp) => tree.getByRole("treeitem", { name, exact: typeof name === "string" });
+  const row = (name: string | RegExp) => fileRow(tree, name);
 
   // Mod+O opens it with the current note revealed and focused; Esc closes, and the caret returns.
   await page.keyboard.press(`${mod}+O`);
@@ -200,7 +200,7 @@ test("FIL-08, FIL-03, PRF-09: several notes are selected and moved by Move to…
   await page.keyboard.press(`${mod}+O`);
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => fileRow(tree, name);
   const selected = () => tree.locator('[role="treeitem"][aria-selected="true"]').evaluateAll((els) => els.map((e) => e.textContent));
   await expect(row("Alpha")).toBeVisible();
 

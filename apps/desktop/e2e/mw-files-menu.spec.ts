@@ -6,7 +6,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -33,7 +33,7 @@ async function opened(dirs: ReturnType<typeof tempDirs>, env: Record<string, str
   await expect(editor).toBeFocused();
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => fileRow(tree, name);
   const items = (menu: ReturnType<Page["getByRole"]>) => menu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent));
   return { l, page, editor, files, tree, row, items };
 }

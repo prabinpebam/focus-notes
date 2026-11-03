@@ -6,7 +6,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, onDisk, quit, tempDirs } from "./helpers.ts";
+import { caret, fileRow, launch, onDisk, quit, tempDirs } from "./helpers.ts";
 import { tenThousandWords } from "../../../tools/bench/fixtures.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -28,7 +28,7 @@ test("PRF-03: a 10,000-word note opens in 150 ms or less", async () => {
   const times: number[] = [];
   for (const name of ["Long note", "Welcome", "Long note", "Welcome", "Long note"]) {
     await page.keyboard.press(`${mod}+O`);
-    const row = page.getByRole("complementary", { name: "Files" }).getByRole("treeitem", { name, exact: true });
+    const row = fileRow(page.getByRole("complementary", { name: "Files" }), name);
     await row.click();
     await expect(row).toBeFocused();
     const before = (await measures(page, "fn:note.open")).length;
