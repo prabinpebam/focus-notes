@@ -1,1 +1,65 @@
-{ "focus": "page", "root": { "type": "Stack", "id": "page", "props": { "gap": "l", "padding": "xl" }, "children": [ { "type": "Text", "props": { "value": { "t": "share.mock.soon" } } } ] } }
+{
+  "focus": "page",
+  "local": {
+    "owner": "org",
+    "dialog": false,
+    "user": "",
+    "role": "read",
+    "sent": false
+  },
+  "root": { "type": "Stack", "id": "page", "props": { "gap": "l", "padding": "xl" }, "children": [
+    { "type": "Surface", "props": { "variant": "sunken", "shape": "control", "padding": "m" }, "children": [
+      { "type": "Stack", "props": { "gap": "m" }, "children": [
+        { "type": "Inline", "props": { "justify": "between", "align": "center", "wrap": true, "gap": "m" }, "children": [
+          { "type": "Text", "props": { "value": { "t": "share.mock.inviteBar" }, "role": "emphasis" } },
+          { "type": "Button", "props": { "label": { "t": "share.mock.allMocks" }, "variant": "subtle", "size": "s", "icon": "chevronLeft" }, "on": { "press": { "run": "gallery.open", "args": { "id": "index" } } } }
+        ] },
+        { "type": "SegmentedControl", "props": { "label": { "t": "share.mock.owner" }, "options": { "get": "vm.mockShare.ownerOptions" }, "value": { "bind": "local.owner" } } }
+      ] }
+    ] },
+    { "type": "Surface", "props": { "variant": "raised", "shape": "control", "padding": "l" }, "children": [
+      { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "Inline", "props": { "justify": "between", "align": "center", "gap": "m", "wrap": true }, "children": [
+          { "type": "Heading", "props": { "level": "1", "value": { "t": "share.invite.people" } } },
+          { "type": "Button", "props": { "label": { "t": "share.invite.open" }, "variant": "primary", "icon": "add" }, "on": { "press": [{ "set": "local.user", "to": "" }, { "set": "local.dialog", "to": true }] } }
+        ] },
+        { "type": "Text", "props": { "value": { "t": "share.invite.notShare" }, "tone": "muted" } },
+        { "type": "Stack", "props": { "gap": "s" }, "children": [
+          { "each": { "get": "vm.mockShare.people" }, "as": "p", "key": "p.id",
+            "render": { "type": "ItemCard", "props": { "title": { "get": "p.login" }, "initials": { "get": "p.initials" }, "detail": { "get": "p.detail" }, "badge": { "get": "p.badge" }, "personal": "title" } },
+            "empty": { "type": "Text", "props": { "value": { "t": "share.invite.empty" }, "tone": "muted" } } },
+          { "type": "ItemCard", "when": { "get": "local.sent" }, "props": { "title": { "get": "local.user" }, "icon": "github", "detail": { "t": "share.invite.pendingDetail", "args": { "owner": { "get": "local.owner" }, "role": { "get": "local.role" } } }, "badge": { "t": "share.invite.pending" }, "personal": "title" }, "children": [
+            { "type": "Button", "props": { "label": { "t": "share.invite.cancelInvite" }, "size": "s" }, "on": { "press": { "set": "local.sent", "to": false } } }
+          ] }
+        ] }
+      ] }
+    ] },
+
+    { "type": "Dialog", "id": "inviteDialog", "when": { "get": "local.dialog" },
+      "props": { "title": { "t": "share.invite.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "local.dialog" }, "size": "m", "height": "content" },
+      "on": { "openChange": { "set": "local.dialog", "to": { "get": "event.open" } } },
+      "children": [ { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "TextField", "props": { "label": { "t": "share.invite.user" }, "description": { "t": "share.invite.user.detail" }, "placeholder": { "t": "share.invite.user.placeholder" }, "value": { "bind": "local.user" }, "autoFocus": true } },
+        { "type": "ItemCard", "when": { "expr": { "!=": [{ "get": "local.user" }, ""] } }, "props": { "title": { "get": "local.user" }, "detail": { "t": "share.invite.account" }, "icon": "github", "personal": "title" } },
+
+        { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.owner" }, "org"] } }, "props": { "gap": "s" }, "children": [
+          { "type": "SegmentedControl", "props": { "label": { "t": "share.invite.role" }, "options": { "get": "vm.mockShare.roleOptions" }, "value": { "bind": "local.role" } } },
+          { "type": "Text", "props": { "value": { "t": "share.invite.roleDetail", "args": { "role": { "get": "local.role" } } }, "tone": "muted", "role": "secondary" } },
+          { "type": "StatusRow", "props": { "message": { "t": "share.invite.orgNote" }, "tone": "info", "icon": "info" } }
+        ] },
+        { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.owner" }, "personal"] } }, "props": { "gap": "s" }, "children": [
+          { "type": "ItemCard", "props": { "title": { "t": "share.invite.collaborator" }, "detail": { "t": "share.invite.collaborator.detail" }, "badge": { "t": "share.invite.onlyChoice" }, "icon": "lock" } },
+          { "type": "StatusRow", "props": { "message": { "t": "share.invite.personalNote" }, "tone": "warning", "icon": "warning" } }
+        ] },
+
+        { "type": "Inline", "props": { "justify": "between", "gap": "s", "wrap": true, "align": "center" }, "children": [
+          { "type": "Button", "props": { "label": { "t": "share.invite.manage" }, "variant": "subtle", "icon": "github", "bleed": true } },
+          { "type": "Inline", "props": { "gap": "s" }, "children": [
+            { "type": "Button", "props": { "label": { "t": "share.cancel" } }, "on": { "press": { "set": "local.dialog", "to": false } } },
+            { "type": "Button", "props": { "label": { "t": "share.invite.send" }, "variant": "primary", "disabled": { "expr": { "==": [{ "get": "local.user" }, ""] } }, "disabledReason": { "t": "share.invite.needUser" } },
+              "on": { "press": [{ "set": "local.sent", "to": true }, { "set": "local.dialog", "to": false }] } }
+          ] }
+        ] }
+      ] } ] }
+  ] }
+}

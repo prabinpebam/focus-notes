@@ -639,5 +639,33 @@
       "title": "Quiet tools",
       "excerpt": "The best tools disappear while you work and come back the moment you need them."
     }
+  ],
+  "labels": {
+    "copyAgain": "Copy again",
+    "extend": "Extend"
+  },
+  "itemOptions": [
+    {
+      "id": "note",
+      "label": "A note"
+    },
+    {
+      "id": "folder",
+      "label": "A folder"
+    }
+  ],
+  "readerThemeOptions": [
+    {
+      "id": "light",
+      "label": "Light"
+    },
+    {
+      "id": "dark",
+      "label": "Dark"
+    },
+    {
+      "id": "system",
+      "label": "System"
+    }
   ]
 }

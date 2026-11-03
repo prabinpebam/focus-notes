@@ -1,1 +1,103 @@
-{ "focus": "page", "root": { "type": "Stack", "id": "page", "props": { "gap": "l", "padding": "xl" }, "children": [ { "type": "Text", "props": { "value": { "t": "share.mock.soon" } } } ] } }
+{
+  "focus": "page",
+  "local": {
+    "filter": "all",
+    "query": "",
+    "dialog": "",
+    "turnOff": "",
+    "status": ""
+  },
+  "root": { "type": "Stack", "id": "page", "props": { "gap": "l", "padding": "xl" }, "children": [
+    { "type": "Surface", "props": { "variant": "sunken", "shape": "control", "padding": "m" }, "children": [
+      { "type": "Inline", "props": { "justify": "between", "align": "center", "wrap": true, "gap": "m" }, "children": [
+        { "type": "Text", "props": { "value": { "t": "share.mock.settingsBar" }, "role": "emphasis" } },
+        { "type": "Button", "props": { "label": { "t": "share.mock.allMocks" }, "variant": "subtle", "size": "s", "icon": "chevronLeft" }, "on": { "press": { "run": "gallery.open", "args": { "id": "index" } } } }
+      ] }
+    ] },
+    { "type": "Surface", "props": { "variant": "raised", "shape": "control", "padding": "l" }, "children": [
+      { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "Heading", "props": { "level": "1", "value": { "t": "share.settings.title" } } },
+
+        { "type": "ItemCard", "when": { "expr": { "!=": [{ "get": "local.turnOff" }, "done"] } }, "props": { "title": { "t": "share.settings.project" }, "detail": { "t": "share.settings.site" }, "badge": { "t": "share.settings.on" }, "icon": "globe" }, "children": [
+          { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "site.preview.open" } }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.share.publish" } } } },
+            { "type": "Button", "props": { "label": { "t": "share.settings.turnOff" }, "busy": { "expr": { "==": [{ "get": "local.turnOff" }, "running"] } } }, "on": { "press": { "set": "local.dialog", "to": "turnOff" } } }
+          ] }
+        ] },
+        { "type": "ItemCard", "when": { "expr": { "==": [{ "get": "local.turnOff" }, "done"] } }, "props": { "title": { "t": "share.settings.project" }, "detail": { "t": "share.settings.offDetail" }, "badge": { "t": "share.settings.off" }, "icon": "lock" }, "children": [
+          { "type": "Button", "props": { "label": { "t": "share.settings.turnOn" } }, "on": { "press": { "set": "local.turnOff", "to": "" } } }
+        ] },
+        { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.turnOff" }, "running"] } }, "props": { "gap": "s" }, "children": [
+          { "type": "ProgressBar", "props": { "label": { "t": "share.settings.turningOff" }, "value": 25 } },
+          { "type": "Inline", "props": { "gap": "s", "align": "center", "wrap": true }, "children": [
+            { "type": "Text", "props": { "value": { "t": "share.settings.turningOff" }, "role": "secondary", "announce": true } },
+            { "type": "Button", "props": { "label": { "t": "share.mock.finish" }, "variant": "subtle", "size": "s" }, "on": { "press": { "set": "local.turnOff", "to": "done" } } }
+          ] }
+        ] },
+        { "type": "StatusRow", "when": { "expr": { "==": [{ "get": "local.turnOff" }, "done"] } }, "props": { "message": { "t": "share.settings.offDone" }, "tone": "success", "icon": "check" } },
+
+        { "type": "Divider" },
+        { "type": "Heading", "props": { "level": "2", "value": { "t": "share.settings.all" } } },
+        { "type": "Inline", "props": { "gap": "l", "wrap": true, "align": "end" }, "children": [
+          { "type": "SegmentedControl", "props": { "label": { "t": "share.settings.show" }, "options": { "get": "vm.mockShare.filterOptions" }, "value": { "bind": "local.filter" } } },
+          { "type": "SearchField", "props": { "label": { "t": "share.settings.find" }, "placeholder": { "t": "share.settings.find.placeholder" }, "value": { "bind": "local.query" }, "clearLabel": { "t": "field.clear" }, "size": "m" } }
+        ] },
+        { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "local.status" }, ""] } }, "props": { "message": { "t": "share.settings.status", "args": { "status": { "get": "local.status" } } }, "tone": "success", "icon": "check" } },
+        { "type": "Stack", "props": { "gap": "s" }, "children": [
+          { "each": { "get": "vm.mockShare.allShares" }, "as": "row", "key": "row.id",
+            "render": { "type": "ItemCard",
+              "when": { "expr": { "and": [{ "or": [{ "==": [{ "get": "local.filter" }, "all"] }, { "==": [{ "get": "row.stateId" }, { "get": "local.filter" }] }] }, { "in": [{ "get": "local.query" }, { "get": "row.item" }] }] } },
+              "props": { "title": { "get": "row.item" }, "detail": { "get": "row.detail" }, "badge": { "get": "row.state" }, "icon": { "get": "row.icon" } },
+              "children": [
+                { "type": "Inline", "when": { "get": "row.live" }, "props": { "gap": "xs", "wrap": true }, "children": [
+                  { "type": "MenuButton", "props": { "variant": "text", "label": { "t": "share.settings.copyAgain" }, "text": { "get": "vm.mockShare.labels.copyAgain" }, "sections": { "get": "vm.mockShare.copyMenu" }, "placement": "bottom end" }, "on": { "action": { "set": "local.status", "to": "copied" } } },
+                  { "type": "MenuButton", "props": { "variant": "text", "label": { "t": "share.settings.extend" }, "text": { "get": "vm.mockShare.labels.extend" }, "sections": { "get": "vm.mockShare.extendMenu" }, "placement": "bottom end" }, "on": { "action": { "set": "local.status", "to": "extended" } } },
+                  { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s" }, "on": { "press": { "set": "local.dialog", "to": "withdraw" } } }
+                ] },
+                { "type": "Inline", "when": { "expr": { "!": { "get": "row.live" } } }, "props": { "gap": "xs", "wrap": true }, "children": [
+                  { "type": "Button", "props": { "label": { "t": "share.settings.deleteRecord" }, "size": "s" }, "on": { "press": { "set": "local.dialog", "to": "delete" } } }
+                ] }
+              ] },
+            "empty": { "type": "Text", "props": { "value": { "t": "share.list.empty" }, "tone": "muted" } } }
+        ] }
+      ] }
+    ] },
+
+    { "type": "Dialog", "id": "withdrawDialog", "when": { "expr": { "==": [{ "get": "local.dialog" }, "withdraw"] } },
+      "props": { "title": { "t": "share.withdraw.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "expr": { "==": [{ "get": "local.dialog" }, "withdraw"] } }, "size": "s", "height": "content" },
+      "on": { "openChange": { "set": "local.dialog", "to": "" } },
+      "children": [ { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "Text", "props": { "value": { "t": "share.withdraw.text" } } },
+        { "type": "Inline", "props": { "justify": "end", "gap": "s" }, "children": [
+          { "type": "Button", "props": { "label": { "t": "share.cancel" }, "autoFocus": true }, "on": { "press": { "set": "local.dialog", "to": "" } } },
+          { "type": "Button", "props": { "label": { "t": "share.withdraw.confirm" }, "variant": "danger" }, "on": { "press": [{ "set": "local.status", "to": "withdrawn" }, { "set": "local.dialog", "to": "" }] } }
+        ] }
+      ] } ] },
+
+    { "type": "Dialog", "id": "deleteDialog", "when": { "expr": { "==": [{ "get": "local.dialog" }, "delete"] } },
+      "props": { "title": { "t": "share.delete.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "expr": { "==": [{ "get": "local.dialog" }, "delete"] } }, "size": "s", "height": "content" },
+      "on": { "openChange": { "set": "local.dialog", "to": "" } },
+      "children": [ { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "Text", "props": { "value": { "t": "share.delete.text" } } },
+        { "type": "Inline", "props": { "justify": "end", "gap": "s" }, "children": [
+          { "type": "Button", "props": { "label": { "t": "share.cancel" }, "autoFocus": true }, "on": { "press": { "set": "local.dialog", "to": "" } } },
+          { "type": "Button", "props": { "label": { "t": "share.delete.confirm" }, "variant": "danger" }, "on": { "press": [{ "set": "local.status", "to": "deleted" }, { "set": "local.dialog", "to": "" }] } }
+        ] }
+      ] } ] },
+
+    { "type": "Dialog", "id": "turnOffDialog", "when": { "expr": { "==": [{ "get": "local.dialog" }, "turnOff"] } },
+      "props": { "title": { "t": "share.off.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "expr": { "==": [{ "get": "local.dialog" }, "turnOff"] } }, "size": "s", "height": "content" },
+      "on": { "openChange": { "set": "local.dialog", "to": "" } },
+      "children": [ { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "Stack", "props": { "gap": "s" }, "children": [
+          { "type": "ItemCard", "props": { "title": { "t": "share.off.shared" }, "detail": { "t": "share.off.shared.detail" }, "badge": { "t": "share.badge.shared" }, "icon": "lock" } },
+          { "type": "ItemCard", "props": { "title": { "t": "share.off.published" }, "detail": { "t": "share.off.published.detail" }, "badge": { "t": "share.badge.published" }, "icon": "globe" } }
+        ] },
+        { "type": "Text", "props": { "value": { "t": "share.off.history" }, "tone": "muted" } },
+        { "type": "Inline", "props": { "justify": "end", "gap": "s" }, "children": [
+          { "type": "Button", "props": { "label": { "t": "share.cancel" }, "autoFocus": true }, "on": { "press": { "set": "local.dialog", "to": "" } } },
+          { "type": "Button", "props": { "label": { "t": "share.off.confirm" }, "variant": "danger" }, "on": { "press": [{ "set": "local.turnOff", "to": "running" }, { "set": "local.dialog", "to": "" }] } }
+        ] }
+      ] } ] }
+  ] }
+}
