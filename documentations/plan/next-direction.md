@@ -186,33 +186,38 @@ The first source is planned in **MP: Projects and simpler sharing**, WP-P.1 to W
 
 ## Review, 3 November
 
-A critique of everything above and on the linked pages, made the same afternoon: a grounding critique of the chain, a design-system audit of the view specs, and a review of fidelity, feasibility and the plan, with external facts checked against their sources. Both source captures still match the owner's files exactly. Fixes are made on the pages themselves; reversible choices are recorded as decisions D-305 onward.
-
-**In progress.** Findings and fixes are added here as each section lands.
+A critique of everything above and on the linked pages, made the same afternoon: a grounding critique of the chain, a design-system audit of the view specs, and a review of fidelity, feasibility and the plan, with external facts checked against their sources. Both source captures still match the owner's files exactly, and the owner's 13:35 decisions hold everywhere. Fixes are on the pages themselves; reversible choices are [D-305 to D-314](decisions.md#review-of-the-3-november-direction-d-305-to-d-314). None needs the owner before design review.
 
 ### Critical
 
 | Finding | Fix |
 | --- | --- |
-| Images were to be stored as a `::image{…}` directive, which a plain Markdown viewer such as GitHub shows as text, not a picture. That breaks the ownership promise ("breaks when the app writes anything a plain Markdown viewer can't show"). | Pending: standard image syntax with an attribute block. |
-| The visibility table said a share is stored in the private repository, while D-299 commits its ciphertext to the public site repository. Who seals it, and when, wasn't decided; re-sealing with fresh keys on every build would commit new ciphertext every night and grow the public repository towards GitHub's 1 GB limit. | Table corrected in [Sharing](../design/views/sharing.md#three-levels-of-visibility). Sealing pending. |
-| The first-share confirmation was a dialog stacked on the share dialog, which the one-panel rule doesn't allow, and scored about 48 on the visual vs verbose score: five sentences of prose, no anchor. | Now an in-place step with the project mark, two "what's created" rows, two badge rows and one history line, about 78 ([Projects](../experience/projects.md#private-only-until-the-first-share)). |
-| Images had no way to write a description (alt text) or a caption by hand; only AI captions. | Added **Edit description…** and **Add caption** to the [image menu](../experience/images.md#image-menu-and-selection), with an empty-description hint and a non-blocking reminder at share time. |
+| Turning sharing off kept the site's deploy key and secret, so the public repository's workflows could still read every private note. | The desktop app now seals shares and the site never holds a private key; Turn off removes any legacy key, secret and scheduled deploy ([D-305](decisions.md#review-of-the-3-november-direction-d-305-to-d-314), R-50, MP.16). |
+| Who seals committed ciphertext, and when, wasn't decided; re-sealing on every build would grow the public repository towards GitHub's 1 GB Pages limit. The visibility table also said shared content lived only in the private repository. | Sealed only when a share changes (D-305, R-54); [visibility table](../design/views/sharing.md#three-levels-of-visibility) corrected. Source: [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits). |
+| Images were to be stored as a `::image{…}` directive, which GitHub shows as text, not a picture, breaking the ownership promise. | Standard Markdown images with an options block only when needed ([D-310](../experience/images.md#assets-markdown-and-encrypted-sharing), IMG-10, IMG.9). |
+| The default site name `⟨project⟩-site` put the project's name in every share link. | Neutral, editable `notes-site`, with "This name appears in every link you share" (D-312). |
+| A folder share silently included notes added later, and a second Share… changed the first recipients' access. | Folder membership is fixed unless **Include notes added later** is on (D-311); Share… always starts a new share (D-307); MP.17, MP.18. |
+| The first-share confirmation stacked a second dialog and scored about 48 on the visual vs verbose score; images had no way to write a description or caption by hand. | An [in-place step](../experience/projects.md#private-only-until-the-first-share) with rows and badges (about 78); **Edit description…** and **Add caption** in the [image menu](../experience/images.md#image-menu-and-selection). |
 
 ### Major
 
 | Finding | Fix |
 | --- | --- |
-| Existing workspaces nest the private repository *inside* the public one; new projects are the other way round, and where a new project's site lives on disk wasn't said. | Pending. |
-| Windows has no Electron API for the system share sheet (Electron's `ShareMenu` is macOS only), so the owner's primary Share button on the owner's own platform rests on an unproven native bridge. Not in the risk register. | Pending. |
-| "Multiple instances" per project wasn't reconciled with the existing single-instance lock, *Open with* routing, or closing to the tray (D-217). | Pending. |
-| Pressing Share… on an item that's already shared didn't say whether it shows the same link or makes a new one. | Pending. |
-| The plan made the owner's three share-dialog fixes wait for all of projects, made inline images wait for encrypted sharing, and packed five deep requirements into one package (WP-P.4). | Pending. |
-| Components named as "existing" (Switch, Select, Disclosure, Tree, Badge) aren't all built; the share dialog had no offline, no-permission or sharing-off states, focus order, or named status element. | Pending. |
+| Windows has no Electron share-sheet API ([ShareMenu](https://www.electronjs.org/docs/latest/api/share-menu) is macOS only), so the owner's Share button on Windows rested on an unproven bridge. | D-308: a one-hour spike (A-SHR-01) first; until proven, the button honestly reads Copy share information (R-51, MP.19). |
+| "Multiple instances" wasn't reconciled with the single-instance lock, *Open with* routing or the tray; a project window's Projects list showed other projects' files. | One running app, one window per project, paths routed to the owning window; no other project's files inside a window ([D-309](../experience/projects.md#opening-a-project), MP.20). |
+| Existing workspaces nest the private repository inside the public one, the opposite of new projects, and a new site's place on disk was unstated. | D-306: a new project is one folder with its site at `public\`; existing layouts don't move. |
+| "Separate color theming" was narrowed to an accent; pins synced to collaborators. | Accent on the title band and Files heading plus an optional per-project Appearance; per-account pins (D-313). |
+| The plan made the owner's three share-dialog fixes wait for all of projects, made inline images wait for encrypted sharing, and packed five deep requirements into WP-P.4. | D-314: Switch (WP-P.16) and the share dialog (WP-P.9) first, the terminology move (WP-P.17) early, WP-P.4 split, turn on/off as WP-P.18, image storage apart from image sharing (WP-9.6). |
+| Turning sharing off had no scenario or user-can; the share and project flows had no offline, sign-in-expired, no-permission, large-folder, deleted-item or two-device conflict states. | SC-SHARE-08 and UC-SHARE-12; state tables in [Sharing](../design/views/sharing.md#states-and-evidence) and [Projects](../experience/projects.md#states-waits-and-accessibility); MP.21. |
+| Unregistered beliefs: the sign-in can create repositories and enable Pages; "ready" can be detected. | R-52 (a protocol matrix per token type) and R-53 (ready = GitHub's deployment status). |
+| Components named as existing weren't all built (Switch, Select, Disclosure); named-audience components remained in the catalogue. | Real statuses listed; Switch contract completed; AudienceRow retired, ShareRow added ([components](../design/system/components.md)). |
 
 ### Minor
 
 | Finding | Fix |
 | --- | --- |
-| Process notes ("this task performs no…", relay times) sat in product pages. | Removed from Projects, Sharing, Published website, Repository and publishing, Web app, Product site and Definition of done. |
+| Stale or contradictory text: D-277's "folders can't be pinned", 30-day Quick notes recovery, SHR-01/SHR-11 named audiences, SHR-07's 12-character passcode, Mod+Shift+N as New window, "Make public" labels, the redirect contradiction, the live demo view, retired browser packages still marked building or verifying, "workspace" in user-can rows. | Each corrected or marked superseded; retired packages marked retired; redirects come from a rename map (D-312). |
+| Image details: the error didn't state the limits, crop focus was unclear, transparent images vanished in dark mode, figure corners were rounded by default, and pasting wasn't specified. | Copy with limits, focus on the Left field, a token backdrop, square figure corners, paste follows the drop path. |
+| Process notes ("this task performs no…", relay times) sat in product pages. | Removed. |
 
+**Left as is, with reasons.** Collapsing the three copy actions into a menu: the owner listed all four actions. Ctrl+Alt+O and Ctrl+Alt+N: the existing rule already lets AltGr characters win, so the menu remains the path on those layouts. "Workspace" in as-built architecture pages: WP-P.17's copy check renames it with the build. WEB-01's link to UC-SHARE-10 and the non-goal wording inside two promises are minor and left for the next chain pass.

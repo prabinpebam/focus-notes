@@ -42,8 +42,8 @@ New notes and projects are Private. Shared is a private note with a grant, not a
 <text x="356" y="266" font-size="17" fill="var(--color-neutral-fg-1)">Passcode · Off</text>
 <text x="46" y="308" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Include notes added later · Off</text>
 <rect id="fnshare-dialog__actions" x="24" y="348" width="594" height="112" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
-<rect x="46" y="368" width="112" height="36" rx="8" fill="var(--color-brand-bg)" />
-<text x="66" y="392" font-size="17" font-weight="600" fill="var(--color-neutral-bg-1)">Share…</text>
+<rect x="46" y="368" width="112" height="36" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-brand-stroke)" stroke-width="2.5" />
+<text x="66" y="392" font-size="17" font-weight="600" fill="var(--color-neutral-fg-1)">Share…</text>
 <rect x="172" y="368" width="424" height="36" rx="8" fill="none" stroke="var(--color-neutral-stroke-1)" />
 <text x="186" y="391" font-size="15" fill="var(--color-neutral-fg-1)">Copy link · Copy access code · Copy share information</text>
 <text x="46" y="438" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__actions" data-slate-fit-padding="16">No share sheet on this system → the primary reads Copy share information</text>
