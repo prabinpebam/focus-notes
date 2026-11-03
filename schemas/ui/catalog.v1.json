@@ -886,7 +886,8 @@
             "moveField",
             "repoField",
             "spotlightField",
-            "findAllField"
+            "findAllField",
+            "newNoteField"
           ],
           "default": "none"
         },
@@ -952,7 +953,8 @@
         "keyScope moveField",
         "keyScope repoField",
         "keyScope spotlightField",
-        "keyScope findAllField"
+        "keyScope findAllField",
+        "keyScope newNoteField"
       ]
     },
     {
@@ -5722,6 +5724,12 @@
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
         "vm.publicIndex"
+      ]
+    },
+    {
+      "id": "newNote",
+      "viewModels": [
+        "vm.newNote"
       ]
     },
     {

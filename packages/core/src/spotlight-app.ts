@@ -353,6 +353,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       [ui.settings.open, "settings.setOpen"], [ui.shortcuts.open, "shortcuts.setOpen"], [ui.picker.open, "picker.setOpen"],
       [ui.aboutOpen, "about.setOpen"], [ui.unlock.open && !ui.unlock.busy, "unlock.setOpen"],
       [ui.files.move.open, "move.setOpen"], [Boolean(ui.files.confirm), "files.setConfirmOpen"], [ui.feedback.open, "feedback.close"],
+      [ui.files.newNote.open && !ui.files.newNote.busy, "newNote.dismiss"],
     ];
     for (const [shown, id] of open) if (shown && commands.has(id)) void run(id, { open: false });
   };

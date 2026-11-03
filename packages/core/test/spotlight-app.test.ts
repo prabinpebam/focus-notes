@@ -444,7 +444,7 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     await app.commands.run("spotlight.setOpen", { open: false });
 
     await act("ideas", "rename");
-    expect(app.store.state.ui.files).toMatchObject({ open: true, edit: { kind: "rename", value: "Ideas" } });
+    expect(app.store.state.ui.files).toMatchObject({ open: true, edit: { kind: "rename", value: "ideas" } });
     await app.commands.run("files.cancelEdit");
     await act("ideas", "moveTo");
     expect(app.store.state.ui.files.move).toMatchObject({ open: true, paths: [`${PRIV}/ideas.md`] });

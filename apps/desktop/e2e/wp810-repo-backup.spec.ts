@@ -81,7 +81,7 @@ test("FIL-14: a folder made in the app is committed and pushed on its own; the s
     const priv = files.getByRole("button", { name: /^Private notes backup: / });
     await expect(priv).toHaveAttribute("data-state", "synced", { timeout: 15_000 });
     await files.getByRole("treeitem", { name: /^Private/ }).click();
-    await page.keyboard.press(`${mod}+Shift+N`);
+    await page.keyboard.press(`${mod}+Alt+N`);
     const name = files.getByRole("textbox", { name: "Folder name" });
     await expect(name).toBeFocused();
     await page.keyboard.type("Plans");

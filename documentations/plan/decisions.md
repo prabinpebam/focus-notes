@@ -1,5 +1,20 @@
 # Decisions
 
+## D-338: choose a folder in today's workspace
+
+**Decided (implementation coordinator, 3 November 2026).** Ship New note in…
+and Mod+Shift+N against today's writable Public and Private workspace folders,
+without waiting for WP-P.4. The approved picker stays inside that workspace,
+preselects the current folder, then the last used folder, then Private, and
+creates folders inline. Cancel creates no note. Local-only windows keep immediate
+New note. When project windows land, the same picker takes their scope; it never
+lists or creates projects. New folder moves to Ctrl+Alt+N / Option+Command+N.
+
+**Trace:** CP-ORDER-01 → SC-FILE-07 → UC-FILE-12 → IA-CMP-PLACEPICKER → FIL-17 / KEY-09 →
+WP-P.7. Affects [Files](../design/views/files.html), [keys](../experience/keyboard-shortcuts.md),
+[requirements](../product/requirements.md), [implementation plan](implementation-plan.md)
+and [work graph](work-graph.json).
+
 ## D-267: one Settings list, one remembered default
 
 **D-265/D-266/D-267 production boundary, 1 November:** owner approval of exact

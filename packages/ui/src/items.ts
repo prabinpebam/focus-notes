@@ -50,7 +50,7 @@ export const ITEM_SHAPES: Readonly<Record<ListOf, ItemShape | typeof STRING_ITEM
     highlights: "array?", descriptionHighlights: "array?", state: "string?",
   }),
   treeItems: shape<TreeItem>({
-    id: "string", kind: "string", level: "number", label: "string", description: "string?", title: "string?", parent: "string?",
+    id: "string", kind: "string", level: "number", label: "string", description: "string?", detail: "string?", title: "string?", parent: "string?",
     expanded: "boolean?", hasChildren: "boolean?", selected: "boolean?", current: "boolean?", pending: "boolean?", readOnly: "boolean?",
     draggable: "boolean?", droppable: "boolean?", editing: "boolean?", accessory: "number?",
   }),

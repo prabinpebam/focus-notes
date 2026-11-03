@@ -457,7 +457,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         return;
       }
       timing.mark(SAVED_MARK);
-      // The file name follows the title (FIL-07); a rename keeps the editor as it is.
+      // Only the provisional first-save name changes (FIL-18); later headings leave the path alone.
       await workspace.written(path, markdown);
       // A held note asks before its first backup only once it has the writer's words (D-158).
       heldNotes.written(path, store.state.note.path);
@@ -751,7 +751,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     enabled: (s) => s.workspace.access === "write",
     disabledReason: "command.note.new.readOnly",
     // With a title (Spotlight's Create note "…"), the note starts with it as its H1 and is named after it (FIL-07).
-    run: async ({ title }: { title?: unknown }) => {
+    run: async ({ title, folder: chosenFolder }: { title?: unknown; folder?: unknown }) => {
       const current = store.state.note.path;
       // With the Files panel open, the note goes into the selected folder (Files → Creating); else
       // into the open note's folder if it's private, or the Private root: private by default (SHR-01).
@@ -759,12 +759,21 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // then only a chosen folder counts, and the shell puts it in the Private root (D-171).
       const tree = store.state.workspace.tree;
       const known = tree.roots.length > 0;
-      const folder = known ? newNoteFolder(tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current) : files.newNoteFolder();
+      const folder = typeof chosenFolder === "string" ? chosenFolder : known ? newNoteFolder(tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current) : files.newNoteFolder();
+      if (chosenFolder !== undefined) {
+        const root = tree.roots.find((r) => folder === r.path || Boolean(folder?.startsWith(r.path + "/") || folder?.startsWith(r.path + "\\")));
+        if (!bridge.workspace?.apply || !root || root.readOnly || !folder || !files.canCreateIn(folder)) throw new Error("folder-unavailable");
+      }
       const near = folder !== undefined ? joinPath(folder, "untitled.md") : known && !isReadOnlyPath(current) ? current : undefined;
       const path = await bridge.newNotePath(near);
+      if (typeof chosenFolder === "string") {
+        const normal = (p: string) => bridge.platform === "windows" ? p.replace(/\\/g, "/").toLowerCase() : p;
+        if (normal(path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")))) !== normal(chosenFolder)) throw new Error("folder-unavailable");
+      }
       if (!(await flush())) return;
+      if (chosenFolder !== undefined && bridge.workspace?.apply) await bridge.workspace.apply([{ op: "create", path, text: "" }]);
+      else await bridge.writeNote(path, "");
       files.created(path);
-      await bridge.writeNote(path, "");
       // Without a private repository the shell held it: its pill shows from the start (D-158).
       await heldNotes.refresh();
       await load(path);

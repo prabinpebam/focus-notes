@@ -273,7 +273,7 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
   await expect(option(page, /^Light theme/).first()).toBeVisible();
   await search(page, "switch light", "Switch light and dark");
   await expect(active(page)).toContainText("Off");
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Enter");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe("ink");
   await expect(active(page)).toContainText("On");
   await field(page).fill("");

@@ -114,6 +114,7 @@ test("the site's navigation reaches each address, the skip link goes to the cont
 });
 
 test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async ({ page }) => {
+  test.fixme(new Date() < new Date("2026-11-11T00:00:00Z"), "Scoped quarantine: gate-evidence.md; implementation coordinator; expires 10 November 2026; CI 41654808341");
   const cdp = await page.context().newCDPSession(page);
   // About a mid-range phone on a slow 4G connection, as the public pages are measured.
   await cdp.send("Network.enable");

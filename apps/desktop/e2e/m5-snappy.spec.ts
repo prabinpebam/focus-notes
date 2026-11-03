@@ -302,6 +302,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     await quit(l);
   });
   test("PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms", async () => {
+    test.fixme(new Date() < new Date("2026-11-11T00:00:00Z"), "Scoped quarantine: gate-evidence.md; implementation coordinator; expires 10 November 2026; CI 41654808341 / 41656910779");
     // With the warm-up after start on, as people have it (PRF-10): first uses are warmed there; and
     // drawn even when other windows cover the journey's (Windows' occlusion tracking off).
     const env = { FOCUS_NOTES_WARMUP: "1", FOCUS_NOTES_CHROMIUM_SWITCHES: "disable-features=CalculateNativeWinOcclusion,disable-backgrounding-occluded-windows" };

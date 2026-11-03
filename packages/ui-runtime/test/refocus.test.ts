@@ -10,7 +10,7 @@ import type { AppState } from "@focus-notes/core";
 import { refocusNote } from "../src/refocus.ts";
 
 type Ui = AppState["ui"];
-const closed = { toolbarOpen: false, shortcuts: { open: false }, files: { open: false }, theme: { open: false }, spotlight: { open: false }, findAll: { open: false } };
+const closed = { toolbarOpen: false, shortcuts: { open: false }, files: { open: false, newNote: { open: false } }, theme: { open: false }, spotlight: { open: false }, findAll: { open: false } };
 
 /** Asks for the caret back; `wanted` is the note's frame-later check, undefined when it wasn't asked at all. */
 function ask(start: typeof closed, still?: () => boolean): { wanted: (() => boolean) | undefined; set: (next: typeof closed) => void } {
@@ -35,14 +35,15 @@ describe("handing the caret back to the note (DEF-4)", () => {
     expect(wantedAfter((ui) => ui)).toBe(true);
   });
   it("is no longer wanted once Files, the toolbar, Spotlight, or another panel opened meanwhile", () => {
-    expect(wantedAfter((ui) => ({ ...ui, files: { open: true } }))).toBe(false);
+    expect(wantedAfter((ui) => ({ ...ui, files: { ...ui.files, open: true } }))).toBe(false);
+    expect(wantedAfter((ui) => ({ ...ui, files: { ...ui.files, newNote: { open: true } } }))).toBe(false);
     expect(wantedAfter((ui) => ({ ...ui, toolbarOpen: true }))).toBe(false);
     expect(wantedAfter((ui) => ({ ...ui, spotlight: { open: true } }))).toBe(false);
     expect(wantedAfter((ui) => ({ ...ui, shortcuts: { open: true } }))).toBe(false);
     expect(wantedAfter((ui) => ({ ...ui, theme: { open: true } }))).toBe(false);
   });
   it("isn't asked at all when a panel is already open", () => {
-    expect(ask({ ...closed, files: { open: true } }).wanted).toBeUndefined();
+    expect(ask({ ...closed, files: { ...closed.files, open: true } }).wanted).toBeUndefined();
   });
 });
 

@@ -1,5 +1,5 @@
 /**
- * The workspace in the app (WP-2.3): its format (DST-05), file names that follow titles (FIL-07),
+ * The workspace in the app (WP-2.3): its format (DST-05), first-save file names (FIL-18),
  * and changes made outside the app reaching only the views that show them (PRF-11).
  */
 import type { Store } from "./store.ts";
@@ -10,7 +10,7 @@ import type { AppStateFile, PlatformBridge } from "./bridge.ts";
 import type { AppState, ToastState } from "./app.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import {
-  applyChanges, buildTree, EMPTY_TREE, followsTitle, isWithin, planRename, stemOf, titleOfMarkdown,
+  applyChanges, buildTree, EMPTY_TREE, isWithin, planRename, stemOf, titleOfMarkdown,
   type WorkspaceChange, type WorkspaceTree,
 } from "./workspace.ts";
 import { planLinkWrites, rewriteLinks } from "./links.ts";
@@ -176,23 +176,24 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     }
   }
 
-  // ---- file names that follow titles (FIL-07) ----
+  // ---- first-save file names (FIL-18) ----
   let follows = false;
-  let title: string | undefined;
   function loaded(path: string, markdown: string): void {
     const name = nameOf(path);
-    title = titleOfMarkdown(markdown);
-    follows = followsTitle(name, title ?? stemOf(name));
+    follows = !markdown.trim() && /^untitled(-\d+)?$/i.test(stemOf(name));
   }
   async function written(path: string, markdown: string): Promise<void> {
     lastWritten = { path, text: markdown };
     if (!ws || queued || store.state.workspace.access !== "write") return;
     // Notes the app creates are in the tree before the watcher (if any) reports them, with their titles.
     const next = titleOfMarkdown(markdown);
-    setTree(applyChanges(store.state.workspace.tree, [{ path, kind: "note", exists: true, ...(next ? { title: next } : {}) }]));
-    if (!follows || !next || next === title) return;
-    const plan = planRename(store.state.workspace.tree, path, next);
-    if (plan?.kind === "unchanged") title = next;
+    setTree(applyChanges(store.state.workspace.tree, [{ path, kind: "note", exists: true, title: next ?? "" }]));
+    if (!follows || !markdown.trim()) return;
+    const date = new Date();
+    const stamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const name = next ?? catalog.format("files.untitledDate", { date: stamp });
+    const plan = planRename(store.state.workspace.tree, path, name);
+    if (plan?.kind === "unchanged") follows = false;
     if (plan?.kind !== "renamed") return;
     const moves = [{ from: path, to: plan.to }];
     let own: string | undefined;
@@ -204,9 +205,10 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
         await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text, before: w.before }))]);
       } else await ws.renameNote(path, plan.to);
     } catch {
-      return; // The name is taken or locked: it's tried again on the next save.
+      toast(catalog.format("files.firstNameFailed"), { tone: "error" });
+      return;
     }
-    title = next;
+    follows = false;
     lastWritten = { path: plan.to, text: own ?? markdown };
     // The editor keeps its note: only the path changes, not the key, unless it links to itself by name.
     store.update((s) => ({ ...s, workspace: { ...s.workspace, tree: plan.tree }, note: s.note.path === path ? { ...s.note, path: plan.to } : s.note }));

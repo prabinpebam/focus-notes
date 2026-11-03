@@ -59,7 +59,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | PopoverPanel | primitive | `closed`, `open` | 8 | `open` |
 | MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 9 | None |
 | Shortcut | primitive | `rest` | 2 | None |
-| SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 15 | `focused` |
+| SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 5 | `hover`, `focusVisible` |
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |

@@ -59,6 +59,8 @@ export interface TreeItem {
   description?: string;
   /** The tooltip: a note's file name. */
   title?: string;
+  /** Muted supplementary text, such as a file name that differs from the title. */
+  detail?: string;
   /** The ID of the row it's in. */
   parent?: string;
   expanded?: boolean;
@@ -84,7 +86,7 @@ export interface TreeItem {
  * stops the outer scopes so Delete and F2 edit the text there. `findAll` is the Find in all notes
  * sheet and `findAllField` its search field.
  */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "filesSection", "moveField", "firstRun", "repoField", "spotlightField", "findAll", "findAllField", "rewritePrompt"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "filesSection", "moveField", "firstRun", "repoField", "spotlightField", "findAll", "findAllField", "rewritePrompt", "newNoteField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** A theme in the theme manager's gallery (ThemeGallery). */

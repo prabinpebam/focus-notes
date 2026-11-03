@@ -2393,7 +2393,8 @@
             "moveField",
             "repoField",
             "spotlightField",
-            "findAllField"
+            "findAllField",
+            "newNoteField"
           ],
           "default": "none"
         },
@@ -2649,6 +2650,18 @@
               "t": "field.clear"
             },
             "keyScope": "findAllField"
+          }
+        },
+        {
+          "name": "keyScope newNoteField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "newNoteField"
           }
         }
       ]

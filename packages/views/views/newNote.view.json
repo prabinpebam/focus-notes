@@ -1,0 +1,45 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "newNote",
+  "viewModels": ["vm.newNote"],
+  "focus": "newNoteSearch",
+  "overlay": true,
+  "root": {
+    "type": "Stack", "children": [{
+    "type": "Dialog", "id": "newNote", "when": { "get": "vm.newNote.open" },
+    "props": { "title": { "t": "newNote.in" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.newNote.open" }, "size": "s" },
+    "on": { "openChange": { "run": "newNote.dismiss" } },
+    "slots": {
+      "toolbar": [{
+        "type": "SearchField", "id": "newNoteSearch",
+        "props": { "label": { "t": "newNote.search" }, "clearLabel": { "t": "field.clear" }, "autoFocus": true, "keyScope": "newNoteField", "focusRequest": { "get": "vm.newNote.focus" }, "value": { "bind": "vm.newNote.query" } }
+      }]
+    },
+    "children": [{
+      "type": "Stack", "props": { "gap": "s" },
+      "children": [
+        { "type": "FileTree", "id": "newNoteTree",
+          "props": { "label": { "t": "newNote.workspaceFolders" }, "items": { "get": "vm.newNote.items" }, "focusId": { "get": "vm.newNote.focusId" }, "editValue": { "get": "vm.newNote.editValue" }, "editError": { "get": "vm.newNote.editError" }, "editLabel": { "get": "vm.newNote.editLabel" } },
+          "on": {
+            "select": { "run": "newNote.select", "args": { "id": { "get": "event.id" } } },
+            "expand": { "run": "newNote.expand", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } },
+            "action": [{ "run": "newNote.select", "args": { "id": { "get": "event.id" } } }, { "run": "newNote.create" }],
+            "editChange": { "run": "files.setEditValue", "args": { "value": { "get": "event.value" } } },
+            "editBlur": { "run": "files.editBlur" }
+          }
+        },
+        { "type": "Text", "props": { "value": { "get": "vm.newNote.error" }, "tone": "danger", "announce": true } },
+        { "type": "Inline", "props": { "gap": "s", "justify": "between", "align": "center" },
+          "children": [
+            { "type": "Button", "props": { "label": { "t": "newNote.newFolder" }, "variant": "subtle", "icon": "newFolder", "disabled": { "get": "vm.newNote.cannotNewFolder" }, "disabledReason": { "t": "newNote.finishFolder" } }, "on": { "press": { "run": "newNote.newFolder" } } },
+            { "type": "Inline", "props": { "gap": "s" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "newNote.dismiss" } } },
+              { "type": "Button", "props": { "label": { "get": "vm.newNote.createLabel" }, "variant": "primary", "disabled": { "get": "vm.newNote.cannotCreate" }, "disabledReason": { "t": "newNote.finishFolder" } }, "on": { "press": { "run": "newNote.create" } } }
+            ] }
+          ]
+        }
+      ]
+    }]
+    }]
+  }
+}

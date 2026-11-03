@@ -12,7 +12,7 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false },
     focusRequest: { kind: "number", min: 0, description: "Each new value moves focus into the field." },
     invalid: { kind: "boolean", default: false },
-    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "moveField", "repoField", "spotlightField", "findAllField"], default: "none" },
+    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "moveField", "repoField", "spotlightField", "findAllField", "newNoteField"], default: "none" },
     chip: { kind: "message", description: "A mode shown before the text (Spotlight's All, Notes, Commands); the label says it in words." },
     controls: { kind: "ref", description: "The ResultList this field drives." },
     activeId: { kind: "text", description: "The active item in that list." },
@@ -32,6 +32,6 @@ export const contract = defineContract({
     { name: "invalid", covers: ["invalid"], props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, invalid: true } },
     { name: "size m", props: { label: { t: "find.field" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, size: "m" } },
     { name: "another icon", props: { label: { t: "find.replaceField" }, clearLabel: { t: "field.clear" }, size: "m", icon: "rename" } },
-    ...["none", "findBar", "findField", "replaceField", "pickerField", "moveField", "repoField", "spotlightField", "findAllField"].map((keyScope) => ({ name: `keyScope ${keyScope}`, props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" }, keyScope } })),
+    ...["none", "findBar", "findField", "replaceField", "pickerField", "moveField", "repoField", "spotlightField", "findAllField", "newNoteField"].map((keyScope) => ({ name: `keyScope ${keyScope}`, props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" }, keyScope } })),
   ],
 });

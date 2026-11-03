@@ -18,6 +18,35 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### General fixes: approved 3 November design
+
+The owner approved the designs at 19:39. WP-P.1 / WP-P.2 are pushed at
+`7f2c6bab`; WP-P.3 / WP-P.7 build the approved file-name separation and
+current-workspace picker (D-338). Built is not integrated: the exact combined
+head must have green Windows CI before main fast-forwards.
+
+| DoD row | Focused evidence | Status |
+| --- | --- | --- |
+| MP.4 | `pnpm exec vitest run packages/core/test/files-menu.test.ts packages/core/test/workspace-names.test.ts packages/core/test/keymap-layers.test.ts packages/core/test/workspace-app.test.ts packages/core/test/files-app.test.ts packages/core/test/ai-app.test.ts packages/core/test/spotlight-app.test.ts packages/ui/test/file-tree-detail.test.tsx packages/ui-runtime/test/refocus.test.ts tools/test/component-inventory.test.mjs`: 268 passed. `mw-workspace.spec.ts -g FIL-18`, `mw-links.spec.ts -g FIL-09` and `new-note-in.spec.ts -g FIL-17` passed with `FOCUS_NOTES_E2E=1`. Picker cancel writes no note, inline folders stay selected, creation guards newly taken paths, and filename renaming preserves content and updates links. | Focused behavior met; exact-head CI pending |
+| MP.5 | `7f2c6bab`: 118 focused units and four related journeys passed; candidate reached through normal UI, then closed. The continuation's combined units above include Spotlight and AI regressions. `air-safeguards.spec.ts -g "D-265, D-266"` passed in light/dark after using the stable Rewrite view region and checking equal visible padding with Button's icon-bearing token (D-331), not equal CSS boxes. | Focused behavior met; combined candidate and exact-head CI pending |
+
+Every local journey launch was invisible and followed by PID-scoped
+`close-test-apps.ps1 -WhatIf` and actual cleanup; no app instance remains.
+
+#### Scoped CI quarantines, expires 10 November 2026
+
+Authorized by the implementation coordinator, not considered fixed. Only these
+four exact test titles use Playwright's `test.fixme` during the quarantine.
+The date guard automatically restores the unchanged assertions after
+10 November (UTC); no budget, selector or other test is relaxed.
+
+| Exact scope | Failure and run | Owner | Expiry | Status |
+| --- | --- | --- | --- | --- |
+| `apps/desktop/e2e/m5-snappy.spec.ts`: "PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms" | p95 56 ms, budget 50 ms; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341), also [41656910779](https://github.com/prabinpebam/focus-notes/actions/runs/41656910779) | Implementation coordinator | 10 November 2026 | Quarantined; actual performance fix queued |
+| `apps/desktop/e2e/doc-minimap.spec.ts`: "D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back" | Minimap row inactive when focused expected; runs 41654808341 and 41656910779 | Implementation coordinator | 10 November 2026 | Quarantined; focus fix queued |
+| `apps/web/e2e/public-pages.spec.ts`: "PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded" | LCP/INP/CLS lab gate; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341) | Implementation coordinator | 10 November 2026 | Quarantined; lab-metrics fix queued |
+| `apps/web/e2e/site.spec.ts`: "PRF-12: the landing page's LCP, INP and CLS on a throttled profile" | LCP/INP/CLS lab gate; run 41654808341 | Implementation coordinator | 10 November 2026 | Quarantined; lab-metrics fix queued |
+
 ### Store 1.1.0 preparation
 
 #### Store 1.1.0 release checklist (live)

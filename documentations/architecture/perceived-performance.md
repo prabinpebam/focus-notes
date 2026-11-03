@@ -237,6 +237,8 @@ Every operation that can take longer than 100 ms, with its class, pattern and wo
 
 | Operation | Class | Pattern and place | Words on the main path | Measure | Status |
 | --- | --- | --- | --- | --- | --- |
+| New note in…: Create note | Responsive; waiting if disk is slow | Picker keeps its folder and input until creation finishes; named action through the task tracker, failure stays retryable | "Creating note…" | `focus-notes:newNote.create` | Built on `wp-general-fixes` (D-338); exact-head CI pending |
+| New note in…: New folder | Responsive; waiting for a Git batch | Existing Files optimistic pending row; inline name retained on failure | "Creating folder…" | PRF-09 (optimistic row within 100 ms) | Built on `wp-general-fixes`; same Files batch as ordinary New folder |
 | Start-up | Waiting at worst | First-start notice: themed canvas, then the note | none under 1 s; the note's skeleton past 1 s | PRF-02, `fn:window.firstFrame` | Partial: the window shows on ready-to-show; no first-frame report |
 | Checking Git (Connect) | Responsive | Silent; shows only when missing or too old | none | `fn:setup.git` | Built |
 | Getting a sign-in code | Waiting | Named wait on *Connect to GitHub* (busy button) | "Getting a code from GitHub…" | `fn:setup.code` | Built (D-149): `firstRun.signIn` through the tracker |

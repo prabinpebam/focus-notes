@@ -55,7 +55,8 @@ describe("component catalog page (DS-A07)", () => {
   });
 
   it("rejects a status that isn't Implemented, Composed, or Planned", () => {
-    const doc = page.replace("| **Switch** | Planned |", "| **Switch** | Coming soon |");
+    const doc = page.replace(/(\| \*\*Switch\*\* \| )[^|]+(?= \|)/, "$1Coming soon");
+    expect(doc).not.toBe(page);
     expect(lint(doc).join("\n")).toMatch(/must start with Implemented, Composed, or Planned/);
   });
 

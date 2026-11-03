@@ -2619,7 +2619,8 @@
                     "moveField",
                     "repoField",
                     "spotlightField",
-                    "findAllField"
+                    "findAllField",
+                    "newNoteField"
                   ]
                 },
                 {

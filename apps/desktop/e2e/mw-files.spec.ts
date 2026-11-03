@@ -95,9 +95,9 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   await page.keyboard.type("id");
   await expect(row("Ideas")).toBeFocused();
 
-  // A new folder is named in place (Mod+Shift+N, or the New folder button), nested in the focused folder.
+  // A new folder is named in place (Ctrl+Alt+N / Option+Command+N), nested in the focused folder.
   await page.keyboard.press("Home");
-  await page.keyboard.press(`${mod}+Shift+N`);
+  await page.keyboard.press(`${mod}+Alt+N`);
   const name = tree.getByRole("textbox", { name: "Folder name" });
   await expect(name).toBeFocused();
   await expect(name).toHaveValue("New folder");
@@ -115,7 +115,7 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
     await expect(button).toBeFocused();
   }
   await files.getByRole("button", { name: "New folder", exact: true }).hover();
-  await expect(page.getByRole("tooltip")).toContainText(process.platform === "darwin" ? "New folder⇧⌘N" : /New folder.*Ctrl\+Shift\+N/);
+  await expect(page.getByRole("tooltip")).toContainText(process.platform === "darwin" ? "New folder⌥⌘N" : /New folder.*Ctrl\+Alt\+N/);
   await files.getByRole("button", { name: "New folder", exact: true }).click();
   await expect(name).toBeFocused();
   await page.keyboard.type("Drafts");
@@ -125,7 +125,7 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   // A taken name keeps the field open and says why; Esc cancels.
   await page.keyboard.press("ArrowLeft");
   await expect(row("Projects")).toBeFocused();
-  await page.keyboard.press(`${mod}+Shift+N`);
+  await page.keyboard.press(`${mod}+Alt+N`);
   await page.keyboard.press(`${mod}+A`);
   await page.keyboard.type("drafts");
   await page.keyboard.press("Enter");
@@ -147,18 +147,18 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   await page.keyboard.type("# Plan for drafts");
   await expect.poll(() => ls(join(dirs.docs, "Projects", "Drafts")), { timeout: 5000 }).toEqual(["plan-for-drafts.md"]);
 
-  // Renaming a note (F2) edits its title; the file name follows.
+  // Rename file (F2) changes the path while keeping the note's title and text.
   await page.keyboard.press(`${mod}+O`);
   await expect(row("Plan for drafts")).toBeFocused();
   await page.keyboard.press(process.platform === "darwin" ? "Enter" : "F2");
-  const title = tree.getByRole("textbox", { name: "Title" });
-  await expect(title).toHaveValue("Plan for drafts");
+  const title = tree.getByRole("textbox", { name: "File name" });
+  await expect(title).toHaveValue("plan-for-drafts");
   await title.fill("Drafting plan");
   await page.keyboard.press("Enter");
-  await expect(row("Drafting plan")).toBeVisible();
+  await expect(row("Plan for drafts")).toBeVisible();
   await expect.poll(() => ls(join(dirs.docs, "Projects", "Drafts"))).toEqual(["drafting-plan.md"]);
-  expect(readFileSync(join(dirs.docs, "Projects", "Drafts", "drafting-plan.md"), "utf8")).toBe("# Drafting plan\n");
-  await expect(editor).toContainText("Drafting plan");
+  expect(readFileSync(join(dirs.docs, "Projects", "Drafts", "drafting-plan.md"), "utf8")).toBe("# Plan for drafts\n");
+  await expect(editor).toContainText("Plan for drafts");
 
   // Renaming a folder moves what's in it.
   await row("Drafts").click();

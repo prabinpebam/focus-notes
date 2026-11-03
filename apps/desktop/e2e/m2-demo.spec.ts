@@ -55,7 +55,7 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
   const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
   await expect(row("Welcome to Focus Notes")).toBeFocused();
   await page.keyboard.press("Home");
-  await page.keyboard.press("Control+Shift+N");
+  await page.keyboard.press("Control+Alt+N");
   await expect(tree.getByRole("textbox", { name: "Folder name" })).toBeFocused();
   await page.keyboard.type("Archive");
   await page.keyboard.press("Enter");
@@ -69,15 +69,15 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
   // Step 5: renaming a note others link to updates their links.
   await row("Plan").click();
   await page.keyboard.press("F2");
-  const title = tree.getByRole("textbox", { name: "Title" });
-  await expect(title).toHaveValue("Plan");
+  const title = tree.getByRole("textbox", { name: "File name" });
+  await expect(title).toHaveValue("plan");
   await title.fill("Launch plan");
   await page.keyboard.press("Enter");
-  await expect(row("Launch plan")).toBeVisible();
+  await expect(row("Plan")).toBeVisible();
   await expect.poll(() => readFileSync(join(docs, "ideas.md"), "utf8")).toBe("# Ideas\n\nSee [the plan](launch-plan.md).\n");
 
   await row("Ideas").click();
-  await row("Launch plan").click({ modifiers: ["Control"] });
+  await row("Plan").click({ modifiers: ["Control"] });
   await expect(files.getByText("2 selected")).toBeVisible();
   await page.keyboard.press("Control+Shift+M");
   const move = page.getByRole("dialog", { name: "Move 2 items to…" });

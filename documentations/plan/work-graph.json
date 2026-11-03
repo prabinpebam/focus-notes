@@ -116,7 +116,7 @@
       "summary": "Name once on first save, explicit Rename file, atomic link updates and preserved identity.",
       "requirements": ["FIL-18"], "dependsOn": ["WP-2.3"],
       "touches": ["core", "views"], "reviews": ["code"],
-      "specs": ["design/views/files.html"], "lookahead": true, "status": "planned"
+      "specs": ["design/views/files.html"], "lookahead": true, "status": "built"
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
@@ -143,10 +143,10 @@
     },
     {
       "id": "WP-P.7", "stage": "MP", "title": "Choose a place before writing",
-      "summary": "New note in project/folder picker and collision-free platform key changes; regular New note unchanged.",
-      "requirements": ["FIL-17", "KEY-09"], "dependsOn": ["WP-P.4"],
+      "summary": "New note in today's workspace folder picker (D-338), project-scoped when projects land; collision-free platform key changes; regular New note unchanged.",
+      "requirements": ["FIL-17", "KEY-09"], "dependsOn": [],
       "touches": ["core", "views"], "reviews": ["code", "design-system", "accessibility"],
-      "specs": ["design/views/files.html", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "planned"
+      "specs": ["design/views/files.html", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "built"
     },
     {
       "id": "WP-P.8", "stage": "MP", "title": "Local notes and standalone files",
