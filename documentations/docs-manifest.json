@@ -2,6 +2,15 @@
   "version": 2,
   "entries": [
     {
+      "path": "experience/projects.md",
+      "title": "Projects",
+      "order": 262,
+      "icon": "workspaces",
+      "status": "draft",
+      "updated": "2026-11-03",
+      "group": "Experience"
+    },
+    {
       "path": "experience/rewrite-with-ai.md",
       "title": "Rewrite with AI",
       "order": 289,
