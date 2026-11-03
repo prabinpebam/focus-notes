@@ -140,6 +140,8 @@ Files and projects rank by **exponential-decay frecency** (D-321): each open add
 > [!NOTE]
 > **Working preview, 3 November: stepped New project.** New project… in Open and Spotlight opens Name → Private only → Look → Confirm, with the existing step dots, Back/Next/Cancel, colour and logo choices. Folder Change… is the system picker on both folder and confirmation steps. Name, collisions and nesting are checked before continuing, and final creation refuses existing folders. For this local owner-review slice, Create project makes only a fresh folder and `notes/`, remembers its identity in its own profile and opens it separately; it makes no starter note, GitHub repository or website. The repository/owner row is deliberately omitted rather than claiming a remote result. The limitation belongs in the candidate README and coordinator's Try it, not an extra label in the app. No real-account writes or production hardening are part of this slice.
 
+The pill is independent of the note's save-state trigger, so an empty new project still shows its name and logo. Pressing the pill opens only Project settings, not backup details.
+
 **New project is a deliberate action of its own** (owner's correction, 3 November; D-315). It's reachable only from **New project…** in Projects (and its empty and first-run states) and from Spotlight's **> New project…**, never from New note, New note in… (which only picks a folder in this project) or Local notes. It opens a short stepped dialog with step dots, **Back**, **Next** and **Cancel** on every step:
 
 1. **Name:** **Project name**, then GitHub owner (only when more than one is available). Validate the name and collisions here; keep all input on refusal.
