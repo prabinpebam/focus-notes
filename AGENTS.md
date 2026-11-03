@@ -71,8 +71,9 @@ Work runs on three kits, each owning one part and pinned at the repository's roo
      - The window stays draggable and takes the mouse in every state.
      - Direct manipulation is attached to the hand: a dragged window follows the pointer within a frame, with no queued moves (PRF-14, D-151).
      - Controls answer on pointer-down in the next frame, and the main process never blocks.
-7. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`). The exceptions are the Microsoft Store package's own Git (GPL-2.0, a separate program the app starts, never linked; D-228) and the unmodified Electron runtime's separately replaceable FFmpeg DLL (LGPL-2.1+) and Chromium's MPL-2.0 code (D-269). Electron's Microsoft DirectX files ship under Microsoft's terms, stated in `apps/desktop/build/license-terms.txt` (D-271).
-8. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
+7. **Add nothing the owner didn't ask for** (the owner, 3 November). Before adding any element to a view, mock or spec, check the owner's source notes (`focus-notes-features.md`, `images-in-focus-notes.md`, `focus-notes-launch.md`, kept word for word in [next-direction.md](documentations/plan/next-direction.md) and [Images](documentations/experience/images.md)); if they don't ask for it, don't add it. Project identity in a window is only the colour outline, the project pill and the optional logo watermark.
+8. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`). The exceptions are the Microsoft Store package's own Git (GPL-2.0, a separate program the app starts, never linked; D-228) and the unmodified Electron runtime's separately replaceable FFmpeg DLL (LGPL-2.1+) and Chromium's MPL-2.0 code (D-269). Electron's Microsoft DirectX files ship under Microsoft's terms, stated in `apps/desktop/build/license-terms.txt` (D-271).
+9. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
 
 ## Working modes and throughput (D-113)
 
