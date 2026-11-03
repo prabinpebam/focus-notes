@@ -1245,7 +1245,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   const projects = projectWindows(notesHome, async (path, content) => {
     if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
-  }, fakeApi);
+  }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi);
   rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
   handle("projects:upload", () => projects.upload());
