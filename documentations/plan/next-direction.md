@@ -3,7 +3,7 @@
 The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-299).
 
 > [!NOTE]
-> **TL;DR.** The owner's authoritative notes ask for everyday writing fixes, isolated projects with preset/uploaded logos, pinned folders/projects and an item-first share dialog. GitHub Pages becomes a clean website: public home, sections/articles, theme/focus controls and in-app site preview. Browser writing, browser-local notes and the ease-in plan are retired completely. The capture preserves exact nesting; D-272 to D-299 record interpretation, not a current-build claim.
+> **TL;DR.** The owner's authoritative notes ask for everyday writing fixes, isolated projects with preset/uploaded logos, pinned folders/projects and an item-first share dialog. GitHub Pages is planned as a clean website: public home, sections/articles, theme/focus controls and in-app site preview. The direction retires browser writing, browser-local notes and the ease-in plan; execution and old-draft disposal still need the owner's decision. The capture preserves exact nesting; D-272 to D-299 record interpretation, not a current-build claim.
 
 ## The owner's notes (3 November 2026)
 
