@@ -171,10 +171,31 @@
      "checked": true
     },
     {
-     "id": "club-org",
+     "id": "reading-club",
      "label": "reading-club"
     }
    ]
+  }
+ ],
+ "changeLabel": "Change…",
+ "locations": [
+  {
+   "id": "Documents › Focus Notes",
+   "label": "Documents › Focus Notes",
+   "description": "The usual place",
+   "icon": "folder"
+  },
+  {
+   "id": "D:\\Writing",
+   "label": "D:\\Writing",
+   "description": "Another drive",
+   "icon": "folder"
+  },
+  {
+   "id": "OneDrive › Projects",
+   "label": "OneDrive › Projects",
+   "description": "Synced by OneDrive too",
+   "icon": "cloud"
   }
  ],
  "createSteps": [

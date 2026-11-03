@@ -13,7 +13,9 @@
   "owner": "prabin",
   "np": "name",
   "accent": "teal",
-  "logo": "book"
+  "logo": "book",
+  "loc": "Documents › Focus Notes",
+  "picking": false
  },
  "root": {
   "type": "AppRoot",
@@ -2541,8 +2543,11 @@
                       "type": "Text",
                       "props": {
                        "value": {
-                        "t": "project.new.folderValue",
+                        "t": "project.new.folderAt",
                         "args": {
+                         "loc": {
+                          "get": "local.loc"
+                         },
                          "name": {
                           "get": "local.name"
                          }
@@ -2809,51 +2814,84 @@
                   "type": "Inline",
                   "props": {
                    "gap": "m",
-                   "align": "center"
+                   "align": "center",
+                   "justify": "between"
                   },
                   "children": [
                    {
-                    "type": "StepMark",
+                    "type": "Inline",
                     "props": {
-                     "icon": "github",
-                     "tone": "neutral",
-                     "size": "compact"
-                    }
-                   },
-                   {
-                    "type": "Stack",
-                    "props": {
-                     "gap": "none"
+                     "gap": "m",
+                     "align": "center"
                     },
                     "children": [
                      {
-                      "type": "Text",
+                      "type": "StepMark",
                       "props": {
-                       "value": {
-                        "t": "project.new.makesRepo"
-                       },
-                       "role": "label"
+                       "icon": "github",
+                       "tone": "neutral",
+                       "size": "compact"
                       }
                      },
                      {
-                      "type": "Text",
+                      "type": "Stack",
                       "props": {
-                       "value": {
-                        "t": "project.new.repoName",
-                        "args": {
-                         "owner": {
-                          "get": "local.owner"
+                       "gap": "none"
+                      },
+                      "children": [
+                       {
+                        "type": "Text",
+                        "props": {
+                         "value": {
+                          "t": "project.new.makesRepo"
                          },
-                         "name": {
-                          "get": "local.name"
-                         }
+                         "role": "label"
                         }
                        },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
+                       {
+                        "type": "Text",
+                        "props": {
+                         "value": {
+                          "t": "project.new.repoName",
+                          "args": {
+                           "owner": {
+                            "get": "local.owner"
+                           },
+                           "name": {
+                            "get": "local.name"
+                           }
+                          }
+                         },
+                         "role": "caption",
+                         "tone": "muted"
+                        }
+                       }
+                      ]
                      }
                     ]
+                   },
+                   {
+                    "type": "MenuButton",
+                    "on": {
+                     "action": {
+                      "set": "local.owner",
+                      "to": {
+                       "get": "event.id"
+                      }
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "project.new.changeOwner"
+                     },
+                     "variant": "text",
+                     "text": {
+                      "get": "vm.mocks.changeLabel"
+                     },
+                     "sections": {
+                      "get": "vm.mocks.owners"
+                     }
+                    }
                    }
                   ]
                  },
@@ -2861,50 +2899,160 @@
                   "type": "Inline",
                   "props": {
                    "gap": "m",
-                   "align": "center"
+                   "align": "center",
+                   "justify": "between"
                   },
                   "children": [
                    {
-                    "type": "StepMark",
+                    "type": "Inline",
                     "props": {
-                     "icon": "folder",
-                     "tone": "neutral",
-                     "size": "compact"
-                    }
+                     "gap": "m",
+                     "align": "center"
+                    },
+                    "children": [
+                     {
+                      "type": "StepMark",
+                      "props": {
+                       "icon": "folder",
+                       "tone": "neutral",
+                       "size": "compact"
+                      }
+                     },
+                     {
+                      "type": "Stack",
+                      "props": {
+                       "gap": "none"
+                      },
+                      "children": [
+                       {
+                        "type": "Text",
+                        "props": {
+                         "value": {
+                          "t": "project.new.makesFolder"
+                         },
+                         "role": "label"
+                        }
+                       },
+                       {
+                        "type": "Text",
+                        "props": {
+                         "value": {
+                          "t": "project.new.folderAt",
+                          "args": {
+                           "loc": {
+                            "get": "local.loc"
+                           },
+                           "name": {
+                            "get": "local.name"
+                           }
+                          }
+                         },
+                         "role": "caption",
+                         "tone": "muted"
+                        }
+                       }
+                      ]
+                     }
+                    ]
                    },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "set": "local.picking",
+                      "to": true
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "project.new.change"
+                     },
+                     "variant": "subtle",
+                     "size": "s"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Surface",
+                  "props": {
+                   "variant": "sunken",
+                   "shape": "popover",
+                   "padding": "s"
+                  },
+                  "children": [
                    {
                     "type": "Stack",
                     "props": {
-                     "gap": "none"
+                     "gap": "xs"
                     },
                     "children": [
                      {
                       "type": "Text",
                       "props": {
                        "value": {
-                        "t": "project.new.makesFolder"
-                       },
-                       "role": "label"
-                      }
-                     },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.new.folderValue",
-                        "args": {
-                         "name": {
-                          "get": "local.name"
-                         }
-                        }
+                        "t": "project.new.pickerMock"
                        },
                        "role": "caption",
                        "tone": "muted"
                       }
+                     },
+                     {
+                      "type": "ResultList",
+                      "id": "pickLocation",
+                      "on": {
+                       "action": [
+                        {
+                         "set": "local.loc",
+                         "to": {
+                          "get": "event.id"
+                         }
+                        },
+                        {
+                         "set": "local.picking",
+                         "to": false
+                        }
+                       ]
+                      },
+                      "props": {
+                       "label": {
+                        "t": "project.new.chooseFolder"
+                       },
+                       "items": {
+                        "get": "vm.mocks.locations"
+                       }
+                      }
+                     },
+                     {
+                      "type": "Inline",
+                      "props": {
+                       "justify": "end"
+                      },
+                      "children": [
+                       {
+                        "type": "Button",
+                        "on": {
+                         "press": {
+                          "set": "local.picking",
+                          "to": false
+                         }
+                        },
+                        "props": {
+                         "label": {
+                          "t": "project.cancel"
+                         },
+                         "variant": "subtle",
+                         "size": "s"
+                        }
+                       }
+                      ]
                      }
                     ]
                    }
-                  ]
+                  ],
+                  "when": {
+                   "get": "local.picking"
+                  }
                  },
                  {
                   "type": "Inline",
