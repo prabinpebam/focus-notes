@@ -123,6 +123,10 @@ contextBridge.exposeInMainWorld("focusNotes", {
   projects: {
     list: () => ipcRenderer.invoke("projects:list"),
     choose: () => ipcRenderer.invoke("projects:choose"),
+    parent: () => ipcRenderer.invoke("projects:parent"),
+    chooseParent: (parent: string) => ipcRenderer.invoke("projects:chooseParent", parent),
+    check: (parent: string, name: string) => ipcRenderer.invoke("projects:check", parent, name),
+    create: (input: { parent: string; name: string; accent: string; logo: string }) => ipcRenderer.invoke("projects:create", input),
     open: (folder: string, note?: string) => ipcRenderer.invoke("projects:open", folder, note),
     onNote: (listener: (path: string) => void) => {
       const handler = (_event: unknown, path: string) => listener(path);

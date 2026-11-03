@@ -23,6 +23,8 @@ export type Removal = "signOut" | "removeWorkspace" | "runSetupAgain" | "signIn"
 export const DATA_FILES = {
   /** Device settings, the first run's step, and the recent note (`lastNotePath`). */
   state: "state.json",
+  /** Local project preview's folder pointer; no note text or credentials. */
+  projectFolder: "project-folder.txt",
   /** The workspace folder the first run opened. */
   workspace: "workspace.json",
   /** A name and email for only the notes workspace, until the workspace has them. */
@@ -60,7 +62,7 @@ export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
  * `recovery/<workspace key>/<draft>.draft`, one file per note with unsaved text, private notes'
  * encrypted with the operating system's key store.
  */
-export const DATA_FOLDERS = { drafts: "recovery" } as const;
+export const DATA_FOLDERS = { drafts: "recovery", projectProfiles: "project-profiles" } as const;
 export type DataFolder = (typeof DATA_FOLDERS)[keyof typeof DATA_FOLDERS];
 
 /**
@@ -90,6 +92,8 @@ export interface InventoryItem {
 /** Everything in the desktop's data folder (Security and privacy → Data inventory). */
 export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "deviceSettings", path: DATA_FILES.state, removedBy: ["deleteDataFolder"] },
+  { id: "projectFolder", path: DATA_FILES.projectFolder, removedBy: ["deleteDataFolder"] },
+  { id: "projectProfiles", path: `${DATA_FOLDERS.projectProfiles}/`, removedBy: ["deleteDataFolder"] },
   { id: "recentItems", path: `${DATA_FILES.state}#lastNotePath`, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "workspaceFolder", path: DATA_FILES.workspace, removedBy: ["removeWorkspace", "deleteDataFolder"] },
   { id: "firstRunIdentity", path: DATA_FILES.firstRun, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },

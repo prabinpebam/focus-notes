@@ -1235,6 +1235,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const projects = projectWindows(notesHome);
   handle("projects:list", () => projects.list());
   handle("projects:choose", () => projects.choose());
+  handle("projects:parent", () => projects.parent());
+  handle("projects:chooseParent", (parent: unknown) => {
+    if (typeof parent !== "string") throw new Error("Invalid project parent");
+    return projects.chooseParent(parent);
+  });
+  handle("projects:check", (parent: unknown, name: unknown) => {
+    if (typeof parent !== "string" || typeof name !== "string") throw new Error("Invalid project folder");
+    return projects.check(parent, name);
+  });
+  handle("projects:create", (input: unknown) => {
+    if (!input || typeof input !== "object" || !("parent" in input) || typeof input.parent !== "string" || !("name" in input) || typeof input.name !== "string" || !("accent" in input) || typeof input.accent !== "string" || !("logo" in input) || typeof input.logo !== "string") throw new Error("Invalid new project");
+    return projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo });
+  });
   handle("projects:open", (folder: unknown, note: unknown) => {
     if (typeof folder !== "string" || (note !== undefined && typeof note !== "string")) throw new Error("Invalid project request");
     return projects.open(folder, note);

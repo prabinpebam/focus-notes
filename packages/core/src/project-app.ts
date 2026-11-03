@@ -4,8 +4,8 @@ import type { MessageCatalog } from "./messages.ts";
 import { BUILT_IN_THEMES, CONTENT_FONTS, themeById } from "./themes.ts";
 import { themeTilesOf } from "./theme-manager-app.ts";
 
-const ACCENTS = ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"];
-const LOGOS = ["book", "briefcase", "beaker", "heart", "star", "leaf", "rocket", "lightbulb", "music", "camera", "people", "home", "airplane", "code", "brush", "trophy", "earth", "food", "building", "chat", "diamond", "flag", "sparkle", "pen"];
+export const PROJECT_ACCENTS = ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"];
+export const PROJECT_LOGOS = ["book", "briefcase", "beaker", "heart", "star", "leaf", "rocket", "lightbulb", "music", "camera", "people", "home", "airplane", "code", "brush", "trophy", "earth", "food", "building", "chat", "diamond", "flag", "sparkle", "pen"];
 export interface ProjectSettings {
   name: string;
   accent: string;
@@ -39,7 +39,7 @@ export function registerProject(ctx: {
       if (!folder()) throw new Error("No project is open");
       if (typeof value !== "string") throw new Error("Invalid project setting");
       const allowed: Record<string, readonly string[]> = {
-        accent: ACCENTS, logo: LOGOS, watermark: ["off", "on"], font: ["app", ...CONTENT_FONTS], theme: ["app", ...BUILT_IN_THEMES.map((theme) => theme.id)],
+        accent: PROJECT_ACCENTS, logo: PROJECT_LOGOS, watermark: ["off", "on"], font: ["app", ...CONTENT_FONTS], theme: ["app", ...BUILT_IN_THEMES.map((theme) => theme.id)],
       };
       if (field !== "name" && !allowed[field]?.includes(value)) throw new Error("Invalid project setting");
       const next = { ...settings(), [field]: value };
@@ -75,8 +75,8 @@ export function registerProject(ctx: {
         scopeFont: transient.fontHover || current.font, scopeTheme: transient.themeHover || current.theme,
         fontValue: catalog.format(current.font === "app" ? "project.appDefault" : `font.${current.font}`),
         themeValue: catalog.format(current.theme === "app" ? "project.appDefault" : themeById(current.theme)?.title ?? "project.appDefault"),
-        accents: ACCENTS.map((id) => ({ id, label: catalog.format(`project.colour.${id}`) })),
-        logos: LOGOS.map((id) => ({ id, label: catalog.format(`project.logo.${id}`) })),
+        accents: PROJECT_ACCENTS.map((id) => ({ id, label: catalog.format(`project.colour.${id}`) })),
+        logos: PROJECT_LOGOS.map((id) => ({ id, label: catalog.format(`project.logo.${id}`) })),
         fonts: CONTENT_FONTS.map((id) => ({ id, label: catalog.format(`font.${id}`) })),
         watermarkOptions: ["off", "on"].map((id) => ({ id, label: catalog.format(`project.watermark.${id}`) })),
         themeTiles: themeTilesOf(state.appearance, state.ui.theme.draft, catalog).filter((tile) => themeById(tile.id)),

@@ -13,7 +13,7 @@ Separate places for separate work, without making every thought choose a project
 > [!NOTE]
 > **Working preview, 3 November: identity slice.** The `vq-projects` candidate applies the approved colour outline, project pill, optional watermark and Settings → Project to today's workspace. The outer outline is drawn by AppRoot in the project's accent, not by an extra inner frame; the watermark sits at the bottom end. Name, the 12 colours, 24 preset logos, watermark and the existing Font and Theme tiles are real choices, remembered per folder in the candidate's local profile; they do not rename folders, move notes or change app-wide defaults. The theme tiles reuse the theme manager's data and component, limited to the built-in themes for this first slice. SVG upload, Launch/Open and stepped New project are not wired in this increment. This is an unhardened owner-review build: typecheck and desktop build only, no tests, journeys or CI; General fixes hardening remains parked.
 >
-> **Combined review, 3 November.** The review candidate retains Files, image editing and Ctrl+A, sharing, and the neutral local-drive location pill (press it to reveal the current file). It also includes the project identity and settings above, and the Open view on Ctrl+Alt+O, with a second sample project to switch to. New project remains a separate slice. This review uses disposable sample notes only; it does not move or upload the owner's notes.
+> **Combined review, 3 November.** The review candidate retains Files, image editing and Ctrl+A, sharing, and the neutral local-drive location pill (press it to reveal the current file). It also includes the project identity and settings above, and the Open view on Ctrl+Alt+O, with a second sample project to switch to. Open → New project… now opens the stepped local-only creation preview described below. This review uses disposable sample notes only; it does not move or upload the owner's notes.
 
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
@@ -138,6 +138,11 @@ Files and projects rank by **exponential-decay frecency** (D-321): each open add
 </figure>
 
 ### Creating and closing
+
+> [!NOTE]
+> **Working preview, 3 November: stepped New project.** New project… in Open and Spotlight opens Name → Private only → Look → Confirm, with the existing step dots, Back/Next/Cancel, colour and logo choices. Folder Change… is the system picker on both folder and confirmation steps. Name, collisions and nesting are checked before continuing, and final creation refuses existing folders. For this local owner-review slice, Create project makes only a fresh folder and `notes/`, remembers its identity in its own profile and opens it separately; it makes no starter note, GitHub repository or website. The repository/owner row is deliberately omitted rather than claiming a remote result. The limitation belongs in the candidate README and coordinator's Try it, not an extra label in the app. No real-account writes or production hardening are part of this slice.
+
+The pill is independent of the note's save-state trigger, so an empty new project still shows its name and logo. Pressing the pill opens only Project settings, not backup details.
 
 **New project is a deliberate action of its own** (owner's correction, 3 November; D-315). It's reachable only from **New project…** in Projects (and its empty and first-run states) and from Spotlight's **> New project…**, never from New note, New note in… (which only picks a folder in this project) or Local notes. It opens a short stepped dialog with step dots, **Back**, **Next** and **Cancel** on every step:
 

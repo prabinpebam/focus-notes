@@ -3784,6 +3784,9 @@
                       },
                       {
                         "get": "vm.saveState.visible"
+                      },
+                      {
+                        "get": "vm.project.available"
                       }
                     ]
                   },
@@ -3913,37 +3916,7 @@
                         "label": { "get": "vm.saveState.label" },
                         "interactive": { "get": "vm.saveState.interactive" }
                       }
-                    },
-{
-  "type": "ProjectPill",
-  "when": {
-    "get": "vm.project.available"
-  },
-  "props": {
-    "name": {
-      "get": "vm.project.name"
-    },
-    "logo": {
-      "get": "vm.project.logo"
-    },
-    "accent": {
-      "get": "vm.project.accent"
-    },
-    "label": {
-      "t": "project.pill.label",
-      "args": {
-        "name": {
-          "get": "vm.project.name"
-        }
-      }
-    }
-  },
-  "on": {
-    "press": {
-      "run": "project.settings"
-    }
-  }
-}
+                    }
                   ],
                   "content": [
                     {
@@ -3994,6 +3967,17 @@
                     }
                   ]
                 }
+              },
+              {
+                "type": "ProjectPill",
+                "when": { "get": "vm.project.available" },
+                "props": {
+                  "name": { "get": "vm.project.name" },
+                  "logo": { "get": "vm.project.logo" },
+                  "accent": { "get": "vm.project.accent" },
+                  "label": { "t": "project.pill.label", "args": { "name": { "get": "vm.project.name" } } }
+                },
+                "on": { "press": { "run": "project.settings" } }
               },
               {
                 "type": "PillButton",

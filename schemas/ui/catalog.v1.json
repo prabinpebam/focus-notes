@@ -5916,6 +5916,14 @@
       ]
     },
     {
+      "id": "projectNew",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.projectNew",
+        "vm.project"
+      ]
+    },
+    {
       "id": "projects",
       "ia": "IA-VIEW-PROJECTS",
       "viewModels": [
