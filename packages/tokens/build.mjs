@@ -159,20 +159,33 @@ for (const [sel, file] of Object.entries(MODES)) {
   if (sel.startsWith("@media")) blocks.push(`${sel} {\n${await css([...BASE, file], ":root:root:root", file)}}\n`);
   else blocks.push(await css([...BASE, file], `:root${sel}`, file));
 }
-// A project's own Appearance (D-313) on a subtree (ProjectScope): every token re-declared with Paper's or
-// Ink's values, so a light project's window and a dark one can sit side by side (the gallery's mocks).
-for (const [scope, scheme, extra] of [["paper", "light", []], ["ink", "dark", [THEMES.ink]]]) {
-  const body = await css([...BASE, ...extra], `[data-theme-scope="${scope}"]`, undefined, (k) => !SITE_ONLY(k));
-  blocks.push(body.replace(/\{\n/, `{\n  color-scheme: ${scheme};\n`));
-}
-// Project accents (D-313): a modifier on the semantic accent roles, never per-component overrides. A role
+// A project's own theme and writing font (D-313, D-316) on a subtree (ProjectScope): the semantic tokens any
+// theme (or font) changes, with that theme's values, and the component tokens reading them, re-declared on
+// the scope, so projects with different looks can sit side by side and a preview can show a choice.
+const scopeValue = (overrides, k) => {
+  const value = (overrides.get(k) ?? all.get(k)).value;
+  return aliasOf(value) ? `var(${cssName(aliasOf(value))})` : String(value);
+};
+const scopeBlock = (selector, keys, overrides, extra = "") => {
+  const lines = [...keys].map((k) => `  ${cssName(k)}: ${scopeValue(overrides, k)};`);
+  for (const [k, tok] of all) if (tierOf(k) === "component" && !SITE_ONLY(k) && keys.has(aliasOf(tok.value))) lines.push(`  ${cssName(k)}: var(${cssName(aliasOf(tok.value))});`);
+  return `${selector} {\n${extra}${lines.join("\n")}\n}\n`;
+};
+const darkThemeIds = THEME_IDS.filter((id) => id === "ink" || id === "dusk" || id.endsWith("-dark"));
+const themedKeys = new Set(Object.values(THEMES).flatMap((f) => [...load(f).keys()]).filter((k) => !SITE_ONLY(k)));
+for (const id of THEME_IDS) blocks.push(scopeBlock(`[data-theme-scope="${id}"]`, themedKeys, overridesOf(id), `  color-scheme: ${darkThemeIds.includes(id) ? "dark" : "light"};\n`));
+const FONT_IDS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"];
+const fontFile = (id) => join(src, "modes", `content-font-${id}.json`);
+const fontKeys = new Set(FONT_IDS.filter((id) => id !== "mono").flatMap((id) => [...load(fontFile(id)).keys()]));
+for (const id of FONT_IDS) blocks.push(scopeBlock(`[data-font-scope="${id}"]`, fontKeys, id === "mono" ? new Map() : load(fontFile(id))));// Project accents (D-313): a modifier on the semantic accent roles, never per-component overrides. A role
 // takes the preset's strong shade in a light context and its soft one in a dark context (a dark theme, or a
 // project whose own Appearance is dark), and the component tokens reading those roles are re-declared on the
 // scope so they resolve inside it. Selectors, not light-dark(): the CSS minifier rewrites light-dark().
 const ACCENT_ROLES = { "color.accent": "", "color.focusRing": "", "color.accentMuted": "Tint" };
 const accentReaders = [...all.keys()].filter((k) => tierOf(k) === "component" && aliasOf(all.get(k).value) in ACCENT_ROLES && !SITE_ONLY(k));
 const accentIds = [...all.keys()].filter((k) => /^ref\.color\.project\.[a-z]+\.strong$/.test(k)).map((k) => k.split(".")[3]);
-const darkThemes = Object.keys(THEMES).filter((id) => id === "ink" || id === "dusk" || id.endsWith("-dark"));
+const darkThemes = darkThemeIds;
+const lightThemeIds = THEME_IDS.filter((id) => !darkThemeIds.includes(id));
 const accentBlock = (selectors, id, shade) => {
   const lines = Object.entries(ACCENT_ROLES).map(([role, tint]) => `  ${cssName(role)}: var(${cssName(`ref.color.project.${id}.${shade}${tint}`)});`);
   for (const k of accentReaders) lines.push(`  ${cssName(k)}: var(${cssName(aliasOf(all.get(k).value))});`);
@@ -181,8 +194,8 @@ const accentBlock = (selectors, id, shade) => {
 for (const id of accentIds) {
   const a = `[data-project-accent="${id}"]`;
   blocks.push(accentBlock([a], id, "strong"));
-  blocks.push(accentBlock([...darkThemes.map((th) => `:root[data-theme="${th}"] ${a}`), `:root [data-theme-scope="ink"]${a}`, `:root [data-theme-scope="ink"] ${a}`], id, "soft"));
-  blocks.push(accentBlock([`:root [data-theme-scope="paper"]${a}`, `:root [data-theme-scope="paper"] ${a}`], id, "strong"));
+  blocks.push(accentBlock([...darkThemes.map((th) => `:root[data-theme="${th}"] ${a}`), ...darkThemes.flatMap((th) => [`:root [data-theme-scope="${th}"]${a}`, `:root [data-theme-scope="${th}"] ${a}`])], id, "soft"));
+  blocks.push(accentBlock(lightThemeIds.flatMap((th) => [`:root [data-theme-scope="${th}"]${a}`, `:root [data-theme-scope="${th}"] ${a}`]), id, "strong"));
 }// Printing (SHR-12, D-230): dark ink on white paper whatever theme is showing, so a note prints in
 // Paper's colors, at the print text size rather than the zoom on screen. !important because the app
 // sets a custom theme's colors and the zoom inline on :root. The print layout's pages are the named

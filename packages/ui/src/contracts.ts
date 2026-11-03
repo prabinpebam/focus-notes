@@ -74,12 +74,13 @@ import { contract as SiteGrid } from "./layouts/SiteGrid/contract.ts";
 import { contract as SiteThemeShowcase } from "./primitives/SiteThemeShowcase/contract.ts";
 import { contract as ProjectMark } from "./primitives/ProjectMark/contract.ts";
 import { contract as ImageFrame } from "./primitives/ImageFrame/contract.ts";
+import { contract as FontChoice } from "./primitives/FontChoice/contract.ts";
 import { contract as ProjectScope } from "./layouts/ProjectScope/contract.ts";
 
 /** Each contract by its type, with its literal types, so the registry checks components against it (D-199). */
 export const contractsByType = {
   SecureKeyField,
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, ProjectMark, ImageFrame, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,

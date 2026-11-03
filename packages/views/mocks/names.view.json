@@ -22,283 +22,204 @@
   },
   "children": [
    {
-    "type": "Center",
+    "type": "Surface",
     "props": {
-     "maxWidth": "wideContent"
+     "variant": "canvas",
+     "scroll": true
     },
     "children": [
      {
-      "type": "Stack",
+      "type": "Center",
       "props": {
-       "gap": "l",
-       "padding": "xl"
+       "maxWidth": "wideContent"
       },
       "children": [
        {
         "type": "Stack",
         "props": {
-         "gap": "s"
+         "gap": "l",
+         "padding": "xl"
         },
         "children": [
          {
-          "type": "Inline",
+          "type": "Stack",
           "props": {
-           "gap": "s",
-           "align": "center"
+           "gap": "s"
           },
           "children": [
            {
-            "type": "Button",
-            "id": "mockBack",
-            "on": {
-             "press": {
-              "run": "gallery.open",
-              "args": {
-               "id": ""
-              }
-             }
-            },
-            "props": {
-             "label": {
-              "t": "project.mock.back"
-             },
-             "variant": "subtle",
-             "size": "s",
-             "icon": "chevronLeft"
-            }
-           },
-           {
-            "type": "Text",
-            "props": {
-             "value": {
-              "t": "project.mock.badge"
-             },
-             "role": "caption",
-             "tone": "muted"
-            }
-           }
-          ]
-         },
-         {
-          "type": "Heading",
-          "props": {
-           "value": {
-            "t": "project.mock.names.title"
-           },
-           "level": "1"
-          }
-         },
-         {
-          "type": "Text",
-          "props": {
-           "value": {
-            "t": "project.mock.names.intro"
-           },
-           "tone": "muted"
-          }
-         },
-         {
-          "type": "Inline",
-          "props": {
-           "gap": "xs",
-           "wrap": true,
-           "label": {
-            "t": "project.mock.steps"
-           }
-          },
-          "children": [
-           {
-            "type": "Button",
-            "on": {
-             "press": {
-              "set": "local.step",
-              "to": "overview"
-             }
-            },
-            "props": {
-             "label": {
-              "t": "project.mock.step.overview"
-             },
-             "size": "s",
-             "variant": "subtle",
-             "toggle": true,
-             "pressed": {
-              "expr": {
-               "==": [
-                {
-                 "get": "local.step"
-                },
-                "overview"
-               ]
-              }
-             }
-            }
-           },
-           {
-            "type": "Button",
-            "on": {
-             "press": {
-              "set": "local.step",
-              "to": "renameTitle"
-             }
-            },
-            "props": {
-             "label": {
-              "t": "project.mock.step.renameTitle"
-             },
-             "size": "s",
-             "variant": "subtle",
-             "toggle": true,
-             "pressed": {
-              "expr": {
-               "==": [
-                {
-                 "get": "local.step"
-                },
-                "renameTitle"
-               ]
-              }
-             }
-            }
-           },
-           {
-            "type": "Button",
-            "on": {
-             "press": {
-              "set": "local.step",
-              "to": "renameFile"
-             }
-            },
-            "props": {
-             "label": {
-              "t": "project.mock.step.renameFile"
-             },
-             "size": "s",
-             "variant": "subtle",
-             "toggle": true,
-             "pressed": {
-              "expr": {
-               "==": [
-                {
-                 "get": "local.step"
-                },
-                "renameFile"
-               ]
-              }
-             }
-            }
-           },
-           {
-            "type": "Button",
-            "on": {
-             "press": {
-              "set": "local.step",
-              "to": "published"
-             }
-            },
-            "props": {
-             "label": {
-              "t": "project.mock.step.published"
-             },
-             "size": "s",
-             "variant": "subtle",
-             "toggle": true,
-             "pressed": {
-              "expr": {
-               "==": [
-                {
-                 "get": "local.step"
-                },
-                "published"
-               ]
-              }
-             }
-            }
-           }
-          ]
-         }
-        ]
-       },
-       {
-        "type": "Columns",
-        "props": {
-         "gap": "l"
-        },
-        "children": [
-         {
-          "type": "Surface",
-          "props": {
-           "variant": "raised",
-           "shape": "sheet",
-           "padding": "none"
-          },
-          "children": [
-           {
-            "type": "ProjectScope",
-            "props": {
-             "part": "band",
-             "accent": "teal"
-            },
-            "children": [
-             {
-              "type": "Inline",
-              "props": {
-               "gap": "s",
-               "align": "center",
-               "padding": "s"
-              },
-              "children": [
-               {
-                "type": "ProjectMark",
-                "props": {
-                 "logo": "book",
-                 "accent": "teal",
-                 "size": "s"
-                }
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "t": "project.mock.bookName"
-                 },
-                 "role": "label"
-                }
-               }
-              ]
-             }
-            ]
-           },
-           {
-            "type": "Stack",
+            "type": "Inline",
             "props": {
              "gap": "s",
-             "padding": "m"
+             "align": "center"
             },
             "children": [
              {
-              "type": "FileTree",
-              "id": "namesTree",
+              "type": "Button",
+              "id": "mockBack",
+              "on": {
+               "press": {
+                "run": "gallery.open",
+                "args": {
+                 "id": ""
+                }
+               }
+              },
               "props": {
                "label": {
-                "t": "project.files.tree"
+                "t": "project.mock.back"
                },
-               "items": {
-                "get": "vm.mocks.namesTree"
-               },
-               "menu": {
-                "get": "vm.mocks.filesMenu"
-               }
+               "variant": "subtle",
+               "size": "s",
+               "icon": "chevronLeft"
               }
              },
              {
               "type": "Text",
               "props": {
                "value": {
-                "t": "project.names.hint"
+                "t": "project.mock.badge"
                },
                "role": "caption",
                "tone": "muted"
+              }
+             }
+            ]
+           },
+           {
+            "type": "Heading",
+            "props": {
+             "value": {
+              "t": "project.mock.names.title"
+             },
+             "level": "1"
+            }
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "project.mock.names.intro"
+             },
+             "tone": "muted"
+            }
+           },
+           {
+            "type": "Inline",
+            "props": {
+             "gap": "xs",
+             "wrap": true,
+             "label": {
+              "t": "project.mock.steps"
+             }
+            },
+            "children": [
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "overview"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.step.overview"
+               },
+               "size": "s",
+               "variant": "subtle",
+               "toggle": true,
+               "pressed": {
+                "expr": {
+                 "==": [
+                  {
+                   "get": "local.step"
+                  },
+                  "overview"
+                 ]
+                }
+               }
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "renameTitle"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.step.renameTitle"
+               },
+               "size": "s",
+               "variant": "subtle",
+               "toggle": true,
+               "pressed": {
+                "expr": {
+                 "==": [
+                  {
+                   "get": "local.step"
+                  },
+                  "renameTitle"
+                 ]
+                }
+               }
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "renameFile"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.step.renameFile"
+               },
+               "size": "s",
+               "variant": "subtle",
+               "toggle": true,
+               "pressed": {
+                "expr": {
+                 "==": [
+                  {
+                   "get": "local.step"
+                  },
+                  "renameFile"
+                 ]
+                }
+               }
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "published"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.step.published"
+               },
+               "size": "s",
+               "variant": "subtle",
+               "toggle": true,
+               "pressed": {
+                "expr": {
+                 "==": [
+                  {
+                   "get": "local.step"
+                  },
+                  "published"
+                 ]
+                }
+               }
               }
              }
             ]
@@ -306,24 +227,24 @@
           ]
          },
          {
-          "type": "Stack",
+          "type": "Columns",
           "props": {
-           "gap": "m"
+           "gap": "l"
           },
           "children": [
            {
-            "type": "ProjectScope",
+            "type": "Surface",
             "props": {
-             "part": "window",
-             "accent": "teal",
-             "appearance": "follow",
-             "grow": true
+             "variant": "raised",
+             "shape": "sheet",
+             "padding": "none"
             },
             "children": [
              {
               "type": "ProjectScope",
               "props": {
-               "part": "band"
+               "part": "band",
+               "accent": "teal"
               },
               "children": [
                {
@@ -346,18 +267,9 @@
                   "type": "Text",
                   "props": {
                    "value": {
-                    "t": "project.window.title",
-                    "args": {
-                     "note": {
-                      "t": "project.names.title"
-                     },
-                     "project": {
-                      "t": "project.mock.bookName"
-                     }
-                    }
+                    "t": "project.mock.bookName"
                    },
-                   "role": "caption",
-                   "lines": "one"
+                   "role": "label"
                   }
                  }
                 ]
@@ -367,167 +279,22 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "m",
-               "padding": "l",
-               "grow": true
+               "gap": "s",
+               "padding": "m"
               },
               "children": [
                {
-                "switch": {
-                 "get": "local.step"
-                },
-                "cases": {
-                 "overview": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "xs"
-                  },
-                  "children": [
-                   {
-                    "type": "Heading",
-                    "props": {
-                     "value": {
-                      "t": "project.names.title"
-                     },
-                     "level": "1"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.names.file"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   }
-                  ]
+                "type": "FileTree",
+                "id": "namesTree",
+                "props": {
+                 "label": {
+                  "t": "project.files.tree"
                  },
-                 "renameTitle": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "xs"
-                  },
-                  "children": [
-                   {
-                    "type": "TextField",
-                    "props": {
-                     "label": {
-                      "t": "project.names.titleField"
-                     },
-                     "value": {
-                      "get": "vm.mocks.titleValue"
-                     },
-                     "autoFocus": true,
-                     "size": "l",
-                     "description": {
-                      "t": "project.names.titleHint"
-                     }
-                    }
-                   }
-                  ]
+                 "items": {
+                  "get": "vm.mocks.namesTree"
                  },
-                 "renameFile": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "xs"
-                  },
-                  "children": [
-                   {
-                    "type": "Heading",
-                    "props": {
-                     "value": {
-                      "t": "project.names.title"
-                     },
-                     "level": "1"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.names.file"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   }
-                  ]
-                 },
-                 "published": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "xs"
-                  },
-                  "children": [
-                   {
-                    "type": "Heading",
-                    "props": {
-                     "value": {
-                      "t": "project.names.aboutTitle"
-                     },
-                     "level": "1"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.names.aboutFile"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   }
-                  ]
-                 },
-                 "renamed": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "xs"
-                  },
-                  "children": [
-                   {
-                    "type": "Heading",
-                    "props": {
-                     "value": {
-                      "t": "project.names.title"
-                     },
-                     "level": "1"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.names.renamedFile",
-                      "args": {
-                       "file": {
-                        "get": "local.file"
-                       }
-                      }
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   },
-                   {
-                    "type": "StatusRow",
-                    "props": {
-                     "message": {
-                      "t": "project.names.renamed",
-                      "args": {
-                       "file": {
-                        "get": "local.file"
-                       }
-                      }
-                     },
-                     "tone": "success",
-                     "icon": "check"
-                    }
-                   }
-                  ]
+                 "menu": {
+                  "get": "vm.mocks.filesMenu"
                  }
                 }
                },
@@ -535,101 +302,464 @@
                 "type": "Text",
                 "props": {
                  "value": {
-                  "get": "vm.mocks.sampleNote"
+                  "t": "project.names.hint"
                  },
-                 "personal": true
+                 "role": "caption",
+                 "tone": "muted"
                 }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "window",
+               "accent": "teal",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "ProjectScope",
+                "props": {
+                 "part": "band"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "s",
+                   "align": "center",
+                   "padding": "s"
+                  },
+                  "children": [
+                   {
+                    "type": "ProjectMark",
+                    "props": {
+                     "logo": "book",
+                     "accent": "teal",
+                     "size": "s"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "project.window.title",
+                      "args": {
+                       "note": {
+                        "t": "project.names.title"
+                       },
+                       "project": {
+                        "t": "project.mock.bookName"
+                       }
+                      }
+                     },
+                     "role": "caption",
+                     "lines": "one"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "switch": {
+                   "get": "local.step"
+                  },
+                  "cases": {
+                   "overview": {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "xs"
+                    },
+                    "children": [
+                     {
+                      "type": "Heading",
+                      "props": {
+                       "value": {
+                        "t": "project.names.title"
+                       },
+                       "level": "1"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.names.file"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   },
+                   "renameTitle": {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "xs"
+                    },
+                    "children": [
+                     {
+                      "type": "TextField",
+                      "props": {
+                       "label": {
+                        "t": "project.names.titleField"
+                       },
+                       "value": {
+                        "get": "vm.mocks.titleValue"
+                       },
+                       "autoFocus": true,
+                       "size": "l",
+                       "description": {
+                        "t": "project.names.titleHint"
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   "renameFile": {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "xs"
+                    },
+                    "children": [
+                     {
+                      "type": "Heading",
+                      "props": {
+                       "value": {
+                        "t": "project.names.title"
+                       },
+                       "level": "1"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.names.file"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   },
+                   "published": {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "xs"
+                    },
+                    "children": [
+                     {
+                      "type": "Heading",
+                      "props": {
+                       "value": {
+                        "t": "project.names.aboutTitle"
+                       },
+                       "level": "1"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.names.aboutFile"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   },
+                   "renamed": {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "xs"
+                    },
+                    "children": [
+                     {
+                      "type": "Heading",
+                      "props": {
+                       "value": {
+                        "t": "project.names.title"
+                       },
+                       "level": "1"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.names.renamedFile",
+                        "args": {
+                         "file": {
+                          "get": "local.file"
+                         }
+                        }
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     },
+                     {
+                      "type": "StatusRow",
+                      "props": {
+                       "message": {
+                        "t": "project.names.renamed",
+                        "args": {
+                         "file": {
+                          "get": "local.file"
+                         }
+                        }
+                       },
+                       "tone": "success",
+                       "icon": "check"
+                      }
+                     }
+                    ]
+                   }
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "get": "vm.mocks.sampleNote"
+                   },
+                   "personal": true
+                  }
+                 }
+                ]
                }
               ]
              }
             ]
            }
           ]
-         }
-        ]
-       },
-       {
-        "type": "DialogPanel",
-        "on": {
-         "openChange": {
-          "set": "local.step",
-          "to": "overview"
-         }
-        },
-        "props": {
-         "open": true,
-         "size": "m",
-         "height": "content",
-         "label": {
-          "t": "project.names.renameFile"
-         }
-        },
-        "slots": {
-         "header": [
-          {
-           "type": "Heading",
-           "props": {
-            "value": {
-             "t": "project.names.renameFile"
-            },
-            "level": "2"
+         },
+         {
+          "type": "DialogPanel",
+          "on": {
+           "openChange": {
+            "set": "local.step",
+            "to": "overview"
            }
-          }
-         ],
-         "footer": [
-          {
-           "type": "Inline",
-           "props": {
-            "gap": "s",
-            "justify": "end"
-           },
-           "children": [
+          },
+          "props": {
+           "open": true,
+           "size": "m",
+           "height": "content",
+           "label": {
+            "t": "project.names.renameFile"
+           }
+          },
+          "slots": {
+           "header": [
             {
-             "type": "Button",
-             "on": {
-              "press": {
-               "set": "local.step",
-               "to": "overview"
-              }
-             },
+             "type": "Heading",
              "props": {
-              "label": {
-               "t": "project.cancel"
+              "value": {
+               "t": "project.names.renameFile"
               },
-              "variant": "secondary"
-             }
-            },
-            {
-             "type": "Button",
-             "on": {
-              "press": {
-               "set": "local.step",
-               "to": "renamed"
-              }
-             },
-             "props": {
-              "label": {
-               "t": "project.names.renameAction"
-              },
-              "variant": "primary"
+              "level": "2"
              }
             }
+           ],
+           "footer": [
+            {
+             "type": "Inline",
+             "props": {
+              "gap": "s",
+              "justify": "end"
+             },
+             "children": [
+              {
+               "type": "Button",
+               "on": {
+                "press": {
+                 "set": "local.step",
+                 "to": "overview"
+                }
+               },
+               "props": {
+                "label": {
+                 "t": "project.cancel"
+                },
+                "variant": "secondary"
+               }
+              },
+              {
+               "type": "Button",
+               "on": {
+                "press": {
+                 "set": "local.step",
+                 "to": "renamed"
+                }
+               },
+               "props": {
+                "label": {
+                 "t": "project.names.renameAction"
+                },
+                "variant": "primary"
+               }
+              }
+             ]
+            }
            ]
-          }
-         ]
-        },
-        "children": [
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "m"
           },
           "children": [
            {
-            "type": "Inline",
+            "type": "Stack",
             "props": {
-             "gap": "xs",
-             "align": "end"
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "xs",
+               "align": "end"
+              },
+              "children": [
+               {
+                "type": "TextField",
+                "props": {
+                 "label": {
+                  "t": "project.names.fileField"
+                 },
+                 "value": {
+                  "bind": "local.file"
+                 },
+                 "autoFocus": true
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.names.ext"
+                 },
+                 "tone": "muted"
+                }
+               }
+              ]
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "project.names.links"
+               },
+               "tone": "info",
+               "icon": "link"
+              }
+             }
+            ]
+           }
+          ],
+          "when": {
+           "expr": {
+            "==": [
+             {
+              "get": "local.step"
+             },
+             "renameFile"
+            ]
+           }
+          }
+         },
+         {
+          "type": "DialogPanel",
+          "on": {
+           "openChange": {
+            "set": "local.step",
+            "to": "overview"
+           }
+          },
+          "props": {
+           "open": true,
+           "size": "m",
+           "height": "content",
+           "label": {
+            "t": "project.names.renameFile"
+           }
+          },
+          "slots": {
+           "header": [
+            {
+             "type": "Heading",
+             "props": {
+              "value": {
+               "t": "project.names.renameFile"
+              },
+              "level": "2"
+             }
+            }
+           ],
+           "footer": [
+            {
+             "type": "Inline",
+             "props": {
+              "gap": "s",
+              "justify": "end"
+             },
+             "children": [
+              {
+               "type": "Button",
+               "on": {
+                "press": {
+                 "set": "local.step",
+                 "to": "overview"
+                }
+               },
+               "props": {
+                "label": {
+                 "t": "project.cancel"
+                },
+                "variant": "secondary"
+               }
+              },
+              {
+               "type": "Button",
+               "on": {
+                "press": {
+                 "set": "local.step",
+                 "to": "overview"
+                }
+               },
+               "props": {
+                "label": {
+                 "t": "project.names.renameAction"
+                },
+                "variant": "primary"
+               }
+              }
+             ]
+            }
+           ]
+          },
+          "children": [
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m"
             },
             "children": [
              {
@@ -639,158 +769,36 @@
                 "t": "project.names.fileField"
                },
                "value": {
-                "bind": "local.file"
+                "get": "vm.mocks.aboutFile"
                },
                "autoFocus": true
               }
              },
              {
-              "type": "Text",
+              "type": "StatusRow",
               "props": {
-               "value": {
-                "t": "project.names.ext"
+               "message": {
+                "t": "project.names.publishedWarning"
                },
-               "tone": "muted"
+               "tone": "warning",
+               "icon": "globe"
               }
              }
             ]
-           },
-           {
-            "type": "StatusRow",
-            "props": {
-             "message": {
-              "t": "project.names.links"
-             },
-             "tone": "info",
-             "icon": "link"
-            }
            }
-          ]
-         }
-        ],
-        "when": {
-         "expr": {
-          "==": [
-           {
-            "get": "local.step"
-           },
-           "renameFile"
-          ]
-         }
-        }
-       },
-       {
-        "type": "DialogPanel",
-        "on": {
-         "openChange": {
-          "set": "local.step",
-          "to": "overview"
-         }
-        },
-        "props": {
-         "open": true,
-         "size": "m",
-         "height": "content",
-         "label": {
-          "t": "project.names.renameFile"
-         }
-        },
-        "slots": {
-         "header": [
-          {
-           "type": "Heading",
-           "props": {
-            "value": {
-             "t": "project.names.renameFile"
-            },
-            "level": "2"
+          ],
+          "when": {
+           "expr": {
+            "==": [
+             {
+              "get": "local.step"
+             },
+             "published"
+            ]
            }
           }
-         ],
-         "footer": [
-          {
-           "type": "Inline",
-           "props": {
-            "gap": "s",
-            "justify": "end"
-           },
-           "children": [
-            {
-             "type": "Button",
-             "on": {
-              "press": {
-               "set": "local.step",
-               "to": "overview"
-              }
-             },
-             "props": {
-              "label": {
-               "t": "project.cancel"
-              },
-              "variant": "secondary"
-             }
-            },
-            {
-             "type": "Button",
-             "on": {
-              "press": {
-               "set": "local.step",
-               "to": "overview"
-              }
-             },
-             "props": {
-              "label": {
-               "t": "project.names.renameAction"
-              },
-              "variant": "primary"
-             }
-            }
-           ]
-          }
-         ]
-        },
-        "children": [
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "m"
-          },
-          "children": [
-           {
-            "type": "TextField",
-            "props": {
-             "label": {
-              "t": "project.names.fileField"
-             },
-             "value": {
-              "get": "vm.mocks.aboutFile"
-             },
-             "autoFocus": true
-            }
-           },
-           {
-            "type": "StatusRow",
-            "props": {
-             "message": {
-              "t": "project.names.publishedWarning"
-             },
-             "tone": "warning",
-             "icon": "globe"
-            }
-           }
-          ]
          }
-        ],
-        "when": {
-         "expr": {
-          "==": [
-           {
-            "get": "local.step"
-           },
-           "published"
-          ]
-         }
-        }
+        ]
        }
       ]
      }

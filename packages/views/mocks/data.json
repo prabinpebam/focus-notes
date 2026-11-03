@@ -6,7 +6,7 @@
   },
   {
    "id": "mock.identity",
-   "label": "2 · Project window identity: accent, logo, watermark, Appearance"
+   "label": "2 · Project window identity: colour, logo, font, theme, preview"
   },
   {
    "id": "mock.files",
@@ -381,18 +381,287 @@
    "label": "Off"
   }
  ],
- "appearances": [
+ "fonts": [
   {
-   "id": "follow",
-   "label": "Follow app"
+   "id": "mono",
+   "label": "Mono"
   },
   {
-   "id": "light",
-   "label": "Light"
+   "id": "serif",
+   "label": "Serif"
   },
   {
-   "id": "dark",
-   "label": "Dark"
+   "id": "sans",
+   "label": "Sans"
+  },
+  {
+   "id": "hyperlegible",
+   "label": "Atkinson Hyperlegible"
+  },
+  {
+   "id": "dyslexic",
+   "label": "OpenDyslexic"
+  },
+  {
+   "id": "system",
+   "label": "System"
+  }
+ ],
+ "themeTiles": [
+  {
+   "id": "paper",
+   "label": "Paper",
+   "kind": "light",
+   "badge": "AAA",
+   "description": "light, AAA"
+  },
+  {
+   "id": "sepia",
+   "label": "Sepia",
+   "kind": "light",
+   "badge": "AAA",
+   "description": "light, AAA"
+  },
+  {
+   "id": "harbor-light",
+   "label": "Harbor",
+   "kind": "light",
+   "badge": "AA",
+   "description": "light, AA"
+  },
+  {
+   "id": "forest-light",
+   "label": "Forest",
+   "kind": "light",
+   "badge": "AA",
+   "description": "light, AA"
+  },
+  {
+   "id": "contrast-light",
+   "label": "High contrast",
+   "kind": "light",
+   "badge": "AAA",
+   "description": "light, AAA"
+  },
+  {
+   "id": "ink",
+   "label": "Ink",
+   "kind": "dark",
+   "badge": "AAA",
+   "description": "dark, AAA"
+  },
+  {
+   "id": "dusk",
+   "label": "Dusk",
+   "kind": "dark",
+   "badge": "AAA",
+   "description": "dark, AAA"
+  },
+  {
+   "id": "harbor-dark",
+   "label": "Harbor",
+   "kind": "dark",
+   "badge": "AA",
+   "description": "dark, AA"
+  },
+  {
+   "id": "forest-dark",
+   "label": "Forest",
+   "kind": "dark",
+   "badge": "AA",
+   "description": "dark, AA"
+  },
+  {
+   "id": "contrast-dark",
+   "label": "High contrast",
+   "kind": "dark",
+   "badge": "AAA",
+   "description": "dark, AAA"
+  }
+ ],
+ "previewBlocks": [
+  {
+   "type": "heading",
+   "attrs": {
+    "level": 2
+   },
+   "content": [
+    {
+     "type": "text",
+     "text": "Chapter 1: The harbour"
+    }
+   ]
+  },
+  {
+   "type": "paragraph",
+   "content": [
+    {
+     "type": "text",
+     "text": "The harbour was quiet that morning. Mara counted the boats "
+    },
+    {
+     "type": "text",
+     "text": "twice",
+     "marks": [
+      {
+       "type": "italic"
+      }
+     ]
+    },
+    {
+     "type": "text",
+     "text": ", then wrote the number down before it could change. See "
+    },
+    {
+     "type": "text",
+     "text": "the map of the bay",
+     "marks": [
+      {
+       "type": "link",
+       "attrs": {
+        "href": "#map"
+       }
+      }
+     ]
+    },
+    {
+     "type": "text",
+     "text": "."
+    }
+   ]
+  },
+  {
+   "type": "bulletList",
+   "content": [
+    {
+     "type": "listItem",
+     "content": [
+      {
+       "type": "paragraph",
+       "content": [
+        {
+         "type": "text",
+         "text": "Eleven boats at dawn"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "listItem",
+     "content": [
+      {
+       "type": "paragraph",
+       "content": [
+        {
+         "type": "text",
+         "text": "Nine by noon"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "listItem",
+     "content": [
+      {
+       "type": "paragraph",
+       "content": [
+        {
+         "type": "text",
+         "text": "One she didn't know"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "blockquote",
+   "content": [
+    {
+     "type": "paragraph",
+     "content": [
+      {
+       "type": "text",
+       "text": "Count what you can, and write down what you can't."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "codeBlock",
+   "attrs": {
+    "language": "text"
+   },
+   "content": [
+    {
+     "type": "text",
+     "text": "boats = 11 - 2 + 1"
+    }
+   ]
+  }
+ ],
+ "previewShortBlocks": [
+  {
+   "type": "paragraph",
+   "content": [
+    {
+     "type": "text",
+     "text": "The harbour was quiet that morning. Mara counted the boats twice. See "
+    },
+    {
+     "type": "text",
+     "text": "the map",
+     "marks": [
+      {
+       "type": "link",
+       "attrs": {
+        "href": "#map"
+       }
+      }
+     ]
+    },
+    {
+     "type": "text",
+     "text": "."
+    }
+   ]
+  },
+  {
+   "type": "bulletList",
+   "content": [
+    {
+     "type": "listItem",
+     "content": [
+      {
+       "type": "paragraph",
+       "content": [
+        {
+         "type": "text",
+         "text": "Eleven at dawn"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "listItem",
+     "content": [
+      {
+       "type": "paragraph",
+       "content": [
+        {
+         "type": "text",
+         "text": "Nine by noon"
+        }
+       ]
+      }
+     ]
+    }
+   ]
   }
  ],
  "windows": [

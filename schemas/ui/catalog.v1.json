@@ -2828,6 +2828,56 @@
       ]
     },
     {
+      "type": "FontChoice",
+      "tier": "primitive",
+      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name, a toggle pressed when chosen. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
+      "props": {
+        "font": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system"
+          ],
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The font's name, shown under the sample and its accessible name."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.fontChoice.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "font mono",
+        "font sans",
+        "font serif",
+        "font hyperlegible",
+        "font dyslexic",
+        "font system",
+        "selected"
+      ]
+    },
+    {
       "type": "SiteLink",
       "tier": "primitive",
       "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
@@ -3955,7 +4005,7 @@
     {
       "type": "ProjectScope",
       "tier": "layout",
-      "description": "A project's look over what it holds (D-313): its accent as a modifier on the semantic accent roles, and its own Appearance when it has one. In the app it's the whole window; in the gallery, several windows side by side. The band part is the tinted title band and the Files heading.",
+      "description": "A project's look over what it holds (D-313, D-316): its accent as a modifier on the semantic accent roles, its own colour theme and writing font when it has them. In the app it's the whole window; in the gallery, several windows side by side or a live preview. The band part is the tinted title band and the Files heading.",
       "props": {
         "accent": {
           "kind": "enum",
@@ -3977,15 +4027,37 @@
           "default": "app",
           "description": "app: the accent around it."
         },
-        "appearance": {
+        "theme": {
           "kind": "enum",
           "values": [
-            "follow",
-            "light",
-            "dark"
+            "paper",
+            "sepia",
+            "harbor-light",
+            "forest-light",
+            "contrast-light",
+            "ink",
+            "dusk",
+            "harbor-dark",
+            "forest-dark",
+            "contrast-dark",
+            "app"
           ],
-          "default": "follow",
-          "description": "The project's Appearance (D-313): Follow app, or always Light or Dark, without touching the reading theme otherwise."
+          "default": "app",
+          "description": "The project's colour theme (D-316); app: Follow app, the app's theme and its light and dark switching."
+        },
+        "font": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system",
+            "app"
+          ],
+          "default": "app",
+          "description": "The project's writing font (D-316); app: the app's."
         },
         "part": {
           "kind": "enum",
@@ -3995,7 +4067,7 @@
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it, clipped to the window's shape. band: the accent's tint (the title band, the Files heading). plain: only the accent."
+          "description": "window: the canvas behind it, clipped to the window's shape. band: the accent's tint (the title band, the Files heading). plain: only the scope."
         },
         "grow": {
           "kind": "boolean",
@@ -4032,9 +4104,24 @@
         "accent pink",
         "accent slate",
         "accent app",
-        "appearance follow",
-        "appearance light",
-        "appearance dark"
+        "theme paper",
+        "theme sepia",
+        "theme harbor-light",
+        "theme forest-light",
+        "theme contrast-light",
+        "theme ink",
+        "theme dusk",
+        "theme harbor-dark",
+        "theme forest-dark",
+        "theme contrast-dark",
+        "theme app",
+        "font mono",
+        "font sans",
+        "font serif",
+        "font hyperlegible",
+        "font dyslexic",
+        "font system",
+        "font app"
       ]
     },
     {
