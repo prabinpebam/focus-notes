@@ -59,7 +59,7 @@ export function registerProjectOpen(ctx: {
       const entries = state.entries.filter((e) => `${e.name} ${e.folder} ${e.lastNote ?? ""}`.toLowerCase().includes(state.query.toLowerCase()));
       return { ...state, entries: entries.map((e) => ({ ...e, id: e.folder })),
         recent: entries.filter((e) => e.folder !== s.workspace.folder && e.lastNote).map((e) => ({
-          id: `${e.folder}|note`, label: e.lastNote!.split(/[\\/]/).at(-1)!.replace(/\.(md|markdown)$/i, ""), description: e.name, icon: "note",
+          id: `${e.folder}|note`, label: e.lastNote!.split(/[\\/]/).at(-1)!.replace(/\.(md|markdown)$/i, ""), description: e.name, icon: "newNote",
         })),
       };
     },
