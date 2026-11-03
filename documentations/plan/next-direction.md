@@ -2,6 +2,8 @@
 
 The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-299).
 
+**Second source, relayed 13:36:** the exact nested [image notes](../experience/images.md#the-owners-image-notes-3-november-2026) are captured on their own durable page; image/editor/asset reconciliation continues there.
+
 > [!NOTE]
 > **TL;DR.** The owner's notes ask for writing fixes, recognizable projects, pins and item-first sharing, with Pages as a reading website. All six follow-up decisions were **accepted by the owner on 3 November at 13:35**: keep the site repository when turning sharing off, accept retained Git history, use opaque names-free shares, permit personal-account invites, make the project migration UX-led and simplify browser retirement. This remains specification/planning, not a current-build or execution claim.
 

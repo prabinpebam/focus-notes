@@ -2,6 +2,15 @@
   "version": 2,
   "entries": [
     {
+      "path": "experience/images.md",
+      "title": "Images",
+      "order": 266,
+      "icon": "image",
+      "status": "draft",
+      "updated": "2026-11-03",
+      "group": "Experience"
+    },
+    {
       "path": "experience/published-site.md",
       "title": "Published website",
       "order": 264,
