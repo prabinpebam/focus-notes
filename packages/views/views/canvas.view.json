@@ -4111,7 +4111,7 @@
         },
         "props": {
           "label": {
-            "t": "files.heading"
+            "get": "vm.project.filesHeading"
           },
           "side": "start",
           "width": "files",
@@ -4319,7 +4319,7 @@
                           "props": {
                             "level": "2",
                             "value": {
-                              "t": "files.heading"
+                              "get": "vm.project.filesHeading"
                             }
                           },
                           "when": {
@@ -4334,7 +4334,7 @@
                           "props": {
                             "level": "2",
                             "value": {
-                              "t": "files.heading"
+                              "get": "vm.project.filesHeading"
                             },
                             "back": true,
                             "label": {
@@ -4355,7 +4355,7 @@
                           "props": {
                             "level": "2",
                             "value": {
-                              "t": "files.heading"
+                              "get": "vm.project.filesHeading"
                             },
                             "back": true,
                             "label": {
@@ -9449,7 +9449,7 @@
           { "type": "Heading", "props": { "value": { "t": "project.open.title" }, "level": "1" } },
           { "type": "SearchField", "id": "projectSearchFull", "props": { "label": { "t": "project.open.search" }, "placeholder": { "t": "project.open.search" }, "clearLabel": { "t": "newNote.clear" }, "value": { "bind": "vm.projects.query" }, "autoFocus": true } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
-            { "type": "Button", "props": { "label": { "t": "project.open.newLocal" }, "variant": "secondary", "icon": "quickNote", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+            { "type": "Button", "props": { "label": { "t": "project.open.newLocal" }, "variant": "secondary", "icon": "quickNote" }, "on": { "press": { "run": "projects.newLocal" } } },
             { "type": "Button", "props": { "label": { "t": "project.openFile" }, "variant": "subtle", "icon": "open", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
             { "type": "Button", "props": { "label": { "t": "project.openFromGitHub" }, "variant": "subtle", "icon": "github", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
             { "type": "Button", "props": { "label": { "t": "project.new" }, "variant": "subtle", "icon": "add" }, "on": { "press": { "run": "projects.new" } } },

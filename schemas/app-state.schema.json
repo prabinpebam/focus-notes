@@ -17,6 +17,10 @@
       "type": "boolean",
       "description": "The one-time Projects notice was dismissed on this device."
     },
+    "localNotes": {
+      "type": "boolean",
+      "description": "This profile writes Local notes, without a project or GitHub backup."
+    },
     "appearance": {
       "enum": [
         "system",

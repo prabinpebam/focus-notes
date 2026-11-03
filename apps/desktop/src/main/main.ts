@@ -93,6 +93,7 @@ if (!process.env.FOCUS_NOTES_PROJECTS_PROFILE && !process.env.FOCUS_NOTES_PROJEC
   if (resume) {
     process.env.FOCUS_NOTES_PROJECTS_PROFILE = rootProfile;
     process.env.FOCUS_NOTES_DOCS = resume.folder;
+    process.env.FOCUS_NOTES_LOCAL_NOTES = resume.localNotes ? "1" : "";
     app.setPath("userData", resume.profile);
   }
 }
@@ -1248,6 +1249,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
   handle("projects:upload", () => projects.upload());
+  handle("projects:localNote", () => projects.localNote());
+  handle("projects:importLocal", (path: unknown, folder: unknown) => {
+    if (typeof path !== "string" || typeof folder !== "string") throw new Error("Invalid local import");
+    return projects.importLocal(path, folder);
+  });
   handle("projects:edited", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");
     return projects.edited(path);
@@ -2259,7 +2265,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.

@@ -436,7 +436,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
   const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
-  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load });
+  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load, flush, toast });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
@@ -1140,7 +1140,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const position = restorePosition;
       restorePosition = undefined;
       if (position) afterPaint(() => editorAction("note.restorePosition", position));
-      if (bridge.projects) afterPaint(() => projectIntro.ready());
+      if (bridge.projects && !bridge.projects.local) afterPaint(() => projectIntro.ready());
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
@@ -1331,7 +1331,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
       more: [
         ...(DEFAULT_TOOLBAR.some((d) => !s.toolbarPinned.includes(d)) ? [{ id: "actions", label: "menu.actions", items: DEFAULT_TOOLBAR.filter((d) => !s.toolbarPinned.includes(d)) as MenuEntry[] }] : []),
-        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({ ...g, items: g.items.filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)) })),
+        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
+          ...g,
+          items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
+            .filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)),
+        })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),

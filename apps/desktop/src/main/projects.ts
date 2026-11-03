@@ -14,7 +14,7 @@ function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
 }
 
-export function resumeProjectProfile(root: string): { profile: string; folder: string } | undefined {
+export function resumeProjectProfile(root: string): { profile: string; folder: string; localNotes: boolean } | undefined {
   try {
     const record = JSON.parse(readFileSync(join(root, DATA_FILES.lastProject), "utf8")) as { profile?: unknown };
     if (typeof record.profile !== "string") throw new Error("Invalid saved project.");
@@ -23,7 +23,8 @@ export function resumeProjectProfile(root: string): { profile: string; folder: s
     if (dirname(profile) !== resolve(root, DATA_FOLDERS.projectProfiles)) throw new Error("Invalid saved project profile.");
     const folder = readFileSync(join(profile, DATA_FILES.projectFolder), "utf8").trim();
     if (!isAbsolute(folder) || !existsSync(folder)) throw new Error("Saved project folder is unavailable.");
-    return { profile, folder };
+    const saved = JSON.parse(readFileSync(join(profile, DATA_FILES.state), "utf8")) as AppStateFile;
+    return { profile, folder, localNotes: saved.localNotes === true };
   } catch (error) {
     if (!missing(error)) console.error("Could not restore the last project.");
     return;
@@ -125,7 +126,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       const identity = saved.projectSettings?.[folder];
       const history = await recent(profile);
       const lastPath = profile === app.getPath("userData") ? await lastNote() : undefined;
-      return { folder, name: identity?.name ?? basename(folder), accent: identity?.accent ?? "teal", logo: identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes };
+      return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes };
     }));
   }
   async function pin(folder: string, path?: string) {
@@ -146,6 +147,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const canonical = await realpath(folder);
     const profile = known.get(canonical);
     if (!profile) throw new Error("Choose a project folder first");
+    const localNotes = (await state(profile)).localNotes === true;
     if (note) {
       const path = await realpath(note);
       const within = relative(canonical, path);
@@ -156,7 +158,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (profile === app.getPath("userData") && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(note ? ["--project-note", note] : [])];
     const child = spawn(process.execPath, args, {
-      env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, ...(note ? { FOCUS_NOTES_PROJECT_NOTE: note } : { FOCUS_NOTES_PROJECT_NOTE: "" }) },
+      env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", ...(note ? { FOCUS_NOTES_PROJECT_NOTE: note } : { FOCUS_NOTES_PROJECT_NOTE: "" }) },
       stdio: "ignore",
     });
     await new Promise<void>((accept, reject) => { child.once("spawn", accept); child.once("error", reject); });
@@ -181,6 +183,48 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (result.canceled || !file) return;
     if (extname(file).toLowerCase() !== ".svg" || (await stat(file)).size > 262144) throw new Error("Choose an SVG logo smaller than 256 KB.");
     return readFile(file, "utf8");
+  }
+  const localHome = () => resolve(process.env.FOCUS_NOTES_LOCAL_NOTES_HOME ?? join(app.getPath("documents"), "Focus Notes", "Local notes"));
+  async function localNote() {
+    const folder = localHome();
+    await mkdir(folder, { recursive: true });
+    const profile = join(profiles, key(folder));
+    await mkdir(profile, { recursive: true });
+    if (!existsSync(join(profile, DATA_FILES.workspace))) {
+      await writeFile(join(profile, DATA_FILES.projectFolder), folder, { flag: "wx" });
+      await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { flag: "wx" });
+      await writeFile(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", localNotes: true, projectIntroSeen: true, filesPinned: true }), { flag: "wx" });
+    }
+    let note: string;
+    for (let i = 1; ; i++) {
+      note = join(folder, i === 1 ? "Untitled.md" : `Untitled ${i}.md`);
+      try { await writeFile(note, "", { flag: "wx" }); break; }
+      catch (error) {
+        if (!error || typeof error !== "object" || !("code" in error) || error.code !== "EEXIST") throw error;
+      }
+    }
+    await open(folder, note);
+  }
+  async function importLocal(path: string, project: string) {
+    const source = await realpath(path);
+    const local = await realpath(localHome());
+    const rel = relative(local, source);
+    if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("Choose a Local note.");
+    await list();
+    const folder = await realpath(project);
+    const profile = known.get(folder);
+    if (!profile || (await state(profile)).localNotes) throw new Error("Choose a project.");
+    const destination = existsSync(join(folder, "private", "notes")) ? join(folder, "private", "notes")
+      : existsSync(join(folder, "notes")) ? join(folder, "notes") : folder;
+    const text = await readFile(source, "utf8");
+    const name = basename(source, extname(source));
+    for (let i = 1; ; i++) {
+      const target = join(destination, `${name}${i === 1 ? "" : ` ${i}`}.md`);
+      try { await writeFile(target, text, { flag: "wx" }); return target; }
+      catch (error) {
+        if (!error || typeof error !== "object" || !("code" in error) || error.code !== "EEXIST") throw error;
+      }
+    }
   }
   async function chooseParent(parent: string): Promise<string | undefined> {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"], defaultPath: parent });
@@ -221,5 +265,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }), { flag: "wx" });
     return folder;
   }
-  return { list, open, choose, upload, pin, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  return { list, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }

@@ -5935,6 +5935,13 @@
       ]
     },
     {
+      "id": "localImport",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.localImport"
+      ]
+    },
+    {
       "id": "newNote",
       "viewModels": [
         "vm.newNote"
