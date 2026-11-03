@@ -2,7 +2,7 @@
  "list": [
   {
    "id": "mock.projects",
-   "label": "1 · Projects and opening a project"
+   "label": "1 · Open: launch, recent files and projects (Ctrl+Alt+O)"
   },
   {
    "id": "mock.identity",
@@ -22,7 +22,7 @@
   },
   {
    "id": "mock.quick",
-   "label": "6 · Quick notes and a file on its own"
+   "label": "6 · Local notes and a file on its own"
   },
   {
    "id": "mock.migrate",
@@ -85,35 +85,43 @@
    "sharing": "Sharing on"
   }
  ],
+ "recentPinned": [
+  {
+   "id": "p1",
+   "label": "Reading list",
+   "description": "Local notes",
+   "icon": "pin"
+  }
+ ],
  "recent": [
   {
    "id": "r1",
-   "label": "Plan",
-   "description": "Book · Drafts / Chapter 1",
+   "label": "October picks",
+   "description": "Reading club · Root",
    "icon": "document"
   },
   {
    "id": "r2",
-   "label": "Standup notes",
-   "description": "Work · Meetings",
+   "label": "Winter soups",
+   "description": "Recipes · Mains",
    "icon": "document"
   },
   {
    "id": "r3",
    "label": "Groceries",
-   "description": "Quick notes · Local only",
+   "description": "Local notes",
    "icon": "quickNote"
   },
   {
    "id": "r4",
    "label": "reading-list.txt",
-   "description": "Downloads · Local only",
+   "description": "Downloads · On its own",
    "icon": "text"
   },
   {
    "id": "r5",
-   "label": "On focus",
-   "description": "Work · Root",
+   "label": "Members",
+   "description": "Reading club · Admin",
    "icon": "document"
   }
  ],
