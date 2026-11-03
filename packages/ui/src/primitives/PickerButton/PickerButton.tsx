@@ -16,12 +16,28 @@ export interface PickerButtonProps {
   /** The chosen option in the popover: a full ring. */
   selected?: boolean;
   onPress?: () => void;
+  /** tile: a fixed-size tile with its label on top and the value drawn (Settings → Project's Font and Theme). */
+  variant?: "compact" | "fontTile" | "themeTile";
   /** Pointing at it or focusing it previews the value (D-316). */
   onPreview?: () => void;
 }
 
 /** A setting's current value, compact; its choices open in a popover (D-316). */
-export function PickerButton({ label, value, font = "app", theme = "app", chevron = true, selected = false, onPress, onPreview }: PickerButtonProps) {
+export function PickerButton({ label, value, font = "app", theme = "app", chevron = true, selected = false, variant = "compact", onPress, onPreview }: PickerButtonProps) {
+  if (variant !== "compact") {
+    const fontScope = font === "app" ? undefined : font;
+    return (
+      <Button className={s.tile} aria-label={`${label}: ${value}`} {...(onPress ? { onPress } : {})} {...(onPreview ? { onHoverStart: onPreview, onFocus: onPreview } : {})}>
+        <span className={s.tileTop}><span className={controlLabel}>{label}</span><Icon name="chevronDown" size="s" /></span>
+        <span className={s.tileVisual} aria-hidden="true">
+          {variant === "fontTile"
+            ? <span className={s.sample} data-font-scope={fontScope}>Aa</span>
+            : <span className={s.preview} data-theme-scope={theme === "app" ? undefined : theme}><span className={s.line} /><span className={`${s.line} ${s.lineShort}`} /><span className={s.accentDot} /></span>}
+        </span>
+        <span className={`${controlLabel} ${s.tileValue}`}>{value}</span>
+      </Button>
+    );
+  }
   return (
     <Button className={`${s.base}${chevron ? "" : ` ${s.option}`}${selected ? ` ${s.selected}` : ""}`} aria-label={chevron ? `${label}: ${value}` : value} {...(chevron ? {} : { "aria-pressed": selected })}
       {...(onPress ? { onPress } : {})} {...(onPreview ? { onHoverStart: onPreview, onFocus: onPreview } : {})}>
