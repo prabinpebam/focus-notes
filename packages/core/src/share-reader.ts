@@ -19,6 +19,7 @@ export interface OpenedShare {
 export interface ShareSource {
   openLink(link: { id: string; secret: string }): Promise<OpenedShare>;
   openPasscode(name: string, passcode: string): Promise<OpenedShare>;
+  openAccessCode?(value: string): Promise<OpenedShare>;
   /** Reopens from a stored session, reading the site afresh (a deploy may have replaced it). */
   resume(session: unknown): Promise<OpenedShare>;
 }
@@ -46,6 +47,7 @@ export interface ShareState extends Record<string, unknown> {
   /** Open was pressed with a field left empty. */
   empty: boolean;
   busy: boolean;
+  legacy: boolean;
   remember: boolean;
   /** Signed out on this device, by this tab or another. */
   signedOut: boolean;
@@ -66,6 +68,7 @@ export const SHARE_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "objec
       error: { type: "boolean" },
       empty: { type: "boolean" },
       busy: { type: "boolean" },
+      legacy: { type: "boolean" },
       remember: { type: "boolean" },
       signedOut: { type: "boolean" },
       multiple: { type: "boolean" },
@@ -102,7 +105,7 @@ export function pickSession<T extends StoredShare>(records: readonly T[], o: { n
   return { use: mine ?? device, drop };
 }
 
-export const SHARE_COMMANDS = ["share.submit", "share.setRemember", "share.signOut", "share.showList"] as const;
+export const SHARE_COMMANDS = ["share.submit", "share.submitCode", "share.setLegacy", "share.setRemember", "share.signOut", "share.showList"] as const;
 
 const EMPTY: ReaderModel = { title: [], updated: 0, body: [] };
 /** setTimeout's longest delay; a later expiry is checked again when it fires. */
@@ -120,7 +123,7 @@ export interface ShareReaderOptions {
 export function createShareReader(o: ShareReaderOptions) {
   const now = o.now ?? Date.now;
   const setTimer = o.setTimer ?? ((fn, ms) => { const t = setTimeout(fn, ms); return () => clearTimeout(t); });
-  let state: ShareState = { phase: "opening", error: false, empty: false, busy: false, remember: false, signedOut: false, multiple: false, list: EMPTY, note: EMPTY, focus: 0 };
+  let state: ShareState = { phase: "opening", error: false, empty: false, busy: false, legacy: false, remember: false, signedOut: false, multiple: false, list: EMPTY, note: EMPTY, focus: 0 };
   const listeners = new Set<() => void>();
   const set = (patch: Partial<ShareState>) => {
     state = { ...state, ...patch };
@@ -222,6 +225,18 @@ export function createShareReader(o: ShareReaderOptions) {
       if (!name.trim() || !passcode.trim()) { set({ empty: true, error: false, focus: state.focus + 1 }); return; }
       set({ busy: true, empty: false, error: false });
       await opened(o.source.openPasscode(name, passcode), remember);
+    },
+    async submitCode(value: string, remember = false): Promise<void> {
+      if (state.busy) return;
+      if (!value) { set({ empty: true, error: false, focus: state.focus + 1 }); return; }
+      set({ busy: true, empty: false, error: false });
+      await opened(Promise.resolve().then(() => {
+        if (!o.source.openAccessCode) throw new Error("Access-code reader unavailable");
+        return o.source.openAccessCode(value);
+      }), remember);
+    },
+    setLegacy(legacy: boolean) {
+      if (!state.busy) set({ legacy, error: false, empty: false, focus: state.focus + 1 });
     },
     /** Remember on this device, or only in this tab (SHR-10). */
     setRemember(on: boolean) {

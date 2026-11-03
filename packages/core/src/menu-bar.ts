@@ -96,7 +96,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
-  { why: "fixed-item sharing dialog and Files row menu", ids: /^(share\.item\.(open|toggleLink|togglePasscode|toggleLater|review|expand)|files\.share)$/ },
+  { why: "fixed-item sharing dialog and Files row menu", ids: /^(share\.item\..+|files\.share)$/ },
   // Settings → AI's fields and the Rewrite dialog's own steps, and the editor's answers to it.
   { why: "AI settings and the Rewrite dialog", ids: /^(ai\.(load|edit|save|openSettings|add|cancel|provider|change|remove|writer|test|discover|useFound|models|model|privacy)|rewrite\.(captured|dismiss|prompt|preset|generate|began|cancel|deselected|keepPrompt|discardPrompt|writer))$/ },
   // What views, the editor, and the shell send as things change: values, events, and their own steps.

@@ -5925,6 +5925,11 @@
         "invalid": {
           "kind": "boolean",
           "default": false
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the chosen day focusable, without changing it while its action is being sent."
         }
       },
       "events": {
@@ -5940,7 +5945,8 @@
         "rest",
         "focused",
         "open",
-        "invalid"
+        "invalid",
+        "readOnly"
       ],
       "tokens": "cmp.datePicker.*",
       "a11y": {
@@ -5981,6 +5987,18 @@
               "t": "gallery.sample"
             },
             "invalid": true
+          }
+        },
+        {
+          "name": "read only",
+          "covers": [
+            "readOnly"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "readOnly": true
           }
         }
       ]

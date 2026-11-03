@@ -6501,6 +6501,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "readOnly": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [

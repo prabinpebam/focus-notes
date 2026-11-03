@@ -3,7 +3,7 @@
 Keep notes private, make them public, and share one with a passcode.
 
 > [!NOTE]
-> **TL;DR.** In the item-sharing candidate, **Share…** starts with the note or folder you chose. You can review a folder and choose how a share will open. This candidate does not publish or copy a share yet; opening or cancelling it leaves your notes and existing shares unchanged.
+> **TL;DR.** In the item-sharing candidate, **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged.
 
 ## Review a note or folder
 
@@ -13,7 +13,15 @@ Keep notes private, make them public, and share one with a passcode.
 4. Choose the expiry and **Link** or **Passcode**. Link starts on, Passcode starts off, and **Include notes added later** starts off for folders. Both opening methods can be off, but that draft cannot be shared.
 5. Close the dialog to discard the draft. No share or website is created by opening, reviewing or cancelling.
 
-**Candidate limit:** generated words, publishing, copying, existing-share actions and first-share setup are not yet connected here. Today's Settings → Sharing flow remains available for existing named grants. The full item-first sharing flow will replace these limits only when its publication and privacy checks pass.
+## Copy a share
+
+Turn on **Link**, **Passcode**, or both. Passcode offers generated words or your own strong passcode. An access code combines a random identifier and the passcode; readers enter that single code without providing a person's name.
+
+On Windows, choose **Copy share information**, **Copy link**, or **Copy access code**. The first action saves the share and waits for the website. Nothing is copied before the encrypted share is ready. The read-only **Share information** block then shows the actual message. On macOS, the primary **Share…** action opens the system share sheet instead.
+
+Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
+
+**Candidate limits:** this work is not yet merged or security-reviewed. Shared-before actions, adding newer notes, first-site setup and full large-folder review remain unfinished. Change… and template editing are not part of this increment. Today's Settings → Sharing flow remains available for existing named grants.
 
 ## Coming soon
 

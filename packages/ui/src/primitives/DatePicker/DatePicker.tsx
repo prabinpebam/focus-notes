@@ -17,6 +17,7 @@ export interface DatePickerProps {
   max?: string;
   description?: string;
   invalid?: boolean;
+  readOnly?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
 }
@@ -31,7 +32,7 @@ const day = (v: string | undefined): CalendarDate | null => {
  * part works from the keyboard (arrows change a segment, Alt+Down opens the calendar) and is named
  * in the locale's words.
  */
-export function DatePicker({ label, value, min, max, description, invalid, id, onChange }: DatePickerProps) {
+export function DatePicker({ label, value, min, max, description, invalid, readOnly, id, onChange }: DatePickerProps) {
   const boundary = useWindowBoundary();
   const minValue = day(min);
   const maxValue = day(max);
@@ -42,6 +43,7 @@ export function DatePicker({ label, value, min, max, description, invalid, id, o
       {...(minValue ? { minValue } : {})}
       {...(maxValue ? { maxValue } : {})}
       isInvalid={Boolean(invalid)}
+      isReadOnly={Boolean(readOnly)}
       granularity="day"
       onChange={(v) => onChange?.({ value: v ? v.toString() : "" })}
       {...(id ? { id } : {})}

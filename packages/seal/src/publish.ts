@@ -13,7 +13,7 @@ import {
 } from "./format.ts";
 import {
   activeShareGrants, deriveLinkBits, GRANT_ID, grantScope, inScope, isActive, keyringRole, keyringSaltFor, LINK_KDF, normalizeName, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
-  type AccessFile, type Grant,
+  codeKeyringPath, SHARE_CODE, type AccessFile, type Grant,
 } from "./grants.ts";
 import { passcodeProblem } from "./access.ts";
 
@@ -84,7 +84,13 @@ export function validateAccess(a: unknown): AccessFile {
     try { if (g.link !== undefined && fromB64url(g.link.secret).length !== LINK_SECRET_BYTES) bad("has a malformed link"); } catch { bad("has a malformed link"); }
     if (g.passcode !== undefined && (typeof g.passcode.value !== "string" || g.passcode.value.trim().length < 12)) bad("has a passcode shorter than 12 characters");
     if (typeof g.scope !== "object" || g.scope === null) bad("has no scope");
-    if (!normalizeName(g.name)) bad("has an empty name");
+    if (g.scope.ids !== undefined && (!Array.isArray(g.scope.ids) || g.scope.ids.some((id) => typeof id !== "string" || !id))) bad("has malformed snapshot identifiers");
+    if (!g.shareCode && !normalizeName(g.name)) bad("has an empty name");
+    if (g.shareCode !== undefined && (!SHARE_CODE.test(g.shareCode) || g.owner)) bad("has a malformed share code");
+    if (g.item !== undefined && (!g.shareCode || typeof g.item !== "object" || g.item === null ||
+      typeof g.item.label !== "string" || typeof g.item.path !== "string" ||
+      typeof g.item.folder !== "boolean" || typeof g.item.includeLater !== "boolean" ||
+      !isSafePath(g.item.folder ? `${g.item.path}/_.md` : g.item.path))) bad("has malformed item metadata");
     // Every passcode in force must resist offline guessing, generated or not: `generated` is just a field
     // in access.json, so it can't vouch for the value. The same rule as the app (passcodeProblem: 16 or
     // more characters, or 3 or more different words, then the strength estimate), so a hand-edited file
@@ -98,6 +104,8 @@ export function validateAccess(a: unknown): AccessFile {
   }
   if (f.grants.filter((g) => g.owner && !g.revokedAt).length > 1) throw new Error("private/access.json: more than one owner grant");
   if (new Set(f.grants.map((g) => g.id)).size !== f.grants.length) throw new Error("private/access.json: two grants have the same ID.");
+  const codes = f.grants.flatMap((g) => g.shareCode ? [g.shareCode] : []);
+  if (new Set(codes).size !== codes.length) throw new Error("private/access.json: two grants have the same share code.");
   return f;
 }
 
@@ -159,7 +167,8 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     // Every grant's secrets, in force or not, are checked for leaks along with the private text.
     for (const g of access.grants) {
       secrets.push(...[g.link?.secret, g.passcode?.value, g.passcodeKey].filter((s): s is string => !!s));
-      if (!g.owner) names.push(g.name);
+      if (!g.owner && !g.shareCode) names.push(g.name);
+      if (g.item) names.push(g.item.label, ...g.item.path.split("/"));
     }
     const root = join(o.private, "notes");
     const files = await markdownFiles(root);
@@ -176,7 +185,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     const salt = access.nameSalt ?? toB64url(randomBytes(SALT_BYTES));
     nameSalt = salt;
     const lookups = new Map<Grant, string>();
-    for (const g of shared) if (g.passcode) lookups.set(g, await nameLookup(salt, g.name));
+    for (const g of shared) if (g.passcode && !g.shareCode) lookups.set(g, await nameLookup(salt, g.name));
     if (new Set(lookups.values()).size !== lookups.size) throw new Error("private/access.json: two active audiences have the same name.");
 
     // Each note is sealed once this build, with its own fresh key, and listed by every manifest that opens it.
@@ -194,7 +203,11 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     const sealManifest = async (g: Grant) => {
       const scope = grantScope(g);
       const opens = notes.filter((n) => inScope(scope, n));
-      const shown = scopedPaths(scope, opens.map((n) => n.path));
+      if (g.item && g.scope.ids?.length) {
+        const ids = new Set(opens.map((n) => n.id));
+        if (ids.size !== opens.length) throw new Error("private/access.json: shared snapshot identifiers are duplicated.");
+      }
+      const shown = scopedPaths(g.item?.folder ? { ...scope, folders: [g.item.path] } : scope, opens.map((n) => n.path));
       const manifest: Manifest = { owner: o.owner, notes: [] };
       for (const n of opens) manifest.notes.push({ ...(await sealNote(n)), path: shown.get(n.path)! });
       const kid = randomId(), key = randomBytes(KEY_BYTES);
@@ -218,8 +231,11 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
         await put(at(linkKeyringPath(build, g.id)), await sealKeyring(await deriveLinkBits(fromB64url(g.link.secret), s, g.id), s, build, payload, LINK_KDF, keyringRole.link(g.id)));
       }
       if (g.passcode) {
-        const s = await keyringSaltFor(grantSalt, "passcode"), lookup = lookups.get(g)!;
-        await put(at(passcodeKeyringPath(build, lookup)), await sealKeyring(await derivePasscodeBits(g.passcode.value, s), s, build, payload, KDF, keyringRole.passcode(lookup)));
+        const s = await keyringSaltFor(grantSalt, "passcode");
+        const ref = g.shareCode ?? lookups.get(g)!;
+        const path = g.shareCode ? codeKeyringPath(build, ref) : passcodeKeyringPath(build, ref);
+        const role = g.shareCode ? keyringRole.code(ref) : keyringRole.passcode(ref);
+        await put(at(path), await sealKeyring(await derivePasscodeBits(g.passcode.value, s), s, build, payload, KDF, role));
       }
       shares++;
     }

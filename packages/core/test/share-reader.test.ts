@@ -47,6 +47,22 @@ function setup(over: Partial<ShareSource> = {}, stored?: { session: unknown; rem
 const text = (blocks: unknown) => JSON.stringify(blocks);
 
 describe("share reader (SHR-10)", () => {
+  it("opens with one access code, preserving its secret and keeping the named route separate", async () => {
+    const openAccessCode = vi.fn(async () => share(["drafts/Plan.md"]));
+    const { r, source } = setup({ openAccessCode });
+    await r.start(undefined, "");
+    expect(r.state.legacy).toBe(false);
+    const code = "k7qm-4drp Mixed CASE  exact words";
+    await r.submitCode(code, true);
+    expect(openAccessCode).toHaveBeenCalledWith(code);
+    expect(source.openPasscode).not.toHaveBeenCalled();
+    expect(r.state.phase).toBe("note");
+    r.signOut();
+    r.setLegacy(true);
+    expect(r.state.legacy).toBe(true);
+    await r.submit("Sam", "orbit maple quiet river");
+    expect(r.state.phase).toBe("note");
+  });
   it("with no link and no session, shows the name and passcode form", async () => {
     const { r } = setup();
     expect(r.state.phase).toBe("opening");

@@ -38,12 +38,16 @@ export interface AccessBridge {
   /** Saves the invite template to `private/access-message.json`, or with null goes back to the default (D-143). */
   setTemplate(template: string | null): Promise<AccessListing>;
   /** One audience's link and passcode, for its open invite only (review L2). */
-  reveal(id: string): Promise<{ link?: string; passcode?: string }>;
+  reveal(id: string): Promise<{ link?: string; passcode?: string; accessCode?: string }>;
+  prepareWords?(): Promise<{ id: string; value: string }>;
+  ready?(id: string): Promise<void>;
+  cancelReady?(id: string): Promise<void>;
+  systemShare?(id: string, invite: { template: string }): Promise<void>;
   /**
    * Copies the link, the passcode, or the invite: the shell fills in the invite's link, passcode, and
    * site itself, and clears the clipboard after 90 s (review L1).
    */
-  copy(id: string, what: "invite" | "link" | "passcode", invite?: { template: string; values: InviteValues }): Promise<void>;
+  copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues }): Promise<void>;
 }
 
 // ---- the invite (SHR-09) ----

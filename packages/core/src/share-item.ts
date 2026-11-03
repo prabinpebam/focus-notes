@@ -4,8 +4,9 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import type { AccessBridge } from "./share-manage.ts";
 import { findNode, joinPath, rootOf, stemOf, type TreeNode } from "./workspace.ts";
-import { passcodeProblem } from "@focus-notes/seal/access";
+import { expiryFrom, expiryUntil, itemInviteText, passcodeProblem, type ExpiryChoice } from "@focus-notes/seal/access";
 
 interface ReviewRow {
   id: string;
@@ -39,20 +40,32 @@ export interface ItemShareState {
   folders: number;
   contents: readonly ReviewRow[];
   problem: string;
+  id: string;
+  busy: boolean;
+  ready: boolean;
+  generated: string;
+  wordsId: string;
+  status: string;
+  information: string;
+  reviewFocus: string;
 }
 
 export const ITEM_SHARE_CLOSED: ItemShareState = {
   open: false, path: "", name: "", folder: false, link: true, passcode: false,
   later: false, expiry: "30d", until: "", mode: "generate", own: "",
   reviewOpen: false, expanded: [], counting: false, notes: 0, folders: 0, contents: [], problem: "",
+  id: "", busy: false, ready: false, generated: "", wordsId: "", status: "", information: "", reviewFocus: "",
 };
 
-export function registerItemShare({ store, commands, viewModels, catalog, tracker }: {
+export function registerItemShare({ store, commands, viewModels, catalog, tracker, access, platform, flush }: {
   store: Store<AppState>;
   commands: CommandRegistry<AppState>;
   viewModels: ViewModelRegistry<AppState>;
   catalog: MessageCatalog;
   tracker: TaskTracker;
+  access: AccessBridge | undefined;
+  platform: string;
+  flush: () => Promise<boolean>;
 }) {
   const state = () => store.state.ui.share.item;
   const set = (patch: Partial<ItemShareState>) => store.update((s) => ({
@@ -61,6 +74,18 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   let generation = 0;
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "command.note.share", run });
+  const template = () => ["title", "link", "code", "until", "forward", "copies"].map((key) =>
+    catalog.format(`share.item.information.${key}`, { title: "{title}", link: "{link}", site: "{site}", accessCode: "{accessCode}", expires: "{expires}" })).join("\n");
+  const prepareWords = async () => {
+    if (!access?.prepareWords) throw new Error(catalog.format("share.item.unavailable"));
+    const current = generation;
+    try {
+      const words = await tracker.run("share.item.words", "share.item.wordsPreparing", () => access.prepareWords!());
+      if (current === generation) set({ wordsId: words.id, generated: words.value });
+    } catch {
+      if (current === generation) set({ problem: catalog.format("share.item.wordsFailed") });
+    }
+  };
 
   reg<{ path?: string }>("share.item.open", async ({ path }) => {
     const tree = store.state.workspace.tree;
@@ -79,7 +104,15 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         share: { ...s.ui.share, note: { open: false } },
       },
     }));
-    if (node.kind !== "folder") return;
+    if (access) {
+      try {
+        const listing = await tracker.run("share.item.prepare", "share.item.preparing", () => access.load());
+        if (current === generation) store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+      } catch {
+        if (current === generation) set({ problem: catalog.format("share.item.unavailable") });
+      }
+    }
+    if (node.kind !== "folder" || current !== generation) return;
     try {
       await tracker.run("share.item.count", "share.dialog.counting", async () => {
         const contents: ReviewRow[] = [];
@@ -105,10 +138,17 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     }
   });
   reg<{ open: boolean }>("share.item.setOpen", ({ open }) => {
-    if (!open) { generation++; set({ ...ITEM_SHARE_CLOSED }); }
+    if (!open) {
+      const id = state().id;
+      generation++; set({ ...ITEM_SHARE_CLOSED });
+      if (id && access?.cancelReady) return access.cancelReady(id);
+    }
   });
   reg("share.item.toggleLink", () => set({ link: !state().link }));
-  reg("share.item.togglePasscode", () => set({ passcode: !state().passcode }));
+  reg("share.item.togglePasscode", async () => {
+    set({ passcode: !state().passcode });
+    if (state().passcode && !state().generated) await prepareWords();
+  });
   reg("share.item.toggleLater", () => set({ later: !state().later }));
   reg<{ value: string }>("share.item.setExpiry", ({ value }) => {
     if (["7d", "30d", "90d", "date", "never"].includes(value)) set({ expiry: value });
@@ -119,10 +159,75 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   });
   reg<{ value: string }>("share.item.setOwn", ({ value }) => set({ own: value }));
   reg("share.item.review", () => set({ reviewOpen: true }));
+  reg<{ id: string }>("share.item.focusReview", ({ id }) => set({ reviewFocus: id }));
+  reg("share.item.newWords", prepareWords);
   reg<{ open: boolean }>("share.item.setReviewOpen", ({ open }) => set({ reviewOpen: open }));
   reg<{ id: string; expanded: boolean }>("share.item.expand", ({ id, expanded }) => set({
     expanded: expanded ? [...new Set([...state().expanded, id])] : state().expanded.filter((p) => p !== id),
   }));
+  reg<{ what: string }>("share.item.action", async ({ what }) => {
+    if (!["primary", "link", "accessCode", "information", "passcode"].includes(what)) throw new Error("Invalid share action");
+    const d = state(), current = generation;
+    const root = rootOf(store.state.workspace.tree, d.path);
+    if (!d.open || d.busy) return;
+    const invalid = !access?.ready ? "share.item.unavailable" : !findNode(store.state.workspace.tree, d.path) ? "share.state.deleted"
+      : root?.id !== "private" ? "share.item.privateOnly" : d.counting ? "share.dialog.counting"
+      : !d.link && !d.passcode ? "share.dialog.keepOne"
+      : d.passcode && d.mode === "own" && passcodeProblem(d.own) ? "share.item.passcodeInvalid" : undefined;
+    if (invalid) { set({ problem: catalog.format(invalid) }); return; }
+    const shell = access!;
+    set({ busy: true, problem: "", status: catalog.format("share.item.creating") });
+    try {
+      let id = d.id;
+      if (!id) {
+        const expiresAt = d.expiry === "date" ? expiryUntil(d.until) : expiryFrom(d.expiry as ExpiryChoice);
+        if (expiresAt === undefined) throw new Error("access:expiry.invalid");
+        const relative = (path: string) => path.slice(root!.path.length).split(/[\\/]/).filter(Boolean).join("/");
+        const result = await tracker.run("share.item.create", "share.item.creating", async () => {
+          if (!(await flush())) throw new Error("access:save.failed");
+          return shell.apply({
+            op: "createItem", item: { path: relative(d.path), label: d.name, folder: d.folder, includeLater: d.later },
+            notes: d.folder ? d.contents.filter((row) => !row.folder).map((row) => relative(row.id)) : [relative(d.path)],
+            link: d.link, expiresAt,
+            ...(d.passcode ? { passcode: d.mode === "own" ? { value: d.own } : { generate: true } } : {}),
+            ...(d.passcode && d.mode === "generate" && d.wordsId ? { wordsId: d.wordsId } : {}),
+          });
+        });
+        id = result.id;
+        if (current !== generation) return;
+        store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: result } } }));
+        set({ id });
+      }
+      if (!d.ready) {
+        set({ status: catalog.format("share.item.publishing") });
+        await tracker.run("share.item.publish", "share.item.publishing", () => shell.ready!(id));
+      }
+      if (current !== generation) return;
+      const secret = await tracker.run("share.item.reveal", "share.item.preparing", () => shell.reveal(id));
+      if (current !== generation) return;
+      const granted = store.state.ui.share.listing?.grants.find((g) => g.id === id);
+      const info = itemInviteText(template(), {
+        title: d.name, ...secret, site: store.state.ui.share.listing?.site ? new URL("s/", store.state.ui.share.listing.site).href : undefined,
+        ...(granted?.expiresAt ? { expires: new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(granted.expiresAt)) } : {}),
+      });
+      set({ ready: true, information: info, generated: secret.passcode ?? state().generated });
+      await tracker.run("share.item.handoff", "share.item.handingOff", async () => {
+        if (what === "primary" && platform === "macos") {
+          if (!shell.systemShare) throw new Error("access:sheet.unavailable");
+          await shell.systemShare(id, { template: template() });
+        } else await shell.copy(id, what === "primary" ? "information" : what as "link" | "accessCode" | "information" | "passcode", { template: template() });
+      });
+      if (current === generation) set({ status: catalog.format(what === "primary" && platform === "macos" ? "share.item.sheetOpen" : `share.item.copied.${what === "primary" ? "information" : what}`) });
+    } catch (error) {
+      if (current === generation) {
+        const code = /access:([A-Za-z.]+)/.exec(error instanceof Error ? error.message : "")?.[1];
+        const message = code === "offline" ? "share.item.offline" : code === "signedOut" || code === "auth" ? "share.item.signedOut"
+          : code === "scope.changed" ? "share.item.contentsChanged" : code === "notReady" ? "share.item.notReady"
+          : code === "expiry.invalid" ? "share.item.expiryInvalid" : "share.item.failed";
+        set({ problem: catalog.format(message), status: "" });
+      }
+    } finally { if (current === generation) set({ busy: false }); }
+  });
 
   const STR = { type: "string" as const }, BOOL = { type: "boolean" as const }, NUM = { type: "number" as const };
   const OPTION = { type: "object" as const, properties: { id: STR, label: STR } };
@@ -130,6 +235,10 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     id: "vm.shareItem",
     schema: { type: "object", properties: {
       open: BOOL, title: STR, name: STR, folder: BOOL, icon: STR, detail: STR, badge: STR,
+      id: STR, busy: BOOL, ready: BOOL, generated: STR, wordsId: STR, status: STR, information: STR, controlsLocked: BOOL,
+      primaryLabel: STR, macos: BOOL, reviewFocus: STR,
+      lines: { type: "array", items: { type: "object", properties: { id: STR, text: STR } } },
+      actionsDisabled: BOOL, actionReason: STR, controlReason: STR,
       notes: NUM, folders: NUM, counting: BOOL, countingVisible: BOOL, deleted: BOOL, problem: STR, hasProblem: BOOL,
       link: BOOL, passcode: BOOL, later: BOOL, laterDetail: STR, noMethods: BOOL, blockedReason: STR,
       expiry: STR, expiries: { type: "array", items: OPTION }, until: STR, date: BOOL, never: BOOL,
@@ -140,11 +249,13 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       } } },
     } },
     setters: { expiry: "share.item.setExpiry", until: "share.item.setUntil", mode: "share.item.setMode", own: "share.item.setOwn" },
-    reads: ["ui.share.item", "workspace.tree", "tasks"],
+    reads: ["ui.share.item", "ui.share.listing", "workspace.tree", "tasks"],
     select: (s) => {
       const d = s.ui.share.item;
       const root = rootOf(s.workspace.tree, d.path);
       const deleted = d.open && (!root || !findNode(s.workspace.tree, d.path));
+      const blockedReason = deleted ? catalog.format("share.state.deleted") : root?.id !== "private" ? catalog.format("share.item.privateOnly")
+        : !d.link && !d.passcode ? catalog.format("share.dialog.keepOne") : d.counting ? catalog.format("share.dialog.counting") : "";
       const expanded = new Set(d.expanded);
       const visible: ReviewRow[] = [];
       let hiddenBelow = Number.POSITIVE_INFINITY;
@@ -154,7 +265,13 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         visible.push({ ...row, expanded: expanded.has(row.id) });
       }
       return {
-        ...d, title: catalog.format("share.item.title", { name: d.name }),
+        ...d, lines: d.information ? d.information.split("\n").map((text, id) => ({ id: String(id), text })) : [],
+        controlsLocked: d.busy || Boolean(d.id), macos: platform === "macos",
+        controlReason: catalog.format(d.id ? "share.item.controlsSaved" : "share.item.creating"),
+        actionsDisabled: d.busy || Boolean(blockedReason),
+        actionReason: d.busy ? catalog.format("share.item.publishing") : blockedReason,
+        primaryLabel: catalog.format("share.dialog.primary", { system: platform }),
+        title: catalog.format("share.item.title", { name: d.name }),
         countingVisible: d.counting && s.tasks.some((t) => t.target === "share.item.count" && t.phase === "on"),
         icon: d.folder ? "folder" : "document", deleted,
         badge: catalog.format(deleted ? "share.item.deleted" : root?.id === "public" ? "share.item.public" : "share.dialog.private"),
@@ -163,7 +280,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         hasProblem: Boolean(d.problem),
         laterDetail: catalog.format("share.dialog.later.detail", { on: d.later ? "yes" : "no" }),
         noMethods: !d.link && !d.passcode,
-        blockedReason: deleted ? catalog.format("share.state.deleted") : !d.link && !d.passcode ? catalog.format("share.dialog.keepOne") : "",
+        blockedReason,
         date: d.expiry === "date", never: d.expiry === "never",
         expiries: ["7d", "30d", "90d", "date", "never"].map((id) => ({ id, label: catalog.format(id === "date" ? "share.item.date" : id === "never" ? "share.item.never" : `share.manage.expiry.${id}`) })),
         modes: ["generate", "own"].map((id) => ({ id, label: catalog.format(`share.item.${id}`) })),

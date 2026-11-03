@@ -10,6 +10,9 @@ export interface Grant {
   id: string;
   /** The audience. The vault's grant is named "You". */
   name: string;
+  /** New item shares use a random code, never a lookup derived from this private label. */
+  shareCode?: string;
+  item?: { path: string; label: string; folder: boolean; includeLater: boolean; notePaths?: string[] };
   owner?: boolean;
   salt: string;
   /** PBKDF2-SHA256 of the vault passphrase (format.derivePasscodeBits). The passphrase is never stored. */
@@ -24,7 +27,7 @@ export interface Grant {
   revokedAt?: string | null;
 }
 /** Note IDs or paths, folder prefixes (which include notes added later), or every private note. */
-export interface GrantScope { all?: boolean; notes?: string[]; folders?: string[] }
+export interface GrantScope { ids?: string[]; all?: boolean; notes?: string[]; folders?: string[] }
 export interface AccessFile { version: 1; nameSalt?: string; grants: Grant[] }
 
 /** Neither withdrawn nor expired. */
@@ -49,6 +52,7 @@ const folderPrefix = (f: string) => f.replace(/^\/+/, "").replace(/\/*$/, "/");
 /** Whether a grant's scope opens this note: by its ID or path, under a shared folder, or everything. */
 export function inScope(scope: GrantScope, note: { path: string; id?: string | undefined }): boolean {
   if (scope.all) return true;
+  if (note.id !== undefined && scope.ids?.includes(note.id)) return true;
   if (scope.notes?.some((n) => n === note.path || (note.id !== undefined && n === note.id))) return true;
   return scope.folders?.some((f) => note.path.startsWith(folderPrefix(f))) ?? false;
 }
@@ -118,6 +122,7 @@ export const keyringRole = {
   vault: "vault",
   link: (id: string) => `link|${id}`,
   passcode: (lookup: string) => `passcode|${lookup}`,
+  code: (code: string) => `code|${code}`,
 } as const;
 
 // ---- link keys ----
@@ -170,3 +175,18 @@ export function parseShareFragment(hash: string): { id: string; secret: string }
   return GRANT_ID.test(id) && LINK_SECRET.test(secret) && fromB64url(secret).length === LINK_SECRET_BYTES ? { id, secret } : undefined;
 }
 export const passcodeKeyringPath = (build: string, lookup: string) => `_access/${build}/p/${lookup}.json`;
+export const SHARE_CODE = /^[A-HJ-NP-Z2-9]{8}$/;
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export function newShareCode(): string {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
+  return [...bytes].map((b) => CODE_ALPHABET[b & 31]).join("");
+}
+export const displayShareCode = (code: string) => `${code.slice(0, 4)}-${code.slice(4)}`;
+export const codeKeyringPath = (build: string, code: string) => `_access/${build}/c/${code}.json`;
+/** Only the identifier is normalized. Consume exactly one separator; retain the secret verbatim. */
+export function parseAccessCode(value: string): { code: string; passcode: string } | undefined {
+  const match = /^([a-zA-Z2-9]{4})-?([a-zA-Z2-9]{4})[ \t]([\s\S]+)$/.exec(value);
+  if (!match) return undefined;
+  const code = `${match[1]}${match[2]}`.toUpperCase();
+  return SHARE_CODE.test(code) ? { code, passcode: match[3]! } : undefined;
+}

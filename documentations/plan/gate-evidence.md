@@ -34,7 +34,18 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | `pnpm typecheck` | Passed all workspace packages. |
 | `node E:\Projects\side-projects\focus-notes\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed the pinned Slate runtime check. |
 
-**Open:** generated words; snapshot/following-scope sealing and newer notes; publication-ready bridge and the four platform actions; usable message/access-code/template matrix; Share information/history; first-share/remote states; bounded 10,000-visible-row review; complete check/typecheck; security/design/accessibility reviews; exact-head Windows CI; candidate visual comparison. MP.6/26 are partial, MP.17/18/19 unproven. The old Share popover's journey expectations still need deliberate replacement as the completed item-first flow lands; this candidate must not fast-forward main yet.
+**Second increment, locally checked before worker rollover:** generated words, opaque code readers, identity-based snapshots, real deployment readiness, clipboard/native adapters and actual Share information are now wired. Missing note IDs are inserted through the existing expected-content atomic writer; duplicate selected IDs are refused. No name alias is emitted for a new access code. The configured production site must remain HTTPS: the journey initially failed because its HTTP URL was discarded by setup-cache validation. Its corrected HTTPS fixture uses an in-test loopback transport and the actual publisher/reader; production validation was not weakened.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\core\test\share-reader.test.ts packages\seal\test\item-sharing.test.ts apps\desktop\test\share-access.test.ts apps\desktop\test\share-publication.test.ts` | Passed 57 tests across five files: membership recheck, ID preservation/duplicates, exact passcode parsing, snapshot/following scopes, independent grants, enabled-method template validation, retry, cancellation and timeout. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1 -g "SHR-16:"` | Passed: real sealed deployment withheld until after first action; no early clipboard write; both methods open; reopening creates another grant without changing the first. |
+| `pnpm check` | Passed after regenerating the coupled DatePicker read-only component inventory; 633 documents, 78 components, 563 commands. |
+| `pnpm typecheck` | Passed every workspace package. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed before the final fixture-only correction. |
+| `pwsh tools\dev\close-test-apps.ps1 -OnlyPid <journey main PID>` | Ran in finally on failed and passing attempts; fixture HTTP server also closed. |
+
+**Open:** Shared before/withdraw/newer-note Add them; bounded 10,000-visible-row review; richer elapsed/progress and signed-out/deleted recovery; command-layer saved-control guards; coupled old journey expectations; security/design/accessibility reviews; exact-head Windows CI; new candidate comparison. MP.6/17/18/19/26 remain partial. Change…, template editing, first-site setup and public-item shares are coordinator-approved exclusions, not completed evidence. The existing candidate at `focus-notes-work\preview\candidates\9b8beb3b` is draft-only and closed; it does not contain this second increment. This branch must not fast-forward main yet.
 
 ### Store 1.1.0 preparation
 

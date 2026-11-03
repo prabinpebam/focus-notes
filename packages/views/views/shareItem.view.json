@@ -60,6 +60,8 @@
                   "label": { "t": "share.dialog.later" },
                   "description": { "get": "vm.shareItem.laterDetail" },
                   "checked": { "get": "vm.shareItem.later" },
+                  "disabled": { "get": "vm.shareItem.controlsLocked" },
+                  "disabledReason": { "get": "vm.shareItem.controlReason" },
                   "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" }
                 },
                 "on": { "change": { "run": "share.item.toggleLater" } }
@@ -70,7 +72,8 @@
                 "props": {
                   "label": { "t": "share.dialog.expires" },
                   "options": { "get": "vm.shareItem.expiries" },
-                  "value": { "bind": "vm.shareItem.expiry" }
+                  "value": { "bind": "vm.shareItem.expiry" },
+                  "readOnly": { "get": "vm.shareItem.controlsLocked" }
                 }
               },
               {
@@ -79,7 +82,8 @@
                 "props": {
                   "label": { "t": "share.dialog.expiresOn" },
                   "description": { "t": "share.dialog.expiresOn.detail" },
-                  "value": { "bind": "vm.shareItem.until" }
+                  "value": { "bind": "vm.shareItem.until" },
+                  "readOnly": { "get": "vm.shareItem.controlsLocked" }
                 }
               },
               {
@@ -98,6 +102,8 @@
                       "label": { "t": "share.dialog.link" },
                       "description": { "t": "share.dialog.link.detail" },
                       "checked": { "get": "vm.shareItem.link" },
+                      "disabled": { "get": "vm.shareItem.controlsLocked" },
+                      "disabledReason": { "get": "vm.shareItem.controlReason" },
                       "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" }
                     },
                     "on": { "change": { "run": "share.item.toggleLink" } }
@@ -108,6 +114,8 @@
                       "label": { "t": "share.dialog.passcode" },
                       "description": { "t": "share.dialog.passcode.detail" },
                       "checked": { "get": "vm.shareItem.passcode" },
+                      "disabled": { "get": "vm.shareItem.controlsLocked" },
+                      "disabledReason": { "get": "vm.shareItem.controlReason" },
                       "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" }
                     },
                     "on": { "change": { "run": "share.item.togglePasscode" } }
@@ -129,8 +137,23 @@
                     "props": {
                       "label": { "t": "share.dialog.passType" },
                       "options": { "get": "vm.shareItem.modes" },
-                      "value": { "bind": "vm.shareItem.mode" }
+                      "value": { "bind": "vm.shareItem.mode" },
+                      "readOnly": { "get": "vm.shareItem.controlsLocked" }
                     }
+                  },
+                  {
+                    "type": "Stack",
+                    "when": { "expr": { "!": { "get": "vm.shareItem.ownMode" } } },
+                    "props": { "gap": "s" },
+                    "children": [
+                      { "type": "Text", "props": { "value": { "get": "vm.shareItem.generated" } } },
+                      { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+                        { "type": "Button", "props": { "label": { "t": "share.dialog.copyPasscode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                          "on": { "press": { "run": "share.item.action", "args": { "what": "passcode" } } } },
+                        { "type": "Button", "props": { "label": { "t": "share.dialog.newWords" }, "disabled": { "get": "vm.shareItem.controlsLocked" }, "disabledReason": { "get": "vm.shareItem.controlReason" } },
+                          "on": { "press": { "run": "share.item.newWords" } } }
+                      ] }
+                    ]
                   },
                   {
                     "type": "Stack",
@@ -143,7 +166,8 @@
                           "label": { "t": "share.dialog.own" },
                           "type": "password",
                           "description": { "t": "share.dialog.own.rule" },
-                          "value": { "bind": "vm.shareItem.own" }
+                          "value": { "bind": "vm.shareItem.own" },
+                          "readOnly": { "get": "vm.shareItem.controlsLocked" }
                         }
                       },
                       {
@@ -162,6 +186,29 @@
                 "type": "Text",
                 "when": { "get": "vm.shareItem.deleted" },
                 "props": { "value": { "t": "share.state.deleted" }, "tone": "danger" }
+              },
+              {
+                "type": "Inline",
+                "props": { "gap": "s", "wrap": true },
+                "children": [
+                  { "type": "Button", "props": { "label": { "get": "vm.shareItem.primaryLabel" }, "variant": "primary", "busy": { "get": "vm.shareItem.busy" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                    "on": { "press": { "run": "share.item.action", "args": { "what": "primary" } } } },
+                  { "type": "Text", "props": { "value": { "t": "share.dialog.copyGroup" }, "tone": "muted", "role": "secondary" } },
+                  { "type": "Button", "when": { "get": "vm.shareItem.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                    "on": { "press": { "run": "share.item.action", "args": { "what": "link" } } } },
+                  { "type": "Button", "when": { "get": "vm.shareItem.passcode" }, "props": { "label": { "t": "share.dialog.copyCode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                    "on": { "press": { "run": "share.item.action", "args": { "what": "accessCode" } } } },
+                  { "type": "Button", "when": { "get": "vm.shareItem.macos" }, "props": { "label": { "t": "share.dialog.copyInfo" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                    "on": { "press": { "run": "share.item.action", "args": { "what": "information" } } } }
+                ]
+              },
+              { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.status" }, ""] } }, "props": { "value": { "get": "vm.shareItem.status" }, "announce": true } },
+              {
+                "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "s" },
+                "children": [
+                  { "type": "Heading", "props": { "value": { "t": "share.dialog.preview" }, "level": "3" } },
+                  { "each": { "get": "vm.shareItem.lines" }, "as": "line", "key": "line.id", "render": { "type": "Text", "props": { "value": { "get": "line.text" } } }, "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } } }
+                ]
               }
             ]
           }
@@ -188,8 +235,11 @@
               {
                 "type": "FileTree",
                 "id": "shareContentsTree",
-                "props": { "label": { "t": "share.review.tree" }, "items": { "get": "vm.shareItem.items" } },
-                "on": { "expand": { "run": "share.item.expand", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } } }
+                "props": { "label": { "t": "share.review.tree" }, "items": { "get": "vm.shareItem.items" }, "focusId": { "get": "vm.shareItem.reviewFocus" } },
+                "on": {
+                  "select": { "run": "share.item.focusReview", "args": { "id": { "get": "event.id" } } },
+                  "expand": { "run": "share.item.expand", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } }
+                }
               },
               {
                 "type": "Inline",
