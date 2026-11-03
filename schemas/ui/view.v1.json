@@ -326,6 +326,9 @@
           "$ref": "#/$defs/c_ProjectMark"
         },
         {
+          "$ref": "#/$defs/c_ImageFrame"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -6488,6 +6491,172 @@
               "$ref": "#/$defs/actions"
             }
           }
+        }
+      }
+    },
+    "c_ImageFrame": {
+      "type": "object",
+      "description": "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Fit height and Rounded corners as saved choices, a token backdrop behind transparency, and a selection ring. In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ImageFrame"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "alt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "mode": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "column",
+                    "wide",
+                    "actual",
+                    "thumb"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "fitHeight": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "rounded": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "hint": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "crop": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "rotation": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "0",
+                    "90",
+                    "180",
+                    "270"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "src"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
         }
       }
     },

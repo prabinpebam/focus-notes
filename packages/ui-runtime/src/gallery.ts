@@ -199,6 +199,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     // An uploaded project logo after sanitizing (D-294): a passive SVG as a data URL.
     logoSrc: mockData.logoSrc,
     initials: "W",
+    imageSrc: mockData.harbourSrc,
     // The product site's theme swatches (SiteThemeShowcase, D-176).
     siteThemes: [
       { id: "paper", label: "Paper", scheme: "light", src: "#gallery", alt: "Paper" },
@@ -258,6 +259,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         href: { type: "string" },
         logoSrc: { type: "string" },
         initials: { type: "string" },
+        imageSrc: { type: "string" },
         siteThemes: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, scheme: { type: "string" }, src: { type: "string" }, alt: { type: "string" } } } },
         colorValues: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         snapLayouts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
@@ -275,7 +277,7 @@ function schemaOf(v: unknown): Record<string, unknown> {
   if (Array.isArray(v)) {
     const props: Record<string, unknown> = {};
     for (const item of v) if (item && typeof item === "object" && !Array.isArray(item)) Object.assign(props, (schemaOf(item) as { properties: object }).properties);
-    return { type: "array", items: v.length && typeof v[0] !== "object" ? schemaOf(v[0]) : { type: "object", properties: props } };
+    return { type: "array", items: v.length && (typeof v[0] !== "object" || Array.isArray(v[0])) ? schemaOf(v[0]) : { type: "object", properties: props } };
   }
   if (v && typeof v === "object") return { type: "object", properties: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, schemaOf(x)])) };
   return { type: typeof v === "number" ? "number" : typeof v === "boolean" ? "boolean" : "string" };
