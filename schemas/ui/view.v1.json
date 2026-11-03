@@ -7071,6 +7071,23 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "variant": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "compact",
+                    "fontTile",
+                    "themeTile"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [

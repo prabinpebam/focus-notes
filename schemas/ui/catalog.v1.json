@@ -3070,6 +3070,16 @@
         "selected": {
           "kind": "boolean",
           "default": false
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "compact",
+            "fontTile",
+            "themeTile"
+          ],
+          "default": "compact",
+          "description": "fontTile, themeTile: a fixed-size tile (pickerTileWidth × pickerTileHeight) whatever the value, its label small on top with a chevron, the value drawn (an Aa in the font, or the theme rendered small: canvas, text lines, accent) and named under it (owner, 3 November 18:48). App default draws what the app's own font or theme looks like."
         }
       },
       "events": {
@@ -3094,6 +3104,9 @@
         "font dyslexic",
         "font system",
         "font app",
+        "font tile",
+        "theme tile",
+        "theme tile, app default",
         "option selected",
         "theme paper",
         "theme sepia",
@@ -5397,6 +5410,8 @@
       "imageQuarterTurn",
       "fontCell",
       "swatch",
+      "pickerTileWidth",
+      "pickerTileHeight",
       "fontGridCell",
       "pillMax",
       "imageThumb",

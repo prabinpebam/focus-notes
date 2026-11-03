@@ -750,27 +750,17 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "l",
-                     "align": "center",
+                     "gap": "s",
+                     "align": "start",
                      "wrap": true
                     },
                     "children": [
                      {
-                      "type": "Inline",
+                      "type": "Stack",
                       "props": {
-                       "gap": "s",
-                       "align": "center"
+                       "gap": "none"
                       },
                       "children": [
-                       {
-                        "type": "Text",
-                        "props": {
-                         "value": {
-                          "t": "project.settings.fontShort"
-                         },
-                         "role": "label"
-                        }
-                       },
                        {
                         "type": "PopoverPanel",
                         "on": {
@@ -811,8 +801,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.app"
@@ -829,8 +820,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.mono"
@@ -847,8 +839,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.serif"
@@ -865,8 +858,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.sans"
@@ -883,8 +877,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.hyperlegible"
@@ -901,8 +896,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.dyslexic"
@@ -919,8 +915,9 @@
                               }
                              },
                              "props": {
+                              "variant": "fontTile",
                               "label": {
-                               "t": "project.settings.font"
+                               "t": "project.settings.fontShort"
                               },
                               "value": {
                                "t": "project.font.system"
@@ -1060,21 +1057,11 @@
                       ]
                      },
                      {
-                      "type": "Inline",
+                      "type": "Stack",
                       "props": {
-                       "gap": "s",
-                       "align": "center"
+                       "gap": "none"
                       },
                       "children": [
-                       {
-                        "type": "Text",
-                        "props": {
-                         "value": {
-                          "t": "project.settings.themeShort"
-                         },
-                         "role": "label"
-                        }
-                       },
                        {
                         "type": "PopoverPanel",
                         "on": {
@@ -1115,8 +1102,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.app"
@@ -1133,8 +1121,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.paper"
@@ -1151,8 +1140,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.sepia"
@@ -1169,8 +1159,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.harborLight"
@@ -1187,8 +1178,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.forestLight"
@@ -1205,8 +1197,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.contrastLight"
@@ -1223,8 +1216,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.ink"
@@ -1241,8 +1235,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.dusk"
@@ -1259,8 +1254,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.harborDark"
@@ -1277,8 +1273,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.forestDark"
@@ -1295,8 +1292,9 @@
                               }
                              },
                              "props": {
+                              "variant": "themeTile",
                               "label": {
-                               "t": "project.settings.theme"
+                               "t": "project.settings.themeShort"
                               },
                               "value": {
                                "t": "project.theme.contrastDark"
