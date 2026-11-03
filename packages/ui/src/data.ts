@@ -5,6 +5,8 @@ export interface CommandItem {
   icon?: string;
   shortcut?: string;
   checked?: boolean;
+  /** A check item over several things that disagree (images in a selection): a dash, and read as mixed. Choosing it sets them all on. */
+  mixed?: boolean;
   disabled?: boolean;
   /** Why it's disabled, shown in its tooltip. */
   reason?: string;

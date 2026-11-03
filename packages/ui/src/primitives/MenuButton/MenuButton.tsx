@@ -163,7 +163,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                     >
                       {({ isSelected }) => (
                         <>
-                          {checkable ? <span className={s.check} aria-hidden="true">{isSelected ? "✓" : ""}</span> : null}
+                          {checkable ? <span className={s.check} aria-hidden="true">{isSelected ? "✓" : item.mixed ? "–" : ""}</span> : null}
                           {/* The name is everything the item shows, its shortcut and an unavailable item's reason included (WCAG 2.5.3).
                               The spaces (unrendered between flex items) keep its words apart, so any part
                               that shows, when a short window clips the item, is still words of the name. */}
