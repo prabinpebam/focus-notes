@@ -142,7 +142,7 @@ Each answer is a proposed decision: it's the plan until the owner changes it.
 
 These are irreversible or change an owner decision, so they're proposed, not built, until the owner says:
 
-1. **What turning sharing on creates** (D-274): a *public* repository called *⟨project⟩-site* plus its GitHub Pages address, made the first time something in a project is shared or published. GitHub Pages needs a public repository on free accounts.
+1. **What turning sharing on/off does** (D-274): a *public* repository called *⟨project⟩-site* plus Pages, made on first share/publish; agree its name and whether Turn off removes that site repository. Notes remain private unless deliberately published; plaintext and encrypted Git history/copies cannot be recalled. Free-account Pages needs a public repository.
 2. **Shares without names** (D-285): a share is recorded by what it opens, never for whom, and readers use the link or an *access code* (a share code plus the passcode). This replaces the owner's earlier D-41 audiences by name.
 3. **Inviting people on personal accounts** (D-290): GitHub offers Read, Triage, Maintain and Admin only for repositories owned by an organization; on a personal account every collaborator can change everything. Offer invites there anyway, with that said plainly, or only for organization projects?
 4. **The site's default theme** (D-291): proposed *Paper*.
@@ -171,4 +171,4 @@ These are irreversible or change an owner decision, so they're proposed, not bui
 | Preview site in the app; choose site theme, fonts and default font size | [Published website → Preview site](../experience/published-site.md#preview-site) | D-297 |
 | Shared ciphertext in the public repository, never a public listing | [Repository and publishing](../architecture/repository-and-publishing.html#project-model) | D-299 |
 
-All of it is planned in stage **MP: Projects and simpler sharing** of the [roadmap](roadmap.md), as work packages WP-P.1 to WP-P.13 in the [implementation plan](implementation-plan.md#mp).
+All of it is planned in stage **MP: Projects and simpler sharing** of the [roadmap](roadmap.md), as work packages WP-P.1 to WP-P.15 in the [implementation plan](implementation-plan.md#mp).

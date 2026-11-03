@@ -2,6 +2,8 @@
 
 What could make Focus Notes fail, how likely and how bad each risk is, and what the plan does about it. Review this register at the end of every milestone.
 
+**3 November scope correction:** D-292 retires the browser-writing, demo, owner-vault and ease-in product completely. Older register entries mentioning them are historical, not continuing scope; only safe recovery of existing browser drafts remains. The current project/website risks and validation priorities are R-33 to R-43 below.
+
 > [!NOTE]
 > **TL;DR.** The biggest risks are **scope** (a large product for a small team), the **custom window management on Windows**, **Markdown round-trip fidelity** with a rich editor, **supply-chain trust** (users' *Deploy app* workflows deploy the project's released bundle with their secrets present), **share passcodes and the vault passphrase** that can be attacked offline, **notes kept only in a browser** being lost or never reaching GitHub, **onboarding friction** (Git, sign-in helpers, and unsigned builds for the desktop app, the only way to save to GitHub), **dependence on GitHub**, **the cost of running Git** for every view, and the **data-driven interface** turning into an inner platform or slowing feature work. Each has a mitigation and an early check in the roadmap.
 
@@ -51,12 +53,17 @@ What could make Focus Notes fail, how likely and how bad each risk is, and what 
 | R-38 | Standalone/Quick notes have no Git recovery safety net. | High | High | Local journal, crash recovery, exact atomic save, external-conflict handling and clear Local only state; never claim backed up. Reject destructive overwrite and preserve original on import. | MP, WP-P.8 |
 | R-39 | A short share code is mistaken for a strong passcode. | Medium | Severe | Code identifies the keyring only; generated passcode and existing strength/KDF rules remain. Offline guesses cannot be rate-limited; prove code collision handling and keep secret out of URLs/logs except intentional fragment link. | MP, WP-P.10 |
 | R-40 | Removing browser writing destroys existing browser-only drafts. | Medium | Severe | Inventory old stores and service workers, one-time local recovery/export, no automatic clearing. Seed old data and prove byte-equal recovery before retiring routes; retain recovery if migration is incomplete. | MP, WP-P.13 |
+| R-41 | Uploaded SVG becomes script, external data fetch or a malformed rendering workload in Electron/site. | Medium | Severe | Passive allowlist before rendering, byte/node/viewBox bounds, no-network sanitizer fixtures, exact safe preview and explicit refusal; never trust MIME/extension alone. | MP, WP-P.5 |
+| R-42 | Public ciphertext history is mistaken for revocable access. | High | High | D-299 states immutable history; explain copies/old keys cannot be recalled, keep fresh authenticated encryption and no plaintext/secret output. Versioned publication plan and security review before migration. | MP, WP-P.12 |
+| R-43 | Website index or preview accidentally reveals shared/private titles, excerpts, counts or logo metadata. | Medium | Severe | Filter before indexing; public-only preview default, explicit prospective-public target, allowlisted typography/assets, public/private/shared fixture leak scan. | MP, WP-P.14, WP-P.15 |
 
 | Assumption | Kind / impact / evidence | Criterion and cheapest check | Decision changed by failure |
 | --- | --- | --- | --- |
 | A-PRJ-01: windows isolate context without becoming clutter. | Usability / high / owner's stated preference, not tried | Owner identifies and reopens the right one among 3 labelled project windows without reading note text. Prototype review first. | Change identity/Projects navigation, not scope |
 | A-PRJ-02: Pinned folders and file-only Recent cover returning to work. | Usability / medium / source notes only | Owner finds a pinned folder and 2 same-title notes from their displayed places without help. | Revise location wording and grouping |
 | A-PRJ-03: local Quick notes can be found again. | Desirability/usability / high / source use case | Owner captures signed out, restarts and reopens it unaided from Recent. | Revise launch/default entry before wiring |
+| A-SITE-01: sections and excerpt lists scale better than the editor tree. | Usability / high / owner direction, not tried | Prototype 1,000 public articles/deep nesting; owner finds a nested article, every item reachable with ≤50 direct entries/page at 320 px. | Revise pagination/section disclosure, not public/private boundary |
+| A-SITE-02: exact-renderer preview lets the owner choose appearance without accidental publication. | Usability/safety / high / source request only | Owner changes font/size/theme, cancels once, applies once; can tell saved versus live, no request/upload/deploy occurs. | Revise saved/live status and controls before wiring |
 
 ## Rewrite assumptions to validate
 

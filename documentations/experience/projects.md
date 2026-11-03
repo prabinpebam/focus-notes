@@ -45,7 +45,7 @@ Work, a book and a club each need their own context. A folder groups notes insid
 <figcaption>Project and repository model (D-272, D-274, D-292). The dashed connection does not exist until the person enables sharing.</figcaption>
 </figure>
 
-The figure's text alternative is the model itself: a project window operates on one private repository; an optional public site receives selected plaintext publications or ciphertext shares. Local capture and external files belong to neither repository.
+The figure's text alternative is the model itself: a project window owns one private repository and may also edit its explicitly paired site's Public notes. The site receives selected plaintext publications or ciphertext shares. This authorized pair is one project context, not permission to browse any sibling repository. Only Publish/Make private crosses its two roots, with visibility confirmation; another project's roots/IDs are always rejected. Local capture and external files belong to neither repository.
 
 ## Opening a project
 
@@ -111,7 +111,9 @@ Existing workspaces are proposed to map private repository → project and insta
 
 ## Telling projects apart
 
-Settings → Project offers 12 contrast-safe accent presets and 24 generic preset SVG logos. Use licensed catalogue geometry in the implementation, not uploaded artwork or hand-drawn familiar icons. The choices live in `.focus-notes/project.json`. These preset counts and watermark opacity are proposed design parameters, not measured usability findings.
+Settings → Project offers 12 contrast-safe accent presets, 24 generic preset SVG logos and **Upload SVG…**. Use licensed catalogue geometry for presets, not hand-drawn familiar icons. Choices live in `.focus-notes/project.json`; sanitized uploaded assets stay in the private project. Preset counts and watermark opacity are proposed design parameters, not measured usability findings.
+
+Upload opens the OS file chooser; Cancel changes nothing. Before rendering, enforce D-294's size/node/viewBox limits and passive SVG allowlist: no scripts/events, foreignObject, HTML, external references, CSS imports, fonts or animation. Reject unsupported input explicitly (**“This SVG can't be used safely. Choose another or use a preset.”**), retaining the old logo and draft. Sanitization must not silently produce a misleading empty logo; show the exact safe result with Apply/Cancel. The untrusted original is never rendered or uploaded. Colour/Badge/Watermark/Off and accessible project-name fallback work for custom logos too. [Site preview](published-site.md#preview-site) makes a site-visible logo's public exposure explicit.
 
 | Choice | Result | What never changes |
 | --- | --- | --- |
@@ -133,6 +135,8 @@ No one-sided accent stripes. Use fills, full outlines and badges. A window is na
 **Quick notes** opens a local folder window under `Documents\Focus Notes\Quick notes`. The OS-resolved Documents location is used, not a hardcoded English directory. No sign-in, repository, share controls or implicit upload. If Documents is cloud-synced, state the detected service as the existing [notes-folder policy](notes-folder.md) does; “Local only” means no Focus Notes/GitHub backup, not a promise that another service never syncs it.
 
 New notes autosave with the ordinary journal and appear in Recent. A failed write keeps the dirty text in recovery and says **“Couldn't save this quick note. Choose another folder or try again.”** No success state until disk confirms. Later **Import into project…** chooses a project/folder and copies the note; keep the local original until the person explicitly deletes it. A folder missing at launch uses recovery, never a silently empty replacement.
+
+**Delete/restore without Git (D-298):** before deleting a note/folder, durably store exact bytes, identity, original path and deletion time in the app's device-local recovery store. Only then unlink/move to OS trash. Failed retention means no delete and a Retry error. Undo restores the whole operation, including links, without requiring Git; Recently deleted retains copies for 30 days across restarts. Restore uses the original folder, otherwise Quick notes root; a taken name is numbered, never overwritten. Confirm folders/counts as in Files. Recovery is not a second synced notes folder or a claim of remote backup. A standalone window has no Delete file action; externally missing files keep their journal and require an explicit save/restore destination.
 
 ## A file on its own
 
@@ -189,7 +193,7 @@ Projects/Recent rows have text names and location, keyboard arrows and Enter; Pi
 | ID | Choice | Serves | Why / alternative rejected |
 | --- | --- | --- | --- |
 | DD-PROJ-01 | One project per window; open, never replace | UC-PROJ-01, UC-PROJ-02, UC-PROJ-03 | Makes scope and history visible; tabs mix contexts |
-| DD-PROJ-02 | Name plus accent and optional preset logo | UC-PROJ-04 | Colour alone excludes users; whole-project themes override personal comfort |
+| DD-PROJ-02 | Name plus accent and optional preset/passive uploaded logo | UC-PROJ-04 | Colour alone excludes users; whole-project themes override personal comfort |
 | DD-PROJ-03 | File-only Recent and real folder/project pins | UC-PROJ-05, UC-PROJ-06 | Return to work without another favourites collection |
 | DD-PROJ-04 | Local Quick notes and standalone files are explicit non-project scopes | UC-PROJ-07, UC-PROJ-08 | No accidental import, upload or Git setup |
 | DD-PROJ-05 | Fixed destination picker, private-first creation | UC-FILE-12, UC-SHARE-08 | Cancel has no effect; first share explains public footprint |

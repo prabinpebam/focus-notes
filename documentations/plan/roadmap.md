@@ -134,7 +134,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MP: Projects and simpler sharing (planned)</p>
-<p>The <a href="next-direction.md">3 November direction</a> adds isolated project windows, folder/project pins, Quick notes, standalone files, direct item sharing without names and a read-only website with its own theme. Browser writing, browser-local notes, owner vault and the ease-in/demo plan are retired completely, not deferred. Existing drafts must remain recoverable before removal. Earlier MW/browser clauses on this page are historical, superseded by D-292. <a href="implementation-plan.md#mp">Work packages</a>; <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-12, FIL-17, FIL-18, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-20, DSY-15, WEB-01.</p>
+<p>The <a href="next-direction.md">3 November direction</a> adds isolated project windows, safe SVG logos, folder/project pins, Quick notes, standalone files, direct item sharing without names, and a public website with sections/articles, theme/focus reading and an in-app appearance preview. Browser writing, browser-local notes, owner vault and the ease-in/demo plan are retired completely, not deferred. Existing drafts must remain recoverable before removal. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">15 work packages</a>; <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-13, FIL-17, FIL-18, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-22, DSY-15, WEB-01.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

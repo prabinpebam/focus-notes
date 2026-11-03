@@ -15,6 +15,10 @@ New projects have one private repository and no public notes root until website 
 
 `access.json` changes for new name-free grants and share codes in WP-P.10, with legacy records read unchanged. It never contains public recipient metadata; no new owner-vault grant is made. D-292 removes the browser note store from the planned content model entirely.
 
+Safe uploaded logos are private sanitized assets referenced by project settings (PRJ-13); raw uploads are not renderable assets. `.focus-notes/site.json` holds validated site theme/font/default size and explicit public-logo choice, not arbitrary CSS/URLs or grant secrets. Only allowlisted appearance fields and chosen passive assets reach the website. Public source plus opaque encrypted share envelopes belong in the paired site repository (D-299); unshared/private names, paths, codes and keys never do.
+
+SVG parsing rejects DTDs/entities, external resources and active/unsupported elements before any rendering. Never let a logo parser fetch network or local filesystem resources; successful parsing alone is not sanitization.
+
 ### Historical instance layout
 
 Each user's workspace is **their instance repository** (the notes repository), copied from the Focus Notes template repository into their GitHub account (see [Repository and publishing → Who owns what](repository-and-publishing.html#who-owns-what)):

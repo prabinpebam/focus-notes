@@ -2,6 +2,15 @@
   "version": 2,
   "entries": [
     {
+      "path": "experience/published-site.md",
+      "title": "Published website",
+      "order": 264,
+      "icon": "public",
+      "status": "draft",
+      "updated": "2026-11-03",
+      "group": "Experience"
+    },
+    {
       "path": "experience/projects.md",
       "title": "Projects",
       "order": 262,

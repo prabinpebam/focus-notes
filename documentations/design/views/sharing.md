@@ -126,7 +126,7 @@ Anyone with the link or access code can read it and forward it.
 Expiry or withdrawal cannot remove copies already downloaded.
 ```
 
-Omit lines for disabled methods. `{site}` is the site's share-reader address. No `{name}` or bare `{passcode}` field in new templates. Settings validates placeholders and requires `{link}` or `{accessCode}`; unknown placeholders have a field error, input retained. Store privately in the project's `access-message.json`; Reset to default is explicit. Legacy templates remain for old grants only, not a reason to request new names.
+Omit lines for disabled methods. `{site}` is the site's share-reader address. No `{name}` or bare `{passcode}` field in new templates. Settings validates known placeholders; unknown ones have a field error, input retained. Validate the **rendered result against enabled methods before copying/OS sharing**: Link needs a working `{link}`; Passcode needs both `{site}` and `{accessCode}`. At least one enabled method must survive omission, otherwise say **“Add a link, or the site address and access code, for this share.”** Keep the template/dialog draft and provide Edit template / Use default this time; no unusable-success toast or clipboard replacement. Exercise link-only, passcode-only and both against each template shape. Store privately in the project's `access-message.json`; Reset to default is explicit. Legacy templates remain for old grants only, not a reason to request new names.
 
 ## The share reader
 
@@ -148,7 +148,7 @@ Expiry is enforced by the reader's clock and a fresh deployment/key rotation. A 
 
 **Publish…** is distinct from sealed sharing. Confirm **“Publish ‘⟨title⟩’ for anyone to read? Its text will be public on your website and in GitHub history.”** First publication also uses the site-creation confirmation. Publishing moves public source into the site repository under the existing two-repository safety protocol; a partial operation remains visible and recoverable, never silently deleting the private source before the target is durable.
 
-Settings → Project → **Site theme** chooses the website's token theme; proposed default **Paper**, independent of personal app Appearance and project accent. Public and sealed-reader pages use that site identity and readable light/dark variants. Preview is a read-only website preview, not a browser writing app.
+Settings → Project → **Preview site…** previews the public home/sections/articles and chooses site theme, approved fonts and default font size; proposed theme **Paper**, independent of personal app Appearance and project accent. Apply saves site settings only; Publish is separate. Public and sealed-reader pages use that site identity and readable light/dark variants. See [Published website](../../experience/published-site.md) for navigation, focus mode and preview states.
 
 GitHub Pages is **purely a website** (D-292). No browser editor, IndexedDB notes, owner-vault unlock, demo-writing or eventual move-to-desktop funnel. [Browser retirement](../../architecture/web-app.md) must preserve old browser drafts before removing the old runtime. Plain download/help links remain.
 
@@ -159,6 +159,10 @@ The design uses Dialog, ItemCard, Badge, Tree, Field, Select, Switch, Button and
 The [wait inventory](../../architecture/perceived-performance.md) records preparing contents, site creation, sealing/publishing and OS handoff. Acknowledge within 100 ms; use named status after 300 ms, preserve the current view and prompt, and make long publication leavable. No “Link copied” or “Live” before the actual copy/deploy succeeds.
 
 **VVS:** designed to meet at least 70, with no criterion below 10, by using item identity, counts, tree, checked switches, expiry badges and an action row instead of prose describing state. This is a target and rationale, **not a scored or approved UI**; score the actual JSON surface in light/dark/narrow states before sign-off. Copy pass: Share is not Invite; shared is not public; access code is not share code; errors retain input and offer a next action.
+
+<h2 id="the-share-popover">Former share popover (retired)</h2>
+
+Older links land here for continuity. D-284 replaces the popover/state interstitial with the [direct fixed-item dialog](#the-share-dialog); do not implement a second flow. Legacy named-grant compatibility is a reader/format boundary, not the old creation UI.
 
 ## Design decisions
 

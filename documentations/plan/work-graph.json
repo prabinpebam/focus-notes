@@ -129,9 +129,9 @@
     },
     {
       "id": "WP-P.5", "stage": "MP", "title": "Recognizable project windows",
-      "summary": "Project name, token accent presets and preset logos, badge/watermark/off; no colour-only identity.",
-      "requirements": ["PRJ-04"], "dependsOn": ["WP-P.4"],
-      "touches": ["ui", "views", "tokens"], "reviews": ["design-system", "accessibility"],
+      "summary": "Project name, token accents, preset/uploaded passive SVG logos, badge/watermark/off; no colour-only identity or raw-upload rendering.",
+      "requirements": ["PRJ-04", "PRJ-13"], "dependsOn": ["WP-P.4"],
+      "touches": ["desktop", "core", "ui", "views", "tokens", "schemas"], "reviews": ["security", "design-system", "accessibility"],
       "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
     },
     {
@@ -189,6 +189,20 @@
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
       "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
       "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.14", "stage": "MP", "title": "Public home, sections and reading",
+      "summary": "Public-only article discovery, folder sections/counts, scalable navigation, optional project mark, site theme and focus reading; no shared-only index metadata.",
+      "requirements": ["SHR-21"], "dependsOn": ["WP-P.12", "WP-P.5", "WP-P.9"],
+      "touches": ["web", "seal", "views", "ui"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/published-site.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-P.15", "stage": "MP", "title": "Preview site appearance locally",
+      "summary": "In-app read-only website renderer, theme/font/default size draft, explicit Apply separate from Publish and safe Cancel/retry.",
+      "requirements": ["SHR-22"], "dependsOn": ["WP-P.14"],
+      "touches": ["desktop", "core", "views", "ui"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/published-site.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",

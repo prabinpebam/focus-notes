@@ -9,12 +9,14 @@ GitHub Pages is a clean website, not a second place to write.
 
 | Surface | Contract |
 | --- | --- |
-| Public website | Plain pages for deliberately published notes, site navigation, independent site theme, download and Help links |
+| Public website | Public-only home, folder sections/counts, article excerpts/pages, minimal top navigation, optional project icon, independent theme and paragraph focus; [full experience](../experience/published-site.md) |
 | Share reader | Link or single access-code field, read-only authorized scope, generic failure, optional remembered cryptographic key |
 | Product site | Screenshots, explanation, downloads and Help; no writing demo |
 | One-time recovery | Local recovery/export of drafts created by the retired app, never a continuing browser writing surface |
 
 No hosted server is added. Dropping browser writing is a product/mental-model decision, not a claim that static browser-local editing is technically impossible. Sharing continues to decrypt in the browser, but that is reading, not an editor, private owner vault or note store.
+
+The in-app **Preview site…** uses the exact website renderer with local theme/font/default size draft controls, not a reintroduced browser editor. Apply saves safe site settings, not a deployment. Public site repositories hold plaintext published source and opaque encrypted share output (D-299); the public index never exposes shared-only metadata. Old encrypted Git history cannot be recalled.
 
 ## Removing the old surfaces
 

@@ -11,7 +11,7 @@ The public face of Focus Notes: the page a person lands on before installing, sc
 > - **Screenshots are captured from the release build in CI** with the demo workspace, in light and dark (D-169).
 > - **The site follows the app's rules:** the design system's tokens and components, no tracking, no requests to other sites, WCAG 2.2 AA.
 >
-> Built as stage MH ([implementation plan](../plan/implementation-plan.md#mh)). Requirements HLP-01 to HLP-09. The site's build and addresses are built (WP-10.1, [How the site is built](#how-the-site-is-built)); its words, articles, screenshots and demo come next.
+> Stage MH records the existing product site; MP replaces browser-demo clauses, not the landing/Help/screenshots. The website-only direction and in-app site preview are planned, not deployed by this specification.
 
 ## Who it's for
 
@@ -25,6 +25,8 @@ The public face of Focus Notes: the page a person lands on before installing, sc
 The specification under `/documentations/` stays for people building Focus Notes. The help centre never links to it for a task; a concept article may link to it at the end, as *For the curious*.
 
 ## The site's addresses
+
+These are the **product repository's** routes, not every project website's home. A user's project website has its own public home, folder sections/article lists, optional logo, theme/focus controls and article pages, with in-app theme/font/default-size preview: [Published website](../experience/published-site.md). Do not replace the product landing page with an owner-notes feed. Shared-only material is excluded from all public navigation/index counts.
 
 | Address | Serves | Notes |
 | --- | --- | --- |

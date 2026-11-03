@@ -38,7 +38,7 @@ See [Files panel](../design/views/files.html) for the full interaction. [Project
 
 Explicit file/folder rename or move rewrites only relative link destinations pointing at the moved content, including links inside moved notes, in the same recoverable batch. Preserve all unrelated bytes, fragments, titles and query strings. Do not rewrite code, front matter or external URLs. Never introduce a public-to-private link. Editing an H1 alone no longer triggers file/link operations (FIL-07 superseded).
 
-## Private, shared and public
+<h2 id="changing-visibility">Private, shared and public</h2>
 
 | State | Stored in | Readable through |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ New projects are **Private only**, with no site. The first share/publication exp
 
 Settings → Sharing lists **All shares** by item/expiry/state; extend and withdraw there. No Flow 2. Existing named grants are compatibility only until they end. Inviting an account with GitHub permissions is a separate [whole-project action](projects.md#people-in-a-project).
 
-## Offline, conflicts and recovery
+<h2 id="conflicts-and-offline">Offline, conflicts and recovery</h2>
 
 Project writing continues in the local clone; offline changes queue without claiming backed up. Conflicts show both versions before choosing; never silently overwrite external edits or leave half a rebase. Quick notes and standalone files have local journals but no Git safety net, so their state says Saved here / Local only.
 

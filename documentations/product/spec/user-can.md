@@ -3,7 +3,7 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 120 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
+> **TL;DR.** 121 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
 
 ## Optional rewriting
 
@@ -33,8 +33,8 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | --- | --- | --- | --- | --- | --- | --- |
 | UC-PROJ-01 | create a separate private project with its own history | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-01, PRJ-11 | No site created; name collision or refused sign-in preserves the draft; existing workspace mapping requires explicit approval and preserves bytes. |
 | UC-PROJ-02 | open several projects in their own windows without replacing work | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-02 | Opening an already-open project focuses its window; closing one leaves others unchanged. |
-| UC-PROJ-03 | stay within one project's context for every action | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-03 | Files, search, links, history, import, moves and agents reject paths outside the active project, including symlink escapes. |
-| UC-PROJ-04 | tell projects apart by name, colour and a logo | SC-PROJ-02 | P1 | IA-CMP-PROJECTMARK | PRJ-04 | Badge, watermark and Off work in both themes and contrast; visible project name remains, independent of colour. |
+| UC-PROJ-03 | stay within one project's context for every action | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-03 | Its paired Public root remains usable; foreign roots/IDs and symlink bypass fail. Cross-root visibility needs confirmation and site permission. |
+| UC-PROJ-04 | tell projects apart by name, colour and a preset or uploaded SVG logo | SC-PROJ-02 | P1 | IA-CMP-PROJECTMARK | PRJ-04, PRJ-13 | Badge/watermark/Off retain a named identity. Unsafe/oversize/external SVGs are rejected before rendering, old mark retained; sanitized preview Apply/Cancel and no network. |
 | UC-PROJ-05 | return to recent files knowing where each lives | SC-PROJ-03 | P1 | IA-VIEW-PROJECTS, IA-VIEW-FILES | PRJ-05, PRJ-06 | File-only Recent shows project/folder; missing files have Locate/Remove, never an empty replacement. |
 | UC-PROJ-06 | pin projects, folders and notes without copying them | SC-PROJ-03 | P1 | IA-VIEW-PROJECTS, IA-VIEW-FILES | PRJ-07 | Unpin leaves content intact; moved folder's shortcut follows its identity; no favourites list. |
 | UC-PROJ-07 | jot a note without picking a project and find it later | SC-PROJ-04 | P1 | IA-VIEW-PROJECTS | PRJ-08 | Quick notes is local only, autosaved, in Recent; later import into a project copies first and removes nothing. |
@@ -92,8 +92,8 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | UC-FILE-05 | select several notes and folders and act on them together | SC-FILE-03 | P0 | IA-VIEW-FILES | FIL-08 | <kbd>Mod</kbd>+click, <kbd>Shift</kbd>+click, and <kbd>Shift</kbd>+arrows select. Move, delete, and change visibility work on the whole selection as one commit. |
 | UC-FILE-06 | move items by dragging, by cut and paste, or with a Move to… picker | SC-FILE-03 | P0 | IA-VIEW-FILES, IA-CMP-MOVE | FIL-03 | All three ways produce the same single commit. Dropping on a folder expands it after 600 ms of hovering. |
 | UC-FILE-07 | rename or move notes without breaking links to them from other notes | SC-FILE-04 | P0 | IA-VIEW-FILES | FIL-09 | Relative links in other notes are updated in the same commit, and a toast says how many were updated. |
-| UC-FILE-08 | undo a delete, move, or rename straight away from a toast | SC-FILE-05 | P0 | IA-CMP-TOAST | FIL-05 | *Undo* restores the previous state exactly, including updated links, as a new commit. |
-| UC-FILE-09 | restore notes deleted in the last 30 days from Recently deleted | SC-FILE-05 | P0 | IA-VIEW-FILES | FIL-10 | A deleted note appears there with its folder and deletion date. *Restore* puts it back where it was, or in the root if its folder is gone. |
+| UC-FILE-08 | undo a delete, move, or rename straight away from a toast | SC-FILE-05 | P0 | IA-CMP-TOAST | FIL-05, PRJ-08 | Undo restores bytes/links exactly: a new commit for projects, a local recoverable batch for Quick notes. No Git requirement for local capture. |
+| UC-FILE-09 | restore notes deleted in the last 30 days from Recently deleted | SC-FILE-05 | P0 | IA-VIEW-FILES | FIL-10, PRJ-08 | Git history or durable Quick notes recovery survives restart; original folder or root, numbering taken names and never overwriting. Failed retention blocks deletion. |
 | UC-FILE-10 | sort the tree by name or by last change, and duplicate a note | SC-FILE-02 | P1 | IA-VIEW-FILES | FIL-11 | The sort choice is remembered. A duplicate is named "⟨title⟩ copy" and opens straight away. |
 | UC-FILE-11 | bring Markdown, text, HTML and Word files into a folder as notes | SC-FILE-03 | P1 | IA-VIEW-FILES | FIL-15 | A folder's menu → *Import files…* picks several files at once; each becomes a note there, titled by its first heading or its file name, in one batch that *Undo* removes. Nothing is replaced. |
 
@@ -112,7 +112,8 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | UC-SHARE-07 | review exactly what is inside the folder I am sharing | SC-SHARE-02 | P1 | IA-CMP-SHAREREVIEW | SHR-14 | Read-only scrollable tree over the share dialog; Escape returns to the intact draft; no add/remove controls. |
 | UC-SHARE-08 | know what enabling sharing makes public before anything is created | SC-SHARE-02 | P1 | IA-CMP-FIRSTSHARE | PRJ-10 | Confirmation names the public site repository and Pages address, plaintext versus sealed content; Cancel has no remote effect. |
 | UC-SHARE-09 | invite a GitHub account to a project with an honest account of its access | SC-SHARE-05 | P1 | IA-CMP-PEOPLE | PRJ-12 | Organization roles reflect GitHub; personal collaborator warning names read/write access to the whole project and share secrets. |
-| UC-SHARE-10 | publish a read-only website whose appearance is independent of my app | SC-SHARE-06 | P1 | IA-VIEW-SHARE, IA-VIEW-PUBLIC | SHR-20, WEB-01 | Site theme does not change the app; no browser-writing/demo/vault route remains. Old browser drafts can be recovered without clearing storage. |
+| UC-SHARE-10 | publish a read-only website whose appearance is independent of my app | SC-SHARE-06 | P1 | IA-VIEW-SHARE, IA-VIEW-PUBLIC | SHR-20, SHR-21, WEB-01 | Home/sections/counts/excerpts expose only public material; every public article reachable with theme/focus reading. No editor/demo/vault; old drafts recoverable. |
+| UC-SHARE-11 | preview my public site in the app and choose its theme, fonts and default size | SC-SHARE-07 | P1 | IA-VIEW-SITEPREVIEW | SHR-22 | Exact website renderer, no default private content/network upload. Apply saves only site settings; Cancel/error retains saved values and draft; personal app appearance unchanged. |
 
 <h2 data-reader-personas="product design">Find and keyboard</h2>
 

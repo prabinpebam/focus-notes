@@ -15,6 +15,10 @@ The MP flows are specified, not implemented or measured. These rows extend the w
 | Invite collaborator | Waiting/long; request then reconcile actual invitation state | People row: Sending invite… → Pending; errors keep username and role | `fn:project.invite`; no accepted claim from pending response |
 | Standalone/Quick note save | Responsive; journal and atomic disk save | File state: Saving here… / Saved here; write refusal offers Save as… | `fn:file.saveLocal`; disk confirmation ≤ existing 1 s save target, retain journal otherwise |
 | Clipboard/OS share | Responsive; explicit result or cancellation | Copy action status / Ready to share when fresh gesture is required | `fn:share.handoff`; never claim copied/opened on refusal |
+| Validate SVG logo | Responsive/waiting; retain current mark until exact safe preview ready | Logo control: Checking logo…; explicit refusal, no network | `fn:project.logoValidate`; acknowledgement ≤100 ms, indicator after 300 ms |
+| Prepare/update site preview | Responsive/waiting; keep previous good render and settings input | Preview heading: Preparing preview… / Updating preview…; Retry on failure | `fn:site.preview`; control acknowledgement ≤100 ms, never clear old view |
+| Save site appearance | Responsive; draft kept, saved values only after atomic write | Apply: Saving site settings…; no Published success | `fn:site.settings`; acknowledgement ≤100 ms |
+| Open public section/article | Waiting; static content first, previous page retained during enhanced navigation | Navigation: Opening section… / Opening article… with Retry | `fn:site.navigate`; bounded index page, no remote-duration claim |
 
 Existing browser-writing waits below are historical and retired by D-292; share-reader decrypt and read-only website waits remain. Ordinary AI-stream waits also cover Write at caret, with “Writing” instead of “Rewriting”.
 

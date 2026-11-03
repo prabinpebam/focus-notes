@@ -10,18 +10,21 @@
 </aside>
 
 <h2 id="project-model">Projects and sites (planned, 3 November)</h2>
-<p><strong>This section supersedes the earlier instance/browser clauses below</strong> (D-272 to D-293). The remaining pipeline/format detail records the current implementation and compatibility formats, not a second product plan. The existing build has not yet been changed.</p>
+<p><strong>This section supersedes the earlier instance/browser clauses below</strong> (D-272 to D-299). The remaining pipeline/format detail records the current implementation and compatibility formats, not a second product plan. The existing build has not yet been changed.</p>
 <table>
 <thead><tr><th>Boundary</th><th>Planned contract</th></tr></thead>
 <tbody>
 <tr><td>Private project</td><td>One private GitHub repository, its own notes/settings/history and window. No public footprint, Pages, owner vault or encrypted mirror of every private note at setup.</td></tr>
 <tr><td>First share/publish</td><td>Before creation, explain public owner/name and Pages URL, sealed versus plaintext output, and Cancel without side effects. Optional site repository proposed as ⟨project⟩-site. Install its read-only private-content deploy key only after confirmation.</td></tr>
-<tr><td>Site</td><td>Public source for published notes and a deployment that emits only read-only website pages and ciphertext for active shares. App/editor/demo/browser note stores and the owner's vault are absent (D-292).</td></tr>
+<tr><td>Site</td><td>Public source for published notes plus opaque ciphertext for selected active shares (D-299); deployment emits read-only home/sections/articles and the sealed reader. No private plaintext/metadata, raw uploaded SVG, app/editor/demo or owner vault.</td></tr>
 <tr><td>Existing pair</td><td>Proposed private repository → project, instance repository → site; preserve disk layout first. Owner-approved snapshot/mapping, byte/ID/link/history inventory and rollback precede any migration. No private content is copied to public plaintext.</td></tr>
 <tr><td>Deploy safety</td><td>Private commit pushed before the public pointer; pinned build/attestation checks before private checkout; least-privilege key cleanup and output leak checks remain. No automatic deletion on partial setup. Expiry/withdrawal state is pending until exact successful deployment.</td></tr>
 <tr><td>Publishing appearance</td><td>Site theme is separate from app Appearance and project accent; proposed Paper, with accessible light/dark reading. Publish confirms public text/history, which cannot later be recalled.</td></tr>
 </tbody>
 </table>
+<p><strong>Public Git ciphertext (D-299):</strong> the owner's final notes explicitly place encrypted shares in the public repository. Seal first, verify the allowed ciphertext-only/public-source output, then commit that output; do not copy private source into a public checkout as an intermediate. Derived envelope keys/passcodes, private names/paths and logs are never committed. Fresh per-build encryption/authentication remains. Old encrypted commits are indefinitely obtainable: withdrawal/expiry only removes access from the current successful build and cannot recall old ciphertext or keys/copies held by a reader. Earlier “ciphertext only in deployed site, never Git” clauses below are historical and superseded. The migration/publication format must be versioned and security-reviewed before implementation, without rewriting existing public history.</p>
+<p><strong>Authorized pair:</strong> the trusted project record binds exactly this private root and optional site root; app file operations cannot infer authority from a common parent. Private/public moves require the visibility confirmation, and site-write permission is independent of private collaboration. See <a href="desktop-and-git.md#per-project-process-boundary-planned">Process boundary</a>.</p>
+<p><strong>Website output:</strong> index only explicitly public files into home/section counts, title/excerpts and article URLs. Shared/private content is excluded before indexing, not hidden afterwards with CSS. Publish only validated theme/font settings and a selected passive logo; no private paths or arbitrary settings/assets. <a href="../experience/published-site.md">Published website</a> owns navigation, reading focus and exact-renderer local preview.</p>
 <p>See <a href="../experience/projects.md">Projects</a>, <a href="../design/views/sharing.md">Sharing</a> and <a href="web-app.md">Website and browser retirement</a>. Historical diagrams below show the old vault-inclusive pipeline, not new-project output.</p>
 
 <figure class="slate-figure">

@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** 80 work packages across 11 stages, covering all 225 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
+> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. MP adds 15 planned packages for projects, simpler sharing and the read-only website/preview; none is built or accepted. Earlier release-path examples remain historical where superseded.
 
 ## How to read a work package
 
@@ -402,7 +402,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.2 | Write at caret | RWR-92 | WP-AI.14 | code, security, design-system |
 | WP-P.3 | Title and file name apart | FIL-18 | WP-2.3 | code |
 | WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03, PRJ-10, PRJ-11 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
-| WP-P.5 | Recognizable project windows | PRJ-04 | WP-P.4 | design-system, accessibility |
+| WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13 | WP-P.4 | security, design-system, accessibility |
 | WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07 | WP-P.4, WP-P.3 | code, design-system, accessibility |
 | WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
 | WP-P.8 | Quick notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
@@ -410,6 +410,8 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.10 | Shares without names | SHR-17, SHR-18, SHR-19 | WP-P.9, WP-5.4 | code, security, accessibility |
 | WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
 | WP-P.12 | A website with its own theme | SHR-20 | WP-5.1, WP-P.4, WP-P.13 | code, security, design-system, accessibility |
+| WP-P.14 | Public home, sections and reading controls | SHR-21 | WP-P.12, WP-P.5, WP-P.9 | code, security, design-system, accessibility |
+| WP-P.15 | Preview site appearance locally | SHR-22 | WP-P.14 | code, security, design-system, accessibility |
 | WP-P.13 | Retire browser writing safely | WEB-01 | WP-5.1 | code, security, accessibility |
 
 These are independently reviewable slices; lookahead permits design without waiting for unrelated stage gates. No real repository creation, invite, deletion or migration is authorized by a spec. Owner choices stay in [Next direction](next-direction.md#what-needs-the-owner).
