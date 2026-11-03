@@ -105,7 +105,6 @@
   "pin.hint": "Pin and Unpin are in each row's menu (right-click or ⋯) and in Spotlight. Pins follow you to your other computers, not to the people you invite.",
   "pin.menu.label": "More for {name}",
   "pin.revealed": "Drafts is shown in the tree: a pin is a shortcut to the real folder, not a copy.",
-  "pin.title": "Pinned",
   "project.back": "Back",
   "project.cancel": "Cancel",
   "project.creating": "Creating “{name}”…",

@@ -2784,5 +2784,294 @@
    "icon": "add",
    "shortcut": "Ctrl+N"
   }
+ ],
+ "filesRecentTree": [
+  {
+   "id": "recent:root",
+   "kind": "section",
+   "level": 1,
+   "label": "Recent",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "recent:fr1",
+   "kind": "note",
+   "level": 2,
+   "label": "Chapter 1",
+   "parent": "recent:root",
+   "description": "Drafts / Chapter 1"
+  },
+  {
+   "id": "recent:fr2",
+   "kind": "note",
+   "level": 2,
+   "label": "Plan",
+   "parent": "recent:root",
+   "description": "Drafts"
+  },
+  {
+   "id": "recent:fr3",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "recent:root",
+   "description": "Root"
+  },
+  {
+   "id": "recent:fr4",
+   "kind": "note",
+   "level": 2,
+   "label": "Mara",
+   "parent": "recent:root",
+   "description": "Notes / People"
+  }
+ ],
+ "filesAll": [
+  {
+   "id": "pin:root",
+   "kind": "section",
+   "level": 1,
+   "label": "Pinned",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "pin:drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "pin:root",
+   "hasChildren": true,
+   "expanded": false
+  },
+  {
+   "id": "pin:plan",
+   "kind": "note",
+   "level": 2,
+   "label": "Plan",
+   "parent": "pin:root",
+   "description": "Drafts"
+  },
+  {
+   "id": "recent:root",
+   "kind": "section",
+   "level": 1,
+   "label": "Recent",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "recent:fr1",
+   "kind": "note",
+   "level": 2,
+   "label": "Chapter 1",
+   "parent": "recent:root",
+   "description": "Drafts / Chapter 1"
+  },
+  {
+   "id": "recent:fr2",
+   "kind": "note",
+   "level": 2,
+   "label": "Plan",
+   "parent": "recent:root",
+   "description": "Drafts"
+  },
+  {
+   "id": "recent:fr3",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "recent:root",
+   "description": "Root"
+  },
+  {
+   "id": "recent:fr4",
+   "kind": "note",
+   "level": 2,
+   "label": "Mara",
+   "parent": "recent:root",
+   "description": "Notes / People"
+  },
+  {
+   "id": "root:private",
+   "kind": "section",
+   "level": 1,
+   "label": "Private",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "root:private",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "notes",
+   "kind": "folder",
+   "level": 2,
+   "label": "Notes",
+   "parent": "root:private",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "outline.md",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "root:private",
+   "current": true
+  },
+  {
+   "id": "root:public",
+   "kind": "section",
+   "level": 1,
+   "label": "Public",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "about.md",
+   "kind": "note",
+   "level": 2,
+   "label": "About the book",
+   "parent": "root:public"
+  }
+ ],
+ "filesAllRevealed": [
+  {
+   "id": "pin:root",
+   "kind": "section",
+   "level": 1,
+   "label": "Pinned",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "pin:drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "pin:root",
+   "hasChildren": true,
+   "expanded": false
+  },
+  {
+   "id": "pin:plan",
+   "kind": "note",
+   "level": 2,
+   "label": "Plan",
+   "parent": "pin:root",
+   "description": "Drafts"
+  },
+  {
+   "id": "recent:root",
+   "kind": "section",
+   "level": 1,
+   "label": "Recent",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "recent:fr1",
+   "kind": "note",
+   "level": 2,
+   "label": "Chapter 1",
+   "parent": "recent:root",
+   "description": "Drafts / Chapter 1"
+  },
+  {
+   "id": "recent:fr2",
+   "kind": "note",
+   "level": 2,
+   "label": "Plan",
+   "parent": "recent:root",
+   "description": "Drafts"
+  },
+  {
+   "id": "recent:fr3",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "recent:root",
+   "description": "Root"
+  },
+  {
+   "id": "recent:fr4",
+   "kind": "note",
+   "level": 2,
+   "label": "Mara",
+   "parent": "recent:root",
+   "description": "Notes / People"
+  },
+  {
+   "id": "root:private",
+   "kind": "section",
+   "level": 1,
+   "label": "Private",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "root:private",
+   "expanded": true,
+   "hasChildren": true,
+   "selected": true
+  },
+  {
+   "id": "drafts/chapter-1.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Chapter 1",
+   "parent": "drafts"
+  },
+  {
+   "id": "drafts/plan.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Plan",
+   "parent": "drafts"
+  },
+  {
+   "id": "notes",
+   "kind": "folder",
+   "level": 2,
+   "label": "Notes",
+   "parent": "root:private",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "outline.md",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "root:private",
+   "current": true
+  },
+  {
+   "id": "root:public",
+   "kind": "section",
+   "level": 1,
+   "label": "Public",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "about.md",
+   "kind": "note",
+   "level": 2,
+   "label": "About the book",
+   "parent": "root:public"
+  }
  ]
 }
