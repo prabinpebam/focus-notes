@@ -7,11 +7,30 @@ import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { AppStateFile, ProjectEntry } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
-import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
+import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { parseRecord } from "./workspace/record.ts";
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
+}
+
+function windowsProtectedRecent(value: string, protect: boolean): Promise<string> {
+  const operation = protect ? "Protect" : "Unprotect";
+  const script = `Add-Type -AssemblyName System.Security; $bytes = [Convert]::FromBase64String([Console]::In.ReadToEnd()); $result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Write([Convert]::ToBase64String($result))`;
+  return new Promise((accept, reject) => {
+    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+    let output = "";
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => { output += chunk; });
+    child.stderr.resume();
+    child.once("error", reject);
+    child.stdin.once("error", reject);
+    child.once("close", (code) => {
+      if (code !== 0 || !output.trim()) reject(new Error(`OS-protected Recent storage failed (${code}).`));
+      else accept(output.trim());
+    });
+    child.stdin.end(value);
+  });
 }
 
 export function resumeProjectProfile(root: string): { profile: string; folder: string; localNotes: boolean } | undefined {
@@ -46,7 +65,11 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   async function recent(profile: string): Promise<Recent> {
     try {
       if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
-      return JSON.parse(safeStorage.decryptString(Buffer.from(await readFile(join(profile, DATA_FILES.projectRecent), "utf8"), "base64")));
+      const encrypted = await readFile(join(profile, DATA_FILES.projectRecent), "utf8");
+      const content = encrypted.startsWith("dpapi:")
+        ? Buffer.from(await windowsProtectedRecent(encrypted.slice(6), false), "base64").toString("utf8")
+        : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
+      return JSON.parse(content);
     } catch (error) {
       if (missing(error)) return { rank: 0, pinned: false, notes: [] };
       throw error;
@@ -54,7 +77,11 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   }
   async function saveRecent(profile: string, record: Recent) {
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
-    await atomicWrite(join(profile, DATA_FILES.projectRecent), safeStorage.encryptString(JSON.stringify(record)).toString("base64"));
+    const content = JSON.stringify(record);
+    const encrypted = process.platform === "win32"
+      ? `dpapi:${await windowsProtectedRecent(Buffer.from(content, "utf8").toString("base64"), true)}`
+      : safeStorage.encryptString(content).toString("base64");
+    await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
   }
   let recentWrites = Promise.resolve();
   function score(path: string, points: number) {
@@ -156,15 +183,6 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (canonical === await realpath(home()) && !note) return;
     // One process and single-instance lock per project keep all existing workspace services scoped.
     if (profile === app.getPath("userData") && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
-    const localState = join(profile, CHROMIUM_FOLDERS.session, "Local State");
-    if (process.platform === "win32" && profile !== rootProfile && !existsSync(localState)) {
-      // New profiles share the OS-protected key so Open can read their encrypted ranking.
-      // Never replace an existing profile's key or its protected data.
-      const root = JSON.parse(await readFile(join(rootProfile, CHROMIUM_FOLDERS.session, "Local State"), "utf8")) as { os_crypt?: { encrypted_key?: unknown } };
-      if (typeof root.os_crypt?.encrypted_key !== "string") throw new Error("Protected project storage is unavailable.");
-      await mkdir(dirname(localState), { recursive: true });
-      await writeFile(localState, JSON.stringify({ os_crypt: root.os_crypt }), { flag: "wx" });
-    }
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(note ? ["--project-note", note] : [])];
     const child = spawn(process.execPath, args, {
       env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", ...(note ? { FOCUS_NOTES_PROJECT_NOTE: note } : { FOCUS_NOTES_PROJECT_NOTE: "" }) },
