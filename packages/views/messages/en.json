@@ -2880,5 +2880,6 @@
   "sharing.size.16": "Small",
   "sharing.size.18": "Medium",
   "sharing.size.20": "Large",
-  "sharing.article": "Article"
+  "sharing.article": "Article",
+  "sharing.preview.updated": "Updated {date}"
 }
