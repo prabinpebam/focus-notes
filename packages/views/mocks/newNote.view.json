@@ -1,0 +1,1018 @@
+{
+ "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+ "id": "gallery.mock.newNote",
+ "viewModels": [
+  "vm.app",
+  "vm.mocks"
+ ],
+ "focus": "mockBack",
+ "local": {
+  "step": "closed",
+  "project": "book"
+ },
+ "root": {
+  "type": "AppRoot",
+  "props": {
+   "scheme": {
+    "get": "vm.app.scheme"
+   },
+   "platform": {
+    "get": "vm.app.platform"
+   }
+  },
+  "children": [
+   {
+    "type": "Center",
+    "props": {
+     "maxWidth": "wideContent"
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "l",
+       "padding": "xl"
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "Inline",
+          "props": {
+           "gap": "s",
+           "align": "center"
+          },
+          "children": [
+           {
+            "type": "Button",
+            "id": "mockBack",
+            "on": {
+             "press": {
+              "run": "gallery.open",
+              "args": {
+               "id": ""
+              }
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.back"
+             },
+             "variant": "subtle",
+             "size": "s",
+             "icon": "chevronLeft"
+            }
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "project.mock.badge"
+             },
+             "role": "caption",
+             "tone": "muted"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Heading",
+          "props": {
+           "value": {
+            "t": "project.mock.newNote.title"
+           },
+           "level": "1"
+          }
+         },
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "project.mock.newNote.intro"
+           },
+           "tone": "muted"
+          }
+         }
+        ]
+       },
+       {
+        "switch": {
+         "get": "local.step"
+        },
+        "cases": {
+         "closed": {
+          "type": "ProjectScope",
+          "props": {
+           "part": "window",
+           "accent": "teal",
+           "appearance": "follow",
+           "grow": true
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "band"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "ProjectMark",
+                "props": {
+                 "logo": "book",
+                 "accent": "teal",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.window.title",
+                  "args": {
+                   "note": {
+                    "t": "project.mock.noteChapter"
+                   },
+                   "project": {
+                    "t": "project.mock.bookName"
+                   }
+                  }
+                 },
+                 "role": "caption",
+                 "lines": "one"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m",
+             "padding": "l",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.step",
+                  "to": "project"
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "newNote.in"
+                 },
+                 "variant": "primary",
+                 "icon": "newNote"
+                }
+               },
+               {
+                "type": "Shortcut",
+                "props": {
+                 "keys": {
+                  "get": "vm.mocks.keysNewIn"
+                 },
+                 "label": {
+                  "get": "vm.mocks.keysNewInSpoken"
+                 }
+                }
+               }
+              ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "get": "vm.mocks.sampleNote"
+               },
+               "personal": true
+              }
+             }
+            ]
+           }
+          ]
+         },
+         "project": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "get": "vm.mocks.sampleNote"
+                 },
+                 "personal": true
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "cancelled"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "m",
+             "height": "content",
+             "label": {
+              "t": "newNote.in.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Heading",
+               "props": {
+                "value": {
+                 "t": "newNote.in.title"
+                },
+                "level": "2"
+               }
+              }
+             ],
+             "footer": [
+              {
+               "type": "Inline",
+               "props": {
+                "justify": "end"
+               },
+               "children": [
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": {
+                   "set": "local.step",
+                   "to": "cancelled"
+                  }
+                 },
+                 "props": {
+                  "label": {
+                   "t": "project.cancel"
+                  },
+                  "variant": "secondary"
+                 }
+                }
+               ]
+              }
+             ]
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "SearchField",
+                "props": {
+                 "label": {
+                  "t": "newNote.search"
+                 },
+                 "placeholder": {
+                  "t": "newNote.search"
+                 },
+                 "clearLabel": {
+                  "t": "newNote.clear"
+                 },
+                 "autoFocus": true
+                }
+               },
+               {
+                "type": "ResultList",
+                "id": "pickProjects",
+                "on": {
+                 "action": [
+                  {
+                   "set": "local.project",
+                   "to": {
+                    "get": "event.id"
+                   }
+                  },
+                  {
+                   "set": "local.step",
+                   "to": "folder"
+                  }
+                 ]
+                },
+                "props": {
+                 "label": {
+                  "t": "newNote.projects"
+                 },
+                 "items": {
+                  "get": "vm.mocks.pickProjects"
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "folder": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "get": "vm.mocks.sampleNote"
+                 },
+                 "personal": true
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "cancelled"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "m",
+             "height": "content",
+             "label": {
+              "t": "newNote.in.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Inline",
+               "props": {
+                "gap": "s",
+                "align": "center"
+               },
+               "children": [
+                {
+                 "type": "IconButton",
+                 "on": {
+                  "press": {
+                   "set": "local.step",
+                   "to": "project"
+                  }
+                 },
+                 "props": {
+                  "icon": "chevronLeft",
+                  "label": {
+                   "t": "newNote.back"
+                  }
+                 }
+                },
+                {
+                 "type": "Heading",
+                 "props": {
+                  "value": {
+                   "t": "newNote.in.title"
+                  },
+                  "level": "2"
+                 }
+                }
+               ]
+              }
+             ],
+             "footer": [
+              {
+               "type": "Inline",
+               "props": {
+                "justify": "end"
+               },
+               "children": [
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": {
+                   "set": "local.step",
+                   "to": "cancelled"
+                  }
+                 },
+                 "props": {
+                  "label": {
+                   "t": "project.cancel"
+                  },
+                  "variant": "secondary"
+                 }
+                }
+               ]
+              }
+             ]
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "StatusRow",
+                "props": {
+                 "message": {
+                  "t": "newNote.otherWindow"
+                 },
+                 "tone": "info",
+                 "icon": "openWindow"
+                },
+                "when": {
+                 "expr": {
+                  "!=": [
+                   {
+                    "get": "local.project"
+                   },
+                   "book"
+                  ]
+                 }
+                }
+               },
+               {
+                "switch": {
+                 "get": "local.project"
+                },
+                "cases": {
+                 "book": {
+                  "type": "ResultList",
+                  "id": "pickFolders",
+                  "on": {
+                   "action": {
+                    "set": "local.step",
+                    "to": "created"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "newNote.folders"
+                   },
+                   "items": {
+                    "get": "vm.mocks.pickFolders"
+                   }
+                  }
+                 },
+                 "work": {
+                  "type": "ResultList",
+                  "id": "pickFoldersWork",
+                  "on": {
+                   "action": {
+                    "set": "local.step",
+                    "to": "createdElsewhere"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "newNote.folders"
+                   },
+                   "items": {
+                    "get": "vm.mocks.pickFoldersWork"
+                   }
+                  }
+                 },
+                 "club": {
+                  "type": "ResultList",
+                  "id": "pickFoldersClub",
+                  "on": {
+                   "action": {
+                    "set": "local.step",
+                    "to": "createdElsewhere"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "newNote.folders"
+                   },
+                   "items": {
+                    "get": "vm.mocks.pickFoldersWork"
+                   }
+                  }
+                 },
+                 "recipes": {
+                  "type": "ResultList",
+                  "id": "pickFoldersRecipes",
+                  "on": {
+                   "action": {
+                    "set": "local.step",
+                    "to": "createdElsewhere"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "newNote.folders"
+                   },
+                   "items": {
+                    "get": "vm.mocks.pickFoldersWork"
+                   }
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "created": {
+          "type": "ProjectScope",
+          "props": {
+           "part": "window",
+           "accent": "teal",
+           "appearance": "follow",
+           "grow": true
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "band"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "ProjectMark",
+                "props": {
+                 "logo": "book",
+                 "accent": "teal",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.window.title",
+                  "args": {
+                   "note": {
+                    "t": "newNote.untitled"
+                   },
+                   "project": {
+                    "t": "project.mock.bookName"
+                   }
+                  }
+                 },
+                 "role": "caption",
+                 "lines": "one"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m",
+             "padding": "l",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "newNote.untitled"
+               },
+               "role": "title",
+               "tone": "muted"
+              }
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "newNote.where"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "closed"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "subtle",
+               "size": "s"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         "createdElsewhere": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "Columns",
+            "props": {
+             "gap": "l"
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "window",
+               "accent": "teal",
+               "appearance": "follow",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "ProjectScope",
+                "props": {
+                 "part": "band"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "s",
+                   "align": "center",
+                   "padding": "s"
+                  },
+                  "children": [
+                   {
+                    "type": "ProjectMark",
+                    "props": {
+                     "logo": "book",
+                     "accent": "teal",
+                     "size": "s"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "project.window.title",
+                      "args": {
+                       "note": {
+                        "t": "project.mock.noteChapter"
+                       },
+                       "project": {
+                        "t": "project.mock.bookName"
+                       }
+                      }
+                     },
+                     "role": "caption",
+                     "lines": "one"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "get": "vm.mocks.sampleNote"
+                   },
+                   "personal": true
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.mock.draftKept"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "window",
+               "accent": "indigo",
+               "appearance": "follow",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "ProjectScope",
+                "props": {
+                 "part": "band"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "s",
+                   "align": "center",
+                   "padding": "s"
+                  },
+                  "children": [
+                   {
+                    "type": "ProjectMark",
+                    "props": {
+                     "logo": "briefcase",
+                     "accent": "indigo",
+                     "size": "s"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "project.window.title",
+                      "args": {
+                       "note": {
+                        "t": "newNote.untitled"
+                       },
+                       "project": {
+                        "t": "project.mock.workName"
+                       }
+                      }
+                     },
+                     "role": "caption",
+                     "lines": "one"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "newNote.untitled"
+                   },
+                   "role": "title",
+                   "tone": "muted"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "newNote.whereWork"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "closed"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.again"
+             },
+             "variant": "subtle",
+             "size": "s"
+            }
+           }
+          ]
+         },
+         "cancelled": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "StatusRow",
+            "props": {
+             "message": {
+              "t": "newNote.cancelled"
+             },
+             "tone": "info",
+             "icon": "info"
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "closed"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.again"
+             },
+             "variant": "secondary"
+            }
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

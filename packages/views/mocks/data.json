@@ -406,5 +406,488 @@
    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='%23f2b134'/><path d='M14 44 L32 14 L50 44 Z' fill='%23264653'/><circle cx='32' cy='36' r='6' fill='%23f2f2f2'/></svg>"
   }
  ],
- "sampleNote": "The harbour was quiet that morning. Mara counted the boats twice, then wrote the number down before it could change."
+ "sampleNote": "The harbour was quiet that morning. Mara counted the boats twice, then wrote the number down before it could change.",
+ "filesPinned": [
+  {
+   "id": "pin:root",
+   "kind": "section",
+   "level": 1,
+   "label": "Pinned",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "pin:drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "pin:root",
+   "hasChildren": true,
+   "expanded": false
+  },
+  {
+   "id": "pin:plan",
+   "kind": "note",
+   "level": 2,
+   "label": "Plan",
+   "parent": "pin:root",
+   "description": "Drafts"
+  }
+ ],
+ "filesRecent": [
+  {
+   "id": "fr1",
+   "label": "Chapter 1",
+   "description": "Drafts / Chapter 1",
+   "icon": "document"
+  },
+  {
+   "id": "fr2",
+   "label": "Plan",
+   "description": "Drafts",
+   "icon": "document"
+  },
+  {
+   "id": "fr3",
+   "label": "Outline",
+   "description": "Root",
+   "icon": "document"
+  },
+  {
+   "id": "fr4",
+   "label": "Mara",
+   "description": "Notes / People",
+   "icon": "document"
+  }
+ ],
+ "filesTree": [
+  {
+   "id": "root:private",
+   "kind": "section",
+   "level": 1,
+   "label": "Private",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "root:private",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "notes",
+   "kind": "folder",
+   "level": 2,
+   "label": "Notes",
+   "parent": "root:private",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "outline.md",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "root:private",
+   "current": true
+  },
+  {
+   "id": "root:public",
+   "kind": "section",
+   "level": 1,
+   "label": "Public",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "about.md",
+   "kind": "note",
+   "level": 2,
+   "label": "About the book",
+   "parent": "root:public"
+  }
+ ],
+ "filesTreeRevealed": [
+  {
+   "id": "root:private",
+   "kind": "section",
+   "level": 1,
+   "label": "Private",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "root:private",
+   "expanded": true,
+   "hasChildren": true,
+   "selected": true
+  },
+  {
+   "id": "drafts/chapter-1.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Chapter 1",
+   "parent": "drafts"
+  },
+  {
+   "id": "drafts/plan.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Plan",
+   "parent": "drafts"
+  },
+  {
+   "id": "notes",
+   "kind": "folder",
+   "level": 2,
+   "label": "Notes",
+   "parent": "root:private",
+   "expanded": false,
+   "hasChildren": true
+  },
+  {
+   "id": "outline.md",
+   "kind": "note",
+   "level": 2,
+   "label": "Outline",
+   "parent": "root:private",
+   "current": true
+  },
+  {
+   "id": "root:public",
+   "kind": "section",
+   "level": 1,
+   "label": "Public",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "about.md",
+   "kind": "note",
+   "level": 2,
+   "label": "About the book",
+   "parent": "root:public"
+  }
+ ],
+ "filesMenu": [
+  {
+   "id": "open",
+   "items": [
+    {
+     "id": "open",
+     "label": "Open"
+    },
+    {
+     "id": "pin",
+     "label": "Pin",
+     "icon": "pin"
+    }
+   ]
+  },
+  {
+   "id": "names",
+   "items": [
+    {
+     "id": "renameTitle",
+     "label": "Rename title",
+     "icon": "rename"
+    },
+    {
+     "id": "renameFile",
+     "label": "Rename file…"
+    },
+    {
+     "id": "move",
+     "label": "Move to…",
+     "shortcut": "Ctrl+Shift+M"
+    }
+   ]
+  },
+  {
+   "id": "danger",
+   "items": [
+    {
+     "id": "delete",
+     "label": "Delete",
+     "icon": "delete"
+    }
+   ]
+  }
+ ],
+ "pinnedMenu": [
+  {
+   "id": "pin",
+   "items": [
+    {
+     "id": "unpin",
+     "label": "Unpin",
+     "icon": "pinOff"
+    },
+    {
+     "id": "reveal",
+     "label": "Show in Files",
+     "icon": "folder"
+    }
+   ]
+  }
+ ],
+ "pickProjects": [
+  {
+   "id": "h:this",
+   "label": "This window",
+   "header": true
+  },
+  {
+   "id": "book",
+   "label": "Book",
+   "description": "Choose a folder next",
+   "icon": "document",
+   "state": "Here"
+  },
+  {
+   "id": "h:other",
+   "label": "Other projects",
+   "header": true
+  },
+  {
+   "id": "work",
+   "label": "Work",
+   "description": "Opens in its own window",
+   "icon": "openWindow"
+  },
+  {
+   "id": "club",
+   "label": "Reading club",
+   "description": "Opens in its own window",
+   "icon": "openWindow"
+  },
+  {
+   "id": "recipes",
+   "label": "Recipes",
+   "description": "Offline: GitHub isn't needed to start a note",
+   "icon": "openWindow"
+  }
+ ],
+ "pickFolders": [
+  {
+   "id": "h:book",
+   "label": "Book",
+   "header": true
+  },
+  {
+   "id": "root",
+   "label": "Root",
+   "icon": "folder"
+  },
+  {
+   "id": "drafts",
+   "label": "Drafts",
+   "icon": "folder",
+   "state": "Current folder"
+  },
+  {
+   "id": "notes",
+   "label": "Notes",
+   "icon": "folder"
+  },
+  {
+   "id": "notes/people",
+   "label": "Notes / People",
+   "icon": "folder"
+  }
+ ],
+ "pickFoldersWork": [
+  {
+   "id": "h:work",
+   "label": "Work",
+   "header": true
+  },
+  {
+   "id": "root",
+   "label": "Root",
+   "icon": "folder"
+  },
+  {
+   "id": "meetings",
+   "label": "Meetings",
+   "icon": "folder"
+  },
+  {
+   "id": "plans",
+   "label": "Plans",
+   "icon": "folder"
+  }
+ ],
+ "keysNewIn": [
+  "Ctrl",
+  "Shift",
+  "N"
+ ],
+ "keysNewInSpoken": "Control Shift N",
+ "namesTree": [
+  {
+   "id": "root:private",
+   "kind": "section",
+   "level": 1,
+   "label": "Private",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "drafts",
+   "kind": "folder",
+   "level": 2,
+   "label": "Drafts",
+   "parent": "root:private",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "drafts/chapter-one-draft.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Chapter 1: The harbour",
+   "parent": "drafts",
+   "description": "chapter-one-draft.md",
+   "title": "Drafts/chapter-one-draft.md",
+   "current": true
+  },
+  {
+   "id": "drafts/plan.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Plan",
+   "parent": "drafts",
+   "title": "Drafts/plan.md"
+  },
+  {
+   "id": "drafts/untitled-2026-11-03.md",
+   "kind": "note",
+   "level": 3,
+   "label": "Untitled 3 Nov",
+   "parent": "drafts",
+   "title": "Drafts/untitled-2026-11-03.md"
+  },
+  {
+   "id": "root:public",
+   "kind": "section",
+   "level": 1,
+   "label": "Public",
+   "expanded": true,
+   "hasChildren": true
+  },
+  {
+   "id": "about.md",
+   "kind": "note",
+   "level": 2,
+   "label": "About the book",
+   "parent": "root:public",
+   "description": "about.md · Published",
+   "title": "about.md"
+  }
+ ],
+ "fileName": "chapter-one-draft",
+ "revealId": "drafts",
+ "titleValue": "Chapter 1: The harbour",
+ "aboutFile": "about",
+ "quickNotes": [
+  {
+   "id": "q1",
+   "label": "Groceries",
+   "description": "Today, 09:12",
+   "icon": "quickNote"
+  },
+  {
+   "id": "q2",
+   "label": "Call the printer",
+   "description": "Yesterday",
+   "icon": "quickNote"
+  },
+  {
+   "id": "q3",
+   "label": "Title ideas",
+   "description": "Monday",
+   "icon": "quickNote"
+  }
+ ],
+ "importTargets": [
+  {
+   "id": "h:p",
+   "label": "Projects",
+   "header": true
+  },
+  {
+   "id": "book/drafts",
+   "label": "Book",
+   "description": "Drafts",
+   "icon": "folder"
+  },
+  {
+   "id": "work/root",
+   "label": "Work",
+   "description": "Root",
+   "icon": "folder"
+  }
+ ],
+ "quickMenu": [
+  {
+   "id": "q",
+   "items": [
+    {
+     "id": "import",
+     "label": "Import into project…",
+     "icon": "import"
+    },
+    {
+     "id": "folder",
+     "label": "Show in folder",
+     "icon": "folder"
+    },
+    {
+     "id": "delete",
+     "label": "Delete",
+     "icon": "delete"
+    }
+   ]
+  }
+ ],
+ "standaloneMenu": [
+  {
+   "id": "s",
+   "items": [
+    {
+     "id": "find",
+     "label": "Find",
+     "shortcut": "Ctrl+F",
+     "icon": "search"
+    },
+    {
+     "id": "theme",
+     "label": "Theme",
+     "icon": "color"
+    },
+    {
+     "id": "print",
+     "label": "Print…",
+     "shortcut": "Ctrl+P",
+     "icon": "print"
+    },
+    {
+     "id": "saveAs",
+     "label": "Save as…",
+     "shortcut": "Ctrl+Shift+S",
+     "icon": "save"
+    }
+   ]
+  }
+ ],
+ "plainText": "Books to read\n- The Old Man and the Sea\n- Moby-Dick\n- A Room of One's Own"
 }

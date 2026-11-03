@@ -303,7 +303,8 @@
                {
                 "type": "ProjectScope",
                 "props": {
-                 "part": "band"
+                 "part": "band",
+                 "accent": "indigo"
                 },
                 "children": [
                  {
@@ -465,7 +466,8 @@
                {
                 "type": "ProjectScope",
                 "props": {
-                 "part": "band"
+                 "part": "band",
+                 "accent": "teal"
                 },
                 "children": [
                  {
@@ -643,7 +645,8 @@
                {
                 "type": "ProjectScope",
                 "props": {
-                 "part": "band"
+                 "part": "band",
+                 "accent": "pink"
                 },
                 "children": [
                  {
@@ -1108,7 +1111,10 @@
                  {
                   "type": "ProjectScope",
                   "props": {
-                   "part": "band"
+                   "part": "band",
+                   "accent": {
+                    "get": "local.accent"
+                   }
                   },
                   "children": [
                    {
@@ -1317,7 +1323,8 @@
                  {
                   "type": "ProjectScope",
                   "props": {
-                   "part": "band"
+                   "part": "band",
+                   "accent": "indigo"
                   },
                   "children": [
                    {
