@@ -15,9 +15,47 @@ const change = (later = false): AccessChange => ({
   op: "createItem", item: { path: "Confidential drafts", label: "Private project title", folder: true, includeLater: later },
   notes: ["Confidential drafts/one.md"], link: true, passcode: { generate: true }, expiresAt: expiryFrom("30d", now),
 });
-const apply = (a: AccessFile, later = false) => applyAccessChange(a, change(later), now, { generate: generatePasscode });
+const apply = (a: AccessFile, later = false) => applyAccessChange(a, change(later), now, {
+  generate: generatePasscode, resolvedItemNotes: { notes: ["Confidential drafts/one.md"], ids: ["one-id"] },
+});
 
 describe("item shares (SHR-14, SHR-16, SHR-23; MP.17/18)", () => {
+  it("refuses unresolved item snapshots and Add them cannot authorize renderer paths as identities", () => {
+    expect(() => applyAccessChange({ version: 1, grants: [] }, change(), now, { generate: generatePasscode })).toThrow("scope");
+    const original = apply({ version: 1, grants: [] });
+    const g = original.access.grants[0]!;
+    const addition: AccessChange = { op: "addItemNotes", id: g.id, notes: ["Confidential drafts/one.md", "Confidential drafts/two.md"] };
+    expect(() => applyAccessChange(original.access, addition)).toThrow("scope");
+    const result = applyAccessChange(original.access, addition, now, { resolvedItemNotes: {
+      grantId: g.id, notes: addition.notes, ids: ["one-id", "two-id"],
+    } });
+    expect(result.access.grants[0]).toMatchObject({ ...g, scope: { ids: ["one-id", "two-id"], notes: [], folders: [] },
+      item: { ...g.item, notePaths: addition.notes } });
+    expect(result.access.grants[0]!.link).toEqual(g.link);
+  });
+  it("rejects name-shaped item identifiers before generating public artifact paths", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fn-item-opaque-")); dirs.push(root);
+    const priv = join(root, "private"), site = join(root, "site");
+    await mkdir(join(priv, "notes"), { recursive: true });
+    const a = apply({ version: 1, grants: [] }).access;
+    a.grants[0]!.id = "Confidential";
+    await writeFile(join(priv, "access.json"), JSON.stringify(a));
+    await expect(publish({ site, private: priv, owner: "fixture" })).rejects.toThrow("opaque");
+  });
+  it("refuses a duplicate snapshot identity introduced after sharing, with either BOM permutation", async () => {
+    for (const bom of ["", "\uFEFF"]) {
+      const root = await mkdtemp(join(tmpdir(), "fn-item-bom-")); dirs.push(root);
+      const priv = join(root, "private"), folder = join(priv, "notes", "Confidential drafts");
+      await mkdir(folder, { recursive: true });
+      await writeFile(join(folder, "one.md"), `${bom}---\nid: one-id\n---\n# Shared original\n`);
+      const a = apply({ version: 1, grants: [] }).access;
+      a.grants[0]!.scope = { ids: ["one-id"], notes: [], folders: [] };
+      await writeFile(join(priv, "access.json"), JSON.stringify(a));
+      await publish({ site: join(root, "site"), private: priv, owner: "fixture" });
+      await writeFile(join(priv, "notes", "unreviewed.md"), `${bom ? "" : "\uFEFF"}---\nid: one-id\n---\n# Unreviewed private replacement\n`);
+      await expect(publish({ site: join(root, "site"), private: priv, owner: "fixture" })).rejects.toThrow("duplicated");
+    }
+  }, 30_000);
   it("copies only an enabled usable method and rejects old or unusable templates", () => {
     const template = "{title}\nOpen: {link}\nAt {site} enter {accessCode}\nUntil {expires}";
     const common = { title: "One", site: "https://site.example/s/", expires: "Tomorrow" };
@@ -36,7 +74,7 @@ describe("item shares (SHR-14, SHR-16, SHR-23; MP.17/18)", () => {
     expect(first.link?.secret).not.toBe(second.link?.secret);
     expect(first.shareCode).toMatch(SHARE_CODE);
     expect(first.shareCode).not.toBe(second.shareCode);
-    expect(first.scope).toMatchObject({ notes: ["Confidential drafts/one.md"], folders: [] });
+    expect(first.scope).toMatchObject({ ids: ["one-id"], notes: [], folders: [] });
     expect(second.scope).toEqual(first.scope);
     expect(b.access.grants[0]).toEqual(first);
     expect(apply({ version: 1, grants: [] }, true).access.grants[0]?.scope.folders).toEqual(["Confidential drafts"]);
@@ -56,7 +94,7 @@ describe("item shares (SHR-14, SHR-16, SHR-23; MP.17/18)", () => {
     const noteDir = join(priv, "notes", "Confidential drafts");
     const site = join(root, "site");
     await mkdir(noteDir, { recursive: true });
-    await writeFile(join(noteDir, "one.md"), "# A private title\n\nA private sentence that must remain sealed.\n");
+    await writeFile(join(noteDir, "one.md"), "---\nid: one-id\n---\n# A private title\n\nA private sentence that must remain sealed.\n");
     let access = apply({ version: 1, grants: [] }).access;
     access = apply(access, true).access;
     const snapshot = access.grants[0]!, following = access.grants[1]!;

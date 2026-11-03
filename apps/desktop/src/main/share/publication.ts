@@ -3,6 +3,7 @@ import { displayShareCode, SealError, SiteReader, type Grant, type SiteFetch } f
 
 export async function waitForPublishedShare(o: {
   grant: Grant; publish: () => Promise<void>; get: SiteFetch; signal: AbortSignal;
+  authorization?: string;
   timeoutMs?: number; delayMs?: number;
 }): Promise<void> {
   const checkCancelled = () => { if (o.signal.aborted) throw new Error("access:cancelled"); };
@@ -22,8 +23,11 @@ export async function waitForPublishedShare(o: {
       if (o.grant.passcode && o.grant.shareCode) opened.push(await reader.openAccessCode(`${displayShareCode(o.grant.shareCode)} ${o.grant.passcode.value}`));
       if (opened.length && opened.every(({ share }) =>
         (share.expiresAt ?? null) === (o.grant.expiresAt ?? null) &&
-        (!(o.grant.scope.ids ?? o.grant.scope.notes)?.length || share.notes.length === (o.grant.scope.ids ?? o.grant.scope.notes)!.length))) {
-        for (const { share } of opened) if (share.notes[0]) await share.read(share.notes[0].path);
+        (!o.grant.item || Boolean(o.authorization) && share.authorization === o.authorization))) {
+        for (const { share } of opened) for (const note of share.notes) {
+          checkCancelled();
+          await share.read(note.path);
+        }
         checkCancelled();
         return;
       }

@@ -4047,6 +4047,11 @@
           "min": 0,
           "description": "Each new value moves focus into the tree."
         },
+        "windowed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Read-only reviews mount at most 200 rows; scrolling, keyboard navigation and type-ahead still cover the whole tree."
+        },
         "editValue": {
           "kind": "text",
           "bindable": true,

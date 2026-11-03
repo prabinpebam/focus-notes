@@ -42,7 +42,7 @@ export const grantScope = (g: Grant): GrantScope => (g.owner ? g.scope : { ...g.
 
 /** A note's `id` from its front matter, the only key the app writes there. */
 export function noteId(text: string): string | undefined {
-  const fm = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
+  const fm = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
   const id = fm && /^id:[ \t]*(["']?)([^\r\n"']+)\1[ \t]*$/m.exec(fm[1]!);
   return id?.[2]?.trim() || undefined;
 }
@@ -55,6 +55,26 @@ export function inScope(scope: GrantScope, note: { path: string; id?: string | u
   if (note.id !== undefined && scope.ids?.includes(note.id)) return true;
   if (scope.notes?.some((n) => n === note.path || (note.id !== undefined && n === note.id))) return true;
   return scope.folders?.some((f) => note.path.startsWith(folderPrefix(f))) ?? false;
+}
+
+/** New item snapshots have no path/ID fallback, and folder members leave when moved out. */
+export function inGrantScope(g: Grant, note: { path: string; id?: string }): boolean {
+  if (g.item?.folder && !note.path.startsWith(`${g.item.path}/`)) return false;
+  return inScope(grantScope(g), note);
+}
+
+/** Authenticated authorization fingerprint: never emitted in unauthenticated metadata. */
+export async function authorizationRevision(g: Grant, notes: readonly { path: string; id?: string }[]): Promise<string> {
+  const text = JSON.stringify({
+    id: g.id, scope: { all: Boolean(g.scope.all), ids: [...(g.scope.ids ?? [])].sort(),
+      notes: [...(g.scope.notes ?? [])].sort(), folders: [...(g.scope.folders ?? [])].sort() },
+    item: g.item ? { path: g.item.path, folder: g.item.folder, includeLater: g.item.includeLater } : null,
+    expiresAt: g.expiresAt ? new Date(g.expiresAt).toISOString() : null,
+    link: g.link?.secret ?? null, passcode: g.passcode?.value ?? null,
+    notes: notes.filter((n) => inGrantScope(g, n)).map((n) => ({ path: n.path, id: n.id ?? null })).sort((a, b) => a.path.localeCompare(b.path)),
+  });
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**

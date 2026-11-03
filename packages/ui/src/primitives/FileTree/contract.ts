@@ -10,6 +10,7 @@ export const contract = defineContract({
     items: { kind: "list", of: "treeItems", required: true },
     focusId: { kind: "text", description: "The focused row, the tree's one tab stop." },
     focusRequest: { kind: "number", min: 0, description: "Each new value moves focus into the tree." },
+    windowed: { kind: "boolean", default: false, description: "Read-only reviews mount at most 200 rows; scrolling, keyboard navigation and type-ahead still cover the whole tree." },
     editValue: { kind: "text", bindable: true, description: "The text of the row being named." },
     editLabel: { kind: "text", description: "The name field's label: Title or Folder name." },
     editError: { kind: "text", description: "Why the name can't be used, under the field." },

@@ -69,17 +69,15 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu", { name: "More" })).toHaveCount(0);
 
-    // Share and visibility… opens the note's Share popover; All people with access goes on to Settings → Sharing (D-143).
+    // Share… now opens the fixed item directly, without creating a grant on opening.
     menu = await openMore(page);
-    await menu.getByRole("menuitem", { name: /^Share and visibility…/ }).click();
+    await menu.getByRole("menuitem", { name: /^Share…/ }).click();
     const share = page.getByRole("dialog", { name: /^Share “/ });
     await expect(share).toBeVisible();
-    await share.getByRole("button", { name: "All people with access" }).click();
-    const settings = page.getByRole("dialog", { name: "Settings" });
-    await expect(settings.getByRole("tab", { name: "Sharing" })).toHaveAttribute("aria-selected", "true");
-    await expect(settings.getByRole("heading", { name: "People with access" })).toBeVisible();
+    await expect(share.getByRole("switch", { name: /^Link / })).toBeChecked();
+    await expect(share.getByRole("button", { name: "Copy share information", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(settings).toHaveCount(0);
+    await expect(share).toHaveCount(0);
 
     // A public note: quick open it, then ⋯ → Copy public link.
     await page.keyboard.press(`${mod}+P`);

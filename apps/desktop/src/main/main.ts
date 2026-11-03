@@ -1618,13 +1618,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.setTemplate(template);
   });
-  handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
+  handle("access:copy", async (id, what, invite) => access.handoff(id, what, invite, (text) => secretCopy.write(text)));
   handleFrom("access:systemShare", async (e, id, invite) => {
     if (process.platform !== "darwin") throw new Error("access:sheet.unavailable");
     const window = BrowserWindow.fromWebContents(e.sender);
     if (!window || window.isDestroyed()) throw new Error("access:sheet.unavailable");
-    const text = await access.secret(id, "information", invite);
-    new ShareMenu({ texts: [text] }).popup({ window });
+    await access.handoff(id, "information", invite, (text) => {
+      if (window.isDestroyed()) throw new Error("access:sheet.unavailable");
+      new ShareMenu({ texts: [text] }).popup({ window });
+    });
   });
   // Local diagnostics (QLT-04, D-140): built and redacted here; copied or saved only when the person asks.
   const diag = diagnostics({

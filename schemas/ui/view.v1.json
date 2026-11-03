@@ -4172,6 +4172,19 @@
                 }
               ]
             },
+            "windowed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "editValue": {
               "anyOf": [
                 {

@@ -18,7 +18,7 @@ import { randomBytes, toB64url } from "../../../packages/seal/src/format.ts";
 import { axeViolations } from "../../desktop/e2e/axe.ts";
 
 const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".woff": "font/woff", ".json": "application/json", ".svg": "image/svg+xml" };
-const ERROR = "That didn't open anything. Check your name and passcode, or the link, and try again. If it still doesn't work, ask the person who shared it with you.";
+const ERROR = "That didn't open anything. Check the access code or link and try again. If it still doesn't work, ask the person who shared it with you.";
 const PASSCODE = "orbit maple quiet river";
 const NOTES: Record<string, string> = {
   "Work/drafts/Plan.md": "---\nid: n-plan\n---\n# The plan\n\nLaunch quietly on a Tuesday. See [the detail](sub/Detail.md) and [the diary](../../Diary.md).\n",
@@ -34,8 +34,9 @@ const grants = (laterWithdrawn: boolean) => [
   { id: "gwithdrw1", name: "Old friend", salt: SALTS[2], link: { secret: secrets.withdrawn }, scope: { notes: ["n-letter"] }, createdAt: "2026-10-01T00:00:00Z", revokedAt: "2026-10-02T00:00:00Z" },
   { id: "gexpired1", name: "Late reader", salt: SALTS[3], link: { secret: secrets.expired }, scope: { notes: ["n-letter"] }, createdAt: "2026-10-01T00:00:00Z", expiresAt: "2026-10-02T00:00:00Z" },
   { id: "gwithdr02", name: "Kim Park", salt: SALTS[4], link: { secret: secrets.later }, scope: { notes: ["n-letter"] }, createdAt: "2026-10-01T00:00:00Z", ...(laterWithdrawn ? { revokedAt: "2026-10-03T00:00:00Z" } : {}) },
+  { id: "saaaaaaaaaaaaaaaa", name: "", shareCode: "K7QM4DRP", salt: SALTS[5], link: { secret: secrets.folder }, passcode: { value: PASSCODE }, scope: { ids: ["n-plan"], notes: [], folders: [] }, item: { path: "Work/drafts/Plan.md", label: "The plan", folder: false, includeLater: false }, createdAt: "2026-10-01T00:00:00Z" },
 ];
-const SALTS = [salt(), salt(), salt(), salt(), salt()];
+const SALTS = [salt(), salt(), salt(), salt(), salt(), salt()];
 
 let root = "";
 let site = "";
@@ -57,7 +58,7 @@ test.beforeAll(async () => {
     await mkdir(join(root, "private", "notes", ...p.split("/").slice(0, -1)), { recursive: true });
     await writeFile(join(root, "private", "notes", ...p.split("/")), t);
   }
-  expect((await seal(false)).shares).toBe(3);
+  expect((await seal(false)).shares).toBe(4);
   // Like GitHub Pages: a folder serves its index.html, and nothing sets a cookie.
   server = createServer(async (req, res) => {
     served.push(req.url ?? "");
@@ -88,6 +89,7 @@ const errorsOf = (page: Page) => {
   return errors;
 };
 async function signIn(page: Page, name: string, passcode = PASSCODE, button = "Open") {
+  if (!(await page.getByRole("textbox", { name: "Your name" }).isVisible())) await page.getByRole("button", { name: "Use an older name-and-passcode share" }).click();
   await page.getByRole("textbox", { name: "Your name" }).fill(name);
   await page.getByLabel("Passcode").fill(passcode);
   await page.getByRole("button", { name: button, exact: true }).click();
@@ -152,6 +154,7 @@ test("SHR-10: a magic link opens exactly its scope, and its secret leaves the ad
 test("SHR-10: a name and passcode open their scope, whatever the name's case or spacing; the session is per tab unless remembered, and sign-out reaches every tab", async ({ page, context }) => {
   await page.goto(origin + READER);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("This note is private");
+  await page.getByRole("button", { name: "Use an older name-and-passcode share" }).click();
   await expect(page.getByRole("textbox", { name: "Your name" })).toBeFocused();
   await signIn(page, "  sAM   lee ");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
@@ -207,9 +210,11 @@ test("SHR-06: wrong, expired, and withdrawn grants all show the one generic erro
     await page.goto(origin + link(id, secret));
     await expectError();
   }
-  // Every failure reads the same, so none of them says whether a name, a link, or a note exists.
-  expect(new Set(shown.map((s) => s.replace(/Your name|Passcode/g, ""))).size).toBe(1);
+  // The intentionally separate legacy and access-code forms each reveal nothing about a grant's existence.
+  expect(new Set(shown.slice(0, 3)).size).toBe(1);
+  expect(new Set(shown.slice(3)).size).toBe(1);
   // An empty field is asked for, not an error.
+  await page.getByRole("button", { name: "Use an older name-and-passcode share" }).click();
   await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.getByText("Enter your name and the passcode.")).toBeVisible();
 
@@ -226,6 +231,19 @@ test("SHR-06: wrong, expired, and withdrawn grants all show the one generic erro
   } finally {
     await seal(false);
   }
+});
+
+test("SHR-23, WP-P.10: new opaque shares open by link or one access-code field, never a name", async ({ page }) => {
+  await page.goto(origin + READER);
+  await expect(page.getByRole("textbox", { name: "Your name" })).toHaveCount(0);
+  await page.getByRole("textbox", { name: "Access code", exact: true }).fill(`K7QM-4DRP ${PASSCODE}`);
+  await page.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("The plan");
+  await expect(main(page)).not.toContainText("A line only the owner may ever read.");
+  await page.goto("about:blank");
+  await page.goto(origin + link("saaaaaaaaaaaaaaaa", secrets.folder));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("The plan");
+  expect(page.url()).not.toContain(secrets.folder);
 });
 
 test("SHR-10: nothing outside a grant's scope is reachable by its address", async ({ page }) => {

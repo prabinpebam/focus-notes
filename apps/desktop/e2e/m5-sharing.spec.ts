@@ -233,7 +233,7 @@ async function vvs(page: Page, region: import("@playwright/test").Locator, name:
   expect(low.economy, log.at(-1)).toBeGreaterThanOrEqual(15);
 }
 
-test("SHR-09, D-143: edit the invite template, share from the note's popover until a picked day, copy that invite; every surface keeps its anchor", async () => {
+test("SHR-09, D-143: legacy Settings sharing retains its template, picked expiry and invite anchors", async () => {
   test.setTimeout(180_000);
   const { dirs } = instance();
   const priv = join(dirs.docs, "private");
@@ -277,15 +277,10 @@ test("SHR-09, D-143: edit the invite template, share from the note's popover unt
     await page.keyboard.press("Escape");
     await expect(settings).toHaveCount(0);
 
-    // ---- the note's Share popover: only you, then Share this note with… ----
-    let menu = await openMore(page);
-    await menu.getByRole("menuitem", { name: /^Share and visibility…/ }).click();
-    const share = page.getByRole("dialog", { name: "Share “Welcome”" });
-    await expect(share.getByText("Only you can read it")).toBeVisible();
-    await expect(share.getByRole("button", { name: "Share this note with…" })).toBeFocused();
-    await vvs(page, share, "popover-private", BUDGETS.popover, scores);
-    expect(await settledAxe(page)).toEqual([]);
-    await share.getByRole("button", { name: "Share this note with…" }).click();
+    // The old named-grant corpus stays in Settings; Share… is the new fixed-item dialog.
+    await page.keyboard.press(`${mod}+,`);
+    await settings.getByRole("tab", { name: "Sharing" }).click();
+    await settings.getByRole("button", { name: "Share with someone" }).click();
     const editor = page.getByRole("dialog", { name: "Share with someone" });
     await expect(editor.getByRole("button", { name: "Welcome", exact: true })).toHaveAttribute("aria-pressed", "true");
     await page.keyboard.type("Ravi");
@@ -322,20 +317,21 @@ test("SHR-09, D-143: edit the invite template, share from the note's popover unt
     expect([until.getFullYear(), until.getMonth(), until.getDate(), until.getHours(), until.getMinutes()]).toEqual([d.getFullYear(), d.getMonth(), d.getDate(), 23, 59]);
     await invite.getByRole("button", { name: "Done" }).click();
 
-    // ---- back in the popover: Ravi can read it; Copy invite from here ----
-    await expect(share).toBeVisible();
-    const row = share.getByRole("group", { name: "Access for Ravi" });
+    // ---- back in Settings: the unchanged legacy invite can be copied again ----
+    await expect(settings).toBeVisible();
+    const row = settings.getByRole("group", { name: "Access for Ravi" });
     await expect(row.getByText("Link and passcode")).toBeVisible();
     await expect(row.getByText("Expires in 14 days")).toBeVisible();
-    await row.getByRole("button", { name: "Copy invite" }).click();
-    await expect(row.getByRole("button", { name: "Copied" })).toBeVisible();
-    await expect(share.getByText("Invite for Ravi copied")).toBeVisible();
+    await row.getByRole("button", { name: "Invite", exact: true }).click();
+    await expect(invite).toBeVisible();
+    await invite.getByRole("button", { name: "Copy invite" }).click();
+    await expect(invite.getByRole("button", { name: "Copied" })).toBeVisible();
     expect(await clipboard(l)).toBe(text);
-    await vvs(page, share, "popover-shared", BUDGETS.popover, scores);
+    await invite.getByRole("button", { name: "Done" }).click();
+    await vvs(page, settings, "settings-legacy-shared", BUDGETS.settings, scores);
     expect(await settledAxe(page)).toEqual([]);
 
-    // ---- All people with access: Settings → Sharing, and the confirmation's card ----
-    await share.getByRole("button", { name: "All people with access" }).click();
+    // ---- Settings → Sharing, and the confirmation's card ----
     await expect(settings.getByRole("tab", { name: "Sharing" })).toHaveAttribute("aria-selected", "true");
     await vvs(page, settings, "settings-sharing", BUDGETS.settings, scores);
     await settings.getByRole("group", { name: "Access for Ravi" }).getByRole("button", { name: "More for Ravi" }).click();

@@ -82,6 +82,134 @@ describe("helpers", () => {
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
 describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
+  it("waits for word preparation before any action or draft mutation", async () => {
+    const t = shell();
+    let finish!: (words: { id: string; value: string }) => void;
+    t.bridge.access!.prepareWords = async () => new Promise((resolve) => { finish = resolve; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    const preparation = t.run("share.item.togglePasscode");
+    await settle();
+    await t.run("share.item.action", { what: "information" });
+    await t.run("share.item.togglePasscode");
+    await t.run("share.item.setMode", { value: "own" });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ passcode: true, wordsBusy: true, mode: "generate" });
+    finish({ id: "wprepared001", value: "harbor-maple-river-cloud" });
+    await preparation;
+    expect(t.vm("vm.shareItem")).toMatchObject({ wordsBusy: false, generated: "harbor-maple-river-cloud" });
+  });
+  it("refreshes readiness after a stale repeat handoff without creating another grant", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "link" });
+    const copy = t.bridge.access!.copy;
+    t.bridge.access!.copy = async () => { throw new Error("access:notReady"); };
+    await t.run("share.item.action", { what: "link" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ ready: false, information: "", hasProblem: true });
+    let refreshed = 0;
+    t.bridge.access!.ready = async () => { refreshed++; };
+    t.bridge.access!.copy = copy;
+    await t.run("share.item.action", { what: "link" });
+    expect(refreshed).toBe(1);
+    expect(shareGrants(t.access())).toHaveLength(1);
+    expect(t.copied).toHaveLength(2);
+  });
+  it("lists only this item's history, copies without creating a grant, and confirms withdrawal without changing notes", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "link" });
+    const id = shareGrants(t.access())[0]!.id;
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("share.item.open", { path: "/w/private/notes/diary.md" });
+    expect(t.vm("vm.shareItem").history).toHaveLength(0);
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyOpen: true });
+    expect(t.vm("vm.shareItem").history).toEqual([expect.objectContaining({ id, active: true, link: true })]);
+    await t.run("share.item.row", { id, what: "link" });
+    expect(shareGrants(t.access())).toHaveLength(1);
+    await t.run("share.item.row", { id, what: "withdraw" });
+    expect(t.vm("vm.shareItem").confirmOpen).toBe(true);
+    expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
+    await t.run("share.item.setConfirmOpen", { open: false });
+    expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
+    await t.run("share.item.row", { id, what: "withdraw" });
+    await t.run("share.item.withdraw");
+    expect(shareGrants(t.access())[0]!.revokedAt).toBeTruthy();
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, confirmOpen: false, hasHistory: true });
+    expect(t.vm("vm.shareItem").history[0].active).toBe(false);
+    expect(t.app.store.state.note.path).toBe("/w/private/notes/trips/rome.md");
+  });
+  it("refuses draft commands during creation and after saving, including regenerated words", async () => {
+    const t = shell();
+    let finish!: () => void;
+    t.bridge.access!.ready = async () => new Promise<void>((resolve) => { finish = resolve; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.togglePasscode");
+    const draft = t.app.store.state.ui.share.item;
+    const action = t.run("share.item.action", { what: "information" });
+    await settle();
+    const mutate = async () => {
+      await t.run("share.item.toggleLink");
+      await t.run("share.item.togglePasscode");
+      await t.run("share.item.toggleLater");
+      await t.run("share.item.setExpiry", { value: "never" });
+      await t.run("share.item.setUntil", { value: "2027-01-01" });
+      await t.run("share.item.setMode", { value: "own" });
+      await t.run("share.item.setOwn", { value: "other-words-for-testing" });
+      await t.run("share.item.newWords");
+    };
+    await mutate();
+    const unchanged = () => expect(t.app.store.state.ui.share.item).toMatchObject({
+      link: draft.link, passcode: draft.passcode, later: draft.later,
+      expiry: draft.expiry, until: draft.until, mode: draft.mode,
+      own: draft.own, wordsId: draft.wordsId, generated: draft.generated,
+    });
+    unchanged();
+    finish();
+    await action;
+    const saved = t.app.store.state.ui.share.item.generated;
+    await mutate();
+    expect(t.app.store.state.ui.share.item).toMatchObject({
+      link: draft.link, passcode: draft.passcode, later: draft.later,
+      expiry: draft.expiry, until: draft.until, mode: draft.mode,
+      own: draft.own, wordsId: draft.wordsId, generated: saved,
+    });
+  });
+  it("cannot copy a method which is switched off", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "accessCode" });
+    expect(t.copied).toHaveLength(0);
+    expect(shareGrants(t.access())).toHaveLength(0);
+    expect(t.vm("vm.shareItem").hasProblem).toBe(true);
+  });
+  it("does not reveal or hand off a cancelled publication into a new draft", async () => {
+    const t = shell();
+    let finish!: () => void;
+    t.bridge.access!.ready = async () => new Promise<void>((resolve) => { finish = resolve; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    const action = t.run("share.item.action", { what: "information" });
+    await settle();
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("share.item.open", { path: "/w/private/notes/trips/rome.md" });
+    finish();
+    await action;
+    expect(t.copied).toHaveLength(0);
+    expect(t.revealed).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ name: "Rome", id: "", ready: false, busy: false });
+  });
   it("creates on the first action, copies only after readiness, and reuses the share within the dialog", async () => {
     const t = shell();
     let finish!: () => void;
@@ -259,7 +387,12 @@ function shell() {
     access: {
       load: async () => listing(),
       apply: async (change: AccessChange) => {
-        const r = applyAccessChange(access, JSON.parse(JSON.stringify(change)) as AccessChange, new Date(), { generate: generatePasscode });
+        const r = applyAccessChange(access, JSON.parse(JSON.stringify(change)) as AccessChange, new Date(), {
+          generate: generatePasscode,
+          ...(change.op === "createItem" || change.op === "addItemNotes" ? { resolvedItemNotes: {
+            ...(change.op === "addItemNotes" ? { grantId: change.id } : {}), notes: change.notes, ids: change.notes.map((_, i) => `fixture-id-${i}`),
+          } } : {}),
+        });
         access = r.access;
         return { ...listing(), id: r.id };
       },

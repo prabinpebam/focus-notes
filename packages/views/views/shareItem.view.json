@@ -11,11 +11,11 @@
       {
         "type": "Dialog",
         "id": "shareItemDialog",
-        "when": { "get": "vm.shareItem.open" },
+        "when": { "get": "vm.shareItem.dialogOpen" },
         "props": {
           "title": { "get": "vm.shareItem.title" },
           "closeLabel": { "t": "dialog.close" },
-          "open": { "get": "vm.shareItem.open" },
+          "open": { "get": "vm.shareItem.dialogOpen" },
           "size": "m",
           "height": "content"
         },
@@ -188,6 +188,14 @@
                 "props": { "value": { "t": "share.state.deleted" }, "tone": "danger" }
               },
               {
+                "type": "Inline", "when": { "get": "vm.shareItem.deleted" }, "props": { "gap": "s", "wrap": true },
+                "children": [
+                  { "type": "Button", "props": { "label": { "t": "share.state.restore" }, "disabled": { "get": "vm.shareItem.restoreDisabled" }, "disabledReason": { "get": "vm.shareItem.restoreReason" } }, "on": { "press": { "run": "share.item.restore" } } },
+                  { "type": "Button", "props": { "label": { "t": "share.state.close" } }, "on": { "press": { "run": "share.item.setOpen", "args": { "open": false } } } }
+                ]
+              },
+              { "type": "Button", "when": { "get": "vm.shareItem.signedOut" }, "props": { "label": { "t": "share.state.signIn" } }, "on": { "press": { "run": "share.item.signIn" } } },
+              {
                 "type": "Inline",
                 "props": { "gap": "s", "wrap": true },
                 "children": [
@@ -203,15 +211,58 @@
                 ]
               },
               { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.status" }, ""] } }, "props": { "value": { "get": "vm.shareItem.status" }, "announce": true } },
+              { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.progress" }, ""] } }, "props": { "value": { "get": "vm.shareItem.progress" }, "tone": "muted", "role": "secondary" } },
               {
                 "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "s" },
                 "children": [
                   { "type": "Heading", "props": { "value": { "t": "share.dialog.preview" }, "level": "3" } },
                   { "each": { "get": "vm.shareItem.lines" }, "as": "line", "key": "line.id", "render": { "type": "Text", "props": { "value": { "get": "line.text" } } }, "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } } }
                 ]
+              },
+              {
+                "type": "Stack", "when": { "get": "vm.shareItem.hasHistory" }, "props": { "gap": "s" },
+                "children": [
+                  { "type": "Divider" },
+                  { "type": "Button", "props": { "label": { "t": "share.dialog.before", "args": { "count": { "get": "vm.shareItem.historyCount" } } }, "variant": "subtle", "expanded": { "get": "vm.shareItem.historyOpen" } }, "on": { "press": { "run": "share.item.toggleHistory" } } },
+                  {
+                    "type": "Stack", "when": { "get": "vm.shareItem.historyOpen" }, "props": { "gap": "s" },
+                    "children": [
+                      { "type": "Inline", "when": { "get": "vm.shareItem.hasNewer" }, "props": { "gap": "s", "wrap": true }, "children": [
+                        { "type": "StatusRow", "props": { "message": { "t": "share.dialog.newer", "args": { "count": { "get": "vm.shareItem.newerCount" } } }, "tone": "info", "icon": "info" } },
+                        { "type": "Button", "props": { "label": { "t": "share.dialog.addThem" }, "size": "s", "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.addThem" } } }
+                      ] },
+                      { "each": { "get": "vm.shareItem.history" }, "as": "row", "key": "row.id", "render": {
+                        "type": "ItemCard", "props": { "title": { "get": "row.methods" }, "detail": { "get": "row.detail" }, "badge": { "get": "row.badge" }, "icon": "share" },
+                        "children": [
+                          { "type": "Inline", "when": { "get": "row.active" }, "props": { "gap": "s", "wrap": true },
+                            "children": [
+                              { "type": "Button", "when": { "get": "row.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "size": "s", "disabled": { "get": "vm.shareItem.busy" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.row", "args": { "id": { "get": "row.id" }, "what": "link" } } } },
+                              { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s", "disabled": { "get": "vm.shareItem.busy" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.row", "args": { "id": { "get": "row.id" }, "what": "withdraw" } } } }
+                            ]
+                          }
+                        ]
+                      }, "empty": { "type": "Text", "props": { "value": { "t": "share.list.empty" } } } }
+                    ]
+                  }
+                ]
               }
             ]
           }
+        ]
+      },
+      {
+        "type": "Dialog", "id": "shareWithdrawDialog", "when": { "get": "vm.shareItem.confirmOpen" },
+        "props": { "title": { "t": "share.withdraw.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.shareItem.confirmOpen" }, "size": "s", "height": "content" },
+        "on": { "openChange": { "run": "share.item.setConfirmOpen", "args": { "open": { "get": "event.open" } } } },
+        "children": [
+          { "type": "Stack", "props": { "gap": "l" }, "children": [
+            { "type": "Text", "props": { "value": { "t": "share.withdraw.text" } } },
+            { "type": "Text", "when": { "get": "vm.shareItem.hasProblem" }, "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger" } },
+            { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "share.manage.cancel" }, "autoFocus": true }, "on": { "press": { "run": "share.item.setConfirmOpen", "args": { "open": false } } } },
+              { "type": "Button", "props": { "label": { "t": "share.withdraw.confirm" }, "variant": "danger", "busy": { "get": "vm.shareItem.busy" } }, "on": { "press": { "run": "share.item.withdraw" } } }
+            ] }
+          ] }
         ]
       },
       {
@@ -235,7 +286,7 @@
               {
                 "type": "FileTree",
                 "id": "shareContentsTree",
-                "props": { "label": { "t": "share.review.tree" }, "items": { "get": "vm.shareItem.items" }, "focusId": { "get": "vm.shareItem.reviewFocus" } },
+                "props": { "label": { "t": "share.review.tree" }, "items": { "get": "vm.shareItem.items" }, "focusId": { "get": "vm.shareItem.reviewFocus" }, "windowed": true },
                 "on": {
                   "select": { "run": "share.item.focusReview", "args": { "id": { "get": "event.id" } } },
                   "expand": { "run": "share.item.expand", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } }

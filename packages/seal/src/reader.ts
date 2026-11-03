@@ -163,6 +163,7 @@ export class SiteReader {
     return {
       owner: manifest.owner,
       expiresAt: ring.expiresAt,
+      ...(ring.authorization ? { authorization: ring.authorization } : {}),
       notes: notes.map(({ path, title, updated }) => ({ path, title, updated })),
       read: async (path) => {
         const entry: ManifestEntry | undefined = byPath.get(path);
@@ -185,6 +186,8 @@ export interface OpenVault {
   owner: string;
   /** When the grant ends, as its keyring says (null: never). */
   expiresAt?: string | null;
+  /** Authenticated membership revision, used only by the publishing desktop. */
+  authorization?: string;
   notes: PublicNote[];
   read(path: string): Promise<string>;
 }

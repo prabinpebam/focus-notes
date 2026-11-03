@@ -58,10 +58,15 @@ export interface ScopeInput { notes: string[]; folders: string[] }
 /** A passcode the owner typed, or a request for main-issued words (only those are stored as `generated`). */
 export type PasscodeInput = { value: string } | { generate: true };
 /** How the main process makes words (seal/words.ts); the window has none, so it can't claim them. */
-export interface ApplyOptions { generate?: () => string }
+export interface ApplyOptions {
+  generate?: () => string;
+  /** Trusted filesystem resolution, never accepted from the renderer. */
+  resolvedItemNotes?: { grantId?: string; notes: readonly string[]; ids: readonly string[] };
+}
 export interface AudienceInput { name: string; link: boolean; passcode?: PasscodeInput; scope: ScopeInput; expiresAt: string | null }
 export type AccessChange =
   | { op: "createItem"; item: NonNullable<Grant["item"]>; notes: string[]; link: boolean; passcode?: PasscodeInput; wordsId?: string; expiresAt: string | null }
+  | { op: "addItemNotes"; id: string; notes: string[] }
   | { op: "create"; audience: AudienceInput }
   /** `passcode: null` removes it; a missing field stays as it is. */
   | { op: "update"; id: string; link?: boolean; passcode?: PasscodeInput | null; scope?: ScopeInput; expiresAt?: string | null }
@@ -74,6 +79,8 @@ export interface Audience {
   link: boolean; passcode: boolean; generated: boolean;
   shareCode?: string;
   item?: Grant["item"];
+  /** Current private folder members outside a snapshot, supplied only by the desktop listing. */
+  unsharedNotes?: string[];
 }
 export const audienceOf = (g: Grant): Audience => ({
   id: g.id, name: g.name, scope: g.scope, createdAt: g.createdAt, expiresAt: g.expiresAt ?? null, revokedAt: g.revokedAt ?? null,
@@ -152,6 +159,13 @@ function checkPasscode(p: PasscodeInput, o: ApplyOptions): { value: string; gene
   return { value: normalizePassphrase(p.value), generated: false };
 }
 const newLink = () => ({ secret: toB64url(randomBytes(LINK_SECRET_BYTES)) });
+const resolvedIds = (notes: readonly string[], o: ApplyOptions, grantId?: string) => {
+  const r = o.resolvedItemNotes;
+  if (!r || r.grantId !== grantId || r.ids.length !== notes.length || !r.ids.length ||
+    r.ids.some((id) => !id) || new Set(r.ids).size !== r.ids.length ||
+    JSON.stringify([...r.notes].sort()) !== JSON.stringify([...notes].sort())) throw new AccessEditError("scope.empty");
+  return [...r.ids];
+};
 
 /**
  * The access file with one change made, and the audience it was made to. Throws AccessEditError for
@@ -163,7 +177,8 @@ export function applyAccessChange(access: AccessFile, change: AccessChange, now 
     const { item } = change;
     if (!isSafePath(item.folder ? `${item.path}/_.md` : item.path) || change.notes.some((p) => !isSafePath(p) || (item.folder ? !p.startsWith(`${item.path}/`) : p !== item.path))) throw new AccessEditError("scope.empty");
     if (!change.link && !change.passcode) throw new AccessEditError("waysIn.none");
-    const scope = tidyScope({ notes: item.includeLater && item.folder ? [] : change.notes, folders: item.includeLater && item.folder ? [item.path] : [] });
+    const scope = item.includeLater && item.folder ? tidyScope({ notes: [], folders: [item.path] })
+      : { ids: resolvedIds(change.notes, o), notes: [], folders: [] };
     let shareCode = newShareCode();
     while (access.grants.some((g) => g.shareCode === shareCode)) shareCode = newShareCode();
     let id = randomId("s", 16);
@@ -204,6 +219,14 @@ export function applyAccessChange(access: AccessFile, change: AccessChange, now 
   if (change.op === "delete") return replace(undefined);
   if (g.revokedAt) throw new AccessEditError("withdrawn");
   if (change.op === "withdraw") return replace({ ...g, revokedAt: now.toISOString() });
+  if (change.op === "addItemNotes") {
+    if (!isActive(g, now.getTime()) || !g.shareCode || !g.item?.folder || g.item.includeLater ||
+      !g.scope.ids?.length || g.scope.all || g.scope.notes?.length || g.scope.folders?.length ||
+      change.notes.some((path) => !isSafePath(path) || !path.startsWith(`${g.item!.path}/`))) throw new AccessEditError("scope.empty");
+    const ids = resolvedIds(change.notes, o, g.id);
+    return replace({ ...g, scope: { ids: [...new Set([...g.scope.ids, ...ids])], notes: [], folders: [] },
+      item: { ...g.item, notePaths: [...new Set([...(g.item.notePaths ?? []), ...change.notes])] } });
+  }
 
   const next: Grant = { ...g };
   if (change.scope) next.scope = tidyScope(change.scope);
@@ -268,6 +291,10 @@ export function parseAccessChange(v: unknown): AccessChange {
     return { op: "create", audience: { name: a.name, link: a.link, ...(a.passcode !== undefined ? { passcode: parsePasscode(a.passcode) } : {}), scope: parseScope(a.scope), expiresAt: parseExpiry(a.expiresAt) } };
   }
   if (typeof v.id !== "string" || !GRANT_ID.test(v.id)) throw new Error("Not a share change");
+  if (v.op === "addItemNotes") {
+    if (!only(v, ["op", "id", "notes"])) throw new Error("Not a share change");
+    return { op: "addItemNotes", id: v.id, notes: strings(v.notes, 10_000) };
+  }
   if (v.op === "withdraw" || v.op === "delete") {
     if (!only(v, ["op", "id"])) throw new Error("Not a share change");
     return { op: v.op, id: v.id };

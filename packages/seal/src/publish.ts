@@ -13,7 +13,7 @@ import {
 } from "./format.ts";
 import {
   activeShareGrants, deriveLinkBits, GRANT_ID, grantScope, inScope, isActive, keyringRole, keyringSaltFor, LINK_KDF, normalizeName, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
-  codeKeyringPath, SHARE_CODE, type AccessFile, type Grant,
+  authorizationRevision, inGrantScope, codeKeyringPath, SHARE_CODE, type AccessFile, type Grant,
 } from "./grants.ts";
 import { passcodeProblem } from "./access.ts";
 
@@ -87,10 +87,13 @@ export function validateAccess(a: unknown): AccessFile {
     if (g.scope.ids !== undefined && (!Array.isArray(g.scope.ids) || g.scope.ids.some((id) => typeof id !== "string" || !id))) bad("has malformed snapshot identifiers");
     if (!g.shareCode && !normalizeName(g.name)) bad("has an empty name");
     if (g.shareCode !== undefined && (!SHARE_CODE.test(g.shareCode) || g.owner)) bad("has a malformed share code");
+    if (g.item && !/^s[a-z2-7]{16}$/.test(g.id)) bad("needs an opaque item identifier");
     if (g.item !== undefined && (!g.shareCode || typeof g.item !== "object" || g.item === null ||
       typeof g.item.label !== "string" || typeof g.item.path !== "string" ||
       typeof g.item.folder !== "boolean" || typeof g.item.includeLater !== "boolean" ||
       !isSafePath(g.item.folder ? `${g.item.path}/_.md` : g.item.path))) bad("has malformed item metadata");
+    if (g.item && (!g.item.folder || !g.item.includeLater) &&
+      (!g.scope.ids?.length || g.scope.all || g.scope.notes?.length || g.scope.folders?.length)) bad("has an unresolved item snapshot");
     // Every passcode in force must resist offline guessing, generated or not: `generated` is just a field
     // in access.json, so it can't vouch for the value. The same rule as the app (passcodeProblem: 16 or
     // more characters, or 3 or more different words, then the strength estimate), so a hand-edited file
@@ -202,10 +205,11 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     /** Seals one grant's manifest of what it opens, and returns the keyring payload that opens it. */
     const sealManifest = async (g: Grant) => {
       const scope = grantScope(g);
-      const opens = notes.filter((n) => inScope(scope, n));
+      const opens = notes.filter((n) => inGrantScope(g, n));
       if (g.item && g.scope.ids?.length) {
-        const ids = new Set(opens.map((n) => n.id));
-        if (ids.size !== opens.length) throw new Error("private/access.json: shared snapshot identifiers are duplicated.");
+        const selected = notes.filter((n) => n.id && g.scope.ids!.includes(n.id));
+        const ids = new Set(selected.map((n) => n.id));
+        if (ids.size !== selected.length) throw new Error("private/access.json: shared snapshot identifiers are duplicated.");
       }
       const shown = scopedPaths(g.item?.folder ? { ...scope, folders: [g.item.path] } : scope, opens.map((n) => n.path));
       const manifest: Manifest = { owner: o.owner, notes: [] };
@@ -213,7 +217,8 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
       const kid = randomId(), key = randomBytes(KEY_BYTES);
       await put(join(o.site, ...sealedPath(build, kid).split("/")), await sealFile("manifest", key, build, kid, encodeText(JSON.stringify(manifest))));
       // A fixed-width expiry (only active grants get here, so it parses), and the payload is padded: every keyring is the same size.
-      return { grant: g.id, expiresAt: g.expiresAt ? new Date(g.expiresAt).toISOString() : null, manifest: { kid, key: toB64url(key) } };
+      return { grant: g.id, expiresAt: g.expiresAt ? new Date(g.expiresAt).toISOString() : null,
+        ...(g.item ? { authorization: await authorizationRevision(g, notes) } : {}), manifest: { kid, key: toB64url(key) } };
     };
     const at = (path: string) => join(o.site, ...path.split("/"));
 
