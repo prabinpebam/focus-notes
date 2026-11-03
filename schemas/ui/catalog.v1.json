@@ -2832,7 +2832,7 @@
     {
       "type": "FontChoice",
       "tier": "primitive",
-      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name, a toggle pressed when chosen. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
+      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name in a cell of fixed size, a toggle pressed when chosen; pointing at it previews it. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
       "props": {
         "font": {
           "kind": "enum",
@@ -2857,7 +2857,8 @@
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "preview": {}
       },
       "slots": {},
       "states": [
@@ -2988,6 +2989,99 @@
         "logo pen",
         "accent app, no logo",
         "uploaded logo"
+      ]
+    },
+    {
+      "type": "PickerButton",
+      "tier": "primitive",
+      "description": "A compact button that shows only a setting's current value and opens its choices in a popover (D-316, owner 3 November): a font's name drawn in that font, or a theme's name beside a small swatch of it, then a chevron. Use it as a PopoverPanel's trigger.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What it sets: its accessible name with the value (Font: Serif)."
+        },
+        "value": {
+          "kind": "message",
+          "required": true,
+          "description": "The current value, the button's visible text."
+        },
+        "font": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system",
+            "app"
+          ],
+          "default": "app",
+          "description": "Draws the value in this writing font."
+        },
+        "theme": {
+          "kind": "enum",
+          "values": [
+            "paper",
+            "sepia",
+            "harbor-light",
+            "forest-light",
+            "contrast-light",
+            "ink",
+            "dusk",
+            "harbor-dark",
+            "forest-dark",
+            "contrast-dark",
+            "app"
+          ],
+          "default": "app",
+          "description": "Shows a swatch of this theme before the value; app: no swatch."
+        },
+        "chevron": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Off for an option inside the popover's grid: a choice, not a trigger."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {},
+        "preview": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.pickerButton.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "font mono",
+        "font sans",
+        "font serif",
+        "font hyperlegible",
+        "font dyslexic",
+        "font system",
+        "font app",
+        "option selected",
+        "theme paper",
+        "theme sepia",
+        "theme harbor-light",
+        "theme forest-light",
+        "theme contrast-light",
+        "theme ink",
+        "theme dusk",
+        "theme harbor-dark",
+        "theme forest-dark",
+        "theme contrast-dark",
+        "theme app"
       ]
     },
     {
@@ -3407,6 +3501,15 @@
           "kind": "token",
           "group": "space",
           "default": "m"
+        },
+        "cell": {
+          "kind": "enum",
+          "values": [
+            "sheet",
+            "choice"
+          ],
+          "default": "sheet",
+          "description": "sheet: each column at least a narrow sheet wide. choice: a uniform grid of small equal cells, three across (the font picker in its popover, D-316, D-323)."
         }
       },
       "events": {},
@@ -3423,6 +3526,7 @@
         "pattern": "none"
       },
       "fixtures": [
+        "choice cells",
         "two"
       ]
     },
@@ -5269,6 +5373,9 @@
       "imageFitViewport",
       "imageWideExtra",
       "imageQuarterTurn",
+      "fontCell",
+      "swatch",
+      "fontGridCell",
       "pillMax",
       "imageThumb",
       "textAreaMax",

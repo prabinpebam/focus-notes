@@ -276,6 +276,9 @@
     "imageFitViewport": { "$value": "{ref.size.70vh}", "$description": "…nor than this share of the window, so it is seen whole without scrolling." },
     "imageWideExtra": { "$value": "{ref.size.128}", "$description": "How far a Wide image reaches past the reading column, split between both sides." },
     "imageQuarterTurn": { "$type": "number", "$value": 0.58, "$description": "Edit image: a landscape picture turned a quarter is drawn this much smaller, so it stays inside its frame." },
+    "fontCell": { "$value": "{ref.size.80}", "$description": "A font cell's height in the font picker." },
+    "swatch": { "$value": "{ref.size.16}", "$description": "A theme swatch in a picker button." },
+    "fontGridCell": { "$value": "{ref.size.110}", "$description": "A font cell's width in the font picker's grid." },
     "pillMax": { "$value": "{ref.size.200}", "$description": "A project pill's widest; a longer name ends in an ellipsis." },
     "imageThumb": { "$value": "{ref.size.96}", "$description": "An image's thumbnail in a dialog (Auto caption)." },
     "textAreaMax": {

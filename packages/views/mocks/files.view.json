@@ -121,38 +121,21 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
+              "type": "Inline",
               "props": {
-               "part": "plain",
-               "accent": "teal"
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
               },
               "children": [
                {
-                "type": "Inline",
+                "type": "Text",
                 "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "ProjectMark",
-                  "props": {
-                   "logo": "book",
-                   "accent": "teal",
-                   "size": "s"
-                  }
+                 "value": {
+                  "t": "project.mock.bookName"
                  },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.mock.bookName"
-                   },
-                   "role": "label"
-                  }
-                 }
-                ]
+                 "role": "label"
+                }
                }
               ]
              },
@@ -304,50 +287,6 @@
                "grow": true
               },
               "children": [
-               {
-                "type": "ProjectScope",
-                "props": {
-                 "part": "band"
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "ProjectMark",
-                    "props": {
-                     "logo": "book",
-                     "accent": "teal",
-                     "size": "s"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.window.title",
-                      "args": {
-                       "note": {
-                        "t": "project.mock.noteChapter"
-                       },
-                       "project": {
-                        "t": "project.mock.bookName"
-                       }
-                      }
-                     },
-                     "role": "caption",
-                     "lines": "one"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
                {
                 "type": "Stack",
                 "props": {

@@ -317,50 +317,6 @@
               },
               "children": [
                {
-                "type": "ProjectScope",
-                "props": {
-                 "part": "band"
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "ProjectMark",
-                    "props": {
-                     "logo": "book",
-                     "accent": "teal",
-                     "size": "s"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.window.title",
-                      "args": {
-                       "note": {
-                        "t": "project.mock.noteChapter"
-                       },
-                       "project": {
-                        "t": "project.mock.bookName"
-                       }
-                      }
-                     },
-                     "role": "caption",
-                     "lines": "one"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
-               {
                 "type": "Stack",
                 "props": {
                  "gap": "m",
@@ -533,50 +489,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "ProjectMark",
-                  "props": {
-                   "logo": "book",
-                   "accent": "teal",
-                   "size": "s"
-                  }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.title",
-                    "args": {
-                     "note": {
-                      "t": "project.mock.noteChapter"
-                     },
-                     "project": {
-                      "t": "project.mock.bookName"
-                     }
-                    }
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -688,34 +600,6 @@
              "grow": true
             },
             "children": [
-             {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.open"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
              {
               "type": "Stack",
               "props": {
@@ -1224,50 +1108,6 @@
               },
               "children": [
                {
-                "type": "ProjectScope",
-                "props": {
-                 "part": "band"
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "ProjectMark",
-                    "props": {
-                     "logo": "briefcase",
-                     "accent": "indigo",
-                     "size": "s"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.window.title",
-                      "args": {
-                       "note": {
-                        "t": "project.mock.noteStandup"
-                       },
-                       "project": {
-                        "t": "project.mock.workName"
-                       }
-                      }
-                     },
-                     "role": "caption",
-                     "lines": "one"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
-               {
                 "type": "Stack",
                 "props": {
                  "gap": "m",
@@ -1394,50 +1234,6 @@
                "grow": true
               },
               "children": [
-               {
-                "type": "ProjectScope",
-                "props": {
-                 "part": "band"
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "ProjectMark",
-                    "props": {
-                     "logo": "briefcase",
-                     "accent": "indigo",
-                     "size": "s"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.window.title",
-                      "args": {
-                       "note": {
-                        "t": "project.mock.noteStandup"
-                       },
-                       "project": {
-                        "t": "project.mock.workName"
-                       }
-                      }
-                     },
-                     "role": "caption",
-                     "lines": "one"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
                {
                 "type": "Stack",
                 "props": {
@@ -2061,34 +1857,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.open"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -2229,50 +1997,6 @@
                 },
                 "children": [
                  {
-                  "type": "ProjectScope",
-                  "props": {
-                   "part": "band"
-                  },
-                  "children": [
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "s",
-                     "align": "center",
-                     "padding": "s"
-                    },
-                    "children": [
-                     {
-                      "type": "ProjectMark",
-                      "props": {
-                       "logo": "briefcase",
-                       "accent": "indigo",
-                       "size": "s"
-                      }
-                     },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.window.title",
-                        "args": {
-                         "note": {
-                          "t": "project.mock.noteStandup"
-                         },
-                         "project": {
-                          "t": "project.mock.workName"
-                         }
-                        }
-                       },
-                       "role": "caption",
-                       "lines": "one"
-                      }
-                     }
-                    ]
-                   }
-                  ]
-                 },
-                 {
                   "type": "Stack",
                   "props": {
                    "gap": "m",
@@ -2356,50 +2080,6 @@
                  "grow": true
                 },
                 "children": [
-                 {
-                  "type": "ProjectScope",
-                  "props": {
-                   "part": "band"
-                  },
-                  "children": [
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "s",
-                     "align": "center",
-                     "padding": "s"
-                    },
-                    "children": [
-                     {
-                      "type": "ProjectMark",
-                      "props": {
-                       "logo": "book",
-                       "accent": "teal",
-                       "size": "s"
-                      }
-                     },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "project.window.title",
-                        "args": {
-                         "note": {
-                          "t": "project.mock.noteChapter"
-                         },
-                         "project": {
-                          "t": "project.mock.bookName"
-                         }
-                        }
-                       },
-                       "role": "caption",
-                       "lines": "one"
-                      }
-                     }
-                    ]
-                   }
-                  ]
-                 },
                  {
                   "type": "Stack",
                   "props": {
@@ -2549,34 +2229,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.open"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -2654,34 +2306,6 @@
                "grow": true
               },
               "children": [
-               {
-                "type": "ProjectScope",
-                "props": {
-                 "part": "band"
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.window.open"
-                     },
-                     "role": "caption",
-                     "lines": "one"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
                {
                 "type": "Stack",
                 "props": {
@@ -3902,34 +3526,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.open"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -4043,34 +3639,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.open"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -4158,34 +3726,6 @@
              "grow": true
             },
             "children": [
-             {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.window.app"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
              {
               "type": "Stack",
               "props": {
