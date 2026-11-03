@@ -16,7 +16,13 @@ IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker an
 
 ## Project and sharing waits (planned)
 
-The MP flows are specified, not implemented or measured. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.
+The MP flows are specified, not implemented or measured except for the candidate increments identified below. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.
+
+The `vq-share-rest` review slice runs Settings copy, expiry changes, withdrawal and deletion through tracker target `sharing.change` (`focus-notes:sharing.change`): responsive through waiting, or long when copy waits for publication. The list stays visible with disabled affected controls, a preparing status and an explicit retryable error. Turn off is an instant candidate-only local preview, not a note move or a real publication.
+
+Local invitation draft saves use tracker target `sharing.invite` (`focus-notes:sharing.invite`), a responsive save with the Send invite button busy, input retained on failure, and the Pending card only after the device-local state write succeeds. No remote invitation wait or claim is made.
+
+The local Publish draft uses `sharing.publishDraft` (`focus-notes:sharing.publishDraft`), responsive save with a busy Publish button and a completion toast only after the local write. Site preview preparation uses `sharing.preview` (`focus-notes:sharing.preview`), responsive through waiting while it reads current notes, retaining Settings until the full preview is ready. Apply uses `sharing.previewSave` (`focus-notes:sharing.previewSave`), responsive save with its busy button and retained choices on failure. Errors remain in the dialog or Settings status. These are local operations, not remote publishing budgets.
 
 The 3 November owner-review Open slice keeps the source window and draft intact while starting a local project in its own process/profile. The dialog names the opening operation and retains search input on refusal; without a note, the same choices fill the window. Launch resumes the last closed project and its remembered note. Tracker timing and restoring every previously open project/window remain production work; no remote operation is wired.
 

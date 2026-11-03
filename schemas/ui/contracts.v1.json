@@ -12107,14 +12107,21 @@
           "kind": "enum",
           "values": [
             "window",
+            "canvas",
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
+          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. canvas: only the scoped background, for the full-window website preview. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
         },
         "grow": {
           "kind": "boolean",
           "default": false
+        },
+        "contentSize": {
+          "kind": "number",
+          "min": 14,
+          "max": 32,
+          "description": "A subtree's reading size, used by the website preview; leaves app appearance unchanged."
         }
       },
       "events": {},
@@ -12132,9 +12139,44 @@
       },
       "fixtures": [
         {
+          "name": "local reading size",
+          "props": {
+            "contentSize": 20,
+            "font": "serif",
+            "theme": "paper"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "part window",
           "props": {
             "part": "window",
+            "accent": "teal"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "part canvas",
+          "props": {
+            "part": "canvas",
             "accent": "teal"
           },
           "children": [
@@ -14470,6 +14512,11 @@
           "of": "noteBlocks",
           "required": true,
           "description": "The note as the Markdown bridge parses it."
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the selected reading block clear and dim the rest. Choose a block with the pointer, or focus the document and use Up/Down."
         }
       },
       "events": {},
@@ -14483,6 +14530,15 @@
         "name": "The page's landmarks name it; headings keep their levels."
       },
       "fixtures": [
+        {
+          "name": "paragraph focus",
+          "props": {
+            "blocks": {
+              "get": "vm.gallery.noteBlocks"
+            },
+            "focusMode": true
+          }
+        },
         {
           "name": "every block",
           "props": {

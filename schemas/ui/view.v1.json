@@ -9641,6 +9641,7 @@
                 {
                   "enum": [
                     "window",
+                    "canvas",
                     "plain"
                   ]
                 },
@@ -9662,6 +9663,18 @@
                 },
                 {
                   "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentSize": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 14,
+                  "maximum": 32
+                },
+                {
+                  "$ref": "#/$defs/read"
                 }
               ]
             }
@@ -11506,6 +11519,19 @@
           "properties": {
             "blocks": {
               "$ref": "#/$defs/read"
+            },
+            "focusMode": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
