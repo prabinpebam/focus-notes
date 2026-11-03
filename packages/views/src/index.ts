@@ -11,6 +11,7 @@ import siteLanding from "../views/siteLanding.view.json" with { type: "json" };
 import sitePage from "../views/sitePage.view.json" with { type: "json" };
 import en from "../messages/en.json" with { type: "json" };
 import { mocks, mockData } from "../mocks/index.ts";
+import { shareMocks } from "../mocks/share/index.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
 export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewrite };
@@ -27,3 +28,6 @@ export const messages: Record<string, Record<string, string>> = { en };/**
  * gallery under "Mocks: Projects, files and images". Nothing here is wired into the app.
  */
 export { mocks, mockData };
+
+/** Design mocks shown in the gallery before anything is wired (strict design mode): one group per area, each with its views, fake data and entries. */
+export const mockGroups = [shareMocks];

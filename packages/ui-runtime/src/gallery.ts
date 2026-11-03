@@ -9,11 +9,35 @@ import { VIEW_SCHEMA_URL } from "./migrate.ts";
 
 export interface GalleryFixture { id: string; type: string; label: string }
 
+/**
+ * A group of design mocks (strict design mode): view documents over fake data, not wired to anything.
+ * Each entry opens one of the group's views with its own starting local state.
+ */
+export interface MockGroup {
+  id: string;
+  label: string;
+  /** Fake data, each registered as a view model `vm.<name>` whose schema is read from the data. */
+  models: Record<string, unknown>;
+  views: Record<string, unknown>;
+  entries: readonly { id: string; label: string; view: string; local?: Record<string, string | number | boolean> }[];
+}
+
 export function galleryFixtures(contracts: readonly Contract[]): GalleryFixture[] {
   return contracts.flatMap((c) => c.fixtures.map((f, i) => ({ id: `${c.type}.${i}`, type: c.type, label: `${c.type}: ${f.name}` })));
 }
-export function galleryViews(contracts: readonly Contract[], scheme: "light" | "dark" = "light"): Record<string, unknown> {
+export function galleryViews(contracts: readonly Contract[], scheme: "light" | "dark" = "light", mockGroups: readonly MockGroup[] = []): Record<string, unknown> {
   const out: Record<string, unknown> = {};
+  for (const group of mockGroups) for (const entry of group.entries) {
+    const doc = group.views[entry.view] as { focus?: string; local?: Record<string, unknown>; root: unknown };
+    const id = `gallery.mock.${entry.id}`;
+    out[id] = {
+      $schema: VIEW_SCHEMA_URL, id,
+      viewModels: ["vm.app", "vm.gallery", ...Object.keys(group.models).map((m) => `vm.${m}`)],
+      ...(doc.focus ? { focus: doc.focus } : {}),
+      local: { ...doc.local, ...entry.local },
+      root: { type: "AppRoot", props: { scheme, platform: { get: "vm.app.platform" } }, children: [doc.root] },
+    };
+  }
   for (const c of contracts) {
     c.fixtures.forEach((f, i) => {
       // A component that names its parts from its id gets one, as a view would give it (D-199).
@@ -79,6 +103,21 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
             },
             { type: "Heading", props: { level: "2", value: { t: "project.mock.components" } } },
             {
+              each: { get: "vm.gallery.mockGroups" }, as: "group", key: "group.id",
+              render: {
+                type: "Stack", props: { gap: "s" }, children: [
+                  { type: "Heading", props: { level: "2", value: { get: "group.label" } } },
+                  {
+                    each: { get: "group.entries" }, as: "entry", key: "entry.id",
+                    render: { type: "Button", props: { label: { get: "entry.label" }, variant: "subtle" }, on: { press: { run: "gallery.open", args: { id: { get: "entry.key" } } } } },
+                    empty: { type: "Text", props: { value: { t: "gallery.empty" } } },
+                  },
+                  { type: "Divider" },
+                ],
+              },
+              empty: { type: "Text", props: { value: { t: "gallery.empty" } } },
+            },
+            {
               each: { get: "vm.gallery.fixtures" }, as: "item", key: "item.id",
               render: { type: "Button", props: { label: { get: "item.label" }, variant: "subtle" }, on: { press: { run: "gallery.open", args: { id: { get: "item.id" } } } } },
               empty: { type: "Text", props: { value: { t: "gallery.empty" } } },
@@ -92,8 +131,12 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
 }
 
 /** Registers the gallery's view model and its navigation command on an app. */
-export function registerGallery(app: App, contracts: readonly Contract[], navigate: (id: string) => void): void {
+export function registerGallery(app: App, contracts: readonly Contract[], navigate: (id: string) => void, mockGroups: readonly MockGroup[] = []): void {
   const fixtures = galleryFixtures(contracts);
+  for (const group of mockGroups) for (const [name, data] of Object.entries(group.models)) {
+    app.viewModels.register({ id: `vm.${name}`, schema: schemaOf(data) as never, select: () => data as never });
+  }
+  const mocks = mockGroups.map((g) => ({ id: g.id, label: g.label, entries: g.entries.map((e) => ({ id: e.id, key: `mock.${e.id}`, label: e.label })) }));
   const item = (id: string, label: string, icon: string, extra: Record<string, unknown> = {}) => ({ id, label, icon, ...extra });
   const toolbar = [
     item("g.new", "New note", "newNote", { shortcut: "Ctrl+N" }),
@@ -231,6 +274,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       type: "object",
       properties: {
         fixtures: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
+        mockGroups: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, entries: { type: "array", items: { type: "object", properties: { id: { type: "string" }, key: { type: "string" }, label: { type: "string" } } } } } } },
         toolbar: { type: "array", items: ITEM },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
         options: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
@@ -270,7 +314,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         textMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ITEM } } } },
       },
     },
-    select: () => ({ fixtures, toolbar, menu, ...extras }),
+    select: () => ({ fixtures, mockGroups: mocks, toolbar, menu, ...extras }),
   });
   // Note blocks keep the editor's own block schema; everything else is read off the fake data.
   const mockSchema = schemaOf(mockData) as { properties: Record<string, unknown> };

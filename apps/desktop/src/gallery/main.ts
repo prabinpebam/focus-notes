@@ -3,7 +3,7 @@ import { createApp, type PlatformBridge } from "@focus-notes/core";
 import { mountApp } from "@focus-notes/ui-runtime";
 import { galleryViews, registerGallery } from "@focus-notes/ui-runtime/gallery";
 import { contracts } from "@focus-notes/ui/contracts";
-import { messages } from "@focus-notes/views";
+import { messages, mockGroups } from "@focus-notes/views";
 
 const params = new URLSearchParams(location.search);
 const scheme = params.get("scheme") === "dark" ? "dark" : "light";
@@ -21,8 +21,8 @@ const bridge: PlatformBridge = {
 const app = createApp(bridge, messages.en!);
 registerGallery(app, contracts, (id) => {
   location.search = `?f=${encodeURIComponent(id)}&scheme=${scheme}`;
-});
+}, mockGroups);
 const fixture = params.get("f");
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root");
-mountApp(root, { app, views: galleryViews(contracts, scheme), view: fixture ? `gallery.${fixture}` : "gallery.index" });
+mountApp(root, { app, views: galleryViews(contracts, scheme, mockGroups), view: fixture ? `gallery.${fixture}` : "gallery.index" });

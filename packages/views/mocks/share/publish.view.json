@@ -1,0 +1,1 @@
+{ "focus": "page", "root": { "type": "Stack", "id": "page", "props": { "gap": "l", "padding": "xl" }, "children": [ { "type": "Text", "props": { "value": { "t": "share.mock.soon" } } } ] } }
