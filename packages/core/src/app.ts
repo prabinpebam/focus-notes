@@ -13,7 +13,7 @@ import { waits } from "@focus-notes/tokens";
 import { TaskTracker, busyProps, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
-import { joinPath, newNoteFolder } from "./workspace.ts";
+import { dirOf, joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { registerPublicLink } from "./public-link-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
@@ -430,7 +430,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
   const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
-  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load });
+  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load, flush, toast });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
@@ -1130,7 +1130,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const position = restorePosition;
       restorePosition = undefined;
       if (position) afterPaint(() => editorAction("note.restorePosition", position));
-      if (bridge.projects) afterPaint(() => projectIntro.ready());
+      if (bridge.projects && !bridge.projects.local) afterPaint(() => projectIntro.ready());
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
@@ -1320,7 +1320,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
       more: [
         ...(DEFAULT_TOOLBAR.some((d) => !s.toolbarPinned.includes(d)) ? [{ id: "actions", label: "menu.actions", items: DEFAULT_TOOLBAR.filter((d) => !s.toolbarPinned.includes(d)) as MenuEntry[] }] : []),
-        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({ ...g, items: g.items.filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)) })),
+        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
+          ...g,
+          items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
+            .filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)),
+        })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
@@ -1515,12 +1519,24 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const timeOfDay = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
   const when = (at: number) => timeOfDay.format(at);
   const backupDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const localLocation = (s: AppState) => Boolean(s.note.path && s.note.status === "ready" && bridge.workspace?.revealItem && !s.sync.git && !s.workspace.repo);
+  commands.register({
+    id: "note.revealLocal", title: `command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`, icon: "hardDrive",
+    enabled: localLocation,
+    run: async () => {
+      const path = store.state.note.path;
+      if (!path || !bridge.workspace?.revealItem) return;
+      try { await bridge.workspace.revealItem(path); }
+      catch { toast(catalog.format("toast.revealItemFailed"), { tone: "error" }); }
+    },
+  });
   viewModels.register({
     id: "vm.saveState",
     schema: {
       type: "object",
       properties: {
         visible: { type: "boolean" },
+        backupVisible: { type: "boolean" }, local: { type: "boolean" }, location: { type: "string" }, locationLabel: { type: "string" },
         interactive: { type: "boolean" },
         state: { type: "string", enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
         label: { type: "string" }, text: { type: "string" },
@@ -1529,7 +1545,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         icon: { type: "string" }, tone: { type: "string", enum: ["neutral", "accent", "danger", "success"] },
       },
     },
-    reads: ["sync", "note.saveState", "note.path", "note.status"],
+    reads: ["sync", "note.saveState", "note.path", "note.status", "workspace"],
     select: (s) => {
       const state = saveStateOf(s.sync, s.note.saveState === "unsaved" || s.note.saveState === "saving");
       const label = !catalog.has("save.state.savedLocal") ? ""
@@ -1538,8 +1554,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
       // The card opens even for local-only notes; its backup action explains when Git is unavailable.
       const backingUp = state === "syncing";
+      const local = localLocation(s);
+      const folder = dirOf(s.note.path ?? "");
+      const location = /^[A-Za-z]:[\\/]|^\//.test(folder) ? folder : joinPath(s.workspace.folder ?? "", folder);
+      const backupVisible = !local && Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready";
       return {
-        visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", interactive: Boolean(bridge.sync), state, label, text,
+        visible: local || backupVisible, backupVisible, local, location,
+        locationLabel: catalog.format("local.location.label", { location, action: catalog.format(`command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`) }),
+        interactive: Boolean(bridge.sync), state, label, text,
         backingUp, canBackUp: s.sync.git && !backingUp,
         backupTime: s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
           : catalog.format("save.backup.last", { time: backupDate.format(s.sync.backedUpAt) }),

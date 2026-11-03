@@ -75,8 +75,8 @@ export function registerProject(ctx: {
     id: "vm.project", reads: "*",
     setters: Object.fromEntries(["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)].map((field) => [field, `project.${field}`])),
     schema: { type: "object", properties: {
-      available: { type: "boolean" }, watermarkOn: { type: "boolean" },
-      ...Object.fromEntries(["name", "accent", "logo", "logoSrc", "watermark", "font", "theme", "fontValue", "themeValue", "scopeFont", "scopeTheme", ...Object.keys(transient)].map((field) => [field, text])),
+      available: { type: "boolean" }, local: { type: "boolean" }, watermarkOn: { type: "boolean" },
+      ...Object.fromEntries(["name", "accent", "logo", "logoSrc", "watermark", "font", "theme", "fontValue", "themeValue", "scopeFont", "scopeTheme", "filesHeading", ...Object.keys(transient)].map((field) => [field, text])),
       accents: { type: "array", items: option }, logos: { type: "array", items: option },
       fonts: { type: "array", items: option }, watermarkOptions: { type: "array", items: option },
       themeTiles: { type: "array", items: { type: "object", properties: {
@@ -87,7 +87,9 @@ export function registerProject(ctx: {
     select: (state: AppState) => {
       const current = settings();
       return {
-        ...current, ...transient, available: Boolean(folder()), watermarkOn: current.watermark === "on",
+        ...current, ...transient, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
+        accent: ctx.bridge.projects?.local ? "app" : current.accent,
+        filesHeading: catalog.format(ctx.bridge.projects?.local ? "quick.title" : "files.heading"),
         scopeFont: transient.fontHover || current.font, scopeTheme: transient.themeHover || current.theme,
         fontValue: catalog.format(current.font === "app" ? "project.appDefault" : `font.${current.font}`),
         themeValue: catalog.format(current.theme === "app" ? "project.appDefault" : themeById(current.theme)?.title ?? "project.appDefault"),

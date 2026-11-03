@@ -126,6 +126,9 @@ export interface PlatformBridge {
   windows?: WindowsBridge;
   /** Local project windows, isolated from each other's workspace services. */
   projects?: {
+    local?: boolean;
+    localNote(): Promise<void>;
+    importLocal(path: string, folder: string): Promise<string>;
     upload(): Promise<string | undefined>;
     edited(path: string): Promise<void>;
     pin(folder: string, path?: string): Promise<void>;
@@ -181,6 +184,7 @@ export interface ProjectEntry {
   pinned?: boolean;
   rank?: number;
   recent?: { path: string; rank: number; pinned: boolean }[];
+  localNotes?: boolean;
 }
 
 /** Settings → AI as the window sees it: its connections and the Writer, never a key. */
@@ -580,6 +584,7 @@ export interface DemoBridge {
 export interface AppStateFile {
   version: 1;
   projectIntroSeen?: boolean;
+  localNotes?: boolean;
   /** Per-workspace identity kept only on this device while the project UX is being reviewed. */
   projectSettings?: Record<string, import("./project-app.ts").ProjectSettings>;
   lastNotePath?: string;
