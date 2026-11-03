@@ -2613,19 +2613,60 @@
       "status": "building"
     },
     {
+      "id": "WP-9.3",
+      "stage": "Later",
+      "title": "Managed image assets and encrypted media",
+      "summary": "Root-owned random assets, standalone sidecars, asset-before-note recovery/copy/move transactions and exact authorized encrypted-media closure. No bulk relocation or orphan purge; extend public Git/deploy media leak checks.",
+      "requirements": ["IMG-05", "IMG-06"],
+      "dependsOn": ["WP-2.3", "WP-5.1", "WP-P.8", "WP-P.10"],
+      "touches": ["core", "desktop", "seal", "markdown", "schemas"],
+      "reviews": ["code", "security"],
+      "specs": ["experience/images.md", "architecture/content-model.md", "architecture/repository-and-publishing.html"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-9.4",
+      "stage": "Later",
+      "title": "Crop and rotate images",
+      "summary": "Preview-only accessible crop/rotate dialog, explicit destructive/no-pixel-Undo save, guarded atomic encode and shared-reference isolation. Conditional existing Git recovery only.",
+      "requirements": ["IMG-07", "IMG-08"],
+      "dependsOn": ["WP-9.1"],
+      "touches": ["editor", "core", "desktop", "ui", "views"],
+      "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/images.md", "architecture/editor-engine.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-9.5",
+      "stage": "Later",
+      "title": "Optional AI image captions",
+      "summary": "Existing explicitly image-capable integration/model, selected stripped raster and instruction only, reviewed caption below image; no model hosting, implicit fallback or surrounding-note upload.",
+      "requirements": ["IMG-09"],
+      "dependsOn": ["WP-9.1", "WP-AI.14"],
+      "touches": ["editor", "core", "desktop", "views"],
+      "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/images.md", "architecture/editor-engine.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",
-      "summary": "An image block registration.",
+      "summary": "Registered inline-flow image insertion, Column/Wide/Actual geometry, remembered and mixed-selection switches, safe menu/clipboard/replace/export, lossless attributes and shared accessible rendering. JSON design review before runtime.",
       "requirements": [
-        "EXT-03"
+        "EXT-03", "IMG-01", "IMG-02", "IMG-03", "IMG-04", "IMG-10"
       ],
       "dependsOn": [
-        "WP-1.1"
+        "WP-1.1", "WP-9.3"
       ],
       "touches": [
         "editor",
-        "ui"
+        "ui",
+        "views",
+        "tokens"
       ],
       "reviews": [
         "code",
@@ -2633,9 +2674,10 @@
         "accessibility"
       ],
       "specs": [
-        "architecture/editor-engine.md"
+        "architecture/editor-engine.md",
+        "experience/images.md"
       ],
-      "lookahead": false,
+      "lookahead": true,
       "status": "planned"
     },
     {

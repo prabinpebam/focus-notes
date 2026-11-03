@@ -3,7 +3,18 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 121 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
+> **TL;DR.** 127 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
+
+## Inline images (planned)
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-IMG-01 | add and manage an image in the flow of a note without moving its source | SC-IMG-01 | P1 | IA-CMP-IMAGE, IA-CMP-IMAGEMENU | EXT-03, IMG-01, IMG-04, IMG-05 | Drop/picker share validation and atomic batch insertion; Cut waits for clipboard success; Replace/Save never overwrite external source silently. |
+| UC-IMG-02 | fit images to the reading space and change image display settings together without changing selected text | SC-IMG-02 | P1 | IA-CMP-IMAGE, IA-CMP-IMAGEMENU | IMG-02, IMG-03 | Three modes preserve ratio; Fit height on by default, last successful options remembered; Mixed toggle changes fully selected images only, one Undo. |
+| UC-IMG-03 | preview a crop or rotation and deliberately save changed pixels knowing the recovery limit | SC-IMG-03 | P1 | IA-CMP-IMAGEEDIT | IMG-07, IMG-08 | Cancel leaves pixels untouched; Save changes is explicitly destructive/no pixel Undo; failed/conflicting write retains old pixels and preview, shared references isolated. |
+| UC-IMG-04 | share a private note with its images without exposing plaintext media or source names | SC-IMG-04 | P0 | IA-CMP-IMAGE | IMG-06 | Authorized closure only, encrypted metadata/media and random public identifiers; no unrelated asset, plaintext cache, thumbnail or EXIF leak. |
+| UC-IMG-05 | ask a chosen image-capable AI integration for a caption and review it below the image | SC-IMG-05 | P1 | IA-CMP-IMAGECAPTION | IMG-09 | Image plus instruction only; no automatic sending/fallback/model hosting. Insert caption is one undoable edit; failed/stopped generation preserves existing text. |
+| UC-IMG-06 | read images and captions accessibly and keep image information when Markdown is reopened elsewhere | SC-IMG-01, SC-IMG-04 | P1 | IA-CMP-IMAGE | IMG-10 | Same read-only renderer in app/site/share; alt/caption not duplicated; unknown syntax survives and missing images remain visible placeholders. |
 
 ## Optional rewriting
 
@@ -31,7 +42,7 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-PROJ-01 | create a separate private project with its own history | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-01, PRJ-11 | No site created; name collision or refused sign-in preserves the draft; existing workspace mapping requires explicit approval and preserves bytes. |
+| UC-PROJ-01 | create a separate private project with its own history | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-01, PRJ-11 | No site created; name collision/refused sign-in preserves draft. Accepted existing-pair transition explains Project/site with unchanged files, IDs, links and history, no disk move. |
 | UC-PROJ-02 | open several projects in their own windows without replacing work | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-02 | Opening an already-open project focuses its window; closing one leaves others unchanged. |
 | UC-PROJ-03 | stay within one project's context for every action | SC-PROJ-01 | P1 | IA-VIEW-PROJECTS | PRJ-03 | Its paired Public root remains usable; foreign roots/IDs and symlink bypass fail. Cross-root visibility needs confirmation and site permission. |
 | UC-PROJ-04 | tell projects apart by name, colour and a preset or uploaded SVG logo | SC-PROJ-02 | P1 | IA-CMP-PROJECTMARK | PRJ-04, PRJ-13 | Badge/watermark/Off retain a named identity. Unsafe/oversize/external SVGs are rejected before rendering, old mark retained; sanitized preview Apply/Cancel and no network. |

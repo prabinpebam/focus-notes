@@ -1,5 +1,19 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Image waits (planned)
+
+IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Validate/copy dropped images | Responsive → waiting; reserved-aspect placeholder, batch count | Insertion marker/task: Adding ⟨count⟩ images…; Retry/Choose images | `fn:image.import`; acknowledgement ≤100 ms, no partial-success batch |
+| Decode/load image | Responsive/waiting; exact aspect box, previous complete pixels on replacement | Image: Preparing image… / Image unavailable | `fn:image.decode`; no layout-shift/blank replacement |
+| Prepare/update crop preview | Responsive/waiting; old preview until new one ready, latest transform wins | Dialog: Preparing image… / Updating image… | `fn:image.preview`; control feedback ≤100 ms, no queued drag updates |
+| Encode/save edited pixels | Waiting/long; leavable preparation, guarded commit with truthful state | Dialog: Saving image…; explicit retry/reopen error, no saved claim early | `fn:image.save`; original retained on failure, main process stays usable |
+| Save image defaults | Responsive; keep saved default until durable write | Menu/status: Saving image options…; retained old value on error | `fn:image.defaults`; no focus/selection reset |
+| Generate caption | Waiting/long; selected image and editable context retained, Stop | Caption surface: Writing caption…; progress through existing AI task | `fn:image.caption`; only explicit Generate sends; Stop/error changes no caption |
+| Seal/publish referenced media | Long; existing publish task steps, not a second spinner | Share status: Preparing images… → Waiting to publish | `fn:image.publish`; no Ready until full authorized media output succeeds |
+
 ## Project and sharing waits (planned)
 
 The MP flows are specified, not implemented or measured. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.

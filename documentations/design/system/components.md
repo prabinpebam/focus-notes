@@ -290,7 +290,8 @@ As built (WP-5.1, D-114), note content renders on published pages through one bl
 | **DividerBlock** | Composed | Horizontal rules. Drawn inside NoteContent and by the editor |
 | **InlineMarks** | Composed | Bold, italic, strikethrough, inline code, links, and find highlights. Drawn inside NoteContent and by the editor |
 | **UnknownBlock** | Composed | Unknown component syntax, kept verbatim and shown read-only (EXT-05). Drawn inside NoteContent and by the editor |
-| **ImageBlock**, **GalleryBlock** | Planned | Later (EXT-03, EXT-04) |
+| **ImageBlock** | Planned | EXT-03 / IMG-01 to IMG-10: typed src/alt/caption/display/rounded/fitHeight, proportional bounds, reserved loading/error box; same render contract in editor/site/share. Sealed token-owned media primitive plus data-composed figure/menu/edit/caption surfaces; [flows and states](../../experience/images.md). No code/token/schema changes in this spec. |
+| **GalleryBlock** | Planned | Later (EXT-04); not part of the inline-image scope |
 
 <h2 id="compound-components" data-reader-personas="design engineering">Compound components</h2>
 

@@ -22,7 +22,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
 | **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 29 |
-| **Later: Components** | Rich components. | Anyone | Later releases | 2 |
+| **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 12 |
 
 ## Where we are
 
@@ -138,7 +138,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>
-<p>Image, then gallery, each added as one block registration with directive syntax. <a href="implementation-plan.md#later">Details</a>. EXT-03, EXT-04.</p>
+<p><a href="../experience/images.md">Inline images</a>: managed local assets and encrypted sharing first (WP-9.3), then insertion/display/menu/bulk options (WP-9.1), explicit destructive crop/rotate (WP-9.4) and optional chosen-integration captions (WP-9.5). Gallery remains separate (WP-9.2). Five new scenarios and six capabilities trace the source to IMG-01 to IMG-10, EXT-03 and EXT-04. <a href="implementation-plan.md#later">Plan</a>; <a href="definition-of-done.md#inline-images-planned">Try it and evidence</a>. Specification only; no implementation or release date is claimed.</p>
 </li>
 </ol>
 

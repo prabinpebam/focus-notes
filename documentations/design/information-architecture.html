@@ -108,6 +108,18 @@
   </tbody>
 </table>
 
+<h2 id="inline-images" data-reader-personas="product design engineering">Inline images (planned)</h2>
+<p><a href="../experience/images.md">Image flows, figures and copy</a> specify the block, context menu, crop/rotate dialog and caption surface. No new editor shell or floating-image canvas. All are data contracts over sealed components, not implemented views.</p>
+<table>
+<thead><tr><th>IA ID</th><th>Purpose</th><th>Surface / entry</th><th>Serves</th></tr></thead>
+<tbody>
+<tr><td>IA-CMP-IMAGE</td><td>Inline image, caption, bounded display and safe read-only/failed states</td><td>Canvas, published article and authorized share reader; drop / Insert image…</td><td>UC-IMG-01, UC-IMG-02, UC-IMG-04, UC-IMG-06</td></tr>
+<tr><td>IA-CMP-IMAGEMENU</td><td>Image clipboard/file/display actions and mixed-selection switches</td><td>Right-click, Image options, Shift+F10; selection Images group</td><td>UC-IMG-01, UC-IMG-02</td></tr>
+<tr><td>IA-CMP-IMAGEEDIT</td><td>Crop/rotate preview with explicit destructive pixel-save boundary</td><td>Edit image…; modal over canvas, no nested editor dialog</td><td>UC-IMG-03</td></tr>
+<tr><td>IA-CMP-IMAGECAPTION</td><td>Chosen AI integration, selected-image payload and reviewed caption</td><td>Auto caption…; anchored caption surface with existing integration picker</td><td>UC-IMG-05</td></tr>
+</tbody>
+</table>
+
 <h2 id="projects-and-sharing" data-reader-personas="product design engineering">Projects and sharing (planned)</h2>
 
 <p>D-272 to D-293 replace the old workspace/browser model. Projects open, never switch in place; Pages is a read-only website. Existing browser-writing IA entries are historical until WEB-01 removes them, not additional product surfaces.</p>

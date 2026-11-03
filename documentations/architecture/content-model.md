@@ -3,7 +3,7 @@
 This page defines what's on disk: how notes and folders are laid out, what a note file contains, how future components are written in Markdown, and the rules that keep files from changing behind the writer's back.
 
 > [!NOTE]
-> **TL;DR.** A note is one `.md` file of CommonMark + GFM. The first H1 is its title, and YAML front matter is optional and minimal. Folders are real folders. Public notes live under `notes/` in the user's instance repository (the notes repository); private notes live under `notes/` in their private repository, linked at `private/` (D-84). Future components (image, gallery) use **generic directive syntax** (`::image{…}`, `:::gallery … :::`), which stays readable as plain text anywhere. Untouched blocks are written back byte-for-byte.
+> **TL;DR.** A note is one `.md` file of CommonMark + GFM; folders and assets are real local files. Public/private repositories keep their existing layout. Planned inline images use the existing generic directive extension with relative managed-asset paths, typed display/caption options and encrypted media when shared. Ordinary Markdown/unknown syntax stays byte-preserved. [Full image flows](../experience/images.md), D-300 to D-304.
 
 ## Workspace layout
 
@@ -11,7 +11,7 @@ This page defines what's on disk: how notes and folders are laid out, what a not
 
 D-272/D-274 separates a private project from its optional public site. Notes, grants, appearance settings and history belong to the private project; `.focus-notes/project.json` stores its display name, preset colour/logo and Badge/Watermark/Off choice, while `.focus-notes/pins.json` stores note/folder pins. Device-local Projects/Recent records reference stable project/item IDs; they never merge trees or search across projects.
 
-New projects have one private repository and no public notes root until website publishing is explicitly enabled. Quick notes is an ordinary local Documents folder; standalone supported text files remain where opened. Both retain byte-preserving content/journal/conflict rules without a Git backup claim. Old instance/private layouts below remain the compatibility layout until the owner approves migration; no initial disk move, implicit ID rewrite, private-to-public copy or history rewrite is allowed.
+New projects have one private repository and no public notes root until website publishing is explicitly enabled. Quick notes is an ordinary local Documents folder; standalone supported text files remain where opened. Both retain byte-preserving content/journal/conflict rules without a Git backup claim. Old instance/private layouts below remain the compatibility layout; the owner accepted a UX-led terminology migration on 3 November, not a storage redesign. No initial disk move, implicit ID rewrite, private-to-public copy or history rewrite is needed.
 
 `access.json` changes for new name-free grants and share codes in WP-P.10, with legacy records read unchanged. It never contains public recipient metadata; no new owner-vault grant is made. D-292 removes the browser note store from the planned content model entirely.
 
@@ -108,7 +108,7 @@ Writing happens one line at a time.
 The seed calls for special components such as image and gallery in the future. They are written as [generic directives](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444), a widely used extension proposal for CommonMark:
 
 ```markdown
-::image{src="assets/cover.jpg" alt="A quiet desk at dawn" width="720"}
+::image{src="../assets/images/q7m4k2.png" alt="A quiet desk at dawn" caption="Morning light" display="column" rounded="false" fitHeight="true"}
 
 :::gallery{columns="3"}
 ![First](assets/a.jpg)
@@ -121,7 +121,17 @@ The seed calls for special components such as image and gallery in the future. T
 - Inside a container, ordinary Markdown is used wherever possible (in a gallery, the images are plain Markdown images). On GitHub or in another viewer, a gallery still degrades to a readable list of images.
 - Each component's name, attributes, and allowed content are defined by its block registration (see [Editor engine](editor-engine.md)).
 - **Unknown directives** are kept verbatim and shown as read-only placeholders (EXT-05).
-- **Media files** sit next to the note in an `assets/` folder in the same root, so private images stay in the private repository.
+- **Media files** belong to `assets/images/` at their owning repository/local root, not a new folder beside every nested note. Existing paths are not migrated. The standalone Markdown sidecar is `<full-note-filename>.assets/images/`. Private media stays private; app fonts/styles are a separate allowlisted runtime asset set.
+
+### Planned image attributes and asset transactions
+
+The [image experience](../experience/images.md#assets-markdown-and-encrypted-sharing) resolves the earlier image stub. `src` is a validated relative path inside the note's trusted media boundary; `alt` and optional `caption` are plain text. `display` is column/wide/actual; `rounded` and `fitHeight` are booleans. New image asset identifiers are random, never note-derived. Persist explicit per-image values so another device uses the same layout; only insertion defaults are device-local. Numeric layout bounds belong to tokens, not arbitrary width/height styles in notes.
+
+Keep untouched `![alt](path)` and old directives (including unknown attributes) verbatim. Ordinary supported Markdown images may render without styling; only an explicit edit to that image promotes it to the typed directive. Unsupported attributes/structures remain read-only rather than silently discarded. Plain-text accessibility and relative paths remain inspectable outside Focus Notes; generic Markdown readers need not render directive styling.
+
+Import/copy is asset-before-reference with an existing recovery/journal transaction: validate the whole batch, stage collision-safe destination files, persist note references, then declare Saved. Failure/crash must not leave a durable reference to a missing asset; never remove external sources. Renaming/moving notes rebases relative media paths in the same operation as note links; crossing visibility roots copies only the referenced permitted media after the usual confirmation. No directory-wide export or automatic orphan purge.
+
+For private shares, compute the authorized reference closure and encrypt images plus their lookup/caption metadata before public staging. Public ciphertext filenames/URLs are opaque (SHR-23); readers decrypt in memory, not plaintext browser caches. Public-note publication is deliberate and exports referenced images with ancillary source/location metadata removed. Existing public Git history remains accepted and cannot be recalled.
 
 ## Round-trip fidelity
 

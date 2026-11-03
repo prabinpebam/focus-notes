@@ -66,6 +66,16 @@ The full allow-list and deny-list are in [Decisions → Licensing policy](../pla
 
 Rewrite (D-256) adds `RewriteStream` and `RewriteDecoration` (`packages/editor/src/rewrite-stream.ts`): the note is read-only while the answer streams; each piece replaces the selected range outside the undo history; the finished answer goes in as one closed undo step; Stop and errors put the original slice back exactly. The decoration's classes come from the host. See [Rewrite engine](rewrite-engine.md#in-the-editor).
 
+### Planned inline image registration
+
+EXT-03 / IMG-01 to IMG-10 uses the same block registry, Markdown bridge and shared rendering contract, not a second editor. “Inline” is normal document flow, not floating placement. The node records a trusted relative src, alt/caption and typed display/rounded/fitHeight attributes; image focus is atomic while caption editing is ordinary text. [Image flows and dialog](../experience/images.md) own geometry, copy, error/cancel branches and keyboard crop fields.
+
+Drop/picker imports run as shell-authorized asset transactions; renderer data never grants arbitrary disk/network access. Capture a document position and rebase through intervening text edits, then insert one undoable batch only after assets are ready. Multi-selection display transactions touch fully selected image nodes and never text. Clipboard/replace actions preserve original assets and normal note Undo.
+
+Destructive crop/rotate is explicitly outside pixel Undo: save atomically with an external-version guard, isolate references used by other notes and establish an image-specific history boundary so subsequent text Undo cannot resurrect stale media paths. Other text history remains usable. Interrupted asset/note commits recover through the existing journal lane, not ad-hoc silent rollback.
+
+Captioning reuses existing integration/destination UI but requires an explicit image-capability request contract; Rewrite's text-only payload is unchanged. No whole-note image scan, model hosting or implicit provider fallback. The generated caption is reviewed plain text before an ordinary one-step insertion.
+
 ## Block registry contract
 
 | Field | Purpose |

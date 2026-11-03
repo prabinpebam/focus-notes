@@ -422,21 +422,26 @@ These are independently reviewable slices; lookahead permits design without unre
 
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 
-**You can:** Image, then gallery, each added as one block registration with directive syntax.
+**You can:** place and manage inline images, choose readable display modes, crop/rotate explicitly, ask a chosen integration for a reviewed caption, and share encrypted media with its note. Gallery remains a separate later registration. [Exact image source, flows and figures](../experience/images.md); D-300 to D-304.
 
 **Used by:** Anyone. **Delivered as:** Later releases.
 
 **Demo script** (run by the owner on clean machines at the gate, then automated):
 
-1. Insert an image and a gallery, save, and open the file in a plain Markdown viewer: it stays readable.
+1. Follow [the image Try it](definition-of-done.md#inline-images-planned): insert small/tall images, change mixed-selection display, cancel/save crop, review a caption, share encrypted media and reopen Markdown.
+2. Separately insert a gallery once that later package is ready; ordinary image support does not promise it.
 
 **Work packages**
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-9.1 | **Image block**. An image block registration. | EXT-03 | WP-1.1 | code, design-system, accessibility |
+| WP-9.3 | **Managed assets and encrypted media.** Relative/root-owned files, local sidecars, atomic copy/move/recovery and selected-media encryption/leak checks. | IMG-05, IMG-06 | WP-2.3, WP-5.1, WP-P.8, WP-P.10 | code, security |
+| WP-9.1 | **Inline image block and actions.** Drop/picker, three modes, remembered/bulk switches, clipboard/replace/export and portable shared renderer. | EXT-03, IMG-01, IMG-02, IMG-03, IMG-04, IMG-10 | WP-1.1, WP-9.3 | code, design-system, accessibility |
+| WP-9.4 | **Crop and rotate.** Preview dialog, keyboard crop, explicit destructive atomic save and conditional Git recovery. | IMG-07, IMG-08 | WP-9.1 | code, security, design-system, accessibility |
+| WP-9.5 | **Optional captions.** Existing image-capable integration, image-only payload and reviewed plain-text caption. | IMG-09 | WP-9.1, WP-AI.14 | code, security, design-system, accessibility |
 | WP-9.2 | **Gallery block**. A gallery block registration. | EXT-04 | WP-9.1 | code, design-system, accessibility |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
 - Round-trip and the block registry contract hold for both components.
+- [IMG.1 to IMG.8](definition-of-done.md#inline-images-planned) supply scoped future evidence. Highest-risk proofs: encrypted media closure, atomic/destructive saves and image-only provider payloads. Stage stays planned; design lookahead permits JSON views/figures only, not implementation/tests/packages before approval.

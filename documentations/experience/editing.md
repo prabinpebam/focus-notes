@@ -103,6 +103,14 @@ Pasting and dropping text work the same way (EDT-09, SEC-02):
 
 ## Extending with components
 
+### Planned inline images
+
+The owner's [3 November image source, flows and figures](images.md) now details EXT-03: drop/picker insertion, Column/Wide/Actual size, remembered Rounded/Fit height options, mixed-selection toggles, image actions, optional AI caption and destructive crop/rotate preview. An image is an inline-flow media block; no float or second canvas.
+
+The paste/import statements above describe the current build. Shipping the image slice adds explicit local file-drop/picker and same-app rich-image copy paths, not automatic remote HTML image downloading. HTML/Word import remains image-free under FIL-15 until separately expanded; alt text and explicit omission feedback remain. Existing Markdown images/unsupported table cells are preserved, not silently rewritten.
+
+Ordinary insertion, replacement, captions and display changes use note Undo. Only the explicit **Save changes** in Edit image commits pixels without pixel Undo, as the owner requested; cancellation/failure preserves old pixels and conditional Git image history is stated honestly. See [asset transactions](../architecture/content-model.md#planned-image-attributes-and-asset-transactions) and IMG-01 to IMG-10.
+
 The seed asks for room to add special components later (image, gallery, …). The editor is built around a **block registry** (EXT-01): built-in blocks register through the same API a future image or gallery block would use. A registration declares:
 
 - the block's **schema** (attributes and allowed content);

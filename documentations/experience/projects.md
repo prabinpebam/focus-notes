@@ -127,6 +127,8 @@ Show the actual repository owner/name and Pages address before confirming, not o
 
 **Turn off sharing** is separate from making one note Private. Confirmation copy: **“Turn off sharing? Shared and published content will be removed from your site repository and website at the next successful publish. The repository and your private notes stay. Git history keeps earlier content.”** Actions **Cancel** / **Turn off sharing**. Withdraw every share and remove published/shared content, related assets and discoverability entries from current output; leave an empty reading-site shell/repository, never delete the repository. Until successful publish show **Turning sharing off…** or **Waiting to publish** with Retry publishing; offline/failure must not claim removal. Re-enable reuses the same site, and nothing withdrawn is republished without an explicit action.
 
+Removing public repository content must not destroy the writer's only working copy. Preserve any public-source notes/media privately through the existing Make private copy-before-remove path before committing their public removal; resolve taken paths without overwriting. Failed preservation stops removal with an explicit error. This is the explicitly confirmed Turn off operation, not a disk move during the terminology upgrade.
+
 Existing pairs follow the [UX-led terminology migration](#meeting-project-for-the-first-time); no disk move or new site is required.
 
 ## Telling projects apart

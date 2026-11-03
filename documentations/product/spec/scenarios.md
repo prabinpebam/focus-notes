@@ -3,7 +3,19 @@
 The situations in which each [customer promise](customer-promises.md) matters, written as jobs to be done. Each scenario names the behavior people should see and the user-can capabilities that deliver it.
 
 > [!NOTE]
-> **TL;DR.** 69 scenarios and 17 unsupported boundaries trace the promises to observable outcomes. Historical browser-writing/vault rows remain for old IDs only and are retired by D-292, not future acceptance obligations. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. Personas are in [The articulation chain](chain.md#personas-used-in-scenarios).
+> **TL;DR.** 74 scenarios and 17 unsupported boundaries trace the promises to observable outcomes. Historical browser-writing/vault rows remain for old IDs only and are retired by D-292, not future acceptance obligations. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. Personas are in [The articulation chain](chain.md#personas-used-in-scenarios).
+
+## Inline images (planned)
+
+[Owner source, flows and figures](../../experience/images.md). No implementation or UX acceptance is claimed.
+
+| ID | Promise | Situation | Persona | Expected behavior | User can | Views |
+| --- | --- | --- | --- | --- | --- | --- |
+| SC-IMG-01 | CP-FLOW-01 | When an image explains my thought, I want to put it in the note and manage it there, so it stays with my words. | Writer | Drop or keyboard insert; bounded local managed copy, menu actions, safe missing-image state and lossless Markdown. | UC-IMG-01, UC-IMG-06 | IA-CMP-IMAGE, IA-CMP-IMAGEMENU |
+| SC-IMG-02 | CP-FLOW-01 | When images differ in size, I want a readable layout and consistent display options, so a tall image or a bulk change does not disrupt the text. | Writer, Comfort | Column/Wide/Actual size, remembered Rounded/Fit height options, mixed selection updates only images in one undo step. | UC-IMG-02 | IA-CMP-IMAGE, IA-CMP-IMAGEMENU |
+| SC-IMG-03 | CP-SAFE-01 | When an image needs a crop or rotation, I want to preview and deliberately save it, so no incidental gesture destroys pixels or changes another note. | Writer | Crop/rotate modal, keyboard fields, explicit no-pixel-Undo save, guarded atomic write; conditional Git recovery only. | UC-IMG-03 | IA-CMP-IMAGEEDIT |
+| SC-IMG-04 | CP-SHARE-01 | When I share a private illustrated note, I want its images visible only to the same reader, so no public file or filename gives them away. | Writer, Reader | Exact authorized media closure encrypted before public staging; opaque identifiers, no plaintext thumbnails/metadata; missing media blocks publication. | UC-IMG-04, UC-IMG-06 | IA-CMP-IMAGE |
+| SC-IMG-05 | CP-RWR-01 | When a picture needs a caption, I want the AI integration I chose to suggest one, so I can add words below it without exposing the rest of the note. | Writer | Explicit image-capable integration, image plus instruction only, reviewed caption below image; Stop/error preserves old caption. | UC-IMG-05 | IA-CMP-IMAGECAPTION |
 
 ## Optional rewriting
 

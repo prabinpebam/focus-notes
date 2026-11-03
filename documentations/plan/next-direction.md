@@ -1,8 +1,8 @@
 # Next direction: projects, sharing and fixes
 
-The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-299).
+The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-304).
 
-**Second source, relayed 13:36:** the exact nested [image notes](../experience/images.md#the-owners-image-notes-3-november-2026) are captured on their own durable page; image/editor/asset reconciliation continues there.
+**Second source, relayed 13:36:** the exact nested [image notes](../experience/images.md#the-owners-image-notes-3-november-2026), detailed flows, two figures, storage/Markdown/encrypted-media contract and image editor/caption UX are on their own durable page. D-300 to D-304, SC-IMG-01 to SC-IMG-05, UC-IMG-01 to UC-IMG-06 and IMG-01 to IMG-10 trace that source to the Later-stage plan and future evidence. No critical image decision needs the owner; reversible default ambiguity is recorded in D-300.
 
 > [!NOTE]
 > **TL;DR.** The owner's notes ask for writing fixes, recognizable projects, pins and item-first sharing, with Pages as a reading website. All six follow-up decisions were **accepted by the owner on 3 November at 13:35**: keep the site repository when turning sharing off, accept retained Git history, use opaque names-free shares, permit personal-account invites, make the project migration UX-led and simplify browser retirement. This remains specification/planning, not a current-build or execution claim.
@@ -179,5 +179,9 @@ Paper, suggested site name, wording/layout and bounds are reversible defaults, n
 | Minimal top bar, optional project icon, top-level sections, theme and focus | [Published website → Reading controls](../experience/published-site.md#reading-controls) | D-296 |
 | Preview site in the app; choose site theme, fonts and default font size | [Published website → Preview site](../experience/published-site.md#preview-site) | D-297 |
 | Shared ciphertext in the public repository, never a public listing | [Repository and publishing](../architecture/repository-and-publishing.html#project-model) | D-299 |
+| Inline images: drop, three display modes and remembered/bulk switches | [Images → Display](../experience/images.md#three-display-modes), [Image menu](../experience/images.md#image-menu-and-selection) | D-300, D-302 |
+| Image storage and encrypted sharing | [Images → Assets](../experience/images.md#assets-markdown-and-encrypted-sharing), [Publishing/assets](../architecture/repository-and-publishing.html#image-assets-planned) | D-301 |
+| Cut/Copy/Replace/Save image and Auto caption below image | [Image menu](../experience/images.md#image-menu-and-selection), [Auto caption](../experience/images.md#auto-caption-using-ai) | D-302, D-303 |
+| Crop/rotate modal and destructive-save/Git recovery boundary | [Images → Crop and rotate](../experience/images.md#crop-and-rotate-dialog) | D-304 |
 
-All of it is planned in stage **MP: Projects and simpler sharing** of the [roadmap](roadmap.md), as work packages WP-P.1 to WP-P.15 in the [implementation plan](implementation-plan.md#mp).
+The first source is planned in **MP: Projects and simpler sharing**, WP-P.1 to WP-P.15. Images extend the existing **Later: Components** stage: assets/encryption WP-9.3, inline image/display/actions WP-9.1, crop/rotate WP-9.4 and optional captions WP-9.5; gallery WP-9.2 stays separate. See [roadmap](roadmap.md), [MP plan](implementation-plan.md#mp) and [image plan](implementation-plan.md#later). All are specification/planning, not built or approved UI.

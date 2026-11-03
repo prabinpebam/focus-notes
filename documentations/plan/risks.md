@@ -41,6 +41,24 @@ What could make Focus Notes fail, how likely and how bad each risk is, and what 
 | R-31 | **Store capabilities and public privacy claims no longer describe optional AI traffic.** | Medium | High | Before Rewrite ships in a release: the privacy page and Store listing say that Rewrite sends selected text to the service the person sets up, and nowhere else. Not before; the review build isn't a release. | MAI gate |
 | R-32 | **Desktop-only rewrite is mistaken for browser support.** | High | Medium | The web build has no AI bridge, so Rewrite is absent there (RWR-71); Help says desktop only. | MAI, WP-AI.11 |
 
+## Image risks and assumptions
+
+The [image source/experience](../experience/images.md) is owner-requested; formats, bounds and positive Fit height wording are reversible design choices, not proven usability or performance.
+
+| ID | Risk | Likelihood | Impact | Mitigation and criterion | Checked in |
+| --- | --- | --- | --- | --- | --- |
+| R-45 | Private media bytes, thumbnails or filenames escape through a shared note. | Medium | Severe | Encrypt exact reference closure before public staging; random identifiers, metadata/binary/provenance leak fixtures; wrong grant never decrypts, no plaintext cache. | Later, WP-9.3 / IMG.5 |
+| R-46 | Destructive crop/rotate corrupts bytes or updates another note's shared asset. | Medium | Severe | Explicit no-pixel-Undo save, guarded atomic write, detach shared references; conflict/failure preserves old pixels/preview. No external original mutation. | Later, WP-9.4 / IMG.4 |
+| R-47 | Image decoding exhausts RAM or stalls the owner's machine. | Medium | High | 20 MiB/40 MP/20-image limits before decode, one bounded worker at a time, downsample display previews and release offscreen buffers. Check malformed headers and existing memory/main-thread budgets after approval. | Later, WP-9.1 / IMG.1, IMG.8 |
+| R-48 | AI caption sends surrounding notes/EXIF or silently chooses another service. | Medium | Severe | Explicit existing image-capable integration/destination; stripped one-image payload, no fallback/new destination, plain-text output and target-version guard. | Later, WP-9.5 / IMG.6 |
+| R-49 | Asset sidecars/moves break a portable Markdown note or prompt unsafe cleanup. | Medium | High | Root-owned relative references, transactional rebasing/copy, unchanged sources, no automatic orphan purge; read-only unknown syntax and explicit missing state. | Later, WP-9.3 / IMG.7 |
+
+| Assumption | Kind / impact / evidence | Criterion and cheapest future check | Decision changed by failure |
+| --- | --- | --- | --- |
+| A-IMG-01: positive Fit height and three modes explain tall/small images. | Usability / medium / source has conflicting default wording | Owner chooses the requested tall and small result from three JSON-view examples without explaining the double negative. | Adjust wording/default/geometry, not ask for an irreversible decision |
+| A-IMG-02: chosen existing integrations expose reliable image capability. | Feasibility / high / text integrations exist; vision not proven here | Supported protocol fake accepts one raster/instruction; incapable integration refuses without a request/fallback. | Narrow caption availability and keep manual captions |
+| A-IMG-03: bounded decode/encode is viable within current desktop budgets. | Feasibility/viability / high / no image measurement yet | After approval, observe one cap-sized synthetic image and malformed input in isolated worker, compare existing budgets; no full benchmark before a design review. | Lower reversible limits/downsample more, never block UI or add a model |
+
 ## Project and website risks
 
 | ID | Risk | Likelihood | Impact | Mitigation and criterion | Checked in |

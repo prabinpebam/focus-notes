@@ -11,17 +11,17 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | --- | --- | --- | --- |
 | `CP-CALM-01` | Nothing competes with your words | Seed: blank UI with one trigger | SC-WRITE-01 |
 | `CP-FOCUS-01` | Your eye stays on the paragraph you're writing | Seed: focus mode; paragraph unit amended by the owner (D-232) | SC-WRITE-02 |
-| `CP-FLOW-01` | Shaping text and tables feels fluid | Seed: Notion/Loop editing, tables; owner: Loop tables, contextual toolbar | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04 |
+| `CP-FLOW-01` | Shaping words, images and tables feels fluid | Seed: Notion/Loop editing; owner: tables, contextual toolbar, inline images | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04, SC-IMG-01, SC-IMG-02 |
 | `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-06 |
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04, SC-FILE-07 |
-| `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07 |
+| `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07, SC-IMG-03 |
 | `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
-| `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-07 |
+| `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content; owner: encrypted images | SC-FILE-06, SC-SHARE-01 to SC-SHARE-07, SC-IMG-04 |
 | `CP-YOURS-01` | Comfortable and yours in a minute | Seed: change theme, colors, fonts; owner: light/dark/system, theme management | SC-THEME-01 to SC-THEME-07 |
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
 | `CP-KNOW-01` | Know what you're getting, and get help when you need it | Owner: product site, support articles, demo (2026-10-16) | SC-HELP-01 to SC-HELP-04 |
-| `CP-RWR-01` | Ask AI for words without giving up control | Owner: optional writing and rewriting (D-282) | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05 |
+| `CP-RWR-01` | Ask AI for words without giving up control | Owner: optional writing, rewriting and image captions | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05, SC-IMG-05 |
 | `CP-SCOPE-01` | One project, one focus | Owner: isolated projects, 3 November | SC-PROJ-01 to SC-PROJ-05 |
 
 <h2 data-reader-personas="product">The promises</h2>
@@ -30,11 +30,11 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 
 | Field | Value |
 | --- | --- |
-| Customer promise | I can ask an AI service I chose to rewrite selected words or write at my caret, watch the words arrive in place, and restore the exact original with one undo, without Focus Notes running a model or sending my words anywhere else. |
+| Customer promise | I can ask an AI service I chose for words, including a caption for an explicitly selected image, without losing control of my note or Focus Notes running a model. Rewrite/caret text stays one-step undoable; captions are reviewed before insertion and undo restores the old caption. |
 | Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged. Before sending, the person sees the integration, model and where it runs, chooses which connection sees their words, and decides whether to send even from a private note (D-261, D-262). |
-| Breaks when | A rewrite loses the original or changes text outside the selection; Stop or an error leaves half-written text; text goes to any service other than the chosen Writer, or anything beyond the prompt and the selection is sent; a key shows in the window, a file in the notes or a log; Focus Notes installs, downloads or runs a model. |
+| Breaks when | A rewrite loses the original or changes text outside the selection; Stop/error leaves partial text; Rewrite sends beyond prompt/selection or captioning sends beyond its explicitly selected image/instruction; either uses an unchosen integration. A key appears in the window, notes or logs, or Focus Notes installs/downloads/runs a model. |
 | Signals | Unit tests prove one undo step, an exact restore on Stop and errors, each service's request shape and that keys stay in the main process; the owner tries it on their own notes with their own service. No telemetry is collected to measure use. |
-| Scenarios | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05 |
+| Scenarios | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05, SC-IMG-05 |
 
 ### CP-SCOPE-01 — One project, one focus
 
@@ -70,11 +70,11 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 
 | Field | Value |
 | --- | --- |
-| Customer promise | Shaping text, lists, and tables feels as fluid as Loop or Notion, from keyboard or pointer, without breaking your train of thought. |
+| Customer promise | Shaping text, lists, images and tables feels fluid from keyboard or pointer, without breaking your train of thought. |
 | Why it matters | Structure is part of thinking. If formatting is slow or surprising, people stop structuring. |
 | Breaks when | A formatting action needs a trip to a distant menu, covers the text being formatted, or produces something Markdown can't keep. |
 | Signals | Use of the contextual toolbar and shortcuts against undo right after a conversion (a sign of surprise). |
-| Scenarios | SC-WRITE-03, SC-WRITE-04, SC-WRITE-05, SC-WRITE-06, SC-WRITE-07, SC-TABLE-01, SC-TABLE-02, SC-TABLE-03, SC-TABLE-04 |
+| Scenarios | SC-WRITE-03, SC-WRITE-04, SC-WRITE-05, SC-WRITE-06, SC-WRITE-07, SC-TABLE-01, SC-TABLE-02, SC-TABLE-03, SC-TABLE-04, SC-IMG-01, SC-IMG-02 |
 
 ### CP-REACH-01 — Everything within reach
 
@@ -104,7 +104,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | Why it matters | Trust is the base of a writing tool. A single lost paragraph or leaked note ends it. |
 | Breaks when | Unsaved text can be lost, a delete can't be undone, a conflict silently overwrites, a private note becomes public without explicit confirmation, or a missing notes folder is silently replaced with an empty one that never syncs. |
 | Signals | Restores from Recently deleted. Conflicts resolved without data loss. Zero leaks found by the publish check. A missing or unconnected folder always leads back to the notes. |
-| Scenarios | SC-FILE-05, SC-SAFE-01, SC-SAFE-02, SC-SAFE-03, SC-SAFE-04, SC-SAFE-05, SC-SAFE-06, SC-SAFE-07 |
+| Scenarios | SC-FILE-05, SC-SAFE-01, SC-SAFE-02, SC-SAFE-03, SC-SAFE-04, SC-SAFE-05, SC-SAFE-06, SC-SAFE-07, SC-IMG-03 |
 
 ### CP-OWN-01 — Yours to keep
 
@@ -124,7 +124,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | Why it matters | A note is written for its audience. Accidental audiences change what people dare to write. |
 | Breaks when | Visibility is unclear, a share happens as a side effect, or a link can't be withdrawn. |
 | Signals | Visibility visible at a glance. Private links revoked when no longer needed. |
-| Scenarios | SC-FILE-06, SC-SHARE-01, SC-SHARE-02, SC-SHARE-03, SC-SHARE-04, SC-SHARE-05, SC-SHARE-06, SC-SHARE-07 |
+| Scenarios | SC-FILE-06, SC-SHARE-01, SC-SHARE-02, SC-SHARE-03, SC-SHARE-04, SC-SHARE-05, SC-SHARE-06, SC-SHARE-07, SC-IMG-04 |
 
 ### CP-YOURS-01 — Made comfortable
 
