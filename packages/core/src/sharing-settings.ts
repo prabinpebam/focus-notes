@@ -102,7 +102,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       } } },
     } },
     setters: { filter: "sharing.filter", query: "sharing.query" },
-    reads: ["ui.share", "workspace"],
+    reads: "*",
     select: s => {
       const m = s.ui.share.settings, listing = s.ui.share.listing;
       const root = s.workspace.tree.roots.find(r => r.id === "private");
@@ -126,6 +126,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         };
       }).filter(r => (m.filter === "all" || r.stateId === m.filter) && r.item.toLocaleLowerCase().includes(m.query.trim().toLocaleLowerCase()));
       const kind = m.dialog === "turnOff" ? "off" : m.dialog === "delete" ? "delete" : "withdraw";
+      const projectName = viewModels.select("vm.project", s).name;
       return {
         project: s.workspace.repo?.split("/").at(-1) ?? s.workspace.folder?.split(/[\\/]/).at(-1) ?? "",
         site: listing?.site ?? s.workspace.site ?? "", on: Boolean(listing?.site && !m.off), off: m.off || !listing?.site,
@@ -133,7 +134,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
         firstOpen: m.dialog === "first", more: m.more, repo: s.workspace.repo ?? listing?.site ?? "",
-        confirmTitle: catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
+        confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(`share.${kind}.confirm`),
         filters: filters.map(id => ({ id, label: catalog.format(`sharing.filter.${id}`) })), rows,
       };

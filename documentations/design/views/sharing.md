@@ -15,6 +15,8 @@ The mocks live on branch `vq-share-mocks` (`b2b4e6e0`) in `packages/views/mocks/
 
 **Publish and Preview review slice:** Publish… in Files and ⋯ → Note uses the actual selected note/folder, count and existing-share state in the approved confirmation. Publish saves only a device-local draft and reports **Saved to the local site preview.**; it never makes a private note public. Settings → Sharing → Preview site fills the window, renders actual public notes plus the explicitly selected local draft, and wires home, section and article navigation, site themes, fonts, numeric default size, reader theme and paragraph focus. Apply writes the local site draft, not personal app appearance or a remote site. The preview uses ProjectScope rather than the mock's AppRoot so closing it cannot leave global theme, font or frame state behind. No real publication or first-site setup is implemented.
 
+The review implementation's first-share, invitation, publishing and Turn off questions use the real project or selected-item names, not the gallery's “Book” sample. Site font labels are the approved Serif, Sans and Hyperlegible choices.
+
 | Surface (gallery entry) | What the approved mock shows |
 | --- | --- |
 | Entry points (1) | **Share…** and **Publish…** in a Files row's right-click menu (between New note/New folder and Rename/Delete), for a note or a folder, and in ⋯ → Note (Share…, Publish…, Version history, Print…). Each opens its dialog at once. |

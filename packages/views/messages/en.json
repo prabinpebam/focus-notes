@@ -2881,5 +2881,9 @@
   "sharing.size.18": "Medium",
   "sharing.size.20": "Large",
   "sharing.article": "Article",
-  "sharing.preview.updated": "Updated {date}"
+  "sharing.preview.updated": "Updated {date}",
+  "sharing.off.title": "Turn off sharing for “{project}”?",
+  "sharing.font.serif": "Serif",
+  "sharing.font.sans": "Sans",
+  "sharing.font.hyperlegible": "Hyperlegible"
 }

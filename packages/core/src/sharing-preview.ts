@@ -161,7 +161,7 @@ export function registerSharingPreview(ctx: {
         sectionTitle: state.section, count: catalog.format("site.preview.count", { count: list.length }),
         articleTitle: article?.title ?? "", updated: article?.updated ? catalog.format("sharing.preview.updated", { date: article.updated }) : "", blocks: article?.blocks ?? [],
         themes: choices.theme.map(id => ({ id, label: catalog.format(`sharing.theme.${id}`) })),
-        fonts: choices.font.map(id => ({ id, label: catalog.format(`font.${id}`) })),
+        fonts: choices.font.map(id => ({ id, label: catalog.format(`sharing.font.${id}`) })),
         sizes: choices.size.map(id => ({ id, label: catalog.format(`sharing.size.${id}`) })),
         readerThemes: choices.readerTheme.map(id => ({ id, label: catalog.format(`command.appearance.${id}`) })),
       };
