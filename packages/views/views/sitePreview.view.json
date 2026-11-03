@@ -38,7 +38,8 @@
               "contentSize": {
                 "get": "vm.sharingPreview.contentSize"
               },
-              "grow": true
+              "grow": true,
+              "part": "canvas"
             },
             "children": [
               {

@@ -4478,10 +4478,11 @@
           "kind": "enum",
           "values": [
             "window",
+            "canvas",
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
+          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. canvas: only the scoped background, for the full-window website preview. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
         },
         "grow": {
           "kind": "boolean",
@@ -4510,6 +4511,7 @@
       "fixtures": [
         "local reading size",
         "part window",
+        "part canvas",
         "part plain",
         "accent red",
         "accent orange",
