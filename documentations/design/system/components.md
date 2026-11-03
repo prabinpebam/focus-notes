@@ -9,13 +9,13 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **77 registered contracts**: **50 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **78 registered contracts**: **51 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
-<h2 id="switch" data-reader-personas="design engineering">Switch (planned)</h2>
+<h2 id="switch" data-reader-personas="design engineering">Switch</h2>
 
-**DSY-15 · IA-CMP-SWITCH · UC-SHARE-03.** Not a registered contract on `main` yet; do not use it in a view until WP-P.16 lands the sealed primitive, tokens, documented props, state stories and generated schema. Reuse existing control sizing, focus, label and pending conventions; do not draw switches in views or repurpose low-contrast chips.
+**DSY-15 · IA-CMP-SWITCH · UC-SHARE-03.** A registered sealed primitive (WP-P.16): `packages/ui/src/primitives/Switch`, its contract, fixtures and generated schema. Reuse existing control sizing, focus, label and pending conventions; do not draw switches in views or repurpose low-contrast chips.
 
-**Approved design (owner, 3 November 19:39, D-335):** the primitive built on `vq-share-mocks` (`packages/ui/src/primitives/Switch`, tokens `cmp.switch.*`, `size.switchTrack` 40 px and `size.switchThumb` 18 px) is the design of record. Props: `label`, `checked` (bindable), `onLabel` / `offLabel` (the On/Off word beside the name, hidden from the accessible name because the switch role states it), `description` (one muted line under the name), `disabled` and `disabledReason` (shown in place of the description). The track (24 px tall, accent fill when on, a strong outline when off) is centred on a 32 px row, and the name and state word are centred on the track (measured 0 px off in light and dark); the description sits under the name. **Pending** and **refused change** below are specified but not designed yet.
+**Approved design (owner, 3 November 19:39, D-335):** the primitive (`packages/ui/src/primitives/Switch`, tokens `cmp.switch.*`, `size.switchTrack` 40 px and `size.switchThumb` 18 px) is the design of record. Props: `label`, `checked` (bindable), `onLabel` / `offLabel` (the On/Off word beside the name, hidden from the accessible name because the switch role states it), `description` (one muted line under the name), `disabled` and `disabledReason` (shown in place of the description). The track (24 px tall, accent fill when on, a strong outline when off) is centred on a 32 px row, and the name and state word are centred on the track (measured 0 px off in light and dark); the description sits under the name. **Pending** and **refused change** below are specified but not designed yet.
 
 | Contract | Required behaviour |
 | --- | --- |
@@ -43,7 +43,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**77 registered contracts:** 50 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
+**78 registered contracts:** 51 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -86,6 +86,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | CodeBlock | primitive | `rest` | 2 | None |
 | VersionCompare | primitive | `rest` | 1 | None |
 | StrengthMeter | primitive | `rest` | 5 | None |
+| Switch | primitive | `rest`, `checked`, `disabled`, `hover`, `focusVisible` | 4 | `hover`, `focusVisible` |
 | ProgressBar | primitive | `rest` | 3 | None |
 | DatePicker | primitive | `rest`, `focused`, `open`, `invalid` | 3 | `focused`, `open` |
 | ProjectMark | primitive | `rest`, `selected` | 39 | None |
@@ -198,7 +199,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **Link** | Planned | `label`, `command` (internal) or `url` (opened through the `link.open` command). The product site's links are **SiteLink** | Link | Help text, About |
 | **Checkbox** | Planned | `label`, `checked` (bindable), `indeterminate` | Checkbox | Lists, settings |
 | **RadioGroup** | Planned | `label`, `options` (bound list), `value` (bindable), `orientation`. Today SegmentedControl serves settings choices | Radio group | Settings |
-| **Switch** | Planned (WP-P.16) | `label`, `description`, `checked` (bindable), `onLabel`/`offLabel` (On/Off), `disabledReason` (approved design, D-335), `pending`, `disabledReason`, `error`; `cmp.switch.*` tokens owned by Switch. A refused change never flips `checked`: the error shows through `aria-describedby` and a polite live region | Switch | Settings, share dialog (Link, Passcode, Include notes added later) |
+| **Switch** | Implemented as a primitive (WP-P.16; pending and error states planned) | `label`, `description`, `checked` (bindable), `onLabel`/`offLabel` (On/Off), `disabledReason` (approved design, D-335), `pending`, `disabledReason`, `error`; `cmp.switch.*` tokens owned by Switch. A refused change never flips `checked`: the error shows through `aria-describedby` and a polite live region | Switch | Settings, share dialog (Link, Passcode, Include notes added later) |
 | **TextField** | Implemented | `label`, `description`, `error`, `value` (bindable), `placeholder`, `icon`, `type` text, email, url, or password (secrets). `labelHidden` keeps the label for screen readers only, for one-line editors | Text box | Forms, rename, link editor, passcodes |
 | **TextArea** | Planned | As TextField, plus `rows` | Text box, multi-line | Invite message |
 | **SearchField** | Implemented | `label`, `value` (bindable), `placeholder`, `clearLabel`, `autoFocus`, `keyScope` (the first run's repository search is `repoField`, Spotlight's `spotlightField`, Find in all notes' `findAllField`), `chip` (a mode shown before the text, such as Spotlight's All or Commands; hidden from screen readers, so the label says the mode in words). <kbd>Esc</kbd> clears it, or passes on to close the dialog when it's already empty | Search box | Spotlight, Files, Settings |
