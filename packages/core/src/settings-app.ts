@@ -49,6 +49,7 @@ export const SETTINGS_CLOSED: SettingsState = {
 };
 
 interface S {
+  note: { path?: string };
   ui: { settings: SettingsState; toolbarOpen: boolean };
   account: AccountState;
   sync: SyncState;
@@ -123,13 +124,13 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     },
   });
   reg<{ open: boolean }>("settings.setOpen", ({ open }) => { if (!open) set({ open: false }); });
-  // Share and visibility… opens the note's Share popover (IA-VIEW-SHARE, D-143); Settings → Sharing keeps the full list.
+  // Item sharing starts at the note, never at a recipient or visibility interstitial.
   commands.register({
     id: "note.share", title: "command.note.share", icon: "share",
-    enabled: () => available() && Boolean(bridge.access),
+    enabled: (s) => Boolean(bridge.access && s.note.path),
     disabledReason: "command.note.share.reason",
     run: async () => {
-      await commands.run("share.manage.noteOpen");
+      await commands.run("share.item.open");
     },
   });
   const sections = () => SETTINGS_SECTIONS.filter((id) => (id !== "sharing" || bridge.access) && (id !== "agents" || bridge.agents) && (id !== "keyboard" || bridge.keybindings) && (id !== "about" || bridge.diagnostics));

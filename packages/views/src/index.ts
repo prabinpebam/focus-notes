@@ -6,6 +6,7 @@ import feedback from "../views/feedback.view.json" with { type: "json" };
 import rewrite from "../views/rewrite.view.json" with { type: "json" };
 import reader from "../views/reader.view.json" with { type: "json" };
 import share from "../views/share.view.json" with { type: "json" };
+import shareItem from "../views/shareItem.view.json" with { type: "json" };
 import index from "../views/index.view.json" with { type: "json" };
 import siteLanding from "../views/siteLanding.view.json" with { type: "json" };
 import sitePage from "../views/sitePage.view.json" with { type: "json" };
@@ -14,7 +15,7 @@ import { mocks, mockData } from "../mocks/index.ts";
 import { shareMocks } from "../mocks/share/index.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
-export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewrite };
+export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewrite, shareItem };
 /**
  * Published pages' view documents (IA-VIEW-PUBLIC): the reader and the index of public notes (D-139),
  * rendered by the publisher at build time, and the share reader, rendered in the browser at s/ (WP-5.4).

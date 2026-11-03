@@ -5830,6 +5830,13 @@
       ]
     },
     {
+      "id": "shareItem",
+      "ia": "IA-VIEW-SHARE",
+      "viewModels": [
+        "vm.shareItem"
+      ]
+    },
+    {
       "id": "theme",
       "ia": "IA-VIEW-THEME",
       "viewModels": [

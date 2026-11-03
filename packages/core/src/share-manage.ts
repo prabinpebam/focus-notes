@@ -17,6 +17,7 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 import { inScope, noteId } from "@focus-notes/seal/grants";
+import { ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
 
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
@@ -110,6 +111,7 @@ export interface ShareTemplateEditor {
   busy: boolean;
 }
 export interface ShareManageState {
+  item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;
   failed: boolean;
@@ -125,6 +127,7 @@ export interface ShareManageState {
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
+  item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
   template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings",
 };

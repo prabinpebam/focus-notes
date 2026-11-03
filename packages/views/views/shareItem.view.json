@@ -1,0 +1,211 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "shareItem",
+  "ia": "IA-VIEW-SHARE",
+  "viewModels": ["vm.shareItem"],
+  "focus": "shareItemLink",
+  "overlay": true,
+  "root": {
+    "type": "Stack",
+    "children": [
+      {
+        "type": "Dialog",
+        "id": "shareItemDialog",
+        "when": { "get": "vm.shareItem.open" },
+        "props": {
+          "title": { "get": "vm.shareItem.title" },
+          "closeLabel": { "t": "dialog.close" },
+          "open": { "get": "vm.shareItem.open" },
+          "size": "m",
+          "height": "content"
+        },
+        "on": { "openChange": { "run": "share.item.setOpen", "args": { "open": { "get": "event.open" } } } },
+        "children": [
+          {
+            "type": "Stack",
+            "props": { "gap": "l" },
+            "children": [
+              {
+                "type": "ItemCard",
+                "props": {
+                  "title": { "get": "vm.shareItem.name" },
+                  "detail": { "get": "vm.shareItem.detail" },
+                  "icon": { "get": "vm.shareItem.icon" },
+                  "badge": { "get": "vm.shareItem.badge" }
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "id": "shareItemReview",
+                    "when": { "get": "vm.shareItem.folder" },
+                    "props": { "label": { "t": "share.dialog.review" }, "size": "s" },
+                    "on": { "press": { "run": "share.item.review" } }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": { "get": "vm.shareItem.countingVisible" },
+                "props": { "value": { "t": "share.dialog.counting" }, "tone": "muted", "role": "secondary" }
+              },
+              {
+                "type": "Text",
+                "when": { "get": "vm.shareItem.hasProblem" },
+                "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger" }
+              },
+              {
+                "type": "Switch",
+                "when": { "get": "vm.shareItem.folder" },
+                "props": {
+                  "label": { "t": "share.dialog.later" },
+                  "description": { "get": "vm.shareItem.laterDetail" },
+                  "checked": { "get": "vm.shareItem.later" },
+                  "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" }
+                },
+                "on": { "change": { "run": "share.item.toggleLater" } }
+              },
+              { "type": "Heading", "props": { "value": { "t": "share.dialog.how" }, "level": "3" } },
+              {
+                "type": "SegmentedControl",
+                "props": {
+                  "label": { "t": "share.dialog.expires" },
+                  "options": { "get": "vm.shareItem.expiries" },
+                  "value": { "bind": "vm.shareItem.expiry" }
+                }
+              },
+              {
+                "type": "DatePicker",
+                "when": { "get": "vm.shareItem.date" },
+                "props": {
+                  "label": { "t": "share.dialog.expiresOn" },
+                  "description": { "t": "share.dialog.expiresOn.detail" },
+                  "value": { "bind": "vm.shareItem.until" }
+                }
+              },
+              {
+                "type": "Text",
+                "when": { "get": "vm.shareItem.never" },
+                "props": { "value": { "t": "share.dialog.never" }, "tone": "muted", "role": "secondary" }
+              },
+              {
+                "type": "Columns",
+                "props": { "gap": "l" },
+                "children": [
+                  {
+                    "type": "Switch",
+                    "id": "shareItemLink",
+                    "props": {
+                      "label": { "t": "share.dialog.link" },
+                      "description": { "t": "share.dialog.link.detail" },
+                      "checked": { "get": "vm.shareItem.link" },
+                      "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" }
+                    },
+                    "on": { "change": { "run": "share.item.toggleLink" } }
+                  },
+                  {
+                    "type": "Switch",
+                    "props": {
+                      "label": { "t": "share.dialog.passcode" },
+                      "description": { "t": "share.dialog.passcode.detail" },
+                      "checked": { "get": "vm.shareItem.passcode" },
+                      "onLabel": { "t": "switch.on" }, "offLabel": { "t": "switch.off" }
+                    },
+                    "on": { "change": { "run": "share.item.togglePasscode" } }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": { "get": "vm.shareItem.noMethods" },
+                "props": { "value": { "t": "share.dialog.keepOne" }, "tone": "muted", "role": "secondary" }
+              },
+              {
+                "type": "Stack",
+                "when": { "get": "vm.shareItem.passcode" },
+                "props": { "gap": "s" },
+                "children": [
+                  {
+                    "type": "SegmentedControl",
+                    "props": {
+                      "label": { "t": "share.dialog.passType" },
+                      "options": { "get": "vm.shareItem.modes" },
+                      "value": { "bind": "vm.shareItem.mode" }
+                    }
+                  },
+                  {
+                    "type": "Stack",
+                    "when": { "get": "vm.shareItem.ownMode" },
+                    "props": { "gap": "s" },
+                    "children": [
+                      {
+                        "type": "TextField",
+                        "props": {
+                          "label": { "t": "share.dialog.own" },
+                          "type": "password",
+                          "description": { "t": "share.dialog.own.rule" },
+                          "value": { "bind": "vm.shareItem.own" }
+                        }
+                      },
+                      {
+                        "type": "StrengthMeter",
+                        "props": {
+                          "label": { "t": "share.dialog.strength" },
+                          "value": { "get": "vm.shareItem.strength" },
+                          "valueText": { "t": "share.dialog.strength.value", "args": { "s": { "get": "vm.shareItem.strength" } } }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": { "get": "vm.shareItem.deleted" },
+                "props": { "value": { "t": "share.state.deleted" }, "tone": "danger" }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "shareContentsDialog",
+        "when": { "get": "vm.shareItem.reviewOpen" },
+        "props": {
+          "title": { "get": "vm.shareItem.reviewTitle" },
+          "closeLabel": { "t": "dialog.close" },
+          "open": { "get": "vm.shareItem.reviewOpen" },
+          "size": "m",
+          "height": "content"
+        },
+        "on": { "openChange": { "run": "share.item.setReviewOpen", "args": { "open": { "get": "event.open" } } } },
+        "children": [
+          {
+            "type": "Stack",
+            "props": { "gap": "l" },
+            "children": [
+              { "type": "Text", "props": { "value": { "get": "vm.shareItem.reviewSummary" }, "tone": "muted", "role": "secondary" } },
+              {
+                "type": "FileTree",
+                "id": "shareContentsTree",
+                "props": { "label": { "t": "share.review.tree" }, "items": { "get": "vm.shareItem.items" } },
+                "on": { "expand": { "run": "share.item.expand", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } } }
+              },
+              {
+                "type": "Inline",
+                "props": { "justify": "end" },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": { "label": { "t": "share.review.done" } },
+                    "on": { "press": { "run": "share.item.setReviewOpen", "args": { "open": false } } }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

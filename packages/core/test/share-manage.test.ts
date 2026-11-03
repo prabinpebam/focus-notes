@@ -80,6 +80,108 @@ describe("helpers", () => {
 });
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
+
+describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
+  it("opens a fixed folder directly, counts its contents and creates nothing on opening or cancelling", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    expect(t.vm("vm.shareItem")).toMatchObject({
+      open: true, name: "trips", folder: true, notes: 1, folders: 0,
+      link: true, passcode: false, later: false, expiry: "30d",
+    });
+    expect(t.access().grants).toHaveLength(1);
+    await t.run("share.item.setOpen", { open: false });
+    expect(t.vm("vm.shareItem").open).toBe(false);
+    expect(t.access().grants).toHaveLength(1);
+  });
+
+  it("preserves the exact draft through reviewing and expanding a read-only contents tree", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.toggleLink");
+    await t.run("share.item.togglePasscode");
+    await t.run("share.item.setOwn", { value: "harbor maple river cloud" });
+    await t.run("share.item.setExpiry", { value: "90d" });
+    const before = t.app.store.state.ui.share.item;
+    await t.run("share.item.review");
+    expect(t.vm("vm.shareItem").reviewOpen).toBe(true);
+    expect(t.vm("vm.shareItem").items).toEqual([
+      expect.objectContaining({ label: "Rome", level: 1, readOnly: true }),
+    ]);
+    await t.run("share.item.setReviewOpen", { open: false });
+    expect(t.app.store.state.ui.share.item).toMatchObject({
+      ...before, reviewOpen: false,
+    });
+    expect(t.access().grants).toHaveLength(1);
+  });
+
+  it("uses the current note for the Note menu and starts a fresh draft on every Share…", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("note.share");
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, folder: false, name: "Rome" });
+    await t.run("share.item.toggleLink");
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("note.share");
+    expect(t.vm("vm.shareItem")).toMatchObject({ link: true, passcode: false, expiry: "30d" });
+    expect(t.app.store.state.ui.share.note.open).toBe(false);
+  });
+
+  it("allows both methods off with an explicit reason, and never changes the fixed target", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.toggleLink");
+    expect(t.vm("vm.shareItem")).toMatchObject({
+      noMethods: true, blockedReason: "Keep Link or Passcode on to share this item.",
+      name: "trips",
+    });
+  });
+
+  it("keeps a deleted item visible and never substitutes the current note", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    t.app.store.update((s) => ({
+      ...s, workspace: { ...s.workspace, tree: { roots: [] } },
+    }));
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, name: "trips", deleted: true });
+    expect(t.access().grants).toHaveLength(1);
+  });
+
+  it("counts 10,000 notes with an immediate draft, yielding for input, and discards a cancelled count", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    t.app.store.update((s) => ({
+      ...s, workspace: { ...s.workspace, tree: { roots: [{
+        id: "private", path: "/w/private/notes", readOnly: false, children: [{
+          kind: "folder", name: "large", children: Array.from({ length: 10_000 }, (_, i) => ({
+            kind: "note", name: `${i}.md`, title: `Note ${i}`, published: false,
+          })),
+        }],
+      }] } },
+    }));
+    const opening = t.run("share.item.open", { path: "/w/private/notes/large" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, counting: true });
+    await t.run("share.item.togglePasscode");
+    await opening;
+    expect(t.vm("vm.shareItem")).toMatchObject({ notes: 10_000, counting: false, passcode: true });
+    const again = t.run("share.item.open", { path: "/w/private/notes/large" });
+    await t.run("share.item.setOpen", { open: false });
+    await again;
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: false, notes: 0, contents: [] });
+    expect(t.access().grants).toHaveLength(1);
+  });
+});
+
 function shell() {
   let access: AccessFile = { version: 1, grants: [{ id: "gownergrant1", name: "You", owner: true, salt: "AAAAAAAAAAAAAAAAAAAAAA", passcodeKey: "A".repeat(43), scope: { all: true }, createdAt: "2026-10-01T00:00:00.000Z" }] };
   const copied: string[] = [];

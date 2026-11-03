@@ -26,6 +26,12 @@ The mocks live on branch `vq-share-mocks` (`b2b4e6e0`) in `packages/views/mocks/
 
 **Specified but not in the approved mocks (not approved yet; design before building):** Share… from Spotlight; the **Change…** flow for an existing share; a per-row Copy access code in Shared before; the no-permission state and **Continue setup**; the *Ready to share* fresh-gesture step; clipboard failure; editing the share information template in Settings (and its Edit template / Use default this time errors); legacy named-grant rows; the first Publish creating the site; the Unpublished-preview label; the site's empty, missing-page and failure states; Remove person; and Switch pending and refused-change states. Removed by the approval: the 1-day expiry, a toast per copy, and the project mark as the first-share anchor.
 
+## Item-dialog implementation increment
+
+**Candidate only, WP-P.9 (3 November):** Files row **Share…** and **⋯ → Note → Share…** now open one fixed item's standard dialog over real state. The card, folder counts, Include notes added later, Link/Passcode defaults, expiry presets/date, custom-passcode strength and nested read-only Review contents are wired. Escape from review returns focus to Review contents with the unchanged draft. Counting yields every 200 entries through the task tracker; closing the dialog cancels stale results. Opening, changing draft controls, reviewing and cancelling make no grant or website.
+
+This first visible increment is not the complete sharing flow and must not replace the production build yet. Generated words, the four publishing/copy actions, Share information, Shared before, first-share setup and remote/offline states remain to be wired. No mock data, mock-finish action or success-shaped clipboard fallback is included. The current Files primitive renders all visible rows: the 10,000-note count is covered, but a 10,000-visible-row review still needs bounded rendering evidence before SHR-14 can close.
+
 ## Three levels of visibility
 
 | Level | Who can read | Where it's kept | What the website serves |

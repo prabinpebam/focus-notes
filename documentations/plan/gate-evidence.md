@@ -18,6 +18,24 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### WP-P.9 item-dialog candidate
+
+**Production-ready work in progress, not a merge candidate (3 November).** Owner-approved design D-335/D-336; first increment covers SHR-13 and parts of SHR-14/15/24 with real JSON and view models, not mocks. No access-file write, clipboard write, network publication or note write occurs in this increment.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts` | Passed 22 tests, including controlled 10,000-note counting and cancelled-count protection. |
+| `pnpm --filter @focus-notes/core run typecheck` | Passed. |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Passed: 632 documents, 78 components, 560 commands; regenerated catalogue. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1` | Passed 1 real-app journey: Files entry, counts/defaults, methods-off warning, custom passcode, nested Review/Escape/focus and unchanged access file. Earlier selector mismatches were corrected against the real React Aria control and approved copy; no assertion weakened. |
+| `pwsh tools\dev\close-test-apps.ps1 -OnlyPid <journey main PID>` | Ran in the journey's `finally`, including failed runs; no instances left by this journey. |
+| `pnpm check` | Passed: boundaries, chain, plan, licences/notices, generated files and UI contracts. Kit checks skip unchecked-out submodules in this isolated worktree. |
+| `pnpm typecheck` | Passed all workspace packages. |
+| `node E:\Projects\side-projects\focus-notes\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed the pinned Slate runtime check. |
+
+**Open:** generated words; snapshot/following-scope sealing and newer notes; publication-ready bridge and the four platform actions; usable message/access-code/template matrix; Share information/history; first-share/remote states; bounded 10,000-visible-row review; complete check/typecheck; security/design/accessibility reviews; exact-head Windows CI; candidate visual comparison. MP.6/26 are partial, MP.17/18/19 unproven. The old Share popover's journey expectations still need deliberate replacement as the completed item-first flow lands; this candidate must not fast-forward main yet.
+
 ### Store 1.1.0 preparation
 
 #### Store 1.1.0 release checklist (live)
