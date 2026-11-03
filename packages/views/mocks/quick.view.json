@@ -1,0 +1,1060 @@
+{
+ "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+ "id": "gallery.mock.quick",
+ "viewModels": [
+  "vm.app",
+  "vm.mocks"
+ ],
+ "focus": "mockBack",
+ "local": {
+  "step": "quick"
+ },
+ "root": {
+  "type": "AppRoot",
+  "props": {
+   "scheme": {
+    "get": "vm.app.scheme"
+   },
+   "platform": {
+    "get": "vm.app.platform"
+   }
+  },
+  "children": [
+   {
+    "type": "Center",
+    "props": {
+     "maxWidth": "wideContent"
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "l",
+       "padding": "xl"
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "Inline",
+          "props": {
+           "gap": "s",
+           "align": "center"
+          },
+          "children": [
+           {
+            "type": "Button",
+            "id": "mockBack",
+            "on": {
+             "press": {
+              "run": "gallery.open",
+              "args": {
+               "id": ""
+              }
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.back"
+             },
+             "variant": "subtle",
+             "size": "s",
+             "icon": "chevronLeft"
+            }
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "project.mock.badge"
+             },
+             "role": "caption",
+             "tone": "muted"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Heading",
+          "props": {
+           "value": {
+            "t": "project.mock.quick.title"
+           },
+           "level": "1"
+          }
+         },
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "project.mock.quick.intro"
+           },
+           "tone": "muted"
+          }
+         },
+         {
+          "type": "Inline",
+          "props": {
+           "gap": "xs",
+           "wrap": true,
+           "label": {
+            "t": "project.mock.steps"
+           }
+          },
+          "children": [
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "quick"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.step.quick"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "quick"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "import"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.step.import"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "import"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "failed"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.step.failed"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "failed"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "file"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.step.file"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "file"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "inProject"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.step.fileInProject"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "inProject"
+               ]
+              }
+             }
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "switch": {
+         "get": "local.step"
+        },
+        "cases": {
+         "quick": {
+          "type": "ProjectScope",
+          "props": {
+           "part": "window",
+           "appearance": "follow",
+           "grow": true
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "band"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "Icon",
+                "props": {
+                 "name": "quickNote",
+                 "size": "m"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "quick.window"
+                 },
+                 "role": "caption",
+                 "lines": "one"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m",
+             "padding": "l",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "Columns",
+              "props": {
+               "gap": "l"
+              },
+              "children": [
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "s"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "s",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "quick.title"
+                     },
+                     "role": "label"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "quick.localOnly"
+                     },
+                     "role": "caption",
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "ResultList",
+                  "id": "quickList",
+                  "props": {
+                   "label": {
+                    "t": "quick.title"
+                   },
+                   "items": {
+                    "get": "vm.mocks.quickNotes"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "quick.where"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "s"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "s",
+                   "align": "center",
+                   "justify": "between"
+                  },
+                  "children": [
+                   {
+                    "type": "Heading",
+                    "props": {
+                     "value": {
+                      "t": "quick.note"
+                     },
+                     "level": "2"
+                    }
+                   },
+                   {
+                    "type": "MenuButton",
+                    "on": {
+                     "action": {
+                      "set": "local.step",
+                      "to": "import"
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "quick.more"
+                     },
+                     "icon": "more",
+                     "sections": {
+                      "get": "vm.mocks.quickMenu"
+                     }
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "quick.body"
+                   },
+                   "personal": true
+                  }
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "xs",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "Icon",
+                    "props": {
+                     "name": "check",
+                     "size": "s"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "quick.saved"
+                     },
+                     "role": "caption",
+                     "tone": "muted"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "quick.noCloud"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "import": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "Icon",
+                  "props": {
+                   "name": "quickNote",
+                   "size": "m"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "quick.window"
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Heading",
+                "props": {
+                 "value": {
+                  "t": "quick.note"
+                 },
+                 "level": "2"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "quick"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "m",
+             "height": "content",
+             "label": {
+              "t": "quick.import.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Heading",
+               "props": {
+                "value": {
+                 "t": "quick.import.title"
+                },
+                "level": "2"
+               }
+              }
+             ],
+             "footer": [
+              {
+               "type": "Inline",
+               "props": {
+                "justify": "end"
+               },
+               "children": [
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": {
+                   "set": "local.step",
+                   "to": "quick"
+                  }
+                 },
+                 "props": {
+                  "label": {
+                   "t": "project.cancel"
+                  },
+                  "variant": "secondary"
+                 }
+                }
+               ]
+              }
+             ]
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "ResultList",
+                "id": "importTargets",
+                "on": {
+                 "action": {
+                  "set": "local.step",
+                  "to": "imported"
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "quick.import.where"
+                 },
+                 "items": {
+                  "get": "vm.mocks.importTargets"
+                 }
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "quick.import.keep"
+                 },
+                 "role": "caption",
+                 "tone": "muted"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "imported": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "StatusRow",
+            "props": {
+             "message": {
+              "t": "quick.imported"
+             },
+             "tone": "success",
+             "icon": "check"
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "quick"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.again"
+             },
+             "variant": "secondary"
+            }
+           }
+          ]
+         },
+         "failed": {
+          "type": "ProjectScope",
+          "props": {
+           "part": "window",
+           "appearance": "follow",
+           "grow": true
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "band"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "Icon",
+                "props": {
+                 "name": "quickNote",
+                 "size": "m"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "quick.window"
+                 },
+                 "role": "caption",
+                 "lines": "one"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m",
+             "padding": "l",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "Heading",
+              "props": {
+               "value": {
+                "t": "quick.note"
+               },
+               "level": "2"
+              }
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "quick.body"
+               },
+               "personal": true
+              }
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "quick.saveFailed"
+               },
+               "tone": "danger",
+               "icon": "error"
+              }
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "quick.chooseFolder"
+                 },
+                 "variant": "secondary",
+                 "icon": "folder"
+                }
+               },
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.step",
+                  "to": "quick"
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "project.retry"
+                 },
+                 "variant": "primary"
+                }
+               }
+              ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "quick.kept"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         "file": {
+          "type": "ProjectScope",
+          "props": {
+           "part": "window",
+           "appearance": "follow",
+           "grow": true
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "band"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "Icon",
+                "props": {
+                 "name": "text",
+                 "size": "m"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.file.window"
+                 },
+                 "role": "caption",
+                 "lines": "one"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m",
+             "padding": "l",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "justify": "between"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "xs",
+                 "align": "center"
+                },
+                "children": [
+                 {
+                  "type": "Icon",
+                  "props": {
+                   "name": "check",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "quick.saved"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "MenuButton",
+                "props": {
+                 "label": {
+                  "t": "project.file.more"
+                 },
+                 "icon": "more",
+                 "sections": {
+                  "get": "vm.mocks.standaloneMenu"
+                 }
+                }
+               }
+              ]
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "project.file.plain"
+               },
+               "tone": "info",
+               "icon": "text"
+              }
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "get": "vm.mocks.plainText"
+               },
+               "personal": true
+              }
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "project.file.saveAs"
+                 },
+                 "variant": "secondary",
+                 "icon": "save"
+                }
+               }
+              ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "project.file.none"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         "inProject": {
+          "type": "Surface",
+          "props": {
+           "variant": "raised",
+           "shape": "popover",
+           "padding": "l"
+          },
+          "children": [
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "m",
+               "align": "center"
+              },
+              "children": [
+               {
+                "type": "ProjectMark",
+                "props": {
+                 "logo": "book",
+                 "accent": "teal",
+                 "size": "l"
+                }
+               },
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "none"
+                },
+                "children": [
+                 {
+                  "type": "Heading",
+                  "props": {
+                   "value": {
+                    "t": "project.file.inProject"
+                   },
+                   "level": "2"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.file.inProjectPath"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "wrap": true
+              },
+              "children": [
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "run": "gallery.open",
+                  "args": {
+                   "id": "mock.projects"
+                  }
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "project.file.openProject"
+                 },
+                 "variant": "primary",
+                 "icon": "openWindow"
+                }
+               },
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.step",
+                  "to": "file"
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "project.file.openOnly"
+                 },
+                 "variant": "secondary"
+                }
+               }
+              ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "project.file.openOnlyHint"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
