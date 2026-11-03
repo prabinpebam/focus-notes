@@ -27,14 +27,28 @@ export function registerProjectOpen(ctx: {
       const [entryId, kind] = id.split("|");
       const entry = state.entries.find((e) => e.folder === entryId);
       if (!entry) throw new Error("Unknown project");
+      const note = kind === "note" ? entry.lastNote : kind;
+      if (note && note !== entry.lastNote && !entry.recent?.some(n => n.path === note)) throw new Error("Unknown recent note");
       state.pending = true; state.error = ""; changed();
       try {
         if (entry.folder === store.state.workspace.folder) {
-          if (kind === "note" && entry.lastNote) await ctx.load(entry.lastNote);
-        } else await bridge.projects!.open(entry.folder, kind === "note" ? entry.lastNote : undefined);
+          if (note) await ctx.load(note);
+        } else await bridge.projects!.open(entry.folder, note);
         close();
       } catch { state.error = ctx.catalog.format("project.open.failed"); }
       finally { state.pending = false; changed(); }
+    },
+  });
+  commands.register<{id: string}>({
+    id: "projects.pin", title: "recent.pinned",
+    run: async ({id}) => {
+      const [folder, path] = id.split("|");
+      if (!folder) throw new Error("Unknown project");
+      try {
+        await bridge.projects!.pin(folder, path);
+        state.entries = await bridge.projects!.list();
+      } catch { state.error = ctx.catalog.format("project.open.failed"); }
+      changed();
     },
   });
   commands.register({
@@ -48,20 +62,29 @@ export function registerProjectOpen(ctx: {
     },
   });
   const text = { type: "string" as const };
-  const item = { type: "object" as const, properties: { id: text, label: text, description: text, icon: text } };
+  const menu = { type: "array" as const, items: { type: "object" as const, properties: { id: text, items: { type: "array" as const, items: { type: "object" as const, properties: { id: text, label: text, icon: text } } } } } };
+  const item = { type: "object" as const, properties: { id: text, label: text, description: text, icon: text, pinned: { type: "boolean" as const }, menu } };
+  const pinMenu = (id: string, pinned: boolean) => [{ id: "pin", items: [{ id, label: ctx.catalog.format(pinned ? "project.open.unpin" : "project.open.pin"), icon: "pin" }] }];
   viewModels.register({
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
     schema: { type: "object", properties: {
       open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, error: text, query: text, active: text,
       recent: { type: "array", items: item },
-      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text } } },
+      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, pinned: { type: "boolean" }, menu } } },
     } },
-    select: (s: AppState) => {
-      const entries = state.entries.filter((e) => `${e.name} ${e.folder} ${e.lastNote ?? ""}`.toLowerCase().includes(state.query.toLowerCase()));
-      return { ...state, dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder })),
-        recent: entries.filter((e) => e.folder !== s.workspace.folder && e.lastNote).map((e) => ({
-          id: `${e.folder}|note`, label: e.lastNote!.split(/[\\/]/).at(-1)!.replace(/\.(md|markdown)$/i, ""), description: e.name, icon: "newNote",
-        })),
+    select: (_s: AppState) => {
+      const query = state.query.toLowerCase();
+      const entries = state.entries.filter((e) => `${e.name} ${e.folder}`.toLowerCase().includes(query))
+        .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || (b.rank ?? 0) - (a.rank ?? 0));
+      const recent = state.entries.flatMap(e => (e.recent?.length ? e.recent : e.lastNote ? [{path: e.lastNote, rank: 0, pinned: false}] : []).map(n => {
+        const parts = n.path.slice(e.folder.length).split(/[\\/]/).filter(Boolean);
+        const label = parts.pop()!.replace(/\.(md|markdown)$/i, "");
+        const id = `${e.folder}|${n.path}`;
+        return {...n, id, label, description: `${e.name} · ${parts.join(" / ") || ctx.catalog.format("project.root")}`, icon: "newNote", menu: pinMenu(id, n.pinned)};
+      })).filter(n => `${n.label} ${n.description}`.toLowerCase().includes(query))
+        .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.rank - a.rank).slice(0, 50);
+      return { ...state, dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, menu: pinMenu(e.folder, Boolean(e.pinned)) })),
+        recent,
       };
     },
   });

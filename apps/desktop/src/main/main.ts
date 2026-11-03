@@ -1248,6 +1248,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
   handle("projects:upload", () => projects.upload());
+  handle("projects:edited", (path: unknown) => {
+    if (typeof path !== "string") throw new Error("Invalid recent note");
+    return projects.edited(path);
+  });
+  handle("projects:pin", (folder: unknown, path: unknown) => {
+    if (typeof folder !== "string" || (path !== undefined && typeof path !== "string")) throw new Error("Invalid project pin");
+    return projects.pin(folder, path);
+  });
   handle("projects:lastNote", () => process.env.FOCUS_NOTES_PROJECT_NOTE || projects.lastNote());
   handle("projects:position", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");

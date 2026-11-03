@@ -215,6 +215,8 @@ Upload opens the OS file chooser; Cancel changes nothing. Before rendering, enfo
 
 ## Recent and pinned
 
+> **Working preview, 3 November: Open ranking and pins.** Open now lists multiple locally visited notes across known projects. Opens add 1 and the first edit of a note's session adds 2; both file and project rankings use the D-321 14-day half-life decay-to-one timestamp, with no visit log. Each row's menu pins only in Open, leading its column; Recent is capped at 50. The records are OS-encrypted in each local profile. Files pins, rename/delete tracking and sync remain outside this slice.
+
 **Recent** is files, never folders, newest first. In Projects a row reads **Plan** with **Book · Drafts / Chapter 1** below; in Book's Files, only **Drafts / Chapter 1**. Show **Root** for the root folder. Local notes and standalone files have explicit **Local only** location labels. Full path is available on focus/tooltip and through **Show in File Explorer** (**Show in Finder** on macOS, **Show in file manager** on Linux), not forced into the row.
 
 **Copy rule: name the platform's file manager** (owner, 3 November 2026; D-328): "Show in folder should be 'Show in File Explorer/Finder' etc." Every menu item that reveals a project, folder or file on disk (Open, Files, Projects, Local notes, images) says **Show in File Explorer** on Windows, **Show in Finder** on macOS and **Show in file manager** on Linux; never "Show in folder". Copy fix to make at implementation: the built `command.files.revealItem` reads **Open containing folder**; it becomes **Show in File Explorer** / **Show in Finder** / **Show in file manager** per platform.

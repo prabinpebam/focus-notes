@@ -129,6 +129,8 @@ export interface PlatformBridge {
   /** Local project windows, isolated from each other's workspace services. */
   projects?: {
     upload(): Promise<string | undefined>;
+    edited(path: string): Promise<void>;
+    pin(folder: string, path?: string): Promise<void>;
     lastNote(): Promise<string | undefined>;
     position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
     remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;
@@ -179,6 +181,8 @@ export interface ProjectEntry {
   logoSrc?: string;
   lastNote?: string;
   pinned?: boolean;
+  rank?: number;
+  recent?: { path: string; rank: number; pinned: boolean }[];
 }
 
 /** Settings → AI as the window sees it: its connections and the Writer, never a key. */

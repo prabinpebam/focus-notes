@@ -555,6 +555,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   type NotePosition = { key: string; from: number; to: number; scroll: number };
   let notePosition: NotePosition | undefined;
   let restorePosition: NotePosition | undefined;
+  let editingScored = false;
   const slashed = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
   /** Whether a path is in the workspace's Public root (`notes/`). */
   const publicInWorkspace = (path: string, folder: string) => slashed(path).startsWith(`${slashed(folder)}/notes/`);
@@ -591,6 +592,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         }
       }
       notePosition = undefined;
+      editingScored = false;
       setNote({ path, key, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.sawOnDisk(path, md);
       workspace.loaded(path, md);
@@ -689,6 +691,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The instance's notes are read-only in the browser (D-90), and so is a workspace this app
       // mustn't write (DST-05); the editor doesn't change them either.
       if (noteReadOnly(store.state)) return;
+      const path = store.state.note.path;
+      if (!editingScored && path && bridge.projects) {
+        editingScored = true;
+        void bridge.projects.edited(path).catch(() => toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }));
+      }
       warmUp.typed();
       typed(value);
     },
