@@ -11,12 +11,12 @@ export const mode = styleVariants({
   actual: { width: "auto", maxWidth: "100%" },
   thumb: { width: t.thumb },
 });
-export const box = style({
-  position: "relative", display: "inline-flex", maxWidth: "100%", backgroundColor: t.backdrop, overflow: "hidden",
-  outlineStyle: "solid", outlineWidth: t.ringWidth, outlineOffset: t.ringOffset, outlineColor: "transparent",
-  transitionProperty: "outline-color", transitionDuration: t.duration,
+// No border, frame or backdrop: the picture is drawn as it is, transparent pixels included (owner, 3 November).
+export const box = style({ position: "relative", display: "inline-flex", maxWidth: "100%", overflow: "hidden", outline: "none" });
+// Selected, it takes the editor's selection tint over the picture, as selected text does: never a ring or a frame.
+export const selected = style({
+  "::after": { content: "\"\"", position: "absolute", inset: 0, backgroundColor: t.selectedTint, pointerEvents: "none" },
 });
-export const selected = style({ outlineColor: t.selectedRing });
 export const rounded = style({ borderRadius: t.radius, overflow: "hidden" });
 export const img = style({ display: "block", maxWidth: "100%", height: "auto", objectFit: "contain" });
 export const fit = style({ maxHeight: `min(${t.fitMax}, ${t.fitViewport})` });
@@ -37,4 +37,3 @@ export const corner = styleVariants({
   bl: { bottom: `calc(${t.handle} / -2)`, left: `calc(${t.handle} / -2)` },
   br: { bottom: `calc(${t.handle} / -2)`, right: `calc(${t.handle} / -2)` },
 });
-export const hint = style({ color: t.hint, fontSize: t.hintSize });
