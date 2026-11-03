@@ -157,28 +157,28 @@
     },
     {
       "id": "WP-P.9", "stage": "MP", "title": "Item-first share dialog",
-      "summary": "Share… in the menu, straight to the fixed item's dialog, counts, review tree, switches and four actions; first action publishes; Share… starts a new share (D-307, D-311). Ships on today's sharing, before projects (D-314).",
-      "requirements": ["SHR-13", "SHR-14", "SHR-15", "SHR-16"], "dependsOn": ["WP-5.3", "WP-P.16"],
+      "summary": "Share… in the menu, straight to the fixed item's dialog, counts, review tree, switches and four actions; first action publishes; Share… starts a new share (D-307, D-311). Ships on today's sharing, before projects (D-314). Nothing added to the writing window (D-336). UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 1 to 11.",
+      "requirements": ["SHR-13", "SHR-14", "SHR-15", "SHR-16", "SHR-24"], "dependsOn": ["WP-5.3", "WP-P.16"],
       "touches": ["core", "ui", "views"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["design/views/sharing.md", "design/system/components.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
-      "summary": "Opaque random share/access identifiers, item-based history and template; no source-name-derived links/paths/files, including media. Extend pre-commit/deploy leak checks; preserve old grants without new revealing aliases.",
+      "summary": "Opaque random share/access identifiers, item-based history and template; no source-name-derived links/paths/files, including media. Extend pre-commit/deploy leak checks; preserve old grants without new revealing aliases. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 2 and 12.",
       "requirements": ["SHR-17", "SHR-18", "SHR-19", "SHR-23"], "dependsOn": ["WP-P.9", "WP-5.4"],
       "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
       "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-P.11", "stage": "MP", "title": "GitHub collaborators",
-      "summary": "Account-backed invites with real personal/organization roles, full-scope warning and safe pending/failure states.",
+      "summary": "Account-backed invites with real personal/organization roles, full-scope warning and safe pending/failure states. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 13 and 14.",
       "requirements": ["PRJ-12"], "dependsOn": ["WP-P.4"],
       "touches": ["github", "core", "views"], "reviews": ["code", "security", "design-system"],
       "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-P.12", "stage": "MP", "title": "A website with its own theme",
-      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation.",
+      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 11.",
       "requirements": ["SHR-20"], "dependsOn": ["WP-5.1", "WP-P.4", "WP-P.13"],
       "touches": ["web", "views", "tokens"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
@@ -199,14 +199,14 @@
     },
     {
       "id": "WP-P.15", "stage": "MP", "title": "Preview site appearance locally",
-      "summary": "In-app read-only website renderer, theme/font/default size draft, explicit Apply separate from Publish and safe Cancel/retry.",
+      "summary": "In-app read-only website renderer, theme/font/default size draft, explicit Apply separate from Publish and safe Cancel/retry. Full-window preview from Settings → Sharing (D-337). UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 15.",
       "requirements": ["SHR-22"], "dependsOn": ["WP-P.14"],
       "touches": ["desktop", "core", "views", "ui"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/published-site.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-P.16", "stage": "MP", "title": "Switch primitive",
-      "summary": "Sealed labelled Switch with checked semantics, thumb position and On/Off text, pending, disabled-with-reason and error states, cmp.switch tokens, in the gallery (D-286, D-314).",
+      "summary": "Sealed labelled Switch with checked semantics, thumb position and On/Off text, pending, disabled-with-reason and error states, cmp.switch tokens, in the gallery (D-286, D-314). The approved primitive and tokens are on vq-share-mocks (packages/ui/src/primitives/Switch, cmp.switch.*); pending and error states still need design (D-335).",
       "requirements": ["DSY-15"], "dependsOn": [],
       "touches": ["tokens", "ui"], "reviews": ["design-system", "accessibility"],
       "specs": ["design/system/components.md"], "lookahead": true, "status": "planned"
@@ -220,7 +220,7 @@
     },
     {
       "id": "WP-P.18", "stage": "MP", "title": "Turn sharing on and off",
-      "summary": "First-share step that creates the site with a neutral name (D-312), local sealing with no private key on the site (D-305), and Turn off that withdraws content and removes legacy keys.",
+      "summary": "First-share step that creates the site with a neutral name (D-312), local sealing with no private key on the site (D-305), and Turn off that withdraws content and removes legacy keys. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 5 and 12.",
       "requirements": ["PRJ-10"], "dependsOn": ["WP-P.4", "WP-P.9", "WP-P.12", "WP-5.1"],
       "touches": ["core", "desktop", "seal"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"

@@ -13,17 +13,19 @@ The design system's components: what each one is for, its variants and key props
 
 <h2 id="switch" data-reader-personas="design engineering">Switch (planned)</h2>
 
-**DSY-15 · IA-CMP-SWITCH · UC-SHARE-03.** Not a registered contract yet; do not use it in a view until WP-P.9 adds the sealed primitive, tokens, documented props, state stories and generated schema. Reuse existing control sizing, focus, label and pending conventions; do not draw switches in views or repurpose low-contrast chips.
+**DSY-15 · IA-CMP-SWITCH · UC-SHARE-03.** Not a registered contract on `main` yet; do not use it in a view until WP-P.16 lands the sealed primitive, tokens, documented props, state stories and generated schema. Reuse existing control sizing, focus, label and pending conventions; do not draw switches in views or repurpose low-contrast chips.
+
+**Approved design (owner, 3 November 19:39, D-335):** the primitive built on `vq-share-mocks` (`packages/ui/src/primitives/Switch`, tokens `cmp.switch.*`, `size.switchTrack` 40 px and `size.switchThumb` 18 px) is the design of record. Props: `label`, `checked` (bindable), `onLabel` / `offLabel` (the On/Off word beside the name, hidden from the accessible name because the switch role states it), `description` (one muted line under the name), `disabled` and `disabledReason` (shown in place of the description). The track (24 px tall, accent fill when on, a strong outline when off) is centred on a 32 px row, and the name and state word are centred on the track (measured 0 px off in light and dark); the description sits under the name. **Pending** and **refused change** below are specified but not designed yet.
 
 | Contract | Required behaviour |
 | --- | --- |
-| Meaning | A binary on/off choice, not a radio option or action button. Link/Passcode in Share and boolean Settings rows use it. |
+| Meaning | A binary on/off choice, not a radio option or action button. Link/Passcode and Include notes added later in Share, Focus in the site, and boolean Settings rows use it. |
 | Anatomy | Visible text label, track, thumb, On/Off text twin; checked fill plus thumb position. No one-sided accent border. All colours, dimensions, opacity and motion are tokens. |
 | Semantics | Native checkbox with switch semantics or equivalent APG switch; accessible name matches label; checked exposed; Space toggles once, Tab follows ordinary form order. |
 | States | Off/on, rest, hover, pressed, focus-visible, disabled, pending and refused change. No native disabled focus loss during pending; retain the persisted value until confirmed, with named tracker feedback. |
 | Contrast/size | Essential non-text 3:1, text 4.5:1 on its actual surface; visible focus and minimum 44 px target; light, dark, more contrast/forced colours. No colour-only meaning. |
 | Motion | Short token thumb transition, instant under reduced motion. No looping animation or layout shift. |
-| Validation | At least one share method stays on; a refusal explains why without silently toggling it back. Stories show that error plus long labels at 320 px. |
+| Validation | In Share both methods may be off; the dialog then shows **“Keep Link or Passcode on to share this item.”** and disables its actions (D-335), rather than refusing the toggle. Stories show long labels at 320 px. |
 
 Gallery and component checks follow design approval, not this docs-only design task. Generated implemented-inventory counts below remain unchanged.
 
@@ -190,7 +192,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **Link** | Planned | `label`, `command` (internal) or `url` (opened through the `link.open` command). The product site's links are **SiteLink** | Link | Help text, About |
 | **Checkbox** | Planned | `label`, `checked` (bindable), `indeterminate` | Checkbox | Lists, settings |
 | **RadioGroup** | Planned | `label`, `options` (bound list), `value` (bindable), `orientation`. Today SegmentedControl serves settings choices | Radio group | Settings |
-| **Switch** | Planned (WP-P.16) | `label`, `description`, `checked` (bindable), `stateText` (On/Off), `pending`, `disabledReason`, `error`; `cmp.switch.*` tokens owned by Switch. A refused change never flips `checked`: the error shows through `aria-describedby` and a polite live region | Switch | Settings, share dialog (Link, Passcode, Include notes added later) |
+| **Switch** | Planned (WP-P.16) | `label`, `description`, `checked` (bindable), `onLabel`/`offLabel` (On/Off), `disabledReason` (approved design, D-335), `pending`, `disabledReason`, `error`; `cmp.switch.*` tokens owned by Switch. A refused change never flips `checked`: the error shows through `aria-describedby` and a polite live region | Switch | Settings, share dialog (Link, Passcode, Include notes added later) |
 | **TextField** | Implemented | `label`, `description`, `error`, `value` (bindable), `placeholder`, `icon`, `type` text, email, url, or password (secrets). `labelHidden` keeps the label for screen readers only, for one-line editors | Text box | Forms, rename, link editor, passcodes |
 | **TextArea** | Planned | As TextField, plus `rows` | Text box, multi-line | Invite message |
 | **SearchField** | Implemented | `label`, `value` (bindable), `placeholder`, `clearLabel`, `autoFocus`, `keyScope` (the first run's repository search is `repoField`, Spotlight's `spotlightField`, Find in all notes' `findAllField`), `chip` (a mode shown before the text, such as Spotlight's All or Commands; hidden from screen readers, so the label says the mode in words). <kbd>Esc</kbd> clears it, or passes on to close the dialog when it's already empty | Search box | Spotlight, Files, Settings |

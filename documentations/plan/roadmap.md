@@ -21,7 +21,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
-| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 32 |
+| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 33 |
 | **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 12 |
 
 ## Where we are
@@ -134,7 +134,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MP: Projects and simpler sharing (planned)</p>
-<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">20 work packages</a>, smallest visible slices first: the share-dialog fixes and the terminology move don't wait for projects (D-314); <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-19, FIL-17 to FIL-19, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-23, DSY-15, WEB-01.</p>
+<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">20 work packages</a>, smallest visible slices first: the share-dialog fixes and the terminology move don't wait for projects (D-314); <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-19, FIL-17 to FIL-19, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-24, DSY-15, WEB-01. <strong>Sharing and publishing UX approved, 3 November 19:39 (D-335):</strong> WP-P.9 to WP-P.12, WP-P.15, WP-P.16 and WP-P.18 build to the gallery mocks on <code>vq-share-mocks</code>; nothing is added to the writing window (D-336).</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

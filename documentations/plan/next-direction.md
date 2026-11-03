@@ -202,6 +202,23 @@ These are the recorded design answers; the six follow-up product choices below w
 
 Paper, suggested site name, wording/layout and bounds are reversible defaults, not owner blockers. Everything here is specified and planned, not built; no account, publication, migration or deletion has happened.
 
+## Approved sharing and publishing design (3 November, 19:39)
+
+The owner approved the clickable sharing and publishing mocks: "The UI and UX looks good. Make sure the spec in Slate is updated and aligned to this. Go ahead and implement this against DoD." They're on branch `vq-share-mocks` (`b2b4e6e0`), in the gallery under **Mocks: Sharing and publishing**, entries 1 to 15, with the Switch primitive built there (D-335). Two owner rules shaped them: nothing is added to the writing window, and no dialog has a tinted title bar (D-336).
+
+| Owner note (above) | Approved in the mocks | Spec |
+| --- | --- | --- |
+| Share in the file's context menu; land directly in the share screen | **Share…** and **Publish…** in the Files row menu and ⋯ → Note, straight to the dialog (entry 1) | [Sharing → Approved design](../design/views/sharing.md#approved-design), SHR-13, SHR-24 |
+| What's shared: name, counts, review as a tree in a dialog over the dialog | Item card with counts and **Review contents**; the read-only tree in a second dialog (2, 4) | SHR-14 |
+| Expiry, Link, Passcode, passcode type | **Expires in** 7/30/90 days, A date, Never; Link and Passcode switches; Generated or Your own with a strength meter (2, 3) | SHR-15, DSY-15 |
+| Share (OS sheet), Copy link, Copy share information, Copy access code | Windows: Copy share information first; macOS: Share…; the copy group follows the switches; one status line (2, 10) | SHR-16 |
+| No "who" | No recipient anywhere; shares listed by item in Settings → Sharing with Copy again, Extend, Withdraw (12) | SHR-18 |
+| Switch toggles that are obvious | The Switch primitive: track, thumb, On/Off word, description (2) | DSY-15 |
+| Invite a GitHub user with GitHub's roles | Invite… with the five roles for organizations, Collaborator and the exact warning for personal accounts (13, 14) | PRJ-12 |
+| Publish as a website with its own theme | Publish… confirms in one dialog, then a toast; Preview site fills the window with the site's theme, font and size (11, 15) | SHR-20, SHR-22, D-337 |
+
+What the mocks don't show is marked on each page as specified but not designed yet; the implementation builds to the mocks and the Definition of Done rows MP.26 to MP.29.
+
 ## Where each note is specified
 
 | Note | Specified in | Decision |

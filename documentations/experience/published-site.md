@@ -78,6 +78,10 @@ Public navigation never lists a share. The sealed reader uses these site typogra
 
 ## Preview site
 
+**Approved design (3 November 19:39, D-335, D-337):** Settings → Sharing → **Preview site…** fills the project window with the site in its own theme; the app's look returns unchanged when it closes. A plain top band holds **Preview site**, **Close preview**, **Apply**, **Site theme** (Paper, Sepia, Ink, Dusk), **Font** (Serif, Sans, Hyperlegible), **Default size** (Small, Medium, Large) and *Changes only the website. Your app's appearance stays the same.* Below it is the site as readers see it: the site name and top-level sections, **Theme** (Light, Dark, System) and a **Focus** switch; home with the tagline and section cards with counts; a section with *Home /*, its count and article cards with two-line excerpts; an article with its breadcrumb and *Updated ⟨date⟩*. Close preview and Apply return to Settings → Sharing. See [Sharing → Approved design](../design/views/sharing.md#approved-design).
+
+**Not in the approved mocks yet (design before building):** opening from ⋯ or Spotlight, the **Unpublished preview** label, **Show sample**, the desktop/narrow width choice, the Keep editing / Discard changes choice, and the empty, failure and missing-font states below. The steps below remain the intended behaviour behind the approved surface.
+
 Settings → Project → **Preview site…**, ⋯ → Preview site… and Spotlight open IA-VIEW-SITEPREVIEW inside the project window, leaving its note and caret intact. The website preview is a separate read-only view, labelled **Unpublished preview**; Return to notes restores the exact note/caret. No browser writing surface, external server or remote upload is involved.
 
 1. Prepare the current project's **public** inventory and website renderer locally. With nothing published, show the empty state; **Show sample** swaps in synthetic sample pages, each marked with a **Sample** badge. Never choose real private notes as samples.

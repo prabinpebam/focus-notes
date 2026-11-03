@@ -154,11 +154,11 @@ Files, Spotlight, find across notes, link suggestions, Recent inside Files, Move
 
 ## Private only until the first share
 
-A new project has no public repository, Pages site, browser vault or share output. The first **Share…**, **Publish…** or **Turn on sharing** asks once. From Share… or Publish… it's an **in-place step inside that dialog**, not a dialog stacked on top (DD-IA-04 allows only Review contents to stack); Cancel returns to the untouched draft. From Settings → Project → Sharing it's a single alert dialog.
+A new project has no public repository, Pages site, browser vault or share output. The first **Share…**, **Publish…** or **Turn on sharing** asks once. From Share… or Publish… it's an **in-place step inside that dialog**, not a dialog stacked on top (DD-IA-04 allows only Review contents to stack); Cancel returns to the untouched draft. From Settings → Sharing it's a single alert dialog (only the in-dialog step from Share… is in the approved mocks, D-335). After **Turn on sharing** the share dialog returns with **“Creating the website, then publishing this share…”**; offline, Turn on sharing is disabled with **“Sharing can't be turned on while you're offline.”**
 
 | Part | Content |
 | --- | --- |
-| Anchor | The project's mark (48 px) and the title **Turn on sharing for “Book”?** |
+| Anchor | A share mark (the approved mock, D-335; the project's mark was the earlier proposal) and the title **Turn on sharing for “Book”?** |
 | One sentence | **Your other notes stay private.** |
 | What's created (two rows, each with an icon) | **Public copy on GitHub** · `prabin/Book-site` · **Website** · `prabin.github.io/Book-site` (the real owner, name and address, never the example) |
 | What people can see (two badge rows) | **Shared** badge: encrypted, opens only with a link or access code · **Published** badge: anyone can read it |
@@ -237,7 +237,7 @@ Dirty recovery and external edits use the same no-loss rules as project notes. A
 
 ## People in a project
 
-Inviting is not sharing. Settings → Project → People lists GitHub accounts and pending invitations; **Invite…** takes a GitHub username, not email or an invented recipient record. Fetch actual permission/owner information before presenting roles.
+Inviting is not sharing. **Approved design (3 November 19:39, D-335):** see [Sharing → Approved design](../design/views/sharing.md#approved-design), entries 13 and 14, for the People list, the **Invite to “Book”** dialog, its per-role one-line explanations, **Manage on GitHub** and the Pending card with **Cancel invite**; removal isn't designed yet. Settings → Project → People lists GitHub accounts and pending invitations; **Invite…** takes a GitHub username, not email or an invented recipient record. Fetch actual permission/owner information before presenting roles.
 
 | Repository owner | Choices | Consequence shown before invite |
 | --- | --- | --- |
