@@ -91,7 +91,7 @@ export function accessStore(o: AccessStoreOptions) {
       })));
       return { ...audience, unsharedNotes: notes.filter((n) => !n.id || !g.scope.ids!.includes(n.id)).map((n) => n.path) };
     }));
-    return { available: true, ...(site ? { site } : {}), ...(t ? { template: t } : {}), vault: hasVault(a), grants };
+    return { available: true, localReview: Boolean(process.env.FOCUS_NOTES_CANDIDATE_SITE), ...(site ? { site } : {}), ...(t ? { template: t } : {}), vault: hasVault(a), grants };
   };
   const grant = async (id: unknown, dir = o.dir()): Promise<Grant> => {
     const g = typeof id === "string" ? shareGrants(await read(dir)).find((x) => x.id === id) : undefined;

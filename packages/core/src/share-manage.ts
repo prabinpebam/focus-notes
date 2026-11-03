@@ -22,6 +22,7 @@ import { ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
   available: boolean;
+  localReview?: boolean;
   /** The Pages site's address, once publishing is set up. Links need it. */
   site?: string;
   /** The owner's own invite template, from `private/access-message.json`; missing, the default (D-143). */
@@ -115,6 +116,7 @@ export interface ShareTemplateEditor {
   busy: boolean;
 }
 export interface ShareManageState {
+  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean };
   item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;
@@ -131,6 +133,7 @@ export interface ShareManageState {
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
+  settings: { filter: "all", query: "", status: "", problem: "", busy: false, dialog: "", id: "", off: false },
   item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
   template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings",

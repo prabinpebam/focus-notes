@@ -16,7 +16,9 @@ IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker an
 
 ## Project and sharing waits (planned)
 
-The MP flows are specified, not implemented or measured. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.
+The MP flows are specified, not implemented or measured except for the candidate increments identified below. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.
+
+The `vq-share-rest` review slice runs Settings copy, expiry changes, withdrawal and deletion through tracker target `sharing.change` (`focus-notes:sharing.change`): responsive through waiting, or long when copy waits for publication. The list stays visible with disabled affected controls, a preparing status and an explicit retryable error. Turn off is an instant candidate-only local preview, not a note move or a real publication.
 
 The 3 November owner-review Open slice keeps the source window and draft intact while starting a local project in its own process/profile. The dialog names the opening operation and retains search input on refusal. Tracker timing and multi-project restore remain production work; no remote operation is wired.
 

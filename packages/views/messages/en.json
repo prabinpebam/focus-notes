@@ -2839,5 +2839,20 @@
   "project.logo.sparkle": "Sparkle",
   "project.logo.pen": "Pen",
   "project.watermark.off": "Off",
-  "project.watermark.on": "On"
+  "project.watermark.on": "On",
+  "sharing.filter.all": "All",
+  "sharing.filter.active": "Active",
+  "sharing.filter.soon": "Expires soon",
+  "sharing.filter.expired": "Expired",
+  "sharing.filter.withdrawn": "Withdrawn",
+  "sharing.state.active": "Active",
+  "sharing.state.soon": "Expires soon",
+  "sharing.state.expired": "Expired",
+  "sharing.state.withdrawn": "Withdrawn",
+  "sharing.state.deleted": "Item deleted",
+  "sharing.copy.link": "Copy link",
+  "sharing.copy.accessCode": "Copy access code",
+  "sharing.copy.information": "Copy share information",
+  "sharing.row.detail": "{ways} · {expiry}",
+  "sharing.expires": "expires {date}"
 }
