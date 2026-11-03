@@ -1,90 +1,64 @@
 # Files and sharing
 
-This page covers the main workflows besides writing: managing notes and folders, choosing who can see a note, and sharing it with a link.
+Manage notes inside one project, then choose deliberately whether anything leaves it.
 
 > [!NOTE]
-> **TL;DR.** The **Files** panel (*Open* in the trigger toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>) is a tree of folders and notes with create, rename, move, and delete. [Spotlight](spotlight.html) quick open (<kbd>Ctrl/⌘</kbd>+<kbd>P</kbd>) finds any note by name. Every operation is a Git commit, so nothing is lost for good. Only the desktop app makes those commits, with the user's own `git` (D-90). In the browser, notes written there are kept in that browser, and the instance's notes open read-only with *Copy to my notes*. Each note is **public** or **private**. Public notes live in `notes/` of the instance repository and are published with the app on its GitHub Pages site, where anyone can read them, and from M5 each gets a stable read-only URL. Private notes live in the private submodule repository and are never published in plaintext: they're sealed into the owner's **vault**, which opens in a browser with the owner's passphrase, and can be shared with named audiences through a link or passcode. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
+> **TL;DR.** Files, search, moves and history stay in the current project. New note is immediate; **New note in…** chooses the place first. Titles and file names are separate. Pin folders and notes; return to recent files with their place. **Share…** on one note/folder opens its dialog directly, with no recipient names. **Publish…** makes a plain website. Browser writing and the owner vault are retired completely. This page summarizes the planned [3 November direction](../plan/next-direction.md), not the unchanged current build.
 
 ## The Files panel
 
-Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>). It's a transient overlay that closes after a note is opened, so the canvas stays blank. Its keyboard behavior follows Finder on macOS and Explorer on Windows ([Keyboard shortcuts → Files panel](keyboard-shortcuts.md#files-panel)). Until Git arrives (M3), each operation is one batch the app writes at once: on the desktop, deleted items go to the system trash; in the browser, they're kept, marked deleted. [What's built](../design/views/files.html#whats-built) lists what works today (D-94).
+**Open** in the [trigger toolbar](main-ui.html), Mod+O or Mod+Shift+E opens the project's Files tree and reveals the current note. It closes after opening a note unless docked. Docking the panel is different from pinning a folder shortcut.
 
-- **Two roots:** *Public* and *Private*. They map to the two content repositories (see [Repository and publishing](../architecture/repository-and-publishing.html)). Each note's visibility is clear from which root it sits under. In the browser there's a third root for the notes written in this browser, the only ones editable there; *Public* and, once unlocked, *Private* are read-only ([Web app](../architecture/web-app.md#three-kinds-of-note)).
-- **Tree:** folders first, then notes, sorted alphabetically, or by last change (newest first) with the header's sort button (FIL-11, D-175). Expand and collapse with the arrow keys. Typing a name jumps to it.
-- **Quick open:** <kbd>Ctrl/⌘</kbd>+<kbd>P</kbd> opens [Spotlight](spotlight.html) in note mode to fuzzy-find any note by title and path (FIL-04).
-- **Context menu** on each item (right-click, the item's ⋯ button, <kbd>Shift</kbd>+<kbd>F10</kbd>, or the Menu key) lists the operations below for the item or the selection, each with its shortcut ([Files panel → Row menu](../design/views/files.html#row-menu), D-162).
-- **Pinning** keeps the panel open while writing: it still floats, and the note's text moves clear of it ([Files panel → Pinning](../design/views/files.html#pinning), D-161).
+| Region | What it contains |
+| --- | --- |
+| Project heading | Name, logo, backup state, Open local folder |
+| Pinned | Shortcuts to real folders and notes; Unpin never deletes content |
+| Recent | Files only, newest first, with folder location |
+| Private | The project's private notes and sealed shares |
+| Public (sharing enabled) | Explicitly published source in the site's repository |
+| Recently deleted / Recovered | Restore Git history or crash drafts without overwriting newer text |
+
+See [Files panel](../design/views/files.html) for the full interaction. [Projects](projects.md) owns project selection, Quick notes, standalone files and People.
 
 ## Operations
 
-| Operation | How | Repository effect | Req |
-| --- | --- | --- | --- |
-| New note | Toolbar *New*, <kbd>Mod</kbd>+<kbd>N</kbd>, or *New note* on a folder | Nothing is written until the first character is typed. The file name follows the title until the note is published | FIL-01, FIL-07 |
-| Rename note | Inline rename (<kbd>F2</kbd> on Windows, <kbd>Enter</kbd> on macOS) | Edits the title (H1). The file is renamed too unless the note is published. Links to it in other notes are updated in the same commit | FIL-01, FIL-07, FIL-09 |
-| Delete note | Context menu or <kbd>Delete</kbd> / <kbd>⌘⌫</kbd>. Private: no dialog, *Undo* in the toast. Public: confirm first | Deletes the file in a commit. Recoverable from *Recently deleted* for 30 days, and from Git history after that | FIL-01, FIL-05, FIL-10 |
-| New folder | *New folder* on a root or folder, named inline | Creates the folder with a `.gitkeep` file so Git can track it while it's empty | FIL-02 |
-| Rename folder | Inline rename | One commit renaming every path inside it and updating links | FIL-02, FIL-09 |
-| Delete folder | Context menu, then confirm, listing how many notes it holds (empty folders don't ask) | One commit deleting the subtree, with *Undo* | FIL-02, FIL-05 |
-| Move | Drag-and-drop, cut and paste, or the *Move to…* picker, for one item or a multi-selection | Git rename within the same repository, links updated, one commit | FIL-03, FIL-08, FIL-09 |
-| Move between Public and Private | Drag across sections, Move to…, or *Make public* / *Make private* (Share, from M5; today the ⋯ menu for the open note and the Files header for a selection), always confirmed | Delete in one repository and add in the other, private first, plus a submodule pointer update (see below) | FIL-06, SHR-02 |
-| Restore | *Recently deleted* → Restore or Restore to… | Re-adds the file from Git history in a new commit | FIL-10 |
-| Recover a draft (desktop) | *Recovered* (shown only when a crash left text that couldn't go back in its note) → open one → *Save as a new note…*, *Copy text* or *Discard* | Save creates a new note in the chosen folder of the same section, then deletes the draft; nothing else is written (D-221) | QLT-06 |
-
-The full interaction design (anatomy, states, naming rules, multi-select, and the reasoning behind each choice) is in [Files panel](../design/views/files.html).
+| Operation | Behaviour | Requirements |
+| --- | --- | --- |
+| New note | Immediate in the current private folder or Private root; set name once on first save | FIL-01, FIL-18 |
+| New note in… | Mod+Shift+N picks a project and folder first; Cancel writes nothing | FIL-17, KEY-09 |
+| Edit title | Changes the first H1, never the file's path | FIL-18 |
+| Rename file… | Changes path, not H1; updates incoming and outgoing relative links atomically | FIL-18, FIL-09 |
+| New folder | Ctrl+Alt+N / ⌥⌘N, named inline; track empty folders with `.gitkeep` | FIL-02 |
+| Move | Drag, cut/paste or Move to… stays inside the project; preview collisions, never overwrite | FIL-03, FIL-08, FIL-09 |
+| Delete / Restore | Existing Undo and 30-day Recently deleted; folders/public items confirm consequences | FIL-05, FIL-10 |
+| Import files… | Copy supported files into the chosen project folder; keep originals, no replacement | FIL-15 |
+| Pin / Unpin | Keep a project/folder/note reachable without creating another copy | PRJ-07 |
 
 ### Links that follow
 
-Renaming or moving a note or folder rewrites the relative links that point at it, in every note the app can write, in the same batch as the rename or move (FIL-09, D-95). The batch is written all or nothing, and in a Git workspace it's one commit (D-97).
+Explicit file/folder rename or move rewrites only relative link destinations pointing at the moved content, including links inside moved notes, in the same recoverable batch. Preserve all unrelated bytes, fragments, titles and query strings. Do not rewrite code, front matter or external URLs. Never introduce a public-to-private link. Editing an H1 alone no longer triggers file/link operations (FIL-07 superseded).
 
-- **What's rewritten:** inline links and images (`[t](../a/b.md)`, `![p](Box/pic.png)`), reference definitions (`[id]: b.md "Title"`), angle-bracket and percent-encoded destinations (`<My Note.md>`, `My%20Note.md`), and links to anything inside a moved folder. Fragments, queries, and titles stay (`b.md#steps` → `Box/b.md#steps`).
-- **The moved notes' own links** are rewritten relative to where they go, so they reach the same files. Links between notes that move together don't change.
-- **What isn't:** links inside code spans and code blocks, HTML, and front matter; absolute URLs, `mailto:`, links within the note (`#…`), and site-root links (`/…`). Links that would climb out of the workspace's root are left as they are.
-- **Byte for byte:** only the characters of a changed destination change. Every other byte, including the parts of a destination that didn't change and how they were spelled, stays as it was.
-- **Renames by title:** renaming a note in Files, and a file name that follows its title as it's typed (FIL-07), update links the same way.
-- **The open note** shows its new links at once, keeping anything typed while the batch was written.
-- **In the browser,** only the notes written there are rewritten; the instance's read-only notes are never read for this, let alone written.
-- **Within a root:** a link is rewritten only when what it reaches stays in the note's own root. Moving a note between Public and Private leaves links that would reach across as they are, so a public note never names a private one (D-99).
-- **A refusal** puts the links back together with the move: nothing changes on disk or in the browser's storage.
+## Private, shared and public
 
-Commit messages are readable and consistent. For example: `Create notes/ideas.md`, `Move drafts/a.md → archive/a.md`, `Make private: notes/journal/2026-10-13.md`.
+| State | Stored in | Readable through |
+| --- | --- | --- |
+| Private | Private project repository | App and authorized GitHub project accounts; no website output |
+| Shared | Private project plus sealed site output | Link or access code, read-only; anyone holding it may forward it |
+| Public | Site repository | Plain website and public Git history |
 
-## Public and private
+New projects are **Private only**, with no site. The first share/publication explains and confirms the public site repository/Pages address before creating it. Published text and old copies cannot be recalled by later making it private. See [Sharing](../design/views/sharing.md).
 
-Seed: *"The content can be made public or private. Private content are hosted in a private repo which is a submodule of the parent repo."*
+## Share one item
 
-| | Public note | Shared note | Private note |
-| --- | --- | --- | --- |
-| Stored in | The instance repository, `notes/` | The private repository, `private/notes/` | The private repository, `private/notes/` |
-| Published on GitHub Pages | Yes, as a read-only page | Only as sealed (encrypted) files | Only sealed, in the owner's vault |
-| Who can read it | Anyone with the URL | Named audiences, with a magic link or their name and passcode, and you | Only you (in a browser, with your vault passphrase) |
-| Default for new notes | No | No | **Yes** (SHR-01, safe by default) |
+1. Files row menu → **Share…** on one note or folder.
+2. See its fixed name and counts; **Review contents** opens the read-only folder tree above the unchanged draft.
+3. Choose expiry, Link/Passcode and generated/custom passcode. No recipient name, multi-item picker or “who”.
+4. **Share…**, **Copy link**, **Copy access code** or **Copy share information** creates/updates that share and waits honestly for publication before delivering ready information.
 
-A new note goes into the folder chosen in Files, or next to the open note when that one is private, and otherwise into the Private root, even when the open note is public. The same holds for the note the app opens at launch: only the note the person last opened is reopened (never an empty public file), and otherwise the private welcome note opens, never a note found under *Public* (D-171). The Files panel says which notes are public: they're under *Public*, with "public" beside their titles and in their names for screen readers. *Shared* arrives with audiences (M5): it's a private note with a grant, stored like any private note.
-### Changing visibility
+Settings → Sharing lists **All shares** by item/expiry/state; extend and withdraw there. No Flow 2. Existing named grants are compatibility only until they end. Inviting an account with GitHub permissions is a separate [whole-project action](projects.md#people-in-a-project).
 
-1. The user picks **Make public** (or *Make private*): from Share once it arrives (M5), and today from the ⋯ menu's *Notes* group for the open note, or the Files header for several selected notes. Moving notes into the other section, by dragging or with Move to…, is the same change. It always asks first (DD-FILES-08). Making notes public says who will read them: *"Anyone with the link will be able to read “On focus” once it's published."* Making them private says what it can't undo (below).
-2. The app writes the note into the target repository and deletes it from the source repository, as one batch: one commit in each, the private repository's first.
-3. If the private repository changed, the public repository's submodule pointer is moved to the new private commit once it's pushed (D-97).
-4. The note keeps the same folder path inside its new root (missing folders are made), so links between notes that move together still work. A name that's taken there is numbered, as for any move.
+## Offline, conflicts and recovery
 
-> [!WARNING]
-> Making a note private doesn't erase it from the public repository's **Git history** or from caches and copies people already have. The confirmation dialog says this clearly. Rewriting history is a manual maintenance task, not an app feature.
+Project writing continues in the local clone; offline changes queue without claiming backed up. Conflicts show both versions before choosing; never silently overwrite external edits or leave half a rebase. Quick notes and standalone files have local journals but no Git safety net, so their state says Saved here / Local only.
 
-## Sharing links
-
-### Public link (SHR-03)
-
-- **Share → Copy link** copies the note's GitHub Pages URL, for example `https://<user>.github.io/focus-notes/n/<path>`.
-- The public page is a read-only rendering of the note in the reader's preferred theme, with no editing UI.
-- The URL is stable for as long as the note's path doesn't change. Renames and moves leave a redirect stub at the old path (proposed; see [decisions](../plan/decisions.md) D-08).
-- The public page appears after the next GitHub Pages deploy, usually within minutes. The Share panel shows *"Publishing…"* until the deploy for that commit is done.
-
-### Sharing with people (SHR-05)
-
-A private note or folder can be shared with an **audience**: a person or group identified only by a **name**, using a **magic link**, a **passcode** (your own or generated), or both, until an expiry or until you withdraw it. Shared notes stay in the private repository and are published only as ciphertext that the link or the name plus passcode opens. Your own access works the same way: the **vault** is a built-in grant for "You" that opens every private note with your vault passphrase (D-90). The full design is in [Sharing and visibility](../design/views/sharing.md), and the cryptography is in [Repository and publishing → Sealing](../architecture/repository-and-publishing.html#sealing-and-share-links) and [The vault](../architecture/repository-and-publishing.html#the-vault).
-
-## Conflicts and offline
-
-- **Desktop:** the app works on a local clone, so reading and writing work fully offline. Commits are made locally and pushed when the network is back. Before pushing it fetches, and if the same note changed elsewhere the toast offers *Resolve*, and the writer chooses between **Keep this computer's version**, **Take the other version** (yours goes to *Recently deleted*), and **Keep both** (yours as a conflict copy next to it), or decides later. Nothing is merged silently, and the repository is never left half-rebased ([Desktop and Git](../architecture/desktop-and-git.md#settling-a-conflict), [Feedback → Conflict resolver](../design/components/feedback-and-dialogs.md#conflict-resolver)). The same choice settles a note another program changed while this window had unsaved edits, which are never saved over it (D-92, D-102).
-- **Browser:** notes written there live only in that browser's IndexedDB and work offline, so there's nothing to conflict with. The instance's notes are read-only copies of the last deploy. Moving notes to the instance is an explicit export and import that keeps both versions on a name clash and deletes nothing ([Web app](../architecture/web-app.md#moving-notes-between-the-browser-and-github)).
-- On the desktop, the trigger shows the save-problem state while changes are waiting, and *Save to cloud* (<kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>, or pressing the pill's save icon) retries right away (D-132).
+The website is read-only, with its own site theme, not a browser app or ease-in plan. Old browser-only drafts must remain recoverable before [retiring the old runtime](../architecture/web-app.md); ordinary import remains independent of that retired funnel.

@@ -1,115 +1,180 @@
 # Sharing and visibility
 
-Who can read a note, and how to give specific people access with a magic link or a passcode, without any server.
+Start from the note or folder. See what it contains, choose how it opens, then send it.
 
 > [!NOTE]
-> **TL;DR.** A note is **Private** (only you), **Shared** (with people you name), or **Public** (anyone). Sharing is by **audience**: a person or group identified **only by a name** ("Asha", "Book club"). Each audience gets a **magic link**, a **passcode**, or both (D-41). The passcode can be **your own** (checked for strength) or **generated** (four random words). An audience can open notes and whole folders, until an expiry (default 30 days) or until you **withdraw** it. Readers open a link, or type **their name and the passcode**, and can stay signed in on their device. Shared notes stay in your private repository and are published only as ciphertext. Your own access in a browser uses the same scheme: the **vault** is a built-in audience, "You", that opens every private note with your vault passphrase (D-90). The cryptography follows the `personal-site` design ([Repository and publishing → Sealing](../../architecture/repository-and-publishing.html#sealing-and-share-links), [The vault](../../architecture/repository-and-publishing.html#the-vault)). View IA-VIEW-SHARE and the share reader in IA-VIEW-PUBLIC serve UC-SHARE-01 to UC-SHARE-05 and UC-READ-01 to UC-READ-02.
+> **TL;DR.** **Private** stays in the private project. **Shared** is read-only through a link or an access code, never a named recipient. **Public** is a plain website anyone can read, with its own theme. Share… opens one fixed item's dialog directly: no state screen, Add people or “who”. Folder review is a read-only dialog over that dialog, an explicit exception. Link/Passcode use clear switches; Share…, Copy link, Copy access code and Copy share information create the share on first action. This is the **planned replacement** for today's named-audience flow, not as-built behaviour. [Source](../../plan/next-direction.md), D-274, D-284 to D-293.
 
-<h2 data-reader-personas="product design">Three levels of visibility</h2>
+## Three levels of visibility
 
-| Level | Who can read | Where it's stored | How it's published |
+| Level | Who can read | Storage | Website output |
 | --- | --- | --- | --- |
-| **Private** | Only you (and anyone with access to your private repository) | Private repository | Only sealed in your vault, which only your vault passphrase opens |
-| **Shared** | You, plus the audiences you name | Private repository | Sealed: encrypted pages that only an audience's link or passcode opens |
-| **Public** | Anyone | Instance repository (`notes/`) | With the app on your GitHub Pages site, where anyone can read it, and from M5 as a normal page |
+| Private | Accounts with access to the private project | Private repository | None; no owner vault (D-292) |
+| Shared | Anyone holding a working link or access code | Private repository; grant secrets stay there | Encrypted pages/keyrings for that share only |
+| Public | Anyone, including GitHub repository visitors | Site repository's public notes | Plain read-only pages |
 
-New notes are **Private** (D-05). Moving between Private and Shared changes nothing on disk except the grant records. Moving to or from Public moves the file between repositories, and always asks first ([confirmation](../components/feedback-and-dialogs.md#confirmation-dialog)).
+New notes and projects are Private. Shared is a private note with a grant, not a move to public storage. Publishing plaintext always confirms the audience and warns about public Git history. Making it private again removes the hosted page at the next successful publication; it cannot erase history, caches or downloaded copies.
 
-<h2 data-reader-personas="product design">Audiences</h2>
+**Inviting a GitHub collaborator is different:** it grants account-backed access to the whole private project and its secrets, not read-only access to this item. See [People in a project](../../experience/projects.md#people-in-a-project). No “pick a person, then pick notes” flow exists.
 
-An **audience** is one grant: a name, the ways in, what it opens, and when it ends.
+## The share dialog
 
-| Part | Rule |
+**Share…** appears in a single note/folder's Files row menu, ⋯ → Note, and Spotlight. It opens IA-CMP-SHAREDIALOG / IA-VIEW-SHARE at once for that item. No visibility-summary interstitial or second Share button. A multi-selection does not silently become one share: offer **Share…** only for one item; a folder is how people choose a group.
+
+<!-- Visual thesis: a fixed item leads directly to opening methods and four actions; review branches out without becoming a scope picker. No icons: the labelled anatomy carries the meaning. -->
+<figure class="slate-figure">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-labelledby="fnshare-dialog__title fnshare-dialog__desc" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
+<title id="fnshare-dialog__title">One item-first share dialog, with review outside its main flow</title>
+<desc id="fnshare-dialog__desc">Share Book drafts. First region: the folder name and counts, 12 notes and 3 folders, and Review contents. Second: expiry, Link on, Passcode off and its generated/custom options when enabled. Third: Share, Copy link, Copy access code when enabled, and Copy share information. Shared before is a disclosure below, never an intermediate screen. Review contents branches to a scrollable read-only folder tree and returns to the intact draft.</desc>
+<g id="fnshare-dialog__main" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
+<rect id="fnshare-dialog__item" x="24" y="24" width="594" height="116" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
+<text x="46" y="64" font-size="21" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__item" data-slate-fit-padding="16">Share “Book drafts”</text>
+<text x="46" y="92" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__item" data-slate-fit-padding="16">Folder · 12 notes · 3 folders</text>
+<text x="46" y="120" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__item" data-slate-fit-padding="16">Review contents</text>
+<rect id="fnshare-dialog__methods" x="24" y="160" width="594" height="168" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
+<text x="46" y="196" font-size="20" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">How it opens</text>
+<text x="46" y="232" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Expires in 30 days</text>
+<text x="46" y="268" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Link: On · Passcode: Off</text>
+<text x="46" y="306" font-size="16" fill="var(--color-neutral-fg-2)" data-slate-fit-target="fnshare-dialog__methods" data-slate-fit-padding="16">Passcode on → Generated or Custom; strength checked</text>
+<rect id="fnshare-dialog__actions" x="24" y="348" width="594" height="112" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
+<text x="46" y="386" font-size="18" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__actions" data-slate-fit-padding="16">Share… · Copy link · Copy share information</text>
+<text x="46" y="430" font-size="16" fill="var(--color-neutral-fg-2)" data-slate-fit-target="fnshare-dialog__actions" data-slate-fit-padding="16">Copy access code appears when Passcode is on</text>
+<rect id="fnshare-dialog__history" x="24" y="480" width="594" height="56" rx="12" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
+<text x="46" y="514" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__history" data-slate-fit-padding="16">Shared before · disclosure, not another step</text>
+</g>
+<g id="fnshare-dialog__review" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+<path d="M618 104 H662" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<rect id="fnshare-dialog__tree" x="662" y="24" width="314" height="304" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
+<text x="684" y="62" font-size="20" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Review contents</text>
+<text x="684" y="104" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Book drafts</text>
+<text x="704" y="138" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Chapter 1</text>
+<text x="724" y="170" font-size="16" fill="var(--color-neutral-fg-2)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Opening.md</text>
+<text x="704" y="204" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Chapter 2</text>
+<text x="684" y="248" font-size="16" fill="var(--color-neutral-fg-2)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Scrollable · read-only</text>
+<text x="684" y="286" font-size="16" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnshare-dialog__tree" data-slate-fit-padding="16">Done / Escape → same draft</text>
+</g>
+</svg>
+<figcaption>Dialog anatomy, not a production screenshot. Counts and filenames are illustrative fixture values; there is no recipient region or scope picker.</figcaption>
+</figure>
+
+| Region | Contents and behaviour |
 | --- | --- |
-| **Name** | The only detail recorded about who it's for (owner decision). A person ("Asha") or a group ("Book club"). Unique among audiences that still work. It isn't secret: the reader types it next to the passcode. |
-| **Ways in** | Magic link, passcode, or both. Both open exactly the same notes. |
-| **Passcode** | **Generated** (default): four random words from the EFF large wordlist, about 52 bits, for example `harbor-maple-river-cloud`. **Your own**: 16 or more characters, or 3 or more different words, and then rated strong by the strength estimate (as built, D-134; a zxcvbn-style dictionary isn't bundled, so the length or word rule keeps common passwords such as "Password1234" out). Weak passcodes can't be saved, because a published file can be attacked offline with unlimited guesses. |
-| **Opens** | Any mix of notes and folders. A folder includes notes added to it later. |
-| **Expires** | 1 day, 7 days, 30 days (default), 90 days, a date, or never (with a warning). |
-| **State** | Active · Expires soon (3 days or less) · Expired · Withdrawn · Waiting to publish |
+| What's being shared | Item title/name, note/folder type, project identity; folder descendant note/folder counts and Review contents. No Add items, checkboxes or recipient name. |
+| How it opens | Expiry (1/7/30/90 days, date, Never with warning), Link and Passcode switches; Generated/Custom appears only when Passcode is on. |
+| Actions | Share… primary; Copy link; Copy access code; Copy share information. Hidden methods have no copy action. |
+| Shared before | Collapsed share history for this item, opening methods, expiry, state and Extend/Withdraw. No recipient identities. |
+| Status | One named task/publish status with failure and Retry; no “ready” until the site actually serves this share. |
 
-**Withdraw** stops an audience at the next publish and keeps its record, so the history of who had access stays complete. **Delete** removes the record too, after a confirmation. The private repository's history keeps every change either way.
+The target is captured by stable item ID, not its title. Rename updates the displayed name without changing scope. Moving it within the project keeps its identity; deleting it disables creation and says **“This item was deleted. Close sharing or restore it in Files.”** If its contents change while reviewing, refresh the counts/tree and require a new review before publication; never widen scope invisibly.
 
-### You: the vault
+## Review contents
 
-Every instance has one built-in audience, **You**: the owner's own grant, whose scope is every private note and whose passcode is the **vault passphrase** set in the desktop app (D-90, SEC-08). It has no link and no expiry, can't be withdrawn or deleted here, and only the passphrase's derived key is stored. The browser opens it with *Unlock*, read-only ([Web app → Unlocking private notes](../../architecture/web-app.md#unlocking-private-notes)). It's listed first in *All people with access*, with [Change passphrase] (the same as in **Settings → Workspace**).
+**Review contents** opens IA-CMP-SHAREREVIEW over the share dialog. It is the owner's explicit exception to the one-panel rule (DD-IA-04, D-287), not permission to nest general workflows. The share draft remains mounted but inert. The top dialog has an accessible title, the Files tree's expand/collapse behaviour, one scroll region and **Done**.
 
-<h2 id="the-share-popover" data-reader-personas="design product">The Share popover</h2>
+No add/remove/select-for-sharing controls. Expanding rows changes only the view. Escape closes only review and returns focus to Review contents with all expiry/passcode input intact. Tab is trapped in the top dialog; closing Share after review restores the original Files row or command opener.
 
-Opens from ⋯ → Share and visibility, Spotlight (`> Share`), or a Files row's ⋯. A frosted popover, 380 px wide, anchored under the trigger.
+Folder shares cover descendants, including notes added later, as the existing live-folder grant does. Say **“New notes in this folder will also be shared.”** before the first action. Review rechecks current contents before creation; future additions follow that explicitly stated live scope. Moving an item out removes it at the next successful publication. Existing copies remain beyond recall.
 
-| Part | Contents |
+## Switches and parameters
+
+Use the sealed [Switch primitive](../system/components.md#switch) (DSY-15): labelled track/thumb, On/Off text, position and filled state, not colour alone; 3:1 control contrast, visible focus, native checked semantics and Space. Pending/disabled has an explanation. Generated/Custom is a choice, not a switch.
+
+Default **Link on**, **Passcode off**, **30 days**. At least one opening method stays on: trying to turn off the last shows **“Keep Link or Passcode on to share this item.”** A date in the past cannot generate; keep the draft and focus the date error. Never is explicit with **“This share keeps working until you withdraw it.”**
+
+Passcodes default to four random EFF words (about 52 bits). Keep the as-built custom strength guard (D-134: 16 or more characters or at least 3 distinct words, then strong rating), never weaken it because a share code exists. PBKDF2-SHA256 at 600,000 iterations and per-grant salt remain; public ciphertext allows unlimited offline guesses. The older SHR-07 12-character wording is a minimum, not a reason to lower the stronger built guard.
+
+## Actions
+
+1. Validate fixed scope, date, method and strength without side effects.
+2. If Private only, show [first-share confirmation](../../experience/projects.md#private-only-until-the-first-share); Cancel creates no site or grant and restores the draft.
+3. The first action creates one grant in the private project, backs it up and publishes the sealed output. Opening/cancelling the dialog creates no grant. A repeated action reuses the same grant, not a second share; changed parameters update it explicitly and await publication.
+4. Once ready, complete the requested action. If publication fails, keep the same record as **Waiting to publish**, preserve its parameters and offer **Retry publishing**; no duplicate grant or success-shaped copy.
+
+| Action | Result |
 | --- | --- |
-| Header | The note's title and its current level |
-| **Who can read** | A three-option switch: **Only me** · **People you choose** · **Anyone (public)** |
-| People you choose | A list of audiences that open this note: name, chips for *Link* and *Passcode*, "Expires in 12 days", and a ⋯ menu (Copy invite, Copy link, Show passcode, Extend, Change what it opens, Withdraw). Audiences that open the note through a folder say "via drafts/". [Add people] is at the bottom. |
-| Anyone (public) | The public URL in a read-only field, [Copy link], and the status: **Live**, **Publishing…**, or **Not published yet** |
-| Footer | A publish status line while changes are on their way ("Works in about 2 minutes, after publishing"), and a link to *All people with access* (Settings → Sharing) |
+| Share… | System share sheet with complete share information where supported. If genuinely unavailable, copy that information and announce **Share information copied**. User cancellation is cancellation, not a copy fallback; errors remain explicit. |
+| Copy link | Copy the working fragment link, only with Link on. |
+| Copy access code | Copy share code plus passcode in one string, only with Passcode on. |
+| Copy share information | Copy title, enabled opening method(s), site share page, expiry and limits using the template below. |
 
-**As built (D-143):** ⋯ → *Share and visibility…* opens *Share “⟨note⟩”* as a compact dialog, not yet a frosted popover anchored under the trigger. It shows who can read the note as audience cards (with "via trips/" for a folder), each with [Copy invite]; *Only you can read it* when nobody else can; *Anyone can read it* with [Copy public link] for a public note; [Share this note with…], which opens *Add people* with this note picked and comes back here; and [All people with access]. The *Who can read* switch and the row's ⋯ menu stay in Settings → Sharing and Files for now.
+Do not invoke the OS sheet until publication is ready. Some platforms require a fresh user gesture after a long wait: show **Ready to share** with **Share…** to complete rather than silently failing or claiming the sheet opened. Clipboard failure shows **“Couldn't copy. Try again.”** with a retry; OS-sheet cancellation leaves the valid share available under Shared before.
 
-### Add people
+Copy through the main process; clear after 90 seconds only if the clipboard is unchanged. History/cloud clipboard services may retain a copy; say so in help, not a wall of text in the dialog. Never put access codes in logs, notifications or public metadata.
 
-1. **Name**, required and focused. A duplicate shows "There's already an active audience called Asha" and offers to add this note to it instead.
-2. **Ways in:** ☑ Magic link · ☑ Passcode. For the passcode, choose *Generate* (shown in large monospaced type with [New words]) or *Choose my own* (a field with a strength meter and a plain reason when it's too weak).
-3. **Opens:** this note (checked), its folder, or *Pick more…* (the [Move to picker](../components/feedback-and-dialogs.md#move-to-picker) in multi-select mode).
-4. **Expires:** presets plus a date.
-5. [Create] commits the grant to the private repository and starts publishing. Then the **invite** view shows the message, ready to send.
+## Shares without names
 
-### The invite
+A share is identified by its item, opening methods, expiry and state, **not by whom it reached**. No account, email, name, optional recipient label or read receipt. Holding a link/code is not proof of identity; it can be forwarded. The app cannot guarantee “only Asha can read this”.
 
-The invite is built from a template that can be edited in **Settings → Sharing** and is stored in the private repository as `access-message.json`, like `personal-site`:
+**Share code** is a non-secret random 8-character identifier, displayed as `K7QM-4DRP`. Use an unambiguous alphabet and collision-check against the project's records. **Access code** is that identifier plus the secret passcode in one field/string, for example `K7QM-4DRP harbor-maple-river-cloud`. Parsing normalizes only the identifier's separators/case; the passcode keeps its exact content. The share code finds one keyring; its entropy does not strengthen a weak passcode. The site's share page supplies the project context.
+
+Existing named grants are **legacy compatibility only**: keep their old links and passcodes working until expiry/withdrawal, list them by item, and retain a clearly separated legacy reader path for old details. New grants and the main reader never ask a name. Do not silently rotate old secrets, publish names, auto-convert access or remove the compatibility reader before those grants end. D-285 remains an owner decision because it supersedes their D-41.
+
+### Settings → Sharing
+
+**All shares**, grouped by item, shows Link/Passcode, expiry and Active / Expires soon (within 3 days) / Expired / Withdrawn / Waiting to publish. Filter by state and find by item title. There is no **All people with access**, **Share with someone** or Add people.
+
+**Extend** changes expiry on the same grant. **Withdraw** confirms **“Withdraw this share? Its link and access code stop working after the next successful publication. Downloaded copies cannot be recalled.”** Default focus Cancel. Keep the record. **Delete record** confirms separately; private Git history still keeps the record and old secrets. Disabling an opening method rotates/reseals as required so the disabled method cannot unlock the new build; the other method's advertised continuity must be verified before claiming success.
+
+### Share information template
 
 ```text
-Hi {name}, I've shared "{title}" with you.
-Open it here: {link}
-Or go to {site} and use your name "{name}" with the passcode {passcode}.
-On a shared computer, use your name and the passcode: browsers remember links.
-It works until {expires}.
+“{title}” is shared read-only.
+Open: {link}
+Or open {site} and enter this access code: {accessCode}
+Works until {expires}.
+Anyone with the link or access code can read it and forward it.
+Expiry or withdrawal cannot remove copies already downloaded.
 ```
 
-Lines for a way in that the audience doesn't have are left out, and the shared-computer line appears only when the audience has both a link and a passcode (D-134). A shared folder is named in the invite by its own name, never the private path above it. Copying goes through the desktop's main process, which clears the clipboard after 90 seconds if it still holds what was copied; Windows clipboard history and its cloud sync may keep a copy, which the app can't prevent, so on a shared computer turn clipboard history off or send the passcode another way. [Copy invite], [Copy link], and [Copy passcode] each copy one thing. The link and passcode can be shown and copied again later, because the secret is kept in the private repository (never published).
+Omit lines for disabled methods. `{site}` is the site's share-reader address. No `{name}` or bare `{passcode}` field in new templates. Settings validates placeholders and requires `{link}` or `{accessCode}`; unknown placeholders have a field error, input retained. Store privately in the project's `access-message.json`; Reset to default is explicit. Legacy templates remain for old grants only, not a reason to request new names.
 
-### Withdraw and extend
+## The share reader
 
-- **Withdraw:** "Withdraw access for Asha? The link and passcode stop working after your next backup and publish. Anything already read can't be taken back." [Cancel] [Withdraw]. It opens on [Cancel].
-- **Extend:** choose a new date (as built, *Extend 30 days* in the ⋯ menu, or a new *Works for* in *Change…*). It works after the next publish, including links already sent.
+On the site's `/s/` page (IA-VIEW-PUBLIC):
 
-Every change is committed to `private/access.json` like a note, so it's live after the next backup and publish; the app says so plainly beside the list and in the invite (D-134).
-
-<h2 id="settings-sharing" data-reader-personas="design product">Settings → Sharing</h2>
-
-- **All people with access:** *You* (the vault) first, then every audience with its name, ways in, what it opens, expiry, and state. Filter by Active, Expired, or Withdrawn, search by name, and act on any row.
-- **As built (WP-5.3, D-134, D-143):** each audience is a card with its initials, what it opens and how, and an expiry badge, with [Invite] and ⋯ (Change…, Extend 30 days, Withdraw…, Delete…); [Share with someone] opens *Add people* as a dialog, which starts with a card for who it's for, what it opens, how, and for how long; its *Opens* is a set of toggle chips for every private folder and note with a filter, and its *Expires* is *Works for* (1, 7, 30, 90 days, Always) or *Or until* a day picked on a calendar (it works until the end of that day). The filter and search by name aren't built yet. Only the desktop's main process writes `access.json` and makes its secrets.
-- **Invite template:** edit the message, with the placeholders listed. As built (D-143), an *Invite message* card (Default or Edited) opens a dialog: the message, the six placeholders as buttons, a live preview with made-up values, and [Reset to default]. An unknown placeholder is named, and a message needs `{link}` or `{passcode}`. It's saved by the main process as `private/access-message.json`; saving the default removes the file.
-- **Share links on this workspace:** whether share-link publishing is set up (the deploy key and secret from [Creating a workspace](../../architecture/desktop-and-git.md#creating-a-workspace)), with [Set up] if it was skipped.
-
-<h2 id="the-share-reader" data-reader-personas="design product">The share reader</h2>
-
-The page a reader sees at `https://<user>.github.io/<workspace>/s/`, part of IA-VIEW-PUBLIC. A magic link is that page with the grant and its secret in the fragment, `s/#<grant>.<secret>`, which browsers never send to the server (D-125).
-
-| Moment | What the reader sees |
+| Entry/state | What happens |
 | --- | --- |
-| **Magic link** | The fragment after `#` is read and removed from the address bar at once. A brief "Opening…", then the note. Nothing to type. |
-| **No link** | "This note is private", a line saying what to do, two fields, **Your name** and **Passcode**, then [Open] and [Open and remember]. The name matches whatever its letter case or spacing. |
-| **Anything that doesn't open** | A wrong name or passcode, a wrong link, or an audience that has expired or been withdrawn all get the same words: "That didn't open anything. Check your name and passcode, or the link, and try again. If it still doesn't work, ask the person who shared it with you." It never says which one was wrong, whether the name exists, or whether access ever existed (D-125). |
-| **Site just updated** | A note that fails to read is read once more from the new build; if it still fails, the same words as above. |
-| **Signed in** | The note in the same calm reading view as public pages. An audience that opens several notes sees "Shared with you" with a list of them by title, and each note offers [All shared notes]. Links to other notes in the share stay on the page; links to anything else are plain text. Footer: [Remember on this device] (a toggle) and [Sign out on this device]. |
+| Link | Read grant/secret from fragment and remove it immediately; open only that share's notes. Browser history/sync may retain the original URL. |
+| No link | One **Access code** field, labelled example, **Open** and **Open and remember**. Never a name field in the new flow. |
+| Wrong, expired, withdrawn or malformed | Same error: **“That didn't open anything. Check the link or access code and try again. If it still doesn't work, ask the person who shared it.”** No existence oracle. |
+| Read failure after site update | Retry once against the current build, then show that same error; no endless retry. |
+| Open | Read-only note(s), list of titles for a folder, site's theme in light/dark; no editor, owner vault, demo or local-note controls. |
 
-**Staying signed in** follows `personal-site`. By default the session is for the browser tab: a reload stays open, and closing the tab ends it there. *Open and remember* or *Remember on this device* keeps it on the device until the audience expires or is withdrawn (or, for an audience that never expires, until 30 days unused). A link always opens for its tab only. *Sign out on this device* forgets it in every open tab, and anything saved before it. A tab's session also ends after 12 hours unused. What's kept is a key the browser can use but never reveal (in IndexedDB), with the grant's ID or the name's lookup and its expiry; never the passcode, the name, or the link secret. The page hides the share when its expiry passes; access itself ends at the first publish after that (D-125).
+Scope-safe internal links open only notes in this share; other private links become plain text. Session defaults to the tab, expires after 12 idle hours and at grant expiry. Optional remembrance stores only non-extractable key material plus lookup/expiry, never the passcode, name or fragment secret; expire never-ending grants after 30 unused days. **Sign out on this device** forgets all tabs and remembered access. These reader keys are not a browser writing store and are not retired by D-292.
 
-The page removes the link's secret from the address bar at once, but the browser's own history (and its sync) may keep the address the link was opened at, so on a shared computer the name and passcode are the better way in.
+Expiry is enforced by the reader's clock and a fresh deployment/key rotation. A static host cannot erase old builds, caches or copies, and someone can retain already decrypted text. **Withdrawn** means removed from the current successful build, not cryptographic recall. Nightly deployment and each site's 60-day schedule warning remain mandatory.
 
-<h2 data-reader-personas="product design">Design decisions</h2>
+## Publishing a website
 
-| ID | Decision | Serves | Rationale | Alternatives rejected |
-| --- | --- | --- | --- | --- |
-| DD-SHARE-01 | Three visibility levels: Private, Shared, Public. | UC-SHARE-01, UC-SHARE-03 | Sharing with a few people is different from publishing, and people should see that difference at a glance (CP-SHARE-01). | Two levels with sharing hidden under Private. |
-| DD-SHARE-02 | An audience is identified by a name only. | UC-SHARE-03, UC-SHARE-04 | The owner asked for just the name. It's enough to recognize, extend, or withdraw access, and records nothing else about the reader. | Recording organization, purpose, or email (as `personal-site` does). |
-| DD-SHARE-03 | One audience can have both a link and a passcode, opening the same notes. | UC-SHARE-03, UC-SHARE-05 | A link is easiest. A passcode works where links get mangled, or when spoken aloud. One scope keeps them consistent. | Separate grants for each way in. |
-| DD-SHARE-04 | Passcodes are generated by default. Custom passcodes must pass a strength check. | UC-SHARE-03 | The owner wants custom passcodes. Static sites can't limit guesses, so weak passcodes would be cracked offline. | Any passcode allowed. Generated only. |
-| DD-SHARE-05 | Readers type their name and the passcode. The name finds the right keyring. | UC-READ-02 | Only one slow key derivation runs, and the page never lists or reveals audience names. The reader already knows their name. | Trying every keyring (slow, and grows with each audience). A name word inside the passcode (makes custom passcodes awkward). |
-| DD-SHARE-06 | Withdraw keeps the record. Delete removes it only after confirmation. | UC-SHARE-04 | A complete record of who had access, as in `personal-site`. | Deleting on withdraw. |
-| DD-SHARE-07 | Default expiry is 30 days, replacing the earlier 1 week. | UC-SHARE-03 | Audiences now include groups, and 30 days matches `personal-site`'s suggestion. | 1 week (too short for groups). Never (forgotten access). |
-| DD-SHARE-08 | No read receipts or tracking for shared notes. | UC-READ-01 | No telemetry anywhere (PRV-01, UNSUP-SHARE-02). | `personal-site`'s per-grant analytics. |
-| DD-SHARE-09 | The owner's private notes in a browser are a built-in grant, "You", sealed with the same format as share grants. | UC-SETUP-07 | One format, one sealer, and one reader to secure, and the browser needs no GitHub credential (D-90). | A browser token that reads the private repository (D-81, superseded). A separate encrypted mirror repository. |
+**Publish…** is distinct from sealed sharing. Confirm **“Publish ‘⟨title⟩’ for anyone to read? Its text will be public on your website and in GitHub history.”** First publication also uses the site-creation confirmation. Publishing moves public source into the site repository under the existing two-repository safety protocol; a partial operation remains visible and recoverable, never silently deleting the private source before the target is durable.
+
+Settings → Project → **Site theme** chooses the website's token theme; proposed default **Paper**, independent of personal app Appearance and project accent. Public and sealed-reader pages use that site identity and readable light/dark variants. Preview is a read-only website preview, not a browser writing app.
+
+GitHub Pages is **purely a website** (D-292). No browser editor, IndexedDB notes, owner-vault unlock, demo-writing or eventual move-to-desktop funnel. [Browser retirement](../../architecture/web-app.md) must preserve old browser drafts before removing the old runtime. Plain download/help links remain.
+
+## States and evidence
+
+The design uses Dialog, ItemCard, Badge, Tree, Field, Select, Switch, Button and Disclosure from the existing tiers, expressed as JSON before wiring. At 320 px actions wrap without horizontal scrolling; only review's tree and the normal dialog content scroll, not a second nested action pane. Fields and target stay stable during waits/errors.
+
+The [wait inventory](../../architecture/perceived-performance.md) records preparing contents, site creation, sealing/publishing and OS handoff. Acknowledge within 100 ms; use named status after 300 ms, preserve the current view and prompt, and make long publication leavable. No “Link copied” or “Live” before the actual copy/deploy succeeds.
+
+**VVS:** designed to meet at least 70, with no criterion below 10, by using item identity, counts, tree, checked switches, expiry badges and an action row instead of prose describing state. This is a target and rationale, **not a scored or approved UI**; score the actual JSON surface in light/dark/narrow states before sign-off. Copy pass: Share is not Invite; shared is not public; access code is not share code; errors retain input and offer a next action.
+
+## Design decisions
+
+| ID | Decision | Serves | Rationale |
+| --- | --- | --- | --- |
+| DD-SHARE-01 | Three levels remain, without named recipients | UC-SHARE-01, UC-SHARE-03 | Distinguish private, sealed and public |
+| DD-SHARE-02 | **Superseded by D-285:** new grants have no audience name | UC-SHARE-03, UC-SHARE-04 | No identity/tracking claim |
+| DD-SHARE-03 | One grant may have link and access-code methods | UC-SHARE-03, UC-SHARE-05 | Same scope, no extra grants |
+| DD-SHARE-04 | Generated passcodes and strong custom validation | UC-SHARE-03 | Offline guesses cannot be rate-limited |
+| DD-SHARE-05 | **Superseded by D-285:** one access code finds a keyring | UC-READ-02 | No new name field or scanning all keyrings |
+| DD-SHARE-06 | Withdraw keeps record; delete is separate | UC-SHARE-04 | History is not recipient tracking |
+| DD-SHARE-07 | 30-day default expiry | UC-SHARE-03 | Deliberate limit; Never warns |
+| DD-SHARE-08 | No read receipts or recipient lookup | UC-READ-01 | Static, no tracking |
+| DD-SHARE-09 | **Retired by D-292:** owner browser vault | UC-SETUP-07 | Website is reading only; private unshared content is never sealed for an owner vault |
+| DD-SHARE-10 | Fixed item directly into Share | UC-SHARE-03, UC-SHARE-07 | Removes interstitial and scope creep |
+| DD-SHARE-11 | Review tree above preserved share draft | UC-SHARE-07 | Explicit nested-dialog exception with reversible focus |
+| DD-SHARE-12 | Switch for on/off; choice for passcode type | UC-SHARE-03 | Position/text, not ambiguous chip colour |
+| DD-SHARE-13 | First action creates; ready output only after publish | UC-SHARE-05, UC-SHARE-08 | No empty shares on cancel or unready invitations |
+| DD-SHARE-14 | Site theme independent of app; no browser-writing product | UC-SHARE-10 | A clean website, not a second editor |
