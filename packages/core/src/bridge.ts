@@ -124,6 +124,13 @@ export interface PlatformBridge {
   recovery?: RecoveryBridge;
   /** Windows of their own, one note each (desktop, DSK-06, D-179). Absent where the shell has one window. */
   windows?: WindowsBridge;
+  /** Local project windows, isolated from each other's workspace services. */
+  projects?: {
+    list(): Promise<ProjectEntry[]>;
+    open(folder: string, note?: string): Promise<void>;
+    choose(): Promise<string | undefined>;
+    onNote?(listener: (path: string) => void): () => void;
+  };
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;
   /**
@@ -152,6 +159,15 @@ export interface PlatformBridge {
    * key store) and makes the one request. The key goes in once and never comes back to the window.
    */
   ai?: AiBridge;
+}
+
+export interface ProjectEntry {
+  folder: string;
+  name: string;
+  accent: string;
+  logo: string;
+  lastNote?: string;
+  pinned?: boolean;
 }
 
 /** Settings → AI as the window sees it: its connections and the Writer, never a key. */

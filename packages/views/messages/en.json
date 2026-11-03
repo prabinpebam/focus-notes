@@ -258,6 +258,8 @@
   "project.new.title": "New project",
   "project.new.willMake": "Create project will make:",
   "project.next": "Next",
+  "project.open.failed": "The project couldn’t be opened. Check its folder and try again.",
+  "project.open.preparing": "Opening project…",
   "project.open": "Open",
   "project.open.button": "Open…",
   "project.open.newLocal": "New Local note",

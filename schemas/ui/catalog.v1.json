@@ -5838,6 +5838,13 @@
       ]
     },
     {
+      "id": "projects",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.projects"
+      ]
+    },
+    {
       "id": "reader",
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
