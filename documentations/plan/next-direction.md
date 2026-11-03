@@ -1,13 +1,13 @@
 # Next direction: projects, sharing and fixes
 
-The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-291).
+The owner's notes of 3 November 2026 on what Focus Notes does next, kept word for word, and the plan that turns each note into the spec: the chain, the views, the requirements and the decisions (D-272 to D-299).
 
 > [!NOTE]
-> **TL;DR.** The owner's authoritative notes ask for everyday writing fixes, isolated **projects**, **pinned folders and projects**, and one item-first **share dialog**. They also retire the browser writing app, browser-local notes and the browser-to-desktop ease-in plan completely: GitHub Pages becomes a clean reading website. The capture below preserves the source's exact nesting. These are specifications, not claims about the current build. Decisions D-272 to D-293 record the direction.
+> **TL;DR.** The owner's authoritative notes ask for everyday writing fixes, isolated projects with preset/uploaded logos, pinned folders/projects and an item-first share dialog. GitHub Pages becomes a clean website: public home, sections/articles, theme/focus controls and in-app site preview. Browser writing, browser-local notes and the ease-in plan are retired completely. The capture preserves exact nesting; D-272 to D-299 record interpretation, not a current-build claim.
 
 ## The owner's notes (3 November 2026)
 
-Captured from the owner's authoritative product-notes file on 3 November, after their 12:22 update. Only Focus Notes product content is present; no non-product lines were omitted. The source remains untouched. Everything below and on the linked pages interprets these notes; when they disagree, the notes win.
+Captured from the owner's authoritative product-notes file on 3 November, including the final reread's SVG and website/preview additions. Only Focus Notes product content is present; no non-product lines were omitted. The source remains untouched. Everything below and on the linked pages interprets these notes; when they disagree, the notes win.
 
 ```text
 # Focus notes features
@@ -33,7 +33,8 @@ Captured from the owner's authoritative product-notes file on 3 November, after 
   - How should projects work? Why do we need projects?
     - Projects might be a way to isolate context and scope and work in a focus mode.
     - I might want to open multiple instances of focus notes with separate color theming and logo each representing a different projects.
-      - We can give a preset bunch of logos generic svg logos to mark different projects. Logos can be shown as a proper project logo or as watermark.
+      - We can give a preset bunch of logos generic SVG logos to mark different projects. Logos can be shown as a proper project logo or as watermark.
+        - Users can upload their own SVGs for logos.
       - So, if I open a Focus notes in project specific mode, I should not be able to browse outside the scope of the Project
       - Projects should be separate repositories in GitHub. The user facing term will be "Project" while the underlying mechanism will be "GitHub repositories"
         - That way the scope and commits are separated.
@@ -93,7 +94,24 @@ Captured from the owner's authoritative product-notes file on 3 November, after 
 
 - Originally we wanted the Focus notes app to work on browsers too. It can't be done without hosting server. Hence we have dropped that idea completely.
 - Also we had the idea that we will run focus notes on the web as an instance where the content is stored in the browser index db. This mental model is complicated and hard to communicate with the user. Hence we are dropping this idea also completely and we should remove anything on this completely. We are not going to have that ease-in plan for users to try Focus Notes on web and eventually move to the desktop app. We are not going to do that.
-- Instead, the GitHub pages is going to be purely a clean website
+- Instead, the GitHub pages is going to be purely a clean website.
+- What will we need for the GitHub pages website.
+  - A home page view that lists all the contents that are published and public.
+    - The distinction to be made here is that share is always with a passcode or a link and people need to have that link/passcode to access it. Share doesn't make the share file/folder public and the shared content is kept encrypted in the public repo.
+    - Published notes/folders are truly public notes which any one can view and discover. They are not encrypted.
+  - The folder structure and files within can be show as a scalable navigation structure
+    - Folders are always shown as sections
+    - Files inside a folder are shown as a list of articles in the folder/section.
+      - The title of the file and the first few lines are shown as a detail of the article item listing.
+      - A folder is shown with a distinction indicating it has more files inside it. Indicate the number of files inside it.
+    - Files are always shown as a web page, like a blog article
+    - We need a minimal navigation bar at the top.
+      - Project icons, optional depending on where the user has set it or not.
+      - Top level section can be directly shown
+      - Toggle for light/dark/system mode
+      - Toggle for the same focus mode that our app has.&#x20;
+
+- A "Preview site" mode in the app where user can preview what their site will look like, choose theme and default font size and fonts etc.&#x20;
 ```
 
 ## How the notes become the spec
@@ -147,5 +165,10 @@ These are irreversible or change an owner decision, so they're proposed, not bui
 | Publishing as a website with its own theme | [Sharing → Publishing a website](../design/views/sharing.md#publishing-a-website) | D-291 |
 | Pinned folders, not only notes | [Projects → Recent and pinned](../experience/projects.md#recent-and-pinned), [Files](../design/views/files.html) | D-293 |
 | Drop browser writing, browser notes and the ease-in plan; Pages is a website | [Repository and publishing](../architecture/repository-and-publishing.html), [Distribution](distribution.md), [Product site and help](../product/site-and-help.md) | D-292 |
+| Upload a project SVG logo | [Projects → Telling projects apart](../experience/projects.md#telling-projects-apart) | D-294 |
+| Public home, folder sections, article lists/excerpts/counts and article pages | [Published website](../experience/published-site.md) | D-295 |
+| Minimal top bar, optional project icon, top-level sections, theme and focus | [Published website → Reading controls](../experience/published-site.md#reading-controls) | D-296 |
+| Preview site in the app; choose site theme, fonts and default font size | [Published website → Preview site](../experience/published-site.md#preview-site) | D-297 |
+| Shared ciphertext in the public repository, never a public listing | [Repository and publishing](../architecture/repository-and-publishing.html#project-model) | D-299 |
 
 All of it is planned in stage **MP: Projects and simpler sharing** of the [roadmap](roadmap.md), as work packages WP-P.1 to WP-P.13 in the [implementation plan](implementation-plan.md#mp).
