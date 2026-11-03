@@ -22,6 +22,7 @@
   "tileLabel": { "$type": "color", "$value": "{color.textMuted}" },
   "tileLabelSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
   "tileValueSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
+  "tileSampleLeading": { "$type": "number", "$value": "{font.headingLineHeight}" },
   "tileSampleSize": { "$type": "dimension", "$value": "{font.uiHeadingLarge}" },
   "previewRadius": { "$type": "dimension", "$value": "{radius.small}" },
   "previewText": { "$type": "color", "$value": "{color.text}" },

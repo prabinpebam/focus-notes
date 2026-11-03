@@ -2118,6 +2118,22 @@
                 }
               ]
             },
+            "width": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "content",
+                    "tiles"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "placement": {
               "anyOf": [
                 {

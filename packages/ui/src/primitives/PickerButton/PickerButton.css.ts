@@ -36,7 +36,7 @@ export const tile = style({
 });
 export const tileTop = style({ display: "flex", alignItems: "center", justifyContent: "space-between", color: t.tileLabel, fontSize: t.tileLabelSize, minWidth: 0 });
 export const tileVisual = style({ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0, overflow: "hidden" });
-export const sample = style({ fontFamily: t.family, fontSize: t.tileSampleSize, lineHeight: 1 });
+export const sample = style({ fontFamily: t.family, fontSize: t.tileSampleSize, lineHeight: t.tileSampleLeading });
 export const tileValue = style({ fontSize: t.tileValueSize, minWidth: 0, whiteSpace: "nowrap", textAlign: "center" });
 // The theme drawn small: its canvas, two lines of its text and a dot of its accent.
 export const preview = style({

@@ -445,6 +445,7 @@
     "themeTile": {
       "$value": "{ref.size.158}"
     },
+    "tilePopover": { "$value": "{ref.size.504}", "$description": "A popover three theme tiles wide: 3 × themeTile, the gallery's gaps and focus room, the popover's padding and border." },
     "themeSwatch": {
       "$value": "{ref.size.56}"
     },

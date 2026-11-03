@@ -9,6 +9,7 @@ export const contract = defineContract({
     open: { kind: "boolean", default: false },
     hoverOpen: { kind: "boolean", default: false, description: "An accessible preview card: opens on hover without moving focus, supports entering its content by keyboard, and stays open while pointed at." },
     padding: { kind: "enum", values: ["normal", "comfortable"], default: "normal", description: "The existing compact popover padding, or 16px on every side for a details card." },
+    width: { kind: "enum", values: ["content", "tiles"], default: "content", description: "content: as wide as what it holds. tiles: three theme tiles across, for a popover that reuses the theme manager's tiles (Settings → Project's Theme and Font, owner 3 November 19:05); it scrolls when taller than the window." },
     placement: { kind: "enum", values: ["bottom", "top", "top start", "start", "end"], default: "bottom" },
   },
   events: { openChange: { payload: { open: "boolean" } } },
@@ -27,5 +28,10 @@ export const contract = defineContract({
     covers: ["closed"],
     props: { label: { t: "gallery.sample" }, padding, open: false },
     slots: { trigger: [{ type: "Button", props: { label: { t: "gallery.action" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
-  }))],
+  })), {
+    name: "width tiles",
+    covers: ["closed"],
+    props: { label: { t: "gallery.sample" }, width: "tiles", open: false },
+    slots: { trigger: [{ type: "Button", props: { label: { t: "gallery.action" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
+  }],
 });

@@ -10,6 +10,8 @@ export interface PopoverPanelProps {
   placement?: "bottom" | "top" | "top start" | "start" | "end";
   hoverOpen?: boolean;
   padding?: "normal" | "comfortable";
+  /** tiles: three theme tiles wide (Settings → Project's Theme and Font popovers). */
+  width?: "content" | "tiles";
   /** The pressable that opens the panel. */
   trigger: ReactNode;
   content?: ReactNode;
@@ -17,7 +19,7 @@ export interface PopoverPanelProps {
 }
 
 /** A frosted, anchored panel. Esc and clicking outside close it (Main UI → Behavior). */
-export function PopoverPanel({ label, open, placement = "bottom", hoverOpen = false, padding = "normal", trigger, content, onOpenChange }: PopoverPanelProps) {
+export function PopoverPanel({ label, open, placement = "bottom", hoverOpen = false, padding = "normal", width = "content", trigger, content, onOpenChange }: PopoverPanelProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const triggerRef = useRef<HTMLSpanElement | null>(null);
@@ -72,7 +74,7 @@ export function PopoverPanel({ label, open, placement = "bottom", hoverOpen = fa
   const children = (
     <>
       {trigger}
-      <Popover className={s.popover} data-padding={padding} placement={placement} offset={8} shouldFlip {...boundary} isNonModal={hoverOpen} aria-label={label} data-surface="popover">
+      <Popover className={s.popover} data-padding={padding} data-width={width} placement={placement} offset={8} shouldFlip {...boundary} isNonModal={hoverOpen} aria-label={label} data-surface="popover">
         {hoverOpen
           ? <div className={s.dialog} role="dialog" aria-label={label} tabIndex={-1} ref={dialogRef as RefObject<HTMLDivElement>}>{content}</div>
           : <Dialog aria-label={label} className={s.dialog} ref={dialogRef as RefObject<HTMLElement>}>{content}</Dialog>}
