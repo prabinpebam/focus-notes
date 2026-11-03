@@ -43,6 +43,9 @@
   "root": {
     "type": "AppRoot",
     "props": {
+      "projectAccent": {
+        "get": "vm.project.accent"
+      },
       "scheme": {
         "get": "vm.app.scheme"
       },
@@ -90,7 +93,7 @@
 {
   "type": "ProjectScope",
   "props": {
-    "part": "window",
+    "part": "plain",
     "grow": true,
     "accent": {
       "get": "vm.project.accent"

@@ -8454,7 +8454,8 @@
                     "window",
                     "center",
                     "bottomCenter",
-                    "bottomStart"
+                    "bottomStart",
+                    "bottomEnd"
                   ]
                 },
                 {
@@ -8766,6 +8767,33 @@
                     "hyperlegible",
                     "dyslexic",
                     "system"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "projectAccent": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "orange",
+                    "amber",
+                    "lime",
+                    "green",
+                    "teal",
+                    "cyan",
+                    "blue",
+                    "indigo",
+                    "violet",
+                    "pink",
+                    "slate",
+                    "app"
                   ]
                 },
                 {
