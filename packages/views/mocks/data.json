@@ -444,7 +444,7 @@
   },
   {
    "id": "harbor-light",
-   "label": "Harbor",
+   "label": "Harbor light",
    "name": "Harbor light",
    "kind": "light",
    "badge": "AA",
@@ -452,7 +452,7 @@
   },
   {
    "id": "forest-light",
-   "label": "Forest",
+   "label": "Forest light",
    "name": "Forest light",
    "kind": "light",
    "badge": "AA",
@@ -460,7 +460,7 @@
   },
   {
    "id": "contrast-light",
-   "label": "High contrast",
+   "label": "High contrast light",
    "name": "High contrast light",
    "kind": "light",
    "badge": "AAA",
@@ -484,7 +484,7 @@
   },
   {
    "id": "harbor-dark",
-   "label": "Harbor",
+   "label": "Harbor dark",
    "name": "Harbor dark",
    "kind": "dark",
    "badge": "AA",
@@ -492,7 +492,7 @@
   },
   {
    "id": "forest-dark",
-   "label": "Forest",
+   "label": "Forest dark",
    "name": "Forest dark",
    "kind": "dark",
    "badge": "AA",
@@ -500,7 +500,7 @@
   },
   {
    "id": "contrast-dark",
-   "label": "High contrast",
+   "label": "High contrast dark",
    "name": "High contrast dark",
    "kind": "dark",
    "badge": "AAA",

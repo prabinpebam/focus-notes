@@ -6,7 +6,7 @@ export const contract = defineContract({
   description: "Children side by side in equal columns while each has room (layout.sheetMin), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window.",
   props: {
     gap: { kind: "token", group: "space", default: "m" },
-    cell: { kind: "enum", values: ["sheet", "choice"], default: "sheet", description: "sheet: each column at least a narrow sheet wide. choice: a uniform grid of small equal cells, three across (the font picker in its popover, D-316, D-323)." },
+    cell: { kind: "enum", values: ["sheet", "choice"], default: "sheet", description: "sheet: each column at least a narrow sheet wide. choice: a uniform grid of equal cells three across, each as wide as a theme manager tile (the font picker in its popover, D-316, D-330)." },
   },
   events: {},
   slots: { default: { accepts: "any" } },

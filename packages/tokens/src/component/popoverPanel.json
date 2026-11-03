@@ -7,6 +7,7 @@
   "opacity": { "$type": "number", "$value": "{frost.opacity}" },
   "blur": { "$type": "dimension", "$value": "{frost.blur}" },
   "padding": { "$type": "dimension", "$value": "{space.xs}" },
+  "tilesWidth": { "$type": "dimension", "$value": "{layout.tilePopover}", "$description": "Three theme tiles across (width tiles)." },
   "paddingComfortable": { "$type": "dimension", "$value": "{space.l}" },
   "offset": { "$type": "dimension", "$value": "{space.s}" },
   "duration": { "$type": "duration", "$value": "{motion.enter}" },

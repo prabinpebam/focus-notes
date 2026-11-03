@@ -56,11 +56,11 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
 | Divider | primitive | `rest` | 2 | None |
-| PopoverPanel | primitive | `closed`, `open` | 7 | `open` |
+| PopoverPanel | primitive | `closed`, `open` | 8 | `open` |
 | MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 9 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 15 | `focused` |
-| SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
+| SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 5 | `hover`, `focusVisible` |
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
 | Skeleton | primitive | `rest` | 6 | None |
@@ -69,7 +69,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
-| TextField | primitive | `rest`, `focused`, `invalid` | 12 | `focused` |
+| TextField | primitive | `rest`, `focused`, `invalid` | 13 | `focused` |
 | PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 2 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen` | 2 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
@@ -92,7 +92,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | FontChoice | primitive | `rest`, `selected` | 7 | None |
 | ProjectPill | primitive | `rest` | 26 | None |
-| PickerButton | primitive | `rest`, `selected` | 19 | None |
+| PickerButton | primitive | `rest`, `selected` | 22 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |

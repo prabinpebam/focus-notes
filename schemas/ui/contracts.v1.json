@@ -1731,6 +1731,15 @@
           "default": "normal",
           "description": "The existing compact popover padding, or 16px on every side for a details card."
         },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "content",
+            "tiles"
+          ],
+          "default": "content",
+          "description": "content: as wide as what it holds. tiles: three theme tiles across, for a popover that reuses the theme manager's tiles (Settings → Project's Theme and Font, owner 3 November 19:05); it scrolls when taller than the window."
+        },
         "placement": {
           "kind": "enum",
           "values": [
@@ -1998,6 +2007,41 @@
               "t": "gallery.sample"
             },
             "padding": "comfortable",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "width tiles",
+          "covers": [
+            "closed"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "width": "tiles",
             "open": false
           },
           "slots": {
@@ -8736,7 +8780,7 @@
             "choice"
           ],
           "default": "sheet",
-          "description": "sheet: each column at least a narrow sheet wide. choice: a uniform grid of small equal cells, three across (the font picker in its popover, D-316, D-323)."
+          "description": "sheet: each column at least a narrow sheet wide. choice: a uniform grid of equal cells three across, each as wide as a theme manager tile (the font picker in its popover, D-316, D-330)."
         }
       },
       "events": {},

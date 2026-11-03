@@ -1051,7 +1051,8 @@
                            ]
                           }
                          },
-                         "placement": "top start"
+                         "placement": "top start",
+                         "width": "tiles"
                         }
                        }
                       ]
@@ -1313,79 +1314,46 @@
                            },
                            "children": [
                             {
-                             "type": "Columns",
-                             "props": {
-                              "gap": "xs",
-                              "cell": "choice"
-                             },
-                             "children": [
-                              {
-                               "each": {
-                                "get": "vm.mocks.themeTiles"
-                               },
-                               "as": "th",
-                               "key": "th.id",
-                               "render": {
-                                "type": "PickerButton",
-                                "on": {
-                                 "press": [
-                                  {
-                                   "set": "local.theme",
-                                   "to": {
-                                    "get": "th.id"
-                                   }
-                                  },
-                                  {
-                                   "set": "local.themeHover",
-                                   "to": ""
-                                  },
-                                  {
-                                   "set": "local.themeOpen",
-                                   "to": "no"
-                                  }
-                                 ],
-                                 "preview": {
-                                  "set": "local.themeHover",
-                                  "to": {
-                                   "get": "th.id"
-                                  }
-                                 }
-                                },
-                                "props": {
-                                 "label": {
-                                  "t": "project.settings.theme"
-                                 },
-                                 "value": {
-                                  "get": "th.name"
-                                 },
-                                 "theme": {
-                                  "get": "th.id"
-                                 },
-                                 "chevron": false,
-                                 "selected": {
-                                  "expr": {
-                                   "==": [
-                                    {
-                                     "get": "local.theme"
-                                    },
-                                    {
-                                     "get": "th.id"
-                                    }
-                                   ]
-                                  }
-                                 }
+                             "type": "ThemeGallery",
+                             "on": {
+                              "choose": [
+                               {
+                                "set": "local.theme",
+                                "to": {
+                                 "get": "event.id"
                                 }
                                },
-                               "empty": {
-                                "type": "Text",
-                                "props": {
-                                 "value": {
-                                  "t": "project.mock.none"
-                                 }
-                                }
+                               {
+                                "set": "local.themeHover",
+                                "to": ""
+                               },
+                               {
+                                "set": "local.themeOpen",
+                                "to": "no"
                                }
+                              ],
+                              "preview": {
+                               "set": "local.themeHover",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              },
+                              "revert": {
+                               "set": "local.themeHover",
+                               "to": ""
                               }
-                             ]
+                             },
+                             "props": {
+                              "label": {
+                               "t": "project.settings.theme"
+                              },
+                              "items": {
+                               "get": "vm.mocks.themeTiles"
+                              },
+                              "value": {
+                               "get": "local.theme"
+                              }
+                             }
                             },
                             {
                              "type": "Button",
@@ -1432,7 +1400,8 @@
                            ]
                           }
                          },
-                         "placement": "top start"
+                         "placement": "top start",
+                         "width": "tiles"
                         }
                        }
                       ]
