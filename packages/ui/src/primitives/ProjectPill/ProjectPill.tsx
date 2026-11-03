@@ -1,5 +1,6 @@
 import { ProjectMark } from "../ProjectMark/ProjectMark.tsx";
 import type { ProjectAccent, ProjectLogo } from "../ProjectMark/presets.ts";
+import { controlLabel } from "../control.css.ts";
 import * as s from "./ProjectPill.css.ts";
 
 export interface ProjectPillProps {
@@ -18,7 +19,7 @@ export function ProjectPill({ name, logo = "none", src, accent = "app", label, o
   const inner = (
     <>
       {logo !== "none" ? <ProjectMark logo={logo} {...(src ? { src } : {})} accent={accent} plate="bare" size="s" /> : null}
-      <span className={s.name}>{name}</span>
+      <span className={`${controlLabel} ${s.name}`}>{name}</span>
     </>
   );
   const accentAttr = accent === "app" ? undefined : accent;

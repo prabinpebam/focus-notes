@@ -258,10 +258,11 @@
           },
           "cases": {
            "quick": {
-            "type": "ProjectScope",
+            "type": "Surface",
             "props": {
-             "part": "window",
-             "grow": true
+             "variant": "raised",
+             "shape": "sheet",
+             "padding": "none"
             },
             "children": [
              {
@@ -285,32 +286,13 @@
                   },
                   "children": [
                    {
-                    "type": "Inline",
+                    "type": "Text",
                     "props": {
-                     "gap": "s",
-                     "align": "center"
-                    },
-                    "children": [
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "quick.title"
-                       },
-                       "role": "label"
-                      }
+                     "value": {
+                      "t": "quick.title"
                      },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "quick.localOnly"
-                       },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
-                     }
-                    ]
+                     "role": "label"
+                    }
                    },
                    {
                     "type": "ResultList",
@@ -322,16 +304,6 @@
                      "items": {
                       "get": "vm.mocks.quickNotes"
                      }
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "quick.where"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
                     }
                    }
                   ]
@@ -387,42 +359,6 @@
                      },
                      "personal": true
                     }
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "xs",
-                     "align": "center"
-                    },
-                    "children": [
-                     {
-                      "type": "Icon",
-                      "props": {
-                       "name": "check",
-                       "size": "s"
-                      }
-                     },
-                     {
-                      "type": "Text",
-                      "props": {
-                       "value": {
-                        "t": "quick.saved"
-                       },
-                       "role": "caption",
-                       "tone": "muted"
-                      }
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "quick.noCloud"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
                    }
                   ]
                  }
@@ -439,10 +375,11 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
+              "type": "Surface",
               "props": {
-               "part": "window",
-               "grow": true
+               "variant": "raised",
+               "shape": "sheet",
+               "padding": "none"
               },
               "children": [
                {
@@ -595,10 +532,11 @@
             ]
            },
            "failed": {
-            "type": "ProjectScope",
+            "type": "Surface",
             "props": {
-             "part": "window",
-             "grow": true
+             "variant": "raised",
+             "shape": "sheet",
+             "padding": "none"
             },
             "children": [
              {
@@ -669,26 +607,17 @@
                   }
                  }
                 ]
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "t": "quick.kept"
-                 },
-                 "role": "caption",
-                 "tone": "muted"
-                }
                }
               ]
              }
             ]
            },
            "file": {
-            "type": "ProjectScope",
+            "type": "Surface",
             "props": {
-             "part": "window",
-             "grow": true
+             "variant": "raised",
+             "shape": "sheet",
+             "padding": "none"
             },
             "children": [
              {
@@ -702,37 +631,9 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "justify": "between"
+                 "justify": "end"
                 },
                 "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "xs",
-                   "align": "center"
-                  },
-                  "children": [
-                   {
-                    "type": "Icon",
-                    "props": {
-                     "name": "check",
-                     "size": "s"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "quick.saved"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   }
-                  ]
-                 },
                  {
                   "type": "MenuButton",
                   "props": {
@@ -748,50 +649,12 @@
                 ]
                },
                {
-                "type": "StatusRow",
-                "props": {
-                 "message": {
-                  "t": "project.file.plain"
-                 },
-                 "tone": "info",
-                 "icon": "text"
-                }
-               },
-               {
                 "type": "Text",
                 "props": {
                  "value": {
                   "get": "vm.mocks.plainText"
                  },
                  "personal": true
-                }
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s"
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "props": {
-                   "label": {
-                    "t": "project.file.saveAs"
-                   },
-                   "variant": "secondary",
-                   "icon": "save"
-                  }
-                 }
-                ]
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "t": "project.file.none"
-                 },
-                 "role": "caption",
-                 "tone": "muted"
                 }
                }
               ]

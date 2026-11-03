@@ -1,6 +1,7 @@
 import { Button } from "react-aria-components";
 import { Icon } from "../Icon/Icon.tsx";
 import type { ProjectFont, ProjectTheme } from "../ProjectMark/presets.ts";
+import { controlLabel } from "../control.css.ts";
 import * as s from "./PickerButton.css.ts";
 
 export interface PickerButtonProps {
@@ -25,7 +26,7 @@ export function PickerButton({ label, value, font = "app", theme = "app", chevro
     <Button className={`${s.base}${chevron ? "" : ` ${s.option}`}${selected ? ` ${s.selected}` : ""}`} aria-label={chevron ? `${label}: ${value}` : value} {...(chevron ? {} : { "aria-pressed": selected })}
       {...(onPress ? { onPress } : {})} {...(onPreview ? { onHoverStart: onPreview, onFocus: onPreview } : {})}>
       {theme !== "app" ? <span className={s.swatch} data-theme-scope={theme} aria-hidden="true"><span className={s.dot} /></span> : null}
-      <span className={`${s.value}${font !== "app" ? ` ${s.inFont}` : ""}`} data-font-scope={font === "app" ? undefined : font}>{value}</span>
+      <span className={`${controlLabel} ${s.value}${font !== "app" ? ` ${s.inFont}` : ""}`} data-font-scope={font === "app" ? undefined : font}>{value}</span>
       {chevron ? <Icon name="chevronDown" size="s" /> : null}
     </Button>
   );

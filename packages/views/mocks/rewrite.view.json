@@ -206,66 +206,79 @@
           },
           "cases": {
            "note": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "accent": "indigo",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "ProjectScope",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "part": "window",
+               "accent": "indigo",
                "grow": true
               },
               "children": [
                {
-                "type": "Text",
+                "type": "Stack",
                 "props": {
-                 "value": {
-                  "get": "vm.mocks.sampleNote"
-                 },
-                 "personal": true
-                }
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "get": "vm.mocks.sampleNote"
+                   },
+                   "personal": true
+                  }
+                 }
+                ]
                },
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s"
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
                 },
                 "children": [
                  {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "rewrite"
-                   }
-                  },
+                  "type": "SaveState",
                   "props": {
+                   "state": "synced",
                    "label": {
-                    "t": "rewrite.mock.reopen"
-                   },
-                   "variant": "secondary",
-                   "icon": "sparkle"
+                    "t": "project.mock.backedUp"
+                   }
                   }
                  },
                  {
-                  "type": "Button",
+                  "type": "ProjectPill",
                   "on": {
                    "press": {
-                    "set": "local.step",
-                    "to": "write"
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
                    }
                   },
                   "props": {
-                   "label": {
-                    "t": "rewrite.mock.reopenWrite"
+                   "name": {
+                    "t": "project.mock.workName"
                    },
-                   "variant": "subtle",
-                   "icon": "sparkle"
+                   "logo": "briefcase",
+                   "accent": "indigo",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.workName"
+                     }
+                    }
+                   }
                   }
                  }
                 ]
@@ -275,44 +288,41 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s",
-               "align": "center",
-               "padding": "s"
+               "gap": "s"
               },
               "children": [
                {
-                "type": "SaveState",
-                "props": {
-                 "state": "synced",
-                 "label": {
-                  "t": "project.mock.backedUp"
-                 }
-                }
-               },
-               {
-                "type": "ProjectPill",
+                "type": "Button",
                 "on": {
                  "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
+                  "set": "local.step",
+                  "to": "rewrite"
                  }
                 },
                 "props": {
-                 "name": {
-                  "t": "project.mock.workName"
-                 },
-                 "logo": "briefcase",
-                 "accent": "indigo",
                  "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.workName"
-                   }
-                  }
+                  "t": "rewrite.mock.reopen"
+                 },
+                 "variant": "secondary",
+                 "icon": "sparkle",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.step",
+                  "to": "write"
                  }
+                },
+                "props": {
+                 "label": {
+                  "t": "rewrite.mock.reopenWrite"
+                 },
+                 "variant": "subtle",
+                 "icon": "sparkle",
+                 "size": "s"
                 }
                }
               ]
@@ -586,34 +596,182 @@
             ]
            },
            "rewriting": {
-            "type": "ProjectScope",
+            "type": "Stack",
             "props": {
-             "part": "window",
-             "accent": "indigo",
-             "grow": true
+             "gap": "m"
             },
             "children": [
              {
-              "type": "Stack",
+              "type": "ProjectScope",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "part": "window",
+               "accent": "indigo",
                "grow": true
               },
               "children": [
                {
-                "type": "Surface",
+                "type": "Stack",
                 "props": {
-                 "variant": "sunken",
-                 "shape": "control",
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "type": "Surface",
+                  "props": {
+                   "variant": "sunken",
+                   "shape": "control",
+                   "padding": "s"
+                  },
+                  "children": [
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "get": "vm.mocks.sampleNote"
+                     },
+                     "personal": true
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "Spinner",
+                    "props": {
+                     "label": {
+                      "t": "rewrite.mock.running"
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "rewrite.mock.running"
+                     },
+                     "announce": true
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "set": "local.step",
+                      "to": "rewrite"
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "rewrite.stop"
+                     },
+                     "variant": "secondary",
+                     "size": "s"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
                  "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "SaveState",
+                  "props": {
+                   "state": "synced",
+                   "label": {
+                    "t": "project.mock.backedUp"
+                   }
+                  }
+                 },
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "t": "project.mock.workName"
+                   },
+                   "logo": "briefcase",
+                   "accent": "indigo",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.workName"
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "rewritten"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.ready"
+               },
+               "variant": "subtle",
+               "size": "s"
+              }
+             }
+            ]
+           },
+           "rewritten": {
+            "type": "Stack",
+            "props": {
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "window",
+               "accent": "indigo",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
                 },
                 "children": [
                  {
                   "type": "Text",
                   "props": {
                    "value": {
-                    "get": "vm.mocks.sampleNote"
+                    "get": "vm.mocks.rewrittenNote"
                    },
                    "personal": true
                   }
@@ -623,207 +781,75 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "m",
-                 "align": "center"
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
                 },
                 "children": [
                  {
-                  "type": "Spinner",
+                  "type": "SaveState",
                   "props": {
+                   "state": "synced",
                    "label": {
-                    "t": "rewrite.mock.running"
+                    "t": "project.mock.backedUp"
                    }
                   }
                  },
                  {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "rewrite.mock.running"
-                   },
-                   "announce": true
-                  }
-                 },
-                 {
-                  "type": "Button",
+                  "type": "ProjectPill",
                   "on": {
                    "press": {
-                    "set": "local.step",
-                    "to": "rewrite"
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
                    }
                   },
                   "props": {
-                   "label": {
-                    "t": "rewrite.stop"
+                   "name": {
+                    "t": "project.mock.workName"
                    },
-                   "variant": "secondary",
-                   "size": "s"
+                   "logo": "briefcase",
+                   "accent": "indigo",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.workName"
+                     }
+                    }
+                   }
                   }
                  }
                 ]
-               },
-               {
-                "type": "Button",
-                "on": {
-                 "press": {
-                  "set": "local.step",
-                  "to": "rewritten"
-                 }
-                },
-                "props": {
-                 "label": {
-                  "t": "project.mock.ready"
-                 },
-                 "variant": "subtle",
-                 "size": "s"
-                }
                }
               ]
              },
              {
-              "type": "Inline",
+              "type": "StatusRow",
               "props": {
-               "gap": "s",
-               "align": "center",
-               "padding": "s"
-              },
-              "children": [
-               {
-                "type": "SaveState",
-                "props": {
-                 "state": "synced",
-                 "label": {
-                  "t": "project.mock.backedUp"
-                 }
-                }
+               "message": {
+                "t": "rewrite.replaced"
                },
-               {
-                "type": "ProjectPill",
-                "on": {
-                 "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
-                 }
-                },
-                "props": {
-                 "name": {
-                  "t": "project.mock.workName"
-                 },
-                 "logo": "briefcase",
-                 "accent": "indigo",
-                 "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.workName"
-                   }
-                  }
-                 }
-                }
-               }
-              ]
-             }
-            ]
-           },
-           "rewritten": {
-            "type": "ProjectScope",
-            "props": {
-             "part": "window",
-             "accent": "indigo",
-             "grow": true
-            },
-            "children": [
-             {
-              "type": "Stack",
-              "props": {
-               "gap": "m",
-               "padding": "l",
-               "grow": true
-              },
-              "children": [
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "get": "vm.mocks.rewrittenNote"
-                 },
-                 "personal": true
-                }
-               },
-               {
-                "type": "StatusRow",
-                "props": {
-                 "message": {
-                  "t": "rewrite.replaced"
-                 },
-                 "tone": "success",
-                 "icon": "check"
-                }
-               },
-               {
-                "type": "Button",
-                "on": {
-                 "press": {
-                  "set": "local.step",
-                  "to": "rewrite"
-                 }
-                },
-                "props": {
-                 "label": {
-                  "t": "project.mock.again"
-                 },
-                 "variant": "secondary",
-                 "size": "s"
-                }
-               }
-              ]
+               "tone": "success",
+               "icon": "check"
+              }
              },
              {
-              "type": "Inline",
-              "props": {
-               "gap": "s",
-               "align": "center",
-               "padding": "s"
-              },
-              "children": [
-               {
-                "type": "SaveState",
-                "props": {
-                 "state": "synced",
-                 "label": {
-                  "t": "project.mock.backedUp"
-                 }
-                }
-               },
-               {
-                "type": "ProjectPill",
-                "on": {
-                 "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
-                 }
-                },
-                "props": {
-                 "name": {
-                  "t": "project.mock.workName"
-                 },
-                 "logo": "briefcase",
-                 "accent": "indigo",
-                 "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.workName"
-                   }
-                  }
-                 }
-                }
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "rewrite"
                }
-              ]
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "subtle",
+               "size": "s"
+              }
              }
             ]
            },
@@ -1075,115 +1101,6 @@
             ]
            },
            "written": {
-            "type": "ProjectScope",
-            "props": {
-             "part": "window",
-             "accent": "indigo",
-             "grow": true
-            },
-            "children": [
-             {
-              "type": "Stack",
-              "props": {
-               "gap": "m",
-               "padding": "l",
-               "grow": true
-              },
-              "children": [
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "get": "vm.mocks.sampleNote"
-                 },
-                 "personal": true
-                }
-               },
-               {
-                "type": "Text",
-                "props": {
-                 "value": {
-                  "get": "vm.mocks.writtenText"
-                 },
-                 "personal": true
-                }
-               },
-               {
-                "type": "StatusRow",
-                "props": {
-                 "message": {
-                  "t": "rewrite.caret.done"
-                 },
-                 "tone": "success",
-                 "icon": "check"
-                }
-               },
-               {
-                "type": "Button",
-                "on": {
-                 "press": {
-                  "set": "local.step",
-                  "to": "write"
-                 }
-                },
-                "props": {
-                 "label": {
-                  "t": "project.mock.again"
-                 },
-                 "variant": "secondary",
-                 "size": "s"
-                }
-               }
-              ]
-             },
-             {
-              "type": "Inline",
-              "props": {
-               "gap": "s",
-               "align": "center",
-               "padding": "s"
-              },
-              "children": [
-               {
-                "type": "SaveState",
-                "props": {
-                 "state": "synced",
-                 "label": {
-                  "t": "project.mock.backedUp"
-                 }
-                }
-               },
-               {
-                "type": "ProjectPill",
-                "on": {
-                 "press": {
-                  "run": "gallery.open",
-                  "args": {
-                   "id": "mock.identity"
-                  }
-                 }
-                },
-                "props": {
-                 "name": {
-                  "t": "project.mock.workName"
-                 },
-                 "logo": "briefcase",
-                 "accent": "indigo",
-                 "label": {
-                  "t": "project.pill.label",
-                  "args": {
-                   "name": {
-                    "t": "project.mock.workName"
-                   }
-                  }
-                 }
-                }
-               }
-              ]
-             }
-            ]
-           },
-           "spotlight": {
             "type": "Stack",
             "props": {
              "gap": "m"
@@ -1206,42 +1123,6 @@
                 },
                 "children": [
                  {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center"
-                  },
-                  "children": [
-                   {
-                    "type": "Button",
-                    "on": {
-                     "press": {
-                      "set": "local.spot",
-                      "to": "open"
-                     }
-                    },
-                    "props": {
-                     "label": {
-                      "t": "project.mock.spotlight.open"
-                     },
-                     "variant": "secondary",
-                     "icon": "search"
-                    }
-                   },
-                   {
-                    "type": "Shortcut",
-                    "props": {
-                     "keys": {
-                      "get": "vm.mocks.keysSpot"
-                     },
-                     "label": {
-                      "get": "vm.mocks.keysSpotSpoken"
-                     }
-                    }
-                   }
-                  ]
-                 },
-                 {
                   "type": "Text",
                   "props": {
                    "value": {
@@ -1251,33 +1132,12 @@
                   }
                  },
                  {
-                  "type": "StatusRow",
-                  "props": {
-                   "message": {
-                    "t": "project.mock.spotlight.done"
-                   },
-                   "tone": "success",
-                   "icon": "check"
-                  },
-                  "when": {
-                   "expr": {
-                    "==": [
-                     {
-                      "get": "local.spot"
-                     },
-                     "done"
-                    ]
-                   }
-                  }
-                 },
-                 {
                   "type": "Text",
                   "props": {
                    "value": {
-                    "t": "project.mock.spotlight.shift"
+                    "get": "vm.mocks.writtenText"
                    },
-                   "role": "caption",
-                   "tone": "muted"
+                   "personal": true
                   }
                  }
                 ]
@@ -1328,6 +1188,171 @@
                 ]
                }
               ]
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "rewrite.caret.done"
+               },
+               "tone": "success",
+               "icon": "check"
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": {
+                "set": "local.step",
+                "to": "write"
+               }
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "subtle",
+               "size": "s"
+              }
+             }
+            ]
+           },
+           "spotlight": {
+            "type": "Stack",
+            "props": {
+             "gap": "m"
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "window",
+               "accent": "indigo",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "m",
+                 "padding": "l",
+                 "grow": true
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "get": "vm.mocks.sampleNote"
+                   },
+                   "personal": true
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "SaveState",
+                  "props": {
+                   "state": "synced",
+                   "label": {
+                    "t": "project.mock.backedUp"
+                   }
+                  }
+                 },
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.identity"
+                    }
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "t": "project.mock.workName"
+                   },
+                   "logo": "briefcase",
+                   "accent": "indigo",
+                   "label": {
+                    "t": "project.pill.label",
+                    "args": {
+                     "name": {
+                      "t": "project.mock.workName"
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center"
+              },
+              "children": [
+               {
+                "type": "Button",
+                "on": {
+                 "press": {
+                  "set": "local.spot",
+                  "to": "open"
+                 }
+                },
+                "props": {
+                 "label": {
+                  "t": "project.mock.spotlight.open"
+                 },
+                 "variant": "secondary",
+                 "icon": "search",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Shortcut",
+                "props": {
+                 "keys": {
+                  "get": "vm.mocks.keysSpot"
+                 },
+                 "label": {
+                  "get": "vm.mocks.keysSpotSpoken"
+                 }
+                }
+               }
+              ]
+             },
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "project.mock.spotlight.done"
+               },
+               "tone": "success",
+               "icon": "check"
+              },
+              "when": {
+               "expr": {
+                "==": [
+                 {
+                  "get": "local.spot"
+                 },
+                 "done"
+                ]
+               }
+              }
              },
              {
               "type": "DialogPanel",

@@ -269,16 +269,6 @@
                    },
                    "personal": true
                   }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "migrate.restored"
-                   },
-                   "role": "caption",
-                   "tone": "muted"
-                  }
                  }
                 ]
                },
@@ -733,18 +723,17 @@
                 }
                },
                {
-                "type": "ProjectScope",
+                "type": "Surface",
                 "props": {
-                 "part": "window",
-                 "grow": true
+                 "variant": "raised",
+                 "shape": "popover",
+                 "padding": "l"
                 },
                 "children": [
                  {
                   "type": "Stack",
                   "props": {
-                   "gap": "m",
-                   "padding": "l",
-                   "grow": true
+                   "gap": "s"
                   },
                   "children": [
                    {
@@ -801,19 +790,17 @@
                 }
                },
                {
-                "type": "ProjectScope",
+                "type": "Surface",
                 "props": {
-                 "part": "window",
-                 "accent": "indigo",
-                 "grow": true
+                 "variant": "raised",
+                 "shape": "popover",
+                 "padding": "l"
                 },
                 "children": [
                  {
                   "type": "Stack",
                   "props": {
-                   "gap": "m",
-                   "padding": "l",
-                   "grow": true
+                   "gap": "s"
                   },
                   "children": [
                    {
@@ -844,51 +831,6 @@
                      },
                      "items": {
                       "get": "vm.mocks.settingsAfter"
-                     }
-                    }
-                   }
-                  ]
-                 },
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "SaveState",
-                    "props": {
-                     "state": "synced",
-                     "label": {
-                      "t": "project.mock.backedUp"
-                     }
-                    }
-                   },
-                   {
-                    "type": "ProjectPill",
-                    "on": {
-                     "press": {
-                      "run": "gallery.open",
-                      "args": {
-                       "id": "mock.identity"
-                      }
-                     }
-                    },
-                    "props": {
-                     "name": {
-                      "t": "project.mock.workName"
-                     },
-                     "logo": "briefcase",
-                     "accent": "indigo",
-                     "label": {
-                      "t": "project.pill.label",
-                      "args": {
-                       "name": {
-                        "t": "project.mock.workName"
-                       }
-                      }
                      }
                     }
                    }

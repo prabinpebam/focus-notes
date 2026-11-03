@@ -1,18 +1,20 @@
 import { style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { controlMetrics } from "../control.css.ts";
 
 const t = tokens.cmp.pickerButton;
 
 export const base = style({
+  ...controlMetrics,
   display: "inline-flex", alignItems: "center", gap: t.gap, height: t.height, paddingInline: t.padding, minWidth: 0, maxWidth: "100%",
   borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, backgroundColor: t.background,
-  color: t.text, cursor: "pointer", font: "inherit",
+  color: t.text, cursor: "pointer", fontFamily: t.uiFont, fontSize: t.fontSize,
   selectors: { "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.ringWidth, outlineColor: t.focusRing, outlineOffset: t.ringOffset } },
   "@media": { "(hover: hover)": { selectors: { "&[data-hovered]": { backgroundColor: t.backgroundHover } } } },
 });
 // The value in the chosen writing font (its scope sets font.content).
 export const inFont = style({ fontFamily: t.family });
-export const value = style({ fontSize: t.fontSize, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+export const value = style({ minWidth: 0, whiteSpace: "nowrap" });
 // A theme's swatch: its canvas, its border and its accent, read inside the theme's own scope.
 export const swatch = style({
   display: "inline-flex", alignItems: "center", justifyContent: "center", width: t.swatch, height: t.swatch, flexShrink: 0,
