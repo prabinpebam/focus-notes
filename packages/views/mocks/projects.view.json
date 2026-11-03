@@ -10,7 +10,10 @@
   "screen": "window",
   "target": "Book",
   "name": "Book",
-  "owner": "prabin"
+  "owner": "prabin",
+  "np": "name",
+  "accent": "teal",
+  "logo": "book"
  },
  "root": {
   "type": "AppRoot",
@@ -368,6 +371,16 @@
                 }
                }
               ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "project.new.where"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
              },
              {
               "type": "Heading",
@@ -1036,6 +1049,16 @@
                   }
                  }
                 ]
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.new.where"
+                 },
+                 "role": "caption",
+                 "tone": "muted"
+                }
                },
                {
                 "type": "Heading",
@@ -1937,142 +1960,22 @@
                 ]
                },
                {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.new.where"
+                 },
+                 "role": "caption",
+                 "tone": "muted"
+                }
+               },
+               {
                 "type": "Heading",
                 "props": {
                  "value": {
                   "t": "project.pinned"
                  },
                  "level": "3"
-                }
-               },
-               {
-                "each": {
-                 "get": "vm.mocks.pinned"
-                },
-                "as": "p",
-                "key": "p.id",
-                "render": {
-                 "type": "Surface",
-                 "props": {
-                  "variant": "raised",
-                  "shape": "control",
-                  "padding": "s"
-                 },
-                 "children": [
-                  {
-                   "type": "Inline",
-                   "props": {
-                    "gap": "m",
-                    "align": "center"
-                   },
-                   "children": [
-                    {
-                     "type": "ProjectMark",
-                     "props": {
-                      "logo": {
-                       "get": "p.logo"
-                      },
-                      "accent": {
-                       "get": "p.accent"
-                      },
-                      "src": {
-                       "get": "vm.mocks.logoSrc"
-                      },
-                      "size": "m"
-                     }
-                    },
-                    {
-                     "type": "Stack",
-                     "props": {
-                      "gap": "none",
-                      "grow": true
-                     },
-                     "children": [
-                      {
-                       "type": "Text",
-                       "props": {
-                        "value": {
-                         "get": "p.name"
-                        },
-                        "role": "label"
-                       }
-                      },
-                      {
-                       "type": "Text",
-                       "props": {
-                        "value": {
-                         "get": "p.location"
-                        },
-                        "role": "caption",
-                        "tone": "muted",
-                        "lines": "one"
-                       }
-                      }
-                     ]
-                    },
-                    {
-                     "type": "Text",
-                     "props": {
-                      "value": {
-                       "get": "p.sharing"
-                      },
-                      "role": "caption",
-                      "tone": "muted"
-                     }
-                    },
-                    {
-                     "type": "MenuButton",
-                     "props": {
-                      "label": {
-                       "t": "pin.menu.label",
-                       "args": {
-                        "name": {
-                         "get": "p.name"
-                        }
-                       }
-                      },
-                      "icon": "more",
-                      "sections": {
-                       "get": "vm.mocks.pinMenu"
-                      }
-                     }
-                    },
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": [
-                       {
-                        "set": "local.target",
-                        "to": {
-                         "get": "p.name"
-                        }
-                       },
-                       {
-                        "set": "local.screen",
-                        "to": "opening"
-                       }
-                      ]
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.open"
-                      },
-                      "variant": "secondary",
-                      "size": "s",
-                      "icon": "openWindow"
-                     }
-                    }
-                   ]
-                  }
-                 ]
-                },
-                "empty": {
-                 "type": "Text",
-                 "props": {
-                  "value": {
-                   "t": "project.mock.none"
-                  }
-                 }
                 }
                }
               ]
@@ -2082,75 +1985,349 @@
            {
             "type": "DialogPanel",
             "on": {
-             "openChange": {
-              "set": "local.screen",
-              "to": "window"
-             }
+             "openChange": [
+              {
+               "set": "local.np",
+               "to": "name"
+              },
+              {
+               "set": "local.screen",
+               "to": "window"
+              }
+             ]
             },
             "slots": {
              "header": [
               {
-               "type": "Heading",
-               "props": {
-                "value": {
-                 "t": "project.new.title"
-                },
-                "level": "2"
-               }
-              }
-             ],
-             "footer": [
-              {
                "type": "Inline",
                "props": {
-                "gap": "s",
-                "justify": "end"
+                "gap": "m",
+                "align": "center",
+                "justify": "between"
                },
                "children": [
                 {
-                 "type": "Button",
-                 "on": {
-                  "press": {
-                   "set": "local.screen",
-                   "to": "window"
-                  }
-                 },
+                 "type": "Heading",
                  "props": {
-                  "label": {
-                   "t": "project.cancel"
+                  "value": {
+                   "t": "project.new.title"
                   },
-                  "variant": "secondary"
+                  "level": "2"
                  }
                 },
                 {
-                 "type": "Button",
-                 "on": {
-                  "press": {
-                   "set": "local.screen",
-                   "to": "creating"
-                  }
+                 "switch": {
+                  "get": "local.np"
                  },
-                 "props": {
-                  "label": {
-                   "t": "project.new.create"
-                  },
-                  "variant": "primary",
-                  "disabled": {
-                   "expr": {
-                    "==": [
-                     {
-                      "get": "local.name"
-                     },
-                     "Work"
-                    ]
+                 "cases": {
+                  "name": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 1,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 1
+                     }
+                    }
                    }
                   },
-                  "disabledReason": {
-                   "t": "project.new.fixName"
+                  "private": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 2,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 2
+                     }
+                    }
+                   }
+                  },
+                  "look": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 3,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 3
+                     }
+                    }
+                   }
+                  },
+                  "confirm": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 4,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 4
+                     }
+                    }
+                   }
                   }
                  }
                 }
                ]
+              }
+             ],
+             "footer": [
+              {
+               "switch": {
+                "get": "local.np"
+               },
+               "cases": {
+                "name": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.np",
+                      "to": "name"
+                     },
+                     {
+                      "set": "local.screen",
+                      "to": "window"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.np",
+                     "to": "private"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.next"
+                    },
+                    "variant": "primary",
+                    "disabled": {
+                     "expr": {
+                      "==": [
+                       {
+                        "get": "local.name"
+                       },
+                       "Work"
+                      ]
+                     }
+                    },
+                    "disabledReason": {
+                     "t": "project.new.fixName"
+                    }
+                   }
+                  }
+                 ]
+                },
+                "private": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.np",
+                      "to": "name"
+                     },
+                     {
+                      "set": "local.screen",
+                      "to": "window"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.np",
+                     "to": "name"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.back"
+                    },
+                    "variant": "subtle"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.np",
+                     "to": "look"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.next"
+                    },
+                    "variant": "primary"
+                   }
+                  }
+                 ]
+                },
+                "look": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.np",
+                      "to": "name"
+                     },
+                     {
+                      "set": "local.screen",
+                      "to": "window"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.np",
+                     "to": "private"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.back"
+                    },
+                    "variant": "subtle"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.np",
+                     "to": "confirm"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.next"
+                    },
+                    "variant": "primary"
+                   }
+                  }
+                 ]
+                },
+                "confirm": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.np",
+                      "to": "name"
+                     },
+                     {
+                      "set": "local.screen",
+                      "to": "window"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.np",
+                     "to": "look"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.back"
+                    },
+                    "variant": "subtle"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.np",
+                      "to": "name"
+                     },
+                     {
+                      "set": "local.screen",
+                      "to": "creating"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.new.create"
+                    },
+                    "variant": "primary"
+                   }
+                  }
+                 ]
+                }
+               }
               }
              ]
             },
@@ -2160,130 +2337,622 @@
              },
              "open": true,
              "size": "m",
-             "height": "content"
+             "height": "stable"
             },
             "children": [
              {
-              "type": "Stack",
-              "props": {
-               "gap": "m"
+              "switch": {
+               "get": "local.np"
               },
-              "children": [
-               {
-                "type": "TextField",
+              "cases": {
+               "name": {
+                "type": "Stack",
                 "props": {
-                 "label": {
-                  "t": "project.new.name"
-                 },
-                 "value": {
-                  "bind": "local.name"
-                 },
-                 "autoFocus": true,
-                 "invalid": {
-                  "expr": {
-                   "==": [
-                    {
-                     "get": "local.name"
-                    },
-                    "Work"
-                   ]
-                  }
-                 },
-                 "error": {
-                  "t": "project.new.taken"
-                 },
-                 "description": {
-                  "t": "project.new.nameHint"
-                 }
-                }
-               },
-               {
-                "type": "Field",
-                "props": {
-                 "label": {
-                  "t": "project.new.owner"
-                 }
+                 "gap": "m"
                 },
                 "children": [
                  {
-                  "type": "MenuButton",
-                  "on": {
-                   "action": {
-                    "set": "local.owner",
-                    "to": {
-                     "get": "event.id"
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "project.new.name"
+                   },
+                   "value": {
+                    "bind": "local.name"
+                   },
+                   "autoFocus": true,
+                   "invalid": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.name"
+                      },
+                      "Work"
+                     ]
                     }
+                   },
+                   "error": {
+                    "t": "project.new.taken"
+                   },
+                   "description": {
+                    "t": "project.new.nameHint"
                    }
-                  },
+                  }
+                 },
+                 {
+                  "type": "Field",
                   "props": {
                    "label": {
                     "t": "project.new.owner"
-                   },
-                   "variant": "select",
-                   "text": {
-                    "get": "local.owner"
-                   },
-                   "sections": {
-                    "get": "vm.mocks.owners"
                    }
-                  }
-                 }
-                ]
-               },
-               {
-                "type": "Field",
-                "props": {
-                 "label": {
-                  "t": "project.new.folder"
-                 }
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center"
                   },
                   "children": [
                    {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.new.folderValue",
-                      "args": {
-                       "name": {
-                        "get": "local.name"
-                       }
+                    "type": "MenuButton",
+                    "on": {
+                     "action": {
+                      "set": "local.owner",
+                      "to": {
+                       "get": "event.id"
                       }
-                     },
-                     "lines": "one"
-                    }
-                   },
-                   {
-                    "type": "Button",
+                     }
+                    },
                     "props": {
                      "label": {
-                      "t": "project.new.change"
+                      "t": "project.new.owner"
                      },
-                     "variant": "subtle",
-                     "size": "s"
+                     "variant": "select",
+                     "text": {
+                      "get": "local.owner"
+                     },
+                     "sections": {
+                      "get": "vm.mocks.owners"
+                     }
                     }
                    }
                   ]
                  }
                 ]
                },
-               {
-                "type": "StatusRow",
+               "private": {
+                "type": "Stack",
                 "props": {
-                 "message": {
-                  "t": "project.new.private"
+                 "gap": "m"
+                },
+                "children": [
+                 {
+                  "type": "Heading",
+                  "props": {
+                   "value": {
+                    "t": "project.new.privateTitle"
+                   },
+                   "level": "3"
+                  }
                  },
-                 "tone": "info",
-                 "icon": "lock"
-                }
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "StepMark",
+                    "props": {
+                     "icon": "lock",
+                     "tone": "neutral",
+                     "size": "compact"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.privateRepo"
+                       },
+                       "role": "label"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "StepMark",
+                    "props": {
+                     "icon": "globe",
+                     "tone": "neutral",
+                     "size": "compact"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.noSite"
+                       },
+                       "role": "label"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.noSiteDetail"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "StepMark",
+                    "props": {
+                     "icon": "folder",
+                     "tone": "neutral",
+                     "size": "compact"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.ownFolder"
+                       },
+                       "role": "label"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.folderValue",
+                        "args": {
+                         "name": {
+                          "get": "local.name"
+                         }
+                        }
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               },
+               "look": {
+                "type": "Stack",
+                "props": {
+                 "gap": "m"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "ProjectMark",
+                    "props": {
+                     "logo": {
+                      "get": "local.logo"
+                     },
+                     "accent": {
+                      "get": "local.accent"
+                     },
+                     "size": "l"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "get": "local.name"
+                     },
+                     "role": "title"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Field",
+                  "props": {
+                   "label": {
+                    "t": "project.settings.colour"
+                   }
+                  },
+                  "children": [
+                   {
+                    "type": "Inline",
+                    "props": {
+                     "gap": "xs",
+                     "wrap": true
+                    },
+                    "children": [
+                     {
+                      "each": {
+                       "get": "vm.mocks.accents"
+                      },
+                      "as": "a",
+                      "key": "a.id",
+                      "render": {
+                       "type": "ProjectMark",
+                       "on": {
+                        "press": {
+                         "set": "local.accent",
+                         "to": {
+                          "get": "a.id"
+                         }
+                        }
+                       },
+                       "props": {
+                        "accent": {
+                         "get": "a.id"
+                        },
+                        "plate": "solid",
+                        "size": "m",
+                        "label": {
+                         "get": "a.label"
+                        },
+                        "selected": {
+                         "expr": {
+                          "==": [
+                           {
+                            "get": "local.accent"
+                           },
+                           {
+                            "get": "a.id"
+                           }
+                          ]
+                         }
+                        }
+                       }
+                      },
+                      "empty": {
+                       "type": "Text",
+                       "props": {
+                        "value": {
+                         "t": "project.mock.none"
+                        }
+                       }
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Field",
+                  "props": {
+                   "label": {
+                    "t": "project.settings.logo"
+                   }
+                  },
+                  "children": [
+                   {
+                    "type": "Inline",
+                    "props": {
+                     "gap": "xs",
+                     "wrap": true
+                    },
+                    "children": [
+                     {
+                      "each": {
+                       "get": "vm.mocks.logos"
+                      },
+                      "as": "l",
+                      "key": "l.id",
+                      "render": {
+                       "type": "ProjectMark",
+                       "on": {
+                        "press": {
+                         "set": "local.logo",
+                         "to": {
+                          "get": "l.id"
+                         }
+                        }
+                       },
+                       "props": {
+                        "logo": {
+                         "get": "l.id"
+                        },
+                        "accent": {
+                         "get": "local.accent"
+                        },
+                        "size": "m",
+                        "label": {
+                         "get": "l.label"
+                        },
+                        "selected": {
+                         "expr": {
+                          "==": [
+                           {
+                            "get": "local.logo"
+                           },
+                           {
+                            "get": "l.id"
+                           }
+                          ]
+                         }
+                        }
+                       }
+                      },
+                      "empty": {
+                       "type": "Text",
+                       "props": {
+                        "value": {
+                         "t": "project.mock.none"
+                        }
+                       }
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.new.lookHint"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               },
+               "confirm": {
+                "type": "Stack",
+                "props": {
+                 "gap": "m"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "ProjectMark",
+                    "props": {
+                     "logo": {
+                      "get": "local.logo"
+                     },
+                     "accent": {
+                      "get": "local.accent"
+                     },
+                     "size": "l"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "get": "local.name"
+                       },
+                       "role": "title"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.privateOnly"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.new.willMake"
+                   },
+                   "role": "label"
+                  }
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "StepMark",
+                    "props": {
+                     "icon": "github",
+                     "tone": "neutral",
+                     "size": "compact"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.makesRepo"
+                       },
+                       "role": "label"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.repoName",
+                        "args": {
+                         "owner": {
+                          "get": "local.owner"
+                         },
+                         "name": {
+                          "get": "local.name"
+                         }
+                        }
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "StepMark",
+                    "props": {
+                     "icon": "folder",
+                     "tone": "neutral",
+                     "size": "compact"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.makesFolder"
+                       },
+                       "role": "label"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.folderValue",
+                        "args": {
+                         "name": {
+                          "get": "local.name"
+                         }
+                        }
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "center"
+                  },
+                  "children": [
+                   {
+                    "type": "StepMark",
+                    "props": {
+                     "icon": "globe",
+                     "tone": "neutral",
+                     "size": "compact"
+                    }
+                   },
+                   {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "none"
+                    },
+                    "children": [
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.makesNoSite"
+                       },
+                       "role": "label"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.makesNoSiteDetail"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
                }
-              ]
+              }
              }
             ]
            }
