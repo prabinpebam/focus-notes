@@ -90,6 +90,11 @@ function ChoiceMenu({ label, items, onAction }: { label: string; items: CommandI
  * unavailable (APG: focusability of disabled controls). React Aria takes disabled items out of focus,
  * so the state is set on the element here, and choosing it does nothing and keeps the menu open.
  */
+/** A check item over things that disagree (images in a selection, D-334): read as mixed, not unchecked. React Aria sets aria-checked from the selection, so a mixed item overrides it on its own element. */
+const markMixed = (mixed: boolean) => (el: HTMLDivElement | null) => {
+  if (el && mixed) el.setAttribute("aria-checked", "mixed");
+};
+
 const markUnavailable = (unavailable: boolean) => (el: HTMLDivElement | null) => {
   if (!el) return;
   if (unavailable) el.setAttribute("aria-disabled", "true");
@@ -157,6 +162,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                       textValue={item.label}
                       ref={(el: HTMLDivElement | null) => {
                         markUnavailable(Boolean(item.disabled))(el);
+                        markMixed(Boolean(item.mixed && !item.checked))(el);
                         startHere(item.id)(el);
                       }}
                       {...(item.disabled ? { shouldCloseOnSelect: false } : {})}
