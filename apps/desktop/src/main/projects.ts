@@ -8,6 +8,7 @@ import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } 
 import type { AppStateFile, ProjectEntry } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
+import { GitHubApi } from "@focus-notes/github";
 import { parseRecord } from "./workspace/record.ts";
 
 function missing(error: unknown) {
@@ -50,7 +51,7 @@ export function resumeProjectProfile(root: string): { profile: string; folder: s
   }
 }
 
-export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>) {
+export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string) {
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
   const known = new Map<string, string>();
@@ -277,11 +278,25 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   }
   async function create(input: { parent: string; name: string; accent: string; logo: string }): Promise<string> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
+    if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
     const result = await check(input.parent, input.name);
     if (result.problem) throw new Error(`Project folder refused: ${result.problem}`);
     // Exclusive creation is intentional: never adopt or overwrite an existing folder, even an empty one.
     await mkdir(result.folder);
     await mkdir(join(result.folder, "notes"));
+    if (candidateApi) {
+      // This preview never reads the account vault or follows a redirect out of the local fake.
+      const api = new GitHubApi("focus-notes-local-candidate", (url, init) => {
+        const source = new URL(url);
+        if (source.origin !== "https://api.github.com") throw new Error("Unexpected GitHub request destination.");
+        return fetch(candidateApi + source.pathname + source.search, { ...init, redirect: "error", signal: AbortSignal.timeout(5000) });
+      });
+      const owner = (await api.user()).login;
+      const name = input.name.replace(/[^A-Za-z0-9._-]/g, "-");
+      await api.createRepo(name, "Private notes for Focus Notes", true, false);
+      const repository = await api.repo(owner, name);
+      if (!repository.private || repository.owner !== owner || repository.name !== name) throw new Error("The local GitHub endpoint did not confirm a private repository.");
+    }
     const folder = await realpath(result.folder);
     const profile = join(profiles, key(folder));
     await mkdir(profile);
