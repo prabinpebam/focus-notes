@@ -8,7 +8,8 @@
  "focus": "mockBack",
  "local": {
   "step": "closed",
-  "folder": "Drafts"
+  "folder": "Drafts",
+  "revealed": false
  },
  "root": {
   "type": "AppRoot",
@@ -1296,6 +1297,40 @@
                   }
                  }
                 ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "set": "local.revealed",
+                    "to": true
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "get": "vm.mocks.localNotesPath"
+                   },
+                   "icon": "hardDrive",
+                   "path": true,
+                   "label": {
+                    "t": "project.local.reveal",
+                    "args": {
+                     "path": {
+                      "get": "vm.mocks.localNotesPath"
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
                }
               ]
              },
@@ -1368,6 +1403,40 @@
                    },
                    "role": "title",
                    "tone": "muted"
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "set": "local.revealed",
+                    "to": true
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "get": "vm.mocks.localNotesPath"
+                   },
+                   "icon": "hardDrive",
+                   "path": true,
+                   "label": {
+                    "t": "project.local.reveal",
+                    "args": {
+                     "path": {
+                      "get": "vm.mocks.localNotesPath"
+                     }
+                    }
+                   }
                   }
                  }
                 ]

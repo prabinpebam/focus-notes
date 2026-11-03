@@ -7,7 +7,8 @@
  ],
  "focus": "mockBack",
  "local": {
-  "step": "quick"
+  "step": "quick",
+  "revealed": false
  },
  "root": {
   "type": "AppRoot",
@@ -253,6 +254,19 @@
           ]
          },
          {
+          "type": "StatusRow",
+          "props": {
+           "message": {
+            "t": "quick.revealed"
+           },
+           "tone": "info",
+           "icon": "folder"
+          },
+          "when": {
+           "get": "local.revealed"
+          }
+         },
+         {
           "switch": {
            "get": "local.step"
           },
@@ -365,6 +379,40 @@
                 ]
                }
               ]
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "ProjectPill",
+                "on": {
+                 "press": {
+                  "set": "local.revealed",
+                  "to": true
+                 }
+                },
+                "props": {
+                 "name": {
+                  "get": "vm.mocks.localNotesPath"
+                 },
+                 "icon": "hardDrive",
+                 "path": true,
+                 "label": {
+                  "t": "project.local.reveal",
+                  "args": {
+                   "path": {
+                    "get": "vm.mocks.localNotesPath"
+                   }
+                  }
+                 }
+                }
+               }
+              ]
              }
             ]
            },
@@ -397,6 +445,40 @@
                     "t": "quick.note"
                    },
                    "level": "2"
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectPill",
+                  "on": {
+                   "press": {
+                    "set": "local.revealed",
+                    "to": true
+                   }
+                  },
+                  "props": {
+                   "name": {
+                    "get": "vm.mocks.localNotesPath"
+                   },
+                   "icon": "hardDrive",
+                   "path": true,
+                   "label": {
+                    "t": "project.local.reveal",
+                    "args": {
+                     "path": {
+                      "get": "vm.mocks.localNotesPath"
+                     }
+                    }
+                   }
                   }
                  }
                 ]
@@ -609,6 +691,40 @@
                 ]
                }
               ]
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "ProjectPill",
+                "on": {
+                 "press": {
+                  "set": "local.revealed",
+                  "to": true
+                 }
+                },
+                "props": {
+                 "name": {
+                  "get": "vm.mocks.localNotesPath"
+                 },
+                 "icon": "hardDrive",
+                 "path": true,
+                 "label": {
+                  "t": "project.local.reveal",
+                  "args": {
+                   "path": {
+                    "get": "vm.mocks.localNotesPath"
+                   }
+                  }
+                 }
+                }
+               }
+              ]
              }
             ]
            },
@@ -655,6 +771,40 @@
                   "get": "vm.mocks.plainText"
                  },
                  "personal": true
+                }
+               }
+              ]
+             },
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "ProjectPill",
+                "on": {
+                 "press": {
+                  "set": "local.revealed",
+                  "to": true
+                 }
+                },
+                "props": {
+                 "name": {
+                  "get": "vm.mocks.downloadsPath"
+                 },
+                 "icon": "hardDrive",
+                 "path": true,
+                 "label": {
+                  "t": "project.local.reveal",
+                  "args": {
+                   "path": {
+                    "get": "vm.mocks.downloadsPath"
+                   }
+                  }
+                 }
                 }
                }
               ]
