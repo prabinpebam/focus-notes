@@ -11,6 +11,7 @@ export const contract = defineContract({
     font: { kind: "enum", values: [...PROJECT_FONTS, "app"], default: "app", description: "The project's writing font (D-316); app: the app's." },
     part: { kind: "enum", values: ["window", "plain"], default: "plain", description: "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)." },
     grow: { kind: "boolean", default: false },
+    contentSize: { kind: "number", min: 14, max: 32, description: "A subtree's reading size, used by the website preview; leaves app appearance unchanged." },
   },
   events: {},
   slots: { default: { accepts: "any" } },
@@ -18,6 +19,7 @@ export const contract = defineContract({
   tokens: "cmp.projectScope.*",
   a11y: { pattern: "none" },
   fixtures: [
+    { name: "local reading size", props: { contentSize: 20, font: "serif", theme: "paper" }, children: [{ type: "NoteContent", props: { blocks: { get: "vm.gallery.noteBlocks" } } }] },
     ...(["window", "plain"] as const).map((part) => ({ name: `part ${part}`, props: { part, accent: "teal" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] })),
     ...[...PROJECT_ACCENTS, "app"].map((accent) => ({ name: `accent ${accent}`, props: { part: "plain", accent }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] })),
     ...[...PROJECT_THEMES, "app"].map((theme) => ({ name: `theme ${theme}`, props: { part: "window", theme, accent: "violet" }, children: [{ type: "Button", props: { label: { t: "gallery.sample" }, variant: "primary" } }] })),

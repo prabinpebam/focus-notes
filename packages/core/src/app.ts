@@ -41,6 +41,7 @@ import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from 
 import { registerItemShare } from "./share-item.ts";
 import { registerSharingSettings } from "./sharing-settings.ts";
 import { registerSharingPeople } from "./sharing-people.ts";
+import { registerSharingPreview } from "./sharing-preview.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
@@ -261,7 +262,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.publish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
@@ -440,6 +441,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState });
+  registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).

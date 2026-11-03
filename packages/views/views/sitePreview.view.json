@@ -1,0 +1,777 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "sitePreview",
+  "ia": "IA-VIEW-PUBLIC",
+  "viewModels": [
+    "vm.app",
+    "vm.project",
+    "vm.sharingPreview"
+  ],
+  "overlay": true,
+  "root": {
+    "type": "Stack",
+    "children": [
+      {
+        "type": "Layer",
+        "id": "sitePreview",
+        "when": {
+          "get": "vm.sharingPreview.open"
+        },
+        "props": {
+          "layer": "dialog",
+          "position": "window",
+          "landmark": "region",
+          "label": {
+            "t": "site.preview.title"
+          }
+        },
+        "children": [
+          {
+            "type": "ProjectScope",
+            "props": {
+              "theme": {
+                "get": "vm.sharingPreview.scopeTheme"
+              },
+              "font": {
+                "get": "vm.sharingPreview.font"
+              },
+              "contentSize": {
+                "get": "vm.sharingPreview.contentSize"
+              },
+              "grow": true
+            },
+            "children": [
+              {
+                "type": "Surface",
+                "props": {
+                  "variant": "canvas",
+                  "scroll": true,
+                  "shape": "none"
+                },
+                "children": [
+                  {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "none"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s",
+                          "padding": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "justify": "between",
+                              "align": "center",
+                              "wrap": true,
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "level": "2",
+                                  "value": {
+                                    "t": "site.preview.title"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "s"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "site.preview.close"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "sharing.previewClose"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "site.preview.apply"
+                                      },
+                                      "variant": "primary",
+                                      "busy": {
+                                        "get": "vm.sharingPreview.busy"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "sharing.previewApply"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "l",
+                              "wrap": true,
+                              "align": "end"
+                            },
+                            "children": [
+                              {
+                                "type": "SegmentedControl",
+                                "props": {
+                                  "label": {
+                                    "t": "site.preview.theme"
+                                  },
+                                  "options": {
+                                    "get": "vm.sharingPreview.themes"
+                                  },
+                                  "value": {
+                                    "bind": "vm.sharingPreview.theme"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "SegmentedControl",
+                                "props": {
+                                  "label": {
+                                    "t": "site.preview.font"
+                                  },
+                                  "options": {
+                                    "get": "vm.sharingPreview.fonts"
+                                  },
+                                  "value": {
+                                    "bind": "vm.sharingPreview.font"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "SegmentedControl",
+                                "props": {
+                                  "label": {
+                                    "t": "site.preview.size"
+                                  },
+                                  "options": {
+                                    "get": "vm.sharingPreview.sizes"
+                                  },
+                                  "value": {
+                                    "bind": "vm.sharingPreview.size"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "site.preview.note"
+                              },
+                              "tone": "muted",
+                              "role": "secondary"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "when": {
+                              "get": "vm.sharingPreview.problem"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.sharingPreview.problem"
+                              },
+                              "tone": "danger",
+                              "announce": true
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Divider"
+                      },
+                      {
+                        "type": "Center",
+                        "props": {
+                          "maxWidth": "wideContent"
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "l",
+                              "padding": "xl"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "justify": "between",
+                                  "align": "center",
+                                  "wrap": true,
+                                  "gap": "m"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "s",
+                                      "align": "center",
+                                      "wrap": true
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "label": {
+                                            "get": "vm.project.name"
+                                          },
+                                          "variant": "subtle",
+                                          "bleed": true
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "sharing.previewHome"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "each": {
+                                          "get": "vm.sharingPreview.sections"
+                                        },
+                                        "as": "nav",
+                                        "key": "nav.id",
+                                        "render": {
+                                          "type": "Button",
+                                          "props": {
+                                            "label": {
+                                              "get": "nav.title"
+                                            },
+                                            "variant": "subtle",
+                                            "size": "s"
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "sharing.previewSection",
+                                              "args": {
+                                                "id": {
+                                                  "get": "nav.id"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "m",
+                                      "align": "center",
+                                      "wrap": true
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "SegmentedControl",
+                                        "props": {
+                                          "label": {
+                                            "t": "site.preview.readerTheme"
+                                          },
+                                          "options": {
+                                            "get": "vm.sharingPreview.readerThemes"
+                                          },
+                                          "value": {
+                                            "bind": "vm.sharingPreview.readerTheme"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "Switch",
+                                        "props": {
+                                          "label": {
+                                            "t": "site.preview.focus"
+                                          },
+                                          "checked": {
+                                            "bind": "vm.sharingPreview.readerFocus"
+                                          },
+                                          "onLabel": {
+                                            "t": "switch.on"
+                                          },
+                                          "offLabel": {
+                                            "t": "switch.off"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Divider"
+                              },
+                              {
+                                "switch": {
+                                  "get": "vm.sharingPreview.page"
+                                },
+                                "cases": {
+                                  "home": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "l"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "xs"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Heading",
+                                            "props": {
+                                              "level": "1",
+                                              "value": {
+                                                "get": "vm.project.name"
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.sharingPreview.sections"
+                                            },
+                                            "as": "s",
+                                            "key": "s.id",
+                                            "render": {
+                                              "type": "ItemCard",
+                                              "props": {
+                                                "title": {
+                                                  "get": "s.title"
+                                                },
+                                                "detail": {
+                                                  "get": "s.count"
+                                                },
+                                                "icon": {
+                                                  "get": "s.icon"
+                                                }
+                                              },
+                                              "on": {
+                                                "press": {
+                                                  "run": "sharing.previewSection",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "s.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.sharingPreview.homeArticles"
+                                            },
+                                            "as": "a",
+                                            "key": "a.id",
+                                            "render": {
+                                              "type": "ItemCard",
+                                              "props": {
+                                                "title": {
+                                                  "get": "a.title"
+                                                },
+                                                "detail": {
+                                                  "get": "a.excerpt"
+                                                },
+                                                "icon": "document"
+                                              },
+                                              "on": {
+                                                "press": {
+                                                  "run": "sharing.previewArticle",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "a.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "section": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "l"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "xs",
+                                          "align": "center"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "site.preview.home"
+                                              },
+                                              "variant": "subtle",
+                                              "size": "s",
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "sharing.previewHome"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "t": "site.preview.sep"
+                                              },
+                                              "tone": "muted"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "xs"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Heading",
+                                            "props": {
+                                              "level": "1",
+                                              "value": {
+                                                "get": "vm.sharingPreview.sectionTitle"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.sharingPreview.count"
+                                              },
+                                              "tone": "muted"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "l"
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.sharingPreview.articles"
+                                            },
+                                            "as": "a",
+                                            "key": "a.id",
+                                            "render": {
+                                              "type": "ItemCard",
+                                              "props": {
+                                                "title": {
+                                                  "get": "a.title"
+                                                },
+                                                "detail": {
+                                                  "get": "a.excerpt"
+                                                },
+                                                "icon": "document"
+                                              },
+                                              "on": {
+                                                "press": {
+                                                  "run": "sharing.previewArticle",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "a.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "article": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "l"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "xs",
+                                          "align": "center",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "site.preview.home"
+                                              },
+                                              "variant": "subtle",
+                                              "size": "s",
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "sharing.previewHome"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "t": "site.preview.sep"
+                                              },
+                                              "tone": "muted"
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "get": "vm.sharingPreview.sectionTitle"
+                                              },
+                                              "variant": "subtle",
+                                              "size": "s"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "sharing.previewSection",
+                                                "args": {
+                                                  "id": {
+                                                    "get": "vm.sharingPreview.section"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "xs"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Heading",
+                                            "props": {
+                                              "level": "1",
+                                              "value": {
+                                                "get": "vm.sharingPreview.articleTitle"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.sharingPreview.updated"
+                                              },
+                                              "tone": "muted",
+                                              "role": "secondary"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "NoteContent",
+                                        "props": {
+                                          "blocks": {
+                                            "get": "vm.sharingPreview.blocks"
+                                          },
+                                          "focusMode": {
+                                            "get": "vm.sharingPreview.readerFocus"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "publishDialog",
+        "when": {
+          "get": "vm.sharingPreview.publishOpen"
+        },
+        "props": {
+          "title": {
+            "get": "vm.sharingPreview.publishTitle"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingPreview.publishOpen"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.publishClose"
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "ItemCard",
+                "props": {
+                  "title": {
+                    "get": "vm.sharingPreview.name"
+                  },
+                  "detail": {
+                    "get": "vm.sharingPreview.detail"
+                  },
+                  "badge": {
+                    "t": "publish.badge"
+                  },
+                  "icon": {
+                    "get": "vm.sharingPreview.icon"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.sharingPreview.publishText"
+                  }
+                }
+              },
+              {
+                "type": "StatusRow",
+                "when": {
+                  "get": "vm.sharingPreview.hasShares"
+                },
+                "props": {
+                  "message": {
+                    "t": "publish.sharesKeep"
+                  },
+                  "tone": "info",
+                  "icon": "info"
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.sharingPreview.problem"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.sharingPreview.problem"
+                  },
+                  "tone": "danger",
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "s",
+                  "justify": "end"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.cancel"
+                      },
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.publishClose"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "publish.confirm"
+                      },
+                      "variant": "primary",
+                      "busy": {
+                        "get": "vm.sharingPreview.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.publish"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

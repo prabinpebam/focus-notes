@@ -22,6 +22,8 @@ The `vq-share-rest` review slice runs Settings copy, expiry changes, withdrawal 
 
 Local invitation draft saves use tracker target `sharing.invite` (`focus-notes:sharing.invite`), a responsive save with the Send invite button busy, input retained on failure, and the Pending card only after the device-local state write succeeds. No remote invitation wait or claim is made.
 
+The local Publish draft uses `sharing.publishDraft` (`focus-notes:sharing.publishDraft`), responsive save with a busy Publish button and a completion toast only after the local write. Site preview preparation uses `sharing.preview` (`focus-notes:sharing.preview`), responsive through waiting while it reads current notes, retaining Settings until the full preview is ready. Apply uses `sharing.previewSave` (`focus-notes:sharing.previewSave`), responsive save with its busy button and retained choices on failure. Errors remain in the dialog or Settings status. These are local operations, not remote publishing budgets.
+
 The 3 November owner-review Open slice keeps the source window and draft intact while starting a local project in its own process/profile. The dialog names the opening operation and retains search input on refusal. Tracker timing and multi-project restore remain production work; no remote operation is wired.
 
 | Operation | Class / pattern | Place and words | Measure / target |

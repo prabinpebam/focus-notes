@@ -12115,6 +12115,12 @@
         "grow": {
           "kind": "boolean",
           "default": false
+        },
+        "contentSize": {
+          "kind": "number",
+          "min": 14,
+          "max": 32,
+          "description": "A subtree's reading size, used by the website preview; leaves app appearance unchanged."
         }
       },
       "events": {},
@@ -12131,6 +12137,24 @@
         "pattern": "none"
       },
       "fixtures": [
+        {
+          "name": "local reading size",
+          "props": {
+            "contentSize": 20,
+            "font": "serif",
+            "theme": "paper"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "part window",
           "props": {
@@ -14462,6 +14486,11 @@
           "of": "noteBlocks",
           "required": true,
           "description": "The note as the Markdown bridge parses it."
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the selected reading block clear and dim the rest. Choose a block with the pointer, or focus the document and use Up/Down."
         }
       },
       "events": {},
@@ -14475,6 +14504,15 @@
         "name": "The page's landmarks name it; headings keep their levels."
       },
       "fixtures": [
+        {
+          "name": "paragraph focus",
+          "props": {
+            "blocks": {
+              "get": "vm.gallery.noteBlocks"
+            },
+            "focusMode": true
+          }
+        },
         {
           "name": "every block",
           "props": {

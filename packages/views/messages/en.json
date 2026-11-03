@@ -2864,5 +2864,21 @@
   "sharing.role.triage": "Triage",
   "sharing.role.write": "Write",
   "sharing.role.maintain": "Maintain",
-  "sharing.role.admin": "Admin"
+  "sharing.role.admin": "Admin",
+  "command.note.publish": "Publish…",
+  "sharing.publish.title": "Publish “{title}”?",
+  "sharing.publish.text": "Publish “{title}” for anyone to read? Its text will be public on your website and in GitHub history.",
+  "sharing.publish.localOnly": "Publishing is local only in this preview.",
+  "sharing.publish.saving": "Preparing publication…",
+  "sharing.publish.saved": "Saved to the local site preview.",
+  "sharing.preview.preparing": "Preparing site preview…",
+  "sharing.preview.saving": "Saving site settings…",
+  "sharing.theme.paper": "Paper",
+  "sharing.theme.sepia": "Sepia",
+  "sharing.theme.ink": "Ink",
+  "sharing.theme.dusk": "Dusk",
+  "sharing.size.16": "Small",
+  "sharing.size.18": "Medium",
+  "sharing.size.20": "Large",
+  "sharing.article": "Article"
 }
