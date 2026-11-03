@@ -43,7 +43,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**75 registered contracts:** 48 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
+**76 registered contracts:** 49 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -88,9 +88,10 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | StrengthMeter | primitive | `rest` | 5 | None |
 | ProgressBar | primitive | `rest` | 3 | None |
 | DatePicker | primitive | `rest`, `focused`, `open`, `invalid` | 3 | `focused`, `open` |
-| ProjectMark | primitive | `rest`, `selected` | 37 | None |
+| ProjectMark | primitive | `rest`, `selected` | 38 | None |
 | ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | FontChoice | primitive | `rest`, `selected` | 7 | None |
+| ProjectPill | primitive | `rest` | 26 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |

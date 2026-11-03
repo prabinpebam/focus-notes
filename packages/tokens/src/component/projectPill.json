@@ -1,0 +1,15 @@
+{ "cmp": { "projectPill": {
+  "background": { "$type": "color", "$value": "{color.accentMuted}", "$description": "A soft fill of the project's accent." },
+  "backgroundHover": { "$type": "color", "$value": "{color.selection}" },
+  "text": { "$type": "color", "$value": "{color.text}", "$description": "The name keeps the text colour, so it passes contrast on any accent." },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
+  "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "height": { "$type": "dimension", "$value": "{size.controlS}" },
+  "maxWidth": { "$type": "dimension", "$value": "{size.pillMax}" },
+  "padding": { "$type": "dimension", "$value": "{space.s}" },
+  "gap": { "$type": "dimension", "$value": "{space.xxs}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "ringOffset": { "$type": "dimension", "$value": "{border.hairline}" }
+} } }

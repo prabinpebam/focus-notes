@@ -332,6 +332,9 @@
           "$ref": "#/$defs/c_FontChoice"
         },
         {
+          "$ref": "#/$defs/c_ProjectPill"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -6427,7 +6430,8 @@
                   "enum": [
                     "tint",
                     "neutral",
-                    "solid"
+                    "solid",
+                    "bare"
                   ]
                 },
                 {
@@ -6746,6 +6750,155 @@
           "required": [
             "font",
             "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_ProjectPill": {
+      "type": "object",
+      "description": "Which project a window belongs to, at the end of its status row (D-317): the project's logo and name on a soft fill of its accent. Pressing it opens Settings → Project. The name truncates with an ellipsis; the text keeps the text colour so it always passes contrast.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ProjectPill"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "logo": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "book",
+                    "briefcase",
+                    "beaker",
+                    "heart",
+                    "star",
+                    "leaf",
+                    "rocket",
+                    "lightbulb",
+                    "music",
+                    "camera",
+                    "people",
+                    "home",
+                    "airplane",
+                    "code",
+                    "brush",
+                    "trophy",
+                    "earth",
+                    "food",
+                    "building",
+                    "chat",
+                    "diamond",
+                    "flag",
+                    "sparkle",
+                    "pen",
+                    "upload",
+                    "none"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "accent": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "orange",
+                    "amber",
+                    "lime",
+                    "green",
+                    "teal",
+                    "cyan",
+                    "blue",
+                    "indigo",
+                    "violet",
+                    "pink",
+                    "slate",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name"
           ]
         },
         "on": {

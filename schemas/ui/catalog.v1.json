@@ -2665,10 +2665,11 @@
           "values": [
             "tint",
             "neutral",
-            "solid"
+            "solid",
+            "bare"
           ],
           "default": "tint",
-          "description": "tint: the accent's tinted plate, the glyph in the accent. neutral: a raised plate, for an uploaded logo in its own colours. solid: the accent itself, a colour swatch."
+          "description": "tint: the accent's tinted plate, the glyph in the accent. neutral: a raised plate, for an uploaded logo in its own colours. solid: the accent itself, a colour swatch. bare: no plate (inside a ProjectPill)."
         },
         "size": {
           "kind": "enum",
@@ -2741,6 +2742,7 @@
         "plate tint",
         "plate neutral",
         "plate solid",
+        "plate bare",
         "accent app"
       ]
     },
@@ -2875,6 +2877,117 @@
         "font dyslexic",
         "font system",
         "selected"
+      ]
+    },
+    {
+      "type": "ProjectPill",
+      "tier": "primitive",
+      "description": "Which project a window belongs to, at the end of its status row (D-317): the project's logo and name on a soft fill of its accent. Pressing it opens Settings → Project. The name truncates with an ellipsis; the text keeps the text colour so it always passes contrast.",
+      "props": {
+        "name": {
+          "kind": "message",
+          "required": true,
+          "description": "The project's name: the person's own words."
+        },
+        "logo": {
+          "kind": "enum",
+          "values": [
+            "book",
+            "briefcase",
+            "beaker",
+            "heart",
+            "star",
+            "leaf",
+            "rocket",
+            "lightbulb",
+            "music",
+            "camera",
+            "people",
+            "home",
+            "airplane",
+            "code",
+            "brush",
+            "trophy",
+            "earth",
+            "food",
+            "building",
+            "chat",
+            "diamond",
+            "flag",
+            "sparkle",
+            "pen",
+            "upload",
+            "none"
+          ],
+          "default": "none"
+        },
+        "src": {
+          "kind": "text",
+          "description": "An uploaded logo's sanitized SVG data URL."
+        },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app"
+        },
+        "label": {
+          "kind": "message",
+          "description": "Its accessible name when it can be pressed (Project settings for Book)."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.projectPill.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "logo book",
+        "logo briefcase",
+        "logo beaker",
+        "logo heart",
+        "logo star",
+        "logo leaf",
+        "logo rocket",
+        "logo lightbulb",
+        "logo music",
+        "logo camera",
+        "logo people",
+        "logo home",
+        "logo airplane",
+        "logo code",
+        "logo brush",
+        "logo trophy",
+        "logo earth",
+        "logo food",
+        "logo building",
+        "logo chat",
+        "logo diamond",
+        "logo flag",
+        "logo sparkle",
+        "logo pen",
+        "accent app, no logo",
+        "uploaded logo"
       ]
     },
     {
@@ -5156,6 +5269,7 @@
       "imageFitViewport",
       "imageWideExtra",
       "imageQuarterTurn",
+      "pillMax",
       "imageThumb",
       "textAreaMax",
       "stepMark",
