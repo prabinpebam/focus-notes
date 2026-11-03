@@ -66,8 +66,15 @@ instead of 530 before the fix; all budgets and assertions remain unchanged.
 | `pnpm --filter @focus-notes/web run build`; `pnpm --filter @focus-notes/web exec playwright test e2e/web.spec.ts --workers=1 -g 'Files on the web\|FIL-09 on the web'` | Build and both journeys passed |
 | `pnpm bench --check --only 'opening and saving' --runs 3` | Opening 51 ms against 150 ms; typing-to-save 558 ms against 1,000 ms; passed, app closed |
 
-The repaired head still requires its own green Windows CI run before main
-fast-forwards. The existing four quarantines below retain their exact scope.
+The repaired head `a1eca24e` passed the Windows unit/static/type/web/budget job
+and journey shards 2, 3 and 4 in
+[41671811307](https://github.com/prabinpebam/focus-notes/actions/runs/41671811307).
+Shard 1 still timed out finding the long-selection Rewrite prompt. Further
+software-rendered, 4x CPU-throttled and GPU repeats passed locally; that does
+not replace the red exact-head result. The journey now attaches committed
+selection, placement, viewport and font state on failure without adding a
+wait or relaxing an assertion. Main remains unmerged pending a green exact-head
+run. The existing four quarantines below retain their exact scope.
 
 #### Scoped CI quarantines, expires 10 November 2026
 
