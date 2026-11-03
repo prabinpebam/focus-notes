@@ -62,6 +62,58 @@ The package receipt and final CI outcome remain outside the source in the releas
 folder and progress record, avoiding a commit/CI loop merely to put that commit's
 own hash into itself. See [Store preparation evidence](gate-evidence.md#store-1-1-0-preparation).
 
+#### AI connections versus model hosting
+
+**Research checked 2 November 2026.** The owner's question is whether consuming
+output from a user-configured local app or API is treated differently from hosting
+the model. Focus Notes is an integration client, not a model host. Its
+[Rewrite adapter](../../apps/desktop/src/main/ai-rewrite.ts) sends selected text and
+an instruction to the chosen provider and streams the response into the note.
+It is therefore an integrated generation feature, not just importing a document
+that somebody generated elsewhere.
+
+| Situation | What the evidence supports |
+| --- | --- |
+| The writer pastes or imports text generated elsewhere | The owner-provided Partner Center help excludes user-imported content from featured/promoted Online Content. The text's possible AI origin does not, by itself, turn an editor into an AI generator. |
+| The app sends a prompt to a separate local model, external app, or API and displays the response | The questionnaire shown by the owner explicitly includes generated AI content. No published IARC exception for user-supplied keys, external processes, or local endpoints was found in the sources below. Treating Rewrite as in-scope is the supported interpretation, not a published ruling on this specific app. |
+| The app bundles or hosts the generating model | This is also a generation feature. The researched rules do not make ownership or location of the model the deciding boundary. |
+| AI only enhances an existing productivity feature | Google Play explicitly recognizes this distinction in its own AI-content policy. It is not an IARC or Microsoft Store exemption. |
+
+**Keep the authorities separate:**
+
+- **IARC:** [How IARC works](https://globalratings.com/how-iarc-works/) and its
+  [FAQ](https://globalratings.com/faq/) describe a content-and-features questionnaire
+  with regional rating rules. The FAQ says the questionnaire is available only
+  through participating storefronts. The current question and imported-content
+  examples here were supplied by the owner from Partner Center on 2 November.
+  The public sources do not settle every content-category answer for an optional,
+  user-configured AI rewrite connection.
+- **Microsoft Store:** the introduction to
+  [Content Policies](https://learn.microsoft.com/en-us/windows/apps/publish/store-policies#content-policies)
+  includes text and anything delivered from a server or connected to by the product.
+  [Section 11.16](https://learn.microsoft.com/en-us/windows/apps/publish/store-policies#1116-live-generative-ai-content)
+  applies to products containing dynamic AI content created in response to user
+  input; it requires disclosure, a submission declaration, policy compliance,
+  and a means to report inappropriate content. Its text does not distinguish an
+  embedded model from a third-party API. These are Store certification rules,
+  not an IARC rule assigning a particular age.
+- **Google Play, comparison only:** its
+  [AI-content policy explanation](https://support.google.com/googleplay/android-developer/answer/14094294?hl=en)
+  excludes certain limited-scope uses from that particular policy, including
+  productivity apps enhancing an existing feature, with AI-suggested email drafts
+  as an example. This is a functional distinction, not a model-hosting exception;
+  it cannot be transferred to a Windows/IARC submission.
+
+**Submission consequence:** keep the accurate description, *optional AI-assisted
+rewriting through a user-configured external connection; no bundled or hosted
+model*. The displayed Online Content question supports **Yes** for this integrated
+feature. That does not automatically make every violence, sexuality, language,
+or drug-content answer **Yes**, nor does external execution automatically make
+them **No**. Do not select higher ratings merely as a precaution or describe
+private imported writing as developer-supplied content. This research is not an
+IARC determination, a new product policy, or authorization to change or submit
+the Partner Center form.
+
 | Path | Account and configuration | What you do |
 | --- | --- | --- |
 | **Now: manual submission** | Personal Microsoft account in Partner Center; three GitHub repository variables for the package identity | Follow steps 1–7 below. Upload each release's MSIX in Partner Center. No Entra tenant or Store API secrets needed. |
