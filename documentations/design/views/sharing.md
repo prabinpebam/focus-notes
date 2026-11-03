@@ -62,8 +62,12 @@ New notes and projects are Private. Shared is a private note with a grant, not a
 | What's being shared | Item title/name, note/folder type, project identity; folder descendant note/folder counts and Review contents. No Add items, checkboxes or recipient name. |
 | How it opens | Expiry (1/7/30/90 days, date, Never with warning), Link and Passcode switches; Generated/Custom appears only when Passcode is on. |
 | Actions | Share… primary; Copy link; Copy access code; Copy share information. Hidden methods have no copy action. |
-| Shared before | Collapsed share history for this item, opening methods, expiry, state and Extend/Withdraw. No recipient identities. |
-| Status | One named task/publish status with failure and Retry; no “ready” until the site actually serves this share. |
+| Shared before | This item's existing shares as ShareRow rows (opening methods, expiry, state badge with text), each with Copy link, Copy access code, Change… and Withdraw. Open by default when the item has active shares, collapsed otherwise. No recipient identities. |
+| Status | One inline status line with a Spinner in the Actions region (a polite live region announces it); a Toast confirms each copy. No “ready” until the site serves this share (R-53). |
+
+**Share… always starts a new share (D-307).** An item can hold several shares, one per audience, because shares have no names. Existing ones change only from their row in Shared before or Settings → Sharing; **Change…** says **“Changes apply to everyone who has this link or access code.”** Within one open dialog, repeated actions reuse the share that dialog created.
+
+**Focus order:** the dialog opens on **Expires**, then follows the regions: the item card's **Review contents of “Book drafts”** button, Expires, Link, Passcode, passcode type and field, the actions, Shared before. Escape or Cancel returns focus to the Files row or command that opened it.
 
 The target is captured by stable item ID, not its title. Rename updates the displayed name without changing scope. Moving it within the project keeps its identity; deleting it disables creation and says **“This item was deleted. Close sharing or restore it in Files.”** If its contents change while reviewing, refresh the counts/tree and require a new review before publication; never widen scope invisibly.
 
@@ -73,7 +77,9 @@ The target is captured by stable item ID, not its title. Rename updates the disp
 
 No add/remove/select-for-sharing controls. Expanding rows changes only the view. Escape closes only review and returns focus to Review contents with all expiry/passcode input intact. Tab is trapped in the top dialog; closing Share after review restores the original Files row or command opener.
 
-Folder shares cover descendants, including notes added later, as the existing live-folder grant does. Say **“New notes in this folder will also be shared.”** before the first action. Review rechecks current contents before creation; future additions follow that explicitly stated live scope. Moving an item out removes it at the next successful publication. Existing copies remain beyond recall.
+**A folder share covers what's in it when shared (D-311).** It includes the reviewed notes and folders, with their later edits. The switch **Include notes added later**, Off by default, makes it follow new notes too. With it Off, a note created in or moved into the folder stays private, and Shared before says **“3 newer notes aren't shared”** with **Add them**. Review rechecks current contents before creation. Moving an item out removes it at the next successful publication. Existing copies remain beyond recall.
+
+**Large folders:** counting and the review tree work in the background with a named wait (**Counting notes…**, waiting class); the tree is virtualized, so a 10,000-note folder scrolls without loading every row.
 
 ## Switches and parameters
 
@@ -92,10 +98,12 @@ Passcodes default to four random EFF words (about 52 bits). Keep the as-built cu
 
 | Action | Result |
 | --- | --- |
-| Share… | System share sheet with complete share information where supported. If genuinely unavailable, copy that information and announce **Share information copied**. User cancellation is cancellation, not a copy fallback; errors remain explicit. |
+| Share… | The system share sheet with the complete share information (D-308): macOS through Electron's ShareMenu; Windows through a native DataTransferManager bridge once proven (A-SHR-01). Where there's no sheet (Linux, and Windows until then) this button is **Copy share information** and the separate copy action is hidden; it never says Share… when nothing would open. Cancelling the sheet is cancellation, not a copy fallback; errors remain explicit. |
 | Copy link | Copy the working fragment link, only with Link on. |
 | Copy access code | Copy share code plus passcode in one string, only with Passcode on. |
 | Copy share information | Copy title, enabled opening method(s), site share page, expiry and limits using the template below. |
+
+The four actions follow the owner's list: **Share…** is the primary button; Copy link, Copy access code and Copy share information are secondary buttons in one group that wraps to a column at narrow widths. A grouped bar rounds only its outer corners, never inner segment corners.
 
 Do not invoke the OS sheet until publication is ready. Some platforms require a fresh user gesture after a long wait: show **Ready to share** with **Share…** to complete rather than silently failing or claiming the sheet opened. Clipboard failure shows **“Couldn't copy. Try again.”** with a retry; OS-sheet cancellation leaves the valid share available under Shared before.
 
@@ -115,7 +123,9 @@ Existing named grants are **legacy compatibility only**: keep their old links an
 
 **All shares**, grouped by item, shows Link/Passcode, expiry and Active / Expires soon (within 3 days) / Expired / Withdrawn / Waiting to publish. Filter by state and find by item title. There is no **All people with access**, **Share with someone** or Add people.
 
-**Extend** changes expiry on the same grant. **Withdraw** confirms **“Withdraw this share? Its link and access code stop working after the next successful publication. Downloaded copies cannot be recalled.”** Default focus Cancel. Keep the record. **Delete record** confirms separately; private Git history still keeps the record and old secrets. Disabling an opening method rotates/reseals as required so the disabled method cannot unlock the new build; the other method's advertised continuity must be verified before claiming success.
+Rows are ItemCards with a state badge and its text, never colour or a one-sided border alone; filter with a SegmentedControl and find with a SearchField. Empty: **No shares yet.** **Extend** changes expiry on the same grant. **Withdraw** confirms **“Withdraw this share? Its link and access code stop working after the next successful publication. Downloaded copies cannot be recalled.”** with **Cancel** (default focus) / **Withdraw share**. Keep the record. **Delete record** confirms **“Delete this share's record? It's already withdrawn; this removes it from the list.”** with **Cancel** / **Delete record**; private Git history still keeps the record and old secrets.
+
+**Deleted or renamed items:** renaming changes nothing public (identifiers are random). Deleting a shared note or folder withdraws its shares at the next publish, and their rows say **Item deleted**; restoring it never shares it again by itself. **Publishing a shared item** keeps its shares, which then also work, and says so before publishing. Disabling an opening method rotates/reseals as required so the disabled method cannot unlock the new build; the other method's advertised continuity must be verified before claiming success.
 
 ### Share information template
 
@@ -127,6 +137,8 @@ Works until {expires}.
 Anyone with the link or access code can read it and forward it.
 Expiry or withdrawal cannot remove copies already downloaded.
 ```
+
+The title line is deliberate: the link itself names nothing, but the message is the sender's own and helps the recipient; it can be removed from the template. A read-only preview of the message sits under Copy share information.
 
 Omit lines for disabled methods. `{site}` is the site's share-reader address. No `{name}` or bare `{passcode}` field in new templates. Settings validates known placeholders; unknown ones have a field error, input retained. Validate the **rendered result against enabled methods before copying/OS sharing**: Link needs a working `{link}`; Passcode needs both `{site}` and `{accessCode}`. At least one enabled method must survive omission, otherwise say **“Add a link, or the site address and access code, for this share.”** Keep the template/dialog draft and provide Edit template / Use default this time; no unusable-success toast or clipboard replacement. Exercise link-only, passcode-only and both against each template shape. Store privately in the project's `access-message.json`; Reset to default is explicit. Legacy templates remain for old grants only, not a reason to request new names.
 
@@ -156,7 +168,15 @@ GitHub Pages is **purely a website** (D-292). No browser editor, IndexedDB notes
 
 ## States and evidence
 
-The design uses Dialog, ItemCard, Badge, Tree, Field, Select, Switch, Button and Disclosure from the existing tiers, expressed as JSON before wiring. At 320 px actions wrap without horizontal scrolling; only review's tree and the normal dialog content scroll, not a second nested action pane. Fields and target stay stable during waits/errors.
+| State | What the dialog shows; the draft is kept in every case |
+| --- | --- |
+| Offline | **“You're offline. Your share will publish when you're back online.”** The share is saved as Waiting to publish; Copy actions wait. A first share (site creation) is unavailable offline, with that reason |
+| Sign-in expired | **“Sign in to GitHub again to publish this share.”** Sign in; the same action resumes |
+| No permission (a collaborator who can't write to the site) | **“Only someone who can change the site can share from this project.”** Actions disabled with that reason; Manage on GitHub |
+| Sharing turned off, or site still being set up | The first-share step, or **Continue setup**, in place |
+| Item deleted while open | **“This item was deleted. Close sharing or restore it in Files.”** |
+
+**Components and their status:** Dialog, ItemCard (with its badge slot), Button, Field and FileTree (`readOnly`, for Review) exist; **Switch** (WP-P.16) and **Select** are planned, **SegmentedControl** serves Generated/Custom, and **Disclosure** and **ShareRow** are new and specified with the work. The view can't be wired before those land. Expressed as JSON before wiring. At 320 px actions wrap without horizontal scrolling; only review's tree and the normal dialog content scroll, not a second nested action pane. Fields and target stay stable during waits/errors.
 
 The [wait inventory](../../architecture/perceived-performance.md) records preparing contents, site creation, sealing/publishing and OS handoff. Acknowledge within 100 ms; use named status after 300 ms, preserve the current view and prompt, and make long publication leavable. No “Link copied” or “Live” before the actual copy/deploy succeeds.
 
@@ -185,3 +205,6 @@ Older links land here for continuity. D-284 replaces the popover/state interstit
 | DD-SHARE-13 | First action creates; ready output only after publish | UC-SHARE-05, UC-SHARE-08 | No empty shares on cancel or unready invitations |
 | DD-SHARE-14 | Site theme independent of app; no browser-writing product | UC-SHARE-10 | A clean website, not a second editor |
 | DD-SHARE-15 | Random opaque share URLs/codes/paths/files, never source-derived | UC-SHARE-03 | A link must not disclose what it opens before authorization; slugs/hashes are not substitutes for random identifiers (SHR-23) |
+| DD-SHARE-16 | Share… starts a new share; existing ones change from their own row (D-307) | UC-SHARE-03, UC-SHARE-04 | Changing the last share silently would cut or shorten access for people who already have it |
+| DD-SHARE-17 | Folder membership fixed at sharing; following new notes is an opt-in switch (D-311) | UC-SHARE-07 | No note is published as a side effect of being created in a shared folder |
+| DD-SHARE-18 | The primary action names what happens on this platform (D-308) | UC-SHARE-05 | Share… only where a share sheet opens; otherwise Copy share information |

@@ -105,10 +105,10 @@ Writing happens one line at a time.
 
 ## Components
 
-The seed calls for special components such as image and gallery in the future. They are written as [generic directives](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444), a widely used extension proposal for CommonMark:
+The seed calls for special components such as image and gallery in the future. An **image** is a standard Markdown image, so every viewer shows it (D-310): the description is its alt text, the caption its title, and non-default display options a trailing attribute block. Containers such as a gallery are written as [generic directives](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444), a widely used extension proposal for CommonMark:
 
 ```markdown
-::image{src="../assets/images/q7m4k2.png" alt="A quiet desk at dawn" caption="Morning light" display="column" rounded="false" fitHeight="true"}
+![A quiet desk at dawn](../assets/images/q7m4k2.png "Morning light"){display=wide rounded}
 
 :::gallery{columns="3"}
 ![First](assets/a.jpg)
@@ -125,9 +125,9 @@ The seed calls for special components such as image and gallery in the future. T
 
 ### Planned image attributes and asset transactions
 
-The [image experience](../experience/images.md#assets-markdown-and-encrypted-sharing) resolves the earlier image stub. `src` is a validated relative path inside the note's trusted media boundary; `alt` and optional `caption` are plain text. `display` is column/wide/actual; `rounded` and `fitHeight` are booleans. New image asset identifiers are random, never note-derived. Persist explicit per-image values so another device uses the same layout; only insertion defaults are device-local. Numeric layout bounds belong to tokens, not arbitrary width/height styles in notes.
+The [image experience](../experience/images.md#assets-markdown-and-encrypted-sharing) resolves the earlier image stub. The path is a validated relative path inside the note's trusted media boundary; the alt text and optional title (the caption) are plain text. The attribute block appears only for non-default values: `display` is `wide` or `actual` (Column is the default), `rounded` is present or absent, and `fitHeight=false` turns the height cap off. New image asset identifiers are random, never note-derived. Persist explicit per-image values so another device uses the same layout; only insertion defaults are device-local. Numeric layout bounds belong to tokens, not arbitrary width/height styles in notes.
 
-Keep untouched `![alt](path)` and old directives (including unknown attributes) verbatim. Ordinary supported Markdown images may render without styling; only an explicit edit to that image promotes it to the typed directive. Unsupported attributes/structures remain read-only rather than silently discarded. Plain-text accessibility and relative paths remain inspectable outside Focus Notes; generic Markdown readers need not render directive styling.
+Keep untouched images, `::image{…}` directives from earlier drafts and unknown attributes verbatim; only an explicit edit to an image rewrites it, in the standard form. Unsupported attributes/structures remain read-only rather than silently discarded. A plain Markdown viewer shows the picture, its caption on hover, and any options as short text after it (CP-OWN-01).
 
 Import/copy is asset-before-reference with an existing recovery/journal transaction: validate the whole batch, stage collision-safe destination files, persist note references, then declare Saved. Failure/crash must not leave a durable reference to a missing asset; never remove external sources. Renaming/moving notes rebases relative media paths in the same operation as note links; crossing visibility roots copies only the referenced permitted media after the usual confirmation. No directory-wide export or automatic orphan purge.
 

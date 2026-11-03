@@ -47,6 +47,8 @@ Work, a book and a club each need their own context. A folder groups notes insid
 
 The figure's text alternative is the model itself: a project window owns one private repository and may also edit its explicitly paired site's Public notes. The site receives selected plaintext publications or ciphertext shares. This authorized pair is one project context, not permission to browse any sibling repository. Only Publish/Make private crosses its two roots, with visibility confirmation; another project's roots/IDs are always rejected. Local capture and external files belong to neither repository.
 
+**On disk (D-306):** a new project is one folder, its private repository; once sharing is on, the site is a clone inside it at `public\`, which the private repository ignores, so the project moves as one folder. An existing workspace keeps its layout (the site repository at the root, private notes in its `private\` submodule); nothing moves.
+
 ## Meeting Project for the first time
 
 **Accepted migration plan (owner, 3 November; D-272).** This is predominantly a vocabulary and UX change, not a storage redesign. The figure above is the explainer used by the upgrade note and Help: a project is the existing private repository; its site is the existing public repository. Existing public/private note locations, repository URLs, `.git`/submodule arrangement, IDs, relative links, credentials, commits, pending saves and publishing settings stay where they are. Never re-clone, move notes, create a replacement repository or silently turn sharing on.
@@ -67,7 +69,7 @@ No automatic tour, forced sign-in or new modal for upgrading. A read-only/offlin
 
 ## Opening a project
 
-**Open**, not switch. **Open project…** (Ctrl+Alt+O / ⌥⌘O), ⋯ → Projects, or Spotlight opens Projects. In an existing window this is a dialog; with no project open it fills the window. It offers **New project…**, existing/pinned projects, file-only Recent, **Quick notes** and **Open file…**. These entries are explicit scope exits, not another project's notes appearing in the active Files/search tree.
+**Open**, not switch. **Open project…** (Ctrl+Alt+O / ⌥⌘O), ⋯ → Projects, or Spotlight opens Projects. In an existing window this is a dialog; with no project open it fills the window. It offers **New project…**, existing and pinned projects, **Quick notes** and **Open file…**. Inside a project window it lists project names only, never another project's files: cross-project **Recent** appears only in the window shown when no project is open (D-309), because the owner's rule is that a project window can't browse outside its project. The list is a listbox of ItemCard rows (name, location, mark) with arrows, Home/End and type-ahead; Pin/Unpin is a separate menu button on each row. Opening a project from here never reveals that project's notes in this window.
 
 1. Choose a known project, a local project folder, or **Open from GitHub…**. Signed out, sign in only for the GitHub path. Existing local projects open offline.
 2. If already open, bring its window forward. Do not mount another watcher or copy the working folder.
@@ -129,7 +131,7 @@ A new project has no public repository, Pages site, browser vault or share outpu
 
 About 40 words visible; estimated VVS 78 (anchor, rows and badges carry the meaning). Focus returns to the action that started it. Do not create a repository, upload content or enable Pages before confirmation. On success resume the original item and untouched share draft. If site creation fails part-way, list what was created, keep the project private-only until setup is complete, and offer **Continue setup**; never silently create another site.
 
-**Turn off sharing** is separate from making one note Private. Confirmation copy: **“Turn off sharing? Shared and published content will be removed from your site repository and website at the next successful publish. The repository and your private notes stay. Git history keeps earlier content.”** Actions **Cancel** / **Turn off sharing**. Withdraw every share and remove published/shared content, related assets and discoverability entries from current output; leave an empty reading-site shell/repository, never delete the repository. Until successful publish show **Turning sharing off…** or **Waiting to publish** with Retry publishing; offline/failure must not claim removal. Re-enable reuses the same site, and nothing withdrawn is republished without an explicit action.
+**Turn off sharing** is separate from making one note Private. Confirmation: title **Turn off sharing for “Book”?**, then two rows: **Shared notes** · their links and access codes stop working; **Published notes** · move back to your private notes and leave the website. One line: **The site and its history stay on GitHub; copies people already have can't be recalled.** Actions **Cancel** (initial focus) / **Turn off sharing**. For an existing pair it also removes the private repository's deploy key, the site's secret and its scheduled deploy, so the public repository can no longer read private notes (D-305). It runs as a long, leavable task (**Moving 120 of 480 notes…**). Withdraw every share and remove published/shared content, related assets and discoverability entries from current output; leave an empty reading-site shell/repository, never delete the repository. Until successful publish show **Turning sharing off…** or **Waiting to publish** with Retry publishing; offline/failure must not claim removal. Re-enable reuses the same site, and nothing withdrawn is republished without an explicit action.
 
 Removing public repository content must not destroy the writer's only working copy. Preserve any public-source notes/media privately through the existing Make private copy-before-remove path before committing their public removal; resolve taken paths without overwriting. Failed preservation stops removal with an explicit error. This is the explicitly confirmed Turn off operation, not a disk move during the terminology upgrade.
 
@@ -137,7 +139,7 @@ Existing pairs follow the [UX-led terminology migration](#meeting-project-for-th
 
 ## Telling projects apart
 
-Settings → Project offers 12 contrast-safe accent presets, 24 generic preset SVG logos and **Upload SVG…**. Use licensed catalogue geometry for presets, not hand-drawn familiar icons. Choices live in `.focus-notes/project.json`; sanitized uploaded assets stay in the private project. Preset counts and watermark opacity are proposed design parameters, not measured usability findings.
+Settings → Project offers 12 contrast-safe accent presets, 24 generic preset SVG logos, **Upload SVG…** and an optional **Appearance** for this project (**Follow app**, Light, Dark; Follow app by default, D-313). The accent tints the title band and the Files heading as well as controls, so two windows look different at a glance; the project's Appearance lets the owner make one project dark and another light, as the owner's "separate color theming" asks, without overriding the reading theme unless chosen. The accent is a project-scope modifier on the semantic accent tokens, never per-component overrides; the watermark's opacity is a token (`opacity.watermark`) and the watermark is hidden in more-contrast, forced-colours and reduced-transparency modes. An uploaded logo is shown on a token-coloured plate, or as a single-colour `currentColor` version, and previewed in light and dark before **Apply**; one that's hard to see says **“This logo is hard to see in dark mode. Use a plate or choose another.”** Use licensed catalogue geometry for presets, not hand-drawn familiar icons. Choices live in `.focus-notes/project.json`; sanitized uploaded assets stay in the private project. Preset counts and watermark opacity are proposed design parameters, not measured usability findings.
 
 Upload opens the OS file chooser; Cancel changes nothing. Before rendering, enforce D-294's size/node/viewBox limits and passive SVG allowlist: no scripts/events, foreignObject, HTML, external references, CSS imports, fonts or animation. Reject unsupported input explicitly (**“This SVG can't be used safely. Choose another or use a preset.”**), retaining the old logo and draft. Sanitization must not silently produce a misleading empty logo; show the exact safe result with Apply/Cancel. The untrusted original is never rendered or uploaded. Colour/Badge/Watermark/Off and accessible project-name fallback work for custom logos too. [Site preview](published-site.md#preview-site) makes a site-visible logo's public exposure explicit.
 
@@ -154,7 +156,7 @@ No one-sided accent stripes. Use fills, full outlines and badges. A window is na
 
 **Recent** is files, never folders, newest first. In Projects a row reads **Plan** with **Book · Drafts / Chapter 1** below; in Book's Files, only **Drafts / Chapter 1**. Show **Root** for the root folder. Quick notes and standalone files have explicit **Local only** location labels. Full path is available on focus/tooltip and through **Show in folder**, not forced into the row.
 
-**Pinned projects** lead Projects on this device. **Pinned folders and notes** lead Files inside the project, persisted in `.focus-notes/pins.json`. A pinned folder is a shortcut into its real expandable subtree, not a second copy; selecting it reveals that folder. Pin/Unpin is in row menus and Spotlight. Stable identity follows rename/move; deletion removes the shortcut, and undo restores it with the item. Missing external files offer **Locate file…** or **Remove from Recent**; removing a history row never deletes a file.
+**Pinned projects** lead Projects on this device. **Pinned folders and notes** lead Files inside the project, kept per account in `.focus-notes/pins/<account>.json`, so they follow the owner across devices but aren't imposed on collaborators (D-313). Recent keeps the 50 newest files, dropping the oldest. A pinned folder is a shortcut into its real expandable subtree, not a second copy; selecting it reveals that folder. Pin/Unpin is in row menus and Spotlight. Stable identity follows rename/move; deletion removes the shortcut, and undo restores it with the item. Missing external files offer **Locate file…** or **Remove from Recent**; removing a history row never deletes a file.
 
 ## Quick notes
 
@@ -166,7 +168,7 @@ New notes autosave with the ordinary journal and appear in Recent. A failed writ
 
 ## A file on its own
 
-**Open file…** or **Open with Focus Notes** handles `.md`, `.markdown` and `.txt`. It opens one file window and saves in place, not in the last-used project. A file already inside an open project goes to that window. If inside a closed known project, offer **Open project** or **Open file only** rather than silently cloning or importing it.
+**Open file…** or **Open with Focus Notes** handles `.md`, `.markdown` and `.txt`. It opens one file window and saves in place, not in the last-used project. A file already inside an open project goes to that window. If inside a closed known project, offer **Open project** (the default) or **Open file only**, which says **Not backed up** while open, rather than silently cloning or importing it.
 
 The file window keeps writing, focus, find-in-note, theme and print. It has no project Files/search, Git backup, People, Share, Publish or agent exposure. `.txt` stays plain text; formatting that would require conversion is unavailable until an explicit **Save as…** to Markdown. Preserve encoding, BOM and line endings, reject unsupported encodings explicitly, and never replace the original during conversion. Save as a taken path needs an overwrite confirmation.
 
@@ -181,11 +183,11 @@ Inviting is not sharing. Settings → Project → People lists GitHub accounts a
 | Organization | Read, Triage, Write, Maintain, Admin as permitted by the caller and organization policy | Role applies to the whole repository, not a chosen folder; Read sees every private note and access record |
 | Personal account | Collaborator (can read and change everything) | No Read-only/Triage/Maintain/Admin picker; GitHub does not offer that role model here |
 
-**Personal-account message (exact UI copy):** “This project belongs to a personal GitHub account. A collaborator can read and change everything in this project, including private notes and sharing settings. GitHub does not offer read-only access here.” Actions **Cancel** / **Invite person**. The account username and project name remain visible; the confirmation also names access to share secrets. Do not equate this with organization Admin or promise repository-management powers GitHub has not returned.
+**Personal-account message (exact UI copy):** “This project belongs to a personal GitHub account. A collaborator can read and change everything in this project, including private notes and sharing settings. GitHub does not offer read-only access here.” Actions **Cancel** / **Send invite**. The account is shown as a profile card (avatar and handle) with the project name. Do not equate this with organization Admin or promise repository-management powers GitHub has not returned.
 
 Source: [GitHub REST collaborator permissions](https://docs.github.com/en/rest/collaborators/collaborators#add-a-repository-collaborator), whose `permission` parameter is only valid on organization-owned repositories; checked for D-290. The UI must use returned permissions and display **Manage on GitHub** when the current account cannot invite or policy blocks it.
 
-Before **Send invite**, say **“Project access includes every private note and sharing secret. It cannot be limited to a folder.”** Do not invite to the site repository automatically. Pending is not accepted; retry checks the existing invitation first. Removal confirms its scope and warns that existing clones/copies cannot be recalled. No real invite is sent by this spec.
+Organization invites carry one line instead: **“They can see every private note and sharing setting in this project, not just one folder.”** Do not invite to the site repository automatically. Pending is not accepted; retry checks the existing invitation first. Removal confirms its scope and warns that existing clones/copies cannot be recalled. No real invite is sent by this spec.
 
 ## Settings and words
 
@@ -206,13 +208,18 @@ Project selection/pin feedback answers within 100 ms. Prepare/open/create/invite
 
 | State | Visible result and way forward |
 | --- | --- |
-| Empty | **No projects yet.** New project… and Quick notes; no sign-in wall for local capture |
+| Empty | App mark (64 px), **No projects yet**, **New project…** (primary) and **Quick notes**; no sign-in wall for local capture. Estimated VVS 82 |
 | Opening / creating | **Opening “Book”…** / **Creating “Book”…** in the chosen row/task, elapsed/steps when long |
 | Missing folder | Recovery names the folder, Find folder… / Download again where appropriate; no automatic creation |
 | Offline | Local project opens; remote creation/invites unavailable with reason; keep all input |
 | Permission refused | **“Couldn't open this project. Check your GitHub access, then try again.”** Sign in / Retry |
 | Invalid/taken name | Field error and a suggested available name; retain input, no remote side effects |
 | Pending invite | Named account and Pending; Cancel invite when authorized, not a success badge |
+| Loading from GitHub | Skeleton rows in **Open from GitHub…**; local projects stay listed and usable |
+| GitHub unreachable or rate-limited | **“Couldn't reach GitHub. Check your connection, then try again.”** Retry; local projects stay listed |
+| Sign-in expired | **“Sign in to GitHub again to continue.”** Sign in; the name, choices and draft are kept and the same operation resumes afterwards |
+| Sign-in can't do this | **“Your GitHub sign-in can't create repositories here.”** Manage on GitHub; nothing is created (R-52) |
+| Settings changed on two devices | Project files (`project.json`, `site.json`, `access.json`, pins) merge by record: stable IDs, union of records, last change wins per field. A true clash (the same share changed both ways) keeps both and shows **Choose which to keep** in Settings; never a silent loss |
 
 Projects/Recent rows have text names and location, keyboard arrows and Enter; Pin/Unpin is not nested inside a competing row button. Dialog focus returns to its opener on Cancel; asynchronous refresh keeps focus and scroll. At 320 px reflow location under title with no horizontal scrolling. All targets/focus/contrast use the design system and reduced motion.
 
@@ -221,7 +228,7 @@ Projects/Recent rows have text names and location, keyboard arrows and Enter; Pi
 | ID | Choice | Serves | Why / alternative rejected |
 | --- | --- | --- | --- |
 | DD-PROJ-01 | One project per window; open, never replace | UC-PROJ-01, UC-PROJ-02, UC-PROJ-03 | Makes scope and history visible; tabs mix contexts |
-| DD-PROJ-02 | Name plus accent and optional preset/passive uploaded logo | UC-PROJ-04 | Colour alone excludes users; whole-project themes override personal comfort |
+| DD-PROJ-02 | Name, accent (title band and Files heading), optional per-project Appearance, and a preset or passive uploaded logo (D-313) | UC-PROJ-04 | Colour alone excludes users; a forced whole-project theme would override personal comfort, so it's opt-in |
 | DD-PROJ-03 | File-only Recent and real folder/project pins | UC-PROJ-05, UC-PROJ-06 | Return to work without another favourites collection |
 | DD-PROJ-04 | Local Quick notes and standalone files are explicit non-project scopes | UC-PROJ-07, UC-PROJ-08 | No accidental import, upload or Git setup |
 | DD-PROJ-05 | Fixed destination picker, private-first creation | UC-FILE-12, UC-SHARE-08 | Cancel has no effect; first share explains public footprint |
