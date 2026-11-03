@@ -42,7 +42,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
   const floating = useContext(FloatingContext) && (variant === "secondary" || variant === "subtle");
   const common = {
     id,
-    className: [s.base, s.size[size], s.variant[variant], ...(floating ? [s.floating] : []), ...(bleed ? [s.bleed[size]] : [])].join(" "),
+    className: [s.base, s.size[size], ...(icon ? [iconPosition === "start" ? s.iconStart[size] : s.iconEnd[size]] : []), s.variant[variant], ...(floating ? [s.floating] : []), ...(bleed ? [s.bleed[size]] : [])].join(" "),
     "data-floating-control": floating ? "" : undefined,
     "data-bleed": bleed ? "" : undefined,
     ...attrs,

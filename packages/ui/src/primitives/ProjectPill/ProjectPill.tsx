@@ -18,12 +18,12 @@ export interface ProjectPillProps {
 export function ProjectPill({ name, logo = "none", src, accent = "app", label, onPress }: ProjectPillProps) {
   const inner = (
     <>
-      {logo !== "none" ? <ProjectMark logo={logo} {...(src ? { src } : {})} accent={accent} plate="bare" size="s" /> : null}
+      {logo !== "none" ? <ProjectMark logo={logo} {...(src ? { src } : {})} accent={accent} plate="bare" size="inline" /> : null}
       <span className={`${controlLabel} ${s.name}`}>{name}</span>
     </>
   );
   const accentAttr = accent === "app" ? undefined : accent;
   return onPress
-    ? <button type="button" className={`${s.base} ${s.pressable}`} data-project-accent={accentAttr} aria-label={label ?? name} title={label ?? name} onClick={onPress}>{inner}</button>
-    : <span className={s.base} data-project-accent={accentAttr} title={name}>{inner}</span>;
+    ? <button type="button" className={`${s.base} ${s.pressable}${logo === "none" ? ` ${s.textOnly}` : ""}`} data-project-accent={accentAttr} aria-label={label ?? name} title={label ?? name} onClick={onPress}>{inner}</button>
+    : <span className={`${s.base}${logo === "none" ? ` ${s.textOnly}` : ""}`} data-project-accent={accentAttr} title={name}>{inner}</span>;
 }

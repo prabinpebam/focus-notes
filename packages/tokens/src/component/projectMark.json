@@ -1,6 +1,6 @@
 { "cmp": { "projectMark": {
-  "size": { "$type": "dimension", "s": { "$value": "{size.iconL}" }, "m": { "$value": "{size.statusMark}" }, "l": { "$value": "{size.appMarkM}" }, "xl": { "$value": "{size.avatar}" }, "watermark": { "$value": "{size.appMarkL}" } },
-  "glyph": { "$type": "dimension", "s": { "$value": "{size.iconS}" }, "m": { "$value": "{size.iconM}" }, "l": { "$value": "{size.iconL}" }, "xl": { "$value": "{size.stepMarkIcon}" }, "watermark": { "$value": "{size.appMarkM}" } },
+  "size": { "$type": "dimension", "inline": { "$value": "{size.iconS}", "$description": "The box is the glyph, with no room around it (inside a ProjectPill, whose padding is the room)." }, "s": { "$value": "{size.iconL}" }, "m": { "$value": "{size.statusMark}" }, "l": { "$value": "{size.appMarkM}" }, "xl": { "$value": "{size.avatar}" }, "watermark": { "$value": "{size.appMarkL}" } },
+  "glyph": { "$type": "dimension", "inline": { "$value": "{size.iconS}" }, "s": { "$value": "{size.iconS}" }, "m": { "$value": "{size.iconM}" }, "l": { "$value": "{size.iconL}" }, "xl": { "$value": "{size.stepMarkIcon}" }, "watermark": { "$value": "{size.appMarkM}" } },
   "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "background": { "$type": "color", "$value": "{color.accentMuted}", "$description": "The plate: the project's accent, tinted (D-313)." },
