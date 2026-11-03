@@ -1,0 +1,4773 @@
+{
+ "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+ "id": "gallery.mock.images",
+ "viewModels": [
+  "vm.app",
+  "vm.mocks"
+ ],
+ "focus": "mockBack",
+ "local": {
+  "step": "insert",
+  "mode": "column",
+  "rounded": false,
+  "fit": true,
+  "sample": "harbour",
+  "last": "",
+  "described": false,
+  "captioned": false,
+  "rot": "0",
+  "saved": false,
+  "bulkRounded": false
+ },
+ "root": {
+  "type": "AppRoot",
+  "props": {
+   "scheme": {
+    "get": "vm.app.scheme"
+   },
+   "platform": {
+    "get": "vm.app.platform"
+   }
+  },
+  "children": [
+   {
+    "type": "Center",
+    "props": {
+     "maxWidth": "wideContent"
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "l",
+       "padding": "xl"
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "Inline",
+          "props": {
+           "gap": "s",
+           "align": "center"
+          },
+          "children": [
+           {
+            "type": "Button",
+            "id": "mockBack",
+            "on": {
+             "press": {
+              "run": "gallery.open",
+              "args": {
+               "id": ""
+              }
+             }
+            },
+            "props": {
+             "label": {
+              "t": "project.mock.back"
+             },
+             "variant": "subtle",
+             "size": "s",
+             "icon": "chevronLeft"
+            }
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "t": "project.mock.badge"
+             },
+             "role": "caption",
+             "tone": "muted"
+            }
+           }
+          ]
+         },
+         {
+          "type": "Heading",
+          "props": {
+           "value": {
+            "t": "image.mock.title"
+           },
+           "level": "1"
+          }
+         },
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "image.mock.intro"
+           },
+           "tone": "muted"
+          }
+         },
+         {
+          "type": "Inline",
+          "props": {
+           "gap": "xs",
+           "wrap": true,
+           "label": {
+            "t": "project.mock.steps"
+           }
+          },
+          "children": [
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "insert"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.insert"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "insert"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "image"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.menu"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "image"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "describe"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.describe"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "describe"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "bulk"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.bulk"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "bulk"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "crop"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.crop"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "crop"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "ai"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.ai"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "ai"
+               ]
+              }
+             }
+            }
+           },
+           {
+            "type": "Button",
+            "on": {
+             "press": {
+              "set": "local.step",
+              "to": "aiNoVision"
+             }
+            },
+            "props": {
+             "label": {
+              "t": "image.mock.step.aiNoVision"
+             },
+             "size": "s",
+             "variant": "subtle",
+             "toggle": true,
+             "pressed": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.step"
+                },
+                "aiNoVision"
+               ]
+              }
+             }
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "switch": {
+         "get": "local.step"
+        },
+        "cases": {
+         "insert": {
+          "type": "ProjectScope",
+          "props": {
+           "part": "window",
+           "accent": "teal",
+           "appearance": "follow",
+           "grow": true
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "band"
+            },
+            "children": [
+             {
+              "type": "Inline",
+              "props": {
+               "gap": "s",
+               "align": "center",
+               "padding": "s"
+              },
+              "children": [
+               {
+                "type": "ProjectMark",
+                "props": {
+                 "logo": "book",
+                 "accent": "teal",
+                 "size": "s"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "project.window.title",
+                  "args": {
+                   "note": {
+                    "t": "project.mock.noteChapter"
+                   },
+                   "project": {
+                    "t": "project.mock.bookName"
+                   }
+                  }
+                 },
+                 "role": "caption",
+                 "lines": "one"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "m",
+             "padding": "l",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "Center",
+              "props": {
+               "maxWidth": "measure"
+              },
+              "children": [
+               {
+                "type": "Stack",
+                "props": {
+                 "gap": "m",
+                 "padding": "l"
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.mock.para1"
+                   },
+                   "personal": true
+                  }
+                 },
+                 {
+                  "type": "Surface",
+                  "props": {
+                   "variant": "sunken",
+                   "shape": "control",
+                   "padding": "m"
+                  },
+                  "children": [
+                   {
+                    "type": "Inline",
+                    "props": {
+                     "gap": "s",
+                     "align": "center",
+                     "justify": "center"
+                    },
+                    "children": [
+                     {
+                      "type": "Icon",
+                      "props": {
+                       "name": "imageAdd",
+                       "size": "m"
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "image.drop"
+                       },
+                       "role": "label"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.mock.para2"
+                   },
+                   "personal": true
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.insertHint"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 },
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "s",
+                   "wrap": true
+                  },
+                  "children": [
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": [
+                      {
+                       "set": "local.step",
+                       "to": "image"
+                      },
+                      {
+                       "set": "local.mode",
+                       "to": "column"
+                      }
+                     ]
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.mock.dropGood"
+                     },
+                     "variant": "primary",
+                     "icon": "image"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "set": "local.last",
+                      "to": "bad"
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.mock.dropBad"
+                     },
+                     "variant": "secondary"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "set": "local.last",
+                      "to": "batch"
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.mock.dropBatch"
+                     },
+                     "variant": "secondary"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "type": "StatusRow",
+                  "props": {
+                   "message": {
+                    "t": "image.error.type"
+                   },
+                   "tone": "danger",
+                   "icon": "error"
+                  },
+                  "when": {
+                   "expr": {
+                    "==": [
+                     {
+                      "get": "local.last"
+                     },
+                     "bad"
+                    ]
+                   }
+                  }
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "s"
+                  },
+                  "children": [
+                   {
+                    "type": "StatusRow",
+                    "props": {
+                     "message": {
+                      "t": "image.error.batch"
+                     },
+                     "tone": "danger",
+                     "icon": "error"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "set": "local.last",
+                      "to": ""
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.choose"
+                     },
+                     "variant": "secondary",
+                     "size": "s"
+                    }
+                   }
+                  ],
+                  "when": {
+                   "expr": {
+                    "==": [
+                     {
+                      "get": "local.last"
+                     },
+                     "batch"
+                    ]
+                   }
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "image": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Center",
+                "props": {
+                 "maxWidth": "measure"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "padding": "l"
+                  },
+                  "children": [
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "image.mock.para1"
+                     },
+                     "personal": true
+                    }
+                   },
+                   {
+                    "type": "Inline",
+                    "props": {
+                     "gap": "xs",
+                     "align": "start",
+                     "justify": "end"
+                    },
+                    "children": [
+                     {
+                      "switch": {
+                       "get": "local.mode"
+                      },
+                      "cases": {
+                       "column": {
+                        "switch": {
+                         "get": "local.rounded"
+                        },
+                        "cases": {
+                         "true": {
+                          "switch": {
+                           "get": "local.fit"
+                          },
+                          "cases": {
+                           "true": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.columnR1F1"
+                             }
+                            }
+                           },
+                           "false": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.columnR1F0"
+                             }
+                            }
+                           }
+                          }
+                         },
+                         "false": {
+                          "switch": {
+                           "get": "local.fit"
+                          },
+                          "cases": {
+                           "true": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.columnR0F1"
+                             }
+                            }
+                           },
+                           "false": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.columnR0F0"
+                             }
+                            }
+                           }
+                          }
+                         }
+                        }
+                       },
+                       "wide": {
+                        "switch": {
+                         "get": "local.rounded"
+                        },
+                        "cases": {
+                         "true": {
+                          "switch": {
+                           "get": "local.fit"
+                          },
+                          "cases": {
+                           "true": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.wideR1F1"
+                             }
+                            }
+                           },
+                           "false": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.wideR1F0"
+                             }
+                            }
+                           }
+                          }
+                         },
+                         "false": {
+                          "switch": {
+                           "get": "local.fit"
+                          },
+                          "cases": {
+                           "true": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.wideR0F1"
+                             }
+                            }
+                           },
+                           "false": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.wideR0F0"
+                             }
+                            }
+                           }
+                          }
+                         }
+                        }
+                       },
+                       "actual": {
+                        "switch": {
+                         "get": "local.rounded"
+                        },
+                        "cases": {
+                         "true": {
+                          "switch": {
+                           "get": "local.fit"
+                          },
+                          "cases": {
+                           "true": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.actualR1F1"
+                             }
+                            }
+                           },
+                           "false": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.actualR1F0"
+                             }
+                            }
+                           }
+                          }
+                         },
+                         "false": {
+                          "switch": {
+                           "get": "local.fit"
+                          },
+                          "cases": {
+                           "true": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.actualR0F1"
+                             }
+                            }
+                           },
+                           "false": {
+                            "type": "MenuButton",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.mode",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "in": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    [
+                                     "column",
+                                     "wide",
+                                     "actual"
+                                    ]
+                                   ]
+                                  },
+                                  {
+                                   "get": "event.id"
+                                  },
+                                  {
+                                   "get": "local.mode"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.rounded",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "rounded"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.rounded"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.rounded"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.fit",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "fit"
+                                   ]
+                                  },
+                                  {
+                                   "!": [
+                                    {
+                                     "get": "local.fit"
+                                    }
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.fit"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.captioned",
+                               "to": {
+                                "expr": {
+                                 "or": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "caption"
+                                   ]
+                                  },
+                                  {
+                                   "get": "local.captioned"
+                                  }
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.step",
+                               "to": {
+                                "expr": {
+                                 "if": [
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "describe"
+                                   ]
+                                  },
+                                  "describe",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "auto"
+                                   ]
+                                  },
+                                  "ai",
+                                  {
+                                   "==": [
+                                    {
+                                     "get": "event.id"
+                                    },
+                                    "edit"
+                                   ]
+                                  },
+                                  "crop",
+                                  "image"
+                                 ]
+                                }
+                               }
+                              },
+                              {
+                               "set": "local.last",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "image.menu"
+                             },
+                             "icon": "more",
+                             "sections": {
+                              "get": "vm.mocks.imageMenus.actualR0F0"
+                             }
+                            }
+                           }
+                          }
+                         }
+                        }
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   {
+                    "switch": {
+                     "get": "local.sample"
+                    },
+                    "cases": {
+                     "harbour": {
+                      "type": "ImageFrame",
+                      "props": {
+                       "src": {
+                        "get": "vm.mocks.harbourSrc"
+                       },
+                       "mode": {
+                        "get": "local.mode"
+                       },
+                       "fitHeight": {
+                        "get": "local.fit"
+                       },
+                       "rounded": {
+                        "get": "local.rounded"
+                       },
+                       "selected": true,
+                       "hint": {
+                        "t": "image.noDescription"
+                       }
+                      }
+                     },
+                     "tall": {
+                      "type": "ImageFrame",
+                      "props": {
+                       "src": {
+                        "get": "vm.mocks.tallSrc"
+                       },
+                       "mode": {
+                        "get": "local.mode"
+                       },
+                       "fitHeight": {
+                        "get": "local.fit"
+                       },
+                       "rounded": {
+                        "get": "local.rounded"
+                       },
+                       "selected": true,
+                       "hint": {
+                        "t": "image.noDescription"
+                       }
+                      }
+                     },
+                     "small": {
+                      "type": "ImageFrame",
+                      "props": {
+                       "src": {
+                        "get": "vm.mocks.smallSrc"
+                       },
+                       "mode": {
+                        "get": "local.mode"
+                       },
+                       "fitHeight": {
+                        "get": "local.fit"
+                       },
+                       "rounded": {
+                        "get": "local.rounded"
+                       },
+                       "selected": true,
+                       "hint": {
+                        "t": "image.noDescription"
+                       }
+                      }
+                     },
+                     "clear": {
+                      "type": "ImageFrame",
+                      "props": {
+                       "src": {
+                        "get": "vm.mocks.clearSrc"
+                       },
+                       "mode": {
+                        "get": "local.mode"
+                       },
+                       "fitHeight": {
+                        "get": "local.fit"
+                       },
+                       "rounded": {
+                        "get": "local.rounded"
+                       },
+                       "selected": true,
+                       "hint": {
+                        "t": "image.noDescription"
+                       }
+                      }
+                     }
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "get": "vm.mocks.imageCaption"
+                     },
+                     "role": "caption",
+                     "tone": "muted",
+                     "personal": true
+                    },
+                    "when": {
+                     "get": "local.captioned"
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "image.mock.para2"
+                     },
+                     "personal": true
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Surface",
+            "props": {
+             "variant": "raised",
+             "shape": "popover",
+             "padding": "l"
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "image.mock.tryThese"
+                 },
+                 "role": "label"
+                }
+               },
+               {
+                "type": "SegmentedControl",
+                "props": {
+                 "label": {
+                  "t": "image.mock.display"
+                 },
+                 "options": {
+                  "get": "vm.mocks.modes"
+                 },
+                 "value": {
+                  "bind": "local.mode"
+                 }
+                }
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "wrap": true
+                },
+                "children": [
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.rounded",
+                    "to": {
+                     "expr": {
+                      "!": [
+                       {
+                        "get": "local.rounded"
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.rounded"
+                   },
+                   "variant": "subtle",
+                   "size": "s",
+                   "toggle": true,
+                   "pressed": {
+                    "get": "local.rounded"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.fit",
+                    "to": {
+                     "expr": {
+                      "!": [
+                       {
+                        "get": "local.fit"
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.fit"
+                   },
+                   "variant": "subtle",
+                   "size": "s",
+                   "toggle": true,
+                   "pressed": {
+                    "get": "local.fit"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.captioned",
+                    "to": true
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.mock.caption"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "wrap": true,
+                 "align": "center"
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.mock.sample"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.sample",
+                    "to": "harbour"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.mock.landscape"
+                   },
+                   "variant": "subtle",
+                   "size": "s",
+                   "toggle": true,
+                   "pressed": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.sample"
+                      },
+                      "harbour"
+                     ]
+                    }
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.sample",
+                    "to": "tall"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.mock.tall"
+                   },
+                   "variant": "subtle",
+                   "size": "s",
+                   "toggle": true,
+                   "pressed": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.sample"
+                      },
+                      "tall"
+                     ]
+                    }
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.sample",
+                    "to": "small"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.mock.small"
+                   },
+                   "variant": "subtle",
+                   "size": "s",
+                   "toggle": true,
+                   "pressed": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.sample"
+                      },
+                      "small"
+                     ]
+                    }
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.sample",
+                    "to": "clear"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.mock.transparent"
+                   },
+                   "variant": "subtle",
+                   "size": "s",
+                   "toggle": true,
+                   "pressed": {
+                    "expr": {
+                     "==": [
+                      {
+                       "get": "local.sample"
+                      },
+                      "clear"
+                     ]
+                    }
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "image.mock.chose",
+                  "args": {
+                   "id": {
+                    "get": "local.last"
+                   }
+                  }
+                 },
+                 "role": "caption",
+                 "tone": "muted"
+                },
+                "when": {
+                 "expr": {
+                  "!=": [
+                   {
+                    "get": "local.last"
+                   },
+                   ""
+                  ]
+                 }
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "describe": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Center",
+                "props": {
+                 "maxWidth": "measure"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "padding": "l"
+                  },
+                  "children": [
+                   {
+                    "type": "ImageFrame",
+                    "props": {
+                     "src": {
+                      "get": "vm.mocks.harbourSrc"
+                     },
+                     "selected": true
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "image"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "m",
+             "height": "content",
+             "label": {
+              "t": "image.describe.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Heading",
+               "props": {
+                "value": {
+                 "t": "image.describe.title"
+                },
+                "level": "2"
+               }
+              }
+             ],
+             "footer": [
+              {
+               "type": "Inline",
+               "props": {
+                "gap": "s",
+                "justify": "end"
+               },
+               "children": [
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": {
+                   "set": "local.step",
+                   "to": "image"
+                  }
+                 },
+                 "props": {
+                  "label": {
+                   "t": "project.cancel"
+                  },
+                  "variant": "secondary"
+                 }
+                },
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": [
+                   {
+                    "set": "local.described",
+                    "to": true
+                   },
+                   {
+                    "set": "local.captioned",
+                    "to": true
+                   },
+                   {
+                    "set": "local.step",
+                    "to": "image"
+                   }
+                  ]
+                 },
+                 "props": {
+                  "label": {
+                   "t": "image.describe.save"
+                  },
+                  "variant": "primary"
+                 }
+                }
+               ]
+              }
+             ]
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "m",
+                 "align": "start"
+                },
+                "children": [
+                 {
+                  "type": "ImageFrame",
+                  "props": {
+                   "src": {
+                    "get": "vm.mocks.harbourSrc"
+                   },
+                   "mode": "thumb"
+                  }
+                 },
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "grow": true
+                  },
+                  "children": [
+                   {
+                    "type": "TextField",
+                    "props": {
+                     "label": {
+                      "t": "image.describe.alt"
+                     },
+                     "value": {
+                      "get": "vm.mocks.imageAlt"
+                     },
+                     "multiline": true,
+                     "compactMultiline": true,
+                     "autoFocus": true,
+                     "description": {
+                      "t": "image.describe.altHint"
+                     }
+                    }
+                   },
+                   {
+                    "type": "TextField",
+                    "props": {
+                     "label": {
+                      "t": "image.describe.caption"
+                     },
+                     "value": {
+                      "get": "vm.mocks.imageCaption"
+                     },
+                     "description": {
+                      "t": "image.describe.captionHint"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "bulk": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Center",
+                "props": {
+                 "maxWidth": "measure"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "padding": "l"
+                  },
+                  "children": [
+                   {
+                    "type": "Surface",
+                    "props": {
+                     "variant": "sunken",
+                     "shape": "control",
+                     "padding": "s"
+                    },
+                    "children": [
+                     {
+                      "type": "Stack",
+                      "props": {
+                       "gap": "m"
+                      },
+                      "children": [
+                       {
+                        "type": "Text",
+                        "props": {
+                         "value": {
+                          "t": "image.mock.para1"
+                         },
+                         "personal": true
+                        }
+                       },
+                       {
+                        "type": "ImageFrame",
+                        "props": {
+                         "src": {
+                          "get": "vm.mocks.harbourSrc"
+                         },
+                         "selected": true,
+                         "rounded": {
+                          "get": "local.bulkRounded"
+                         }
+                        }
+                       },
+                       {
+                        "type": "Text",
+                        "props": {
+                         "value": {
+                          "t": "image.mock.para2"
+                         },
+                         "personal": true
+                        }
+                       },
+                       {
+                        "type": "ImageFrame",
+                        "props": {
+                         "src": {
+                          "get": "vm.mocks.smallSrc"
+                         },
+                         "mode": "actual",
+                         "selected": true,
+                         "rounded": true
+                        }
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "Surface",
+            "props": {
+             "variant": "raised",
+             "shape": "popover",
+             "padding": "l"
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "s"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center"
+                },
+                "children": [
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.bulk.selected"
+                   },
+                   "role": "label"
+                  }
+                 },
+                 {
+                  "switch": {
+                   "get": "local.bulkRounded"
+                  },
+                  "cases": {
+                   "false": {
+                    "type": "MenuButton",
+                    "on": {
+                     "action": {
+                      "set": "local.bulkRounded",
+                      "to": true
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.bulk.menu"
+                     },
+                     "variant": "text",
+                     "text": {
+                      "get": "vm.mocks.bulkLabel"
+                     },
+                     "sections": {
+                      "get": "vm.mocks.bulkMenu"
+                     }
+                    }
+                   },
+                   "true": {
+                    "type": "MenuButton",
+                    "on": {
+                     "action": {
+                      "set": "local.bulkRounded",
+                      "to": false
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "image.bulk.menu"
+                     },
+                     "variant": "text",
+                     "text": {
+                      "get": "vm.mocks.bulkLabel"
+                     },
+                     "sections": {
+                      "get": "vm.mocks.bulkMenuOn"
+                     }
+                    }
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "image.bulk.hint"
+                 },
+                 "role": "caption",
+                 "tone": "muted"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         "crop": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Center",
+                "props": {
+                 "maxWidth": "measure"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "padding": "l"
+                  },
+                  "children": [
+                   {
+                    "type": "ImageFrame",
+                    "props": {
+                     "src": {
+                      "get": "vm.mocks.harbourSrc"
+                     },
+                     "selected": true,
+                     "rotation": {
+                      "expr": {
+                       "if": [
+                        {
+                         "get": "local.saved"
+                        },
+                        {
+                         "get": "local.rot"
+                        },
+                        "0"
+                       ]
+                      }
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "image"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "l",
+             "height": "stable",
+             "label": {
+              "t": "image.edit.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Heading",
+               "props": {
+                "value": {
+                 "t": "image.edit.title"
+                },
+                "level": "2"
+               }
+              }
+             ],
+             "footer": [
+              {
+               "type": "Inline",
+               "props": {
+                "gap": "s",
+                "align": "center",
+                "justify": "between"
+               },
+               "children": [
+                {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "xs",
+                  "align": "center"
+                 },
+                 "children": [
+                  {
+                   "type": "Icon",
+                   "props": {
+                    "name": "warning",
+                    "size": "s"
+                   }
+                  },
+                  {
+                   "type": "Text",
+                   "props": {
+                    "value": {
+                     "t": "image.edit.warning"
+                    },
+                    "role": "caption"
+                   }
+                  }
+                 ]
+                },
+                {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.rot",
+                      "to": "0"
+                     },
+                     {
+                      "set": "local.step",
+                      "to": "image"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.saved",
+                     "to": true
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "image.edit.save"
+                    },
+                    "variant": "danger"
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "justify": "center"
+                },
+                "children": [
+                 {
+                  "type": "ImageFrame",
+                  "props": {
+                   "src": {
+                    "get": "vm.mocks.harbourSrc"
+                   },
+                   "mode": "column",
+                   "crop": true,
+                   "rotation": {
+                    "get": "local.rot"
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "wrap": true,
+                 "align": "end"
+                },
+                "children": [
+                 {
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "image.edit.left"
+                   },
+                   "value": {
+                    "get": "vm.mocks.cropLeft"
+                   },
+                   "autoFocus": true
+                  }
+                 },
+                 {
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "image.edit.top"
+                   },
+                   "value": {
+                    "get": "vm.mocks.cropTop"
+                   }
+                  }
+                 },
+                 {
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "image.edit.width"
+                   },
+                   "value": {
+                    "get": "vm.mocks.cropWidth"
+                   }
+                  }
+                 },
+                 {
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "image.edit.height"
+                   },
+                   "value": {
+                    "get": "vm.mocks.cropHeight"
+                   }
+                  }
+                 }
+                ]
+               },
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center"
+                },
+                "children": [
+                 {
+                  "type": "IconButton",
+                  "on": {
+                   "press": {
+                    "set": "local.rot",
+                    "to": {
+                     "expr": {
+                      "if": [
+                       {
+                        "==": [
+                         {
+                          "get": "local.rot"
+                         },
+                         "0"
+                        ]
+                       },
+                       "270",
+                       {
+                        "==": [
+                         {
+                          "get": "local.rot"
+                         },
+                         "270"
+                        ]
+                       },
+                       "180",
+                       {
+                        "==": [
+                         {
+                          "get": "local.rot"
+                         },
+                         "180"
+                        ]
+                       },
+                       "90",
+                       "0"
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  "props": {
+                   "icon": "undo",
+                   "label": {
+                    "t": "image.edit.rotateLeft"
+                   }
+                  }
+                 },
+                 {
+                  "type": "IconButton",
+                  "on": {
+                   "press": {
+                    "set": "local.rot",
+                    "to": {
+                     "expr": {
+                      "if": [
+                       {
+                        "==": [
+                         {
+                          "get": "local.rot"
+                         },
+                         "0"
+                        ]
+                       },
+                       "90",
+                       {
+                        "==": [
+                         {
+                          "get": "local.rot"
+                         },
+                         "90"
+                        ]
+                       },
+                       "180",
+                       {
+                        "==": [
+                         {
+                          "get": "local.rot"
+                         },
+                         "180"
+                        ]
+                       },
+                       "270",
+                       "0"
+                      ]
+                     }
+                    }
+                   }
+                  },
+                  "props": {
+                   "icon": "rotate",
+                   "label": {
+                    "t": "image.edit.rotateRight"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.rot",
+                    "to": "0"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "image.edit.reset"
+                   },
+                   "variant": "subtle",
+                   "size": "s"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ],
+            "when": {
+             "expr": {
+              "!": [
+               {
+                "get": "local.saved"
+               }
+              ]
+             }
+            }
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "s"
+            },
+            "children": [
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "image.edit.saved"
+               },
+               "tone": "success",
+               "icon": "check"
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": [
+                {
+                 "set": "local.saved",
+                 "to": false
+                },
+                {
+                 "set": "local.rot",
+                 "to": "0"
+                }
+               ]
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "secondary",
+               "size": "s"
+              }
+             }
+            ],
+            "when": {
+             "get": "local.saved"
+            }
+           }
+          ]
+         },
+         "ai": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Center",
+                "props": {
+                 "maxWidth": "measure"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "padding": "l"
+                  },
+                  "children": [
+                   {
+                    "type": "ImageFrame",
+                    "props": {
+                     "src": {
+                      "get": "vm.mocks.harbourSrc"
+                     },
+                     "selected": true
+                    }
+                   },
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "get": "vm.mocks.aiCaption"
+                     },
+                     "role": "caption",
+                     "tone": "muted",
+                     "personal": true
+                    },
+                    "when": {
+                     "get": "local.captioned"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "image"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "m",
+             "height": "content",
+             "label": {
+              "t": "image.ai.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Heading",
+               "props": {
+                "value": {
+                 "t": "image.ai.title"
+                },
+                "level": "2"
+               }
+              }
+             ],
+             "footer": [
+              {
+               "switch": {
+                "get": "local.last"
+               },
+               "cases": {
+                "": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.step",
+                     "to": "image"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.last",
+                     "to": "writing"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "image.ai.generate"
+                    },
+                    "variant": "primary",
+                    "icon": "sparkle"
+                   }
+                  }
+                 ]
+                },
+                "writing": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.last",
+                     "to": ""
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "image.ai.stop"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.last",
+                     "to": "review"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.mock.ready"
+                    },
+                    "variant": "subtle"
+                   }
+                  }
+                 ]
+                },
+                "review": {
+                 "type": "Inline",
+                 "props": {
+                  "gap": "s",
+                  "justify": "end"
+                 },
+                 "children": [
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.last",
+                     "to": "writing"
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "image.ai.again"
+                    },
+                    "variant": "subtle"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": [
+                     {
+                      "set": "local.last",
+                      "to": ""
+                     },
+                     {
+                      "set": "local.step",
+                      "to": "image"
+                     }
+                    ]
+                   },
+                   "props": {
+                    "label": {
+                     "t": "project.cancel"
+                    },
+                    "variant": "secondary"
+                   }
+                  },
+                  {
+                   "type": "Button",
+                   "on": {
+                    "press": {
+                     "set": "local.captioned",
+                     "to": true
+                    }
+                   },
+                   "props": {
+                    "label": {
+                     "t": "image.ai.use"
+                    },
+                    "variant": "primary"
+                   }
+                  }
+                 ]
+                }
+               }
+              }
+             ]
+            },
+            "children": [
+             {
+              "switch": {
+               "get": "local.last"
+              },
+              "cases": {
+               "": {
+                "type": "Stack",
+                "props": {
+                 "gap": "m"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "start"
+                  },
+                  "children": [
+                   {
+                    "type": "ImageFrame",
+                    "props": {
+                     "src": {
+                      "get": "vm.mocks.harbourSrc"
+                     },
+                     "mode": "thumb"
+                    }
+                   },
+                   {
+                    "type": "ItemCard",
+                    "props": {
+                     "title": {
+                      "get": "vm.mocks.visionName"
+                     },
+                     "detail": {
+                      "get": "vm.mocks.visionModel"
+                     },
+                     "badge": {
+                      "get": "vm.mocks.visionWhere"
+                     },
+                     "icon": "aiOllama"
+                    },
+                    "children": [
+                     {
+                      "type": "MenuButton",
+                      "props": {
+                       "label": {
+                        "t": "image.ai.integration"
+                       },
+                       "variant": "select",
+                       "text": {
+                        "get": "vm.mocks.visionName"
+                       },
+                       "sections": {
+                        "get": "vm.mocks.integrations"
+                       }
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "image.ai.instruction"
+                   },
+                   "value": {
+                    "get": "vm.mocks.captionInstruction"
+                   },
+                   "multiline": true,
+                   "compactMultiline": true,
+                   "autoFocus": true
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.ai.sends"
+                   },
+                   "role": "caption",
+                   "tone": "muted"
+                  }
+                 }
+                ]
+               },
+               "writing": {
+                "type": "Inline",
+                "props": {
+                 "gap": "m",
+                 "align": "center"
+                },
+                "children": [
+                 {
+                  "type": "Spinner",
+                  "props": {
+                   "label": {
+                    "t": "image.ai.writing"
+                   }
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "image.ai.writing"
+                   },
+                   "announce": true
+                  }
+                 }
+                ]
+               },
+               "review": {
+                "type": "Stack",
+                "props": {
+                 "gap": "m"
+                },
+                "children": [
+                 {
+                  "type": "Inline",
+                  "props": {
+                   "gap": "m",
+                   "align": "start"
+                  },
+                  "children": [
+                   {
+                    "type": "ImageFrame",
+                    "props": {
+                     "src": {
+                      "get": "vm.mocks.harbourSrc"
+                     },
+                     "mode": "thumb"
+                    }
+                   },
+                   {
+                    "type": "TextField",
+                    "props": {
+                     "label": {
+                      "t": "image.ai.result"
+                     },
+                     "value": {
+                      "get": "vm.mocks.aiCaption"
+                     },
+                     "multiline": true,
+                     "compactMultiline": true,
+                     "autoFocus": true,
+                     "description": {
+                      "t": "image.ai.resultHint"
+                     }
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              }
+             }
+            ],
+            "when": {
+             "expr": {
+              "!": [
+               {
+                "get": "local.captioned"
+               }
+              ]
+             }
+            }
+           },
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "s"
+            },
+            "children": [
+             {
+              "type": "StatusRow",
+              "props": {
+               "message": {
+                "t": "image.ai.used"
+               },
+               "tone": "success",
+               "icon": "check"
+              }
+             },
+             {
+              "type": "Button",
+              "on": {
+               "press": [
+                {
+                 "set": "local.captioned",
+                 "to": false
+                },
+                {
+                 "set": "local.last",
+                 "to": ""
+                }
+               ]
+              },
+              "props": {
+               "label": {
+                "t": "project.mock.again"
+               },
+               "variant": "secondary",
+               "size": "s"
+              }
+             }
+            ],
+            "when": {
+             "get": "local.captioned"
+            }
+           }
+          ]
+         },
+         "aiNoVision": {
+          "type": "Stack",
+          "props": {
+           "gap": "m"
+          },
+          "children": [
+           {
+            "type": "ProjectScope",
+            "props": {
+             "part": "window",
+             "accent": "teal",
+             "appearance": "follow",
+             "grow": true
+            },
+            "children": [
+             {
+              "type": "ProjectScope",
+              "props": {
+               "part": "band"
+              },
+              "children": [
+               {
+                "type": "Inline",
+                "props": {
+                 "gap": "s",
+                 "align": "center",
+                 "padding": "s"
+                },
+                "children": [
+                 {
+                  "type": "ProjectMark",
+                  "props": {
+                   "logo": "book",
+                   "accent": "teal",
+                   "size": "s"
+                  }
+                 },
+                 {
+                  "type": "Text",
+                  "props": {
+                   "value": {
+                    "t": "project.window.title",
+                    "args": {
+                     "note": {
+                      "t": "project.mock.noteChapter"
+                     },
+                     "project": {
+                      "t": "project.mock.bookName"
+                     }
+                    }
+                   },
+                   "role": "caption",
+                   "lines": "one"
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m",
+               "padding": "l",
+               "grow": true
+              },
+              "children": [
+               {
+                "type": "Center",
+                "props": {
+                 "maxWidth": "measure"
+                },
+                "children": [
+                 {
+                  "type": "Stack",
+                  "props": {
+                   "gap": "m",
+                   "padding": "l"
+                  },
+                  "children": [
+                   {
+                    "type": "ImageFrame",
+                    "props": {
+                     "src": {
+                      "get": "vm.mocks.harbourSrc"
+                     },
+                     "selected": true
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "type": "DialogPanel",
+            "on": {
+             "openChange": {
+              "set": "local.step",
+              "to": "image"
+             }
+            },
+            "props": {
+             "open": true,
+             "size": "m",
+             "height": "content",
+             "label": {
+              "t": "image.ai.title"
+             }
+            },
+            "slots": {
+             "header": [
+              {
+               "type": "Heading",
+               "props": {
+                "value": {
+                 "t": "image.ai.title"
+                },
+                "level": "2"
+               }
+              }
+             ],
+             "footer": [
+              {
+               "type": "Inline",
+               "props": {
+                "gap": "s",
+                "justify": "end"
+               },
+               "children": [
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": [
+                   {
+                    "set": "local.captioned",
+                    "to": false
+                   },
+                   {
+                    "set": "local.step",
+                    "to": "image"
+                   }
+                  ]
+                 },
+                 "props": {
+                  "label": {
+                   "t": "image.ai.write"
+                  },
+                  "variant": "secondary"
+                 }
+                },
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": [
+                   {
+                    "set": "local.last",
+                    "to": ""
+                   },
+                   {
+                    "set": "local.step",
+                    "to": "ai"
+                   }
+                  ]
+                 },
+                 "props": {
+                  "label": {
+                   "t": "image.ai.choose"
+                  },
+                  "variant": "primary"
+                 }
+                }
+               ]
+              }
+             ]
+            },
+            "children": [
+             {
+              "type": "Stack",
+              "props": {
+               "gap": "m"
+              },
+              "children": [
+               {
+                "type": "StatusRow",
+                "props": {
+                 "message": {
+                  "t": "image.ai.noVision"
+                 },
+                 "tone": "warning",
+                 "icon": "warning"
+                }
+               },
+               {
+                "type": "Text",
+                "props": {
+                 "value": {
+                  "t": "image.ai.noVisionKeep"
+                 },
+                 "role": "caption",
+                 "tone": "muted"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

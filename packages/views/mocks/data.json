@@ -889,5 +889,1506 @@
    ]
   }
  ],
- "plainText": "Books to read\n- The Old Man and the Sea\n- Moby-Dick\n- A Room of One's Own"
+ "plainText": "Books to read\n- The Old Man and the Sea\n- Moby-Dick\n- A Room of One's Own",
+ "harbourSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='700' viewBox='0 0 1200 700'><rect width='1200' height='700' fill='%23cfe3ee'/><rect y='420' width='1200' height='280' fill='%234f7f99'/><circle cx='940' cy='160' r='70' fill='%23f6d27a'/><path d='M200 420 L320 300 L440 420 Z' fill='%237a8f6a'/><path d='M380 420 L560 240 L740 420 Z' fill='%235f7552'/><rect x='560' y='470' width='160' height='34' rx='6' fill='%23e9ecef'/><path d='M640 470 L640 380 L700 460 Z' fill='%23fff'/><rect x='820' y='520' width='120' height='26' rx='6' fill='%23d64545'/></svg>",
+ "tallSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='1500' viewBox='0 0 500 1500'><rect width='500' height='1500' fill='%23e8e2d4'/><rect x='200' y='120' width='100' height='1260' fill='%23b8a98a'/><circle cx='250' cy='110' r='60' fill='%23d64545'/><rect x='120' y='1380' width='260' height='60' fill='%236b5d45'/></svg>",
+ "smallSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='96' viewBox='0 0 160 96'><rect width='160' height='96' rx='8' fill='%23264653'/><text x='80' y='58' font-size='28' text-anchor='middle' fill='%23f2f2f2' font-family='sans-serif'>Map</text></svg>",
+ "clearSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='360' viewBox='0 0 600 360'><circle cx='300' cy='180' r='140' fill='%231f2937'/><path d='M230 180 L290 240 L380 130' stroke='%23f2f2f2' stroke-width='24' fill='none'/></svg>",
+ "imageAlt": "Boats moored in a quiet harbour below two green hills",
+ "imageCaption": "The harbour at dawn, before the boats went out.",
+ "aiCaption": "Small boats rest in a calm harbour beneath green hills on a clear morning.",
+ "captionInstruction": "Write a short caption for this image.",
+ "imageMenu": [
+  {
+   "id": "clip",
+   "items": [
+    {
+     "id": "cut",
+     "label": "Cut",
+     "shortcut": "Ctrl+X"
+    },
+    {
+     "id": "copy",
+     "label": "Copy",
+     "shortcut": "Ctrl+C",
+     "icon": "copy"
+    }
+   ]
+  },
+  {
+   "id": "file",
+   "items": [
+    {
+     "id": "replace",
+     "label": "Replace image…",
+     "icon": "image"
+    },
+    {
+     "id": "save",
+     "label": "Save image…",
+     "icon": "save"
+    }
+   ]
+  },
+  {
+   "id": "words",
+   "items": [
+    {
+     "id": "describe",
+     "label": "Edit description…",
+     "icon": "description"
+    },
+    {
+     "id": "caption",
+     "label": "Add caption",
+     "icon": "caption"
+    },
+    {
+     "id": "auto",
+     "label": "Auto caption…",
+     "icon": "sparkle"
+    }
+   ]
+  },
+  {
+   "id": "pixels",
+   "items": [
+    {
+     "id": "edit",
+     "label": "Edit image…",
+     "icon": "crop"
+    }
+   ]
+  },
+  {
+   "id": "mode",
+   "label": "Display",
+   "items": [
+    {
+     "id": "column",
+     "label": "Column",
+     "checked": true
+    },
+    {
+     "id": "wide",
+     "label": "Wide",
+     "checked": false
+    },
+    {
+     "id": "actual",
+     "label": "Actual size",
+     "checked": false
+    }
+   ]
+  },
+  {
+   "id": "look",
+   "items": [
+    {
+     "id": "rounded",
+     "label": "Rounded corners",
+     "checked": false
+    },
+    {
+     "id": "fit",
+     "label": "Fit height",
+     "checked": true
+    }
+   ]
+  }
+ ],
+ "bulkMenu": [
+  {
+   "id": "images",
+   "label": "Images · 2 selected",
+   "items": [
+    {
+     "id": "rounded",
+     "label": "Rounded corners · Mixed",
+     "checked": false
+    },
+    {
+     "id": "fit",
+     "label": "Fit height",
+     "checked": true
+    }
+   ]
+  }
+ ],
+ "bulkMenuOn": [
+  {
+   "id": "images",
+   "label": "Images · 2 selected",
+   "items": [
+    {
+     "id": "rounded",
+     "label": "Rounded corners",
+     "checked": true
+    },
+    {
+     "id": "fit",
+     "label": "Fit height",
+     "checked": true
+    }
+   ]
+  }
+ ],
+ "modes": [
+  {
+   "id": "column",
+   "label": "Column"
+  },
+  {
+   "id": "wide",
+   "label": "Wide"
+  },
+  {
+   "id": "actual",
+   "label": "Actual size"
+  }
+ ],
+ "integrations": [
+  {
+   "id": "i",
+   "items": [
+    {
+     "id": "ollama",
+     "label": "Ollama · llava · This computer",
+     "checked": true
+    },
+    {
+     "id": "claude",
+     "label": "Claude · Sonnet · Cloud"
+    }
+   ]
+  }
+ ],
+ "visionName": "Ollama",
+ "visionModel": "llava",
+ "visionWhere": "This computer",
+ "cropLeft": "120",
+ "cropTop": "70",
+ "cropWidth": "960",
+ "cropHeight": "560",
+ "bulkLabel": "Images",
+ "imageMenus": {
+  "columnR1F1": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": true
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "columnR1F0": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": true
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "columnR0F1": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": true
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "columnR0F0": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": true
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "wideR1F1": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": true
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "wideR1F0": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": true
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "wideR0F1": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": true
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "wideR0F0": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": true
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": false
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "actualR1F1": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": true
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "actualR1F0": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": true
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": true
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": false
+     }
+    ]
+   }
+  ],
+  "actualR0F1": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": true
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": true
+     }
+    ]
+   }
+  ],
+  "actualR0F0": [
+   {
+    "id": "clip",
+    "items": [
+     {
+      "id": "cut",
+      "label": "Cut",
+      "shortcut": "Ctrl+X"
+     },
+     {
+      "id": "copy",
+      "label": "Copy",
+      "shortcut": "Ctrl+C",
+      "icon": "copy"
+     }
+    ]
+   },
+   {
+    "id": "file",
+    "items": [
+     {
+      "id": "replace",
+      "label": "Replace image…",
+      "icon": "image"
+     },
+     {
+      "id": "save",
+      "label": "Save image…",
+      "icon": "save"
+     }
+    ]
+   },
+   {
+    "id": "words",
+    "items": [
+     {
+      "id": "describe",
+      "label": "Edit description…",
+      "icon": "description"
+     },
+     {
+      "id": "caption",
+      "label": "Add caption",
+      "icon": "caption"
+     },
+     {
+      "id": "auto",
+      "label": "Auto caption…",
+      "icon": "sparkle"
+     }
+    ]
+   },
+   {
+    "id": "pixels",
+    "items": [
+     {
+      "id": "edit",
+      "label": "Edit image…",
+      "icon": "crop"
+     }
+    ]
+   },
+   {
+    "id": "mode",
+    "label": "Display",
+    "items": [
+     {
+      "id": "column",
+      "label": "Column",
+      "checked": false
+     },
+     {
+      "id": "wide",
+      "label": "Wide",
+      "checked": false
+     },
+     {
+      "id": "actual",
+      "label": "Actual size",
+      "checked": true
+     }
+    ]
+   },
+   {
+    "id": "look",
+    "items": [
+     {
+      "id": "rounded",
+      "label": "Rounded corners",
+      "checked": false
+     },
+     {
+      "id": "fit",
+      "label": "Fit height",
+      "checked": false
+     }
+    ]
+   }
+  ]
+ },
+ "settingsBefore": [
+  {
+   "id": "h",
+   "label": "Workspace",
+   "header": true
+  },
+  {
+   "id": "name",
+   "label": "Name",
+   "state": "notes"
+  },
+  {
+   "id": "folder",
+   "label": "Folder",
+   "state": "Documents › Focus Notes"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "state": "2 people"
+  },
+  {
+   "id": "publishing",
+   "label": "Publishing",
+   "state": "On"
+  }
+ ],
+ "settingsAfter": [
+  {
+   "id": "h",
+   "label": "Project",
+   "header": true
+  },
+  {
+   "id": "name",
+   "label": "Name",
+   "state": "Work"
+  },
+  {
+   "id": "folder",
+   "label": "Folder",
+   "state": "Documents › Focus Notes (unchanged)"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "state": "2 people"
+  },
+  {
+   "id": "sharing",
+   "label": "Sharing",
+   "state": "On · prabin.github.io/notes"
+  },
+  {
+   "id": "theme",
+   "label": "Site theme",
+   "state": "Paper"
+  },
+  {
+   "id": "github",
+   "label": "On GitHub",
+   "state": "prabin/notes-private"
+  }
+ ],
+ "writerName": "Ollama",
+ "writerModel": "llama3.2",
+ "writerWhere": "This computer",
+ "keysSubmit": [
+  "Ctrl",
+  "Enter"
+ ],
+ "keysSubmitSpoken": "Control Enter",
+ "keysSpot": [
+  "Ctrl",
+  "/"
+ ],
+ "keysSpotSpoken": "Control slash",
+ "rewrittenNote": "The harbour lay still that morning. Mara counted the boats twice, smiling, and wrote the number down before it could change.",
+ "writePrompt": "Three ideas for the next scene",
+ "writtenText": "1. A boat that wasn't there yesterday. 2. Mara's brother returns with no luggage. 3. The tide comes in an hour early.",
+ "spotQuery": "foc",
+ "spotFirst": "top:focus",
+ "spotResults": [
+  {
+   "id": "h:top",
+   "label": "Top hit",
+   "header": true
+  },
+  {
+   "id": "top:focus",
+   "label": "Focus mode",
+   "icon": "focus",
+   "state": "Off",
+   "shortcut": "Ctrl+Shift+D",
+   "highlights": [
+    [
+     0,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "h:notes",
+   "label": "Notes",
+   "header": true
+  },
+  {
+   "id": "notes:on-focus",
+   "label": "On focus",
+   "icon": "document",
+   "description": "Work · Root",
+   "highlights": [
+    [
+     3,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "h:actions",
+   "label": "Actions",
+   "header": true
+  },
+  {
+   "id": "actions:create",
+   "label": "Create note “foc”",
+   "icon": "add",
+   "shortcut": "Ctrl+N"
+  }
+ ]
 }

@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **73 registered contracts**: **46 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **74 registered contracts**: **47 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch (planned)</h2>
 
@@ -43,7 +43,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**73 registered contracts:** 46 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
+**74 registered contracts:** 47 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -89,6 +89,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ProgressBar | primitive | `rest` | 3 | None |
 | DatePicker | primitive | `rest`, `focused`, `open`, `invalid` | 3 | `focused`, `open` |
 | ProjectMark | primitive | `rest`, `selected` | 37 | None |
+| ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -220,6 +221,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **PillButton** | Implemented | `label` (required), event `press`. Muted caption text in a pill with no fill or border until pointed at or focused; full opacity, so it keeps AA contrast | Button | *Unlock* and the owner's name in the account pill (UI-12), *Use this app for yourself*, and *Read only · Copy to my notes* |
 | **ItemCard** | Implemented | `title` (required), `detail`, `badge`, `icon`, `avatar`, `initials`, `mark`, `size` m or l, `personal`, `label`, `busy`, `disabled`, `skeleton`, `autoFocus`; event `press`; a default slot for its actions. One thing shown rather than described: an account, a workspace, or an option (D-126, D-127); `cmp.itemCard.*` | Group, named by its label | The first run's account and workspace choices |
 | **AppMark** | Implemented | `size` m or l, `label`. The app icon drawn from the brand tokens, a dark tile in a dark theme (D-126, D-135); decorative unless labelled | Image | The full-window setup's hero |
+| **ImageFrame** | Implemented | `src` (a data URL the shell made), `alt`, `mode` column, wide, actual or thumb, `fitHeight` (on by default), `rounded`, `selected`, `hint` (No description), `crop` and `rotation` for Edit image. An inline image in the note's flow with a token backdrop behind transparency (IMG, D-300) | Image | Images in notes, Edit image, Auto caption (mocks, awaiting approval) |
 | **ProjectMark** | Implemented | `logo` one of 24 presets (Fluent geometry), `upload` (a sanitized SVG data URL in `src`) or `none` (`initials`); `accent` one of 12 presets or `app`; `plate` tint, neutral or solid; `size` s, m, l, xl or watermark; `selected`; pressable as a toggle in the logo and colour pickers. A project's identity (D-313); the watermark hides in more contrast, forced colours and reduced transparency; decorative unless labelled | Image, or toggle button | The title band, the Files heading, Projects, Settings → Project (mocks, awaiting approval) |
 | **StepMark** | Implemented | `icon` (required), `tone` neutral, accent, danger, or success, `size` hero or compact, `busy`, `label`. A setup step's icon in a large tile; while the step waits a ring turns around it, still with reduced motion (D-127, D-135, D-132); decorative unless labelled | Image | Setup steps, the backup card |
 | **StepDots** | Implemented | `current`, `total`, `label` (required). One dot per step, done steps filled, the current one longer (D-142); named as a whole ("Step 2 of 4") | Image | The first run |
