@@ -4,18 +4,13 @@
   "wideExtra": { "$type": "dimension", "$value": "{size.imageWideExtra}" },
   "thumb": { "$type": "dimension", "$value": "{size.imageThumb}" },
   "radius": { "$type": "dimension", "$value": "{radius.popover}", "$description": "Rounded corners, when chosen; square by default." },
-  "backdrop": { "$type": "color", "$value": "{color.surfaceSunken}", "$description": "Behind a transparent image, so it never vanishes in a dark theme." },
-  "selectedRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "selectedTint": { "$type": "color", "$value": "{color.selection}", "$description": "The editor's selection tint over a selected image, as over selected text (owner, 3 November): never a ring or frame." },
   "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },
-  "ringOffset": { "$type": "dimension", "$value": "{border.hairline}" },
   "cropLine": { "$type": "color", "$value": "{color.onAccent}" },
   "shadeReach": { "$type": "dimension", "$value": "{radius.round}", "$description": "How far the crop shade spreads: past any image edge (the frame clips it)." },
   "cropShade": { "$type": "color", "$value": "{color.scrim}" },
   "handle": { "$type": "dimension", "$value": "{size.hit}", "$description": "A crop handle's target (44 px with its ring)." },
   "handleFill": { "$type": "color", "$value": "{color.accent}" },
-  "hint": { "$type": "color", "$value": "{color.textMuted}" },
-  "hintSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
   "quarterScale": { "$type": "number", "$value": "{size.imageQuarterTurn}" },
-  "gap": { "$type": "dimension", "$value": "{space.xs}" },
-  "duration": { "$type": "duration", "$value": "{motion.micro}" }
+  "gap": { "$type": "dimension", "$value": "{space.xs}" }
 } } }

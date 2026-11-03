@@ -1271,7 +1271,7 @@
  "harbourSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='700' viewBox='0 0 1200 700'><rect width='1200' height='700' fill='%23cfe3ee'/><rect y='420' width='1200' height='280' fill='%234f7f99'/><circle cx='940' cy='160' r='70' fill='%23f6d27a'/><path d='M200 420 L320 300 L440 420 Z' fill='%237a8f6a'/><path d='M380 420 L560 240 L740 420 Z' fill='%235f7552'/><rect x='560' y='470' width='160' height='34' rx='6' fill='%23e9ecef'/><path d='M640 470 L640 380 L700 460 Z' fill='%23fff'/><rect x='820' y='520' width='120' height='26' rx='6' fill='%23d64545'/></svg>",
  "tallSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='1500' viewBox='0 0 500 1500'><rect width='500' height='1500' fill='%23e8e2d4'/><rect x='200' y='120' width='100' height='1260' fill='%23b8a98a'/><circle cx='250' cy='110' r='60' fill='%23d64545'/><rect x='120' y='1380' width='260' height='60' fill='%236b5d45'/></svg>",
  "smallSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='96' viewBox='0 0 160 96'><rect width='160' height='96' rx='8' fill='%23264653'/><text x='80' y='58' font-size='28' text-anchor='middle' fill='%23f2f2f2' font-family='sans-serif'>Map</text></svg>",
- "clearSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='360' viewBox='0 0 600 360'><circle cx='300' cy='180' r='140' fill='%231f2937'/><path d='M230 180 L290 240 L380 130' stroke='%23f2f2f2' stroke-width='24' fill='none'/></svg>",
+ "clearSrc": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='360' viewBox='0 0 600 360'><circle cx='300' cy='180' r='140' fill='%23e76f51'/><path d='M230 180 L290 240 L380 130' stroke='%23f2f2f2' stroke-width='24' fill='none'/></svg>",
  "imageAlt": "Boats moored in a quiet harbour below two green hills",
  "imageCaption": "The harbour at dawn, before the boats went out.",
  "aiCaption": "Small boats rest in a calm harbour beneath green hills on a clear morning.",
@@ -1323,7 +1323,7 @@
     },
     {
      "id": "auto",
-     "label": "Auto caption…",
+     "label": "Auto caption with AI…",
      "icon": "sparkle"
     }
    ]
@@ -1497,7 +1497,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -1596,7 +1596,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -1695,7 +1695,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -1794,7 +1794,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -1893,7 +1893,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -1992,7 +1992,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -2091,7 +2091,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -2190,7 +2190,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -2289,7 +2289,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -2388,7 +2388,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -2487,7 +2487,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]
@@ -2586,7 +2586,7 @@
      },
      {
       "id": "auto",
-      "label": "Auto caption…",
+      "label": "Auto caption with AI…",
       "icon": "sparkle"
      }
     ]

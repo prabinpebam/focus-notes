@@ -1,3 +1,4 @@
+import type { MouseEvent, KeyboardEvent } from "react";
 import * as s from "./ImageFrame.css.ts";
 
 export interface ImageFrameProps {
@@ -10,19 +11,30 @@ export interface ImageFrameProps {
   fitHeight?: boolean;
   rounded?: boolean;
   selected?: boolean;
-  /** An author-only line under the image. */
-  hint?: string;
   /** Edit image: the crop frame over the preview. */
   crop?: boolean;
   rotation?: keyof typeof s.rotation;
+  /** The image menu: right-click, or the context-menu key or Shift+F10 while it's selected (owner, 3 November). */
+  onContextMenu?: (p: { x: number; y: number }) => void;
 }
 
-/** An inline image: shown, never stretched or cropped by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, hint, crop = false, rotation = "0" }: ImageFrameProps) {
+/** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
+export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, crop = false, rotation = "0", onContextMenu }: ImageFrameProps) {
   const safe = src.startsWith("data:image/") ? src : undefined;
+  const menu = onContextMenu ? {
+    onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }); },
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
+        e.preventDefault();
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        onContextMenu({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      }
+    },
+    tabIndex: selected ? 0 : -1,
+  } : {};
   return (
     <span className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
-      <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined}>
+      <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
         {safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} /> : null}
         {crop ? (
           <span className={s.crop} aria-hidden="true">
@@ -30,7 +42,6 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
           </span>
         ) : null}
       </span>
-      {hint ? <span className={s.hint}>{hint}</span> : null}
     </span>
   );
 }
