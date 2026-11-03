@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { NodeViewRenderer } from "@focus-notes/editor";
+import { syncSelection, type NodeViewRenderer } from "@focus-notes/editor";
 import { Popover } from "react-aria-components";
 import { ImageFrame } from "../../primitives/ImageFrame/ImageFrame.tsx";
 import { CommandMenu } from "../../primitives/MenuButton/MenuButton.tsx";
@@ -21,15 +21,15 @@ export interface ImageViewOptions {
   action?: (payload: { id: string }) => void;
 }
 
-function ImageNode({ payload, selected, options, select }: { payload: ImagePayload; selected: boolean; options: ImageViewOptions; select: (focus?: boolean) => void }) {
+function ImageNode({ payload, selected, options, select, capture }: { payload: ImagePayload; selected: boolean; options: ImageViewOptions; select: (focus?: boolean) => void; capture: () => ImagePayload }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const boundary = useWindowBoundary();
   const source = options.sources.find((s) => s.id === payload.src);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  return <span ref={ref} onClick={() => select(true)}>
+  return <span ref={ref} onClick={() => select(true)} onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); } }}>
     {source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected}
-      onSize={setSize} onContextMenu={() => { select(); options.select?.({ ...payload, ...size }); setOpen(true); }} />
+      onSize={setSize} onContextMenu={() => { select(); options.select?.({ ...capture(), ...size }); setOpen(true); }} />
       : source ? <Text value={options.missing} /> : <Spinner />}
     <Popover isOpen={open} onOpenChange={setOpen} triggerRef={ref} placement="bottom start" className={menuStyles.popover} {...boundary} data-floating-child="">
       <CommandMenu label={options.menuLabel} sections={options.menu} onAction={(p) => { setOpen(false); options.action?.(p); }} />
@@ -48,12 +48,13 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     const select = (focus = false) => {
       const pos = getPos();
       if (typeof pos !== "number") return;
+      syncSelection(editor);
       const selection = editor.state.selection;
       if (!focus && !selection.empty && pos >= selection.from && pos < selection.to) return;
       editor.commands.setNodeSelection(pos);
       if (focus) requestAnimationFrame(() => dom.querySelector<HTMLElement>("[data-selected]")?.focus({ preventScroll: true }));
     };
-    const render = () => {
+    const capture = (): ImagePayload => {
       const pos = getPos();
       const selection = editor.state.selection;
       const inRange = typeof pos === "number" && !selection.empty && pos >= selection.from && pos < selection.to;
@@ -61,9 +62,15 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
       if (inRange) editor.state.doc.nodesBetween(selection.from, selection.to, (node) => { if (node.type.name === "image") images.push({ rounded: node.attrs.rounded === true, fitHeight: node.attrs.fitHeight !== false }); });
       const roundAll = images.length ? images.every((i) => i.rounded) : current.attrs.rounded === true;
       const limitAll = images.length ? images.every((i) => i.fitHeight) : current.attrs.fitHeight !== false;
-      root.render(<ImageNode payload={{ pos: typeof pos === "number" ? pos : -1, src: String(current.attrs.src), alt: String(current.attrs.alt ?? ""), rounded: roundAll, fitHeight: limitAll, mode: String(current.attrs.mode), width: 0, height: 0,
+      return { pos: typeof pos === "number" ? pos : -1, src: String(current.attrs.src), alt: String(current.attrs.alt ?? ""), rounded: roundAll, fitHeight: limitAll, mode: String(current.attrs.mode), width: 0, height: 0,
         from: inRange ? selection.from : typeof pos === "number" ? pos : 0, to: inRange ? selection.to : typeof pos === "number" ? pos + current.nodeSize : 0, count: images.length || 1,
-        roundMixed: !roundAll && images.some((i) => i.rounded), limitMixed: !limitAll && images.some((i) => i.fitHeight) }} selected={selected || inRange} options={options()} select={select} />);
+        roundMixed: !roundAll && images.some((i) => i.rounded), limitMixed: !limitAll && images.some((i) => i.fitHeight) };
+    };
+    const render = () => {
+      const payload = capture();
+      const selection = editor.state.selection;
+      const inRange = !selection.empty && payload.pos >= selection.from && payload.pos < selection.to;
+      root.render(<ImageNode payload={payload} selected={selected || inRange} options={options()} select={select} capture={capture} />);
     };
     editor.on("selectionUpdate", render);
     renders.add(render);
