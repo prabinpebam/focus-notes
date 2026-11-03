@@ -1004,6 +1004,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -1240,6 +1241,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -1529,6 +1531,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -2288,6 +2291,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -2718,6 +2722,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -5026,6 +5031,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -5311,6 +5317,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -5822,6 +5829,7 @@
                     "moreVertical",
                     "newFolder",
                     "github",
+                    "hardDrive",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -6811,7 +6819,7 @@
     },
     "c_ProjectPill": {
       "type": "object",
-      "description": "Which project a window belongs to, at the end of its status row (D-317): the project's logo and name on a soft fill of its accent. Pressing it opens Settings → Project. The name truncates with an ellipsis; the text keeps the text colour so it always passes contrast.",
+      "description": "Which project a window belongs to, at the end of its status row (D-317): the project's logo and name on a soft fill of its accent. Pressing it opens Settings → Project. Outside any project (D-333) it shows a local drive icon and the folder location on a neutral fill in Backed up's place, and pressing it shows the file in File Explorer or Finder. The name truncates with an ellipsis; the text keeps the text colour so it always passes contrast.",
       "required": [
         "type",
         "props"
@@ -6920,6 +6928,34 @@
                     "slate",
                     "app"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "hardDrive"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "path": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"

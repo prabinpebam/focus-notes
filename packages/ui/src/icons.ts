@@ -1,5 +1,5 @@
 import {
-  FolderOpen20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, MoreHorizontal20Regular, MoreVertical20Regular,
+  FolderOpen20Regular, HardDrive20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, MoreHorizontal20Regular, MoreVertical20Regular,
   Search20Regular, Add20Regular, Dismiss20Regular, Checkmark20Regular, DocumentAdd20Regular, TextBold20Regular,
   TextItalic20Regular, Link20Regular, Subtract20Regular, SquareMultiple20Regular, Square20Regular,
   FullScreenMaximize20Regular, FullScreenMinimize20Regular, CenterVertical20Regular, TextFont20Regular,
@@ -51,7 +51,7 @@ export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
   print: Print20Regular,
   // Projects, Quick notes and images (D-272 to D-313).
   image: Image20Regular, imageAdd: ImageAdd20Regular, crop: Crop20Regular, rotate: ArrowRotateClockwise20Regular,
-  openWindow: WindowNew20Regular, quickNote: Notepad20Regular, upload: ArrowUpload20Regular, caption: ClosedCaption20Regular,
+  openWindow: WindowNew20Regular, quickNote: Notepad20Regular, hardDrive: HardDrive20Regular, upload: ArrowUpload20Regular, caption: ClosedCaption20Regular,
   description: TextDescription20Regular, sparkle: Sparkle20Regular,
   // GitHub's own mark (Octicons, MIT), where the setup names GitHub (D-126).
   github: GitHubMark,

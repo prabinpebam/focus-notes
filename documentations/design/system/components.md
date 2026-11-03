@@ -89,7 +89,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ProjectMark | primitive | `rest`, `selected` | 39 | None |
 | ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | FontChoice | primitive | `rest`, `selected` | 7 | None |
-| ProjectPill | primitive | `rest` | 26 | None |
+| ProjectPill | primitive | `rest` | 27 | None |
 | PickerButton | primitive | `rest`, `selected` | 22 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |

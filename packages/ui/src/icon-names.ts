@@ -10,7 +10,7 @@ export const ICON_NAMES = [
   "document", "chevronRight", "chevronDown", "undo", "redo", "table", "quote", "code", "bulletList",
   "numberedList", "heading1", "heading2", "heading3", "color", "share", "history", "matchCase", "wholeWord", "regex", "sort", "inSelection", "grip",
   "arrowUp", "arrowDown", "lock", "export", "import", "strikethrough", "text", "taskList", "divider", "moreVertical", "newFolder", "github",
-  "cloud", "cloudUp", "cloudCheck", "cloudOff", "download", "circle", "globe", "calendar", "chevronLeft", "mail", "pin", "pinOff", "feedback", "sent", "print",
+  "hardDrive", "cloud", "cloudUp", "cloudCheck", "cloudOff", "download", "circle", "globe", "calendar", "chevronLeft", "mail", "pin", "pinOff", "feedback", "sent", "print",
   "aiOllama", "aiLmStudio", "aiVllm", "aiAnthropic", "aiClaude", "aiClaudeCode",
   "aiGemini", "aiMistral", "aiDeepseek", "aiPerplexity",
   "aiOpenrouter", "aiHuggingface", "aiCopilot",

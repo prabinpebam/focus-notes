@@ -19,3 +19,13 @@ export const pressable = style({
 export const name = style({ minWidth: 0 });
 // No logo: text only, the same inset at both ends.
 export const textOnly = style({ paddingInlineStart: t.paddingTextOnly });
+// Outside any project: neutral fill, a muted icon (Local notes' drive and folder, owner 3 November 19:22).
+export const neutral = style({
+  backgroundColor: t.neutralBackground,
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.neutralBackgroundHover } } } },
+});
+export const icon = style({ display: "inline-flex", color: t.neutralIcon, flexShrink: 0 });
+// A path ellipsized in the middle: the start (drive, root) gives way, the containing folder stays whole.
+export const pathWrap = style({ display: "inline-flex", minWidth: 0 });
+export const pathHead = style({ minWidth: 0, flexShrink: 1 });
+export const pathTail = style({ flexShrink: 0 });
