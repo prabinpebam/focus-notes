@@ -17,6 +17,7 @@ const idle: SyncReport = { git: true, state: "idle", waiting: 0 };
 
 function setup(opts: { privateRoot?: boolean } = {}) {
   const files: Record<string, string> = { [`${PUB}/hello.md`]: "# Hello\n" };
+  const disk = checkingDisk(files);
   let held: HeldNotes = NO_HELD;
   const answers: [string, string][] = [];
   const saves: string[] = [];
@@ -24,11 +25,11 @@ function setup(opts: { privateRoot?: boolean } = {}) {
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async (p) => files[p] ?? "",
-    writeNote: checkingDisk(files).writeNote,
+    writeNote: disk.writeNote,
     chooseNote: async () => undefined,
     // As the shell does (D-158): without a private root, a new note's path is held before it's written.
     newNotePath: async () => {
-      const p = opts.privateRoot ? `${PRIV}/Untitled ${++n}.md` : `${PUB}/Untitled ${++n}.md`;
+      const p = opts.privateRoot ? `${PRIV}/Untitled-${++n}.md` : `${PUB}/Untitled-${++n}.md`;
       if (!opts.privateRoot) held = { ...held, waiting: [...held.waiting, p] };
       return p;
     },
@@ -55,7 +56,24 @@ function setup(opts: { privateRoot?: boolean } = {}) {
       }),
       writeFormat: async () => {},
       renameNote: async () => {},
-      apply: async () => {},
+      apply: async (ops) => {
+        for (const op of ops) {
+          if (op.op === "create") {
+            if (op.path in files) throw new Error("Refused: exists");
+            files[op.path] = op.text;
+          } else if (op.op === "write") {
+            disk.writeOp(op);
+          } else if (op.op === "move") {
+            if (!(op.from in files) || op.to in files) throw new Error("Refused: move");
+            files[op.to] = files[op.from]!;
+            delete files[op.from];
+            held = {
+              waiting: held.waiting.map((path) => path === op.from ? op.to : path),
+              local: held.local.map((path) => path === op.from ? op.to : path),
+            };
+          }
+        }
+      },
       onChange: () => () => {},
     },
   };
@@ -79,14 +97,14 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     expect(vm(app).placeholder).toMatch(/^Start writing/);
     await app.commands.run("note.new");
     await settle();
-    expect(app.store.state.note.path).toBe(`${PUB}/Untitled 1.md`);
+    expect(app.store.state.note.path).toBe(`${PUB}/Untitled-1.md`);
     expect(vm(app)).toMatchObject({ pill: true, pillText: "Public · not backed up", open: false });
     expect(vm(app).placeholder).toBe("Public note · start writing, type / for blocks, or press Ctrl+/");
     // The Files panel says it the same way.
     await app.commands.run("files.open");
     await settle();
     const items = (app.viewModels.select("vm.files", app.store.state) as { items: { label: string; description: string }[] }).items;
-    expect(items.find((i) => i.label === "Untitled 1")?.description).toBe("Public · not backed up");
+    expect(items.find((i) => i.label === "Untitled-1")?.description).toBe("Public · not backed up");
     expect(items.find((i) => i.label === "Hello")?.description).toBe("public");
   });
 
@@ -95,16 +113,19 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     const app = await started(f);
     await app.commands.run("note.new");
     await settle();
-    const note = `${PUB}/Untitled 1.md`;
     await app.commands.run("note.setContent", { value: "Words of mine." });
     await app.commands.run("note.save");
     await settle();
-    expect(vm(app)).toMatchObject({ open: true, title: "Where should “Untitled 1” live?", local: false });
+    const note = app.store.state.note.path!;
+    const title = note.slice(PUB.length + 1, -3);
+    expect(note).not.toBe(`${PUB}/Untitled-1.md`);
+    expect(f.files[note]).toBe("Words of mine.");
+    expect(vm(app)).toMatchObject({ open: true, title: `Where should “${title}” live?`, local: false });
     await app.commands.run("held.answer", { choice: "local" });
     await settle();
     expect(f.answers).toEqual([[note, "local"]]);
     expect(vm(app)).toMatchObject({ open: false, pill: true, pillText: "On this computer only" });
-    expect(app.store.state.announcement.text).toBe("“Untitled 1” stays on this computer only.");
+    expect(app.store.state.announcement.text).toBe(`“${title}” stays on this computer only.`);
     // Answered: saving again doesn't ask.
     await app.commands.run("note.save");
     await settle();
@@ -129,11 +150,13 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     expect(vm(app).open).toBe(false);
     await app.commands.run("note.new");
     await settle();
-    const note = `${PUB}/Untitled 2.md`;
     await app.commands.run("note.setContent", { value: "Words of mine." });
     await app.commands.run("files.activate", { id: `${PUB}/hello.md` });
     await settle();
-    expect(vm(app)).toMatchObject({ open: true, title: "Where should “Untitled 2” live?" });
+    const note = Object.keys(f.files).find((path) => f.files[path] === "Words of mine.")!;
+    const title = note.slice(PUB.length + 1, -3);
+    expect(note).not.toBe(`${PUB}/Untitled-2.md`);
+    expect(vm(app)).toMatchObject({ open: true, title: `Where should “${title}” live?` });
     await app.commands.run("held.setOpen", { open: false });
     expect(vm(app).open).toBe(false);
     expect(f.answers).toEqual([]);
@@ -159,15 +182,6 @@ describe("D-158: a new note in a workspace without a private repository", () => 
       const lists = structuredClone(await held());
       if (slow) await new Promise((r) => setTimeout(r, 30));
       return lists;
-    };
-    f.bridge.workspace!.apply = async (ops) => {
-      for (const op of ops) {
-        if (op.op !== "move") continue;
-        f.files[op.to] = f.files[op.from] ?? "";
-        delete f.files[op.from];
-        const lists = await held();
-        (lists.waiting as string[]).splice(lists.waiting.indexOf(op.from), 1, op.to);
-      }
     };
     const app = await started(f);
     await app.commands.run("note.new");

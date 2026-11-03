@@ -201,7 +201,7 @@ test("FIL-08, FIL-03, PRF-09: several notes are selected and moved by Move to…
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
   const row = (name: string) => fileRow(tree, name);
-  const selected = () => tree.locator('[role="treeitem"][aria-selected="true"]').evaluateAll((els) => els.map((e) => e.textContent));
+  const selected = () => tree.locator('[role="treeitem"][aria-selected="true"] > span[dir="auto"]').allTextContents();
   await expect(row("Alpha")).toBeVisible();
 
   // Mod+click adds, Shift+click selects a range, Shift+arrows extend it from the anchor.

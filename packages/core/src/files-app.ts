@@ -1100,13 +1100,13 @@ export function registerFiles(ctx: Ctx) {
   } });
   commands.register<{ value: string }>({ id: "newNote.query", title: "command.note.newIn", run: ({ value }) => setNewNote({ query: String(value ?? "") }) });
   for (const [id, key, direction] of [["newNote.next", "ArrowDown", 1], ["newNote.prev", "ArrowUp", -1]] as const) {
-    commands.register({ id, title: "command.note.newIn", shortcut: { default: key, handledBy: "newNoteField" }, layer: "writer", run: () => {
+    commands.register({ id, title: "command.note.newIn", shortcut: { default: key, handledBy: "newNoteField" }, layer: "writer", group: "files", run: () => {
       const rows = pickerRows(), index = rows.findIndex((r) => r.path === files().newNote.activeId);
       const row = rows[Math.max(0, Math.min(rows.length - 1, index + direction))];
       if (row) setNewNote({ activeId: row.path });
     } });
   }
-  commands.register({ id: "newNote.accept", title: "command.note.newIn", shortcut: { default: "Enter", handledBy: "newNoteField" }, layer: "writer", run: (_a, c) => c.run("newNote.create") });
+  commands.register({ id: "newNote.accept", title: "command.note.newIn", shortcut: { default: "Enter", handledBy: "newNoteField" }, layer: "writer", group: "files", run: (_a, c) => c.run("newNote.create") });
   commands.register<{ id: string }>({ id: "newNote.select", title: "command.note.newIn", run: ({ id }) => {
     if (!files().newNote.open || files().newNote.busy) return;
     const row = pickerRows().find((r) => r.id === id);

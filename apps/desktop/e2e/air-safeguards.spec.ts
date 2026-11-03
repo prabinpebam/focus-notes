@@ -56,7 +56,14 @@ async function select(page: Page, text: string) {
     throw new Error(`"${text}" isn't in the note`);
   }, text);
   await expect.poll(() => page.evaluate(() => getSelection()?.toString() ?? "")).toBe(text);
-  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect.poll(() => page.locator("[data-editor]").evaluate((element) => {
+    const editor = (element as HTMLElement & {
+      editor?: { state: { selection: { from: number; to: number }; doc: { textBetween: (from: number, to: number, separator: string) => string } } };
+    }).editor;
+    if (!editor) throw new Error("The note editor is not mounted");
+    const { selection, doc } = editor.state;
+    return doc.textBetween(selection.from, selection.to, "\n\n");
+  })).toBe(text);
 }
 /** Select, open Rewrite and type the prompt; the dialog is left open. */
 async function openRewrite(page: Page, text: string, prompt?: string) {

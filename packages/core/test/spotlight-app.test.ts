@@ -185,6 +185,20 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
 });
 
 describe("SPT-04: states, the empty field, and no match", () => {
+  it("SPT-10: dismisses before a command opens and focuses its destination", async () => {
+    const app = createApp(desktop().bridge, messages);
+    let openDuringRun: boolean | undefined;
+    app.commands.register({ id: "test.destination", title: "command.focus.toggle", run: () => { openDuringRun = sp(app).open; } });
+    await app.start();
+    await app.commands.run("spotlight.commands");
+    await type(app, "focus mode");
+    const row = sp(app).rows.find((r) => r.key === "test.destination")!;
+    await app.commands.run("spotlight.setActive", { id: row.id });
+    await app.commands.run("spotlight.run");
+    expect(openDuringRun).toBe(false);
+    expect(sp(app).open).toBe(false);
+  });
+
   it("SPT-10: a failed command retains the query and reports its error", async () => {
     const app = createApp(desktop().bridge, messages);
     app.commands.register({ id: "test.failure", title: "command.focus.toggle", run: () => { throw new Error("refused"); } });

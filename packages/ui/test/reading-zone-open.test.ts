@@ -10,7 +10,8 @@ import { anchors } from "../src/behaviors/anchors.ts";
 import { autoScrollRemaining, keepInReadingZone } from "../src/host/EditorSurface/reading-zone.ts";
 
 let off: (() => void) | undefined;
-afterEach(() => { off?.(); off = undefined; vi.restoreAllMocks(); });
+let mounted: HTMLElement | undefined;
+afterEach(() => { off?.(); off = undefined; mounted?.remove(); mounted = undefined; vi.restoreAllMocks(); });
 
 function setup(empty = true) {
   const scroller = document.createElement("div");
@@ -19,6 +20,7 @@ function setup(empty = true) {
   scroller.append(column);
   column.append(dom);
   document.body.append(scroller);
+  mounted = scroller;
   // A 600 px tall note scroller with 4,000 px of content.
   Object.defineProperty(scroller, "clientHeight", { value: 600, configurable: true });
   Object.defineProperty(scroller, "scrollHeight", { value: 4000, configurable: true });
@@ -51,6 +53,21 @@ function setup(empty = true) {
 }
 
 describe("an anchored surface opening (DEF-25)", () => {
+  it("finishes the selection scroll started by the pending band check before Rewrite is placed", () => {
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(() => 1);
+    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
+    const { scroller, dom, props } = setup(false);
+    dom.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", shiftKey: true, bubbles: true }));
+    expect((props().handleScrollToSelection as () => boolean)()).toBe(true);
+    const closed = anchors.opening();
+    try {
+      expect(scroller.scrollTop).toBe(530);
+      expect(autoScrollRemaining(scroller)).toBe(0);
+    } finally {
+      closed();
+    }
+  });
+
   it("runs the band check a key left for the next frame at once, before the surface is placed", () => {
     const raf = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(() => 1);
     vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});

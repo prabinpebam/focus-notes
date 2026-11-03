@@ -432,6 +432,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     outside: (path, mine, theirs) => conflicts.outside(path, mine, theirs),
     matched: (path) => conflicts.release(path),
     handOver: () => editorAction(FLUSH_EDITOR),
+    notesMoved: (moves) => {
+      notesMoved(moves);
+      for (const { from, to } of moves) conflicts.moved(from, to);
+    },
   });
 
   async function writeNow(): Promise<void> {
@@ -503,6 +507,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // The trail moves the moment the stepped-to note shows, not after the rest of opening finishes,
   // so forward pressed as soon as the note appears isn't lost (DEF-11).
   const trail = { paths: [] as string[], at: -1, step: undefined as { to: number; shown: boolean } | undefined };
+  const notesMoved = (moves: readonly { from: string; to: string }[]) => {
+    const paths = new Map(moves.map(({ from, to }) => [from, to]));
+    trail.paths = trail.paths.map((path) => paths.get(path) ?? path);
+    drafts.moved(moves);
+  };
   const visited = (path: string) => {
     const step = trail.step;
     if (step && trail.paths[step.to] === path) {
@@ -1119,7 +1128,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       workspace.movedOnDisk(from, to);
       conflicts.moved(from, to);
     },
-    notesMoved: (moves) => drafts.moved(moves),
+    notesMoved,
     describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id), tracker, htmlToMarkdown: options.htmlToMarkdown,
   });
   const browser = registerBrowserFeatures({

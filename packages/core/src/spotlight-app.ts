@@ -606,9 +606,15 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const path = row.path ?? "";
     if (id === "run" && (row.kind === "setting" || row.kind === "command")) {
       frecency.record(itemKey(row.kind, row.key), ctx.now());
-      if (row.kind === "setting") await settingById(row.key)?.step();
-      else await run(row.key);
+      const previous = sp();
       if (!keepOpen) close();
+      try {
+        if (row.kind === "setting") await settingById(row.key)?.step();
+        else await run(row.key);
+      } catch (error) {
+        if (!keepOpen) set({ ...previous, focus: sp().focus + 1, busy: false });
+        throw error;
+      }
       return;
     }
     if (id === "reset") return settingById(row.key)?.reset();

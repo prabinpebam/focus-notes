@@ -1,4 +1,4 @@
-/** The workspace in the app: its format (DST-05), names that follow titles (FIL-07), and outside changes (PRF-11). */
+/** The workspace in the app: its format (DST-05), first-save names (FIL-18), and outside changes (PRF-11). */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -54,6 +54,21 @@ function setup(opts: { files?: Record<string, string>; format?: string; open?: s
 const canvas = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.canvas", app.store.state) as Record<string, unknown>;
 const toasts = (app: ReturnType<typeof createApp>) => app.store.state.ui.toasts.map((t) => t.message);
 const settle = () => new Promise((r) => setTimeout(r, 0));
+
+it("FIL-18, KEY-03: Back and Forward follow a new note's first-save filename even without a heading", async () => {
+  const f = setup();
+  const app = createApp(f.bridge, messages);
+  await app.start();
+  await settle();
+  await app.commands.run("note.new");
+  await app.commands.run("note.setContent", { value: "second note\n" });
+  await app.commands.run("note.back");
+  expect(app.store.state.note.path).toBe(`${ROOT}/welcome.md`);
+  await app.commands.run("note.forward");
+  expect(app.store.state.note.markdown).toBe("second note\n");
+  expect(app.store.state.note.path).toBe(f.renames[0]![1]);
+  expect(f.files[app.store.state.note.path!]).toBe("second note\n");
+});
 
 describe("FIL-17: choosing a writable workspace folder", () => {
   function pickerSetup() {

@@ -40,7 +40,34 @@ The combined branch includes main `6dcd3ab7`. Its final focused run passed
 journey includes visible filename details: the accessible name contains all
 visible words, with actual text separators between spans; the full path is an
 accessible description, not zero-size text erroneously included in the visible
-label. Candidate verification and exact-head CI remain pending.
+label. The `e15e179d` candidate launcher was verified through the normal UI
+and closed; its exact-head run
+[41664634194](https://github.com/prabinpebam/focus-notes/actions/runs/41664634194)
+failed, so it was not merged.
+
+The coupled CI repairs preserve first-save path changes in navigation and
+recovery drafts, adapt title-only selectors to the visible filename detail,
+and use a held-note fixture that really moves files and retargets both held
+lists. History's inactive list was branch-specific: Spotlight now dismisses
+before dispatching the destination command, restoring its query on failure.
+No history quarantine was added.
+
+Rewrite's journey waits for the editor's committed selection, not two frames.
+The product synchronizes that selection before capturing it; its reading-zone
+settlement now also finishes an animation started by the pending band check
+before the prompt is placed. The regression failed with scroll position zero
+instead of 530 before the fix; all budgets and assertions remain unchanged.
+
+| Coupled repair check | Result, 3 November |
+| --- | --- |
+| `pnpm exec vitest run packages/ui/test/reading-zone-open.test.ts packages/core/test/spotlight-app.test.ts packages/core/test/conflicts-app.test.ts packages/core/test/diagnostics.test.ts packages/core/test/held-app.test.ts packages/core/test/keymap.test.ts packages/core/test/menu-bar.test.ts packages/core/test/workspace-app.test.ts` | 168 passed |
+| `pnpm check`; `pnpm typecheck`; `pnpm --filter @focus-notes/desktop run build` | All passed |
+| `pnpm --filter @focus-notes/desktop exec playwright test e2e/m4-power-keys.spec.ts e2e/m8-files-sort.spec.ts e2e/mw-files.spec.ts e2e/air-safeguards.spec.ts e2e/m8-note-history.spec.ts --workers=1 -g 'Back and forward\|FIL-11\|FIL-08\|D-265\|FIL-13' --repeat-each 3` | 15 passed; Rewrite exercised light/dark on each repeat; PID-scoped cleanup completed, no owned app remains |
+| `pnpm --filter @focus-notes/web run build`; `pnpm --filter @focus-notes/web exec playwright test e2e/web.spec.ts --workers=1 -g 'Files on the web\|FIL-09 on the web'` | Build and both journeys passed |
+| `pnpm bench --check --only 'opening and saving' --runs 3` | Opening 51 ms against 150 ms; typing-to-save 558 ms against 1,000 ms; passed, app closed |
+
+The repaired head still requires its own green Windows CI run before main
+fast-forwards. The existing four quarantines below retain their exact scope.
 
 #### Scoped CI quarantines, expires 10 November 2026
 

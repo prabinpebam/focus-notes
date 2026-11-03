@@ -61,6 +61,7 @@ interface Ctx {
   handOver?: () => void;
   /** Serializes disk reads with saves and their acknowledgements, so own writes aren't outside edits. */
   afterWrites: <T>(fn: () => Promise<T>) => Promise<T>;
+  notesMoved?: (moves: readonly { from: string; to: string }[]) => void;
 }
 
 export function registerWorkspaceFeatures(ctx: Ctx) {
@@ -210,6 +211,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     }
     follows = false;
     lastWritten = { path: plan.to, text: own ?? markdown };
+    ctx.notesMoved?.(moves);
     // The editor keeps its note: only the path changes, not the key, unless it links to itself by name.
     store.update((s) => ({ ...s, workspace: { ...s.workspace, tree: plan.tree }, note: s.note.path === path ? { ...s.note, path: plan.to } : s.note }));
     if (own !== undefined && store.state.note.path === plan.to) {
