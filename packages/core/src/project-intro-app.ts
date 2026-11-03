@@ -29,7 +29,7 @@ export function registerProjectIntro(ctx: {
   ctx.viewModels.register({
     id: "vm.projectIntro", reads: "*",
     schema: {type: "object", properties: {notice: {type: "boolean"}, open: {type: "boolean"}, error: {type: "string"}}},
-    select: () => state,
+    select: () => ({ ...state }),
   });
   let shown = false;
   return {
