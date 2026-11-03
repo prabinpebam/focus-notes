@@ -32,6 +32,8 @@ import { registerToolbarCustomize, TOOLBAR_CUSTOMIZE_CLOSED, validPinned, type T
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
+import { registerProject } from "./project-app.ts";
+import { registerProjectOpen } from "./project-open-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerAi } from "./ai-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
@@ -427,6 +429,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
+  registerProject({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
+  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
@@ -1625,7 +1629,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
         const last = bridge.windows?.initialNote ?? appState.lastNotePath;
         const reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
-        if (!reopened) await load(await bridge.defaultNotePath());
+        if (!reopened && bridge.projects) await projects.start();
+        else if (!reopened) await load(await bridge.defaultNotePath());
         // A link the app was opened with goes on from the note it opened (D-165).
         void deepLinks.take();
       }

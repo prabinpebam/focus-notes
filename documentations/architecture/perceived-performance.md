@@ -18,6 +18,8 @@ IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker an
 
 The MP flows are specified, not implemented or measured. These rows extend the wait inventory before wiring; targets are feedback budgets, not claims that GitHub finishes within them. Use the existing task tracker, keep the old view/draft, delay a responsive indicator 300 ms and keep it visible at least 500 ms once shown. Acknowledge within 100 ms; long remote work is leavable and steps have elapsed time, never an unnamed busy flag.
 
+The 3 November owner-review Open slice keeps the source window and draft intact while starting a local project in its own process/profile. The dialog names the opening operation and retains search input on refusal. Tracker timing and multi-project restore remain production work; no remote operation is wired.
+
 | Operation | Class / pattern | Place and words | Measure / target |
 | --- | --- | --- | --- |
 | Open local project | Responsive → waiting; keep old window, prepare complete replacement | Project row: Opening “⟨project⟩”…; Retry on failure | `fn:project.open`; acknowledgement ≤100 ms, indicator after 300 ms |

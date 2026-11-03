@@ -120,6 +120,16 @@ contextBridge.exposeInMainWorld("focusNotes", {
   readNotes: (paths: readonly string[]) => ipcRenderer.invoke("notes:read", paths),
   writeNote: (path: string, content: string, expected?: string) => ipcRenderer.invoke("note:write", path, content, expected),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
+  projects: {
+    list: () => ipcRenderer.invoke("projects:list"),
+    choose: () => ipcRenderer.invoke("projects:choose"),
+    open: (folder: string, note?: string) => ipcRenderer.invoke("projects:open", folder, note),
+    onNote: (listener: (path: string) => void) => {
+      const handler = (_event: unknown, path: string) => listener(path);
+      ipcRenderer.on("projects:note", handler);
+      return () => ipcRenderer.removeListener("projects:note", handler);
+    },
+  },
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
   toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),
   // The page's title is the print job's name, and Save as PDF's file name (D-230).

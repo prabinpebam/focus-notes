@@ -52,3 +52,8 @@ export const frame = styleVariants({
   rounded: { ...drawn, inset: t.windowMargin, borderRadius: t.windowRadius, boxShadow: `${t.windowShadow}, 0 0 0 ${t.windowBorderWidth} ${t.windowBorder}` },
   square: { ...drawn, inset: 0, borderRadius: 0 },
 });
+export const projectFrame = styleVariants({
+  native: { boxShadow: `inset 0 0 0 ${t.windowBorderWidth} ${t.projectBorder}` },
+  rounded: { boxShadow: `${t.windowShadow}, 0 0 0 ${t.windowBorderWidth} ${t.projectBorder}` },
+  square: { boxShadow: `inset 0 0 0 ${t.windowBorderWidth} ${t.projectBorder}` },
+});

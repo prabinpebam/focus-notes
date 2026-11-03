@@ -23,7 +23,7 @@ import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./
 
 /** Settings' categories, in order, as built so far. */
 // Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
-export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
+export const SETTINGS_SECTIONS = ["account", "project", "workspace", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {

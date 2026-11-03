@@ -11,7 +11,9 @@ Separate places for separate work, without making every thought choose a project
 ## What a project is for
 
 > [!NOTE]
-> **Candidate implementation, 3 November.** Local-only notes now replace the backup pill with the existing neutral local-drive location pill. Pressing it reveals the current file in File Explorer/Finder. The project creation and Open view are a separate implementation slice; this change does not move or upload notes.
+> **Working preview, 3 November: identity slice.** The `vq-projects` candidate applies the approved colour outline, project pill, optional watermark and Settings → Project to today's workspace. The outer outline is drawn by AppRoot in the project's accent, not by an extra inner frame; the watermark sits at the bottom end. Name, the 12 colours, 24 preset logos, watermark and the existing Font and Theme tiles are real choices, remembered per folder in the candidate's local profile; they do not rename folders, move notes or change app-wide defaults. The theme tiles reuse the theme manager's data and component, limited to the built-in themes for this first slice. SVG upload, Launch/Open and stepped New project are not wired in this increment. This is an unhardened owner-review build: typecheck and desktop build only, no tests, journeys or CI; General fixes hardening remains parked.
+>
+> **Combined review, 3 November.** The review candidate retains Files, image editing and Ctrl+A, sharing, and the neutral local-drive location pill (press it to reveal the current file). It also includes the project identity and settings above, and the Open view on Ctrl+Alt+O, with a second sample project to switch to. New project remains a separate slice. This review uses disposable sample notes only; it does not move or upload the owner's notes.
 
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
@@ -80,6 +82,9 @@ No automatic tour, forced sign-in or new modal for upgrading. A read-only/offlin
 In the approved mock the missing-note recovery reads **“⟨Chapter 1⟩ isn't in ⟨Book⟩ any more. It may have been moved or deleted outside Focus Notes.”** with **Find it…** and **Recently deleted**; nothing new is created.
 
 ## The Open view
+
+> [!NOTE]
+> **Working preview, 3 November: Open slice.** Ctrl+Alt+O and Spotlight's Open… now open the real two-column dialog. Search filters known local projects and their last files; a project's Open opens or focuses its own process/profile, so the original window keeps its note and scope. Open project… selects a local folder. Launch still restores the profile's last note directly, without Open first; a profile with no last note opens Open instead of creating a replacement. This slice has no frecency or pins yet; GitHub opening and the Local notes/standalone actions await their separate tracks. New project is the next slice. Multiple-project quit restoration is not implemented yet.
 
 **Open**, not switch. **Open** is the one view for going somewhere else (owner, 3 November; D-319): <kbd>Ctrl+Alt+O</kbd> (<kbd>⌥⌘O</kbd>), ⋯ → Open…, or Spotlight's **> Open…**. In a window it's a dialog; with no window open it fills the window. It isn't inside any project, so it may list other projects' files: opening one opens it in its own project's window, never in this one, and this window's Files, search and scope stay its own (this amends D-309, which kept cross-project Recent out of project windows).
 

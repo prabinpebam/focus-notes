@@ -9645,7 +9645,8 @@
             "window",
             "center",
             "bottomCenter",
-            "bottomStart"
+            "bottomStart",
+            "bottomEnd"
           ],
           "default": "center",
           "description": "window: the whole window below the title bar band, which stays the window's (dragging, the window controls): the full-window setup (D-126)."
@@ -10061,6 +10062,32 @@
           ]
         },
         {
+          "name": "position bottomEnd",
+          "props": {
+            "position": "bottomEnd"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "name": "landmark none",
           "props": {
             "landmark": "none",
@@ -10445,6 +10472,26 @@
           ],
           "default": "mono",
           "description": "The content font (THM-03)."
+        },
+        "projectAccent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app",
+          "description": "The full outer project outline (D-317)."
         },
         "uiScale": {
           "kind": "number",
@@ -10863,6 +10910,240 @@
             "scheme": "light",
             "platform": "windows",
             "contentFont": "system"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent red",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "red"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent orange",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "orange"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent amber",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "amber"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent lime",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "lime"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent green",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "green"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent teal",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "teal"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent cyan",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "cyan"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent blue",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "blue"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent indigo",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "indigo"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent violet",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "violet"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent pink",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "pink"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent slate",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "slate"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent app",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "app"
           },
           "children": [
             {

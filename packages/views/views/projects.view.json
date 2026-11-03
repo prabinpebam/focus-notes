@@ -1,0 +1,51 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "projects",
+  "ia": "IA-VIEW-PROJECTS",
+  "overlay": true,
+  "viewModels": ["vm.projects"],
+  "focus": "projectSearch",
+  "root": {
+    "type": "Stack",
+    "children": [{
+    "type": "Dialog",
+    "when": { "get": "vm.projects.open" },
+    "props": { "title": { "t": "project.open.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.projects.open" }, "size": "xl", "height": "content" },
+    "on": { "openChange": { "run": "projects.close" } },
+    "children": [{
+      "type": "Stack", "props": { "gap": "s" },
+      "children": [
+        { "type": "SearchField", "id": "projectSearch", "props": { "label": { "t": "project.open.search" }, "placeholder": { "t": "project.open.search" }, "clearLabel": { "t": "newNote.clear" }, "value": { "bind": "vm.projects.query" }, "autoFocus": true } },
+        { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+          { "type": "Button", "props": { "label": { "t": "project.open.newLocal" }, "variant": "secondary", "icon": "quickNote", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+          { "type": "Button", "props": { "label": { "t": "project.openFile" }, "variant": "subtle", "icon": "open", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+          { "type": "Button", "props": { "label": { "t": "project.openFromGitHub" }, "variant": "subtle", "icon": "github", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+          { "type": "Button", "props": { "label": { "t": "project.new" }, "variant": "subtle", "icon": "add", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
+          { "type": "Button", "props": { "label": { "t": "project.openProject" }, "variant": "subtle", "icon": "folder" }, "on": { "press": { "run": "projects.choose" } } }
+        ] },
+        { "type": "Columns", "props": { "gap": "l" }, "children": [
+          { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "Heading", "props": { "value": { "t": "recent.title" }, "level": "3" } },
+            { "type": "ResultList", "id": "projectRecent", "props": { "label": { "t": "recent.title" }, "items": { "get": "vm.projects.recent" }, "activeId": { "get": "vm.projects.active" } }, "on": { "action": { "run": "projects.launch", "args": { "id": { "get": "event.id" } } }, "activeChange": { "run": "projects.active", "args": { "id": { "get": "event.id" } } } } }
+          ] },
+          { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "Heading", "props": { "value": { "t": "project.list.title" }, "level": "3" } },
+            { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" } } }, "render":
+              { "type": "ProjectScope", "props": { "accent": { "get": "entry.accent" } }, "children": [
+                { "type": "ItemCard", "props": { "title": { "get": "entry.name" }, "detail": { "get": "entry.folder" }, "personal": "all" }, "children": [
+                  { "type": "ProjectMark", "props": { "logo": { "get": "entry.logo" }, "size": "s" } },
+                  { "type": "Button", "props": { "label": { "t": "project.open" }, "variant": "primary", "size": "s" }, "on": { "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } } } }
+                ] }
+              ] }
+            }
+          ] }
+        ] },
+        { "type": "Text", "when": { "get": "vm.projects.pending" }, "props": { "value": { "t": "project.open.preparing" } } },
+        { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projects.error" }, ""] } }, "props": { "value": { "get": "vm.projects.error" } } },
+        { "type": "Inline", "props": { "align": "end" }, "children": [{ "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "projects.close" } } }] }
+      ]
+    }],
+    "slots": {}
+    }]
+  }
+}

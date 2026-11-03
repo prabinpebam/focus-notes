@@ -20,6 +20,7 @@ import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { spawn } from "node:child_process";
+import { projectWindows } from "./projects.ts";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -1231,6 +1232,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       await rename(temp, path);
     } finally { await rm(temp, { force: true }); }
   });
+  const projects = projectWindows(notesHome);
+  handle("projects:list", () => projects.list());
+  handle("projects:choose", () => projects.choose());
+  handle("projects:open", (folder: unknown, note: unknown) => {
+    if (typeof folder !== "string" || (note !== undefined && typeof note !== "string")) throw new Error("Invalid project request");
+    return projects.open(folder, note);
+  });
   handle("note:read", async (p) => {
     try {
       return (await readParsed(notePath(p))).text;
@@ -1955,6 +1963,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("state:load", async () => {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
+      if (process.env.FOCUS_NOTES_PROJECT_NOTE) s.lastNotePath = notePath(process.env.FOCUS_NOTES_PROJECT_NOTE);
       return s && s.version === 1 ? s : { version: 1 };
     } catch {
       return { version: 1 };
@@ -2549,6 +2558,8 @@ app.whenReady().then(async () => {
     });
   }
   app.on("second-instance", (_e, argv) => {
+    const noteAt = argv.indexOf("--project-note");
+    if (noteAt >= 0 && argv[noteAt + 1]) mainWindow?.webContents.send("projects:note", notePath(argv[noteAt + 1]));
     linkArrived(argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined));
     showMain();
   });
