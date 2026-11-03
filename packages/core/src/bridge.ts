@@ -567,6 +567,8 @@ export interface AppStateFile {
   filesWidth?: number;
   /** The Files tree sorted by last change (FIL-11, D-175); absent: by name. */
   filesSort?: "changed";
+  filesPins?: string[];
+  filesRecent?: string[];
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;
   darkTheme?: string;

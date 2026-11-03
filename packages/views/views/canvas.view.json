@@ -4073,7 +4073,7 @@
                             "value": {
                               "get": "vm.files.source.title"
                             },
-                            "role": "emphasis",
+                            "role": "title",
                             "lines": "one"
                           },
                           "when": {
@@ -4089,7 +4089,7 @@
                             "value": {
                               "get": "vm.files.source.title"
                             },
-                            "role": "emphasis",
+                            "role": "title",
                             "lines": "one",
                             "label": {
                               "get": "vm.files.source.repoLabel"
@@ -4560,6 +4560,23 @@
           ]
         },
         "children": [
+          {
+            "type": "FileTree",
+            "id": "filesShortcuts",
+            "when": { "get": "vm.deleted.closed" },
+            "props": {
+              "label": { "t": "files.heading" },
+              "items": { "get": "vm.files.shortcuts" },
+              "menu": { "get": "vm.files.menu" },
+              "menuLabel": { "get": "vm.files.menuLabel" }
+            },
+            "on": {
+              "select": { "run": "files.selectShortcut", "args": { "id": { "get": "event.id" } } },
+              "action": { "run": "files.activateShortcut", "args": { "id": { "get": "event.id" } } },
+              "expand": { "run": "files.setExpanded", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } },
+              "menuAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
+            }
+          },
           {
             "type": "FileTree",
             "id": "filesTree",

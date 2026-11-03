@@ -1594,6 +1594,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       else if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
         files.restoreSort(appState.filesSort);
+        files.restoreShortcuts(appState.filesPins, appState.filesRecent);
         files.restorePinned(appState.filesPinned, appState.filesWidth);
         // Only the note the person last opened, and never an empty public file;
         // else the app's own note, in the Private root (D-171, SHR-01).

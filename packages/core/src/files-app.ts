@@ -37,6 +37,8 @@ export interface FilesState {
   filter: string;
   /** How the tree is sorted (FIL-11, D-175): by name, or by last change. */
   sort: FilesSort;
+  pins: readonly string[];
+  visits: readonly string[];
   /** Bumped to move focus into the tree, to the focused row. */
   focusRequest: number;
   /** The inline name field: renaming a row, or naming a new folder in `parent`. */
@@ -67,7 +69,7 @@ export interface FilesState {
   newNote: { open: boolean; query: string; activeId: string; expanded: readonly string[]; focus: number; busy: boolean; error: string };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [], unsaved: [],
+  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", pins: [], visits: [], focusRequest: 0, pending: [], unsaved: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
   recovered: { open: false, loading: false },
@@ -146,6 +148,15 @@ export function registerFiles(ctx: Ctx) {
     return nameOf(path);
   };
   const rootLabel = (id: string) => catalog.format(`files.root.${id === "local" && bridge.platform !== "web" ? "folder" : id}`);
+  let lastVisited = "";
+  store.subscribe(() => {
+    const path = store.state.note.path;
+    if (!path || path === lastVisited || store.state.note.status !== "ready") return;
+    lastVisited = path;
+    const visits = [path, ...files().visits.filter((p) => p !== path)].slice(0, 20);
+    setFiles(() => ({ visits }));
+    void ctx.persistAppState({ filesRecent: visits });
+  });
 
   // ---- opening, revealing, closing ----
   // Opened before the workspace was first listed: the current note is revealed once it is. Focus was
@@ -301,6 +312,31 @@ export function registerFiles(ctx: Ctx) {
     if (store.state.note.path !== row.path) await ctx.load(row.path);
   };
   commands.register<{ id: string }>({ id: "files.activate", title: "command.files.openItem", run: ({ id }) => activate(String(id)) });
+  commands.register<{ id: string }>({
+    id: "files.selectShortcut", title: "command.files.select",
+    run: ({ id }) => { if (!id.startsWith("root:")) reveal(id, false); },
+  });
+  commands.register<{ id: string }>({
+    id: "files.activateShortcut", title: "command.files.openItem",
+    run: async ({ id }) => {
+      if (id.startsWith("root:")) return setExpanded(id, files().collapsed.includes(id));
+      const found = findNode(tree(), id);
+      if (!found) return;
+      reveal(id, false);
+      if (found.node.kind === "note") await activate(id);
+    },
+  });
+  commands.register({
+    id: "files.pinItem", title: "command.files.pinItem", icon: "pin", group: "files",
+    enabled: (s) => Boolean(s.ui.files.selection.focus) && !isRootRow(s.ui.files.selection.focus),
+    checked: (s) => s.ui.files.pins.includes(s.ui.files.selection.focus),
+    run: async () => {
+      const path = files().selection.focus;
+      const pins = files().pins.includes(path) ? files().pins.filter((p) => p !== path) : [...files().pins, path];
+      setFiles(() => ({ pins }));
+      await ctx.persistAppState({ filesPins: pins });
+    },
+  });
   commands.register({
     id: "files.openItem", title: "command.files.openItem", shortcut: { macos: "Mod+Down", default: "Enter", handledBy: "filesTree" }, layer: "basic", group: "files",
     run: () => activate(files().selection.focus),
@@ -736,7 +772,7 @@ export function registerFiles(ctx: Ctx) {
     }
   };
   commands.register<{ path?: string }>({
-    id: "files.revealItem", title: "command.files.revealItem", icon: "open",
+    id: "files.revealItem", title: `command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`, icon: "open",
     shortcut: { macos: "Mod+Alt+R", default: "Shift+Alt+R", handledBy: "files" }, layer: "pro", group: "files",
     enabled: (s) => {
       const r = focusedRow(s);
@@ -1332,6 +1368,7 @@ export function registerFiles(ctx: Ctx) {
     const both = ["public", "private"].every((id) => roots.some((r) => r.id === id && !r.readOnly));
     const item = (id: string) => {
       const d = ctx.describeItem(id);
+      if (id === "files.pinItem") return { ...d, label: catalog.format(f.pins.includes(focus.path) ? "files.unpinItem" : "command.files.pinItem") };
       if (id === "files.openItem") return { ...d, label: catalog.format("files.menu.open") };
       if (id === "files.rename" && focus.kind === "folder") return { ...d, label: catalog.format("files.renameFolder") };
       // New note runs the app's own, so it shows that shortcut, as the header's button does.
@@ -1342,6 +1379,7 @@ export function registerFiles(ctx: Ctx) {
       both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };
   };
@@ -1354,6 +1392,7 @@ export function registerFiles(ctx: Ctx) {
         open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
+        shortcuts: { type: "array", items: TREE_ITEM },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
         selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
@@ -1374,6 +1413,22 @@ export function registerFiles(ctx: Ctx) {
       const pending = new Set(f.pending);
       const unsaved = new Set(f.unsaved);
       const writable = canWrite(s);
+      const shortcuts: Record<string, unknown>[] = [];
+      for (const [section, paths] of [["pinned", f.pins], ["recent", f.visits.filter((p) => !f.pins.includes(p))]] as const) {
+        const id = `root:${section}`;
+        const expanded = !f.collapsed.includes(id);
+        const entries = paths.flatMap((path) => {
+          const found = findNode(s.workspace.tree, path);
+          if (!found || (section === "recent" && found.node.kind !== "note")) return [];
+          const label = titleOfNode(found.node);
+          if (f.filter && !label.toLocaleLowerCase().includes(f.filter.toLocaleLowerCase())) return [];
+          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id,
+            detail: dirOf(path).replace(`${found.root.path}/`, ""), description: "", title: path,
+            selected: selected.has(path), current: path === s.note.path, expanded: false, hasChildren: false }];
+        });
+        shortcuts.push({ id, kind: "section", label: catalog.format(section === "pinned" ? "project.pinned" : "recent.title"), level: 1, expanded, hasChildren: entries.length > 0 });
+        if (expanded) shortcuts.push(...entries);
+      }
       const items: Record<string, unknown>[] = rows.map((r) => ({
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
@@ -1401,7 +1456,7 @@ export function registerFiles(ctx: Ctx) {
       const notes = rows.filter((r) => r.kind !== "root").length;
       const pin = ctx.describeItem("files.togglePin");
       return {
-        source: whereFrom(s),
+        source: whereFrom(s), shortcuts,
         open: true, pinned: f.pinned, docked: f.pinned && f.fits, width: f.width ?? 0, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
         ...menuOf(s, rows),
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
@@ -1571,6 +1626,9 @@ export function registerFiles(ctx: Ctx) {
 
   return {
     /** Lists Recovered again: after launch has sorted the last session's drafts, and after one goes (D-221). */
+    restoreShortcuts(pins: readonly string[] = [], visits: readonly string[] = []): void {
+      setFiles(() => ({ pins, visits }));
+    },
     canCreateIn: validNewFolder,
     listRecovered,
     /** At launch: the order chosen on this device (D-175). */
