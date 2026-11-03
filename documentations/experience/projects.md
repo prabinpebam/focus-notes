@@ -10,6 +10,9 @@ Separate places for separate work, without making every thought choose a project
 
 ## What a project is for
 
+> [!NOTE]
+> **Candidate implementation, 3 November.** Local-only notes now replace the backup pill with the existing neutral local-drive location pill. Pressing it reveals the current file in File Explorer/Finder. The project creation and Open view are a separate implementation slice; this change does not move or upload notes.
+
 Work, a book and a club each need their own context. A folder groups notes inside that context; a project separates the history and permissions too. Giving someone access to a folder through a share link is read-only and limited. Inviting them to the project gives actual GitHub repository access, including private notes and sharing secrets.
 
 <!-- Visual thesis: private project scope exists before any public site; sharing adds a separate, explicitly enabled surface. No icons are needed: containment and branching carry the meaning. -->

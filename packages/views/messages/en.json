@@ -1132,6 +1132,7 @@
   "command.move.choose": "Move here",
   "command.picker.open": "Quick open",
   "files.heading": "Files",
+  "local.location.label": "{action}: {location}",
   "command.files.pinItem": "Pin",
   "files.unpinItem": "Unpin",
   "command.files.showItem.windows": "Show in File Explorer",

@@ -3807,10 +3807,22 @@
                 ]
               },
               {
+                "type": "ProjectPill",
+                "id": "localLocation",
+                "when": { "get": "vm.saveState.local" },
+                "props": {
+                  "name": { "get": "vm.saveState.location" },
+                  "icon": "hardDrive",
+                  "path": true,
+                  "label": { "get": "vm.saveState.locationLabel" }
+                },
+                "on": { "press": { "run": "note.revealLocal" } }
+              },
+              {
                 "type": "PopoverPanel",
                 "id": "backupDetails",
                 "when": {
-                  "get": "vm.saveState.visible"
+                  "get": "vm.saveState.backupVisible"
                 },
                 "props": {
                   "label": {
@@ -4214,7 +4226,7 @@
                             }
                           },
                           "when": {
-                            "get": "vm.deleted.closed"
+                            "expr": { "and": [{ "get": "vm.deleted.closed" }, { "!": { "get": "vm.files.source.visible" } }] }
                           }
                         },
                         {
