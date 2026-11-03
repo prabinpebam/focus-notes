@@ -77,6 +77,8 @@ No automatic tour, forced sign-in or new modal for upgrading. A read-only/offlin
 
 ## Launch
 
+> **Working preview, 3 November: Meeting Project.** After the restored note and caret are ready, an existing local profile gets the approved non-blocking notice once. Learn about projects opens mock 7's standard untinted explainer with its project/private/site/local diagram and unchanged-files message; Dismiss and Got it remember the dismissal locally. Learn about projects remains available in Spotlight after dismissal. The old/new terminology panels remain gallery demonstrations, not extra runtime screens; the external Help-site link is not wired in this local-only slice.
+
 **Starting Focus Notes opens the note you were last editing** (owner, 3 November; D-318): its project's window, the note, its caret and its scroll, with no Projects or Open screen first. With several windows open, the **last project and file closed** count as the last edited, because the last window closed held the last word. Quitting the app with several open reopens all of them (PRJ-02), and the last one closed comes forward. A Local note or a file on its own counts the same way. If the note was deleted or moved outside Focus Notes, its project opens on the missing-file recovery; it never makes an empty note. With nothing to reopen (first run, or every window closed with nothing ever written), the Open view fills the window.
 
 In the approved mock the missing-note recovery reads **“⟨Chapter 1⟩ isn't in ⟨Book⟩ any more. It may have been moved or deleted outside Focus Notes.”** with **Find it…** and **Recently deleted**; nothing new is created.

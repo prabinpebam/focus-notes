@@ -33,6 +33,7 @@ import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerProject } from "./project-app.ts";
+import { registerProjectIntro } from "./project-intro-app.ts";
 import { registerProjectOpen } from "./project-open-app.ts";
 import { registerProjectNew } from "./project-new-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
@@ -431,6 +432,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
+  const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
   const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
@@ -1132,6 +1134,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const position = restorePosition;
       restorePosition = undefined;
       if (position) afterPaint(() => editorAction("note.restorePosition", position));
+      if (bridge.projects) afterPaint(() => projectIntro.ready());
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;

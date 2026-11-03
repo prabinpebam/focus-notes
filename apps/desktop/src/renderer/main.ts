@@ -38,7 +38,7 @@ const base = {
 };
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root in the entry document");
-const OVERLAYS = ["settings", "theme", "history", "feedback", "rewrite", "newNote", "shareItem", "projects", "projectNew"] as const;
+const OVERLAYS = ["settings", "theme", "history", "feedback", "rewrite", "newNote", "shareItem", "projects", "projectNew", "projectIntro"] as const;
 
 /**
  * The bridge as one app instance sees it. When another instance replaces it (D-148), everything it

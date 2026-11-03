@@ -13,6 +13,10 @@
     "lastNotePath": {
       "type": "string"
     },
+    "projectIntroSeen": {
+      "type": "boolean",
+      "description": "The one-time Projects notice was dismissed on this device."
+    },
     "appearance": {
       "enum": [
         "system",

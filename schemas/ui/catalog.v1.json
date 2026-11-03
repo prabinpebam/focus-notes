@@ -5860,6 +5860,7 @@
         "vm.app",
         "vm.project",
         "vm.projects",
+        "vm.projectIntro",
         "vm.canvas",
         "vm.toolbar",
         "vm.shortcuts",
@@ -5922,6 +5923,13 @@
       "id": "newNote",
       "viewModels": [
         "vm.newNote"
+      ]
+    },
+    {
+      "id": "projectIntro",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.projectIntro"
       ]
     },
     {
