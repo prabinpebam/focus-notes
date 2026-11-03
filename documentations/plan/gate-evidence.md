@@ -71,10 +71,10 @@ and journey shards 2, 3 and 4 in
 [41671811307](https://github.com/prabinpebam/focus-notes/actions/runs/41671811307).
 Shard 1 still timed out finding the long-selection Rewrite prompt. Further
 software-rendered, 4x CPU-throttled and GPU repeats passed locally; that does
-not replace the red exact-head result. The journey now attaches committed
-selection, placement, viewport and font state on failure without adding a
-wait or relaxing an assertion. Main remains unmerged pending a green exact-head
-run. The existing four quarantines below retain their exact scope.
+not replace the red exact-head result. At the owner's direction, further
+CI waits and D-265 refinement are parked until owner review; the failure-only
+attachment was removed and no assertions were relaxed. Main remains unmerged.
+The existing four quarantines below retain their exact scope.
 
 #### Scoped CI quarantines, expires 10 November 2026
 

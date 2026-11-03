@@ -71,27 +71,7 @@ async function openRewrite(page: Page, text: string, prompt?: string) {
   await page.keyboard.press(`${mod}+Shift+R`);
   const dialog = page.locator('#rewrite[role="region"]');
   await expect(dialog).toBeVisible();
-  try {
-    if (prompt !== undefined) await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
-  } catch (error) {
-    const state = await page.locator("[data-editor]").evaluate((element) => {
-      const editor = (element as HTMLElement & {
-        editor: { state: { selection: { from: number; to: number }; doc: { textBetween: (from: number, to: number, separator: string) => string } } };
-      }).editor;
-      const popover = document.querySelector<HTMLElement>("#rewrite");
-      const scroller = document.querySelector("[data-editor-scroller]");
-      const { selection, doc } = editor.state;
-      return {
-        selection: { from: selection.from, to: selection.to, text: doc.textBetween(selection.from, selection.to, "\n\n") },
-        focus: document.activeElement?.id, fonts: document.fonts.status,
-        scroll: scroller?.scrollTop, viewport: scroller?.getBoundingClientRect().toJSON(),
-        edge: popover?.dataset.edge, placed: popover?.dataset.placed, popover: popover?.getBoundingClientRect().toJSON(),
-        prompt: document.querySelector("#rewritePrompt")?.outerHTML,
-      };
-    });
-    await test.info().attach("rewrite-selection-state", { body: JSON.stringify(state, null, 2), contentType: "application/json" });
-    throw error;
-  }
+  if (prompt !== undefined) await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
   return dialog;
 }
 
