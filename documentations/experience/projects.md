@@ -193,7 +193,9 @@ Upload opens the OS file chooser; Cancel changes nothing. Before rendering, enfo
 
 ## Recent and pinned
 
-**Recent** is files, never folders, newest first. In Projects a row reads **Plan** with **Book · Drafts / Chapter 1** below; in Book's Files, only **Drafts / Chapter 1**. Show **Root** for the root folder. Local notes and standalone files have explicit **Local only** location labels. Full path is available on focus/tooltip and through **Show in folder**, not forced into the row.
+**Recent** is files, never folders, newest first. In Projects a row reads **Plan** with **Book · Drafts / Chapter 1** below; in Book's Files, only **Drafts / Chapter 1**. Show **Root** for the root folder. Local notes and standalone files have explicit **Local only** location labels. Full path is available on focus/tooltip and through **Show in File Explorer** (**Show in Finder** on macOS, **Show in file manager** on Linux), not forced into the row.
+
+**Copy rule: name the platform's file manager** (owner, 3 November 2026; D-328): "Show in folder should be 'Show in File Explorer/Finder' etc." Every menu item that reveals a project, folder or file on disk (Open, Files, Projects, Local notes, images) says **Show in File Explorer** on Windows, **Show in Finder** on macOS and **Show in file manager** on Linux; never "Show in folder". Copy fix to make at implementation: the built `command.files.revealItem` reads **Open containing folder**; it becomes **Show in File Explorer** / **Show in Finder** / **Show in file manager** per platform.
 
 **Two pin scopes, never mixed** (owner, 3 November; D-322):
 
