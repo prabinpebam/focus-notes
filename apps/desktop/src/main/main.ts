@@ -4,7 +4,7 @@
  * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -1610,8 +1610,30 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const access = accessStore({
     dir: privateDir,
     site: pagesSite,
-    write: async (file, text) => void (await atomicWrite(file, text)),
+    write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: (file) => withGit((g) => g.written(file)),
+    writeNoteId: async (file, text, expected) => {
+      const outside = await atomicWrite(file, text, expected);
+      if (outside) throw new Error("access:scope.changed");
+    },
+    publish: async () => {
+      const g = await gitOpening;
+      if (!g) throw new Error("access:site.unavailable");
+      const report = await g.request("save");
+      if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
+    },
+    getSite: (site, signal) => async (path) => {
+      const base = new URL(site);
+      const url = new URL(path, base.href.endsWith("/") ? base : `${base.href}/`);
+      if (url.origin !== base.origin) throw new Error("access:site.unavailable");
+      let response: Response;
+      try {
+        response = await fetch(url, { redirect: "error", credentials: "omit", cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]) });
+      } catch { throw new Error(signal.aborted ? "access:cancelled" : "access:offline"); }
+      if (response.status === 404) return undefined;
+      if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? "access:signedOut" : "access:site.unavailable");
+      return response.text();
+    },
   });
   handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
   handle("access:apply", async (change) => {
@@ -1622,11 +1644,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
   const secretCopy = secretClipboard(appClipboard());
   handle("access:reveal", async (id) => access.reveal(id));
+  handle("access:words", () => access.prepareWords());
+  handle("access:ready", (id) => access.ready(id));
+  handle("access:cancelReady", (id) => access.cancelReady(id));
   handle("access:template", async (template) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.setTemplate(template);
   });
-  handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
+  handle("access:copy", async (id, what, invite) => access.handoff(id, what, invite, (text) => secretCopy.write(text)));
+  handleFrom("access:systemShare", async (e, id, invite) => {
+    if (process.platform !== "darwin") throw new Error("access:sheet.unavailable");
+    const window = BrowserWindow.fromWebContents(e.sender);
+    if (!window || window.isDestroyed()) throw new Error("access:sheet.unavailable");
+    await access.handoff(id, "information", invite, (text) => {
+      if (window.isDestroyed()) throw new Error("access:sheet.unavailable");
+      new ShareMenu({ texts: [text] }).popup({ window });
+    });
+  });
   // Local diagnostics (QLT-04, D-140): built and redacted here; copied or saved only when the person asks.
   const diag = diagnostics({
     // Started from its built script (journeys, `pnpm dev`), Electron would report its own version: read the app's.

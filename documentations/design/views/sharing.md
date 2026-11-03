@@ -26,6 +26,16 @@ The mocks live on branch `vq-share-mocks` (`b2b4e6e0`) in `packages/views/mocks/
 
 **Specified but not in the approved mocks (not approved yet; design before building):** Share… from Spotlight; the **Change…** flow for an existing share; a per-row Copy access code in Shared before; the no-permission state and **Continue setup**; the *Ready to share* fresh-gesture step; clipboard failure; editing the share information template in Settings (and its Edit template / Use default this time errors); legacy named-grant rows; the first Publish creating the site; the Unpublished-preview label; the site's empty, missing-page and failure states; Remove person; and Switch pending and refused-change states. Removed by the approval: the 1-day expiry, a toast per copy, and the project mark as the first-share anchor.
 
+## Item-dialog implementation increment
+
+**Candidate only, WP-P.9 (3 November):** Files row **Share…** and **⋯ → Note → Share…** open one fixed private item's standard dialog over real state. The card, counts, Include notes added later, methods, expiry, generated words, custom-passcode strength and nested Review contents are wired. Escape from review restores focus and the unchanged draft. Counting yields every 200 entries; opening, changing draft controls, reviewing and cancelling make no grant or website.
+
+The first action creates one independent grant, preserves reviewed note identities for fixed snapshots, and waits through the task tracker for a real encrypted reader to open the deployed share before clipboard or native handoff. The saved controls become read-only, publication retry reuses that grant, and Share information contains real enabled methods. Access codes use random identifiers, never name aliases. The reader's default route accepts one identifier-plus-passcode string; legacy name-based access is an explicit separate route.
+
+History, Add them, bounded visible review rows, signed-out recovery and deleted-item controls remain unfinished. Native-sheet cancellation and approved light/dark/narrow comparison still need evidence. The coordinator excluded Change…, template editing, first-site setup and public-item shares from this merge; no implementation acceptance or security approval is claimed.
+
+This first visible increment is not the complete sharing flow and must not replace the production build yet. Generated words, the four publishing/copy actions, Share information, Shared before, first-share setup and remote/offline states remain to be wired. No mock data, mock-finish action or success-shaped clipboard fallback is included. The current Files primitive renders all visible rows: the 10,000-note count is covered, but a 10,000-visible-row review still needs bounded rendering evidence before SHR-14 can close.
+
 ## Three levels of visibility
 
 | Level | Who can read | Where it's kept | What the website serves |
@@ -206,6 +216,10 @@ GitHub Pages is **purely a website** (D-292). No browser editor, IndexedDB notes
 | Item deleted while open | **“This item was deleted. Close sharing or restore it in Files.”** |
 
 **Components and their status:** Dialog, ItemCard (with its badge slot), Button, Field and FileTree (`readOnly`, for Review) exist; **Switch** (WP-P.16) and **Select** are planned, **SegmentedControl** serves Generated/Custom, and **Disclosure** and **ShareRow** are new and specified with the work. The view can't be wired before those land. Expressed as JSON before wiring. At 320 px actions wrap without horizontal scrolling; only review's tree and the normal dialog content scroll, not a second nested action pane. Fields and target stay stable during waits/errors.
+
+**As built in the D-339 increment:** the fixed-item dialog has item-specific Shared before rows, Copy link and confirmed withdrawal, and Add them for the complete currently reviewed snapshot-folder membership. Addition preserves existing reader credentials and requires main-resolved unique note identities. Snapshot notes moved out of the stored folder boundary are excluded on the next publication; folder-rename handling still needs evidence and must not silently broaden the scope. Existing named Settings creation/template controls remain legacy behavior for now, not the approved new Settings design or a newly designed template flow.
+
+Review streams counts and rows every 200 entries and bounds mounted rows to 200, retaining full-list keyboard navigation and type-ahead. Saved controls lock at the command boundary; new-word preparation also blocks first-copy races. Publication checks the exact authenticated authorization revision and all required ciphertexts, not a successful Git push or equal note counts. The credential callback rechecks current membership, private root and site; stale readiness fails explicitly and retry republishes the same grant. The [evidence](../../plan/gate-evidence.md#wp-p9-item-dialog-candidate) distinguishes local proof from pending native-sheet, recovery and visual acceptance.
 
 The [wait inventory](../../architecture/perceived-performance.md) records preparing contents, site creation, sealing/publishing and OS handoff. Acknowledge within 100 ms; use named status after 300 ms, preserve the current view and prompt, and make long publication leavable. No “Link copied” or “Live” before the actual copy/deploy succeeds.
 

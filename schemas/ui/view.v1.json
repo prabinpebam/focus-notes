@@ -4173,6 +4173,19 @@
                 }
               ]
             },
+            "windowed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "editValue": {
               "anyOf": [
                 {
@@ -6491,6 +6504,19 @@
               ]
             },
             "invalid": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "readOnly": {
               "anyOf": [
                 {
                   "type": "boolean"

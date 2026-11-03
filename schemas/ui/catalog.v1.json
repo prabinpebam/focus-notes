@@ -1658,6 +1658,11 @@
           "min": 0,
           "description": "Each new value moves focus into the tree."
         },
+        "windowed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Read-only reviews mount at most 200 rows; scrolling, keyboard navigation and type-ahead still cover the whole tree."
+        },
         "editValue": {
           "kind": "text",
           "bindable": true,
@@ -2666,6 +2671,11 @@
         "invalid": {
           "kind": "boolean",
           "default": false
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the chosen day focusable, without changing it while its action is being sent."
         }
       },
       "events": {
@@ -2681,7 +2691,8 @@
         "rest",
         "focused",
         "open",
-        "invalid"
+        "invalid",
+        "readOnly"
       ],
       "tokens": "cmp.datePicker.*",
       "a11y": {
@@ -2691,7 +2702,8 @@
       "fixtures": [
         "empty",
         "with a description",
-        "invalid"
+        "invalid",
+        "read only"
       ]
     },
     {
@@ -5904,6 +5916,13 @@
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
         "vm.share"
+      ]
+    },
+    {
+      "id": "shareItem",
+      "ia": "IA-VIEW-SHARE",
+      "viewModels": [
+        "vm.shareItem"
       ]
     },
     {

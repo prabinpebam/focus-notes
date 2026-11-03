@@ -5,8 +5,8 @@
  * what an audience opens, extending, withdrawing, and deleting.
  */
 import { describe, expect, it } from "vitest";
-import { applyAccessChange, audienceOf, shareGrants, type AccessChange } from "@focus-notes/seal/access";
-import { shareLink } from "@focus-notes/seal";
+import { applyAccessChange, audienceOf, itemInviteText, shareGrants, type AccessChange } from "@focus-notes/seal/access";
+import { displayShareCode, shareLink } from "@focus-notes/seal";
 import { generatePasscode } from "@focus-notes/seal/words";
 import type { AccessFile } from "@focus-notes/seal";
 import { createApp, initials, inviteTemplate, inviteText, MessageCatalog, shareables, type AccessListing, type PlatformBridge } from "../src/index.ts";
@@ -80,6 +80,279 @@ describe("helpers", () => {
 });
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
+
+describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
+  it("waits for word preparation before any action or draft mutation", async () => {
+    const t = shell();
+    let finish!: (words: { id: string; value: string }) => void;
+    t.bridge.access!.prepareWords = async () => new Promise((resolve) => { finish = resolve; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    const preparation = t.run("share.item.togglePasscode");
+    await settle();
+    await t.run("share.item.action", { what: "information" });
+    await t.run("share.item.togglePasscode");
+    await t.run("share.item.setMode", { value: "own" });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ passcode: true, wordsBusy: true, mode: "generate" });
+    finish({ id: "wprepared001", value: "harbor-maple-river-cloud" });
+    await preparation;
+    expect(t.vm("vm.shareItem")).toMatchObject({ wordsBusy: false, generated: "harbor-maple-river-cloud" });
+  });
+  it("refreshes readiness after a stale repeat handoff without creating another grant", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "link" });
+    const copy = t.bridge.access!.copy;
+    t.bridge.access!.copy = async () => { throw new Error("access:notReady"); };
+    await t.run("share.item.action", { what: "link" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ ready: false, information: "", hasProblem: true });
+    let refreshed = 0;
+    t.bridge.access!.ready = async () => { refreshed++; };
+    t.bridge.access!.copy = copy;
+    await t.run("share.item.action", { what: "link" });
+    expect(refreshed).toBe(1);
+    expect(shareGrants(t.access())).toHaveLength(1);
+    expect(t.copied).toHaveLength(2);
+  });
+  it("lists only this item's history, copies without creating a grant, and confirms withdrawal without changing notes", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "link" });
+    const id = shareGrants(t.access())[0]!.id;
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("share.item.open", { path: "/w/private/notes/diary.md" });
+    expect(t.vm("vm.shareItem").history).toHaveLength(0);
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyOpen: true });
+    expect(t.vm("vm.shareItem").history).toEqual([expect.objectContaining({ id, active: true, link: true })]);
+    await t.run("share.item.row", { id, what: "link" });
+    expect(shareGrants(t.access())).toHaveLength(1);
+    await t.run("share.item.row", { id, what: "withdraw" });
+    expect(t.vm("vm.shareItem").confirmOpen).toBe(true);
+    expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
+    await t.run("share.item.setConfirmOpen", { open: false });
+    expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
+    await t.run("share.item.row", { id, what: "withdraw" });
+    await t.run("share.item.withdraw");
+    expect(shareGrants(t.access())[0]!.revokedAt).toBeTruthy();
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, confirmOpen: false, hasHistory: true });
+    expect(t.vm("vm.shareItem").history[0].active).toBe(false);
+    expect(t.app.store.state.note.path).toBe("/w/private/notes/trips/rome.md");
+  });
+  it("refuses draft commands during creation and after saving, including regenerated words", async () => {
+    const t = shell();
+    let finish!: () => void;
+    t.bridge.access!.ready = async () => new Promise<void>((resolve) => { finish = resolve; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.togglePasscode");
+    const draft = t.app.store.state.ui.share.item;
+    const action = t.run("share.item.action", { what: "information" });
+    await settle();
+    const mutate = async () => {
+      await t.run("share.item.toggleLink");
+      await t.run("share.item.togglePasscode");
+      await t.run("share.item.toggleLater");
+      await t.run("share.item.setExpiry", { value: "never" });
+      await t.run("share.item.setUntil", { value: "2027-01-01" });
+      await t.run("share.item.setMode", { value: "own" });
+      await t.run("share.item.setOwn", { value: "other-words-for-testing" });
+      await t.run("share.item.newWords");
+    };
+    await mutate();
+    const unchanged = () => expect(t.app.store.state.ui.share.item).toMatchObject({
+      link: draft.link, passcode: draft.passcode, later: draft.later,
+      expiry: draft.expiry, until: draft.until, mode: draft.mode,
+      own: draft.own, wordsId: draft.wordsId, generated: draft.generated,
+    });
+    unchanged();
+    finish();
+    await action;
+    const saved = t.app.store.state.ui.share.item.generated;
+    await mutate();
+    expect(t.app.store.state.ui.share.item).toMatchObject({
+      link: draft.link, passcode: draft.passcode, later: draft.later,
+      expiry: draft.expiry, until: draft.until, mode: draft.mode,
+      own: draft.own, wordsId: draft.wordsId, generated: saved,
+    });
+  });
+  it("cannot copy a method which is switched off", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "accessCode" });
+    expect(t.copied).toHaveLength(0);
+    expect(shareGrants(t.access())).toHaveLength(0);
+    expect(t.vm("vm.shareItem").hasProblem).toBe(true);
+  });
+  it("does not reveal or hand off a cancelled publication into a new draft", async () => {
+    const t = shell();
+    let finish!: () => void;
+    t.bridge.access!.ready = async () => new Promise<void>((resolve) => { finish = resolve; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    const action = t.run("share.item.action", { what: "information" });
+    await settle();
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("share.item.open", { path: "/w/private/notes/trips/rome.md" });
+    finish();
+    await action;
+    expect(t.copied).toHaveLength(0);
+    expect(t.revealed).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ name: "Rome", id: "", ready: false, busy: false });
+  });
+  it("creates on the first action, copies only after readiness, and reuses the share within the dialog", async () => {
+    const t = shell();
+    let finish!: () => void;
+    t.bridge.access!.ready = async () => new Promise<void>((r) => { finish = r; });
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    const action = t.run("share.item.action", { what: "primary" });
+    await settle();
+    expect(shareGrants(t.access())).toHaveLength(1);
+    expect(t.copied).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ busy: true, ready: false });
+    finish();
+    await action;
+    expect(t.copied.at(-1)).toContain("Open: https://ada.github.io/notes/s/#");
+    expect(t.vm("vm.shareItem")).toMatchObject({ busy: false, ready: true });
+    t.bridge.access!.ready = async () => {};
+    await t.run("share.item.action", { what: "link" });
+    expect(shareGrants(t.access())).toHaveLength(1);
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "primary" });
+    expect(shareGrants(t.access())).toHaveLength(2);
+  });
+
+  it("preserves the draft and saved grant after offline failure; retry never creates twice", async () => {
+    const t = shell();
+    t.bridge.access!.ready = async () => { throw new Error("access:offline"); };
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips/rome.md" });
+    await t.run("share.item.togglePasscode");
+    await t.run("share.item.setMode", { value: "own" });
+    await t.run("share.item.setOwn", { value: "harbor-maple-river-cloud" });
+    await t.run("share.item.action", { what: "accessCode" });
+    expect(t.copied).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, own: "harbor-maple-river-cloud", ready: false, hasProblem: true });
+    const id = shareGrants(t.access())[0]!.id;
+    t.bridge.access!.ready = async () => {};
+    await t.run("share.item.action", { what: "accessCode" });
+    expect(shareGrants(t.access()).map((g) => g.id)).toEqual([id]);
+    expect(t.copied.at(-1)).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4} harbor-maple-river-cloud$/);
+  });
+  it("opens a fixed folder directly, counts its contents and creates nothing on opening or cancelling", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    expect(t.vm("vm.shareItem")).toMatchObject({
+      open: true, name: "trips", folder: true, notes: 1, folders: 0,
+      link: true, passcode: false, later: false, expiry: "30d",
+    });
+    expect(t.access().grants).toHaveLength(1);
+    await t.run("share.item.setOpen", { open: false });
+    expect(t.vm("vm.shareItem").open).toBe(false);
+    expect(t.access().grants).toHaveLength(1);
+  });
+
+  it("preserves the exact draft through reviewing and expanding a read-only contents tree", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.toggleLink");
+    await t.run("share.item.togglePasscode");
+    await t.run("share.item.setOwn", { value: "harbor maple river cloud" });
+    await t.run("share.item.setExpiry", { value: "90d" });
+    const before = t.app.store.state.ui.share.item;
+    await t.run("share.item.review");
+    expect(t.vm("vm.shareItem").reviewOpen).toBe(true);
+    expect(t.vm("vm.shareItem").items).toEqual([
+      expect.objectContaining({ label: "Rome", level: 1, readOnly: true }),
+    ]);
+    await t.run("share.item.setReviewOpen", { open: false });
+    expect(t.app.store.state.ui.share.item).toMatchObject({
+      ...before, reviewOpen: false,
+    });
+    expect(t.access().grants).toHaveLength(1);
+  });
+
+  it("uses the current note for the Note menu and starts a fresh draft on every Share…", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("note.share");
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, folder: false, name: "Rome" });
+    await t.run("share.item.toggleLink");
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("note.share");
+    expect(t.vm("vm.shareItem")).toMatchObject({ link: true, passcode: false, expiry: "30d" });
+    expect(t.app.store.state.ui.share.note.open).toBe(false);
+  });
+
+  it("allows both methods off with an explicit reason, and never changes the fixed target", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.toggleLink");
+    expect(t.vm("vm.shareItem")).toMatchObject({
+      noMethods: true, blockedReason: "Keep Link or Passcode on to share this item.",
+      name: "trips",
+    });
+  });
+
+  it("keeps a deleted item visible and never substitutes the current note", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    t.app.store.update((s) => ({
+      ...s, workspace: { ...s.workspace, tree: { roots: [] } },
+    }));
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, name: "trips", deleted: true });
+    expect(t.access().grants).toHaveLength(1);
+  });
+
+  it("counts 10,000 notes with an immediate draft, yielding for input, and discards a cancelled count", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    t.app.store.update((s) => ({
+      ...s, workspace: { ...s.workspace, tree: { roots: [{
+        id: "private", path: "/w/private/notes", readOnly: false, children: [{
+          kind: "folder", name: "large", children: Array.from({ length: 10_000 }, (_, i) => ({
+            kind: "note", name: `${i}.md`, title: `Note ${i}`, published: false,
+          })),
+        }],
+      }] } },
+    }));
+    const opening = t.run("share.item.open", { path: "/w/private/notes/large" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, counting: true });
+    await t.run("share.item.togglePasscode");
+    await opening;
+    expect(t.vm("vm.shareItem")).toMatchObject({ notes: 10_000, counting: false, passcode: true });
+    const again = t.run("share.item.open", { path: "/w/private/notes/large" });
+    await t.run("share.item.setOpen", { open: false });
+    await again;
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: false, notes: 0, contents: [] });
+    expect(t.access().grants).toHaveLength(1);
+  });
+});
+
 function shell() {
   let access: AccessFile = { version: 1, grants: [{ id: "gownergrant1", name: "You", owner: true, salt: "AAAAAAAAAAAAAAAAAAAAAA", passcodeKey: "A".repeat(43), scope: { all: true }, createdAt: "2026-10-01T00:00:00.000Z" }] };
   const copied: string[] = [];
@@ -87,7 +360,7 @@ function shell() {
   const listing = (): AccessListing => ({ available: true, site: SITE, ...(template ? { template } : {}), vault: true, grants: shareGrants(access).map(audienceOf) });
   const secrets = (id: string) => {
     const g = shareGrants(access).find((x) => x.id === id)!;
-    return { ...(g.link ? { link: shareLink(SITE, g.id, g.link.secret) } : {}), ...(g.passcode ? { passcode: g.passcode.value } : {}) };
+    return { ...(g.link ? { link: shareLink(SITE, g.id, g.link.secret) } : {}), ...(g.passcode ? { passcode: g.passcode.value } : {}), ...(g.shareCode && g.passcode ? { accessCode: `${displayShareCode(g.shareCode)} ${g.passcode.value}` } : {}) };
   };
   const revealed: string[] = [];
   const bridge: PlatformBridge = {
@@ -114,16 +387,25 @@ function shell() {
     access: {
       load: async () => listing(),
       apply: async (change: AccessChange) => {
-        const r = applyAccessChange(access, JSON.parse(JSON.stringify(change)) as AccessChange, new Date(), { generate: generatePasscode });
+        const r = applyAccessChange(access, JSON.parse(JSON.stringify(change)) as AccessChange, new Date(), {
+          generate: generatePasscode,
+          ...(change.op === "createItem" || change.op === "addItemNotes" ? { resolvedItemNotes: {
+            ...(change.op === "addItemNotes" ? { grantId: change.id } : {}), notes: change.notes, ids: change.notes.map((_, i) => `fixture-id-${i}`),
+          } } : {}),
+        });
         access = r.access;
         return { ...listing(), id: r.id };
       },
       reveal: async (id) => (revealed.push(id), secrets(id)),
+      ready: async () => {},
+      prepareWords: async () => ({ id: "wprepared001", value: generatePasscode() }),
+      cancelReady: async () => {},
       setTemplate: async (t) => ((template = t ?? undefined), listing()),
       // As the main process does: the window sends the invite without secrets, and the shell fills them in.
       copy: async (id, what, invite) => {
         const s = secrets(id);
-        copied.push(what === "invite" ? inviteText(invite!.template, { ...invite!.values, ...s, site: `${SITE}s/` }) : (what === "link" ? s.link : s.passcode)!);
+        const g = shareGrants(access).find((x) => x.id === id)!;
+        copied.push(what === "information" ? itemInviteText(invite!.template, { title: g.item!.label, ...s, site: `${SITE}s/` }) : what === "invite" ? inviteText(invite!.template, { ...invite!.values, ...s, site: `${SITE}s/` }) : (what === "link" ? s.link : what === "accessCode" ? s.accessCode : s.passcode)!);
       },
     },
   };

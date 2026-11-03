@@ -341,6 +341,15 @@ export function registerFiles(ctx: Ctx) {
     id: "files.openItem", title: "command.files.openItem", shortcut: { macos: "Mod+Down", default: "Enter", handledBy: "filesTree" }, layer: "basic", group: "files",
     run: () => activate(files().selection.focus),
   });
+  commands.register({
+    id: "files.share", title: "command.note.share", icon: "share",
+    enabled: (s) => Boolean(bridge.access) && Boolean(rowById(s.ui.files.selection.focus)) && !isRootRow(s.ui.files.selection.focus),
+    disabledReason: "command.note.share.reason",
+    run: async () => {
+      const row = rowById(files().selection.focus);
+      if (row) await commands.run("share.item.open", { path: row.path });
+    },
+  });
 
   // ---- links that follow renames and moves (FIL-09, D-95) ----
   /**
@@ -1375,10 +1384,12 @@ export function registerFiles(ctx: Ctx) {
       if (id === "files.newNote" && newNoteShortcut()) return { ...d, shortcut: newNoteShortcut() };
       return d;
     };
-    const menu = rowMenu(focus, acted, {
+    const sections = rowMenu(focus, acted, {
       both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
-    }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    });
+    if (bridge.access && focus.kind !== "root") sections.splice(1, 0, ["files.share"]);
+    const menu = sections.map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };

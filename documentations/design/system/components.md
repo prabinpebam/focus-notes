@@ -88,7 +88,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | StrengthMeter | primitive | `rest` | 5 | None |
 | Switch | primitive | `rest`, `checked`, `disabled`, `hover`, `focusVisible` | 4 | `hover`, `focusVisible` |
 | ProgressBar | primitive | `rest` | 3 | None |
-| DatePicker | primitive | `rest`, `focused`, `open`, `invalid` | 3 | `focused`, `open` |
+| DatePicker | primitive | `rest`, `focused`, `open`, `invalid`, `readOnly` | 4 | `focused`, `open` |
 | ProjectMark | primitive | `rest`, `selected` | 39 | None |
 | ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | FontChoice | primitive | `rest`, `selected` | 7 | None |

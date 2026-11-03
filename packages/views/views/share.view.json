@@ -7,6 +7,7 @@
   ],
   "focus": "page",
   "local": {
+    "accessCode": "",
     "name": "",
     "passcode": ""
   },
@@ -37,18 +38,24 @@
             { "type": "Text", "props": { "value": { "t": "share.reader.gate.intro" }, "tone": "muted" } }
           ] },
           { "type": "Text", "when": { "get": "vm.share.signedOut" }, "props": { "value": { "t": "share.reader.signedOut" }, "announce": true } },
-          { "type": "TextField", "id": "name", "props": { "label": { "t": "share.reader.name" }, "value": { "bind": "local.name" }, "invalid": { "get": "vm.share.error" }, "autoFocus": true, "focusRequest": { "get": "vm.share.focus" } },
+          { "type": "TextField", "id": "accessCode", "when": { "expr": { "!": { "get": "vm.share.legacy" } } }, "props": { "label": { "t": "share.reader.accessCode" }, "type": "password", "value": { "bind": "local.accessCode" }, "invalid": { "get": "vm.share.error" }, "autoFocus": true, "focusRequest": { "get": "vm.share.focus" } },
+            "on": { "submit": [{ "run": "share.submitCode", "args": { "value": { "get": "local.accessCode" } } }, { "set": "local.accessCode", "to": "" }] } },
+          { "type": "TextField", "id": "name", "when": { "get": "vm.share.legacy" }, "props": { "label": { "t": "share.reader.name" }, "value": { "bind": "local.name" }, "invalid": { "get": "vm.share.error" }, "autoFocus": true, "focusRequest": { "get": "vm.share.focus" } },
             "on": { "submit": [{ "run": "share.submit", "args": { "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }] } },
-          { "type": "TextField", "id": "passcode", "props": { "label": { "t": "share.reader.passcode" }, "type": "password", "value": { "bind": "local.passcode" }, "invalid": { "get": "vm.share.error" } },
+          { "type": "TextField", "id": "passcode", "when": { "get": "vm.share.legacy" }, "props": { "label": { "t": "share.reader.passcode" }, "type": "password", "value": { "bind": "local.passcode" }, "invalid": { "get": "vm.share.error" } },
             "on": { "submit": [{ "run": "share.submit", "args": { "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }] } },
           { "type": "Text", "when": { "get": "vm.share.error" }, "props": { "value": { "t": "share.reader.error" }, "tone": "danger", "announce": true } },
           { "type": "Text", "when": { "get": "vm.share.empty" }, "props": { "value": { "t": "share.reader.error.empty" }, "tone": "danger", "announce": true } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
             { "type": "Button", "id": "open", "props": { "label": { "t": "share.reader.open" }, "variant": "primary", "busy": { "get": "vm.share.busy" } },
-              "on": { "press": [{ "run": "share.submit", "args": { "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }] } },
+              "on": { "press": [{ "run": "share.submit", "args": { "value": { "get": "local.accessCode" }, "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }, { "set": "local.accessCode", "to": "" }] } },
             { "type": "Button", "id": "openRemember", "props": { "label": { "t": "share.reader.openRemember" }, "busy": { "get": "vm.share.busy" } },
-              "on": { "press": [{ "run": "share.submit", "args": { "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" }, "remember": true } }, { "set": "local.passcode", "to": "" }] } }
-          ] }
+              "on": { "press": [{ "run": "share.submit", "args": { "value": { "get": "local.accessCode" }, "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" }, "remember": true } }, { "set": "local.passcode", "to": "" }, { "set": "local.accessCode", "to": "" }] } }
+          ] },
+          { "type": "Button", "when": { "expr": { "!": { "get": "vm.share.legacy" } } }, "props": { "label": { "t": "share.reader.legacy" }, "variant": "subtle" },
+            "on": { "press": [{ "run": "share.setLegacy", "args": { "value": true } }, { "set": "local.accessCode", "to": "" }] } },
+          { "type": "Button", "when": { "get": "vm.share.legacy" }, "props": { "label": { "t": "share.reader.useCode" }, "variant": "subtle" },
+            "on": { "press": [{ "run": "share.setLegacy", "args": { "value": false } }, { "set": "local.passcode", "to": "" }] } }
         ] },
         "list": { "type": "Stack", "props": { "gap": "s" }, "children": [
           { "type": "NoteContent", "props": { "blocks": { "get": "vm.share.list.title" } } },

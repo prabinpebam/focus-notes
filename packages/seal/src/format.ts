@@ -103,7 +103,7 @@ export type KeyringKdf = typeof KDF | "hkdf-sha256";
 export type KeyringEnvelope =
   | { v: 1; kdf: typeof KDF; iterations: typeof ITERATIONS; salt: string; iv: string; data: string }
   | { v: 1; kdf: "hkdf-sha256"; salt: string; iv: string; data: string };
-export interface KeyringPayload { grant: string; expiresAt: string | null; manifest: { kid: string; key: string } }
+export interface KeyringPayload { grant: string; expiresAt: string | null; authorization?: string; manifest: { kid: string; key: string } }
 
 /**
  * The keyring's header, its role (`vault`, `link|<grant id>`, `passcode|<lookup>`), and the build,
@@ -157,6 +157,7 @@ export async function openKeyring(e: KeyringEnvelope, key: CryptoKey, build: str
   let p: KeyringPayload;
   try { p = JSON.parse(dec.decode(plain)) as KeyringPayload; } catch { throw new SealError("format", "keyring payload"); }
   if (typeof p?.grant !== "string" || typeof p.manifest?.kid !== "string" || !KID.test(p.manifest.kid) || typeof p.manifest.key !== "string") throw new SealError("format", "keyring payload");
+  if (p.authorization !== undefined && (typeof p.authorization !== "string" || !/^[0-9a-f]{64}$/.test(p.authorization))) throw new SealError("format", "keyring authorization");
   if (p.expiresAt && Date.parse(p.expiresAt) < Date.now()) throw new SealError("key", "expired");
   return p;
 }

@@ -45,6 +45,7 @@ const opened = ({ share, session }: OpenShare): OpenedShare => ({ notes: share.n
 const source: ShareSource = {
   openLink: async (l) => opened(await new SiteReader(get).openLinkSession(l.id, l.secret)),
   openPasscode: async (name, passcode) => opened(await new SiteReader(get).openPasscodeSession(name, passcode)),
+  openAccessCode: async (value) => opened(await new SiteReader(get).openAccessCode(value)),
   resume: async (session) => opened(await new SiteReader(get).resume(session)),
 };
 
@@ -78,7 +79,12 @@ const app: RuntimeApp = {
     has: (id) => (SHARE_COMMANDS as readonly string[]).includes(id),
     describe: (id) => { throw new Error(`The share reader's commands have no description (${id})`); },
     run: async (id, args) => {
-      if (id === "share.submit") await reader.submit(String(args?.name ?? ""), String(args?.passcode ?? ""), args?.remember === true);
+      if (id === "share.submit") {
+        if (reader.state.legacy) await reader.submit(String(args?.name ?? ""), String(args?.passcode ?? ""), args?.remember === true);
+        else await reader.submitCode(String(args?.value ?? ""), args?.remember === true);
+      }
+      else if (id === "share.submitCode") await reader.submitCode(String(args?.value ?? ""), args?.remember === true);
+      else if (id === "share.setLegacy") reader.setLegacy(args?.value === true);
       else if (id === "share.setRemember") reader.setRemember(args?.value === true);
       else if (id === "share.signOut") { reader.signOut(); dropNoteFragment(); }
       else if (id === "share.showList") { reader.showList(); dropNoteFragment(); }

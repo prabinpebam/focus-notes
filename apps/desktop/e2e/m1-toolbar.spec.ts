@@ -189,7 +189,7 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   // The menu holds what UI-07 lists, in its groups.
   const labelOf = (el: Element | null) => document.getElementById(el?.getAttribute("aria-labelledby") ?? "")?.firstElementChild?.firstElementChild?.textContent ?? "";
   const labels = await menu.getByRole("menuitem").evaluateAll((els, fn) => els.map((e) => new Function("el", `return (${fn})(el)`)(e) as string), labelOf.toString());
-  expect(labels).toEqual(expect.arrayContaining(["Smaller text", "Larger text", "Reset text size", "Full screen", "Find", "Find and replace", "Share and visibility…", "Settings…", "Keyboard shortcuts", "Help and docs"]));
+  expect(labels).toEqual(expect.arrayContaining(["Smaller text", "Larger text", "Reset text size", "Full screen", "Find", "Find and replace", "Share…", "Settings…", "Keyboard shortcuts", "Help and docs"]));
   // Arrow keys reach every item, unavailable ones included, so a screen reader hears why (the reason is in its name).
   const visited: string[] = [];
   const seen = new Set<string>();
@@ -200,12 +200,12 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
     visited.push(label);
     await page.keyboard.press("ArrowDown");
   }
-  expect(visited).toEqual(expect.arrayContaining(["Share and visibility…", "Settings…", "Help and docs", "Keyboard shortcuts"]));
+  expect(visited).toEqual(expect.arrayContaining(["Share…", "Settings…", "Help and docs", "Keyboard shortcuts"]));
 
-  // Share and visibility opens the note's Share popover on the desktop (D-143); m5-public-link.spec.ts chooses it.
-  const share = menu.getByRole("menuitem", { name: /^Share and visibility…/ });
+  // Share… opens the fixed-item dialog; item-sharing.spec.ts checks its publication actions.
+  const share = menu.getByRole("menuitem", { name: /^Share…/ });
   await expect(share).not.toHaveAttribute("aria-disabled", "true");
-  await expect(share).toHaveAccessibleName("Share and visibility…");
+  await expect(share).toHaveAccessibleName("Share…");
   // Settings is the desktop's own (D-103): available, with its shortcut in its name. The browser
   // shows it unavailable, saying Settings are in the desktop app.
   const settings = menu.getByRole("menuitem", { name: /^Settings…/ });

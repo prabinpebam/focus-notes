@@ -7,7 +7,7 @@ import {
   parsePublicIndex, parseSiteManifest, sealedPath, SealError, vaultPath,
   type KeyringEnvelope, type ManifestEntry, type PublicNote, type SiteManifest,
 } from "./format.ts";
-import { deriveLinkKey, GRANT_ID, keyringRole, LINK_KDF, linkKeyringPath, nameLookup, passcodeKeyringPath } from "./grants.ts";
+import { codeKeyringPath, deriveLinkKey, GRANT_ID, keyringRole, LINK_KDF, linkKeyringPath, nameLookup, parseAccessCode, passcodeKeyringPath, SHARE_CODE } from "./grants.ts";
 
 /** Fetches a file of the site by its path from the site's root. Resolves to undefined if it isn't there. */
 export type SiteFetch = (path: string) => Promise<string | undefined>;
@@ -115,6 +115,20 @@ export class SiteReader {
       return this.#openShare(m, envelope, "passcode", lookup, await derivePasscodeKey(passcode, keyringSalt(envelope)));
     });
   }
+  async openAccessCode(value: string): Promise<OpenShare> {
+    return generic(async () => {
+      const parsed = parseAccessCode(value);
+      if (!parsed) throw new SealError("key");
+      const m = await this.manifest();
+      const text = m ? await this.get(codeKeyringPath(m.build, parsed.code)) : undefined;
+      if (text === undefined) {
+        await derivePasscodeBits(parsed.passcode, DUMMY_SALT);
+        throw new SealError("key");
+      }
+      const envelope = parseKeyring(text, KDF);
+      return this.#openShare(m!, envelope, "code", parsed.code, await derivePasscodeKey(parsed.passcode, keyringSalt(envelope)));
+    });
+  }
   /** Reopens a share from a stored session. Anything malformed or expired fails before any request; every failure is generic. */
   async resume(stored: unknown): Promise<OpenShare> {
     return generic(async () => {
@@ -126,13 +140,13 @@ export class SiteReader {
 
   async #shareKeyring(m: SiteManifest | undefined, via: ShareSession["via"], ref: string): Promise<KeyringEnvelope> {
     if (!m) throw new SealError("key");
-    const text = await this.get(via === "link" ? linkKeyringPath(m.build, ref) : passcodeKeyringPath(m.build, ref));
+    const text = await this.get(via === "link" ? linkKeyringPath(m.build, ref) : via === "code" ? codeKeyringPath(m.build, ref) : passcodeKeyringPath(m.build, ref));
     if (text === undefined) throw new SealError("key");
     return parseKeyring(text, via === "link" ? LINK_KDF : KDF);
   }
   async #openShare(m: SiteManifest, envelope: KeyringEnvelope, via: ShareSession["via"], ref: string, key: CryptoKey): Promise<OpenShare> {
     // A link's keyring names its grant, so it must be the one the link asked for (D-117).
-    const share = await this.#open(m, envelope, key, via === "link" ? keyringRole.link(ref) : keyringRole.passcode(ref), via === "link" ? ref : undefined);
+    const share = await this.#open(m, envelope, key, via === "link" ? keyringRole.link(ref) : via === "code" ? keyringRole.code(ref) : keyringRole.passcode(ref), via === "link" ? ref : undefined);
     return { share, session: { v: 1, via, ref, key, expiresAt: share.expiresAt ?? null } };
   }
 
@@ -149,6 +163,7 @@ export class SiteReader {
     return {
       owner: manifest.owner,
       expiresAt: ring.expiresAt,
+      ...(ring.authorization ? { authorization: ring.authorization } : {}),
       notes: notes.map(({ path, title, updated }) => ({ path, title, updated })),
       read: async (path) => {
         const entry: ManifestEntry | undefined = byPath.get(path);
@@ -171,6 +186,8 @@ export interface OpenVault {
   owner: string;
   /** When the grant ends, as its keyring says (null: never). */
   expiresAt?: string | null;
+  /** Authenticated membership revision, used only by the publishing desktop. */
+  authorization?: string;
   notes: PublicNote[];
   read(path: string): Promise<string>;
 }
@@ -181,7 +198,7 @@ export interface OpenVault {
  * AES-GCM CryptoKey (stored only by structured clone, in IndexedDB), and the grant's expiry.
  * Never the link secret, the name, or the passcode, and never the key's bytes.
  */
-export interface ShareSession { v: 1; via: "link" | "passcode"; ref: string; key: CryptoKey; expiresAt: string | null }
+export interface ShareSession { v: 1; via: "link" | "passcode" | "code"; ref: string; key: CryptoKey; expiresAt: string | null }
 export interface OpenShare { share: OpenVault; session: ShareSession }
 
 const LOOKUP = /^[0-9a-f]{32}$/;
@@ -194,7 +211,7 @@ export function parseShareSession(v: unknown): ShareSession {
   const s = v as Partial<ShareSession> | null;
   const fail = () => { throw new SealError("key"); };
   if (typeof s !== "object" || s === null || Object.keys(s).sort().join(",") !== "expiresAt,key,ref,v,via" || s.v !== 1) return fail();
-  if (!(s.via === "link" ? GRANT_ID : s.via === "passcode" ? LOOKUP : undefined)?.test(String(s.ref))) return fail();
+  if (!(s.via === "link" ? GRANT_ID : s.via === "passcode" ? LOOKUP : s.via === "code" ? SHARE_CODE : undefined)?.test(String(s.ref))) return fail();
   if (!isDecryptKey(s.key)) return fail();
   if (s.expiresAt !== null && (typeof s.expiresAt !== "string" || !(Date.parse(s.expiresAt) > Date.now()))) return fail();
   return s as ShareSession;

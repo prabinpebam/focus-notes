@@ -4,6 +4,9 @@ import { tokens } from "@focus-notes/tokens";
 const t = tokens.cmp.fileTree;
 /** How deep a row is (aria-level minus one), set per row: each level indents by one step. */
 export const depth = createVar({ syntax: "<number>", inherits: false, initialValue: "0" });
+export const skippedRows = createVar({ syntax: "<number>", inherits: false, initialValue: "0" });
+export const spacer = style({ flexShrink: 0, height: `calc(${skippedRows} * (${t.rowHeight} + ${t.rowGap}) - ${t.rowGap})` });
+export const windowed = style({ overflowY: "auto", maxHeight: `calc(12 * (${t.rowHeight} + ${t.rowGap}))` });
 
 // It scrolls with what holds it (the Files sheet's body), which fades its edges (D-111).
 export const tree = style({

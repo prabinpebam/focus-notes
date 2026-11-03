@@ -21,13 +21,13 @@ export interface ImageViewOptions {
   action?: (payload: { id: string }) => void;
 }
 
-function ImageNode({ payload, selected, options, select, capture }: { payload: ImagePayload; selected: boolean; options: ImageViewOptions; select: (focus?: boolean) => void; capture: () => ImagePayload }) {
+function ImageNode({ payload, selected, options, select, capture }: { payload: ImagePayload; selected: boolean; options: ImageViewOptions; select: (focus?: boolean, all?: boolean) => void; capture: () => ImagePayload }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const boundary = useWindowBoundary();
   const source = options.sources.find((s) => s.id === payload.src);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  return <span ref={ref} onClick={() => select(true)} onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); } }}>
+  return <span ref={ref} onClick={() => select(true)} onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") { e.preventDefault(); e.stopPropagation(); select(false, true); } }} onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); } }}>
     {source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected}
       onSize={setSize} onContextMenu={() => { select(); options.select?.({ ...capture(), ...size }); setOpen(true); }} />
       : source ? <Text value={options.missing} /> : <Spinner />}
@@ -45,10 +45,11 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     const root = createRoot(dom);
     let current = node;
     let selected = false;
-    const select = (focus = false) => {
+    const select = (focus = false, all = false) => {
       const pos = getPos();
       if (typeof pos !== "number") return;
       syncSelection(editor);
+      if (all) { editor.commands.selectAll(); return; }
       const selection = editor.state.selection;
       if (!focus && !selection.empty && pos >= selection.from && pos < selection.to) return;
       editor.commands.setNodeSelection(pos);
