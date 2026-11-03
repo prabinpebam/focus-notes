@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **76 registered contracts**: **49 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **77 registered contracts**: **50 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch (planned)</h2>
 
@@ -41,7 +41,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**76 registered contracts:** 49 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
+**77 registered contracts:** 50 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -90,6 +90,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | FontChoice | primitive | `rest`, `selected` | 7 | None |
 | ProjectPill | primitive | `rest` | 26 | None |
+| PickerButton | primitive | `rest`, `selected` | 19 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -101,7 +102,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
 | Stack | layout | `rest` | 18 | None |
 | Inline | layout | `rest` | 19 | None |
-| Columns | layout | `rest` | 1 | None |
+| Columns | layout | `rest` | 2 | None |
 | Surface | layout | `rest` | 24 | None |
 | Layer | layout | `rest` | 19 | None |
 | Center | layout | `rest` | 11 | None |
@@ -222,6 +223,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **ItemCard** | Implemented | `title` (required), `detail`, `badge`, `icon`, `avatar`, `initials`, `mark`, `size` m or l, `personal`, `label`, `busy`, `disabled`, `skeleton`, `autoFocus`; event `press`; a default slot for its actions. One thing shown rather than described: an account, a workspace, or an option (D-126, D-127); `cmp.itemCard.*` | Group, named by its label | The first run's account and workspace choices |
 | **AppMark** | Implemented | `size` m or l, `label`. The app icon drawn from the brand tokens, a dark tile in a dark theme (D-126, D-135); decorative unless labelled | Image | The full-window setup's hero |
 | **FontChoice** | Implemented | `font` mono, sans, serif, hyperlegible, dyslexic or system; `label`; `selected`; a toggle button drawing a large Aa and the font's name in that font, so a writing font is chosen by eye (D-316) | Toggle button | Settings → Project (mocks, awaiting approval) |
+| **PickerButton** | Implemented | `label`, `value`, `font`, `theme`, `chevron`, `selected`; a compact button showing only a setting's current value (a font's name in that font, or a theme's name with its swatch) that opens its choices in a PopoverPanel; without the chevron, an option in the popover's grid (D-323) | Button | Settings → Project's Font and Theme (mocks, awaiting approval) |
 | **ProjectPill** | Implemented | `name`, `logo`, `src`, `accent`, `label`; pressable. A window's project at the end of its status row, after Backed up: the logo and name on a soft fill of the accent, the name in the text colour, truncated with an ellipsis; pressing it opens Settings → Project (D-317) | Button | Every project window's status row (mocks, awaiting approval) |
 | **ImageFrame** | Implemented | `src` (a data URL the shell made), `alt`, `mode` column, wide, actual or thumb, `fitHeight` (on by default), `rounded`, `selected`, `hint` (No description), `crop` and `rotation` for Edit image. An inline image in the note's flow with a token backdrop behind transparency (IMG, D-300) | Image | Images in notes, Edit image, Auto caption (mocks, awaiting approval) |
 | **ProjectMark** | Implemented | `logo` one of 24 presets (Fluent geometry), `upload` (a sanitized SVG data URL in `src`) or `none` (`initials`); `accent` one of 12 presets or `app`; `plate` tint, neutral or solid; `size` s, m, l, xl or watermark; `selected`; pressable as a toggle in the logo and colour pickers. A project's identity (D-313); the watermark hides in more contrast, forced colours and reduced transparency; decorative unless labelled | Image, or toggle button | The title band, the Files heading, Projects, Settings → Project (mocks, awaiting approval) |

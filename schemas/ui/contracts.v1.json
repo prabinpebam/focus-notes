@@ -6456,7 +6456,7 @@
     {
       "type": "FontChoice",
       "tier": "primitive",
-      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name, a toggle pressed when chosen. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
+      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name in a cell of fixed size, a toggle pressed when chosen; pointing at it previews it. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
       "props": {
         "font": {
           "kind": "enum",
@@ -6481,7 +6481,8 @@
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "preview": {}
       },
       "slots": {},
       "states": [
@@ -6907,6 +6908,313 @@
             "src": {
               "get": "vm.gallery.logoSrc"
             }
+          }
+        }
+      ]
+    },
+    {
+      "type": "PickerButton",
+      "tier": "primitive",
+      "description": "A compact button that shows only a setting's current value and opens its choices in a popover (D-316, owner 3 November): a font's name drawn in that font, or a theme's name beside a small swatch of it, then a chevron. Use it as a PopoverPanel's trigger.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What it sets: its accessible name with the value (Font: Serif)."
+        },
+        "value": {
+          "kind": "message",
+          "required": true,
+          "description": "The current value, the button's visible text."
+        },
+        "font": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system",
+            "app"
+          ],
+          "default": "app",
+          "description": "Draws the value in this writing font."
+        },
+        "theme": {
+          "kind": "enum",
+          "values": [
+            "paper",
+            "sepia",
+            "harbor-light",
+            "forest-light",
+            "contrast-light",
+            "ink",
+            "dusk",
+            "harbor-dark",
+            "forest-dark",
+            "contrast-dark",
+            "app"
+          ],
+          "default": "app",
+          "description": "Shows a swatch of this theme before the value; app: no swatch."
+        },
+        "chevron": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Off for an option inside the popover's grid: a choice, not a trigger."
+        },
+        "selected": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {},
+        "preview": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.pickerButton.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "font mono",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "mono"
+          }
+        },
+        {
+          "name": "font sans",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "sans"
+          }
+        },
+        {
+          "name": "font serif",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "serif"
+          }
+        },
+        {
+          "name": "font hyperlegible",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "hyperlegible"
+          }
+        },
+        {
+          "name": "font dyslexic",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "dyslexic"
+          }
+        },
+        {
+          "name": "font system",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "system"
+          }
+        },
+        {
+          "name": "font app",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "font": "app"
+          }
+        },
+        {
+          "name": "option selected",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "sepia",
+            "chevron": false,
+            "selected": true
+          },
+          "covers": [
+            "selected"
+          ]
+        },
+        {
+          "name": "theme paper",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "paper"
+          }
+        },
+        {
+          "name": "theme sepia",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "sepia"
+          }
+        },
+        {
+          "name": "theme harbor-light",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "harbor-light"
+          }
+        },
+        {
+          "name": "theme forest-light",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "forest-light"
+          }
+        },
+        {
+          "name": "theme contrast-light",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "contrast-light"
+          }
+        },
+        {
+          "name": "theme ink",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "ink"
+          }
+        },
+        {
+          "name": "theme dusk",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "dusk"
+          }
+        },
+        {
+          "name": "theme harbor-dark",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "harbor-dark"
+          }
+        },
+        {
+          "name": "theme forest-dark",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "forest-dark"
+          }
+        },
+        {
+          "name": "theme contrast-dark",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "contrast-dark"
+          }
+        },
+        {
+          "name": "theme app",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "t": "gallery.sample"
+            },
+            "theme": "app"
           }
         }
       ]
@@ -8331,6 +8639,15 @@
           "kind": "token",
           "group": "space",
           "default": "m"
+        },
+        "cell": {
+          "kind": "enum",
+          "values": [
+            "sheet",
+            "choice"
+          ],
+          "default": "sheet",
+          "description": "sheet: each column at least a narrow sheet wide. choice: a uniform grid of small equal cells, three across (the font picker in its popover, D-316, D-323)."
         }
       },
       "events": {},
@@ -8347,6 +8664,47 @@
         "pattern": "none"
       },
       "fixtures": [
+        {
+          "name": "choice cells",
+          "props": {
+            "gap": "xs",
+            "cell": "choice"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "two",
           "props": {

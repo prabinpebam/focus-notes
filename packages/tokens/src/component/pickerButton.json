@@ -1,0 +1,22 @@
+{ "cmp": { "pickerButton": {
+  "family": { "$type": "fontFamily", "$value": "{font.content}", "$description": "The value's font: the writing font its scope sets." },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "height": { "$type": "dimension", "$value": "{size.controlM}" },
+  "padding": { "$type": "dimension", "$value": "{space.s}" },
+  "gap": { "$type": "dimension", "$value": "{space.xs}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "border": { "$type": "color", "$value": "{color.borderStrong}" },
+  "background": { "$type": "color", "$value": "{color.surfaceRaised}" },
+  "backgroundHover": { "$type": "color", "$value": "{color.hover}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "selectedRing": { "$type": "color", "$value": "{color.text}" },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "ringOffset": { "$type": "dimension", "$value": "{border.hairline}" },
+  "swatch": { "$type": "dimension", "$value": "{size.swatch}" },
+  "swatchRadius": { "$type": "dimension", "$value": "{radius.round}" },
+  "swatchCanvas": { "$type": "color", "$value": "{color.canvas}" },
+  "swatchBorder": { "$type": "color", "$value": "{color.borderStrong}" },
+  "swatchAccent": { "$type": "color", "$value": "{color.accent}" }
+} } }

@@ -265,41 +265,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Icon",
-                  "props": {
-                   "name": "quickNote",
-                   "size": "m"
-                  }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "quick.window"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -481,41 +446,6 @@
               },
               "children": [
                {
-                "type": "ProjectScope",
-                "props": {
-                 "part": "band"
-                },
-                "children": [
-                 {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "s",
-                   "align": "center",
-                   "padding": "s"
-                  },
-                  "children": [
-                   {
-                    "type": "Icon",
-                    "props": {
-                     "name": "quickNote",
-                     "size": "m"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "quick.window"
-                     },
-                     "role": "caption",
-                     "lines": "one"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
-               {
                 "type": "Stack",
                 "props": {
                  "gap": "m",
@@ -672,41 +602,6 @@
             },
             "children": [
              {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Icon",
-                  "props": {
-                   "name": "quickNote",
-                   "size": "m"
-                  }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "quick.window"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
-             {
               "type": "Stack",
               "props": {
                "gap": "m",
@@ -796,41 +691,6 @@
              "grow": true
             },
             "children": [
-             {
-              "type": "ProjectScope",
-              "props": {
-               "part": "band"
-              },
-              "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "s",
-                 "align": "center",
-                 "padding": "s"
-                },
-                "children": [
-                 {
-                  "type": "Icon",
-                  "props": {
-                   "name": "text",
-                   "size": "m"
-                  }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "project.file.window"
-                   },
-                   "role": "caption",
-                   "lines": "one"
-                  }
-                 }
-                ]
-               }
-              ]
-             },
              {
               "type": "Stack",
               "props": {

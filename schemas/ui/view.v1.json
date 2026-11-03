@@ -335,6 +335,9 @@
           "$ref": "#/$defs/c_ProjectPill"
         },
         {
+          "$ref": "#/$defs/c_PickerButton"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -6669,7 +6672,7 @@
     },
     "c_FontChoice": {
       "type": "object",
-      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name, a toggle pressed when chosen. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
+      "description": "One writing font to choose, drawn in that font (D-316): a large Aa and its name in a cell of fixed size, a toggle pressed when chosen; pointing at it previews it. Used in Settings → Project and the theme manager's fonts; not for interface fonts.",
       "required": [
         "type",
         "props"
@@ -6757,6 +6760,9 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "preview": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -6906,6 +6912,157 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_PickerButton": {
+      "type": "object",
+      "description": "A compact button that shows only a setting's current value and opens its choices in a popover (D-316, owner 3 November): a font's name drawn in that font, or a theme's name beside a small swatch of it, then a chevron. Use it as a PopoverPanel's trigger.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "PickerButton"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "font": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "mono",
+                    "sans",
+                    "serif",
+                    "hyperlegible",
+                    "dyslexic",
+                    "system",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "theme": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "paper",
+                    "sepia",
+                    "harbor-light",
+                    "forest-light",
+                    "contrast-light",
+                    "ink",
+                    "dusk",
+                    "harbor-dark",
+                    "forest-dark",
+                    "contrast-dark",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "chevron": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "value"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "preview": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -7772,6 +7929,22 @@
                 },
                 {
                   "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "cell": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "sheet",
+                    "choice"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
                 }
               ]
             }

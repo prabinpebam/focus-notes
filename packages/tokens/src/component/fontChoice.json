@@ -5,7 +5,7 @@
   "nameSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
   "gap": { "$type": "dimension", "$value": "{space.xxs}" },
   "padding": { "$type": "dimension", "$value": "{space.s}" },
-  "minWidth": { "$type": "dimension", "$value": "{size.avatar}" },
+  "cellHeight": { "$type": "dimension", "$value": "{size.fontCell}", "$description": "Every font cell is this tall, so the grid is uniform." },
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "border": { "$type": "color", "$value": "{color.border}" },
