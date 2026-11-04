@@ -719,6 +719,16 @@
         "busyLabel": {
           "kind": "text"
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Immediate own-border feedback; recovery stays beside the compact control."
+        },
         "bleed": {
           "kind": "boolean",
           "default": false,
@@ -737,7 +747,10 @@
         "mixed",
         "focusVisible",
         "disabled",
-        "busy"
+        "busy",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.iconButton.*",
       "a11y": {
@@ -745,6 +758,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "tone default",
         "tone muted",
         "toggle off",
@@ -1050,6 +1067,16 @@
           "default": false,
           "description": "Locks only this menu, keeps its trigger focusable and shows a pending border on compact text variants."
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Own-border feedback after persisting a menu choice; Retry and Revert stay outside the compact trigger."
+        },
         "bleed": {
           "kind": "boolean",
           "default": false,
@@ -1070,7 +1097,10 @@
         "itemFocused",
         "itemDisabled",
         "itemChecked",
-        "busy"
+        "busy",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.menuButton.*",
       "a11y": {
@@ -1078,6 +1108,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "busy",
         "glyph bounds pill",
         "glyph bounds text",

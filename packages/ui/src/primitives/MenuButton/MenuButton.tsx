@@ -11,6 +11,7 @@ import type { CommandItem, MenuSection as Section } from "../../data.ts";
 import { ownHomeEnd } from "../../behaviors/menu-keys.ts";
 import { useBusy } from "../../behaviors/busy.ts";
 import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
+import type { CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./MenuButton.css.ts";
 
 export interface MenuButtonProps {
@@ -28,6 +29,8 @@ export interface MenuButtonProps {
   /** The text variant at the edge of a panel's content (the Files sheet's New): its text lines up with the edge (D-111). */
   bleed?: boolean;
   busy?: boolean;
+  /** Own-border feedback for a persisted choice; recovery stays outside the compact trigger. */
+  commit?: CommitState;
   onAction?: (payload: { id: string }) => void;
 }
 
@@ -197,24 +200,25 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
 }
 
 /** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
-export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, bleed, busy, onAction }: MenuButtonProps) {
+export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, bleed, busy, commit, onAction }: MenuButtonProps) {
   const [open, setOpen] = useState(false);
-  useEffect(() => { if (busy) setOpen(false); }, [busy]);
-  const { attrs, ref } = useBusy({ busy, label });
+  const pending = busy || commit === "pending";
+  useEffect(() => { if (pending) setOpen(false); }, [pending]);
+  const { attrs, ref } = useBusy({ busy: pending, label });
   const boundary = useWindowBoundary();
   const floating = useContext(FloatingContext);
   const surface = floating ? ` ${s.floating}` : "";
-  const words = <><span className={controlLabel}>{text ?? label}</span>{busy ? <BorderProgress state="pending" /> : null}</>;
-  const trigger = { ...attrs, ref, "aria-label": label };
+  const words = <><span className={controlLabel}>{text ?? label}</span>{pending ? <BorderProgress state="pending" /> : commit && commit !== "rest" ? <BorderProgress state={commit} /> : null}</>;
+  const trigger = { ...attrs, ref, "aria-label": label, "data-commit": commit };
   return (
-    <MenuTrigger isOpen={open && !busy} onOpenChange={(next) => { if (!next || !busy) setOpen(next); }}>
+    <MenuTrigger isOpen={open && !pending} onOpenChange={(next) => { if (!next || !pending) setOpen(next); }}>
       {variant === "pill"
         ? <Button {...trigger} className={`${s.pill} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}</Button>
         : variant === "select"
           ? <Button {...trigger} className={`${s.select} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : variant === "text"
           ? <Button {...trigger} className={`${s.text} ${s.busyAnchor}${surface}${bleed ? ` ${s.textBleed}` : ""}`} data-floating-control={floating ? "" : undefined} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
-          : <IconButton icon={icon} label={label} busy={busy} {...(shortcut ? { shortcut } : {})} />}
+          : <IconButton icon={icon} label={label} busy={busy} commit={commit} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">
         <CommandMenu label={label} sections={sections} onAction={onAction} />
       </Popover>

@@ -177,6 +177,78 @@ test("theme-manager appearance and paragraph choices retain failures and retry w
   }
 });
 
+test("theme and font choices keep failed drafts, retry their own choice and reopen stored settings", async () => {
+  const dirs = tempDirs();
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", appearance: "light" }));
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  const saved = () => JSON.parse(readFileSync(stateFile, "utf8"));
+  try {
+    const open = async () => {
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+      const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+      await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+      await settings.getByRole("button", { name: "Open theme manager", exact: true }).click();
+    };
+    await open();
+    const theme = l.page.getByRole("complementary", { name: "Theme", exact: true });
+    const gallery = theme.getByRole("listbox", { name: "Themes", exact: true });
+    const paper = gallery.getByRole("option", { name: /^Paper/ });
+    await paper.focus();
+    await paper.press("ArrowRight");
+    await expect.poll(() => saved().lightTheme).toBeUndefined();
+    await expect.poll(() => saved().darkTheme).toBeUndefined();
+    await l.page.keyboard.press("Escape");
+    await expect(l.page.locator("html")).toHaveAttribute("data-theme", "paper");
+    block();
+    const dusk = gallery.getByRole("option", { name: /^Dusk/ });
+    await dusk.click();
+    await expect(theme.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    await expect(dusk).toHaveAttribute("aria-selected", "true");
+    await expect(dusk.locator("[data-border-progress=failed]")).toHaveCount(1);
+    await expect(l.page.locator("html")).toHaveAttribute("data-theme", "paper");
+    await dusk.press("Home");
+    await expect(gallery.getByRole("option", { name: /^Paper/ })).toHaveAttribute("aria-selected", "true");
+    restore();
+    await theme.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => saved().darkTheme).toBe("dusk");
+    await expect.poll(() => saved().appearance).toBe("dark");
+    await expect(l.page.locator("html")).toHaveAttribute("data-theme", "dusk");
+    await theme.getByRole("tab", { name: "Reading", exact: true }).click();
+    const font = theme.getByRole("button", { name: /^Font:/ });
+    await font.click();
+    block();
+    await l.page.getByRole("menuitemcheckbox", { name: "Serif (Fraunces and Newsreader)", exact: true }).click();
+    await expect(font).toHaveAttribute("data-commit", "failed");
+    await expect(font).toContainText("Serif (Fraunces and Newsreader)");
+    await expect(l.page.locator("html")).not.toHaveAttribute("data-content-font");
+    restore();
+    await theme.getByRole("tabpanel", { name: "Reading", exact: true }).getByRole("button", { name: "Revert", exact: true }).click();
+    await expect(font).toContainText("Mono");
+    await expect.poll(() => saved().contentFont).toBeUndefined();
+    await font.click();
+    block();
+    await l.page.getByRole("menuitemcheckbox", { name: "Serif (Fraunces and Newsreader)", exact: true }).click();
+    await expect(font).toHaveAttribute("data-commit", "failed");
+    restore();
+    await theme.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => saved().contentFont).toBe("serif");
+    await expect(l.page.locator("html")).toHaveAttribute("data-content-font", "serif");
+    await expect(font).not.toHaveAttribute("data-commit", "pending");
+    await theme.getByRole("button", { name: "Close", exact: true }).click();
+    await open();
+    await theme.getByRole("tab", { name: "Reading", exact: true }).click();
+    await expect(font).toContainText("Serif (Fraunces and Newsreader)");
+    await expect(l.page.locator("html")).toHaveAttribute("data-theme", "dusk");
+  } finally { restore(); await closeTestApp(l); }
+});
+
 test("reading sliders preview keyboard changes, retain failed values, retry and reopen stored settings", async () => {
   const dirs = tempDirs();
   const stateFile = join(dirs.userData, DATA_FILES.state);

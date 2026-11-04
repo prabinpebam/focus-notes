@@ -284,28 +284,27 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     store.update((s) => ({ ...s, ui: { ...s.ui, theme: rest } }));
   });
   /** Choosing fills the theme's slot and shows it, switching the appearance if it's showing the other kind. */
-  reg<{ id: string }>("theme.choose", async ({ id }) => {
+  const chooseTheme = async (id: string, confirm: boolean) => {
     // Theme files are read when they're first needed, not at launch (PRF-14).
     if (isCustomId(String(id)) && !kindOf(store.state.appearance, String(id))) await reloadThemes();
     const kind = kindOf(store.state.appearance, String(id));
-    if (!kind) return;
+    if (!kind) throw new Error("Unknown theme");
     const t = { id: String(id), kind };
     const { preview, ...rest } = state();
     void preview;
     store.update((s) => ({ ...s, ui: { ...s.ui, theme: rest } }));
-    if (isCustomId(t.id)) {
-      // A custom theme fills its slot as the ⋯ menu's theme commands do, and is remembered the same way.
-      const key = kind === "light" ? "lightTheme" : "darkTheme";
-      await persistAppState({ [key]: t.id });
-      store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id } }));
-    } else await commands.run(`theme.${t.kind}.${t.id}`);
-    if (schemeOf(store.state.appearance) !== t.kind) await commands.run(`appearance.${t.kind}`);
+    const key = kind === "light" ? "lightTheme" : "darkTheme";
+    const changeMode = schemeOf(store.state.appearance) !== kind;
+    await persistAppState({ [key]: t.id, ...(changeMode ? { appearance: kind } : {}) });
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id, ...(changeMode ? { mode: kind } : {}) } }));
     // A copy of another theme goes once neither slot holds its base.
     const d = state().draft;
     const a = store.state.appearance;
     if (d && d.base !== a.lightTheme && d.base !== a.darkTheme) set({ draft: undefined });
-    announce(catalog.format("theme.chosen", { name: name(t.id), kind: catalog.format(`theme.kind.${t.kind}`) }));
-  });
+    if (confirm) announce(catalog.format("theme.chosen", { name: name(t.id), kind: catalog.format(`theme.kind.${t.kind}`) }));
+  };
+  reg<{ id: string }>("theme.choose", ({ id }) => chooseTheme(id, true));
+  reg<{ value: string }>("theme.setChoice", ({ value }) => chooseTheme(value, false));
   reg<{ value: string }>("appearance.setMode", async (a) => {
     const v = str(a);
     if (v === "system" || v === "light" || v === "dark") await commands.run(`appearance.${v}`);
@@ -320,7 +319,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     set({ readingPreview: { ...state().readingPreview, [field]: next } });
   });
   reg<{ value: string }>("reading.setFont", async (a) => {
-    if ((CONTENT_FONTS as readonly string[]).includes(str(a))) await commands.run(`font.content.${str(a)}`);
+    if (!(CONTENT_FONTS as readonly string[]).includes(str(a))) throw new Error("Unknown reading font");
+    await commands.run(`font.content.${str(a)}`);
   });
   reg<{ value: number }>("reading.setLineHeight", async ({ value }) => {
     const v = onSteps(value, LINE_HEIGHT);
@@ -480,14 +480,14 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         open: BOOL, tab: { type: "string", enum: [...THEME_TABS] }, tabs: { type: "array", items: OPTION },
         mode: { type: "string", enum: ["system", "light", "dark"] }, modes: { type: "array", items: OPTION },
         tiles: { type: "array", items: { type: "object", properties: { id: STR, label: STR, kind: { type: "string", enum: ["light", "dark"] }, slot: STR, badge: STR, description: STR, group: STR, sample: STR, colors: { type: "array", items: { type: "object", properties: { id: STR, value: STR } } } } } },
-        showing: STR, previewing: BOOL, focusRequest: NUM, status: STR, themeMenuLabel: STR, hasThemeMenu: BOOL,
+        showing: STR, themeChoice: STR, themeRetry: STR, themeCommit: STR, themeFailed: BOOL, previewing: BOOL, focusRequest: NUM, status: STR, themeMenuLabel: STR, hasThemeMenu: BOOL,
         themeMenu: { type: "array", items: { type: "object", properties: { id: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR } } } } } },
         reading: {
           type: "object",
           properties: {
             font: STR, fontText: STR, fontLabel: STR, fontMenu: { type: "array", items: { type: "object", properties: { id: STR, label: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR, checked: BOOL } } } } } }, sizeText: STR, canSmaller: BOOL, canLarger: BOOL,
             lineHeight: NUM, lineHeightText: STR, measure: NUM, measureText: STR, spacing: { type: "string", enum: [...PARAGRAPH_SPACINGS] }, spacings: { type: "array", items: OPTION },
-            focusDim: NUM, focusDimText: STR,
+            focusDim: NUM, focusDimText: STR, fontChoice: STR, fontCommit: STR, fontFailed: BOOL,
           },
         },
         colors: {
@@ -509,6 +509,10 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       const st = s.ui.theme;
       if (!st.open) return { open: false, tab: st.tab, tabs: [], mode: s.appearance.mode, modes: [], tiles: [], showing: "", previewing: false, focusRequest: st.focusRequest, status: "", themeMenuLabel: "", hasThemeMenu: false, themeMenu: [], reading: {}, colors: { rows: [] } };
       const a = s.appearance;
+      const themeCommit = s.commits?.find((item) => item.target === "vm.themeManager.choice");
+      const fontCommit = s.commits?.find((item) => item.target === "vm.themeManager.reading.font");
+      const themeDraft = typeof themeCommit?.value === "string" && themeCommit.phase !== "confirmed" ? themeCommit.value : undefined;
+      const fontChoice = typeof fontCommit?.value === "string" && fontCommit.phase !== "confirmed" ? fontCommit.value : a.contentFont;
       const displayed = (field: "lineHeight" | "measure" | "focusDim", fallback: number) => {
         const commit = s.commits?.find((item) => item.target === `vm.themeManager.reading.${field}` && item.phase !== "confirmed");
         return st.readingPreview?.[field] ?? (typeof commit?.value === "number" ? commit.value : a[field] ?? fallback);
@@ -545,13 +549,14 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         };
       });
       const failing = results.filter((r) => !r.pass).length;
-      // The fonts are the ⋯ menu's own commands, each showing whether it's chosen.
-      const fontMenu = [{ id: "fonts", items: CONTENT_FONTS.map((id) => ({ id: `font.content.${id}`, label: catalog.format(`font.${id}`), checked: a.contentFont === id })) }];
-      const fontText = catalog.format(`font.${a.contentFont}`);
+      const fontMenu = [{ id: "fonts", items: CONTENT_FONTS.map((id) => ({ id, label: catalog.format(`font.${id}`), checked: fontChoice === id })) }];
+      const fontText = catalog.format(`font.${fontChoice}`);
       return {
         open: true, tab: st.tab, tabs: THEME_TABS.map((id) => ({ id, label: catalog.format(`theme.tab.${id}`) })),
         mode: a.mode, modes: (["system", "light", "dark"] as const).map((id) => ({ id, label: catalog.format(`command.appearance.${id}`) })),
-        tiles, showing, previewing: Boolean(st.preview && st.preview !== chosen), focusRequest: st.focusRequest,
+        tiles, showing, themeChoice: st.preview ?? themeDraft ?? showing, themeRetry: themeDraft ?? showing,
+        themeCommit: st.preview ? "rest" : themeCommit?.phase ?? "rest", themeFailed: themeCommit?.phase === "failed",
+        previewing: Boolean(st.preview && st.preview !== chosen), focusRequest: st.focusRequest,
         hasThemeMenu: canSaveThemes() || Boolean(customOf(a, showing) && (revealTheme || removeTheme)),
         themeMenuLabel: catalog.format("theme.options", { name: customOf(a, showing)?.name ?? name(showing) }),
         themeMenu: [
@@ -563,7 +568,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         ],
         status: catalog.format("theme.status", { ratio: ratioText(tc.ratio), level: catalog.format(`theme.level.${tc.level}`) }),
         reading: {
-          font: a.contentFont, fontText, fontLabel: catalog.format("reading.fontLabel", { font: fontText }), fontMenu, sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
+          font: a.contentFont, fontText, fontLabel: catalog.format("reading.fontLabel", { font: fontText }), fontMenu, fontChoice,
+          fontCommit: fontCommit?.phase ?? "rest", fontFailed: fontCommit?.phase === "failed", sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
           canSmaller: commands.describe("font.smaller").enabled, canLarger: commands.describe("font.larger").enabled,
           lineHeight: a.lineHeight, lineHeightText: displayed("lineHeight", LINE_HEIGHT.default).toFixed(1), measure: a.measure, measureText: catalog.format("reading.measureText", { count: displayed("measure", MEASURE.default) }),
           spacing: a.paragraphSpacing, spacings: PARAGRAPH_SPACINGS.map((id) => ({ id, label: catalog.format(`reading.spacing.${id}`) })),

@@ -2079,6 +2079,16 @@
         "busyLabel": {
           "kind": "text"
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Immediate own-border feedback; recovery stays beside the compact control."
+        },
         "bleed": {
           "kind": "boolean",
           "default": false,
@@ -2097,7 +2107,10 @@
         "mixed",
         "focusVisible",
         "disabled",
-        "busy"
+        "busy",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.iconButton.*",
       "a11y": {
@@ -2117,6 +2130,58 @@
         "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
+        {
+          "name": "commit rest",
+          "covers": [
+            "rest"
+          ],
+          "props": {
+            "icon": "save",
+            "label": {
+              "t": "gallery.action"
+            },
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "commit pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "icon": "save",
+            "label": {
+              "t": "gallery.action"
+            },
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "commit confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "icon": "save",
+            "label": {
+              "t": "gallery.action"
+            },
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "commit failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "icon": "save",
+            "label": {
+              "t": "gallery.action"
+            },
+            "commit": "failed"
+          }
+        },
         {
           "name": "tone default",
           "props": {
@@ -2931,6 +2996,16 @@
           "default": false,
           "description": "Locks only this menu, keeps its trigger focusable and shows a pending border on compact text variants."
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Own-border feedback after persisting a menu choice; Retry and Revert stay outside the compact trigger."
+        },
         "bleed": {
           "kind": "boolean",
           "default": false,
@@ -2951,7 +3026,10 @@
         "itemFocused",
         "itemDisabled",
         "itemChecked",
-        "busy"
+        "busy",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.menuButton.*",
       "a11y": {
@@ -2970,6 +3048,70 @@
         }
       ],
       "fixtures": [
+        {
+          "name": "commit rest",
+          "covers": [
+            "closed"
+          ],
+          "props": {
+            "variant": "select",
+            "label": {
+              "t": "gallery.action"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            },
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "commit pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "variant": "select",
+            "label": {
+              "t": "gallery.action"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            },
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "commit confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "variant": "select",
+            "label": {
+              "t": "gallery.action"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            },
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "commit failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "variant": "select",
+            "label": {
+              "t": "gallery.action"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            },
+            "commit": "failed"
+          }
+        },
         {
           "name": "busy",
           "covers": [

@@ -4,6 +4,7 @@ import { tokens } from "@focus-notes/tokens";
 const t = tokens.cmp.iconButton;
 
 export const base = style({
+  position: "relative",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

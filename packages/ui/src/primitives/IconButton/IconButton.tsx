@@ -6,6 +6,7 @@ import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import type { IconName } from "../../icon-names.ts";
 import { useBusy } from "../../behaviors/busy.ts";
+import { CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./IconButton.css.ts";
 
 export interface IconButtonProps {
@@ -23,18 +24,20 @@ export interface IconButtonProps {
   /** A wait it started (Waits, D-199): inert at once; after the busy delay a Spinner replaces the icon, and the label says what it's doing. */
   busy?: boolean;
   busyLabel?: string;
+  /** Immediate own-border commit feedback; recovery belongs beside this compact control. */
+  commit?: CommitState;
   /** At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding. */
   bleed?: boolean;
   id?: string;
   onPress?: () => void;
 }
 
-export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, bleed, id, onPress }: IconButtonProps) {
+export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, commit, bleed, id, onPress }: IconButtonProps) {
   const className = `${s.base} ${s.tone[tone]}${bleed ? ` ${s.bleed}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
-  const { inert, name, attrs, ref } = useBusy({ busy, busyLabel, label, disabled });
-  const common = { id, className, "aria-label": name, ...attrs, ref, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };
-  const glyph = busy ? (
+  const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
+  const common = { id, className, "aria-label": name, ...attrs, ref, "data-commit": commit, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };
+  const glyph = commit && commit !== "rest" ? <><Icon name={icon} /><CommitMark variant="border" state={commit} /></> : busy ? (
     <span className={s.busyGlyph}>
       <span className={s.busyIcon}><Icon name={icon} /></span>
       <span className={s.busySpinner}><Spinner size="s" /></span>

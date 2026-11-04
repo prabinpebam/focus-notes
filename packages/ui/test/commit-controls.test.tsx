@@ -8,9 +8,91 @@ import { ProjectMark } from "../src/primitives/ProjectMark/ProjectMark.tsx";
 import { PickerButton } from "../src/primitives/PickerButton/PickerButton.tsx";
 import { Slider } from "../src/primitives/Slider/Slider.tsx";
 import { MenuButton } from "../src/primitives/MenuButton/MenuButton.tsx";
+import { IconButton } from "../src/primitives/IconButton/IconButton.tsx";
+import { ThemeGallery } from "../src/primitives/ThemeGallery/ThemeGallery.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.useRealTimers());
+
+it.each(["select", "icon"] as const)("keeps a committing %s menu trigger focused and inert, then shows its outcome after the menu closes", (variant) => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const render = (commit: "rest" | "pending" | "confirmed" | "failed") => act(() => root.render(createElement(MenuButton, {
+    label: "Font", variant, commit, sections: [{ id: "fonts", items: [{ id: "serif", label: "Serif" }] }],
+  })));
+  try {
+    render("rest");
+    const button = host.querySelector("button")!;
+    button.focus();
+    render("pending");
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    expect(button.disabled).toBe(false);
+    act(() => button.click());
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    render("failed");
+    expect(button.getAttribute("data-commit")).toBe("failed");
+    expect(button.getAttribute("aria-busy")).toBeNull();
+    render("confirmed");
+    expect(button.getAttribute("data-commit")).toBe("confirmed");
+    expect(document.activeElement).toBe(button);
+  } finally { act(() => root.unmount()); host.remove(); }
+});
+
+it("keeps an icon toggle focused and blocks only its pending commit", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const press = vi.fn();
+  const render = (commit: "rest" | "pending" | "failed") => act(() => root.render(createElement(IconButton, {
+    icon: "focus", label: "Focus", toggle: true, pressed: false, commit, onPress: press,
+  })));
+  try {
+    render("rest");
+    const button = host.querySelector("button")!;
+    button.focus();
+    render("pending");
+    expect(document.activeElement).toBe(button);
+    expect(button.disabled).toBe(false);
+    act(() => button.click());
+    expect(press).not.toHaveBeenCalled();
+    render("failed");
+    act(() => button.click());
+    expect(press).toHaveBeenCalledOnce();
+  } finally { act(() => root.unmount()); host.remove(); }
+});
+
+it("theme arrows only preview and pending tiles retain focus without accepting another choice", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const preview = vi.fn(), choose = vi.fn();
+  const render = (commit: "rest" | "pending" | "failed", value = "paper") => act(() => root.render(createElement(ThemeGallery, {
+    label: "Themes", items: [{ id: "paper", label: "Paper", kind: "light", badge: "AAA" }, { id: "dusk", label: "Dusk", kind: "dark", badge: "AAA" }],
+    value, commit, onPreview: preview, onChoose: choose,
+  })));
+  try {
+    render("rest");
+    const tiles = host.querySelectorAll<HTMLElement>("[role=option]");
+    act(() => {
+      tiles[0]!.focus();
+      tiles[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+    });
+    expect(preview).toHaveBeenCalledExactlyOnceWith({ id: "dusk" });
+    expect(choose).not.toHaveBeenCalled();
+    render("pending", "dusk");
+    expect(document.activeElement).toBe(tiles[1]);
+    act(() => {
+      tiles[1]!.click();
+      tiles[1]!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    });
+    expect(choose).not.toHaveBeenCalled();
+    render("failed", "dusk");
+    act(() => tiles[1]!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+    expect(choose).toHaveBeenCalledExactlyOnceWith({ id: "dusk" });
+  } finally { act(() => root.unmount()); host.remove(); }
+});
 
 it("keeps a compact busy menu focusable and inert without reopening it when the operation ends", async () => {
   const host = document.createElement("div");

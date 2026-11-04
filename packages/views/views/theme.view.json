@@ -188,7 +188,10 @@
                             "get": "vm.themeManager.tiles"
                           },
                           "value": {
-                            "get": "vm.themeManager.showing"
+                            "get": "vm.themeManager.themeChoice"
+                          },
+                          "commit": {
+                            "get": "vm.themeManager.themeCommit"
                           },
                           "previewing": {
                             "get": "vm.themeManager.previewing"
@@ -207,9 +210,12 @@
                             }
                           },
                           "choose": {
-                            "run": "theme.choose",
+                            "run": "commit.run",
                             "args": {
-                              "id": {
+                              "target": "vm.themeManager.choice",
+                              "command": "theme.setChoice",
+                              "label": { "t": "theme.gallery" },
+                              "value": {
                                 "get": "event.id"
                               }
                             }
@@ -218,6 +224,29 @@
                             "run": "theme.previewEnd"
                           }
                         }
+                      },
+                      {
+                        "type": "Inline",
+                        "when": { "get": "vm.themeManager.themeFailed" },
+                        "props": { "gap": "s", "wrap": true },
+                        "children": [
+                          {
+                            "type": "StatusRow",
+                            "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } },
+                            "on": { "action": { "run": "commit.run", "args": {
+                              "target": "vm.themeManager.choice", "command": "theme.setChoice",
+                              "label": { "t": "theme.gallery" }, "value": { "get": "vm.themeManager.themeRetry" }
+                            } } }
+                          },
+                          {
+                            "type": "Button",
+                            "props": { "label": { "t": "commit.revert" }, "variant": "subtle", "size": "s" },
+                            "on": { "press": [
+                              { "run": "theme.previewEnd" },
+                              { "run": "commit.revert", "args": { "target": "vm.themeManager.choice" } }
+                            ] }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -258,6 +287,7 @@
                               "text": {
                                 "get": "vm.themeManager.reading.fontText"
                               },
+                              "commit": { "get": "vm.themeManager.reading.fontCommit" },
                               "placement": "bottom start",
                               "sections": {
                                 "get": "vm.themeManager.reading.fontMenu"
@@ -265,14 +295,37 @@
                             },
                             "on": {
                               "action": {
-                                "run": "command.run",
+                                "run": "commit.run",
                                 "args": {
-                                  "id": {
+                                  "target": "vm.themeManager.reading.font",
+                                  "command": "reading.setFont",
+                                  "label": { "t": "reading.font" },
+                                  "value": {
                                     "get": "event.id"
                                   }
                                 }
                               }
                             }
+                          },
+                          {
+                            "type": "Inline",
+                            "when": { "get": "vm.themeManager.reading.fontFailed" },
+                            "props": { "gap": "s", "wrap": true },
+                            "children": [
+                              {
+                                "type": "StatusRow",
+                                "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } },
+                                "on": { "action": { "run": "commit.run", "args": {
+                                  "target": "vm.themeManager.reading.font", "command": "reading.setFont",
+                                  "label": { "t": "reading.font" }, "value": { "get": "vm.themeManager.reading.fontChoice" }
+                                } } }
+                              },
+                              {
+                                "type": "Button",
+                                "props": { "label": { "t": "commit.revert" }, "variant": "subtle", "size": "s" },
+                                "on": { "press": { "run": "commit.revert", "args": { "target": "vm.themeManager.reading.font" } } }
+                              }
+                            ]
                           }
                         ]
                       },

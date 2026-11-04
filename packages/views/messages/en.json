@@ -2101,6 +2101,7 @@
   "command.theme.preview": "Preview a theme",
   "command.theme.previewEnd": "Stop previewing",
   "command.theme.choose": "Choose a theme",
+  "command.theme.setChoice": "Choose a theme",
   "command.appearance.setMode": "Appearance",
   "command.reading.setFont": "Font",
   "command.reading.setLineHeight": "Line spacing",

@@ -42,6 +42,52 @@ async function started(opts: Parameters<typeof shell>[0] = {}) {
   return { ...f, app, vm, run: (id: string, args?: Record<string, unknown>) => app.commands.run(id, args) };
 }
 
+it("keeps failed theme/font choices local, writes theme and scheme together, and retries the retained choice after another preview", async () => {
+  let reject = false;
+  const writes: AppStateFile[] = [];
+  const t = await started({ save: async (value) => { writes.push(value); if (reject) throw new Error("disk full"); } });
+  await t.run("theme.manager.open");
+  writes.length = 0;
+  const theme = { target: "vm.themeManager.choice", command: "theme.setChoice", value: "dusk", label: "Themes" };
+  await t.run("theme.preview", { id: "dusk" });
+  reject = true;
+  await expect(t.run("commit.run", theme)).rejects.toThrow("disk full");
+  expect(writes).toHaveLength(1);
+  expect(writes[0]).toMatchObject({ darkTheme: "dusk", appearance: "dark" });
+  expect(t.vm("vm.app").theme).toBe("paper");
+  expect(t.app.store.state.appearance).toMatchObject({ darkTheme: "ink", mode: "system" });
+  expect(t.vm()).toMatchObject({ themeChoice: "dusk", themeRetry: "dusk", themeCommit: "failed", themeFailed: true });
+  await t.run("theme.preview", { id: "sepia" });
+  expect(t.vm()).toMatchObject({ themeChoice: "sepia", themeRetry: "dusk", themeCommit: "rest", themeFailed: true });
+  const font = { target: "vm.themeManager.reading.font", command: "reading.setFont", value: "serif", label: "Font" };
+  await expect(t.run("commit.run", font)).rejects.toThrow("disk full");
+  expect(t.app.store.state.appearance.contentFont).toBe("mono");
+  expect(t.vm().reading).toMatchObject({ fontChoice: "serif", fontCommit: "failed", fontFailed: true, fontText: en["font.serif"] });
+  expect(t.vm("vm.app").contentFont).toBe("mono");
+  reject = false;
+  const before = t.app.store.state.announcement.n;
+  await t.run("commit.run", { ...theme, value: t.vm().themeRetry });
+  expect(t.state()).toMatchObject({ darkTheme: "dusk", appearance: "dark" });
+  expect(t.vm("vm.app").theme).toBe("dusk");
+  expect(t.app.store.state.announcement).toMatchObject({ text: "Themes saved.", n: before + 1 });
+  await t.run("commit.revert", { target: font.target });
+  expect(t.vm().reading).toMatchObject({ fontChoice: "mono", fontCommit: "rest", fontFailed: false });
+  expect(t.state().contentFont).toBeUndefined();
+  await t.run("commit.run", font);
+  expect(t.state().contentFont).toBe("serif");
+  await t.run("theme.manager.close");
+  await t.run("theme.manager.open");
+  expect(t.vm().reading).toMatchObject({ fontChoice: "serif", fontText: en["font.serif"] });
+  expect(t.vm().themeChoice).toBe("dusk");
+});
+
+it("rejects unknown theme/font values instead of confirming an unperformed save", async () => {
+  const t = await started();
+  await expect(t.run("commit.run", { target: "vm.themeManager.choice", command: "theme.setChoice", value: "missing" })).rejects.toThrow("Unknown theme");
+  await expect(t.run("commit.run", { target: "vm.themeManager.reading.font", command: "reading.setFont", value: "missing" })).rejects.toThrow("Unknown reading font");
+  expect(t.app.store.state.commits.every((item) => item.phase === "failed")).toBe(true);
+});
+
 it("keeps a failed appearance choice local while another reading group saves, then retries without reverting that group", async () => {
   let reject = false;
   const t = await started({ save: async () => { if (reject) throw new Error("disk full"); } });

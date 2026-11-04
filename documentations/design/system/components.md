@@ -53,13 +53,13 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
 | Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 56 | `hover`, `pressed`, `focusVisible` |
-| IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
+| IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy`, `pending`, `confirmed`, `failed` | 12 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
 | Divider | primitive | `rest` | 2 | None |
 | PopoverPanel | primitive | `closed`, `open` | 8 | `open` |
-| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked`, `busy` | 10 | None |
+| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked`, `busy`, `pending`, `confirmed`, `failed` | 14 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible`, `pending`, `confirmed`, `failed` | 9 | `hover`, `focusVisible` |
