@@ -82,10 +82,12 @@ it("keeps failed theme/font choices local, writes theme and scheme together, and
 });
 
 it("keeps a failed size visible without changing the note, retries exactly that size and reverts without writing", async () => {
-  let reject = true;
+  let reject = false;
   const writes: AppStateFile[] = [];
   const t = await started({ save: async (value) => { if (reject) throw new Error("disk full"); writes.push(value); } });
   await t.run("theme.manager.open");
+  writes.length = 0;
+  reject = true;
   await expect(t.run("font.larger")).rejects.toThrow("disk full");
   expect(t.vm().reading).toMatchObject({ sizeChoice: 17, sizeText: "17 px", sizeCommit: "failed", sizeFailed: true });
   expect(t.vm("vm.app")).toMatchObject({ fontSize: 16, fontSizeSmaller: 15, fontSizeLarger: 17 });

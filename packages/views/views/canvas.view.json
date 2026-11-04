@@ -103,9 +103,6 @@
     },
     "font": {
       "get": "vm.project.scopeFont"
-    },
-    "theme": {
-      "get": "vm.project.scopeTheme"
     }
   },
 "children": [

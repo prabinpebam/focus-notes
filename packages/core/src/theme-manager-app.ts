@@ -51,7 +51,7 @@ export interface Appearance {
   /** Custom themes read from the workspace (THM-04, D-173). */
   customThemes?: CustomTheme[];
 }
-type Snapshot = Omit<Appearance, "system" | "uiScale" | "customThemes"> & { draft?: ThemeDraft };
+type Snapshot = Omit<Appearance, "system" | "uiScale" | "customThemes"> & { draft?: ThemeDraft; project?: { folder: string; theme: string } };
 
 export interface ThemeManagerState {
   open: boolean;
@@ -85,6 +85,10 @@ interface Ctx<St extends S> {
   viewModels: ViewModelRegistry<St>;
   catalog: MessageCatalog;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
+  project?: {
+    current: () => { folder: string; theme: string } | undefined;
+    saveTheme: (folder: string, theme: string, patch?: Partial<AppStateFile>) => Promise<void>;
+  };
   announce: (text: string) => void;
   /** Writes a new theme file in the workspace (D-173); absent where themes can't be saved. */
   saveTheme?: (file: string, text: string) => Promise<string>;
@@ -106,6 +110,10 @@ export const customOf = (a: { customThemes?: CustomTheme[] }, id: string | undef
   isCustomId(id) ? a.customThemes?.find((t) => t.id === id) : undefined;
 /** A theme's kind, built-in or custom: undefined for one that isn't there. */
 export const kindOf = (a: { customThemes?: CustomTheme[] }, id: string | undefined): ThemeKind | undefined => customOf(a, id)?.kind ?? themeById(id)?.kind;
+export function projectAppearance(a: Appearance, theme: string | undefined): Appearance {
+  const kind = kindOf(a, theme);
+  return kind && theme ? { ...a, mode: kind, [kind === "light" ? "lightTheme" : "darkTheme"]: theme } : a;
+}
 /** A theme's colors, with a draft's edits when it's the draft's base. */
 export function colorsOf(id: string, draft?: ThemeDraft, custom?: CustomTheme): Record<string, string> {
   const colors: Record<string, string> = custom ? customColors(custom) : { ...themeValues[id] };
@@ -171,10 +179,15 @@ function fixFor(colors: Record<string, string>, key: KeyColor, high: boolean): s
   return fixes.get(k);
 }
 
-export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce, saveTheme, listThemes, removeTheme, revealTheme, toast, themesAvailable = () => true }: Ctx<St>) {
+export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, project, announce, saveTheme, listThemes, removeTheme, revealTheme, toast, themesAvailable = () => true }: Ctx<St>) {
   /** Saving themes needs a shell that writes them and a workspace to hold them. */
   const canSaveThemes = () => Boolean(saveTheme) && themesAvailable();
   const state = () => store.state.ui.theme;
+  const effective = (s: St = store.state) => ({ ...s, appearance: projectAppearance(s.appearance, project?.current()?.theme) });
+  const checkProject = () => {
+    const opened = state().opened?.project;
+    if (opened && opened.folder !== project?.current()?.folder) throw new Error("The project changed while Themes was open");
+  };
   const set = (patch: Partial<ThemeManagerState>) => store.update((s) => ({ ...s, ui: { ...s.ui, theme: { ...s.ui.theme, ...patch } } }));
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown) =>
     commands.register<A>({ id, title: `command.${id}`, run: async (a) => { await run(a); } });
@@ -231,6 +244,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         mode: a.mode, lightTheme: a.lightTheme, darkTheme: a.darkTheme, contentFont: a.contentFont, fontSize: a.fontSize,
         lineHeight: a.lineHeight, measure: a.measure, paragraphSpacing: a.paragraphSpacing, ...(a.focusDim !== undefined ? { focusDim: a.focusDim } : {}),
         ...(state().draft ? { draft: state().draft! } : {}),
+        ...(project?.current() ? { project: project.current() } : {}),
       };
       store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, theme: { ...s.ui.theme, open: true, tab: "themes", opened, typing: {}, focusRequest: s.ui.theme.focusRequest + 1 } } }));
       // Theme files added or changed since launch show without a restart.
@@ -254,16 +268,22 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   reg("theme.manager.revert", async () => {
     const o = state().opened;
     if (!o) return;
-    const { draft, ...appearance } = o;
+    checkProject();
+    const { draft, project: openedProject, ...appearance } = o;
+    const fixedProject = openedProject && openedProject.theme !== "app";
+    const { mode: _mode, lightTheme: _light, darkTheme: _dark, ...reading } = appearance;
     const { preview, draft: _d, ...rest } = state();
     void preview; void _d;
-    await persistAppState({
-      appearance: o.mode, lightTheme: o.lightTheme, darkTheme: o.darkTheme, contentFont: o.contentFont, fontSize: o.fontSize,
+    const patch: Partial<AppStateFile> = {
+      ...(!fixedProject ? { appearance: o.mode, lightTheme: o.lightTheme, darkTheme: o.darkTheme } : {}),
+      contentFont: o.contentFont, fontSize: o.fontSize,
       lineHeight: o.lineHeight, measure: o.measure, paragraphSpacing: o.paragraphSpacing, focusDim: o.focusDim,
-    });
+    };
+    if (openedProject && project) await project.saveTheme(openedProject.folder, openedProject.theme, patch);
+    else await persistAppState(patch);
     store.update((s) => ({
       ...s,
-      appearance: { ...s.appearance, ...appearance, ...(o.focusDim === undefined ? { focusDim: undefined } : {}) },
+      appearance: { ...s.appearance, ...(fixedProject ? reading : appearance), ...(o.focusDim === undefined ? { focusDim: undefined } : {}) },
       ui: { ...s.ui, theme: { ...rest, typing: {}, ...(draft ? { draft } : {}) } },
     }));
     announce(catalog.format("theme.reverted"));
@@ -285,6 +305,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   });
   /** Choosing fills the theme's slot and shows it, switching the appearance if it's showing the other kind. */
   const chooseTheme = async (id: string, confirm: boolean) => {
+    checkProject();
     // Theme files are read when they're first needed, not at launch (PRF-14).
     if (isCustomId(String(id)) && !kindOf(store.state.appearance, String(id))) await reloadThemes();
     const kind = kindOf(store.state.appearance, String(id));
@@ -295,12 +316,18 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     store.update((s) => ({ ...s, ui: { ...s.ui, theme: rest } }));
     const key = kind === "light" ? "lightTheme" : "darkTheme";
     const changeMode = schemeOf(store.state.appearance) !== kind;
-    await persistAppState({ [key]: t.id, ...(changeMode ? { appearance: kind } : {}) });
-    store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id, ...(changeMode ? { mode: kind } : {}) } }));
+    const currentProject = project?.current();
+    if (currentProject && currentProject.theme !== "app" && project) {
+      await project.saveTheme(currentProject.folder, t.id);
+      store.update(s => ({ ...s }));
+    } else {
+      await persistAppState({ [key]: t.id, ...(changeMode ? { appearance: kind } : {}) });
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id, ...(changeMode ? { mode: kind } : {}) } }));
+    }
     // A copy of another theme goes once neither slot holds its base.
     const d = state().draft;
     const a = store.state.appearance;
-    if (d && d.base !== a.lightTheme && d.base !== a.darkTheme) set({ draft: undefined });
+    if (d && d.base !== a.lightTheme && d.base !== a.darkTheme && d.base !== project?.current()?.theme) set({ draft: undefined });
     if (confirm) announce(catalog.format("theme.chosen", { name: name(t.id), kind: catalog.format(`theme.kind.${t.kind}`) }));
   };
   reg<{ id: string }>("theme.choose", ({ id }) => chooseTheme(id, true));
@@ -353,7 +380,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
 
   // ---- Edit colors (THM-13) ----
   const editing = () => {
-    const s = store.state;
+    const s = effective();
     const base = shownTheme(s);
     const d = state().draft;
     return { base, draft: d?.base === base ? d : undefined };
@@ -431,16 +458,16 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   });
   // ---- a theme's options (the theme showing): duplicate it; for one of yours, show its file or delete it ----
   reg("theme.duplicate", async () => {
-    const title = await saveCopy(shownTheme(store.state));
+    const title = await saveCopy(shownTheme(effective()));
     if (title) announce(catalog.format("colors.saved", { name: title }));
   });
   reg("theme.reveal", async () => {
-    const t = customOf(store.state.appearance, shownTheme(store.state));
+    const t = customOf(store.state.appearance, shownTheme(effective()));
     if (t && revealTheme) await revealTheme(t.file);
   });
   reg("theme.delete", async () => {
     const a = store.state.appearance;
-    const t = customOf(a, shownTheme(store.state));
+    const t = customOf(a, shownTheme(effective()));
     if (!t || !removeTheme) return;
     await removeTheme(t.file);
     const slot = a.lightTheme === t.id ? "lightTheme" : a.darkTheme === t.id ? "darkTheme" : undefined;
@@ -505,8 +532,9 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       "reading.measure": "reading.setMeasure", "reading.spacing": "reading.setParagraphSpacing", "reading.focusDim": "reading.setFocusDim",
     },
     commits: ["mode", "reading.spacing", "reading.lineHeight", "reading.measure", "reading.focusDim"],
-    reads: ["ui.theme", "appearance", "commits"],
+    reads: "*",
     select: (s) => {
+      s = effective(s);
       const st = s.ui.theme;
       if (!st.open) return { open: false, tab: st.tab, tabs: [], mode: s.appearance.mode, modes: [], tiles: [], showing: "", previewing: false, focusRequest: st.focusRequest, status: "", themeMenuLabel: "", hasThemeMenu: false, themeMenu: [], reading: {}, colors: { rows: [] } };
       const a = s.appearance;
