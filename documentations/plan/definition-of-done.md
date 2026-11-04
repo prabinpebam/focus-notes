@@ -7,6 +7,20 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
+### Phase-2 structural overlay layers, b031948f
+
+The [window stacking contract](../design/system/overview.html#window-stacking) is implemented in the candidate only. One direct AppRoot host isolates full-app surfaces from panels; modal descendants send their menus back to the window root. Docked panels, floating panels, full-app surfaces, menus/tooltips and notifications have named, ordered token roles. The former raw scroll-fade index now uses the mask token. No app workflow or note persistence changed.
+
+| Scoped check on `b031948f` | Result |
+| --- | --- |
+| `pnpm exec vitest run tools/test/layers.test.mjs` | Passed, 5 tests: semantic order, role aliases, raw-index mutation probes and scan, single-host/portal routing, anchored surface order |
+| `pnpm --filter @focus-notes/ui run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck`; `node tools/check-boundaries.mjs` | Passed |
+| `pnpm tokens`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm ui:check` | Passed; generated catalog committed |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "full-app Connect\|Themes applies"` | Passed, 3 journeys: both Themes restart paths; Settings and Connect use the single root host, Connect is the painted hit target above docked Files, note bytes unchanged |
+
+**Try it:** keep Files docked, open Settings and Sign in to show Connect. Files and its header stay behind the full-app step; the title band remains available. No real sign-in was performed in verification. Test apps were closed with scoped finally cleanup; the owner's review was untouched. Menu tooltips, code Copy and Settings scrolling remain in progress.
+
 ### Phase-2 Themes project scope, bc45a4e1
 
 The [owner's new feedback queue](../design/ui-states-audit.md#owner-feedback-queue-5-november) remains in progress. This is the first of five fixes, not phase completion. No app merge, full suite, CI wait, release or review-window replacement occurred.

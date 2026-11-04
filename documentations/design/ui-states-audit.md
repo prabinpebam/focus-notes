@@ -12,6 +12,8 @@
 
 ### Owner feedback queue, 5 November
 
+**Structural layers, `b031948f`:** one AppRoot full-app portal now removes dialog/window/fill Layers and modal scrims from panel stacking contexts. Docked/floating panels have distinct named token roles; menus/tooltips remain above overlays and notifications last. Raw-index and portal-ownership guards plus a native Connect-over-Files hit-test pass. [Contract](system/overview.html#window-stacking) and [evidence](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f). This is fix 2 of 5; no new owner candidate yet.
+
 The five new owner fixes supersede the earlier implementation pause: Themes application, structural full-app overlay layering, menu-description tooltips, icon-only code Copy overlay, and fixed Settings navigation, in that order. Toolbar customizer and AI-scan designs remain a separate track. Phase 2 is still in progress; only after all five will one new two-project owner candidate replace the existing review.
 
 **Themes, `bc45a4e1`:** reproduced in the built invisible app before fixing: choosing Dusk saved the app slot, while the fixed Sepia project still painted the window and editor. **Why it escaped:** the old journey used only an App-default project and reopened the sheet; it never selected a theme in a fixed-theme project or checked applied tokens after a real process restart.

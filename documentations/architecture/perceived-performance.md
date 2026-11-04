@@ -2,6 +2,8 @@
 
 ## Themes: scope and acknowledgement
 
+The [structural overlay correction at b031948f](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f) changes paint ownership only: no load, save, reload, unmount or new wait is introduced. Dialogs/full-app steps portal above panels; the existing window band remains draggable and notifications keep their top-level role.
+
 Theme choices retain the existing responsive commit track and its pending/confirmed minimum beats; no new wait or latency claim is introduced. In a fixed-theme project, the acknowledged project theme remains applied until its own write succeeds, with retained attempted choice and scoped Retry on failure. In an App-default project, the existing app slot owns the write. Keyboard previews apply through the same root token resolver without a nested writing scope masking them. [Built-app evidence at bc45a4e1](../plan/definition-of-done.md#phase-2-themes-project-scope-bc45a4e1) covers actual root/editor tokens and restart, not only a selected control.
 
 ## Notification outcome lifetime

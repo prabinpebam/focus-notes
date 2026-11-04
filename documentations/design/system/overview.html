@@ -192,6 +192,20 @@
 </ol>
 
 <h2 data-reader-personas="engineering">Implementation stack</h2>
+<h3 id="window-stacking">One window stacking contract</h3>
+<p>Full-app content must not compete with a panel's descendants. <strong>AppRoot owns one full-app overlay portal host</strong>, a direct child of the drawn window. Every dialog Layer, every window/fill Layer, and every modal scrim renders there, even when requested from within a panel. Only this root host establishes the full-app isolation context; panels cannot become its ancestors. Menu and tooltip portals return to the window root, not the modal or panel's local context.</p>
+<table>
+  <thead><tr><th>Order</th><th>Named semantic layer</th><th>Ownership</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>canvas, mask, contextual, trigger</td><td>Writing content, local effects and window chrome</td></tr>
+    <tr><td>2</td><td>docked</td><td>Docked panels, including their headers</td></tr>
+    <tr><td>3</td><td>panel, anchored</td><td>Floating panels and selection-attached controls</td></tr>
+    <tr><td>4</td><td>dialog</td><td>One top-level full-app host: full-window setup, recovery and modal scrims</td></tr>
+    <tr><td>5</td><td>popover, tooltip</td><td>Menus, pickers and accessible tooltips, above full-app surfaces</td></tr>
+    <tr><td>6</td><td>toast</td><td>Notifications, above all application surfaces</td></tr>
+  </tbody>
+</table>
+<p>Component layer tokens alias these semantic roles; never introduce a raw z-index, a numeric local exception, or a panel-specific escalation. Local underlays remain isolated behind their own hit target. The <code>layers.test.mjs</code> guard checks role order, component aliases, raw declarations and portal ownership; the native Connect/Settings journey asserts the actual overlay's parentage and the top painted element over the Files header. <a href="../../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f">Evidence at b031948f</a> covers the built app. This is a structural portal correction, not an overlapping-component z-index bump.</p>
 
 <table>
   <thead><tr><th>Need</th><th>Choice</th><th>License</th><th>Why</th></tr></thead>
