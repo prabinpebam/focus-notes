@@ -592,6 +592,22 @@ The native journey now checks every reachable empty cause/action against the act
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\20406d26\Open review build.cmd`. The visible `f2127c67` owner review remains open. This is bounded D5 acceptance; remaining rows are still being matched to their evidence, not silently accepted. No full suite, CI wait, main app merge, release, remote publication or real-account application write ran.
 
+### Phase-2 cleared AI and startup pixels, cf63f90d
+
+The real AI journey now adds a connection, acknowledges its local record, removes the last connection and verifies the empty cause/action returns inside the same connected Settings wrapper. The persisted connection list is actually empty; no provider request or real account is used. Native Files checks distinguish its 32 px filtered component minimum from its 160 px cleared section minimum and verify the actual section height.
+
+Light and dark native startup tests now request a PNG at the existing first-frame report, while the report observes the window hidden. The existing pixel classifier rejects blank, substantially transparent and wrong-scheme content within the drawn window, excluding the intentional transparent frame margin. Both schemes pass, with the system deliberately set opposite the saved scheme. This is report-triggered native-pixel evidence, not a continuous pre-show frame stream or proof of every startup delay.
+
+| Scoped evidence on `cf63f90d` | Result |
+| --- | --- |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Files.*empty\|Known-empty AI\|First-run (light\|dark) shows"` | 5 passed: two native startup schemes, site first-action/cleared acceptance, initial Files read and Files cleared/filter sizing. The `Known-empty AI` selector matches no title; the next command explicitly runs that journey |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "known-empty wrappers"` | 1 passed: actual AI Add/Cancel/add/remove, retained Settings wrapper and filtered Open Clear search |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | Passed; 780 documents, 82 components, 725 commands. Shipping runtime is unchanged, so the existing worker build is reused |
+| Headless existing-gallery `EmptyState.0` to `.3`, light/dark and system/reduced motion | 16 passed: component/section/view minimums are 32/160/320 px; rendered heights meet the minimums; all-done has the good tone and no unnecessary action. The gallery's unchanged primitive/token source was compared to this head; this is fixture evidence, not a new native product route |
+| Exact pushed candidate `cf63f90d` | Both distinct sample projects, their actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cf63f90d\Open review build.cmd`. The visible `f2127c67` remains open. Phase 2 still needs final row-by-row acceptance; no full suite, CI wait, main app merge, release, remote publication or real-account application write ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

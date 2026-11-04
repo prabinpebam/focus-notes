@@ -66,6 +66,8 @@ The [native acceptance increment](../plan/definition-of-done.md#phase-2-native-r
 
 The [site empty-variant evidence](../plan/definition-of-done.md#phase-2-site-empty-variants-20406d26) verifies known-empty results after actual public content is cleared and the real watcher acknowledges removal. Each reachable section keeps the 160 px token minimum. The fourth list's defensive empty-section route is client-tested separately because normal section navigation is derived from nonempty articles. These checks add no wait, network destination or latency claim.
 
+The [startup-pixel and sizing evidence](../plan/definition-of-done.md#phase-2-cleared-ai-and-startup-pixels-cf63f90d) requests actual native pixels at the first-frame report in light and dark. The existing frame classifier finds no blank, substantially transparent or wrong-scheme drawn window in those captures; the report still observes the window hidden and never takes the timeout path. Capture completion is asynchronous, so this is not a continuous pre-show frame stream. Cleared AI/Files and existing-gallery minimum-size checks add no runtime wait or speed claim.
+
 ## History recovery
 
 The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.
