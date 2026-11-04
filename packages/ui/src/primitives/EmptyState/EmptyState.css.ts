@@ -7,4 +7,5 @@ export const size = styleVariants({ component: { minHeight: t.minHeight.componen
 export const tile = style({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: t.iconTile, height: t.iconTile, borderRadius: t.radius, backgroundColor: t.iconBackground, color: t.icon, fontSize: t.iconSize, selectors: { '[data-tone="good"] > &': { backgroundColor: t.goodBackground, color: t.goodIcon } } });
 export const title = style({ fontSize: t.titleSize, fontWeight: t.titleWeight, color: t.title, maxWidth: t.maxWidth });
 export const detail = style({ fontSize: t.detailSize, color: t.detail, maxWidth: t.maxWidth });
-export const action = style({ marginBlockStart: t.actionGap });
+// The action stands further from the words than they do from each other: its own box holds that room (spacing SP-9).
+export const action = style({ display: "inline-flex", paddingBlockStart: t.actionGap });

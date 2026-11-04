@@ -80,7 +80,9 @@ export const dialog = style({
   // Positioned, so it sits above the window's title bar band where it reaches into it.
   position: "relative",
   flexDirection: "column",
-  gap: t.gap,
+  // The body holds its slack (below) as its own padding, so the gap around it is that much less and
+  // what's inside still sits t.gap from the regions (spacing SP-3: no negative margins).
+  gap: `calc(${t.gap} - ${t.bodySlack})`,
   width: "100%",
   minHeight: 0,
   // No block padding of its own: the part at each edge holds it, so a scrolling body at the top or
@@ -100,7 +102,12 @@ export const dialog = style({
 export const region = style({
   paddingInline: t.padding,
   flexShrink: 0,
-  selectors: { "&[data-dialog-first]": { paddingBlockStart: t.padding }, "&[data-dialog-last]": { paddingBlockEnd: t.padding } },
+  selectors: {
+    "&[data-dialog-first]": { paddingBlockStart: t.padding },
+    "&[data-dialog-last]": { paddingBlockEnd: t.padding },
+    // A fixed region under the header: the full gap, as the body's slack isn't between them.
+    "&[data-dialog-after-header]": { paddingBlockStart: t.bodySlack },
+  },
 });
 
 // The body's corners at the dialog's edge follow its rounding, so what scrolls (and the scrollbar) stays inside it.
@@ -116,7 +123,6 @@ export const body = style({
   // Room inside its clip for the focus ring and letters of what's at its very top or bottom (a
   // heading trimmed to its capitals), without moving anything (D-111).
   paddingBlock: t.bodySlack,
-  marginBlock: `calc(-1 * ${t.bodySlack})`,
   paddingInlineStart: t.padding,
   // The reserved gutter takes the place of the end padding, so text lines up either way (UI-09).
   paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,
@@ -126,8 +132,8 @@ export const body = style({
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     // At the dialog's top or bottom edge, the dialog's padding is inside the scroller: content keeps
     // that spacing at rest, scrolls right to the edge, and what scrolls into view keeps it too.
-    "&[data-dialog-first]": { paddingBlockStart: t.padding, marginBlockStart: 0, scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
-    "&[data-dialog-last]": { paddingBlockEnd: t.padding, marginBlockEnd: 0, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
+    "&[data-dialog-first]": { paddingBlockStart: t.padding, scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
+    "&[data-dialog-last]": { paddingBlockEnd: t.padding, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
   },
 });
 export const fixedBody = style({ overflow: "hidden", scrollbarGutter: "auto", paddingInlineEnd: t.padding });

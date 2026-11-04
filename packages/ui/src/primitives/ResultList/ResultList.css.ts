@@ -63,7 +63,9 @@ export const state = style({ flexShrink: 0, color: t.state, fontSize: t.captionS
 export const match = style({ backgroundColor: t.match, color: t.matchText, borderRadius: t.matchRadius, fontWeight: t.matchWeight });
 
 /** A group: its heading, then its items (Spotlight's Top hit, Notes…; Find in all notes' note). */
-export const group = style({ display: "flex", flexDirection: "column", gap: t.gap, selectors: { "&:not(:first-child)": { marginBlockStart: t.groupGap } } });
+export const group = style({ display: "flex", flexDirection: "column", gap: t.gap });
+/** A list of groups: the list's own gap separates them, never a margin on a group by its position (spacing SP-1). */
+export const grouped = style({ gap: t.groupGap });
 export const header = style({
   display: "flex",
   flexDirection: "column",

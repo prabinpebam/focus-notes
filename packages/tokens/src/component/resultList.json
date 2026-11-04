@@ -99,7 +99,8 @@
       },
       "groupGap": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.l}",
+        "$description": "Between groups of results (Spotlight's Top hit, Notes…): at least twice the space between a group's items (spacing SP-1, SP-8)."
       },
       "headerPaddingBlock": {
         "$type": "dimension",

@@ -1,4 +1,4 @@
-import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { controlMetrics } from "../control.css.ts";
 
@@ -58,15 +58,22 @@ export const fileIcon = style({ width: t.fileTileIcon, height: t.fileTileIcon })
 
 // The folder path: one line, ellipsized in the middle (its start gives way, the folder's own name stays),
 // above the item's hit area; pressing it shows the folder in File Explorer or Finder.
+/** The path link's fill, drawn on its hit extension. */
+const pathFill = createVar();
+// Its text lines up with the title above it; its start padding is an invisible extension that
+// carries the hit area, fill and ring, never a negative margin into the row's padding (spacing SP-2).
 export const path = style({
-  ...controlMetrics, position: "relative", zIndex: t.controlLayer, display: "inline-flex", alignItems: "center", gap: t.pathGap, alignSelf: "flex-start",
-  minWidth: 0, maxWidth: "100%", paddingInline: t.pathPadding, marginInlineStart: `calc(${t.pathPadding} * -1)`,
+  ...controlMetrics, position: "relative", zIndex: t.controlLayer, isolation: "isolate", display: "inline-flex", alignItems: "center", gap: t.pathGap, alignSelf: "flex-start",
+  minWidth: 0, maxWidth: "100%", paddingInlineStart: 0, paddingInlineEnd: t.pathPadding,
   border: "none", borderRadius: t.rowRadius, background: "none", font: "inherit", fontSize: t.detail, color: t.detailColor, cursor: "pointer", whiteSpace: "nowrap",
+  vars: { [pathFill]: "transparent" },
+  "::before": { content: '""', position: "absolute", zIndex: tokens.layer.underlay, insetBlock: 0, insetInlineEnd: 0, insetInlineStart: `calc(-1 * ${t.pathPadding})`, borderRadius: t.rowRadius, backgroundColor: pathFill },
   selectors: {
-    "&:active": { color: t.pathHover, backgroundColor: t.pressed },
-    "&:focus-visible": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
+    "&:active": { color: t.pathHover, vars: { [pathFill]: t.pressed } },
+    "&:focus-visible": { outlineStyle: "none" },
+    "&:focus-visible::before": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
   },
-  "@media": { "(hover: hover)": { selectors: { "&:hover": { color: t.pathHover, backgroundColor: t.hover } } } },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { color: t.pathHover, vars: { [pathFill]: t.hover } } } } },
 });
 export const pathIcon = style({ flexShrink: 0, width: t.pathIcon, height: t.pathIcon });
 export const pathWrap = style({ display: "inline-flex", minWidth: 0 });

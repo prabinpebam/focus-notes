@@ -20,7 +20,8 @@ export const iconTone = styleVariants({
   success: { color: t.success.icon },
 });
 // The icon sits on the first line of the sentence: a line is the font's size times its line height.
-export const icon = style({ flexShrink: 0, width: t.icon, height: t.icon, marginBlock: `calc((${t.size} * ${t.lineHeight} - ${t.icon}) / 2)` });
+// Centred on the first line by its own padding (the line's height less the icon's), never a margin.
+export const icon = style({ flexShrink: 0, boxSizing: "content-box", width: t.icon, height: t.icon, paddingBlock: `calc((${t.size} * ${t.lineHeight} - ${t.icon}) / 2)` });
 export const text = style({ minWidth: 0, overflowWrap: "anywhere" });
 export const content = style({ display: "flex", flexDirection: "column", gap: t.actionGap, minWidth: 0, flex: 1 });
 export const actions = style({ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: t.actionGap });
@@ -29,4 +30,4 @@ export const summary = style({
   cursor: "pointer", borderRadius: t.summaryRadius,
   selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusOffset } },
 });
-export const detailsBody = style({ display: "block", marginBlockStart: t.actionGap });
+export const detailsBody = style({ display: "block", paddingBlockStart: t.actionGap });

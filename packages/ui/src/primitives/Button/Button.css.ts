@@ -1,8 +1,11 @@
-import { keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, keyframes, style, styleVariants, type StyleRule } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
 const t = tokens.cmp.button;
+/** Its rest fill and its state overlay: on the box, or on a bleeding button's hit extension. */
+const rest = createVar();
+const overlay = createVar();
 
 export const borderAnchor = style({ position: "relative" });
 export const base = style({
@@ -31,7 +34,7 @@ export const base = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focus.ring, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
     // Busy is inert but not disabled: its sign is the Spinner and its words, never a dimmed look (D-199).
     '&[aria-disabled="true"]:not([data-busy="on"])': { opacity: t.disabledOpacity },
-    "&[data-selected]": { backgroundImage: `linear-gradient(${t.toggle.selected}, ${t.toggle.selected})` },
+    "&[data-selected]": { vars: { [overlay]: `linear-gradient(${t.toggle.selected}, ${t.toggle.selected})` } },
   },
 });
 
@@ -52,20 +55,16 @@ export const iconEnd = styleVariants({
   m: { paddingInlineEnd: `calc(${t.paddingInline.m} - ${t.iconBearing})` },
   l: { paddingInlineEnd: `calc(${t.paddingInline.l} - ${t.iconBearing})` },
 });
-/** A subtle button at the start of the content: its label lines up with the edge, its hit area reaching into the padding (D-111, D-123). */
-export const bleed = styleVariants({
-  s: { marginInlineStart: `calc(-1 * ${t.paddingInline.s})` },
-  m: { marginInlineStart: `calc(-1 * ${t.paddingInline.m})` },
-  l: { marginInlineStart: `calc(-1 * ${t.paddingInline.l})` },
-});
 
 const variantStyle = (v: { background: { rest: string; hover: string; pressed: string }; text: string; border: string }) => ({
-  backgroundColor: v.background.rest,
+  vars: { [rest]: v.background.rest, [overlay]: "none" },
+  backgroundColor: rest,
+  backgroundImage: overlay,
   color: v.text,
   borderColor: v.border,
   selectors: {
-    '&[data-hovered]:not([aria-disabled="true"])': { backgroundImage: `linear-gradient(${v.background.hover}, ${v.background.hover})` },
-    '&[data-pressed]:not([aria-disabled="true"])': { backgroundImage: `linear-gradient(${v.background.pressed}, ${v.background.pressed})` },
+    '&[data-hovered]:not([aria-disabled="true"])': { vars: { [overlay]: `linear-gradient(${v.background.hover}, ${v.background.hover})` } },
+    '&[data-pressed]:not([aria-disabled="true"])': { vars: { [overlay]: `linear-gradient(${v.background.pressed}, ${v.background.pressed})` } },
   },
 });
 
@@ -75,6 +74,26 @@ export const variant = styleVariants({
   subtle: variantStyle(t.subtle),
   danger: variantStyle(t.danger),
 });
+
+/**
+ * A subtle button at the start of the content (D-111, D-123): its label lines up with the edge. Its
+ * start padding moves to an invisible extension that carries its hit area, fill and focus ring, so
+ * the box itself never reaches into its container's padding (spacing SP-2). After the variants, so
+ * its fill wins.
+ */
+const bleedSize = (pad: string): StyleRule => ({
+  position: "relative",
+  isolation: "isolate",
+  paddingInlineStart: 0,
+  backgroundColor: "transparent",
+  backgroundImage: "none",
+  "::before": {
+    content: '""', position: "absolute", zIndex: tokens.layer.underlay, insetBlock: 0, insetInlineEnd: 0, insetInlineStart: `calc(-1 * ${pad})`,
+    borderRadius: t.radius, backgroundColor: rest, backgroundImage: overlay,
+  },
+  selectors: { "&[data-focus-visible]": { outlineStyle: "none" }, "&[data-focus-visible]::before": { outlineStyle: "solid", outlineColor: t.focus.ring, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset } },
+});
+export const bleed = styleVariants({ s: bleedSize(t.paddingInline.s), m: bleedSize(t.paddingInline.m), l: bleedSize(t.paddingInline.l) });
 
 export const label = style({ minWidth: 0 });
 export const floating = style(floatingControlSurface);

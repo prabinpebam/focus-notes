@@ -629,6 +629,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
           tabIndex={i === focusIndex ? 0 : -1}
           aria-current={i === current ? "location" : undefined}
           data-untitled={h.text ? undefined : ""}
+          data-pin-room={onPin && i === 0 ? "" : undefined}
           onPointerDown={keepFocus}
           onClick={() => jump(i)}
         >

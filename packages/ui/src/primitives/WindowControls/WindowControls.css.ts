@@ -49,12 +49,12 @@ export const close = style({
 });
 
 // Never wider than the window less its edges: in a narrow window (320 px, WCAG 1.4.10) the layouts wrap.
-export const popover = style({ zIndex: t.layer, outline: "none", maxWidth: `calc(100% - 2 * ${t.inset})`, boxSizing: "border-box" });
+// Its offset from the button is its own padding, never a margin on the flyout inside it (spacing SP-9).
+export const popover = style({ zIndex: t.layer, outline: "none", maxWidth: `calc(100% - 2 * ${t.inset})`, boxSizing: "border-box", paddingBlockStart: t.flyoutOffset });
 export const flyout = style({
   display: "flex",
   flexWrap: "wrap",
   gap: t.flyoutGap,
-  marginTop: t.flyoutOffset,
   padding: t.flyoutPadding,
   backgroundColor: t.flyoutBackground,
   borderStyle: "solid",

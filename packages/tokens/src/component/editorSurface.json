@@ -579,6 +579,11 @@
             "$type": "color",
             "$value": "{color.accent}"
           }
+        },
+        "itemCurrentStroke": {
+          "$type": "dimension",
+          "$value": "{font.strokeEmphasis}",
+          "$description": "The current heading's heavier look: a stroke, so its lines never rewrap."
         }
       },
       "zoneBottom": {

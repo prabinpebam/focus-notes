@@ -14,10 +14,11 @@ export const root = style({
   outline: "none",
 });
 
+/** The track's place: the hit's height, the track centred in it on the label's first line (spacing SP-9, no margins). */
+export const trackSlot = style({ display: "inline-flex", alignItems: "center", flexShrink: 0, height: t.hit });
 export const track = style({
   position: "relative",
   flexShrink: 0,
-  marginBlock: `calc((${t.hit} - ${t.trackHeight}) / 2)`,
   width: t.trackWidth,
   height: t.trackHeight,
   borderRadius: t.radius,

@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { createVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
@@ -71,10 +71,14 @@ export const shortcut = style({
   selectors: { [unavailable]: { opacity: t.disabledOpacity } },
   "@media": { "(forced-colors: active)": { selectors: { [`${item}[data-focused] &`]: { color: t.forcedFocusedText }, [unavailable]: { color: t.textDisabled } } } },
 });
-export const separator = style({ height: t.separatorWidth, backgroundColor: t.separator, marginBlock: t.padding });
+// Its space is its own padding, the line on its content box (spacing SP-9).
+export const separator = style({ height: t.separatorWidth, boxSizing: "content-box", paddingBlock: t.padding, backgroundColor: t.separator, backgroundClip: "content-box" });
 
 // The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).
+/** The text variant's fill: on its box, or on a bleeding text button's hit extension. */
+const textFill = createVar();
 export const text = style({
+  vars: { [textFill]: t.textTransparent },
   ...controlMetrics,
   display: "inline-flex",
   alignItems: "center",
@@ -83,7 +87,7 @@ export const text = style({
   paddingInline: t.textPaddingInline,
   borderRadius: t.textRadius,
   borderStyle: "none",
-  backgroundColor: t.textTransparent,
+  backgroundColor: textFill,
   color: t.text,
   fontFamily: t.font,
   fontSize: t.fontSize,
@@ -91,8 +95,8 @@ export const text = style({
   cursor: "default",
   outline: "none",
   selectors: {
-    "&[data-hovered], &[aria-expanded=\"true\"]": { backgroundColor: t.hover },
-    "&[data-pressed]": { backgroundColor: t.pressed },
+    "&[data-hovered], &[aria-expanded=\"true\"]": { vars: { [textFill]: t.hover } },
+    "&[data-pressed]": { vars: { [textFill]: t.pressed } },
     // Inset, as a menu item's: the text and select variants line up with a panel's content edge, where
     // a scrolling body would cut a ring drawn outside them (D-111).
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.pillFocusWidth})` },
@@ -114,7 +118,23 @@ export const select = style([text, {
 }]);
 
 /** The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111). */
-export const textBleed = style({ marginInline: `calc(-1 * ${t.textPaddingInline})`, marginBlock: `calc((${t.fontSize} * ${t.lineHeight} - ${t.textHeight}) / 2)` });
+export const textBleed = style({
+  // Its box is its text's line, in line with the content; its hit area, fill and ring reach past it
+  // by an invisible extension, never by pulling the box into its container's padding (spacing SP-2).
+  position: "relative",
+  isolation: "isolate",
+  minHeight: 0,
+  paddingInline: 0,
+  backgroundColor: "transparent",
+  "::before": {
+    content: '""', position: "absolute", zIndex: tokens.layer.underlay, borderRadius: t.textRadius, backgroundColor: textFill,
+    insetInline: `calc(-1 * ${t.textPaddingInline})`, insetBlock: `calc((${t.fontSize} * ${t.lineHeight} - ${t.textHeight}) / 2)`,
+  },
+  selectors: {
+    "&[data-focus-visible]": { outlineStyle: "none" },
+    "&[data-focus-visible]::before": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.pillFocusWidth})` },
+  },
+});
 
 // The pill variant: the trigger is a quiet text pill (UI-12).
 

@@ -121,7 +121,7 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
         <div className={s.band} data-drag-band="" aria-hidden="true" />
         <Dialog data-surface="dialog" data-no-drag="" className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
           {header ? <div className={s.region} data-dialog-first="">{header}</div> : null}
-          {fixed ? <div className={s.region} data-dialog-first={!header ? "" : undefined}>{fixed}</div> : null}
+          {fixed ? <div className={s.region} data-dialog-first={!header ? "" : undefined} data-dialog-after-header={header ? "" : undefined}>{fixed}</div> : null}
           {/* The body can take focus so its content can be scrolled from the keyboard, even when nothing in it is actionable. */}
           <div className={`${s.body}${height === "navigation" ? ` ${s.fixedBody}` : ""}`} ref={bodyRef} data-dialog-body="" data-dialog-first={!header && !fixed ? "" : undefined} data-dialog-last={!footer ? "" : undefined} tabIndex={height === "navigation" ? -1 : 0} role="region" aria-label={label}>{children}</div>
           {footer ? <div className={s.region} data-dialog-last="">{footer}</div> : null}

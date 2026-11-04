@@ -114,15 +114,17 @@ export function ResultList({ label, items, activeId, width = "fill", height = "c
     if (item.header) groups.push({ header: item, items: [] });
     else groups.at(-1)!.items.push(item);
   }
+  const grouped = groups.length > 1;
   return (
     <div
-      ref={ref} id={id} role="listbox" aria-label={label} className={`${s.list} ${s.width[width]} ${s.height[height]}`}
+      ref={ref} id={id} role="listbox" aria-label={label} className={`${s.list} ${s.width[width]} ${s.height[height]}${grouped ? ` ${s.grouped}` : ""}`}
       tabIndex={0}
       aria-activedescendant={activeId ? resultItemId(id, activeId) : undefined}
       onKeyDown={onKeyDown}
     >
       {groups.map((group) => {
-        if (!group.header) return group.items.map(option);
+        // Items before the first header are a group of their own, so the list's gap separates groups only.
+        if (!group.header) return grouped ? (group.items.length ? <div key="loose" role="presentation" className={s.group}>{group.items.map(option)}</div> : null) : group.items.map(option);
         const headerId = resultItemId(id, group.header.id);
         return (
           <div key={group.header.id} role="group" aria-labelledby={headerId} className={s.group}>

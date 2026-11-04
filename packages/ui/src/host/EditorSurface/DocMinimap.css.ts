@@ -111,13 +111,13 @@ export const handle = style({
   position: "absolute",
   top: 0,
   bottom: 0,
-  left: `calc(-1 * ${t.dock.handleWidth} / 2)`,
+  insetInlineStart: `calc(-1 * ${t.dock.handleWidth} / 2)`,
   width: t.dock.handleWidth,
   cursor: "col-resize",
   touchAction: "none",
   outline: "none",
   selectors: {
-    "&::after": { content: '""', position: "absolute", top: 0, bottom: 0, left: `calc(50% - ${t.dock.handleLine} / 2)`, width: t.dock.handleLine, backgroundColor: t.transparent },
+    "&::after": { content: '""', position: "absolute", top: 0, bottom: 0, insetInlineStart: `calc(50% - ${t.dock.handleLine} / 2)`, width: t.dock.handleLine, backgroundColor: t.transparent },
     "&:focus-visible::after, &:active::after": { backgroundColor: t.dock.handleActive },
   },
   "@media": { "(hover: hover)": { selectors: { "&:hover:not(:active):not(:focus-visible)::after": { backgroundColor: t.dock.handleHover } } } },
@@ -154,8 +154,7 @@ export const list = style({
 });
 minimalScrollbar(list, { scrollbarSize: e.scrollbarSize, scrollbarInset: e.scrollbarInset, scrollbarThumb: e.scrollbarThumb, scrollbarThumbHover: e.scrollbarThumbHover, scrollbarTrack: e.scrollbarTrack });
 fadingEdges(list, { scrollFade: t.cardFade });
-// The first heading's row leaves room for the pin at its end.
-globalStyle(`${list}[data-pin] > li:first-child > button`, { paddingInlineEnd: `calc(${t.itemPaddingInline} + ${t.pinSize})` });
+
 
 export const entry = style({ display: "flex", flexDirection: "column", gap: t.itemGap });
 /** A heading's subsections: indented by their buttons, so nesting adds no space of its own. */
@@ -181,19 +180,17 @@ export const item = style({
     "&:focus-visible": { backgroundColor: t.itemHover, outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing },
     "&:active": { backgroundColor: t.itemPressed },
     // Not by colour alone (1.4.1): the current heading is also heavier.
-    '&[aria-current="location"]': { color: t.itemCurrent, fontWeight: t.itemCurrentWeight },
+    // Heavier by a stroke, not a weight, so its lines never rewrap (spacing ST-3: states move nothing).
+    '&[aria-current="location"]': { color: t.itemCurrent, WebkitTextStroke: `${t.itemCurrentStroke} currentColor` },
     "&[data-untitled]": { color: t.itemUntitled },
+    // The first heading's row leaves room for the pin at its end: marked by the minimap, never by its position (spacing ST-2).
+    "&[data-pin-room]": { paddingInlineEnd: `calc(${t.itemPaddingInline} + ${t.pinSize})` },
   },
   "@media": { "(hover: hover)": { selectors: { "&:hover:not(:active)": { backgroundColor: t.itemHover } } } },
 });
-export const indent = styleVariants({
-  0: {},
-  1: { marginInlineStart: t.indent },
-  2: { marginInlineStart: `calc(2 * ${t.indent})` },
-  3: { marginInlineStart: `calc(3 * ${t.indent})` },
-  4: { marginInlineStart: `calc(4 * ${t.indent})` },
-  5: { marginInlineStart: `calc(5 * ${t.indent})` },
-});
+// Indented by a transparent start border its fill doesn't paint under: the item's own box, never a margin (spacing SP-9).
+const indentBy = (n: number) => ({ borderInlineStartStyle: "solid" as const, borderInlineStartColor: "transparent", borderInlineStartWidth: `calc(${n} * ${t.indent})`, backgroundClip: "padding-box" });
+export const indent = styleVariants({ 0: {}, 1: indentBy(1), 2: indentBy(2), 3: indentBy(3), 4: indentBy(4), 5: indentBy(5) });
 
 /** At most two lines, then an ellipsis; the full text stays the accessible name. */
 export const label = style({

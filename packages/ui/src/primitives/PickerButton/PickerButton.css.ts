@@ -42,9 +42,11 @@ export const sample = style({ fontFamily: t.family, fontSize: t.tileSampleSize, 
 export const tileValue = style({ fontSize: t.tileValueSize, minWidth: 0, whiteSpace: "nowrap", textAlign: "center" });
 // The theme drawn small: its canvas, two lines of its text and a dot of its accent.
 export const preview = style({
-  display: "flex", flexDirection: "column", justifyContent: "center", gap: t.previewLine, width: "100%", height: "100%", padding: t.tilePadding,
+  display: "flex", flexDirection: "column", justifyContent: "center", gap: `calc(2 * ${t.previewLine})`, width: "100%", height: "100%", padding: t.tilePadding,
   boxSizing: "border-box", borderRadius: t.previewRadius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.swatchBorder, backgroundColor: t.swatchCanvas,
 });
 export const line = style({ height: t.previewLine, width: "70%", borderRadius: t.previewLine, backgroundColor: t.previewText });
 export const lineShort = style({ width: "45%" });
-export const accentDot = style({ width: t.swatch, height: t.previewLine, borderRadius: t.previewLine, backgroundColor: t.swatchAccent, marginBlockStart: t.previewLine });
+// The text's two lines are one group; the accent stands apart, by the preview's own gap (spacing SP-9).
+export const previewText = style({ display: "flex", flexDirection: "column", gap: t.previewLine, width: "100%" });
+export const accentDot = style({ width: t.swatch, height: t.previewLine, borderRadius: t.previewLine, backgroundColor: t.swatchAccent });

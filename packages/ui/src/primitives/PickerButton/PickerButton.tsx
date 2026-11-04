@@ -41,7 +41,7 @@ export function PickerButton({ label, value, font = "app", theme = "app", chevro
         <span className={s.tileVisual} aria-hidden="true">
           {variant === "fontTile"
             ? <span className={s.sample} data-font-scope={fontScope}>Aa</span>
-            : <span className={s.preview} data-theme-scope={theme === "app" ? undefined : theme}><span className={s.line} /><span className={`${s.line} ${s.lineShort}`} /><span className={s.accentDot} /></span>}
+            : <span className={s.preview} data-theme-scope={theme === "app" ? undefined : theme}><span className={s.previewText}><span className={s.line} /><span className={`${s.line} ${s.lineShort}`} /></span><span className={s.accentDot} /></span>}
         </span>
         <span className={`${controlLabel} ${s.tileValue}`}>{value}</span>
         {commit ? <CommitMark variant="border" state={commit} /> : null}

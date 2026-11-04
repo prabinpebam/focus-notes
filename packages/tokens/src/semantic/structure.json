@@ -8,6 +8,11 @@
     }
   },
   "font": {
+    "strokeEmphasis": {
+      "$type": "dimension",
+      "$value": "{ref.size.em03}",
+      "$description": "A heavier look for a state without a heavier weight (a text stroke), so the text never rewraps when the state changes (spacing ST-3)."
+    },
     "content": {
       "$type": "fontFamily",
       "$value": "{ref.font.mono}"

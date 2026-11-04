@@ -70,7 +70,7 @@ export const rowHandle = style([handle, {
   width: t.handleShort,
   height: t.handleHit,
   transform: `translate(calc(-100% - ${t.rowGap}), -50%)`,
-  selectors: { "&::before": { content: '""', position: "absolute", insetBlock: 0, left: `calc((${t.handleShort} - ${t.handleHit}) / 2)`, width: t.handleHit } },
+  selectors: { "&::before": { content: '""', position: "absolute", insetBlock: 0, insetInlineStart: `calc((${t.handleShort} - ${t.handleHit}) / 2)`, width: t.handleHit } },
 }]);
 /** Where the handles meet, at the top-left corner. */
 export const tableHandle = style([handle, {
@@ -144,8 +144,9 @@ const bar = style([control, {
   selectors: { "&:active": { backgroundColor: t.color.barHover } },
   "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.color.barHover } } } },
 }]);
-export const newRow = style([bar, { width: wVar, height: t.newRowHeight, marginTop: t.barGap }]);
-export const newColumn = style([bar, { width: t.newColumnWidth, height: hVar, marginLeft: t.barGap }]);
+// Placed at the frame's measured edge and offset from it by a translation, never a margin (spacing SP-9).
+export const newRow = style([bar, { width: wVar, height: t.newRowHeight, translate: `0 ${t.barGap}` }]);
+export const newColumn = style([bar, { width: t.newColumnWidth, height: hVar, translate: `${t.barGap} 0` }]);
 
 /** The context menu opens from the active cell; this is where it's anchored. */
 export const anchor = style([area, { visibility: "hidden" }]);
