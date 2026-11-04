@@ -38,6 +38,16 @@ Completed Local import receipts live for the current desktop process. Crash-pers
 
 The [New project stream evidence](../plan/definition-of-done.md#phase-2-streamed-new-project) adds real check/folder/profile receipts, an actual repository step only when that backend work runs, and the final Open step. Cancel waits for the current atomic step, aborts before the next, and never deletes partial files. Cancellation after a completed profile retains its receipt and skips Open; Retry opens it once without creating again. Screen readers hear Stopped, not a false failure. This does not claim crash-resumable setup, Publish or first-clone/push streaming.
 
+## Local site operations
+
+The [local-site operation evidence](../plan/definition-of-done.md#phase-2-local-site-operations-b70e3334) distinguishes local preview persistence from remote publication. No upload or deployment step is invented.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Prepare site preview | Responsive → long; actual per-note preparation and final acceptance | Settings/preview retain old content; real completed/total StepMarks and progress, elapsed after 3 s, Cancel stops before accepting the next preview; read-only Retry retains its error | `fn:site.preview`; exact elapsed/count and retained-content units, real delayed/refused read journey |
+| Apply site appearance | Responsive → waiting; atomic local save | Existing preview shows collection/save steps; failed choices remain editable with Retry; cancellation is unavailable during the write | `fn:site.settings`; actual state-write refusal/Retry, real 50% receipt count |
+| Publish to local draft | Responsive → waiting; collect actual selected paths, then atomic save | Publish dialog explicitly says local only; steps never claim remote deployment; no repeated in-flight save | `fn:sharing.publishDraft`; actual persisted paths and unchanged note bytes |
+
 ## History recovery
 
 The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.

@@ -488,6 +488,22 @@ Initial journey failures were fixture-only: native progress exposes `value`, not
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\65f42cfc\Open review build.cmd`; Ctrl+Alt+O → New project. Controlled repository delays belong to the scoped journey/inspection, not the owner's notes or a real account. This candidate retains Field notes and Garden notes; Ctrl+Alt+O → Garden notes opens its second window. The existing visible `f2127c67` review was not replaced. Publish, first clone/push, W9 and remaining phase-2 acceptance stay in progress; no full suite, CI wait, main app merge or release ran.
 
+### Phase-2 local site operations, b70e3334
+
+Site preparation counts actual per-note read/build receipts plus acceptance of the completed preview. Cancel waits for the current read and rejects the replacement before changing articles or settings; previous content and the note stay intact. Read failure marks its real step and offers local Retry, preserving the error through recovery. The existing Publish action only collects paths and writes a local draft; Apply collects and atomically saves local appearance. Both show those actual steps, never invented remote upload/deployment. Save failures retain choices and offer scoped Retry. Cancel is unavailable once an atomic write has begun; completion is never misreported as cancelled.
+
+| Scoped check on `b70e3334` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\sharing-preview.test.ts packages\core\test\share-manage.test.ts packages\core\test\tasks.test.ts` | 49 passed: actual counts, exact 2999/3000 ms elapsed, retained preview/note, cancellation before acceptance, failure-step/read-only Retry, Apply snapshot lock, failed-input recovery and duplicate local-publication exclusion |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `node tools\component-inventory.mjs --write`; `pnpm check`; `git diff --check` | Passed; 779 documents, 82 components, 720 commands; generated catalogue updated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime/copy changes |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Site preview counts actual reads"` | Passed: held/refused real reads, elapsed, safe Cancel/Retry, actual article replacement, refused/held atomic Apply, correct 50% progress, persisted appearance/local publication paths, all three named measures and unchanged note bytes |
+| Exact-head candidate | Both distinct sample projects inspected invisibly and closed. Separate synthetic local Git workspace passed actual 33% preview/elapsed/Cancel/Retry and local Apply inspection; note bytes stayed unchanged and own app closed |
+
+The journey caught a real percentage mismatch: ProgressBar takes 0–100, not a 0–1 fraction. The model and measurable assertions now use that contract. Other failed attempts corrected fixture-only labels, the toolbar shortcut and the elapsed format. All test/inspection apps closed with own-PID WhatIf and actual cleanup. No real account, GitHub write, remote deployment, full suite, CI wait or app merge ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b70e3334\Open review build.cmd`. Settings → Sharing → Preview site; controlled delays/refusals belong to the separate synthetic inspection, not owner notes. The current visible `f2127c67` review remains open. Phase 2, first clone/push and W9 remain unfinished.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
