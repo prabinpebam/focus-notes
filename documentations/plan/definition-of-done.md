@@ -75,6 +75,23 @@ Project choices retain the attempted selection and error locally while the writi
 
 **Still partial:** SVG logo upload, other app settings, AI's details/key save groups, notification/withdrawal acceptance, scoped recovery, empty wrappers, streamed operations and section shimmer. Project settings evidence does not certify the other D2–D4 surfaces. No full suite, CI wait or benchmark ran.
 
+### Phase-2 app choices and announcements, b7f54383
+
+The app's Appearance and Paragraph spacing groups use the commit lane at pushed `9132ff95`. Named polite confirmation is added at pushed `b7f54383`: a bound control supplies its label, otherwise the outcome says “Change saved.” Confirmation happens once after successful storage, never for a pending or failed attempt, Revert or expiry; draft values never enter the announcement. The existing live region is reused, with no writing-window element added.
+
+| Check on the combined increment | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts packages/core/test/commits.test.ts packages/core/test/settings-failures.test.ts packages/ui-runtime/test/failures.test.tsx` | 5 files, 35 tests passed: independent groups, confirmed-value safety, ordered Retry, minimum beats, retained input, single named outcomes and no draft disclosure |
+| `pnpm --filter @focus-notes/desktop run build` at `b7f54383` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1` | All 7 scoped journeys passed together: scale, app mode/paragraph choices, modal F6/pointer Retry, project name, colour/logo, font/theme and watermark. Reopening preserves mode/spacing; the named live-region confirmation is accessible while Settings stays open. |
+| `pnpm ui:check` | Still fails on the same 54 inherited sharing/site-preview findings; 0 fixture gaps, 0 stale generated files |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head `b7f54383`; normal Project settings plus app Appearance/Paragraph spacing and named polite confirmations were reached in the invisible candidate. Its synthetic profile/notes are separate. All apps closed; PID-scoped `-WhatIf` then actual cleanup ran. |
+
+The theme-manager test's category list was updated for the Project section introduced by the prerequisite merge. No unrelated CI repair or quarantine was added. This is DOM/role evidence for announcements, not live screen-reader certification.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b7f54383\Open review build.cmd`. Project settings cover the project controls; Settings → Appearance → Open theme manager covers Appearance and Reading → Paragraph spacing. Remaining app controls/sliders, AI save groups, SVG logo upload and the other D1–D8 gaps above remain unaccepted. No full suite, CI wait or benchmark ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
