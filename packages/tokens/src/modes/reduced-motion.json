@@ -33,6 +33,9 @@
     },
     "shimmer": {
       "$value": "{ref.duration.0}"
+    },
+    "sweep": {
+      "$value": "{ref.duration.0}"
     }
   }
 }

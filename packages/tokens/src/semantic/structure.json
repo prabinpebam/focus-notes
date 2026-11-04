@@ -673,6 +673,14 @@
       "$type": "number",
       "$value": 3,
       "$description": "How many times the shimmer passes before the placeholder stands still: 3 × 1.5 s stays within 5 s of motion (WCAG 2.2.2, D-208)."
+    },
+    "hold": {
+      "$value": "{ref.duration.1000}",
+      "$description": "How long a dragged button rests over another before that one lifts to show it will be replaced (DD-IA-08). A timing, not motion: reduced motion keeps it."
+    },
+    "sweep": {
+      "$value": "{ref.duration.3000}",
+      "$description": "One turn of the scan's radar sweep while the app asks this computer for AI models (DD-RWR-12). The scan ends within 5 s, so the sweep never outlasts WCAG 2.2.2."
     }
   },
   "easing": {
