@@ -295,3 +295,41 @@ Most of what's needed already exists: Spinner, Icon, StatusRow, Skeleton, StepMa
 | `NotificationRegion` | Layout | The labelled "Notifications" region around the toast stack, with the queue's visible limit of three (F3) |
 | A commit track in the task tracker | Core (not UI) | `tracker.commit(key, fn)` and `vm.commits`, the source of every control's pending, confirmed and failed state (F2) |
 | A gallery fixture for every state | Gallery | Each new state as a contract fixture, so the gallery shows it in light, dark and contrast before any wiring |
+
+## Proposed order of work
+
+UI first, in the owner's strict-design mode: each state is drawn as a contract fixture or a gallery mock with the real design system, and the owner approves the look before anything is wired. Every slice is small enough to review within an hour. Wiring follows only after sign-off, one slice at a time.
+
+<div class="slate-callout slate-callout--tip">
+  <p class="slate-callout__title">Where to look</p>
+  <p>Design slices land in the gallery (<code>pnpm gallery</code>) under a <em>States</em> group in <code>packages/views/mocks/states/</code>, shown in light, dark and contrast. Each slice names the findings it answers.</p>
+</div>
+
+### Design (gallery only, no wiring)
+
+| Slice | What the owner reviews | Findings | Effort |
+| --- | --- | --- | --- |
+| D1 | The notification stack: sticky error with Retry, success, warning and progress tones, three visible, a coalesced *3 images couldn't load*, inside the Notifications region | F3, F4 | S |
+| D2 | A field's commit: TextField and ColorField pending, confirmed (border and tick) and failed with Retry | F2 | S |
+| D3 | A switch's commit: Switch pending (spinner in the thumb), confirmed and failed with Retry | F2 | S |
+| D4 | A choice's commit: SegmentedControl, ThemeGallery and FontChoice pending and confirmed, the group locked | F2 | S |
+| D5 | `EmptyState` in Files, Open, AI connections, the share list and the site preview, plus a good-news StatusRow | F6 | M |
+| D6 | StatusRow with an action and Details, used in Open, New project, Local import and history; ImageFrame broken with Retry | F5, F4, F11 | S |
+| D7 | Long operations: New project and Publish with a step list, progress, elapsed time and Cancel; the crashed-panel fallback | F7, F8 | S |
+| D8 | Sections loading in their shape: Agents, the share item, history | F9 | S |
+
+### Wiring (after the owner approves each design)
+
+| Slice | What lands | Findings | Effort |
+| --- | --- | --- | --- |
+| W1 | Notification host: sticky errors, a queue of three with errors first, coalescing, pause on blur, the region | F3 | M |
+| W2 | No silent failures: `render.ts` routes a rejected setter or action to the control's failed state or an error with Retry; renderer `unhandledrejection` reporter; roll back store updates whose write fails | F1 | M |
+| W3 | The commit track in the task tracker and `vm.commits` | F2 | M |
+| W4 | App settings confirm through the commit track (appearance, fonts, scale, focus, outline, Files options, AI fields) | F2, F12 | M |
+| W5 | Project settings confirm through the commit track | F2 | S |
+| W6 | Retry in place: Open, New project, Local import, history, image reads | F4, F5, F11 | M |
+| W7 | Empty states adopted | F6 | S |
+| W8 | Steps and Cancel for New project, Publish and the first clone and push | F7 | L |
+| W9 | Small fixes: Withdraw with Undo, the crashed-panel fallback, section shimmer, copy that says what's safe, the first-run frame, the hover check in `pnpm check` | F8, F9, F10, F13, F14, F15 | S each |
+
+Each wiring slice also adds its rows to the [wait inventory](../architecture/perceived-performance.md), and runs the checks its risk calls for once it's out of design mode.
