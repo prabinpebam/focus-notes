@@ -104,8 +104,11 @@ export function ToolbarComposer(props: ToolbarComposerProps) {
     const inside = (el: HTMLElement | null) => { const r = el?.getBoundingClientRect(); return !!r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
     if (inside(stage.current)) {
       const slots = [...(stage.current?.querySelectorAll<HTMLElement>("[data-slot]") ?? [])].map((el) => ({ i: Number(el.dataset.slot), r: el.getBoundingClientRect() }));
-      const gap = slots.filter(({ r }) => r.left + r.width / 2 < x).length;
-      for (const { i, r } of slots) if (x >= r.left + r.width / 4 && x <= r.right - r.width / 4) return { kind: "slot", index: i, gap };
+      const nearest = slots.reduce<typeof slots[number] | undefined>((best, slot) => !best || Math.abs(slot.r.top + slot.r.height / 2 - y) < Math.abs(best.r.top + best.r.height / 2 - y) ? slot : best, undefined);
+      const row = nearest ? slots.filter(({ r }) => Math.abs(r.top - nearest.r.top) < r.height / 2) : [];
+      const before = row.filter(({ r }) => r.left + r.width / 2 < x).at(-1);
+      const gap = before ? before.i + 1 : row[0]?.i ?? 0;
+      for (const { i, r } of row) if (y >= r.top && y <= r.bottom && x >= r.left + r.width / 4 && x <= r.right - r.width / 4) return { kind: "slot", index: i, gap };
       return { kind: "gap", index: gap };
     }
     if (inside(catalogue.current)) return { kind: "remove" };

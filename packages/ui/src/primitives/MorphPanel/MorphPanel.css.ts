@@ -37,7 +37,7 @@ export const root = style({
       // would otherwise scroll it, shifting the buttons and closing their tooltip.
       overflow: "clip",
     },
-    "&[data-open][data-preview]": { overflow: "visible" },
+    "&[data-open][data-preview]": { width: "fit-content", maxWidth: "100%", height: "auto", overflow: "visible" },
     // One floating thing at a time in the title bar: while the Snap Layouts picker is open (reached
     // by Tab from the toolbar), the open toolbar steps back rather than sit under it (D-119). Never
     // while it holds focus: the picker opened by the pointer resting on maximize would hide the
@@ -82,6 +82,7 @@ export const content = style({
   transitionTimingFunction: t.easing,
   selectors: {
     [`${root}[data-open] > &`]: { opacity: t.visible, visibility: "visible", transform: "translateX(-50%) scale(1)", transitionDelay: `${t.contentDelay}, ${t.contentDelay}, 0s` },
+    [`${root}[data-open][data-preview] > &`]: { position: "relative", left: "auto", maxWidth: "100%", transform: "none" },
     // Its content steps back with it while the Snap Layouts picker is open (D-119).
     [`:root:has([data-picker-open]) ${root}[data-open]:not(:focus-within) > &`]: { visibility: "hidden" },
   },
