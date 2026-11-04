@@ -128,6 +128,24 @@ EmptyState's unchanged sealed markup/styles now live in the primitive tier; Noti
 
 **Try it:** the next candidate refresh will include these wrappers; the current `6a217238` candidate still covers sliders/upload only. All-done/good-news cases and complete first-action/content-replacement journeys remain unaccepted; no full suite, CI wait, benchmark or app merge ran.
 
+### Phase-2 independent section loading, 47101d57
+
+**D8 wiring pushed; full phase 2 remains in progress.** `TaskTracker.section` delays the shape by 300 ms and holds its actual visible start for at least 500 ms, even on failure. Agents uses two approved rows, item-sharing one, history two. Each has three finite shimmer passes and static reduced motion. Refresh retains existing content. Agents failures offer local Retry; history list failure keeps prior versions and offers Retry. Sharing Retry reloads only its listing, keeps editable expiry/method choices and never creates a grant. Request identities discard late Agents/history replies, including a closed/reopened sheet for the same note.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\tasks.test.ts packages\core\test\agents-app.test.ts packages\core\test\note-history.test.ts packages\core\test\share-manage.test.ts` | Passed: 60 tests. Measured 299/300 ms reveal and 499/500 ms minimum boundaries; fast/no-shape, failed minimum, retained history, late replies and failed-sharing Retry retaining expiry |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check` and `pnpm ui:check` | Passed, no inherited static findings remain |
+| `pnpm --filter @focus-notes/desktop run build` | Passed, rebuilt at exact pushed head before candidate creation |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "section loading"` | Passed: approved Agents row anatomy, exactly three passes, static reduced motion, old content retained during failed refresh and Retry. Only that read handler was faked; no real account/network writes |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at `47101d57`: normal Settings/project/reading/upload refusal/Retry, AI empty first action, real Agents data and filtered Open/Clear search inspected invisibly |
+| Slate `runtime-host.mjs check --repo . --host documentations` from the worker folder | Passed for the updated wait inventory |
+
+The touched Agents Undo test still assumed errors were appended after success; corrected its assertion for the already-built error-first queue. The existing 10,000-note sharing test caught a draft-input lock while preparation ran; removed that lock, preserving editable input while only share creation waits. All focused checks then passed. Every started app was invisible, closed, and followed by PID-scoped `-WhatIf` then actual cleanup.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\47101d57\Open review build.cmd`. Settings → AI → Add connection/Cancel; Open → unmatched search → Clear search; Settings → Agents. Full desktop journeys through delayed sharing/history are still absent; individual history-version/restore recovery and other D1–D7 gaps remain. No full suite, CI wait, benchmark or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
