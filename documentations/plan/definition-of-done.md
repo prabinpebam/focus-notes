@@ -92,6 +92,25 @@ The theme-manager test's category list was updated for the Project section intro
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b7f54383\Open review build.cmd`. Project settings cover the project controls; Settings → Appearance → Open theme manager covers Appearance and Reading → Paragraph spacing. Remaining app controls/sliders, AI save groups, SVG logo upload and the other D1–D8 gaps above remain unaccepted. No full suite, CI wait or benchmark ran.
 
+### Phase-2 reading sliders and SVG upload, 6a217238
+
+Pushed `7d8811e3` wires the three Reading sliders. Live note preview does not write or change acknowledged appearance; release, blur or a 500 ms keyboard pause commits once. A failed write restores the note's stored appearance while keeping the attempted numeric value and its formatted output in the slider. Other sliders remain usable. Pushed `6a217238` wires SVG upload to the shared logo commit group: Retry reuses the sanitized source without reopening the picker, Revert discards it without writing, and picker cancellation emits no saved outcome. The upload button uses its own border, with recovery outside.
+
+| Check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on the slider increment; core/desktop repeated and passed after SVG upload |
+| `pnpm exec vitest run packages/core/test/theme-manager.test.ts packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx` | 3 files, 23 tests passed, including transient preview, refused-save rollback, formatted retained values, independent Retry and keyboard pause/blur/focus |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts` | 9 tests passed, including retained upload source, picker cancellation, source-preserving Retry, write-free Revert and named confirmation |
+| `pnpm --filter @focus-notes/desktop run build` | Passed for each slice |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "reading sliders"` | Passed: all three values persist and reopen; refused width keeps 85 characters, independent line spacing saves and Retry restores width |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "SVG logo upload"` | Passed: real sanitized SVG, actual state-write refusal, Retry with picker deliberately unavailable, later failed upload/Revert preserving the stored Rocket |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Schemas regenerated; 0 fixture gaps, 0 stale files. Still fails on 54 inherited sharing/site-preview view findings; not a green static check |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head `6a217238`: normal project controls, SVG write refusal/Retry, Appearance/Paragraph spacing and all Reading sliders inspected invisibly |
+
+Every journey and candidate closed its app and ran PID-scoped cleanup, `-WhatIf` first. The review gallery is detached from fresh folder `vq-ui-states-5` on port 5231; HTTP 200 verified. Clock marks recorded worker/production-ready; status says no matching clock, so reviews are tracked manually. No full suite, CI wait, benchmark or app-code merge to main ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\6a217238\Open review build.cmd`. Settings → Project → Upload SVG; Settings → Appearance → Open theme manager → Reading. This remains partial D2–D4 acceptance; the other controls, AI save groups and D1/D5–D8 gaps remain.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
