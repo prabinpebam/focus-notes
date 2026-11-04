@@ -224,6 +224,7 @@ describe("opening the panel (IA-VIEW-FILES)", () => {
     await settle();
     expect(app.store.state.ui.files.pins).toEqual([]);
     expect(app.store.state.ui.files.selection).toEqual(before);
+    expect(vm(app).items.find(item => item.id === "other.md")).toMatchObject({ pinLabel: "Pin Other" });
     expect(vm(app).items.find(item => item.id === "other.md")).toMatchObject({ pinCommit: "pending" });
     await app.commands.run("files.select", { id: "welcome.md", mode: "single" });
     const failure = expect(pin).rejects.toThrow("disk full");

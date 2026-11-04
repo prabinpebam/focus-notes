@@ -30,15 +30,20 @@ it("the in-place pin action names and targets its row without selecting, opening
   root = createRoot(host);
   const onPin = vi.fn(), onSelect = vi.fn(), onAction = vi.fn(), onExpand = vi.fn();
   act(() => root!.render(createElement(FileTree, { id: "files", label: "Files", onPin, onSelect, onAction, onExpand, items: [
-    { id: "ideas", kind: "folder", level: 1, label: "Ideas", pinLabel: "Pin", pinned: false },
+    { id: "ideas", kind: "folder", level: 1, label: "Ideas", pinLabel: "Pin Ideas", pinned: false },
   ] })));
   const row = host.querySelector<HTMLElement>('[role="treeitem"]')!;
   const button = row.querySelector<HTMLButtonElement>("button")!;
-  expect(button.getAttribute("aria-label")).toBe("Pin");
+  expect(button.getAttribute("aria-label")).toBe("Pin Ideas");
   act(() => button.click());
   expect(onPin).toHaveBeenCalledWith({ id: "ideas", pinned: true });
   expect(onSelect).not.toHaveBeenCalled();
   expect(onAction).not.toHaveBeenCalled();
   expect(onExpand).not.toHaveBeenCalled();
   expect(document.getElementById(row.getAttribute("aria-labelledby")!)?.textContent).toBe("Ideas");
+  act(() => root!.render(createElement(FileTree, { id: "files", label: "Files", items: [
+    { id: "ideas", kind: "folder", level: 1, label: "Ideas", pinLabel: "Unpin Ideas", pinned: true },
+  ] })));
+  expect(host.querySelector('button[aria-label="Unpin Ideas"]')?.getAttribute("aria-pressed")).toBe("true");
+  expect(host.querySelector('[data-file-icon="pin"]')).not.toBeNull();
 });

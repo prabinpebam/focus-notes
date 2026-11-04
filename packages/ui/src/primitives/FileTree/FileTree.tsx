@@ -365,7 +365,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             ) : <span className={s.chevron} aria-hidden="true" />}
             {item.kind !== "section" ? (
               <span className={s.icon}>
-                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} aria-hidden="true"><Icon name={folder ? "folder" : "document"} size="s" /></span>
+                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></span>
                 {item.pinLabel && !item.editing ? (
                   <span className={s.pinControl} data-pin-commit={item.pinCommit}
                     data-key-scope="filesSection" data-key-scope-stop=""

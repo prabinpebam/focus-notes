@@ -211,10 +211,10 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
     treeFocus: "journal/2026-10-12.md",
     treePins: [
-      { id: "ideas", kind: "folder", level: 1, label: "Ideas", pinLabel: "Pin", pinned: false, pinCommit: "rest" },
-      { id: "pending.md", kind: "note", level: 1, label: "Saving pin", pinLabel: "Pin", pinned: false, pinCommit: "pending" },
-      { id: "confirmed.md", kind: "note", level: 1, label: "Pinned", pinLabel: "Unpin", pinned: true, pinCommit: "confirmed" },
-      { id: "failed.md", kind: "note", level: 1, label: "Pin not saved", pinLabel: "Pin", pinned: false, pinCommit: "failed" },
+      { id: "ideas", kind: "folder", level: 1, label: "Ideas", pinLabel: "Pin Ideas", pinned: false, pinCommit: "rest" },
+      { id: "pending.md", kind: "note", level: 1, label: "Saving pin", pinLabel: "Pin Saving pin", pinned: false, pinCommit: "pending" },
+      { id: "confirmed.md", kind: "note", level: 1, label: "Pinned", pinLabel: "Unpin Pinned", pinned: true, pinCommit: "confirmed" },
+      { id: "failed.md", kind: "note", level: 1, label: "Pin not saved", pinLabel: "Pin Pin not saved", pinned: false, pinCommit: "failed" },
     ],
     treeEditing: [
       { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },

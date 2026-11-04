@@ -1478,9 +1478,9 @@ export function registerFiles(ctx: Ctx) {
       const pending = new Set(f.pending);
       const unsaved = new Set(f.unsaved);
       const writable = canWrite(s);
-      const pinState = (path: string) => ({
+      const pinState = (path: string, name: string) => ({
         pinned: f.pins.includes(path),
-        pinLabel: catalog.format(f.pins.includes(path) ? "files.unpinItem" : "command.files.pinItem"),
+        pinLabel: catalog.format(f.pins.includes(path) ? "project.open.unpinItem" : "project.open.pinItem", { name }),
         pinCommit: s.commits.find(item => item.target === `vm.files.itemPin:${path}`)?.phase ?? "rest",
       });
       const shortcuts: Record<string, unknown>[] = [];
@@ -1492,7 +1492,7 @@ export function registerFiles(ctx: Ctx) {
           if (!found || (section === "recent" && found.node.kind !== "note")) return [];
           const label = titleOfNode(found.node);
           if (f.filter && !label.toLocaleLowerCase().includes(f.filter.toLocaleLowerCase())) return [];
-          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id, ...pinState(path),
+          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id, ...pinState(path, label),
             detail: dirOf(path).slice(found.root.path.length).replace(/^[\\/]+/, "") || catalog.format("files.location.root"), description: "", title: path,
             selected: selected.has(path), current: path === s.note.path, expanded: false, hasChildren: false }];
         });
@@ -1508,7 +1508,7 @@ export function registerFiles(ctx: Ctx) {
         title: r.kind === "note" ? r.path : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,
-        ...(r.kind !== "root" ? pinState(r.id) : {}),
+        ...(r.kind !== "root" ? pinState(r.id, r.label) : {}),
         draggable: writable && !r.readOnly && r.kind !== "root", droppable: writable && !r.readOnly && r.kind !== "note",
         editing: f.edit?.kind === "rename" && f.edit.id === r.id,
         // Private and Public each carry their repository's backup at the trailing end (D-191).
