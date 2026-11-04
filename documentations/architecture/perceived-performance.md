@@ -237,6 +237,7 @@ Every operation that can take longer than 100 ms, with its class, pattern and wo
 
 | Operation | Class | Pattern and place | Words on the main path | Measure | Status |
 | --- | --- | --- | --- | --- | --- |
+| Persist an app appearance/reading setting (UI-states W2–W4) | Responsive; storage may exceed 100 ms | Control-local commit state; only the affected control/group locks, failed input remains available for Retry | Pending and confirmed each at least 200 ms; approved inline mark or compact border | Planned `fn:settings.commit`; timing not measured in W2 | Partial at `dbf53479`: writes serialize, failures report Retry, confirmed values change only after persistence. W3/W4 still add the commit lane and draft presentation; W1 must keep Retry reachable above modals. |
 | Start-up | Waiting at worst | First-start notice: themed canvas, then the note | none under 1 s; the note's skeleton past 1 s | PRF-02, `fn:window.firstFrame` | Partial: the window shows on ready-to-show; no first-frame report |
 | Checking Git (Connect) | Responsive | Silent; shows only when missing or too old | none | `fn:setup.git` | Built |
 | Getting a sign-in code | Waiting | Named wait on *Connect to GitHub* (busy button) | "Getting a code from GitHub…" | `fn:setup.code` | Built (D-149): `firstRun.signIn` through the tracker |

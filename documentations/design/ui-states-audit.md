@@ -382,3 +382,5 @@ UI first, in the owner's strict-design mode: each state is drawn as a contract f
 | W9 | Small fixes: Withdraw with Undo, the crashed-panel fallback, section shimmer, copy that says what's safe, the first-run frame, the hover check in `pnpm check` | F8, F9, F10, F13, F14, F15 | S each |
 
 Each wiring slice also adds its rows to the [wait inventory](../architecture/perceived-performance.md), and runs the checks its risk calls for once it's out of design mode.
+
+**Phase-2 implementation, 4 November:** W2's result-aware action handling and confirmed-settings persistence are pushed to `vq-ui-states` at `dbf53479`; see the [scoped evidence and remaining gaps](../plan/definition-of-done.md#phase-2-evidence-4-november). W3/W4 still supply the approved commit states and retained drafts. W1 must also place actionable notifications above modal scrims: the focused journey could use Retry only after closing Settings. W5 depends on the project-settings implementation, which is not present on this branch. These are implementation gaps, not changes to the owner's design approval.

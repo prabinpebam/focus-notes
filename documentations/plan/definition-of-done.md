@@ -22,6 +22,20 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it in phase 1:** use the [review hub](http://127.0.0.1:5231/?f=mock.uistates.hub), compare Before/After and Play in light, dark and reduced motion. **Try it in phase 2:** perform the approved row's journey in the real app. Record exact-head evidence only after that slice's approval and implementation.
 
+### Phase-2 evidence, 4 November
+
+**W2 infrastructure is verified on `vq-ui-states` at `dbf53479`; no D2–D4 acceptance is claimed.** Rejected bound setters and action sequences report an error with Retry, stop dependent actions and preserve the original retry arguments. Keyboard/startup commands and unhandled renderer rejections use the same reporter. Settings writes are serialized and failed writes do not alter the confirmed appearance/reading values or leak into later writes.
+
+| Check on `dbf53479` | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed; desktop typecheck repeated after journey edits |
+| `pnpm exec vitest run packages/core/test/settings-failures.test.ts packages/core/test/app.test.ts packages/core/test/settings-app.test.ts packages/core/test/theme-manager-app.test.ts packages/ui-runtime/test/failures.test.tsx` | 4 files, 35 tests passed; the additional `theme-manager-app.test.ts` selector matched no file |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Passed: 695 documents, 81 components, 549 commands; generated files unchanged |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1 -g "a rejected settings write"` | Passed: a real isolated state-file write fails, Retry persists 110% scale, and reopening Settings shows that value. Cleanup ran with only the journey's PID, first with `-WhatIf`, then without. |
+
+**Remaining:** commit timing and retained failed drafts belong to W3/W4. The focused journey exposed the existing notification host beneath the modal scrim: Retry currently requires closing Settings first; W1 must make recovery reachable while the dialog remains open, not bypass the scrim in a test. Project settings are absent from this branch, so the project-specific D2/D3 journeys and W5 need that implementation integrated first. No candidate build, full suite, CI wait or benchmark has run for this increment.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
