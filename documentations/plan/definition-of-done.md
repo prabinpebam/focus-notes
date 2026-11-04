@@ -7,6 +7,21 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
+### Phase-2 fixed Settings navigation and combined checks, b83c1e0c
+
+Settings uses the sealed navigation-height dialog variant: 600 px high/minimum, clamped to the available overlay space. Its body never scrolls. Tabs owns one content-only scroller while navigation and Send feedback remain outside it. A body shorter than the 400 px side-navigation budget, or too narrow for side-by-side content, uses wrapping horizontal tabs; navigation itself never gets a scrollbar. Other dialogs and Tabs retain their existing defaults.
+
+| Scoped check on `b83c1e0c` | Result |
+| --- | --- |
+| `pnpm tokens`; UI and desktop package typechecks; `node tools/check-boundaries.mjs`; desktop build | Passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm ui:check` | Passed, 783 documents / 82 components / 725 commands; contracts, fixtures and schemas committed together |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts tools/test/layers.test.mjs` | Passed, 35 focused unit/static tests on the combined implementation |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts ui-states.spec.ts --workers=1 -g "Settings keeps navigation\|Agents code Copy\|menu explanations\|full-app Connect\|Themes applies\|review feedback: project scheme\|theme and font choices"` | Passed, 8 native journeys on the combined implementation |
+
+The Settings journey checks the navigation's unchanged bounds while real content scrolls, a non-scrolling dialog body, every category and feedback action in view, and vertical/short-window fallback orientation at 1400 × 850, 1024 × 720, 600 × 480 and 480 × 360. The native theme-refusal fixture now starts on an actual note rather than leaving the full-app empty Open surface active underneath Settings; the structural portal correctly prevents that full-app surface's covered controls being clicked. The older blur fixture waits for acknowledged scroll-edge state rather than racing startup scroll restoration. No production recovery or onboarding behavior was weakened.
+
+**Try it:** open Settings → Agents and scroll long configuration content. Categories and Send feedback stay fixed. Make the window short: tabs wrap above the content, still without navigation scrolling. All five fixes are implemented in the candidate branch; packaging and verifying one exact-head, two-project owner candidate is still pending. No phase completion, main app merge, full suite, CI wait or release is claimed.
+
 ### Phase-2 code Copy overlay, a0e29706
 
 The shared CodeBlock uses an absolute top-right IconButton, retaining the supplied localized Copy name/tooltip. Source text fills the code box rather than yielding a column to a text button; token-based top clearance avoids covering source bytes, and line breaks are preserved.

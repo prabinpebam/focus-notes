@@ -12,6 +12,8 @@
 
 ### Owner feedback queue, 5 November
 
+**All five implemented; combined review still pending, `b83c1e0c`:** Settings now keeps its navigation outside the content scroller. The navigation shell is 600 px high, clamped to available window space; when the body cannot fit its 400 px side-navigation budget, tabs wrap horizontally with the footer still fixed. Native bounds/scroll checks pass at 1400 × 850, 1024 × 720, 600 × 480 and 480 × 360. Combined focused evidence is 35 units and 8 native journeys, all passing. The owner's old review is still open; a new exact-head two-project candidate has not yet been packaged or launched. Phase 2 is not complete.
+
 **Code Copy, `a0e29706`:** shared CodeBlock uses the existing IconButton with accessible Copy name/tooltip, positioned top-right rather than consuming a text column. Code preserves line breaks and fills the available width; token clearance prevents the icon obscuring the source. Native Agents proof checks actual geometry, icon-only content, keyboard tooltip and exact copied bytes using the isolated memory clipboard. Fix 4 of 5; Settings navigation remains.
 
 **Menu descriptions, `f879f991`:** shared command, choice and submenu primitives no longer show secondary explanation rows. Reasons remain stable accessible descriptions, with the shared positioned tooltip on hover or focus; unavailable items stay reachable and cannot run. Native proof checks the Publish reason's clipped one-pixel description, accessible name/description, keyboard focus tooltip and hover tooltip. No per-view copy fork. Fix 3 of 5; code Copy and Settings scrolling remain.
