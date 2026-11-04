@@ -28,6 +28,7 @@ export function Toast({ message, tone = "info", sticky = false, actionLabel, act
   const ref = useRef<HTMLDivElement | null>(null);
   const messageRef = useRef<HTMLSpanElement | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
+  const pauseCauses = useRef({ hover: false, focus: false });
   useLayoutEffect(() => () => {
     if (ref.current?.contains(document.activeElement) && returnFocus.current?.isConnected) returnFocus.current.focus({ preventScroll: true });
   }, []);
@@ -52,9 +53,15 @@ export function Toast({ message, tone = "info", sticky = false, actionLabel, act
     asked.current = focusRequest;
     ref.current?.querySelector<HTMLElement>("button")?.focus();
   }, [focusRequest]);
-  const pause = (paused: boolean) => onPausedChange?.({ paused });
+  const pause = (cause: "hover" | "focus", active: boolean) => {
+    const causes = pauseCauses.current;
+    const wasPaused = causes.hover || causes.focus;
+    causes[cause] = active;
+    const paused = causes.hover || causes.focus;
+    if (paused !== wasPaused) onPausedChange?.({ paused });
+  };
   const onBlur = (e: FocusEvent) => {
-    if (!ref.current?.contains(e.relatedTarget as Node | null)) pause(false);
+    if (!ref.current?.contains(e.relatedTarget as Node | null)) pause("focus", false);
   };
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== "Escape") return;
@@ -70,11 +77,11 @@ export function Toast({ message, tone = "info", sticky = false, actionLabel, act
       data-sticky={sticky || tone === "error" ? "" : undefined}
       className={s.root}
       data-surface="toast"
-      onMouseEnter={() => pause(true)}
-      onMouseLeave={() => pause(false)}
+      onMouseEnter={() => pause("hover", true)}
+      onMouseLeave={() => pause("hover", false)}
       onFocus={(event) => {
         if (event.relatedTarget instanceof HTMLElement && !ref.current?.contains(event.relatedTarget)) returnFocus.current = event.relatedTarget;
-        pause(true);
+        pause("focus", true);
       }}
       onBlur={onBlur}
       onKeyDown={onKeyDown}

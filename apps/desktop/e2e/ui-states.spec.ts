@@ -568,6 +568,45 @@ test("an actually wrapped writing notice stays for eight visible seconds", async
   } finally { await closeTestApp(l); }
 });
 
+for (const endsFirst of ["hover", "focus"] as const) {
+  test(`notification lifetime stays paused when ${endsFirst} ends while the other cause remains`, async () => {
+    const dirs = tempDirs();
+    const note = join(dirs.docs, "Welcome.md");
+    const original = "# Pause causes\n\nKept text.\n";
+    writeFileSync(note, original);
+    writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+    const l = await launch(dirs);
+    try {
+      await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
+      const region = l.page.getByRole("region", { name: "Notifications", exact: true });
+      while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
+      const time = new Date("2026-11-04T00:00:00Z");
+      await l.page.clock.install({ time });
+      await l.page.clock.pauseAt(new Date(time.getTime() + 1000));
+      const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+      await editor.click();
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+u" : "Control+u");
+      const notice = region.locator("[data-surface=toast][data-tone=warning]");
+      await expect(notice).toBeVisible();
+      await l.page.clock.runFor(1000);
+      await notice.hover();
+      await l.page.keyboard.press("F6");
+      await expect(notice.getByRole("button", { name: "Dismiss", exact: true })).toBeFocused();
+      if (endsFirst === "hover") await editor.hover();
+      else await editor.focus();
+      await l.page.clock.runFor(8000);
+      await expect(notice).toBeVisible();
+      if (endsFirst === "hover") await editor.focus();
+      else await editor.hover();
+      await l.page.clock.runFor(4999);
+      await expect(notice).toBeVisible();
+      await l.page.clock.runFor(1);
+      await expect(notice).toHaveCount(0);
+      expect(readFileSync(note, "utf8")).toBe(original);
+    } finally { await closeTestApp(l); }
+  });
+}
+
 test("notification Retry stays above Settings and reachable with F6 while the modal stays open", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

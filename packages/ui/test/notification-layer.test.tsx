@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { Layer } from "../src/layouts/Layer/Layer.tsx";
 import { Toast } from "../src/primitives/Toast/Toast.tsx";
 import * as styles from "../src/layouts/Layer/Layer.css.ts";
@@ -38,4 +38,34 @@ it("returns focus to the connected field when its focused notification is remove
     act(() => root.render(null));
     expect(document.activeElement).toBe(field);
   } finally { act(() => root.unmount()); field.remove(); host.remove(); }
+});
+
+it.each(["hover", "focus"] as const)("keeps the timer paused when %s ends but the other cause remains", (first) => {
+  const outside = document.createElement("button");
+  const host = document.createElement("div");
+  document.body.append(outside, host);
+  const root = createRoot(host);
+  const paused = vi.fn();
+  try {
+    act(() => root.render(createElement(Toast, { message: "Saved", actionLabel: "View", dismissLabel: "Dismiss", onPausedChange: paused })));
+    const toast = host.querySelector<HTMLElement>("[data-surface=toast]")!;
+    const [action, dismiss] = [...toast.querySelectorAll("button")];
+    act(() => toast.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, relatedTarget: outside })));
+    act(() => action!.focus());
+    expect(paused.mock.calls).toEqual([[{ paused: true }]]);
+    act(() => dismiss!.focus());
+    expect(paused.mock.calls).toEqual([[{ paused: true }]]);
+    if (first === "hover") {
+      act(() => toast.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: outside })));
+    } else {
+      act(() => outside.focus());
+    }
+    expect(paused.mock.calls).toEqual([[{ paused: true }]]);
+    if (first === "hover") {
+      act(() => outside.focus());
+    } else {
+      act(() => toast.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: outside })));
+    }
+    expect(paused.mock.calls).toEqual([[{ paused: true }], [{ paused: false }]]);
+  } finally { act(() => root.unmount()); outside.remove(); host.remove(); }
 });
