@@ -538,6 +538,28 @@ Both backend regressions failed first against the old implementation because it 
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\025fe72f\Open review build.cmd`. Both review projects remain available. Controlled existing-project clone delays belong to the separate synthetic local-remote journey. W9 and remaining D5/D7 acceptance are still in progress.
 
+### Phase-2 panel recovery and hover, afbd3c3c
+
+The failed view now has a danger row with Reload panel and Report problem. Reload changes only that boundary's key: repeated failure remains recoverable and sibling nodes and note state keep their identity. A new panel Feedback draft uses fixed safe copy with diagnostics off; opening it never sends or navigates. Existing draft kind and words are kept. Other failed-panel surfaces yield while Feedback is open. The gallery supplies the same fallback and Feedback view rather than failing again on a missing recovery document.
+
+Rewrite failures after a partial answer abort the rewrite and explicitly keep the original text; generic connection-test errors remain unchanged. A stale capture says current text is kept and supports reselecting or placing the caret again. Appearance-storage failure promises only unchanged current appearance, not an unverified rollback of every file. New-project disabled reasons distinguish validation, atomic creation without cancellation support, requested stopping, and the final noncancellable Open.
+
+All CSS `:hover` selectors now require an actual hover-capable media ancestor, including mixed and ancestor selectors. Nonhover focus/active/expanded/drag/pinned behavior stays independent; Files' menu affordance and Open's pin remain available without hover. Native light/dark first-run checks verify the existing themed-frame handshake; no speculative startup rewrite was needed.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\ai-app.test.ts packages\core\test\project-open.test.ts packages\core\test\feedback.test.ts packages\ui-runtime\test\failures.test.tsx tools\test\check-boundaries.test.mjs` | 128 passed: client remount/repeated failure, same sibling and note, safe draft/no diagnostics or send, existing draft preservation, partial rewrite abort, accurate pending reasons and positive/negative AST hover probes |
+| `pnpm exec tsc -p E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json` | Passed for all core source plus the three affected core test files; external configuration only |
+| `pnpm --filter @focus-notes/ui-runtime run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck` | Both passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check`; `git diff --check` | Passed; generated catalog included; 780 documents, 82 components, 725 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "First-run (light\|dark) shows\|Files hover responds"` | Final 3 passed together: native window still hidden at the themed-frame report in both schemes against the opposite system scheme, opaque resolved app canvas/nonzero geometry, one mark/no timeout; actual touch-capability emulation clears Files hover while pointer and Shift+F10 menus work and note bytes remain unchanged |
+| Exact-head candidate `afbd3c3c` | Field notes and Garden notes, actual notes, distinct schemes/settings, both Open cards and both loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+Repository-wide `pnpm typecheck` remains red on the unchanged older `sharing-preview.test.ts` fixture, which lacks `PlatformBridge.defaultNotePath`. The affected core source/tests, runtime and desktop types above pass; no unrelated fixture repair was folded into W9. Initial native probes corrected only their selectors/emulation: the filename selector replaces a Windows regex path, CDP touch emulation replaces an unsupported hover-media override, and Files' actual `data-row-more` span replaces a nonexistent button. The final combined native run passed. No full frame-integrity corpus, full suite, CI wait, main app merge, release or real GitHub write is claimed.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\afbd3c3c\Open review build.cmd`. Both distinct synthetic projects remain available. Controlled panel failure belongs to the client regression; native startup/touch behavior belongs to the focused Electron journeys. The owner's visible `f2127c67` remains open. Remaining D5/D7 first-action/content-replacement/all-done acceptance is still in progress; phase 2 is not complete.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
