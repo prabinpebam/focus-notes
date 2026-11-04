@@ -1,4 +1,7 @@
 {
+  "toast.queued": "{count, plural, one {1 more waiting} other {# more waiting}}",
+  "toast.repeated": "{message} ({count})",
+  "toast.region": "Notifications",
   "project.launch.rememberFailed": "Could not remember this note for next launch. Your note is still saved.",
   "project.launch.restoreFailed": "Could not restore the last note. Choose a note from Open.",
   "image.ai.again": "Try again",

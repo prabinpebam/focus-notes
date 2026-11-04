@@ -14,6 +14,8 @@ The owner approved all eight designs on 4 November at 14:06. The project/Open im
 
 The notification layer uses the existing `layer.toast` token and React Aria's top-layer marker, so modal hiding and focus containment do not suppress Retry. The focused invisible settings journey reaches Retry with F6, clicks it while Settings stays open, and reopens the persisted value. UI/desktop typechecks and the related layer/runtime tests pass (2 files, 3 tests). The merged sharing/site-preview views retain pre-existing `ui:check` findings; their acceptance remains outstanding.
 
+The host now retains its queue, shows the first three with errors first, and coalesces repeated command failures with the latest Retry arguments. Errors and unique recovery actions require dismissal; queued pills consume no display time. Hover/focus and window inactivity pause the remaining display time without resetting it. The named notification region shows the queued count. Queue timing/priority/coalescing tests pass alongside setting-failure and runtime coverage (4 files, 15 tests); the invisible modal Retry journey also passes. Withdrawal restoration and the full four-outcome writing journey remain outstanding.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.

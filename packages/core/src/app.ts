@@ -10,6 +10,7 @@ import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
+import { NotificationQueue } from "./notifications.ts";
 import { TaskTracker, busyProps, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
@@ -92,7 +93,7 @@ export interface AppState {
     find: FindState;
     /** Find in all notes (FND-04): its side sheet, query, and results. */
     findAll: FindAllState;
-    /** Toasts, newest last; at most two show (IA-CMP-TOAST). */
+    /** Outcomes ordered by priority; the first three are visible and the rest wait. */
     toasts: ToastState[];
     /** Bumped to move focus to the newest toast's action (F6). */
     toastFocus: number;
@@ -192,6 +193,9 @@ export interface ToastState {
   /** A command the toast offers ([Undo], [Retry], [Resolve]), its label, and its arguments. */
   action?: { command: string; label: string; args?: Record<string, unknown> };
   paused: boolean;
+  sticky?: boolean;
+  count?: number;
+  subject?: string;
 }
 
 export const SAVE_DELAY_MS = 400;
@@ -352,24 +356,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const clock = options.clock ?? { now: () => Date.now(), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
 
   // ---- toasts (IA-CMP-TOAST) ----
-  let toastId = 1;
-  const toastTimers = new Map<number, { handle: unknown; remaining: number; started: number }>();
-  const setToasts = (fn: (t: ToastState[]) => ToastState[]) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts: fn(s.ui.toasts) } }));
-  const dismissToast = (id: number) => {
-    const t = toastTimers.get(id);
-    if (t) clock.clearTimeout(t.handle);
-    toastTimers.delete(id);
-    setToasts((ts) => ts.filter((x) => x.id !== id));
-  };
-  const arm = (id: number, ms: number) => toastTimers.set(id, { handle: clock.setTimeout(() => dismissToast(id), ms), remaining: ms, started: clock.now() });
-  /** Shows a toast: one past-tense sentence, an optional action. At most two show; older ones go early. */
-  const toast = (message: string, opts: { tone?: ToastState["tone"]; action?: ToastState["action"] } = {}) => {
-    const id = toastId++;
-    setToasts((ts) => [...ts, { id, message, tone: opts.tone ?? "info", paused: false, ...(opts.action ? { action: opts.action } : {}) }]);
-    for (const old of store.state.ui.toasts.slice(0, -2)) dismissToast(old.id);
-    arm(id, opts.action ? waits.toastUndoDuration : waits.toastDuration);
-    return id;
-  };
+  const notifications = new NotificationQueue(clock, waits.toastDuration, (toasts) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts } })));
+  const dismissToast = (id: number) => notifications.dismiss(id);
+  const toast = (message: string, opts: { tone?: ToastState["tone"]; action?: ToastState["action"]; subject?: string; sticky?: boolean } = {}) => notifications.show(message, opts);
+  store.subscribe(() => notifications.setActive(store.state.window.active));
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saving: Promise<void> = Promise.resolve();
   /** When the text not yet handed to a write first changed: the browser saves no later than a second after (QLT-03). */
@@ -1076,6 +1066,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: ({ command, args }) => {
       toast(catalog.format("toast.actionFailed"), {
         tone: "error",
+        ...(command ? { subject: command } : {}),
         ...(command && commands.has(command) ? { action: { command, ...(args ? { args } : {}), label: catalog.format("toast.retry") } } : {}),
       });
     },
@@ -1093,13 +1084,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   commands.register<{ id: number; paused: boolean }>({
     id: "toast.setPaused", title: "command.toast.setPaused",
     run: ({ id, paused }) => {
-      const t = toastTimers.get(Number(id));
-      if (!t) return;
-      if (paused) {
-        clock.clearTimeout(t.handle);
-        t.remaining = Math.max(0, t.remaining - (clock.now() - t.started));
-      } else arm(Number(id), Math.max(t.remaining, 1500));
-      setToasts((ts) => ts.map((x) => (x.id === Number(id) ? { ...x, paused: Boolean(paused) } : x)));
+      notifications.pause(Number(id), Boolean(paused));
     },
   });
   commands.register({
@@ -1321,9 +1306,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         announcementKey: { type: "number" },
         toasts: { type: "array", items: { type: "object", properties: {
           id: { type: "number" }, message: { type: "string" }, tone: { type: "string", enum: ["info", "error"] },
-          actionLabel: { type: "string" }, hasAction: { type: "boolean" }, paused: { type: "boolean" },
+          actionLabel: { type: "string" }, hasAction: { type: "boolean" }, paused: { type: "boolean" }, focusRequest: { type: "number" },
         } } },
         toastFocus: { type: "number" },
+        overflowLabel: { type: "string" },
         dismissLabel: { type: "string" },
       },
     },
@@ -1331,8 +1317,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => ({
       announcement: s.announcement.text,
       announcementKey: s.announcement.n,
-      toasts: s.ui.toasts.map((t) => ({ id: t.id, message: t.message, tone: t.tone, actionLabel: t.action?.label ?? "", hasAction: Boolean(t.action), paused: t.paused })),
+      toasts: s.ui.toasts.slice(0, 3).map((t) => ({ id: t.id, message: (t.count ?? 1) > 1 ? catalog.format("toast.repeated", { message: t.message, count: t.count ?? 1 }) : t.message, tone: t.tone, actionLabel: t.action?.label ?? "", hasAction: Boolean(t.action), paused: t.paused, focusRequest: t.id === (s.ui.toasts.slice(0, 3).find((x) => x.action)?.id ?? s.ui.toasts[0]?.id) ? s.ui.toastFocus : 0 })),
       toastFocus: s.ui.toastFocus,
+      overflowLabel: s.ui.toasts.length > 3 ? catalog.format("toast.queued", { count: s.ui.toasts.length - 3 }) : "",
       dismissLabel: catalog.has("toast.dismiss") ? catalog.format("toast.dismiss") : "",
     }),
   });

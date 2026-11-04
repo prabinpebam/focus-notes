@@ -126,7 +126,8 @@
       "slots": {
         "default": {
           "accepts": [
-            "Toast"
+            "Toast",
+            "Stack"
           ],
           "max": 3
         }

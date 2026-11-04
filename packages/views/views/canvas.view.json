@@ -9283,10 +9283,10 @@
         },
         "children": [
           {
-            "type": "Stack",
+            "type": "NotificationRegion",
             "props": {
-              "gap": "s",
-              "align": "center"
+              "label": { "t": "toast.region" },
+              "overflowLabel": { "get": "vm.feedback.overflowLabel" }
             },
             "children": [
               {
@@ -9311,7 +9311,7 @@
                       "t": "toast.dismiss"
                     },
                     "focusRequest": {
-                      "get": "vm.feedback.toastFocus"
+                      "get": "toast.focusRequest"
                     }
                   },
                   "on": {
