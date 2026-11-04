@@ -54,9 +54,12 @@ export function registerProject(ctx: {
         accent: PROJECT_ACCENTS, logo: PROJECT_LOGOS, watermark: ["off", "on"], font: ["app", ...CONTENT_FONTS], theme: ["app", ...BUILT_IN_THEMES.map((theme) => theme.id)],
       };
       if (field !== "name" && !allowed[field]?.includes(value)) throw new Error("Invalid project setting");
-      await save({ [field]: value });
-      if (field === "font" || field === "theme") Object.assign(transient, { [`${field}Open`]: "no", [`${field}Hover`]: "" });
-      changed();
+      try {
+        await save({ [field]: value });
+      } finally {
+        if (field === "font" || field === "theme") Object.assign(transient, { [`${field}Open`]: "no", [`${field}Hover`]: "" });
+        changed();
+      }
     },
   });
   for (const field of ["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)]) reg(field);
@@ -80,6 +83,7 @@ export function registerProject(ctx: {
   });
   const text = { type: "string" as const };
   const option = { type: "object" as const, properties: { id: text, label: text } };
+  const choiceFields = ["accent", "logo", "font", "theme"] as const;
   viewModels.register({
     id: "vm.project", reads: "*",
     setters: Object.fromEntries(["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)].map((field) => [field, `project.${field}`])),
@@ -93,29 +97,36 @@ export function registerProject(ctx: {
         id: text, label: text, kind: text, slot: text, badge: text, description: text, group: text, sample: text,
         colors: { type: "array", items: { type: "object", properties: { id: text, value: text } } },
       } } },
-      ...Object.fromEntries(["accent", "logo"].flatMap((field) => [
+      ...Object.fromEntries(choiceFields.flatMap((field) => [
         [`${field}Commit`, { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] }],
         [`${field}Choice`, text], [`${field}Failed`, { type: "boolean" as const }],
       ])),
     } },
     select: (state: AppState) => {
       const current = settings();
-      const choices = Object.fromEntries(["accent", "logo"].flatMap((field) => {
+      const choiceOf = (field: typeof choiceFields[number]) => {
         const commit = state.commits.find((item) => item.target === `vm.project.${field}`);
-        const stored = field === "accent" ? current.accent : current.logo;
+        return {
+          phase: commit?.phase ?? "rest",
+          value: commit && commit.phase !== "confirmed" && typeof commit.value === "string" ? commit.value : current[field],
+          failed: commit?.phase === "failed",
+        };
+      };
+      const choices = Object.fromEntries(choiceFields.flatMap((field) => {
+        const choice = choiceOf(field);
         return [
-          [`${field}Commit`, commit?.phase ?? "rest"],
-          [`${field}Choice`, commit && commit.phase !== "confirmed" && typeof commit.value === "string" ? commit.value : stored],
-          [`${field}Failed`, commit?.phase === "failed"],
+          [`${field}Commit`, choice.phase], [`${field}Choice`, choice.value], [`${field}Failed`, choice.failed],
         ];
       }));
+      const fontChoice = choiceOf("font").value;
+      const themeChoice = choiceOf("theme").value;
       return {
         ...current, ...transient, ...choices, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
         accent: ctx.bridge.projects?.local ? "app" : current.accent,
         filesHeading: catalog.format(ctx.bridge.projects?.local ? "quick.title" : "files.heading"),
         scopeFont: transient.fontHover || current.font, scopeTheme: transient.themeHover || current.theme,
-        fontValue: catalog.format(current.font === "app" ? "project.appDefault" : `font.${current.font}`),
-        themeValue: catalog.format(current.theme === "app" ? "project.appDefault" : themeById(current.theme)?.title ?? "project.appDefault"),
+        fontValue: catalog.format(fontChoice === "app" ? "project.appDefault" : `font.${fontChoice}`),
+        themeValue: catalog.format(themeChoice === "app" ? "project.appDefault" : themeById(themeChoice)?.title ?? "project.appDefault"),
         accents: PROJECT_ACCENTS.map((id) => ({ id, label: catalog.format(`project.colour.${id}`) })),
         logos: PROJECT_LOGOS.map((id) => ({ id, label: catalog.format(`project.logo.${id}`) })),
         fonts: CONTENT_FONTS.map((id) => ({ id, label: catalog.format(`font.${id}`) })),

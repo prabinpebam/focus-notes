@@ -3750,6 +3750,16 @@
           "kind": "boolean",
           "default": false
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Persistent border feedback on the picker trigger, including after its choices close. Recovery belongs beside the trigger."
+        },
         "variant": {
           "kind": "enum",
           "values": [
@@ -3768,7 +3778,10 @@
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.pickerButton.*",
       "a11y": {
@@ -3776,6 +3789,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "font mono",
         "font sans",
         "font serif",

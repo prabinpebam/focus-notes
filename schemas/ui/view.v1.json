@@ -8579,6 +8579,24 @@
                 }
               ]
             },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "variant": {
               "anyOf": [
                 {

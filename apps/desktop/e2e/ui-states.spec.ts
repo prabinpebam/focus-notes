@@ -162,3 +162,56 @@ test("project colour and logo keep failed choices, retry the latest value and re
     await closeTestApp(l);
   }
 });
+
+test("project font and theme retain failed choices on their triggers and keep keyboard preview separate from saving", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  const saved = () => JSON.parse(readFileSync(stateFile, "utf8")).projectSettings?.[dirs.docs];
+  try {
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    const font = settings.getByRole("button", { name: /^Font:/ });
+    await font.click();
+    const fonts = l.page.getByRole("dialog", { name: "Font", exact: true });
+    block();
+    await fonts.getByRole("button", { name: "Serif (Fraunces and Newsreader)", exact: true }).click();
+    await expect(fonts).not.toBeVisible();
+    await expect(font).toHaveAttribute("data-commit", "failed");
+    await expect(font).toHaveAccessibleName("Font: Serif (Fraunces and Newsreader)");
+    restore();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => saved()?.font).toBe("serif");
+    const theme = settings.getByRole("button", { name: /^Theme:/ });
+    await theme.click();
+    const themes = l.page.getByRole("dialog", { name: "Colour theme", exact: true });
+    const sepia = themes.getByRole("option", { name: /^Sepia/ });
+    await sepia.focus();
+    await sepia.press("ArrowRight");
+    expect(saved()?.theme).toBe("app");
+    block();
+    await sepia.click();
+    await expect(themes).not.toBeVisible();
+    await expect(theme).toHaveAttribute("data-commit", "failed");
+    await expect(theme).toHaveAccessibleName("Theme: Sepia");
+    restore();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => saved()?.theme).toBe("sepia");
+    await expect(theme).not.toHaveAttribute("data-commit", "pending");
+    await theme.click();
+    await themes.getByRole("button", { name: "Use app default", exact: true }).click();
+    await expect.poll(() => saved()?.theme).toBe("app");
+    expect(saved()?.font).toBe("serif");
+    await expect(theme).toHaveAccessibleName("Theme: App default");
+  } finally {
+    restore();
+    await closeTestApp(l);
+  }
+});

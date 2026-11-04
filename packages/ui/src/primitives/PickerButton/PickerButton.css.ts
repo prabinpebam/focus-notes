@@ -6,6 +6,7 @@ const t = tokens.cmp.pickerButton;
 
 export const base = style({
   ...controlMetrics,
+  position: "relative",
   display: "inline-flex", alignItems: "center", gap: t.gap, height: t.height, paddingInline: t.padding, minWidth: 0, maxWidth: "100%",
   borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, backgroundColor: t.background,
   color: t.text, cursor: "pointer", fontFamily: t.uiFont, fontSize: t.fontSize,
@@ -28,6 +29,7 @@ export const selected = style({ outlineStyle: "solid", outlineWidth: t.ringWidth
 // drawn (an "Aa" in the font, or a small rendering of the theme) and named under it.
 export const tile = style({
   ...controlMetrics,
+  position: "relative",
   display: "grid", gridTemplateRows: "auto 1fr auto", gap: t.gap, width: t.tileWidth, height: t.tileHeight, padding: t.tilePadding,
   borderRadius: t.tileRadius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, backgroundColor: t.background,
   color: t.text, cursor: "pointer", fontFamily: t.uiFont, textAlign: "start", flexShrink: 0,

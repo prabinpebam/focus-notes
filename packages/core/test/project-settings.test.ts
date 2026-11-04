@@ -45,9 +45,21 @@ it("shows a failed project choice locally without changing confirmed project ide
   expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({
     accent: "teal", accentChoice: "blue", accentCommit: "failed", accentFailed: true,
   });
+
   await app.commands.run("commit.revert", { target: "vm.project.accent" });
   expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({
     accent: "teal", accentChoice: "teal", accentCommit: "rest", accentFailed: false,
   });
   expect(save).toHaveBeenCalledTimes(1);
+});
+
+it.each([["font", "serif"], ["theme", "sepia"]])("retains a failed %s choice on its trigger and clears its preview without changing the saved value", async (field, value) => {
+  const app = setup(async () => { throw new Error("disk full"); });
+  await app.commands.run(`project.${field}Open`, { value: "yes" });
+  await app.commands.run(`project.${field}Hover`, { value });
+  await expect(app.commands.run("commit.run", { target: `vm.project.${field}`, command: `project.${field}`, value })).rejects.toThrow("disk full");
+  expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({
+    [field]: "app", [`${field}Choice`]: value, [`${field}Commit`]: "failed", [`${field}Failed`]: true,
+    [`${field}Open`]: "no", [`${field}Hover`]: "", [`scope${field === "font" ? "Font" : "Theme"}`]: "app",
+  });
 });

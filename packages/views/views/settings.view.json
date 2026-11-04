@@ -360,6 +360,7 @@
                                           "type": "PickerButton",
                                           "props": {
                                             "variant": "fontTile",
+                                            "commit": { "get": "vm.project.fontCommit" },
                                             "label": {
                                               "t": "project.settings.fontShort"
                                             },
@@ -405,8 +406,10 @@
                                                     "on": {
                                                       "press": [
                                                         {
-                                                          "run": "project.font",
+                                                          "run": "commit.run",
                                                           "args": {
+                                                            "target": "vm.project.font",
+                                                            "command": "project.font",
                                                             "value": {
                                                               "get": "f.id"
                                                             }
@@ -435,6 +438,7 @@
                                                       }
                                                     },
                                                     "props": {
+                                                      "commit": { "get": "vm.project.fontCommit" },
                                                       "font": {
                                                         "get": "f.id"
                                                       },
@@ -445,7 +449,7 @@
                                                         "expr": {
                                                           "==": [
                                                             {
-                                                              "get": "vm.project.font"
+                                                              "get": "vm.project.fontChoice"
                                                             },
                                                             {
                                                               "get": "f.id"
@@ -471,8 +475,10 @@
                                               "on": {
                                                 "press": [
                                                   {
-                                                    "run": "project.font",
+                                                    "run": "commit.run",
                                                     "args": {
+                                                      "target": "vm.project.font",
+                                                      "command": "project.font",
                                                       "value": "app"
                                                     }
                                                   },
@@ -491,6 +497,7 @@
                                                 ]
                                               },
                                               "props": {
+                                                "disabled": { "expr": { "==": [{ "get": "vm.project.fontCommit" }, "pending"] } },
                                                 "label": {
                                                   "t": "project.settings.reset"
                                                 },
@@ -520,6 +527,14 @@
                                       "placement": "top start",
                                       "width": "tiles"
                                     }
+                                  },
+                                  {
+                                    "type": "Inline", "when": { "get": "vm.project.fontFailed" },
+                                    "props": { "gap": "s", "align": "center", "wrap": true },
+                                    "children": [
+                                      { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.font", "command": "project.font", "value": { "get": "vm.project.fontChoice" } } } } },
+                                      { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.font" } } } }
+                                    ]
                                   }
                                 ]
                               },
@@ -563,6 +578,7 @@
                                           "type": "PickerButton",
                                           "props": {
                                             "variant": "themeTile",
+                                            "commit": { "get": "vm.project.themeCommit" },
                                             "label": {
                                               "t": "project.settings.themeShort"
                                             },
@@ -595,8 +611,10 @@
                                               "on": {
                                                 "choose": [
                                                   {
-                                                    "run": "project.theme",
+                                                    "run": "commit.run",
                                                     "args": {
+                                                      "target": "vm.project.theme",
+                                                      "command": "project.theme",
                                                       "value": {
                                                         "get": "event.id"
                                                       }
@@ -638,8 +656,9 @@
                                                   "get": "vm.project.themeTiles"
                                                 },
                                                 "value": {
-                                                  "get": "vm.project.theme"
-                                                }
+                                                  "get": "vm.project.themeChoice"
+                                                },
+                                                "commit": { "get": "vm.project.themeCommit" }
                                               }
                                             },
                                             {
@@ -647,8 +666,10 @@
                                               "on": {
                                                 "press": [
                                                   {
-                                                    "run": "project.theme",
+                                                    "run": "commit.run",
                                                     "args": {
+                                                      "target": "vm.project.theme",
+                                                      "command": "project.theme",
                                                       "value": "app"
                                                     }
                                                   },
@@ -670,6 +691,7 @@
                                                 "label": {
                                                   "t": "project.settings.reset"
                                                 },
+                                                "disabled": { "expr": { "==": [{ "get": "vm.project.themeCommit" }, "pending"] } },
                                                 "variant": "subtle",
                                                 "size": "s",
                                                 "icon": "undo"
@@ -696,6 +718,14 @@
                                       "placement": "top start",
                                       "width": "tiles"
                                     }
+                                  },
+                                  {
+                                    "type": "Inline", "when": { "get": "vm.project.themeFailed" },
+                                    "props": { "gap": "s", "align": "center", "wrap": true },
+                                    "children": [
+                                      { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.theme", "command": "project.theme", "value": { "get": "vm.project.themeChoice" } } } } },
+                                      { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.theme" } } } }
+                                    ]
                                   }
                                 ]
                               }

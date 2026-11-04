@@ -5,9 +5,37 @@ import { afterEach, expect, it, vi } from "vitest";
 import { SegmentedControl } from "../src/primitives/SegmentedControl/SegmentedControl.tsx";
 import { TextField } from "../src/primitives/TextField/TextField.tsx";
 import { ProjectMark } from "../src/primitives/ProjectMark/ProjectMark.tsx";
+import { PickerButton } from "../src/primitives/PickerButton/PickerButton.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.useRealTimers());
+
+it("keeps a picker trigger focused and inert pending, with persistent failed and confirmed border feedback", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const press = vi.fn();
+  const render = (commit: "rest" | "pending" | "confirmed" | "failed") => act(() => root.render(createElement(PickerButton, {
+    label: "Font", value: "Serif", variant: "fontTile", commit, onPress: press,
+  })));
+  try {
+    render("rest");
+    const button = host.querySelector("button")!;
+    button.focus();
+    render("pending");
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    expect(button.disabled).toBe(false);
+    act(() => button.click());
+    expect(press).not.toHaveBeenCalled();
+    render("failed");
+    expect(button.getAttribute("aria-busy")).toBeNull();
+    expect(button.getAttribute("data-commit")).toBe("failed");
+    render("confirmed");
+    expect(button.getAttribute("data-commit")).toBe("confirmed");
+    expect(document.activeElement).toBe(button);
+  } finally { act(() => root.unmount()); host.remove(); }
+});
 
 it("keeps compact project choices focusable, blocks the pending group and draws feedback only on its chosen mark", () => {
   const host = document.createElement("div");
