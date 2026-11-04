@@ -20,7 +20,8 @@
     "value": {
      "bind": "vm.projects.query"
     },
-    "autoFocus": true
+    "autoFocus": true,
+    "focusRequest": { "get": "vm.projects.searchFocus" }
    }
   },
   {
@@ -411,8 +412,14 @@
     "message": {
      "get": "vm.projects.error"
     },
-    "tone": "danger"
-   }
+    "tone": "danger",
+    "actionLabel": { "get": "vm.projects.recoveryAction" },
+    "actionBusy": { "get": "vm.projects.retrying" },
+    "actionBusyLabel": { "t": "uiStates.recovery.retrying" },
+    "detailsLabel": { "t": "uiStates.recovery.details" },
+    "details": { "get": "vm.projects.details" }
+   },
+   "on": { "action": { "run": "projects.retry" } }
   }
  ]
 }

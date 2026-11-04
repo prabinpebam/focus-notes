@@ -20,6 +20,10 @@
   "githubError": "",
   "repos": [{ "id": "r/x", "label": "x", "description": "", "busy": false }],
   "error": "",
+  "details": "",
+  "recoveryAction": "",
+  "retrying": false,
+  "searchFocus": 0,
   "query": "",
   "active": "",
   "recent": [

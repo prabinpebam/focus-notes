@@ -2975,6 +2975,13 @@
         "actionLabel": {
           "kind": "message"
         },
+        "actionBusy": {
+          "kind": "boolean",
+          "description": "Only the recovery action is inert; the status, details and surrounding input stay mounted."
+        },
+        "actionBusyLabel": {
+          "kind": "message"
+        },
         "detailsLabel": {
           "kind": "message",
           "description": "The native disclosure's label, when details are available."
@@ -2989,7 +2996,8 @@
       },
       "slots": {},
       "states": [
-        "rest"
+        "rest",
+        "recovering"
       ],
       "tokens": "cmp.statusRow.*",
       "a11y": {
@@ -2998,6 +3006,7 @@
       },
       "fixtures": [
         "recovery and details",
+        "recovering",
         "tone danger",
         "tone warning",
         "tone info",

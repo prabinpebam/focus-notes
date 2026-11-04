@@ -185,6 +185,68 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
   } finally { await closeTestApp(l); }
 });
 
+test("Open retries the failed action in place, keeps input and never repeats a completed pin", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "open-recovery.md");
+  writeFileSync(note, "# Open recovery\n\nThese exact note bytes stay here.\n");
+  const before = readFileSync(note);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await l.app.evaluate(({ ipcMain }, folder) => {
+      let reads = 0, pins = 0, opens = 0, failRefresh = false;
+      ipcMain.removeHandler("projects:list");
+      ipcMain.handle("projects:list", async () => {
+        const request = ++reads;
+        if (request === 2 || failRefresh) { failRefresh = false; throw new Error("sensitive diagnostic must stay hidden readOnly"); }
+        if (request === 3) await new Promise(resolve => setTimeout(resolve, 600));
+        return [{ folder, name: "Book", accent: "teal", logo: "book", pinned: pins > 0 }];
+      });
+      ipcMain.removeHandler("projects:pin");
+      ipcMain.handle("projects:pin", () => { pins++; failRefresh = true; Reflect.set(globalThis, "fnUiStatesPinCount", pins); });
+      ipcMain.removeHandler("projects:open");
+      ipcMain.handle("projects:open", () => { if (++opens === 1) throw new Error("notFound"); });
+    }, join(dirs.docs, "Synthetic Book"));
+    const shortcut = process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o";
+    await l.page.keyboard.press(shortcut);
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+    const book = open.getByRole("button", { name: "Open Book", exact: true });
+    await expect(book).toBeVisible();
+    const search = open.getByRole("searchbox", { name: "Find a file or project", exact: true });
+    await search.fill("Book");
+    await l.page.keyboard.press(shortcut);
+    const row = open.locator("[data-status-row=danger]");
+    await expect(row).toContainText("Your projects couldn’t be listed. Your notes weren’t changed. Try again.");
+    await row.getByText("Details", { exact: true }).click();
+    await expect(row).toContainText("The system refused access to this location.");
+    expect(await open.innerText()).not.toContain("sensitive diagnostic");
+    await row.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(row.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(book).toBeVisible();
+    await expect(search).toHaveValue("Book");
+    await expect(row.locator("details")).toHaveAttribute("open", "");
+    await expect(row).toHaveCount(0);
+    await expect(search).toBeFocused();
+    await expect(search).toHaveValue("Book");
+
+    await open.getByRole("button", { name: "Pin Book", exact: true }).click();
+    await expect(row).toContainText("The pin was changed, but the list couldn’t be refreshed.");
+    await row.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(open.getByRole("button", { name: "Unpin Book", exact: true })).toBeVisible();
+    expect(await l.app.evaluate(() => Reflect.get(globalThis, "fnUiStatesPinCount"))).toBe(1);
+
+    await book.click();
+    await expect(row).toContainText("The project couldn’t be opened. Your notes weren’t changed.");
+    await expect(open).toBeVisible();
+    expect(readFileSync(note)).toEqual(before);
+    await row.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(open).not.toBeVisible();
+    expect(readFileSync(note)).toEqual(before);
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("These exact note bytes stay here.");
+  } finally { await closeTestApp(l); }
+});
+
 test("section loading uses the approved row shapes and keeps old content through a failed refresh and Retry", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

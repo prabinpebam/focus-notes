@@ -7218,6 +7218,13 @@
         "actionLabel": {
           "kind": "message"
         },
+        "actionBusy": {
+          "kind": "boolean",
+          "description": "Only the recovery action is inert; the status, details and surrounding input stay mounted."
+        },
+        "actionBusyLabel": {
+          "kind": "message"
+        },
         "detailsLabel": {
           "kind": "message",
           "description": "The native disclosure's label, when details are available."
@@ -7232,7 +7239,8 @@
       },
       "slots": {},
       "states": [
-        "rest"
+        "rest",
+        "recovering"
       ],
       "tokens": "cmp.statusRow.*",
       "a11y": {
@@ -7254,6 +7262,24 @@
             },
             "details": {
               "t": "gallery.long"
+            }
+          }
+        },
+        {
+          "name": "recovering",
+          "covers": [
+            "recovering"
+          ],
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "actionLabel": {
+              "t": "commit.retry"
+            },
+            "actionBusy": true,
+            "actionBusyLabel": {
+              "t": "uiStates.recovery.retrying"
             }
           }
         },
