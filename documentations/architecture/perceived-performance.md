@@ -17,11 +17,13 @@ The key stays only in its password component and the in-flight check closure, ne
 
 ## Open action recovery
 
-The [Open recovery evidence](../plan/definition-of-done.md#phase-2-scoped-open-recovery-cf5859a2) covers retained content and exact recovery targets, not a latency improvement. Retry keeps the existing error and expanded Details mounted, shows “Trying again…” on its own inert action and returns focus to search only after successful recovery. The query remains editable; a list refresh does not clear old entries. A completed pin is never replayed just because the next list read failed.
+The [Open recovery evidence](../plan/definition-of-done.md#phase-2-scoped-open-recovery-cf5859a2) covers retained content and exact recovery targets, not a latency improvement. Retry keeps the existing error and expanded Details mounted, shows “Trying again…” on its own inert action and returns focus to search only after successful recovery. The query remains editable; a list refresh does not clear old entries. A completed pin is never replayed just because the next list read failed. [Same-project acceptance and timing evidence](../plan/definition-of-done.md#phase-2-same-project-open-acceptance-and-waits-8f1fb690) adds named tracker measures, exact list-shape timing and actual note-read acceptance before dismissal.
 
 | Operation | Class / pattern | Place and words | Measure / target |
 | --- | --- | --- | --- |
-| Retry a failed Open action | Responsive → waiting; local recovery action, retained error/content | Error row: Retry → Trying again…; other input stays available | Planned `fn:project.open` / `fn:project.list` coverage; held-list journey verifies the state, but complete tracker/timing instrumentation remains unaccepted |
+| Read/refresh Open entries | Responsive → waiting; named section task, existing entries retained | Existing list wrapper; shapes only after 300 ms and for at least 500 ms; local Retry | `fn:project.list`; exact boundary/fast-read units and held-list journey passed |
+| Launch/pick a project or file | Responsive → waiting; named action task, acknowledged note retained | Opening project…; elapsed after 3 s; scoped Retry on failure | `fn:project.open`; same-project read must succeed before Open closes |
+| Pin/reveal an Open entry | Responsive → waiting; named action task | Saving pin… / Showing project folder…; scoped Retry | `fn:project.pin`, `fn:project.reveal`; completed pin never replayed for a failed follow-up list |
 
 ## New project and Local import recovery
 

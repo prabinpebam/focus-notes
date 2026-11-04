@@ -307,6 +307,25 @@ The first journey reached and recovered Local import, then used â€œNew projectâ€
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\651b1340\Open review build.cmd`. Recovery failures are injected only in the scoped journey. This slice does not claim crash-persistent import receipts, resumable partial project setup or D7 streaming. Same-project note-read failure propagation, complete tracker/timing, history/broken-image recovery, complete empty-state acceptance and independent delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 same-project Open acceptance and waits, 8f1fb690
+
+Open now treats a same-project note read as accepted only when the loader returns success. A rejected read keeps the acknowledged note, Open, its query and its exact Retry target mounted. Retry closes Open only after the actual note text loads. Failure to remember the next-launch path is separately reported after an accepted read; it no longer mislabels an already-open note as a failed Open. External open-note events keep their existing error presentation.
+
+Open list, launch/file/project picker, pin and reveal operations use named task-tracker entries with `fn:project.list`, `fn:project.open`, `fn:project.pin` and `fn:project.reveal` measures. The list's skeleton is absent before 300 ms and remains for at least 500 ms once shown, including failed reads; refresh keeps old entries. Long pending labels include elapsed time after 3 seconds. Closing/reopening invalidates presentation work: an obsolete launch cannot close the new Open, and a late post-pin list or error cannot replace its results.
+
+| Check on `8f1fb690` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\core\test\tasks.test.ts packages\core\test\app.test.ts` | 38 passed: read refusal/Retry, metadata-only refusal, exact 300/500 ms boundary, fast-list absence, exact named success/failure measures and obsolete launch/post-pin replies |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed on final source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 710 commands; generated output current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "same-project Open\|Open retries the failed action"` | 2 passed on final source: actual same-project read rejection preserves the ready note and dialog; held Retry loads the target before closing. Existing scoped recovery still preserves Details/query and never repeats a completed pin |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Exact pushed head built, inspected invisibly through the earlier normal settings/Reading/compact/notification/AI/Agents/Open paths and closed |
+
+Both journeys and candidate inspection ended with own-PID cleanup (`-WhatIf`, then actual). No OS input, live account, full suite, CI wait or app merge ran. The action-generation guards cover Open presentation, not every concurrent note-loader race.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\8f1fb690\Open review build.cmd`. The failed-read journey injects only its controlled target, not a permanent failure in the candidate. History/broken-image recovery, complete D5 and D8 acceptance, streaming, crash receipts and tracker coverage outside Open remain in progress.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
