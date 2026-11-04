@@ -1,6 +1,154 @@
 # Perceived performance: no frozen waits, no glitches
 
-## Image waits (planned)
+## Files item pin acknowledgement
+
+The exact-brief candidate at `26c3bd1f` preserves these timings and adds row-named tooltips plus a visible resting pin. Native proof covers actual persistence/Retry and unchanged row-relative icon alignment, not an asserted latency improvement.
+
+The existing Files pin write now uses a per-row commit target. The acknowledged pin and selection remain unchanged until storage succeeds; independent rows remain usable and writes serialize without dropping another pin. Retry retains the original row and intended value, including from the existing menu. No performance improvement is claimed.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Pin/unpin a Files note or folder | Responsive; per-row commit track | Same-slot Pin/Unpin button; own-border pending, confirmed or failed; retained error with exact Retry | `fn:files.pin`; immediate local pending, existing 200 ms pending/confirmed floors; no acknowledged pin before persistence |
+
+The [Close-hover correction](../plan/definition-of-done.md#phase-2-close-hover-and-files-pin) changes semantic slot spacing only; it introduces no save, load or wait. Every-frame native checks cover all dialog height variants rather than claiming faster tooltips.
+
+## Themes: scope and acknowledgement
+
+The [structural overlay correction at b031948f](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f) changes paint ownership only: no load, save, reload, unmount or new wait is introduced. Dialogs/full-app steps portal above panels; the existing window band remains draggable and notifications keep their top-level role.
+
+Theme choices retain the existing responsive commit track and its pending/confirmed minimum beats; no new wait or latency claim is introduced. In a fixed-theme project, the acknowledged project theme remains applied until its own write succeeds, with retained attempted choice and scoped Retry on failure. In an App-default project, the existing app slot owns the write. Keyboard previews apply through the same root token resolver without a nested writing scope masking them. [Built-app evidence at bc45a4e1](../plan/definition-of-done.md#phase-2-themes-project-scope-bc45a4e1) covers actual root/editor tokens and restart, not only a selected control.
+
+## Notification outcome lifetime
+
+The UI-states candidate uses the existing notification host, not a blocking wait: ordinary information/success notices get 6 visible seconds; actual multi-line geometry extends that total to `wait.noticeLong` (8 seconds), without restarting elapsed time. The queue's clock runs only for visible pills and pauses on interaction/window inactivity. Errors, recovery actions and explicit decision warnings require dismissal or resolution; progress stays until replaced by its outcome. Retry keeps its original error mounted and makes only its own action inert while the original operation runs. The [notification evidence](../plan/definition-of-done.md#phase-2-notification-acceptance-increment-0db24cb0) records exact clock and focus checks. [Overlapping hover/focus evidence](../plan/definition-of-done.md#phase-2-overlapping-notification-pauses-b68775f8) proves that ending one cause cannot resume the timer while the other remains. [Withdrawal evidence](../plan/definition-of-done.md#phase-2-irreversible-withdrawal-46c0cb31) verifies the existing irreversible confirmation instead of offering a misleading Undo.
+
+## Independent AI connection commits
+
+The [AI group evidence](../plan/definition-of-done.md#phase-2-independent-ai-details-and-checked-key-42e06fc0) covers actual storage and synthetic-provider refusals. These are feedback targets, not a provider-latency improvement claim.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Save one connection detail or provider choice | Responsive; existing commit track, no provider request | Committing field/trigger; retained attempted value with Retry/Revert | `fn:ai.saveDetail`; immediate pending, pending/confirmed each at least 200 ms; independent fields remain usable |
+| Check and save an access key | Responsive → waiting; explicit Save, synthetic provider check before sealed storage | Access-key group: Checking key… → Access key saved; local failure and Retry/Revert | `fn:ai.saveKey`; immediate local pending, same 200 ms floors, no Saved before both provider and storage accept |
+
+The key stays only in its password component and the in-flight check closure, never a generic retained command value. A failed same-destination check keeps the entry and old saved key; a changed destination clears the entry and requires it again. A configuration changed during the check rejects the old result instead of attaching it to the new destination. A name can persist independently during checking. The old note and all other settings remain mounted.
+
+## Open action recovery
+
+The [Open recovery evidence](../plan/definition-of-done.md#phase-2-scoped-open-recovery-cf5859a2) covers retained content and exact recovery targets, not a latency improvement. Retry keeps the existing error and expanded Details mounted, shows “Trying again…” on its own inert action and returns focus to search only after successful recovery. The query remains editable; a list refresh does not clear old entries. A completed pin is never replayed just because the next list read failed. [Same-project acceptance and timing evidence](../plan/definition-of-done.md#phase-2-same-project-open-acceptance-and-waits-8f1fb690) adds named tracker measures, exact list-shape timing and actual note-read acceptance before dismissal.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read/refresh Open entries | Responsive → waiting; named section task, existing entries retained | Existing list wrapper; shapes only after 300 ms and for at least 500 ms; local Retry | `fn:project.list`; exact boundary/fast-read units and held-list journey passed |
+| Launch/pick a project or file | Responsive → waiting; named action task, acknowledged note retained | Opening project…; elapsed after 3 s; scoped Retry on failure | `fn:project.open`; same-project read must succeed before Open closes |
+| Pin/reveal an Open entry | Responsive → waiting; named action task | Saving pin… / Showing project folder…; scoped Retry | `fn:project.pin`, `fn:project.reveal`; completed pin never replayed for a failed follow-up list |
+
+## New project and Local import recovery
+
+The [partial-safe recovery evidence](../plan/definition-of-done.md#phase-2-partial-safe-newlocal-recovery-651b1340) proves recovery targets and data safety, not a latency improvement or complete long-operation timing.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Create/open a new project | Responsive → long; named whole-operation task and actual backend step receipts | Existing New project dialog; completed/total ProgressBar, current StepMark, elapsed after 3 s, Cancel → Stopping after this step…; completed files retained | `fn:project.create`; active-request filtering, exact 2999/3000 ms elapsed and completed-receipt units; real held loopback repository/cancellation and Open-only Retry journeys passed |
+| Retry Local import | Responsive → waiting; retain source, target and request receipt | Import sheet's error row: Retry → Trying again…; list/input remain mounted; one complete copy | Planned `fn:local.import` / tracker coverage; actual destination-refusal journey and partial-write units prove safety only |
+
+Completed Local import receipts live for the current desktop process. Crash-persistent recovery and streaming remain unaccepted. If setup failed without returning a created-project receipt, the UI offers a location change rather than replaying uncertain creation.
+
+The [New project stream evidence](../plan/definition-of-done.md#phase-2-streamed-new-project) adds real check/folder/profile receipts, an actual repository step only when that backend work runs, and the final Open step. Cancel waits for the current atomic step, aborts before the next, and never deletes partial files. Cancellation after a completed profile retains its receipt and skips Open; Retry opens it once without creating again. Screen readers hear Stopped, not a false failure. This does not claim crash-resumable setup, Publish or first-clone/push streaming.
+
+## Local site operations
+
+The [local-site operation evidence](../plan/definition-of-done.md#phase-2-local-site-operations-b70e3334) distinguishes local preview persistence from remote publication. No upload or deployment step is invented.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Prepare site preview | Responsive → long; actual per-note preparation and final acceptance | Settings/preview retain old content; real completed/total StepMarks and progress, elapsed after 3 s, Cancel stops before accepting the next preview; read-only Retry retains its error | `fn:site.preview`; exact elapsed/count and retained-content units, real delayed/refused read journey |
+| Apply site appearance | Responsive → waiting; atomic local save | Existing preview shows collection/save steps; failed choices remain editable with Retry; cancellation is unavailable during the write | `fn:site.settings`; actual state-write refusal/Retry, real 50% receipt count |
+| Publish to local draft | Responsive → waiting; collect actual selected paths, then atomic save | Publish dialog explicitly says local only; steps never claim remote deployment; no repeated in-flight save | `fn:sharing.publishDraft`; actual persisted paths and unchanged note bytes |
+
+## First setup cancellation
+
+The [first-setup evidence](../plan/definition-of-done.md#phase-2-first-setup-cancellation-a9425fee) adds actual completed/total receipts to `firstRun.create` and keeps the existing `firstRun.clone` download/part reports. Setup waits retain their existing tracker elapsed threshold at 3 seconds. Cancel changes to “Stopping after this step…” while the current atomic API/Git step finishes; only then does a persisted stopped receipt offer Resume. Completed files are kept and acknowledged steps are skipped, not blindly replayed. A final push that finishes still reports completion; a refused push reports failure. The separate Open-from-GitHub clone path still needs its own cancellation increment.
+
+## Existing-project download cancellation
+
+The [retained-folder evidence](../plan/definition-of-done.md#phase-2-existing-project-download-025fe72f) extends `firstRun.clone` with actual discovered totals and acknowledged download/private/link receipts. The existing download percentage remains Git's own; elapsed still appears after 3 seconds. Cancel never kills a Git command or removes its files: it stops before the next safe step. Resume checks the same in-process folder receipt instead of cloning again. A late stop on completed work offers Open, and a stop before download says nothing was downloaded. After restart the existing Open-a-folder route checks the retained files; there is no invented durable resume receipt.
+
+## Panel recovery and first-frame checks
+
+The [W9 evidence](../plan/definition-of-done.md#phase-2-panel-recovery-and-hover-afbd3c3c) adds immediate, view-local Reload: the failed boundary remounts without a page reload or restarting the app. Sibling views, note state and editor identity remain intact. Report problem opens the existing Feedback draft; a new panel report contains only fixed copy, starts with diagnostics off and sends nothing. An existing draft keeps its kind and words. Other failed-panel surfaces yield while Feedback is open so they cannot cover the reporting path. This introduces no asynchronous storage or network wait.
+
+The existing `fn:window.firstFrame` handshake was checked at native first run in both light and dark, with the system deliberately set to the opposite scheme: the window was still hidden when the report arrived, and the resolved themed app root had nonzero geometry and an opaque canvas. Both runs reported the first-frame path, not the timeout. The intentional transparent custom-frame margin remains unchanged. This scoped check does not claim the full frame-integrity corpus, all startup delays or a performance-budget improvement.
+
+The [native acceptance increment](../plan/definition-of-done.md#phase-2-native-recovery-and-empty-first-actions-12834be2) additionally injects an actual Settings-panel render failure in Electron, repeats local Reload, opens safe Feedback and then recovers the panel. The existing editor node, page time origin, note bytes and one-window count remain unchanged. The fault is test-only; recovery adds no reload, process restart or new network destination.
+
+The [site empty-variant evidence](../plan/definition-of-done.md#phase-2-site-empty-variants-20406d26) verifies known-empty results after actual public content is cleared and the real watcher acknowledges removal. Each reachable section keeps the 160 px token minimum. The fourth list's defensive empty-section route is client-tested separately because normal section navigation is derived from nonempty articles. These checks add no wait, network destination or latency claim.
+
+The [startup-pixel and sizing evidence](../plan/definition-of-done.md#phase-2-cleared-ai-and-startup-pixels-cf63f90d) requests actual native pixels at the first-frame report in light and dark. The existing frame classifier finds no blank, substantially transparent or wrong-scheme drawn window in those captures; the report still observes the window hidden and never takes the timeout path. Capture completion is asynchronous, so this is not a continuous pre-show frame stream. Cleared AI/Files and existing-gallery minimum-size checks add no runtime wait or speed claim.
+
+The [next D7 increment](../plan/definition-of-done.md#phase-2-single-outcomes-and-startup-frame-stream-a7363402) adds a native frame subscription before page loading and checks every delivered shown-window frame through the ready screen plus 300 ms: 7 light and 7 dark frames in the final run. Hidden frames remain excluded from visible-window failures. It also makes outcome ownership explicit without changing wait timing: local recovery rows/notifications and interpreted setup/download receipts no longer compete with generic task endings. Other tracker callers retain the default announcements. These are scoped integrity/announcement checks, not a latency or broad-corpus claim.
+
+The [colour all-done evidence](../plan/definition-of-done.md#phase-2-reachable-colour-all-done-state-a055bbe8) moves the already-approved good-news treatment from an unreachable empty-row fallback to the actual contrast summary. The edit/fix preview remains synchronous and write-free; the same wrapper changes between a failure summary and one polite success row. No asynchronous wait, new timing or latency claim is introduced.
+
+The [retained-outcome follow-up](../plan/definition-of-done.md#phase-2-repeated-retained-outcomes-06d4f939) also checks another refusal while the original recovery row remains mounted. A repeated identical result gets one explicit live announcement; a new local message is not duplicated. Actual operation work, progress, measures and cancellation are unchanged. That D7-only claim does not cover the separate D8 section-tracker/local-error overlap.
+
+The [D8 section-outcome follow-up](../plan/definition-of-done.md#phase-2-section-outcome-ownership-1d3deccf) now closes that separate overlap for Agents, item sharing and history reads. The tracker keeps its delayed wait and successful completion; the local live failure row owns refusal, and only an unchanged retained refusal gets an explicit repeated announcement. Agents retains its error row with busy Retry rather than showing first-load shapes again. Exact 300 ms delay/500 ms hold, finite/reduced-motion shimmer, existing content and stale-read guards remain unchanged. Native 1,100 ms refusals and connected live-region mutations prove initial/repeated outcome ownership; they are not latency or screen-reader certification claims. No new wait or network destination is introduced.
+
+The [named field/switch contract proof](../plan/definition-of-done.md#phase-2-named-field-and-switch-contracts-9c512e40) reuses the existing 200 ms pending/confirmed commit lane when a field is explicitly declared persisted. It adds no wait to actual colour-copy or sharing/site draft controls. Native colour edits/Fix and reader Focus changes perform zero early settings writes; their existing explicit Save/Share/Apply boundaries remain intact. This is state/acknowledgement proof, not a performance improvement claim.
+
+## History recovery
+
+The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read initial/older history page | Responsive → waiting; independent section task | Existing history wrapper; Reading versions… / Reading older versions…; scoped Retry | `fn:history.list`; shared 300/500 ms shape timing; failed read retains content |
+| Read selected version | Responsive → waiting; independent preview task | Reading that version…; shapes only without an acknowledged preview; retained old preview on failure | `fn:history.version`; exact 300/500 ms first-preview units and real delayed/failed journey |
+| Restore selected version | Responsive → waiting; named save task | Restore this version → Restoring version…; retained error and scoped Retry | `fn:history.restore`; current draft saved first; no success or dismissal before restored write acknowledgement |
+| Undo restored text | Responsive → waiting; named save task | Existing notification action, retained failure and Retry | `fn:history.undo`; original Undo text survives refusal; no success announcement before write acknowledgement |
+
+## Share-item section recovery
+
+The [independent sharing evidence](../plan/definition-of-done.md#phase-2-share-item-independent-section-2ce9b22d) uses held/refused local reads, not a latency improvement claim. Preparation is a named section task: no shape before 300 ms, at least 500 ms once visible, three shimmer passes then still, static with reduced motion. A refresh keeps acknowledged sharing history. Retry retains its error and the editable choices, makes only its own action inert and never creates or replays a grant.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Prepare/retry an item's sharing list | Responsive → waiting; independent section | Existing Share dialog row; Preparing sharing… / scoped Retry → Trying again… | `fn:share.item.prepare`; exact 300/500 ms units and independent held/refused desktop journey |
+
+## Files initial listing
+
+The [Files known-empty evidence](../plan/definition-of-done.md#phase-2-files-known-empty-and-first-action-6218b99d) separates a successful empty scan from unknown or failed content. Initial listing and its scoped read-only Retry use a named section task. A first-load shape is delayed 300 ms and, once shown, held at least 500 ms by the shared tracker. Retry retains its error row; snapshot completion reapplies queued watcher events and acknowledged saves. This is no speed claim and does not claim an independent delayed initial-scan desktop journey.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Initial/retry Files scan | Responsive → waiting; independent section | Existing Files body; Reading your notes…; failure says notes weren't changed, Retry → Trying again… | `fn:workspace.list`; shared 300/500 ms task units, read/write-queue safety units, real known-empty first-action journey and [independent held/refused first-scan journey](../plan/definition-of-done.md#phase-2-independent-initial-files-scan-b830a17c) |
+
+## Recently deleted history
+
+The [honest-history evidence](../plan/definition-of-done.md#phase-2-recently-deleted-honest-states-71e94423) distinguishes a failed read from good news. The first-read shape is absent before 300 ms and, once shown, held at least 500 ms. Refresh keeps acknowledged rows; scoped Retry retains its error and never changes notes. A failed Git log propagates failure, not a partial empty result. This is feedback correctness, not a speed improvement.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read/retry Recently deleted | Responsive → waiting; independent named section task | Existing Files history wrapper; Looking through history…; local Retry → Trying again… | `fn:history.deleted`; exact 300/500 ms units and held/refused real-history journey; good news only after successful empty read |
+
+## Sharing settings list
+
+The [honest-list evidence](../plan/definition-of-done.md#phase-2-honest-sharing-settings-list-e1ce6940) covers this separate listing, not only the Share item. Unknown and failed lists are not empty. Refresh keeps acknowledged rows, Retry keeps its error, and an older read cannot replace a newer acknowledged change. Filter clearing reads and writes nothing. This is feedback correctness, not a speed improvement.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Initial/retry Sharing settings list | Responsive → waiting; independent section | Existing Settings content; Loading who has access…; safe local failure, Retry → Trying again… | `fn:sharing.list`; exact 300/500 ms units, three approved ItemCard shapes, finite/reduced-motion shimmer and independent delayed/refused desktop journey |
+
+## Image read recovery
+
+The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-recovery-cd0cede9) covers actual missing-file and native decode refusal, retained layout/alt/Retry and unchanged note bytes. It makes no speed claim. The read task includes the shared 300 ms sign delay and 500 ms minimum once shown; an existing broken frame stays mounted throughout Retry. Distinct failures coalesce per note, never one interrupting notice per Retry.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read/retry one note image | Responsive → waiting; named image task, exact source and document identity | Existing image wrapper; alt and error remain, Retry → Trying again…; other images stay usable | `fn:image.read`; exact 300/500 ms task units and held/refused real-image journey |
+| Browser decode refusal | Responsive/waiting; explicit component failure, no blank success-shaped fallback | Approved broken ImageFrame and scoped Retry | Correctness journey passed; end-to-end native decode duration remains unmeasured |
+
+## Other image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
 
@@ -253,7 +401,8 @@ Every operation that can take longer than 100 ms, with its class, pattern and wo
 | --- | --- | --- | --- | --- | --- |
 | New note in…: Create note | Responsive; waiting if disk is slow | Picker keeps its folder and input until creation finishes; named action through the task tracker, failure stays retryable | "Creating note…" | `focus-notes:newNote.create` | Built on `wp-general-fixes` (D-338); exact-head CI pending |
 | New note in…: New folder | Responsive; waiting for a Git batch | Existing Files optimistic pending row; inline name retained on failure | "Creating folder…" | PRF-09 (optimistic row within 100 ms) | Built on `wp-general-fixes`; same Files batch as ordinary New folder |
-| Start-up | Waiting at worst | First-start notice: themed canvas, then the note | none under 1 s; the note's skeleton past 1 s | PRF-02, `fn:window.firstFrame` | Partial: the window shows on ready-to-show; no first-frame report |
+| Persist an app appearance/reading setting (UI-states W2–W4) | Responsive; storage may exceed 100 ms | Control-local commit state; only the affected control/group locks, failed input remains available for Retry | Pending and confirmed each at least 200 ms; approved inline mark or compact border | Planned `fn:settings.commit`; timing not measured in W2 | Partial at `dbf53479`: writes serialize, failures report Retry, confirmed values change only after persistence. W3/W4 still add the commit lane and draft presentation; W1 must keep Retry reachable above modals. |
+| Start-up | Waiting at worst | First-start notice: themed canvas, then the note | none under 1 s; the note's skeleton past 1 s | PRF-02, `fn:window.firstFrame` | Existing native first-frame handshake verified in light/dark first run at `afbd3c3c`; the window remains hidden until the themed frame report. Broader frame-integrity and slow-start variants are separate evidence. |
 | Checking Git (Connect) | Responsive | Silent; shows only when missing or too old | none | `fn:setup.git` | Built |
 | Getting a sign-in code | Waiting | Named wait on *Connect to GitHub* (busy button) | "Getting a code from GitHub…" | `fn:setup.code` | Built (D-149): `firstRun.signIn` through the tracker |
 | Waiting for approval | Long, user-driven | The code card with GitHub's ringed mark, elapsed time, [Cancel] | "Waiting for you to approve on GitHub…" | none (the person's time) | Built: elapsed time and [Cancel] (D-149) |

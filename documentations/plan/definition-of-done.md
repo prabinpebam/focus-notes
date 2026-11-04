@@ -5,6 +5,824 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The owner approved exact d40b78a3 Rewrite/Settings UX and UI on 1 November; its combined runtime/test/config head passed complete Windows CI 41325681712. The **MAI** rows add CP-RWR-01 to the production bar and still retain the explicitly unmeasured renderer, screen-reader, contrast and live-account certification gaps. Runtime hardening proof is not complete stage or release certification.
 
+## UI states, after visual approval
+
+### Phase-2 Close-hover and Files pin
+
+**Exact-brief acceptance, `26c3bd1f829d43a9a10021e2649b65531f19e728`:** the late full brief is reconciled. The same 68 focused units and all 12 combined native journeys pass; the exact clean pushed head was built before packaging. Native Close cases now exercise New note location, Settings, Share, Customize toolbar and Delete confirmation, plus New project and Idea feedback, at 1132 × 812 and 480 × 360 in light/dark. Every sampled frame and the post-hover state must have identical bounds and computed padding on semantic header/body/footer edges; every tooltip must be outside the modal. Toolbar/AI-design views were not edited.
+
+Named pin proofs additionally assert the `Pin <name>` tooltip, `Unpin <name>` keyboard name, immediate appearance in Pinned, visible resting pin/pressed state, stable hover geometry, unchanged selection and note bytes, failure/Retry after selection changes, actual restart and touch access. New rows in Pinned intentionally move content below them; the resting icon's alignment is therefore measured relative to its row, not against the row's old absolute screen position.
+
+The location fixture waits for the loaded/focused Hello note and actual new public-note state before typing/saving; its second opening uses the explicit status-pill action because automatic backup prompts once per session. The inherited Settings bounds fixture now waits for its real entry animation to settle. These are explicit prerequisites, not tolerance increases or waived assertions.
+
+One corrected candidate at `focus-notes-work/preview/candidates/26c3bd1f` passed both Field notes/Garden notes inspection, then replaced only the newly authorized 62832/65092 review (scoped WhatIf first). Normal Shell receipt has no E2E variables. Per-PID proof verifies new Electron 4388 / launcher 14240 / HWND 2752998 after 22.0 s, 10/45 actually exposed points, bounds 1970,314–3102,1126. Both prior candidates were preserved, never regenerated.
+
+The 07c2e31a rows below are the historical first delivery; the corrected combined proof uses the same documented commands and exact final head above.
+
+Worker17 implemented owner item 7 before item 6. The existing five fixes are preserved. App local/origin are clean at `07c2e31a71fe4ae056fdf87c2a5742898f872de0`; its exact-head build passed all 12 combined native checks before packaging.
+
+| Scoped check in worker17 | Result |
+| --- | --- |
+| `pnpm exec vitest run packages/core/test/files-app.test.ts packages/ui/test/file-tree-detail.test.tsx packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts tools/test/layers.test.mjs` | Passed, 68 tests: acknowledged row pin/unpin, concurrent pins, explicit hovered target, menu Retry after selection changes, preserved selection, existing Files, project/theme scope and structural layers |
+| UI, UI-runtime and desktop package typechecks; scoped core typecheck using `scratch/ui-states-worker13-core-tsconfig.json` | Passed; external config now targets worker17 throughout, including Files tests |
+| `node tools/check-boundaries.mjs`; `pnpm ui:check`; component inventory and schema regeneration | Passed: 784 documents / 82 components / 726 commands; existing hover-capability rule retained |
+| Desktop build; `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "Close tooltip never"` | Passed, 2 native tests spanning three dialog variants, two sizes, both themes, repeated pointer/keyboard tooltip cycles and frame-by-frame geometry; body padding is independent of appended portal siblings |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "Files pin swaps"` | Passed, 2 native tests: no row/label shift, explicit note/folder target without navigation, persisted pin/unpin, keyboard action, refused state write with exact Retry after selection changes, process restart, touch Unpin and exact note bytes |
+| `pnpm --filter @focus-notes/desktop run build`, then `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts ui-states.spec.ts --workers=1 -g "Files pin swaps\|Close tooltip never\|Settings keeps navigation\|Agents code Copy\|menu explanations\|full-app Connect\|Themes applies\|review feedback: project scheme\|theme and font choices"` | Passed on clean pushed `07c2e31a`: all 12 native journeys, preserving the original five fixes alongside the two additions |
+| External `ui-states-candidate.cjs --feedback-only`, normal generated `Open review build.cmd` launch, per-PID exposure receipt | Passed: one candidate at `focus-notes-work/preview/candidates/07c2e31a`; both distinct projects, notes, Settings schemes, Open cards and loopback repositories inspected invisibly, with own-PID cleanup. Only then old Electron 2480 was closed via worker17's scoped script, WhatIf first; its launcher exited. New Electron 62832 / launcher 65092 / HWND 2621926 has no E2E variables, is titled Focus Notes, and passed actual monitor exposure after 21.6 s (20/45 points; bounds 1970,314–3102,1126). |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and external headless changed-page checker | Passed: changed audit/DoD/system/wait pages have one H1, resolving evidence anchors, no page-wide overflow and light/dark rendering |
+
+**Why the repeated Close bug escaped:** the old owner build's Idea feedback dialog loses 24 px when a tooltip becomes its last child (580 → 556 px). Prior tooltip checks explicitly skipped dialog-height rules, while taller dialog content masked the padding loss. The shared primitive now declares content-slot edges; it does not patch a particular dialog's height or raise a z-index.
+
+**Try it:** hover Close in Settings, New project and short Idea feedback; repeat, then focus Close by keyboard. None moves or resizes. In Files, hover a note/folder or focus its row, then use the pin in its type-icon slot. It must not open/select/expand that row. Restart and confirm Pinned persists; touch users can act without hover. Failure retains the acknowledged pins and offers Retry for the original target/value, never a replayed toggle.
+
+All test apps use scoped finally cleanup. No full suite, CI wait, main app merge, release, real-account write, toolbar-customizer or AI-scan change is claimed. Phase 2 is not complete.
+
+**Current owner review:** leave Electron 4388 and launcher 14240 open. Start future reviews only through the public normal Shell entry and require a new per-PID exposure receipt; do not drive, activate, move or blindly relaunch this review. Both Field notes and Garden notes are preserved. The old 9c512e40 candidate was not regenerated; protected Preview, galleries and docs were not stopped.
+
+### Phase-2 fixed Settings navigation and combined checks, b83c1e0c
+
+Settings uses the sealed navigation-height dialog variant: 600 px high/minimum, clamped to the available overlay space. Its body never scrolls. Tabs owns one content-only scroller while navigation and Send feedback remain outside it. A body shorter than the 400 px side-navigation budget, or too narrow for side-by-side content, uses wrapping horizontal tabs; navigation itself never gets a scrollbar. Other dialogs and Tabs retain their existing defaults.
+
+| Scoped check on `b83c1e0c` | Result |
+| --- | --- |
+| `pnpm tokens`; UI and desktop package typechecks; `node tools/check-boundaries.mjs`; desktop build | Passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm ui:check` | Passed, 783 documents / 82 components / 725 commands; contracts, fixtures and schemas committed together |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts tools/test/layers.test.mjs` | Passed, 35 focused unit/static tests on the combined implementation |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts ui-states.spec.ts --workers=1 -g "Settings keeps navigation\|Agents code Copy\|menu explanations\|full-app Connect\|Themes applies\|review feedback: project scheme\|theme and font choices"` | Passed, 8 native journeys on the combined implementation |
+
+The Settings journey checks the navigation's unchanged bounds while real content scrolls, a non-scrolling dialog body, every category and feedback action in view, and vertical/short-window fallback orientation at 1400 × 850, 1024 × 720, 600 × 480 and 480 × 360. The native theme-refusal fixture now starts on an actual note rather than leaving the full-app empty Open surface active underneath Settings; the structural portal correctly prevents that full-app surface's covered controls being clicked. The older blur fixture waits for acknowledged scroll-edge state rather than racing startup scroll restoration. No production recovery or onboarding behavior was weakened.
+
+**Try it:** open Settings → Agents and scroll long configuration content. Categories and Send feedback stay fixed. Make the window short: tabs wrap above the content, still without navigation scrolling. All five fixes are implemented in the candidate branch; packaging and verifying one exact-head, two-project owner candidate is still pending. No phase completion, main app merge, full suite, CI wait or release is claimed.
+
+### Phase-2 code Copy overlay, a0e29706
+
+The shared CodeBlock uses an absolute top-right IconButton, retaining the supplied localized Copy name/tooltip. Source text fills the code box rather than yielding a column to a text button; token-based top clearance avoids covering source bytes, and line breaks are preserved.
+
+| Scoped check on `a0e29706` | Result |
+| --- | --- |
+| `pnpm tokens`; UI and desktop package typechecks; `pnpm ui:check`; `node tools/check-boundaries.mjs`; desktop build | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "Agents code Copy"` | Passed: real Agents JSON block uses full text width; button is absolute/top-right/icon-only, is named Copy and exposes its keyboard tooltip; copying preserves exact JSON bytes in memory, never the owner's clipboard |
+
+**Try it:** Settings → Agents, then focus or hover the small Copy icon at the code block's top-right. This is fix 4 of 5; Settings scrolling and the combined review candidate remain outstanding.
+
+### Phase-2 menu description tooltips, f879f991
+
+Shared MenuButton command, choice and submenu content keeps reasons as accessible descriptions rather than visible secondary lines. Tooltip placement reuses the existing Tooltip primitive; unavailable commands remain keyboard reachable, inert and described. No labels or behavior outside menu presentation change.
+
+| Scoped check on `f879f991` | Result |
+| --- | --- |
+| UI and desktop package typechecks; `pnpm ui:check`; `node tools/check-boundaries.mjs`; desktop build | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "menu explanations"` | Passed: Publish has its unchanged accessible name and stable reason description; description occupies no secondary row; tooltip appears on focus and hover and clears on focus departure |
+
+**Try it:** open More and focus or hover Publish. Only its label appears in the menu; its explanation appears as a tooltip. No publishing is performed. This is fix 3 of 5, not phase completion; owner review remains unchanged.
+
+### Phase-2 structural overlay layers, b031948f
+
+The [window stacking contract](../design/system/overview.html#window-stacking) is implemented in the candidate only. One direct AppRoot host isolates full-app surfaces from panels; modal descendants send their menus back to the window root. Docked panels, floating panels, full-app surfaces, menus/tooltips and notifications have named, ordered token roles. The former raw scroll-fade index now uses the mask token. No app workflow or note persistence changed.
+
+| Scoped check on `b031948f` | Result |
+| --- | --- |
+| `pnpm exec vitest run tools/test/layers.test.mjs` | Passed, 5 tests: semantic order, role aliases, raw-index mutation probes and scan, single-host/portal routing, anchored surface order |
+| `pnpm --filter @focus-notes/ui run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck`; `node tools/check-boundaries.mjs` | Passed |
+| `pnpm tokens`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm ui:check` | Passed; generated catalog committed |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "full-app Connect\|Themes applies"` | Passed, 3 journeys: both Themes restart paths; Settings and Connect use the single root host, Connect is the painted hit target above docked Files, note bytes unchanged |
+
+**Try it:** keep Files docked, open Settings and Sign in to show Connect. Files and its header stay behind the full-app step; the title band remains available. No real sign-in was performed in verification. Test apps were closed with scoped finally cleanup; the owner's review was untouched. Menu tooltips, code Copy and Settings scrolling remain in progress.
+
+### Phase-2 Themes project scope, bc45a4e1
+
+The [owner's new feedback queue](../design/ui-states-audit.md#owner-feedback-queue-5-november) remains in progress. This is the first of five fixes, not phase completion. No app merge, full suite, CI wait, release or review-window replacement occurred.
+
+| Exact scoped check in worker16 at `bc45a4e1` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts` | Passed, 30 tests: fixed-project choice/preview/refusal/Revert, unchanged defaults/other project, App-default path, stale sheet rejection and existing theme/reading behavior |
+| `pnpm exec tsc --noEmit -p E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json` | Passed; external config's extends/typeRoots/includes all target worker16 |
+| `pnpm --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm ui:check` | Passed, 780 documents / 82 components / 725 commands; no generated schema changes |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts ui-states.spec.ts --workers=1 -g "Themes applies\|theme and font choices"` | Passed, 3 native journeys: both theme scopes with computed canvas/text tokens, sheet reopen and real process restart; existing refused theme/font Retry journey |
+
+The regression first failed against the old built app with `html[data-theme="sepia"]` after a stored Dusk choice. The App-default baseline applied Dusk correctly. The new native fixtures assert Garden settings unchanged and exact note bytes retained; cleanup is finally-scoped to each test PID, dry-run before actual. The size-Retry unit fixture now allows startup persistence before injecting failure, so an unrelated startup toast cannot be mistaken for the tested Retry; no runtime recovery behavior was altered.
+
+**Try it:** in Field notes with a fixed theme, open Settings → Appearance → Themes, choose a light and a dark theme, close/reopen the sheet and restart. This window follows the choices; Garden and app defaults do not change. Repeat with App default to verify the app slot still changes. Final owner candidate waits for the remaining four fixes.
+
+**All eight design slices were approved** (owner, 4 November 14:06), including the compact border-spinner rule. The [audit's approval table](../design/ui-states-audit.md#visual-review-and-approval) records the authorization for phase 2. The rows below specify implementation evidence, not completed acceptance: silent failures land first, then commit states, with scoped typechecks, related unit tests and one journey per slice. App code stays on `vq-ui-states`; no full suite, CI wait or benchmarks are authorized by this increment.
+
+| Slice | Wiring done when | Unit evidence, after approval | One related journey, after approval |
+| --- | --- | --- | --- |
+| D1 · Notifications (F3, F4, F10) | The notification host shows at most 3 pills, errors first; repeated subjects update/coalesce; errors and decision warnings stay until resolved or dismissed. Visible-only timers pause on hover, focus and window blur. Withdraw offers Undo only if it can restore the same link; otherwise explain the irreversible consequence before acting. | Queue priority/limit, coalescing, hard dismiss, visibility and pause/resume with fake clocks; notification region naming; same-link withdrawal restoration or irreversible confirmation. | Trigger 4 outcomes while writing, recover an error, dismiss a pill and see the next queued outcome without focus loss; withdraw and restore a reversible link. |
+| D2 · Fields (F1, F2, F12) | TextField and ColorField use real commit results when bound to persisted fields: pending and confirmed each hold at least 200 ms, only the field locks; failed values remain editable with Retry/Revert; storage errors are never silent. Draft-only colour editing does not claim storage before Save. AI connection details commit independently; the provider-checked access key has its own explicit-save group. | Instant/slow/rejected writes; minimum beats; retained input; last-confirmed rollback; late response ordering and stable focus; key-check failure cannot claim Saved. | Change a project name and colour, inject a write failure, retry and reopen to find the stored values; distinguish connection details from the access-key Save. |
+| D3 · Switches (F2) | A Switch committing a persisted value stays the same focusable element while pending; confirmation shows the stored value; a failure restores the last confirmed value with Retry, without blocking neighbours. Draft-only switches keep their existing Share/Apply boundary, without inventing per-toggle writes. | Instant/slow/rejected commits, 200 ms floor per beat, lock release at confirmation, stable focus and rollback. | Toggle watermark, force failure, use Retry and verify the kept value after reopening project settings. |
+| D4 · Choices (F2, F14) | SegmentedControl, ThemeGallery and FontChoice confirm on the chosen option, lock only their group, and retain input on failure; keyboard browsing does not save every arrow step. Slider and PickerButton follow the same approved commit treatment. Hover styles in the audited components are hover-capability gated, with pressed feedback. | 500 ms pause/blur/release semantics; a single in-flight commit per group; stale-result ordering; Retry/Revert and keyboard focus; the static no-bare-hover enforcement rule. | Change appearance, theme and font using keyboard and pointer; inject failure, recover and reopen to check persistence; touch emulation never leaves hover stuck. |
+| D5 · Empty spaces (F6) | Files, Open, AI connections, sharing and site-preview lists use the approved empty wrapper, minimum size, cause and next action; loading and errors never masquerade as empty. | First-use/filtered/cleared/all-done variants; section/view/component sizing; good-news tone; no empty flash during loading. | Visit the empty lists, use each available first action and see content replace the empty state in the same wrapper. |
+| D6 · Recovery (F4, F5, F11, F15) | Open, New project, Local import, history and broken images expose a scoped recovery action and optional Details, keeping successful work and drafts. Failure copy names what is safe, including appearance and AI rewrite failures. No retry silently repeats completed destructive work. | Failure classification, preserved input, retry target and partial-result safety; optional Details; image alt fallback; safe-clause copy review. | Fail Open/import/history and an image read; retry from each surface without closing it or losing the draft. |
+| D7 · Long operations (F7, F8, F13) | New project and Publish stream real steps, real-count progress and elapsed time with Cancel; failures name the failed step and preserve completed work; a crashed panel offers recovery without discarding the note. Native startup resolves the theme background before showing the window, without a blank or white frame. | Step transitions, known/unknown totals, cancellation and partial retry, retained draft, crash-boundary fallback, single outcome announcement and resolved startup scheme. | Start in light and dark, run a multi-step operation, cancel once and retry a failed step; recover a crashed panel with the note intact. |
+| D8 · Section loading (F9) | Agents, the share item and history load independently in their own shape: 300 ms delay, at least 500 ms once visible, 3 shimmer passes then still; refresh keeps old content until replacement is ready. | Fast/slow/failed/empty load tracks; finite passes; reduced-motion static shapes; no stale overwrite or duplicate announcements. | Load and refresh the 3 sections with delayed/failed responses; navigation remains usable and Retry replaces only the affected section. |
+
+**Try it in phase 1:** use the [review hub](http://127.0.0.1:5231/?f=mock.uistates.hub), compare Before/After and Play in light, dark and reduced motion. **Try it in phase 2:** perform the approved row's journey in the real app. Record exact-head evidence only after that slice's approval and implementation.
+
+### Phase-2 evidence, 4 November
+
+**W2 infrastructure is verified on `vq-ui-states` at `dbf53479`; no D2–D4 acceptance is claimed.** Rejected bound setters and action sequences report an error with Retry, stop dependent actions and preserve the original retry arguments. Keyboard/startup commands and unhandled renderer rejections use the same reporter. Settings writes are serialized and failed writes do not alter the confirmed appearance/reading values or leak into later writes.
+
+| Check on `dbf53479` | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed; desktop typecheck repeated after journey edits |
+| `pnpm exec vitest run packages/core/test/settings-failures.test.ts packages/core/test/app.test.ts packages/core/test/settings-app.test.ts packages/core/test/theme-manager-app.test.ts packages/ui-runtime/test/failures.test.tsx` | 4 files, 35 tests passed; the additional `theme-manager-app.test.ts` selector matched no file |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Passed: 695 documents, 81 components, 549 commands; generated files unchanged |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1 -g "a rejected settings write"` | Passed: a real isolated state-file write fails, Retry persists 110% scale, and reopening Settings shows that value. Cleanup ran with only the journey's PID, first with `-WhatIf`, then without. |
+
+**Follow-up:** the modal host and project prerequisite gaps above are resolved in the following increment. W2's evidence remains historical; it does not by itself accept D2–D4.
+
+### Phase-2 functional increment, bf1c5afd
+
+`vq-ui-states` now includes the approved project/Open implementation through a normal merge (`36e93da4`), modal notification recovery (`5251ef0d`), the notification queue (`414b9341`) and the first commit-track controls (`bf1c5afd`). App code remains off main.
+
+| Check | Result |
+| --- | --- |
+| `pnpm typecheck` after the project merge | Passed for all workspace packages |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on the commit-track increment |
+| `pnpm exec vitest run packages/core/test/commits.test.ts packages/core/test/project-settings.test.ts packages/core/test/tasks.test.ts packages/core/test/settings-failures.test.ts packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx` | 6 files, 22 tests passed: separate 200 ms beats, stale confirmation timers, failed draft/Revert, 500 ms keyboard pause, stable focus, ordered project patches, rejected settings and local/global recovery |
+| `pnpm exec vitest run packages/core/test/notifications.test.ts packages/core/test/app.test.ts packages/core/test/settings-failures.test.ts packages/ui/test/notification-layer.test.tsx packages/ui-runtime/test/failures.test.tsx` on the notification increment | 5 files, 27 tests passed: priority/queue, visible-only clocks, hard-dismiss actions/errors, coalescing, pause/resume and modal top-layer marker |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1` | 3 journeys passed: rejected scale/Retry/reopening; F6 and pointer Retry above the open Settings modal; project-name blur/failure/retained draft/Retry/reopening |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Generated schemas current; still fails on 54 inherited sharing/site-preview view findings. No new canvas finding remains. |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed: copied exact-commit output into the candidate, opened it invisibly, used normal Project settings, saved name/watermark, rejected a real state-file write, retained the draft and recovered with Retry. Candidate and journey apps closed; PID-scoped cleanup ran first with `-WhatIf`, then without. |
+
+**Try it:** open `E:\Projects\side-projects\focus-notes-work\preview\candidates\bf1c5afd\Open review build.cmd`, then Project → Name/Watermark and Appearance → Interface size. The candidate uses sample notes and its own profile.
+
+**Acceptance remains partial.** W3's separate commit lane and the first W4/W5 controls are functional. Action-driven project colour/logo/font/theme pickers, other app settings, AI's separate save groups, watermark failure, the full notification queue/withdrawal journey, scoped recovery, empty wrappers, long-operation steps and section shimmer still need their own evidence. The 54 inherited `ui:check` findings are recorded, not silently waived. No full suite, CI wait or benchmark ran.
+
+### Phase-2 project increment, fd5252ee
+
+Colour/preset-logo commit feedback (`78d0a335`), font/theme trigger feedback (`c766d793`) and watermark refusal/recovery proof (`fd5252ee`) are pushed. GitHub repeatedly refused the ordinary branch updates with `Internal Server Error`; one `git push --no-thin origin vq-ui-states` succeeded without changing history. No app code is merged to main.
+
+Project choices retain the attempted selection and error locally while the writing surface keeps its saved identity. Retry uses the latest attempted value, Revert does not write, and the persistent font/theme trigger carries the minimum feedback beat after its popover closes. A refused font/theme write clears its temporary preview, not the retained choice. Theme arrows remain preview-only; Use app default commits explicitly.
+
+| Check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on the font/theme increment; core/desktop repeated after watermark test edits |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/commits.test.ts packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx` | 4 files, 17 tests passed on the combined increment: retained choices, unchanged saved identity, write-free Revert, focusable pending groups/triggers, repeated local Retry failures, preview cleanup, minimum beats and ordered project patches |
+| `pnpm --filter @focus-notes/desktop run build` | Passed again at exact candidate head `fd5252ee` |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1` | 5 passed on the combined app build. Watermark's first attempt checked busy state on the RadioGroup rather than its wrapper and tried changing during its 200 ms pending hold; corrected to wait on the real wrapper. |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "a refused watermark"` | Passed after that selector correction, including failed On/Retry and failed Off/Revert; the actual writing-surface mark and write-free Revert are asserted |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Generated contracts/current schemas: 0 fixture gaps, 0 stale files; still fails on the same 54 inherited sharing/site-preview findings |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at `fd5252ee`: normal Settings saved name/watermark/colour/logo/font/theme; real name/font write failures retained input and recovered via Retry. Candidate and every journey were invisible, closed, and followed by PID-scoped `-WhatIf` then actual cleanup. |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\fd5252ee\Open review build.cmd`, then Project → Name/Colour/Logo/Watermark/Font/Theme. Synthetic notes and a separate profile only. The [approved gallery](http://127.0.0.1:5231/?f=mock.uistates.hub) remains running.
+
+**Still partial:** SVG logo upload, other app settings, AI's details/key save groups, notification/withdrawal acceptance, scoped recovery, empty wrappers, streamed operations and section shimmer. Project settings evidence does not certify the other D2–D4 surfaces. No full suite, CI wait or benchmark ran.
+
+### Phase-2 app choices and announcements, b7f54383
+
+The app's Appearance and Paragraph spacing groups use the commit lane at pushed `9132ff95`. Named polite confirmation is added at pushed `b7f54383`: a bound control supplies its label, otherwise the outcome says “Change saved.” Confirmation happens once after successful storage, never for a pending or failed attempt, Revert or expiry; draft values never enter the announcement. The existing live region is reused, with no writing-window element added.
+
+| Check on the combined increment | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts packages/core/test/commits.test.ts packages/core/test/settings-failures.test.ts packages/ui-runtime/test/failures.test.tsx` | 5 files, 35 tests passed: independent groups, confirmed-value safety, ordered Retry, minimum beats, retained input, single named outcomes and no draft disclosure |
+| `pnpm --filter @focus-notes/desktop run build` at `b7f54383` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1` | All 7 scoped journeys passed together: scale, app mode/paragraph choices, modal F6/pointer Retry, project name, colour/logo, font/theme and watermark. Reopening preserves mode/spacing; the named live-region confirmation is accessible while Settings stays open. |
+| `pnpm ui:check` | Still fails on the same 54 inherited sharing/site-preview findings; 0 fixture gaps, 0 stale generated files |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head `b7f54383`; normal Project settings plus app Appearance/Paragraph spacing and named polite confirmations were reached in the invisible candidate. Its synthetic profile/notes are separate. All apps closed; PID-scoped `-WhatIf` then actual cleanup ran. |
+
+The theme-manager test's category list was updated for the Project section introduced by the prerequisite merge. No unrelated CI repair or quarantine was added. This is DOM/role evidence for announcements, not live screen-reader certification.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b7f54383\Open review build.cmd`. Project settings cover the project controls; Settings → Appearance → Open theme manager covers Appearance and Reading → Paragraph spacing. Remaining app controls/sliders, AI save groups, SVG logo upload and the other D1–D8 gaps above remain unaccepted. No full suite, CI wait or benchmark ran.
+
+### Phase-2 reading sliders and SVG upload, 6a217238
+
+Pushed `7d8811e3` wires the three Reading sliders. Live note preview does not write or change acknowledged appearance; release, blur or a 500 ms keyboard pause commits once. A failed write restores the note's stored appearance while keeping the attempted numeric value and its formatted output in the slider. Other sliders remain usable. Pushed `6a217238` wires SVG upload to the shared logo commit group: Retry reuses the sanitized source without reopening the picker, Revert discards it without writing, and picker cancellation emits no saved outcome. The upload button uses its own border, with recovery outside.
+
+| Check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on the slider increment; core/desktop repeated and passed after SVG upload |
+| `pnpm exec vitest run packages/core/test/theme-manager.test.ts packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx` | 3 files, 23 tests passed, including transient preview, refused-save rollback, formatted retained values, independent Retry and keyboard pause/blur/focus |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts` | 9 tests passed, including retained upload source, picker cancellation, source-preserving Retry, write-free Revert and named confirmation |
+| `pnpm --filter @focus-notes/desktop run build` | Passed for each slice |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "reading sliders"` | Passed: all three values persist and reopen; refused width keeps 85 characters, independent line spacing saves and Retry restores width |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "SVG logo upload"` | Passed: real sanitized SVG, actual state-write refusal, Retry with picker deliberately unavailable, later failed upload/Revert preserving the stored Rocket |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Schemas regenerated; 0 fixture gaps, 0 stale files. Still fails on 54 inherited sharing/site-preview view findings; not a green static check |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head `6a217238`: normal project controls, SVG write refusal/Retry, Appearance/Paragraph spacing and all Reading sliders inspected invisibly |
+
+Every journey and candidate closed its app and ran PID-scoped cleanup, `-WhatIf` first. The review gallery is detached from fresh folder `vq-ui-states-5` on port 5231; HTTP 200 verified. Clock marks recorded worker/production-ready; status says no matching clock, so reviews are tracked manually. No full suite, CI wait, benchmark or app-code merge to main ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\6a217238\Open review build.cmd`. Settings → Project → Upload SVG; Settings → Appearance → Open theme manager → Reading. This remains partial D2–D4 acceptance; the other controls, AI save groups and D1/D5–D8 gaps remain.
+
+### Phase-2 known-empty wrappers, 7d8f98fd
+
+**Partial D5 plus inherited static gates, pushed on `vq-ui-states`.** Open/recent, Files, AI, Sharing and site-preview lists use the approved sealed wrapper in their own content. Filtered results say No matches and Clear search restores the list; first-use Open selects a folder; AI's Add connection opens its existing form. Delayed/failed AI reads never become known-empty. Sharing/preview first actions close their transient surface and open Files without toggling an already-open panel shut. Site navigation/section actions lead to Files' existing publish flow, not a new configuration UI.
+
+| Check | Result |
+| --- | --- |
+| `pnpm check` | Passed, including boundaries, token ownership, generated component inventory and `ui:check`; no inherited static findings remain |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\core\test\ai-app.test.ts packages\core\test\share-manage.test.ts packages\ui\test\commit-controls.test.tsx packages\ui-runtime\test\check.test.ts` | Passed: 118 tests; filtered clearing, known-empty/load-failure gating, sharing Files preservation, busy-menu focus/inertness and full-window overlay validation |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "known-empty wrappers"` | Passed: AI's first action opens/cancels its form in place; Open's filtered empty wrapper clears its search without navigating |
+| Slate `runtime-host.mjs check --repo . --host documentations` from the worker folder | Passed for the updated component guidance/inventory |
+
+EmptyState's unchanged sealed markup/styles now live in the primitive tier; NotificationRegion owns its matching token group. Other inherited styles use component aliases of their previous values; no visual redesign. Generated schemas/catalog are committed. The initial focused journey assumed Open was always a dialog; corrected to accept its existing full-window region. The touched Sharing unit's category list was stale after the inherited Project integration; corrected its expectation. Every app was invisible and closed with PID-scoped cleanup, `-WhatIf` first.
+
+**Try it:** the next candidate refresh will include these wrappers; the current `6a217238` candidate still covers sliders/upload only. All-done/good-news cases and complete first-action/content-replacement journeys remain unaccepted; no full suite, CI wait, benchmark or app merge ran.
+
+### Phase-2 independent section loading, 47101d57
+
+**D8 wiring pushed; full phase 2 remains in progress.** `TaskTracker.section` delays the shape by 300 ms and holds its actual visible start for at least 500 ms, even on failure. Agents uses two approved rows, item-sharing one, history two. Each has three finite shimmer passes and static reduced motion. Refresh retains existing content. Agents failures offer local Retry; history list failure keeps prior versions and offers Retry. Sharing Retry reloads only its listing, keeps editable expiry/method choices and never creates a grant. Request identities discard late Agents/history replies, including a closed/reopened sheet for the same note.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\tasks.test.ts packages\core\test\agents-app.test.ts packages\core\test\note-history.test.ts packages\core\test\share-manage.test.ts` | Passed: 60 tests. Measured 299/300 ms reveal and 499/500 ms minimum boundaries; fast/no-shape, failed minimum, retained history, late replies and failed-sharing Retry retaining expiry |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check` and `pnpm ui:check` | Passed, no inherited static findings remain |
+| `pnpm --filter @focus-notes/desktop run build` | Passed, rebuilt at exact pushed head before candidate creation |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "section loading"` | Passed: approved Agents row anatomy, exactly three passes, static reduced motion, old content retained during failed refresh and Retry. Only that read handler was faked; no real account/network writes |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at `47101d57`: normal Settings/project/reading/upload refusal/Retry, AI empty first action, real Agents data and filtered Open/Clear search inspected invisibly |
+| Slate `runtime-host.mjs check --repo . --host documentations` from the worker folder | Passed for the updated wait inventory |
+
+The touched Agents Undo test still assumed errors were appended after success; corrected its assertion for the already-built error-first queue. The existing 10,000-note sharing test caught a draft-input lock while preparation ran; removed that lock, preserving editable input while only share creation waits. All focused checks then passed. Every started app was invisible, closed, and followed by PID-scoped `-WhatIf` then actual cleanup.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\47101d57\Open review build.cmd`. Settings → AI → Add connection/Cancel; Open → unmatched search → Clear search; Settings → Agents. Full desktop journeys through delayed sharing/history are still absent; individual history-version/restore recovery and other D1–D7 gaps remain. No full suite, CI wait, benchmark or app merge ran.
+
+### Phase-2 theme and Reading font, e643bd48
+
+The theme gallery and Reading font menu now use the approved commit track. Failed drafts remain local to Settings; the actual note retains its stored theme/font. Retry remembers the failed theme even after keyboard previewing another tile. Revert writes nothing. Choosing an opposite-scheme theme stores its slot and appearance mode together, avoiding a partially saved theme selection. Unknown theme/font values fail rather than claim success. MenuButton and IconButton support the existing own-border progress, outcome and reduced-motion treatment.
+
+| Check on `e643bd48` | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm exec vitest run packages\core\test\theme-manager.test.ts packages\ui\test\commit-controls.test.tsx` | 26 passed: atomic scheme/slot write, retained draft, one named confirmation, write-free Revert, retry after preview, stable pending focus, inert compact triggers and keyboard preview without saving |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "theme and font choices"` | Passed: real storage refusal, stored note unchanged, theme Retry after another preview, font Revert/Retry and persistence after reopening |
+| `pnpm check` and UI schema regeneration | Passed: no view findings, fixture gaps or stale generated output |
+
+Journey apps were invisible, closed, and followed by own-PID cleanup (`-WhatIf`, then actual). No full suite, CI wait or app merge ran. GitHub rejected two ordinary non-thin pushes with `Internal Server Error`; a subsequent ordinary push of `b6375b3a` persisted this increment too. The refreshed candidate below includes both worker-6 commits.
+
+### Phase-2 compact focus and docking, b6375b3a
+
+The existing Focus mode toolbar button, Files pin and contents pin use the same own-border commit treatment. Roomy menu rows keep inline marks; Retry remains outside compact controls, in the existing notification. Persistence completes before the acknowledged value changes. Files previously discarded its persistence promise; refusal now surfaces and leaves the saved docking unchanged. Retry carries the original intended boolean, so an old Retry cannot toggle an already-correct setting backwards. Pending locks only its own command. These compact setting actions keep the toolbar open for feedback, without changing ordinary outside dismissal or adding writing-window elements.
+
+| Check on `b6375b3a` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\settings-failures.test.ts packages\core\test\files-app.test.ts packages\core\test\outline.test.ts packages\ui\test\commit-controls.test.tsx` | 48 passed: refusal keeps stored values, exact-value Retry, duplicate-write lock, outline behavior and shared compact feedback |
+| `pnpm exec vitest run packages\core\test\menu-bar.test.ts packages\core\test\files-menu.test.ts -t "sends the menu bar\|the pin keeps\|pinned from closed\|Mod\+O doesn\|docked \(D-187\)"` | 5 passed, 35 skipped: pending menu availability and existing Files docking behavior |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm --filter @focus-notes/desktop run build` | Passed; output copied into the exact-head candidate after committing without further source edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "compact focus and docking"` | Passed: real state-file write refusal on all three controls, old value retained, outside Retry persists the intended value, note bytes unchanged |
+| `pnpm check`, UI schema regeneration and component inventory | Passed, 773 documents, 82 components, 693 commands |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed head `b6375b3a`: theme/font, Focus mode, Files docking and contents docking reached through normal UI, alongside previous project/slider/empty-state paths |
+
+The initial candidate inspection assumed Focus mode defaulted to Off; the app defaults to On. Its synthetic fixture now explicitly starts Off, then verifies On. The initial compact journey was obstructed by the existing project-renaming notice; it now dismisses that notice through its real button. Candidate and journey apps were invisible, closed and followed by own-PID cleanup.
+
+**Unrelated inherited checks, not acceptance:** the broader six-file unit selection exposed existing Files menu pin-item/source expectations, notification ordering and native-menu command inventories; the exact affected cases above pass. Three old `m1-toolbar.spec.ts` UI-07 journeys stop before any compact action because their empty-start fixture no longer supplies the expected Note textbox. Their toolbar visibility expectation was updated for the deliberate behavior, but those journeys are not claimed green. No full suite, CI wait, merge or unrelated repair ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b6375b3a\Open review build.cmd`. Settings → Appearance → theme manager → Themes/Reading; then toolbar Focus mode, Files → Dock Files, More → Dock contents. Font size, AI save groups, notification acceptance, remaining recovery/streamed work and independent delayed history/share journeys remain in progress.
+
+### Phase-2 Reading size, 399bd9c9
+
+The existing size row reuses one inline CommitMark beside its number, not two competing button indicators. The attempted formatted size remains visible after refusal while the actual note keeps its acknowledged size. Smaller/Larger remain focusable but inert during their group's pending write; unrelated settings stay available. Retry saves the exact retained value even if another action has since reached a size boundary. Revert writes nothing. Menu and shortcut commands use the same commit lane, and font-size reset changes only size, not paragraph spacing or other reading choices.
+
+| Check on `399bd9c9` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\theme-manager.test.ts packages\core\test\settings-failures.test.ts` | 29 passed: retained formatted draft, unchanged acknowledged note, exact Retry after another size change, write-free Revert, reset, invalid-value refusal and pending-group isolation |
+| `pnpm exec vitest run packages\core\test\toolbar.test.ts -t "a setting keeps"` | 1 passed: size feedback keeps the toolbar open; an unrelated normal action still closes it |
+| `pnpm exec vitest run packages\core\test\roots-app.test.ts -t "settings"` | 3 passed: workspace reading-setting synchronization remains intact |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check` and UI schema regeneration | Passed, 773 documents, 82 components, 694 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed at the final source state |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Reading size"` | Passed: real storage refusal, retained output, unchanged actual editor size, exact Retry, write-free Revert, unrelated spacing preserved and reopened setting retained |
+
+The journey waits for failure before repairing its synthetic blocked file; a visible draft alone is not proof the write has failed. No uncommitted draft is announced as saved. The invisible app closed and own-PID cleanup ran. No full suite, CI wait or merge ran. The candidate remains `b6375b3a`; it does not yet include `399bd9c9`.
+
+**Try it after the next candidate refresh:** Settings → Appearance → theme manager → Reading → Smaller/Larger text. AI groups, full notification acceptance, recovery and streamed operations remain in progress.
+
+### Phase-2 notification acceptance increment, 0db24cb0
+
+The host now carries success, warning and progress as well as info/error. A progress outcome stays until replaced; replacing it with success resets the repetition count and starts the success lifetime. Errors, recovery actions and explicit decision warnings remain hard-dismiss outcomes. A notice that actually wraps receives `wait.noticeLong` (8 seconds) rather than the ordinary 6 seconds, preserving elapsed visible time rather than restarting its clock.
+
+Recovery now keeps its original pill until the action succeeds, with only that action inert and own-border pending feedback. Failed Retry preserves the original command, arguments and coalescing subject. Notification dismissal/recovery restores its connected prior field, and F6 captures one notification ID instead of handing an old request to whichever pill happens to become first.
+
+| Check on `0db24cb0` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\notifications.test.ts packages\core\test\settings-failures.test.ts packages\ui\test\notification-layer.test.tsx packages\ui-runtime\test\failures.test.tsx` | 25 passed: priority/limit, coalescing, hard dismiss, visible clocks, 8-second extension, progress-to-success replacement, retained Retry, captured F6 target and focus restoration |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check`, UI schema regeneration and component inventory | Passed, 774 documents, 82 components, 695 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed at final source state |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "four writing outcomes\|actually wrapped\|notification Retry stays"` | Initial run: 2 passed / 1 failed. Four-outcome and modal journeys passed; the wrapped fixture still consumed real time between clock calls. After pausing before triggering it, that case passed separately below |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "actually wrapped"` | Passed: real multi-line geometry, visible after 6 seconds and 7,999 ms, absent at exactly 8,000 ms |
+| Final combined rerun of the three-case selector above on the unchanged pushed head | All 3 passed together (13.7 seconds); own-PID cleanup ran after each case |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed head `0db24cb0`: all worker-6 normal UI paths, Reading size, warning and repeated failed Retry followed by successful recovery and editor focus |
+
+The four-outcome journey uses an actual refused setting, the unsupported-underline warning and two successful Replace all operations. Dismissing a pill reveals the queued outcome; a second refused Retry stays usable; success returns to the note with its expected text intact. These journeys uncovered the retained-Retry and F6-target bugs above, not just fixture issues. Wrapped timing is measured from a paused renderer clock: elapsed real test-run time is not counted as part of the promised 8 seconds.
+
+Candidate and journey apps were invisible, closed and followed by own-PID `-WhatIf` and actual cleanup. No full suite, CI wait or merge ran. **D1 is still partial:** overlapping hover/focus causes need their own combined-state proof/fix; withdrawal still requires same-link restoration evidence or the irreversible confirmation. AI groups, remaining recovery/streamed work, complete empty-state acceptance and delayed history/share journeys remain in progress.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\0db24cb0\Open review build.cmd`. Reading → Smaller/Larger text; while writing, an unsupported underline shows a warning. The separate journey injects the refused writes; the candidate contains only synthetic data.
+
+### Phase-2 overlapping notification pauses, b68775f8
+
+Hover and focus now pause a notification independently. The primitive reports only a change in their union, so leaving hover while a button remains focused, or leaving focus while hovering, cannot restart the timer. Focus moving between the pill's buttons also keeps the pause.
+
+| Check on `b68775f8` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\ui\test\notification-layer.test.tsx packages\core\test\notifications.test.ts` | 10 passed; both overlap orders, internal focus movement, retained queue clocks and focus restoration |
+| `pnpm --filter @focus-notes/ui --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "notification lifetime stays paused"` | 2 passed: actual hover/F6 focus, 8 seconds with one cause remaining, then visible at the retained 4,999 ms and gone at 5,000 ms; note bytes unchanged |
+| `pnpm check` | Passed, including generated component inventory and `ui:check` |
+
+Both apps ran invisibly, closed and received own-PID cleanup (`-WhatIf`, then actual). The gallery migrated to fresh worker folder 7, HTTP 200 verified; only folder 6's verified gallery process was stopped, then its clean inactive folder removed. Candidate `0db24cb0` remains the latest inspected build until the next refresh. Withdrawal confirmation and AI groups are next; phase 2 is not complete. No full suite, CI wait or app merge ran.
+
+### Phase-2 irreversible withdrawal, 46c0cb31
+
+The existing access format rejects edits to a withdrawn grant. A subsequent share creates a different ID/link, so Undo cannot honestly restore the same link. The existing item and Settings confirmations remain; both now say that withdrawal cannot be undone and sharing again creates a new link. The publication delay and downloaded-copy limitation remain explicit. No vault or grant restoration mechanism was added.
+
+| Check on `46c0cb31` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\seal\test\access.test.ts` | 68 passed; confirmation before mutation, cancel safety, refused reactivation and new-link identity |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1 -g "SHR-16: first copy"` | Passed: real local sealing/publication, safe default Cancel, explicit irreversible consequence, cancelled grant unchanged, confirmed withdrawal, old link rejected after publication and exact pre-withdrawal note bytes kept |
+| `pnpm check` | Passed |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed `46c0cb31`: existing project/Reading/compact/empty paths, retained Retry, actual wrapped notification overlap, final editor focus; invisible app closed and own-PID cleanup ran |
+
+The initial sharing fixture opened the new Open surface without a selected note; it now explicitly selects its synthetic Hello note. The second assertion compared the note to its pre-publication text instead of retaining the ID assigned by publication; corrected to compare exact bytes immediately before withdrawal. The final journey passes. Candidate timing inspection initially left its pointer over the newly created pill after dismissing an earlier notice; moving it back to the editor before starting the clock measurement fixes the fixture. The candidate uses the standard renderer focus emulation, never OS focus.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\46c0cb31\Open review build.cmd`. Notification overlap and the prior settings/Reading paths are inspected; withdrawal's proof is the separate synthetic sharing journey, not a real account. D1's requested irreversible alternative is verified. AI groups, remaining recovery/empty/streamed work and complete delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 independent AI details and checked key, 42e06fc0
+
+The approved Connection details and Access key groups are now wired independently. Detail fields save on blur/Enter through the existing commit track, including its 200 ms pending/confirmed floors, retained attempted values and scoped Retry/Revert. Only the committing field locks. Provider choice persists its defaults, including ready Copilot defaults; discovery persists its actual endpoint/model and reuses a partial connection on Retry instead of requiring a removed full-form Save.
+
+The separate **Save key** sends only a synthetic connection test, then stores the sealed key after the provider accepts it and storage succeeds. A name can still save during that check. Refusal preserves the previous key and the same-destination entry in the local password component; Retry resends that local entry, while Revert writes nothing. Raw keys never enter view models, commit values, generic retained retries or logs. A changed destination clears its local entry; a check begun for older details cannot attach its result to the changed configuration. An incomplete saved connection cannot send note text or silently become the Writer.
+
+| Check on `42e06fc0` | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\ai-commits.test.ts apps\desktop\test\ai-rewrite.test.ts apps\desktop\test\ai-own-key.test.ts packages\core\test\ai-app.test.ts packages\ui\test\secure-key-field.test.tsx` | 75 passed: independent/ordered detail writes, first-connection identity, retained failures, provider/default/discovery paths, synthetic checking before storage, sealed-only results, wrong-key/storage refusal, changed-destination rejection, local entry clearing, existing Writer semantics and OpenAI/Anthropic Rewrite through protocol fakes |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 777 documents, 82 components, 706 commands; related schemas and component inventory regenerated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed at final runtime source state |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "AI details commit independently\|known-empty wrappers"` | Both passed together: actual failed detail/independent neighbour/Retry, held synthetic key check with independent name save, provider 401, real storage refusal, retained key/Retry/Revert, successful sealed replacement, no note text in probes, exact note bytes, destination clearing, AI Add-to-content replacement and Open/Clear search |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head: previous project/Reading/compact/notification paths plus separate AI groups, persisted compatible-service choice and unavailable key Save; no provider request in candidate inspection |
+
+The first-action fixture initially queried an uncheckable menu role; it now uses the real checkable service item. The key journey checks the button's existing border-progress child, not a nonexistent button attribute. Final scoped tests and journeys pass. Candidate and journey apps were invisible, closed and followed by own-PID cleanup, first `-WhatIf`, then actual.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\42e06fc0\Open review build.cmd`. Settings → AI → Change shows the separate groups. Enter details and leave a field to save it; a key requires its own Save. The candidate contains no real key or usable provider. Remaining recovery, complete empty-state acceptance, streamed work and independent delayed/failed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 scoped Open recovery, cf5859a2
+
+Open now keeps its error, expanded safe Details, query and old entries while only Retry is inert. List, open, pin and reveal failures retain the original command and arguments. Safe Details and diagnostics use only the existing whitelisted operation code, never the raw exception or path. Successful recovery returns focus to search. Closing/reopening invalidates old list replies. A successful pin followed by failed list refresh retries the list, not the completed toggle; cancelled pickers clear obsolete recovery.
+
+| Check on `cf5859a2` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\ui\test\status-row.test.tsx` | 11 passed: retained list/query, exact original targets, pin partial-success safety, stale-list guard, cancelled picker, mounted recovery/Details/focus and correct idle/pending button names |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 708 commands; Open gallery data and related generated files updated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Open retries the failed action"` | Passed: controlled list/open/pin IPC failures, held Retry with retained query/content/expanded Details, search focus after success, one pin despite a failed post-write list, exact note bytes and unchanged writing content |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head; earlier settings/Reading/compact/notification paths plus separate AI groups, actual Agents and filtered Open |
+
+The journey caught the shared busy helper's persistent outcome-label semantics: passing pending words at rest incorrectly named the button “Trying again…”. StatusRow now passes them only while pending, with a unit assertion for the restored Retry name. Journey and candidate apps were invisible, closed and followed by own-PID `-WhatIf` and actual cleanup.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cf5859a2\Open review build.cmd`; Ctrl+Alt+O opens the retained-content surface. Controlled failures are in the scoped journey, not permanently injected into this candidate. This is not complete D6 acceptance: New project and Local import need partial-success-safe recovery; same-project note-read failure propagation, history/broken-image recovery, complete task timing, empty/streamed work and independent delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 partial-safe New/Local recovery, 651b1340
+
+New project's completed `created` receipt is retained: a failed Open retries only that project, never creation. When creation itself fails before returning a receipt, setup may already exist; recovery keeps the choices and offers a location change instead of pretending creation can safely be replayed. A cancelled location picker leaves that error and draft intact.
+
+Local import retains the original note, target and request ID through Retry. The desktop stages a complete file in the chosen destination, then publishes it with an exclusive hard link; collisions are never overwritten and a partial staging write cannot appear as a Markdown note. Completed in-session requests return their original copy receipt, including after a lost reply or concurrent Retry. Failed staging is cleaned before Retry. Unsupported hard-link destinations fail visibly rather than falling back to an unsafe partial write. The source note is never removed.
+
+| Check on `651b1340` | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\local-import.test.ts packages\core\test\project-open.test.ts` | 19 passed: lost/concurrent acknowledgement, one completed copy, exact original target/request, collision safety, partial staging and link refusal/cleanup, listing recovery, retained project choices and non-repeated creation |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 710 commands; generated output current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "New project and Local import recover"` | Passed: actual destination refusal, same-sheet Retry, one byte-exact imported note and unchanged source; controlled creation/Open refusal with retained choices, held Retry and exactly one creation |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head; earlier settings/Reading/compact/notification paths plus separate AI groups, actual Agents and filtered Open inspected invisibly |
+
+The first journey reached and recovered Local import, then used “New project” instead of the real “New project…” label. Corrected the selector and the combined journey passed. Apps were invisible, closed and followed by own-PID cleanup (`-WhatIf`, then actual). Worker 8 verified both npm and pnpm Microsoft feeds, installed fresh dependencies/tokens, migrated only folder 7's verified gallery process to folder 8 and verified HTTP 200 before removing the clean inactive predecessor.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\651b1340\Open review build.cmd`. Recovery failures are injected only in the scoped journey. This slice does not claim crash-persistent import receipts, resumable partial project setup or D7 streaming. Same-project note-read failure propagation, complete tracker/timing, history/broken-image recovery, complete empty-state acceptance and independent delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 same-project Open acceptance and waits, 8f1fb690
+
+Open now treats a same-project note read as accepted only when the loader returns success. A rejected read keeps the acknowledged note, Open, its query and its exact Retry target mounted. Retry closes Open only after the actual note text loads. Failure to remember the next-launch path is separately reported after an accepted read; it no longer mislabels an already-open note as a failed Open. External open-note events keep their existing error presentation.
+
+Open list, launch/file/project picker, pin and reveal operations use named task-tracker entries with `fn:project.list`, `fn:project.open`, `fn:project.pin` and `fn:project.reveal` measures. The list's skeleton is absent before 300 ms and remains for at least 500 ms once shown, including failed reads; refresh keeps old entries. Long pending labels include elapsed time after 3 seconds. Closing/reopening invalidates presentation work: an obsolete launch cannot close the new Open, and a late post-pin list or error cannot replace its results.
+
+| Check on `8f1fb690` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\core\test\tasks.test.ts packages\core\test\app.test.ts` | 38 passed: read refusal/Retry, metadata-only refusal, exact 300/500 ms boundary, fast-list absence, exact named success/failure measures and obsolete launch/post-pin replies |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed on final source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 710 commands; generated output current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "same-project Open\|Open retries the failed action"` | 2 passed on final source: actual same-project read rejection preserves the ready note and dialog; held Retry loads the target before closing. Existing scoped recovery still preserves Details/query and never repeats a completed pin |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Exact pushed head built, inspected invisibly through the earlier normal settings/Reading/compact/notification/AI/Agents/Open paths and closed |
+
+Both journeys and candidate inspection ended with own-PID cleanup (`-WhatIf`, then actual). No OS input, live account, full suite, CI wait or app merge ran. The action-generation guards cover Open presentation, not every concurrent note-loader race.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\8f1fb690\Open review build.cmd`. The failed-read journey injects only its controlled target, not a permanent failure in the candidate. History/broken-image recovery, complete D5 and D8 acceptance, streaming, crash receipts and tracker coverage outside Open remain in progress.
+
+### Phase-2 history recovery and independent section, ef03a581
+
+History now retains the previous list and chosen preview on failure. Retry repeats the exact failed initial read, older page or version, not a fresh history request that discards loaded pages. The error and safe Details remain mounted while its action is inert. List and first-preview shapes use the shared 300 ms delay and 500 ms visible minimum. Back/close invalidate pending version reads.
+
+Restore first saves the current draft; refusal never replaces it. A failed restored save leaves the preview/sheet and unsaved restored text available, retaining the original Undo snapshot across Retry. If the person edits after that refusal, Retry reviews the version again before a new explicit Restore, never overwriting the new draft. Restore and Undo announce success only after their save acknowledgement; failed Undo retains its exact save target and offers Retry. All read/restore/Undo diagnostics use fixed operation names and known error codes, never raw exception text or note paths.
+
+| Check on `ef03a581` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\note-history.test.ts packages\core\test\history.test.ts packages\core\test\tasks.test.ts` | 33 passed: exact older-page/version Retry, retained preview, safe Details, exact first-preview 300/500 ms timing, obsolete Back response, pre-restore save refusal, changed-draft protection and original Undo retention across failed saves |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed on final source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 711 commands; generated output current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final tracker edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "History delays its own section"` | Passed on final source: real local Git history, held/failed list and version reads, independent shapes and Retry, actual restored/Undo disk writes refused then accepted; no success before the saved text. Two measures each for `fn:history.list`, `fn:history.version`, `fn:history.restore` and `fn:history.undo` |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Exact pushed head built, earlier normal settings/Reading/compact/notification/AI/Agents/Open paths inspected invisibly and app closed |
+
+The initial fixture had no selected note; it now explicitly selects its synthetic note. The old Spotlight lookup did not expose history in this fixture, so the journey uses the normal toolbar More menu rather than widening into search repair. It also caught a persistent busy-label error: idle restore labels must be empty, with pending/elapsed words derived from the tracker. Fixed and covered by units before the final passing run. Every run closed its own invisible app and performed own-PID `-WhatIf`, then actual cleanup.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\ef03a581\Open review build.cmd`; toolbar More → Note history. Failures are injected only in the scoped journey. This accepts the independent delayed/failed history slice, not all D8: share-item proof, broken-image recovery, complete D5, streaming, crash receipts and remaining tracker coverage are still in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 broken-image recovery, cd0cede9
+
+The approved ImageFrame is now wired to actual file-read and browser-decode failures. Its alt, error and local Retry remain mounted during recovery; only that action is inert. Keyboard Retry retains focus through another refusal. Recovering one image does not disable another. Distinct failures coalesce into one retained notice per note; repeated failure of the same image does not add another notice/count.
+
+Image sources now have their own checked list shape with explicit pending/failed fields, not colour-value items or an empty-string-only failure signal. Retry bypasses a failed cache entry without rereading successful images. Read replies check both path and document key; per-request tokens prevent an obsolete completion from releasing a newer same-source read. Native decode errors carry their document key and exact cached value, so an old error cannot mark a replacement broken. Destroyed/obsolete editor nodes do not initiate reads for the new note.
+
+| Check on `cd0cede9` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\images-app.test.ts` | 6 passed: coalesced distinct failures, no repeat notice, exact scoped Retry/deduplication, retained failed state, 300/500 ms task boundaries, same-path generation/token isolation, obsolete failure suppression, invalid source/decode and old-value rejection |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on final runtime/journey source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 779 documents, 82 components, 713 commands; typed image list, retrying ImageFrame fixture, component inventory and committed UI schemas current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Broken images keep their alt"` | Passed: actual missing PNG and corrupt PNG decode, two alt/Retry frames with one notice, held keyboard Retry/refusal with retained focus and no notice growth, independent successful recovery to two decoded 128 px PNGs; note and final image bytes unchanged by the app; five `fn:image.read` measures |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Exact pushed head built, earlier normal settings/Reading/compact/notification/AI/Agents/Open paths inspected invisibly and app closed |
+
+The gallery fixture's busy label initially used a raw text value where the checked contract requires a message/read. It now uses the existing localized Retry words; regeneration and static gates passed. The new image diagnostics log only a fixed operation and known error code. This is read/recovery evidence, not an end-to-end decode performance benchmark or new image-editing acceptance.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\Open review build.cmd`; in a synthetic note, reference an unavailable image, restore its file and choose its Retry. The controlled journey also tests a corrupt image and another refusal. All app runs were invisible and ended with own-PID `-WhatIf`, then actual cleanup. Complete D5, share-item D8 proof, streaming, crash receipts and remaining tracker coverage are still in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 owner review launch, cd0cede9
+
+The owner asked for the most complete reviewable app immediately, before the next implementation slice. Both implementation heads were clean/pushed. `git merge-base --is-ancestor origin/vq-open-cards HEAD` succeeded at exact `cd0cede9bb538495c982f9fe73fb6162a232c1a0`; latest Open head `34fa5dea` is already included, so no consolidation merge was required. The previously built exact-head candidate was reused, not replaced with a dirty build.
+
+| Check | Result |
+| --- | --- |
+| `node E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\review-launch.mjs --inspect` | Passed: invisible normal-UI Project/AI settings, Open, local-only GitHub repository list and Open file using a synthetic file-picker selection; inspection closed, own-PID `-WhatIf` then actual cleanup |
+| `Open review build.cmd` | Launched visibly for the owner with a fresh `owner-review-profile`; process/window verified and local stand-in `/user/repos` returned HTTP 200 |
+| Additional suites/CI | Not run, as requested for this priority launch; no runtime source or dependency changes, no app merge to main or release |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\Open review build.cmd`. Project/Reading settings and AI groups include all pushed phase-2 increments. Open from GitHub lists `review-user/example-notes` and clones only from the candidate's local bare repository; no real account is connected. The visible owner instance is explicitly exempt from ordinary inspection cleanup and stays open. This launch does not accept outstanding D5/D7/share-item D8 work.
+
+### Phase-2 share-item independent section, 2ce9b22d
+
+The share-item list now has delayed/failed desktop evidence independent of Agents and history. Retry retains the existing error row while only its action is inert; expiry and method choices stay editable. Successful reads clear the original failure. A failed refresh keeps acknowledged history instead of replacing it with a loading shape; closed/reopened item generations reject old results. Preparation uses the named `fn:share.item.prepare` task measure; diagnostics contain only the known error code.
+
+| Check on `2ce9b22d` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\core\test\tasks.test.ts` | 40 passed: exact 300/500 ms shape timing, held error during Retry, editable expiry, retained history, no grant mutation and rejected late closed-item reads |
+| `pnpm --filter @focus-notes/core run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey correction |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check` | Passed: 779 documents, 82 components, 713 commands; no stale generated files |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Share item delays its own section"` | Passed: held/refused real sharing-read handler, finite/static reduced-motion shapes, retained editable choices and history through Retry, four named measures, no access mutation, unchanged note bytes |
+
+The first journey tried finding the selected private note in an unopened Files tree; the final fixture uses the normal toolbar More → Share action and passes. The invisible test app closed with own-PID `-WhatIf`, then actual cleanup; the expressly requested owner-review instance remained open and untouched.
+
+**Try it after the next candidate refresh:** Share a synthetic note, change its expiry while preparing, and inspect its existing sharing history. Controlled failures belong only to the scoped journey. The currently open owner review remains the earlier `cd0cede9`; this slice is pushed but not in that running instance. Complete D5, D7 streaming/crash receipts, remaining tracker coverage and any remaining static/hover acceptance are still in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 Files known-empty and first action, 6218b99d
+
+Files no longer labels a collapsed nonempty root as empty. A filtered query checks actual matching content, independently of collapsed roots. Initial listing is now a named read task: unknown and failed reads cannot show the empty wrapper; failure offers scoped Retry with safe copy, retains its error while retrying and logs only a known diagnostic code. Watcher events and acknowledged note saves are queued over the scan snapshot, including bridges without watchers. Retry itself never writes a note.
+
+| Check on `6218b99d` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\files-app.test.ts packages\core\test\workspace-app.test.ts packages\core\test\workspace-names.test.ts packages\core\test\tasks.test.ts` | 68 passed: collapsed/filter/unknown/failure distinctions, read-only Retry, duplicate Retry exclusion, retained watcher events and acknowledged saves, existing names and task timing |
+| `pnpm --filter @focus-notes/core run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey selectors |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check` | Passed: 779 documents, 82 components, 714 commands; generated files unchanged |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final save-queue correction |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Files distinguishes collapsed content"` | Passed: collapse retains nonempty truth, filtered empty clears its query, removing only the synthetic fixture note reveals known-empty, its own New note action fills the same connected Files body, one named listing measure |
+| Exact pushed-head candidate inspection | `6218b99d` inspected invisibly through existing project/Reading/compact/notification/AI/Agents/Open flows and new collapsed/filtered Files; closed, own-PID `-WhatIf` then actual cleanup |
+
+Two regressions failed before implementation. Early journey attempts corrected a missing last-note fixture, model-selection rather than DOM-focus navigation, the SearchField role and the empty action's visible text selector; the final unchanged-runtime repeat passed. No unrelated empty-start repair was made. Candidate inspection helper initially had a duplicate local declaration; fixed before it started an app. All started inspection/test instances closed; the explicitly requested `cd0cede9` owner instance stayed open.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\Open review build.cmd` includes all prior slices and the local GitHub stand-in. Collapse Files, search for an absent title, then Clear search. The synthetic first-note replacement and refused listing Retry belong to scoped evidence, not the owner's notes. This is bounded D5 evidence, not acceptance of every empty/all-done surface or an independent delayed initial-scan journey. Recently-deleted read failure/good-news treatment, other first actions, D7 streaming/crash receipts, remaining tracker coverage and hover/static acceptance remain in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 owner review refresh, 6218b99d
+
+The owner's priority direction at 20:23 stopped the next implementation slice for an immediate latest combined launch. After `git fetch origin --no-recurse-submodules`, exact `git log vq-ui-states..origin/vq-open-cards` returned no commits: Open cards are already included in pushed `6218b99d80d9c7783cb271204d2f2a81f84d83b3`. No merge, source change or additional build was needed; the exact candidate already built and inspected at 20:19 was reused without rolling back image recovery.
+
+| Check | Result |
+| --- | --- |
+| `node E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\review-launch.mjs --inspect` | Passed again: normal Project/AI settings, Open, local-only GitHub repository list and Open file with synthetic picker selection; invisible inspection closed with own-PID `-WhatIf`, then actual cleanup |
+| `E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\Open review build.cmd` | Separate visible owner-review instance left open; actual Electron PID 51232, launcher parent 55868, exact candidate command verified; loopback `/user/repos` returned HTTP 200 |
+| Earlier owner instance | PID 51996 and parent 60712 remain open and untouched; neither was silently replaced |
+| Suites/CI/app merge | Not run: priority launch reused exact verified output, with no runtime changes |
+
+**Try it:** the launcher above includes Open file/Open from GitHub, broken-image recovery and all later sharing/Files slices. The GitHub list is a synthetic loopback stand-in with a local bare repository, not a real account. This expressly requested visible instance stays open. Phase 2 remains in progress; the launch does not accept remaining D5/D7 or hover/static work.
+
+### Phase-2 Recently deleted honest states, 71e94423
+
+Recently deleted distinguishes unknown, loading, failed and acknowledged empty results. A failed first read never says Nothing deleted; refresh failure keeps acknowledged rows. Read-only Retry retains its error, locks only that action and cannot restore or delete notes. Closing/reopening invalidates old results; successful Restore invalidates the old read too. The shared named section task supplies exact 300/500 ms shape timing and `fn:history.deleted`. Diagnostics contain only the fixed operation and known code. A refused Git log now rejects the listing instead of silently returning a partial/empty result.
+
+The approved success StatusRow replaces both bare empty-history branches, gated on a successful empty read. The colour editor's existing All colours pass branch also uses the approved success row. No writing-window element, new workflow or destructive replay was added.
+
+| Check on `71e94423` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\files-app.test.ts -t "Recently deleted known-empty"` before implementation | All 3 new regressions failed: failure became empty, refresh discarded rows and the first shape appeared before 300 ms |
+| `pnpm exec vitest run packages\core\test\files-app.test.ts packages\core\test\tasks.test.ts` | 36 passed: retained rows/error, duplicate Retry exclusion, read-only recovery, late closed/reopened result rejection, exact 299/300 and 499/500 ms boundaries, real task measure and existing Files behavior |
+| `pnpm exec vitest run apps\desktop\test\git-conflicts.test.ts -t "FIL-10: Recently deleted"` | 3 passed: real Git listing/restoration and controlled log refusal followed by acknowledged empty history |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed on final runtime/journey source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check` | Passed: 779 documents, 82 components, 715 commands; generated schemas unchanged |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Recently deleted never calls failed history empty"` | Passed: real Git history behind held/refused IPC, no false empty during loading/failure, retained rows/error through Retry, actual restoration, then successful empty read shown as good news in the same connected Files body; 5 named measures and unchanged existing note bytes |
+
+An intermediate measurement assertion ran under mocked performance; moved it to the real-clock failure/Retry unit. Static validation required both repeat fallback branches; each is now gated on acknowledged empty state. A nonexistent command metadata property was replaced by the existing Spotlight exclusion mechanism. Final focused checks passed. The invisible journey closed and received own-PID `-WhatIf`, then actual cleanup; both explicitly requested owner-review instances stayed open.
+
+**Try it after the next candidate refresh:** Files → Recently deleted. The currently visible owner review is still `6218b99d`; this increment is pushed, not silently installed into that running app. Complete D5 first actions, independently delayed initial Files, D7 and hover/static acceptance remain in progress. No full suite, CI wait or app merge ran.
+
+### Phase-2 independent initial Files scan, b830a17c
+
+A test-only entrypoint wraps the existing IPC registration before importing the unchanged built main entrypoint. It holds the actual first-ever workspace scan, then refuses that read; no renderer reload, replacement application state, production test hook or live account is involved. A second held request delegates to the real scan. The note remains open throughout.
+
+| Check on `b830a17c` | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check`; `git diff --check` | Passed; 779 documents, 82 components, 715 commands |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Files initial scan is independent"` | Passed: real first-scan held/refused before any successful listing; three section shapes, bounded three-cycle shimmer and static reduced motion; no false empty; safe local error, held Retry, editable retained filter and editor; actual notes after Retry/Clear search, same connected Files body, two `fn:workspace.list` measures and exact unchanged note bytes |
+| Build | Reused the final runtime build verified for `71e94423`; this increment changes only journey code and its test launcher helper |
+
+The initial test expected six shapes and different copy; corrected it to the approved three-shape Files section and existing message. The final journey passed in 4.7 seconds. Its invisible app closed and own-PID `-WhatIf`, then actual cleanup found no leftovers. Both expressly requested visible owner instances stayed open. Complete D5 first actions, D7 and hover/static acceptance remain in progress; no full suite, CI wait or app merge ran.
+
+### Phase-2 honest Sharing settings list, e1ce6940
+
+Settings' sharing list now has its own known-empty guard: an unknown or refused list cannot claim Nothing shared yet. A named section task supplies delayed/held shapes and read-only Retry. Failure and acknowledged rows remain while retrying. Repeated in-flight loads are excluded; an old read cannot overwrite a newer successful listing change. Filtered emptiness says No matches and Clear filters restores All plus an empty query without reading, writing or changing the open note. Known first use retains the existing Open Files route.
+
+| Check on `e1ce6940` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts -t "known-empty sharing settings"` before implementation | All 3 initial regressions failed: no known-empty/failure distinctions, wrong filtered cause/action and no named section timing |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\core\test\tasks.test.ts` | 44 passed: existing sharing behavior, unknown/refused/known empty, exact 299/300 and 499/500 ms, retained rows/error, duplicate Retry exclusion, read-free filter clear, unchanged note and newer successful listing protection |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `node tools\component-inventory.mjs --write`; `pnpm check`; `git diff --check` | Passed: 779 documents, 82 components, 716 commands; committed generated output unchanged |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime/view edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Sharing settings distinguish\|Files initial scan is independent\|Recently deleted never calls failed history empty"` | All 3 passed together: initial Files scan, real deleted history/restoration and independent Settings listing. Sharing proves three ItemCard shapes/nine shimmer parts, bounded/reduced-motion treatment, safe local refusal, held Retry, known-empty Open Files route, filtered Clear filters, retained acknowledged rows through failed refresh, editable query, five `fn:sharing.list` measures, zero grant writes and exact unchanged note bytes |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed head: previous project/Reading/compact/notification/AI/Agents/Open paths plus truthful Files, Recently deleted good news and Sharing first-action/filter treatment through normal UI |
+
+Static validation caught empty literal titles in skeleton ItemCards; they now use the existing localized loading message. The journey initially looked for Files' body marker inside Settings and counted three shimmer parts rather than three cards/nine parts; final selectors match the actual approved components. Candidate inspection initially used a non-Git sample without deleted-history support; a valid-format, local-only synthetic Git workspace enabled the real normal-UI path. No production-only test hook or live account was added.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\e1ce6940\Open review build.cmd`. This exact candidate includes all worker-10 slices, was inspected invisibly and closed with own-PID `-WhatIf`, then actual cleanup. It was not silently launched in place of the owner's visible `6218b99d` review. This proves safe empty causes and the existing Open Files route, not every site-preview first-action content replacement. Remaining D5 variants, D7 and hover/static acceptance stay in progress; no full suite, CI wait or app merge ran.
+
+### Phase 2: streamed New project
+
+Actual backend check/folder/profile steps stream through sender-scoped IPC with an active request ID. The repository step exists only where the backend actually performs it; Open is the final core step. Progress counts completed receipts, not simulated time. Elapsed appears at 3 seconds. Cancel stops at the next safe boundary, preserves completed files and never replays uncertain creation; a completed profile receipt skips Open on Cancel and permits Open-only Retry. Failure marks its actual step and keeps choices. Cancellation announces Stopped rather than Failed. The progress state replaces the large preflight cards so its actions stay visible. Exact-candidate inspection also exposed an inherited Open command-title ICU argument error; a neutral metadata title fixes it without changing the platform-specific folder action.
+
+| Scoped check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\core\test\tasks.test.ts apps\desktop\test\project-create.test.ts` | 32 passed: real local step order, safe cancellation boundaries, byte-exact partial-folder protection, active-request filtering, duplicate action exclusion, exact 2999/3000 ms elapsed, completed receipt/Open-only Retry, stopped outcome and valid command title |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check`; `pnpm --filter @focus-notes/desktop run build`; `git diff --check` | Passed; 779 view documents, 82 components, 718 commands; generated output unchanged |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "New project streams\|New project and Local import recover"` | Both passed: actual held loopback repository reports 2/5 steps, Cancel preserves the folder without opening/replaying it, recovery controls stay in view, note bytes unchanged; existing import and completed-create Retry behavior preserved |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --feedback-only`; `node E:\Projects\side-projects\focus-notes-work\scratch\inspect-project-create11.cjs 65f42cfc` | Exact pushed head inspected invisibly: both named/coloured/logoed sample projects, matching Settings schemes, Open/GitHub lists and actual creation progress/Cancel; all inspection apps closed with own-PID WhatIf then cleanup |
+
+Initial journey failures were fixture-only: native progress exposes `value`, not a redundant ARIA attribute; the creation parent must be isolated rather than the shared temporary directory; a held response must release only once. The passing final journey uses a private fixture parent and cleans its synthetic partial folder. Screenshots in `focus-notes-work\review\ui-states-long-ops` were inspected and show reachable actions before and after Cancel.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\65f42cfc\Open review build.cmd`; Ctrl+Alt+O → New project. Controlled repository delays belong to the scoped journey/inspection, not the owner's notes or a real account. This candidate retains Field notes and Garden notes; Ctrl+Alt+O → Garden notes opens its second window. The existing visible `f2127c67` review was not replaced. Publish, first clone/push, W9 and remaining phase-2 acceptance stay in progress; no full suite, CI wait, main app merge or release ran.
+
+### Phase-2 local site operations, b70e3334
+
+Site preparation counts actual per-note read/build receipts plus acceptance of the completed preview. Cancel waits for the current read and rejects the replacement before changing articles or settings; previous content and the note stay intact. Read failure marks its real step and offers local Retry, preserving the error through recovery. The existing Publish action only collects paths and writes a local draft; Apply collects and atomically saves local appearance. Both show those actual steps, never invented remote upload/deployment. Save failures retain choices and offer scoped Retry. Cancel is unavailable once an atomic write has begun; completion is never misreported as cancelled.
+
+| Scoped check on `b70e3334` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\sharing-preview.test.ts packages\core\test\share-manage.test.ts packages\core\test\tasks.test.ts` | 49 passed: actual counts, exact 2999/3000 ms elapsed, retained preview/note, cancellation before acceptance, failure-step/read-only Retry, Apply snapshot lock, failed-input recovery and duplicate local-publication exclusion |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `node tools\component-inventory.mjs --write`; `pnpm check`; `git diff --check` | Passed; 779 documents, 82 components, 720 commands; generated catalogue updated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime/copy changes |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Site preview counts actual reads"` | Passed: held/refused real reads, elapsed, safe Cancel/Retry, actual article replacement, refused/held atomic Apply, correct 50% progress, persisted appearance/local publication paths, all three named measures and unchanged note bytes |
+| Exact-head candidate | Both distinct sample projects inspected invisibly and closed. Separate synthetic local Git workspace passed actual 33% preview/elapsed/Cancel/Retry and local Apply inspection; note bytes stayed unchanged and own app closed |
+
+The journey caught a real percentage mismatch: ProgressBar takes 0–100, not a 0–1 fraction. The model and measurable assertions now use that contract. Other failed attempts corrected fixture-only labels, the toolbar shortcut and the elapsed format. All test/inspection apps closed with own-PID WhatIf and actual cleanup. No real account, GitHub write, remote deployment, full suite, CI wait or app merge ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b70e3334\Open review build.cmd`. Settings → Sharing → Preview site; controlled delays/refusals belong to the separate synthetic inspection, not owner notes. The current visible `f2127c67` review remains open. Phase 2, first clone/push and W9 remain unfinished.
+
+### Phase-2 first-setup cancellation, a9425fee
+
+The existing setup engine reports every actual step and its Git download percentage. Its UI now also counts completed/skipped receipts out of the real nine steps and offers safe Cancel: the active step finishes, its receipt is saved, and the next step does not start. Files, repositories and local receipts are never removed by Cancel. A stopped receipt survives reopening; Resume passes the existing options and skips completed steps. The final private-first push stays atomic: a stop request waits for its result, success shows all nine receipts, and refusal stays a failure with recovery rather than a false cancellation. This is setup only, not the separate Open-from-GitHub clone path.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\setup.test.ts apps\desktop\test\setup-git.test.ts packages\core\test\first-run.test.ts` | 93 passed, including existing real local Git setup, preserved retry/idempotency and the new UI count/Cancel/Resume and clone/final-push regressions |
+| `pnpm exec vitest run apps\desktop\test\setup.test.ts -t "setup cancellation keeps completed receipts"` | Final 3 passed; added refusal-after-Cancel keeps the offline failure and all eight prior receipts. Reopening retains the cancelled receipt |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | Passed; 779 documents, 82 components, 722 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "First setup stops after its real clone receipt"` | Passed in invisible Electron: actual 4/9→5/9 clone receipt, elapsed, safe Cancel, persisted receipt, Resume without repeating clone, actual 8/9→9/9 private-first push, completed-not-cancelled truth, equal local/remote Git heads and unchanged synthetic note |
+| Exact-head candidate `a9425fee` | Both Field notes and Garden notes, their distinct settings and both loopback repositories inspected invisibly and closed; owner `f2127c67` remained untouched |
+
+Two engine regressions first failed because Cancel did not exist. The first journey attempt used an outdated exact action name; using the current composite Create-my-notes accessible name fixed only the fixture. The passing journey closed its own app with own-PID cleanup. PowerShell's tracked module-analysis cache changed during that cleanup and was restored, not committed. All repository/API activity in the journey was synthetic and local; no real account write, full suite, CI wait, main app merge or release ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a9425fee\Open review build.cmd` retains both review projects. First-run controlled waits and local remotes belong to the separate synthetic journey, not those review projects or owner data. Separate clone cancellation, W9 and remaining phase-2 acceptance stay in progress.
+
+### Phase-2 existing-project download, 025fe72f
+
+Open-from-GitHub now streams actual completed/total receipts, including discovery of private/link work after the public clone. Optional steps are not presumed complete before discovery. Cancel finishes the active Git command, then stops at the public/private/link boundary without deleting files or opening the window into an incomplete workspace. In-process Resume checks the retained folder and continues missing private/link work; it does not call clone again. The original Open action routes to that receipt too, preventing a second download. If work finishes before the stop takes effect, the UI says Download finished and offers Open downloaded notes. A stop before any download says nothing was downloaded.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\first-run.test.ts packages\core\test\first-run.test.ts` | 78 passed, including two new real-Git boundary regressions: cancel after public/private receipts, retain note bytes and resume without another clone |
+| `pnpm exec vitest run packages\core\test\first-run.test.ts -t "clone receipts\|stop arrives after"` | 2 additional UI regressions passed: streamed count/elapsed, Cancel without opening, original Open reuses the receipt, late completion offers Open instead of Resume |
+| `pnpm exec vitest run apps\desktop\test\first-run.test.ts -t "FRE-06"` | Final 8 real-Git tests passed after adding receipt checks for refused linking/configuration |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check`; desktop build | Passed; 779 documents, 82 components, 724 commands |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Existing project clone stops safely"` | Passed in invisible Electron: actual 1/3 receipt and elapsed, safe Cancel before private work, retained public note edited before Resume, same-folder private checkout on main, no second clone folder, Ready and unchanged edited bytes |
+| Exact-head candidate | Both distinct sample projects and loopback repositories inspected invisibly and closed at `025fe72f`; the visible `f2127c67` review was not touched |
+
+Both backend regressions failed first against the old implementation because it ignored the stop boundary. One native journey attempt used the project title rather than the existing Open button; the corrected normal-UI journey passed. Own apps closed; only the test-created tracked PowerShell cache was restored. The retained-folder receipt is deliberately in-process only; reopening uses the existing checked Open-a-folder route. No crash-resumable creation/import, real-account write, full suite, CI wait, main app merge or release is claimed.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\025fe72f\Open review build.cmd`. Both review projects remain available. Controlled existing-project clone delays belong to the separate synthetic local-remote journey. W9 and remaining D5/D7 acceptance are still in progress.
+
+### Phase-2 panel recovery and hover, afbd3c3c
+
+The failed view now has a danger row with Reload panel and Report problem. Reload changes only that boundary's key: repeated failure remains recoverable and sibling nodes and note state keep their identity. A new panel Feedback draft uses fixed safe copy with diagnostics off; opening it never sends or navigates. Existing draft kind and words are kept. Other failed-panel surfaces yield while Feedback is open. The gallery supplies the same fallback and Feedback view rather than failing again on a missing recovery document.
+
+Rewrite failures after a partial answer abort the rewrite and explicitly keep the original text; generic connection-test errors remain unchanged. A stale capture says current text is kept and supports reselecting or placing the caret again. Appearance-storage failure promises only unchanged current appearance, not an unverified rollback of every file. New-project disabled reasons distinguish validation, atomic creation without cancellation support, requested stopping, and the final noncancellable Open.
+
+All CSS `:hover` selectors now require an actual hover-capable media ancestor, including mixed and ancestor selectors. Nonhover focus/active/expanded/drag/pinned behavior stays independent; Files' menu affordance and Open's pin remain available without hover. Native light/dark first-run checks verify the existing themed-frame handshake; no speculative startup rewrite was needed.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\ai-app.test.ts packages\core\test\project-open.test.ts packages\core\test\feedback.test.ts packages\ui-runtime\test\failures.test.tsx tools\test\check-boundaries.test.mjs` | 128 passed: client remount/repeated failure, same sibling and note, safe draft/no diagnostics or send, existing draft preservation, partial rewrite abort, accurate pending reasons and positive/negative AST hover probes |
+| `pnpm exec tsc -p E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json` | Passed for all core source plus the three affected core test files; external configuration only |
+| `pnpm --filter @focus-notes/ui-runtime run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck` | Both passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check`; `git diff --check` | Passed; generated catalog included; 780 documents, 82 components, 725 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "First-run (light\|dark) shows\|Files hover responds"` | Final 3 passed together: native window still hidden at the themed-frame report in both schemes against the opposite system scheme, opaque resolved app canvas/nonzero geometry, one mark/no timeout; actual touch-capability emulation clears Files hover while pointer and Shift+F10 menus work and note bytes remain unchanged |
+| Exact-head candidate `afbd3c3c` | Field notes and Garden notes, actual notes, distinct schemes/settings, both Open cards and both loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+Repository-wide `pnpm typecheck` remains red on the unchanged older `sharing-preview.test.ts` fixture, which lacks `PlatformBridge.defaultNotePath`. The affected core source/tests, runtime and desktop types above pass; no unrelated fixture repair was folded into W9. Initial native probes corrected only their selectors/emulation: the filename selector replaces a Windows regex path, CDP touch emulation replaces an unsupported hover-media override, and Files' actual `data-row-more` span replaces a nonexistent button. The final combined native run passed. No full frame-integrity corpus, full suite, CI wait, main app merge, release or real GitHub write is claimed.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\afbd3c3c\Open review build.cmd`. Both distinct synthetic projects remain available. Controlled panel failure belongs to the client regression; native startup/touch behavior belongs to the focused Electron journeys. The owner's visible `f2127c67` remains open. Remaining D5/D7 first-action/content-replacement/all-done acceptance is still in progress; phase 2 is not complete.
+
+### Phase-2 native recovery and empty first actions, 12834be2
+
+The W9 implementation now has actual Electron acceptance for a crashed Settings panel, beyond its client-rendered regression. A test-only DOM fault causes the boundary to fail, repeated Reload stays recoverable, and Report problem opens fixed safe Feedback with diagnostics off and no exception text. After removing the fault, Reload remounts Settings. The same editor node, page time origin, note bytes and single native window remain intact; no production crash hook was added.
+
+Open's two empty columns each invoke their actual Open project action through the real IPC/backend path. Only the native picker and initial empty listing are controlled. Choosing the current synthetic folder closes Open without spawning another app; reopening shows real project/note entries instead of either empty state. All three site-preview first actions use the existing Files route, not invented link/section editors. Adding actual public notes and reopening the preview replaces its navigation, section and published-note empty treatments with real content. Their neutral wrappers have nonzero minimum height. Private sample note bytes stay unchanged.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "A crashed native panel\|Open and Recent empty\|Site preview first actions"` | Final 3 passed together; panel recovery, both Open first actions and all three site-preview first actions/content replacement |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | All passed; only the journey file changed, with no shipping-code change or unnecessary rebuild |
+| Exact pushed candidate `12834be2` | Both Field notes and Garden notes, actual notes, distinct schemes/settings, both Open cards and both loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+Initial fixture failures corrected only control queries: the diagnostic opt-in is a toggle button, and each empty wrapper is selected by its own title rather than an incorrectly ancestor-scoped nested locator. Final combined results above passed. This does not claim complete D5/D7 acceptance, every all-done variant or full frame integrity. No full suite, CI wait, main app merge, release, actual remote publication or real-account application write ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\12834be2\Open review build.cmd`. Both distinct synthetic projects remain available. Native panel fault injection is test-only; the recovery controls are the real product. The owner's visible `f2127c67` stays open. Remaining acceptance must still be matched to the D5/D7 rows; phase 2 is not complete.
+
+### Phase-2 site empty variants, 20406d26
+
+The site has four list fallbacks, not four normally reachable empty lists. Navigation and section cards derive from the same article snapshot; the fourth fallback belongs to the selected section's article list. An empty section cannot be selected through normal navigation. A client-rendered regression explicitly selects that defensive state through the existing core command, renders the real site view and checks its cause and Choose note action. That action closes preview/Settings, opens Files and writes no appearance or draft state; no section editor or new product path was added.
+
+The native journey now checks every reachable empty cause/action against the actual 160 px section minimum and rendered height. Real public notes replace all three first-use lists; after removing only those two synthetic public files and waiting for the real watcher, a fresh preview returns to all three known-empty states without stale article content. Private sample note bytes remain unchanged.
+
+| Scoped evidence on `20406d26` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\ui-runtime\test\empty-states.test.tsx` | 1 passed: actual fourth-list client fallback, cause/action, existing Files route and no persistence |
+| `pnpm --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck`; final desktop typecheck; `pnpm check`; `git diff --check` | Passed; 780 documents, 82 components, 725 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed in the fresh worker checkout; shipping source is unchanged |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Site preview first actions"` | Final 1 passed: exact sizing/copy, three first actions, real content replacement and subsequent cleared state, unchanged private note and one native window |
+| Exact pushed candidate `20406d26` | Both Field notes and Garden notes, their distinct Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\20406d26\Open review build.cmd`. The visible `f2127c67` owner review remains open. This is bounded D5 acceptance; remaining rows are still being matched to their evidence, not silently accepted. No full suite, CI wait, main app merge, release, remote publication or real-account application write ran.
+
+### Phase-2 cleared AI and startup pixels, cf63f90d
+
+The real AI journey now adds a connection, acknowledges its local record, removes the last connection and verifies the empty cause/action returns inside the same connected Settings wrapper. The persisted connection list is actually empty; no provider request or real account is used. Native Files checks distinguish its 32 px filtered component minimum from its 160 px cleared section minimum and verify the actual section height.
+
+Light and dark native startup tests now request a PNG at the existing first-frame report, while the report observes the window hidden. The existing pixel classifier rejects blank, substantially transparent and wrong-scheme content within the drawn window, excluding the intentional transparent frame margin. Both schemes pass, with the system deliberately set opposite the saved scheme. This is report-triggered native-pixel evidence, not a continuous pre-show frame stream or proof of every startup delay.
+
+| Scoped evidence on `cf63f90d` | Result |
+| --- | --- |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Files.*empty\|Known-empty AI\|First-run (light\|dark) shows"` | 5 passed: two native startup schemes, site first-action/cleared acceptance, initial Files read and Files cleared/filter sizing. The `Known-empty AI` selector matches no title; the next command explicitly runs that journey |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "known-empty wrappers"` | 1 passed: actual AI Add/Cancel/add/remove, retained Settings wrapper and filtered Open Clear search |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | Passed; 780 documents, 82 components, 725 commands. Shipping runtime is unchanged, so the existing worker build is reused |
+| Headless existing-gallery `EmptyState.0` to `.3`, light/dark and system/reduced motion | 16 passed: component/section/view minimums are 32/160/320 px; rendered heights meet the minimums; all-done has the good tone and no unnecessary action. The gallery's unchanged primitive/token source was compared to this head; this is fixture evidence, not a new native product route |
+| Exact pushed candidate `cf63f90d` | Both distinct sample projects, their actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cf63f90d\Open review build.cmd`. The visible `f2127c67` remains open. Phase 2 still needs final row-by-row acceptance; no full suite, CI wait, main app merge, release, remote publication or real-account application write ran.
+
+### Phase-2 single outcomes and startup frame stream, a7363402
+
+The D7 announcement check found a real gap: long operations could announce a generic task end as well as their local outcome. A stopped clone/setup receipt could even resolve successfully and be followed by generic Done. The tracker now defaults to its unchanged all-outcome behavior, with explicit ownership for these operations: New project and preview/Apply retain a tracker success but leave errors/stops to their live recovery row; local Publish leaves outcomes to its notification/recovery row; first setup/download leave their interpreted receipts to their result cards. Wait announcements, real steps, elapsed time, measures, cancellation and retained receipts are unchanged.
+
+The two startup tests now subscribe to native compositor frames before page loading begins and stop 300 ms after the ready screen, after two animation frames. Only frames delivered after the native window is shown are classified; hidden frames are counted separately. The final combined run classified 7 shown light frames and 7 shown dark frames with no blank, substantially transparent or wrong-scheme drawn window. The existing hidden first-report snapshot also remains checked. This closes the scoped first-show stream gap in the previous increment, not the broad DSK-09 recovery/transition corpus or every possible startup delay.
+
+| Scoped evidence on `a7363402` | Result |
+| --- | --- |
+| New tracker/local-Publish regressions before the fix | 7 failed as expected: duplicate generic success/failure/stop outcomes; 2 additional first-setup/download regressions also reproduced duplicate receipt outcomes before those owners were wired |
+| `pnpm exec vitest run packages/core/test/tasks.test.ts packages/core/test/sharing-preview.test.ts packages/core/test/project-open.test.ts packages/core/test/first-run.test.ts` | Final 102 passed: all/success/none outcome modes, local Publish refusal/Retry with no early or duplicate success, stopped New-project/download receipts, first-setup resume and preserved completed work |
+| `pnpm exec tsc --project E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json --noEmit`; `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | Passed: source and scoped valid fixtures, desktop, 780 documents/82 components/725 commands. The older sharing-preview fixture's unrelated missing `defaultNotePath` still blocks repository-wide typecheck; its bridge was not repaired or excluded from unit execution |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after the combined runtime change |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "First-run (light\|dark) shows\|Site preview counts actual reads\|New project streams actual setup\|Existing project clone stops\|First setup stops"` | Final 6 passed together: subscribed startup schemes, existing-download and first-setup safe resume, local preview/Apply/Publish recovery and one acknowledged Publish status without generic Done, and New-project partial cancellation |
+| Exact pushed candidate `a7363402` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a7363402\Open review build.cmd`. The owner's visible `f2127c67`, gallery 5231 and docs 8787 remain available. Existing-clone receipts remain in-process only; stopped first-setup receipts persist; uncertain creation/import replay is not crash-resumable. Phase 2 remains in progress pending the final row-by-row evidence reconciliation. No full suite, CI wait, main app merge, release or real-account application write ran.
+
+### Phase-2 reachable colour all-done state, a055bbe8
+
+The existing good-news row was attached to the empty fallback of the five editable colour rows. Those rows remain present even when every contrast pair passes, so the intended success row was unreachable. The real summary now uses the approved success StatusRow when all pairs pass and keeps the existing announced failure summary otherwise. It reuses the same words and tokens, adds no action and does not hide the colour editor. Only one live all-pass message is rendered.
+
+| Scoped evidence on `a055bbe8` | Result |
+| --- | --- |
+| New client-rendered all-done regression before the view fix | Failed as expected: no rendered success row despite all pairs passing |
+| `pnpm exec vitest run packages/ui-runtime/test/empty-states.test.tsx packages/core/test/theme-manager.test.ts -t "fourth site\|colour failures\|THM-13"` | Final 6 passed, 14 unrelated cases not selected: real site fallback, actual colour failure-to-success view replacement in the same wrapper, one polite good-news row with no action, contrast guard/fix and unchanged note/save calls |
+| `pnpm --filter @focus-notes/desktop --filter @focus-notes/ui-runtime run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm check`; `git diff --check` | Passed; generated schemas unchanged, 780 documents/82 components/725 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Colour contrast all-done"` | 1 passed: actual Settings-to-colour-editor route, typed failing colour, real Fix Text action, exactly one returned success status without an unnecessary action, same editor node, unchanged note bytes and one native window |
+| Exact pushed candidate `a055bbe8` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Separate check finding:** initially selecting the whole theme-manager unit file exposed one unrelated size-retry fixture failure: its first toast was the refused opened-note persistence outcome, not the expected font Retry. That fixture and font behavior were not changed; the D5 run above selects only the colour cases. This is recorded for consolidation, not silently counted as a green full file or repaired inside the colour increment.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a055bbe8\Open review build.cmd`. The visible `f2127c67` remains open; final phase-2 reconciliation remains in progress. No full suite, CI wait, main app merge, release or real-account application write ran.
+
+### Phase-2 repeated retained outcomes, 06d4f939
+
+The next recovery attempt must also have one outcome. After the generic/local duplicate was removed, a repeated refusal with identical text could leave its already-mounted live error row unchanged. A targeted regression reproduced the missing repeated announcement. These owners now explicitly reannounce only an unchanged retained outcome; a newly rendered or changed local outcome still owns its normal live announcement. The tracker wait, visual row, typed input and successful work remain intact.
+
+| Scoped evidence on `06d4f939` | Result |
+| --- | --- |
+| Repeated local-Publish refusal regression before the correction | Failed as expected: the second refusal supplied no new outcome announcement |
+| `pnpm exec vitest run packages/core/test/tasks.test.ts packages/core/test/sharing-preview.test.ts packages/core/test/project-open.test.ts packages/core/test/first-run.test.ts` | Final 102 passed: two refused local saves followed by one acknowledged success; repeated failed Open of an already-created project with creation called once; repeated stopped download with one clone, retained folder and final accepted Open; default tracker and receipt behavior preserved |
+| `pnpm exec tsc --project E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json --noEmit`; `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check`; `pnpm --filter @focus-notes/desktop run build` | Passed; source/scoped valid-fixture types, desktop, 780 documents/82 components/725 commands and rebuilt runtime |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Site preview counts actual reads\|New project streams actual setup\|Existing project clone stops\|First setup stops"` | Final 4 passed together: all affected native operation owners retain their cancellation/recovery and acknowledged local outcomes. Repeated same-text refusals are unit evidence, not falsely reported as repeated native fault injection |
+| Exact pushed candidate `06d4f939` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup. A first packaging attempt correctly refused the test-created PowerShell cache delta; only that known delta was restored before inspection |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\06d4f939\Open review build.cmd`. The owner's visible `f2127c67` remains open. Phase 2 remains in progress; D8's section-tracker/local-live-outcome overlap still needs a scoped reconciliation rather than an implicit acceptance. No full suite, CI wait, main app merge, release or real-account application write ran.
+
+### Phase-2 section outcome ownership, 1d3deccf
+
+The D8 reconciliation reproduced two distinct defects: a slow section refusal could announce generic Didn't finish as well as its local live error, while a repeated refusal could leave the retained error unchanged and announce no new outcome. `section(...)` now accepts the same explicit outcome policy as other tracker operations, retaining the default for unrelated callers. Agents, item sharing and history reads request success-only tracker outcomes: their wait and legitimate Done remain, and their live error owns failure. Only an unchanged retained error gets one explicit reannouncement. Existing generation, selected-version, open-sheet and project guards remain in place.
+
+Agents also keeps its failed row mounted during Retry, using the existing StatusRow busy action and words; it no longer clears the row or replaces it with first-load skeletons. Item-sharing choices/history and history entries/previews retain their existing behavior. Read retries do not create a share or write note bytes. History restore/Undo outcome ownership is deliberately unchanged by this D8 fix.
+
+| Scoped evidence on `1d3deccf` | Result |
+| --- | --- |
+| New focused regressions before the correction | 9 failed, 1 passed, 82 not selected: reproduced generic failure overlap and missing/cleared retained outcomes |
+| `pnpm exec vitest run packages/core/test/tasks.test.ts packages/core/test/agents-app.test.ts packages/core/test/note-history.test.ts packages/core/test/share-manage.test.ts` | Final 92 passed: explicit/default modes, exact 300/500 ms failure hold, instant/slow Agents and item-sharing refusals, repeated list/older-page/version refusals, retained drafts/content, read-only Retry and successful recovery |
+| `pnpm exec tsc --project E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json --noEmit`; `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm check`; `git diff --check` | Passed; source and 4 scoped valid-fixture files, desktop and 780 documents/82 components/725 commands. Generated schemas unchanged. The unrelated older sharing-preview missing-`defaultNotePath` fixture is not repaired or counted as a green repository-wide typecheck |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "section loading uses\|Share item delays its own section\|History delays its own section"` | Final 3 passed together: native 1,100 ms read refusals cross the tracker's 1-second announcement threshold; initial and repeated outcomes appear once in observed live-region mutations, with no generic Didn't finish. Agents and sharing also repeat a retained-content refresh refusal. Same recovery nodes, busy Retry, editable choices, finite/static shimmer, usable navigation, local Git restore/Undo and exact measures are retained |
+| Exact pushed candidate `1d3deccf` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Evidence boundary:** the native observer records connected polite status text changes, including the main live region's clear/next-frame repeated-message cycle. It proves rendered announcement ownership and repetition, not a named screen-reader's spoken timing. Repeated older-page refusal is unit evidence; the native history journey repeats list and version refusals. These results close the concrete D8 overlap, not by themselves every D1–D8 acceptance clause.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\1d3deccf\Open review build.cmd`. The owner's visible `f2127c67`, gallery 5231 and docs 8787 remain unchanged. Phase 2 is in progress pending final clause-by-clause reconciliation. No full suite, CI wait, main app merge, release or real-account application write ran.
+
+### Phase-2 named field and switch contracts, 9c512e40
+
+The clause-level review found that the recorded generic commit proof did not directly exercise ColorField or Switch. Watermark's actual control is SegmentedControl, not Switch. New component and renderer regressions now cover both named primitives. They exposed one real contract omission: ColorField's value and commit event were not declared bindable, so a declared persisted ColorField received no setter handler. Its contract now uses the existing binding path; the matching generated schemas are committed. No markup, styling, new control or persistence workflow is added.
+
+The actual theme colour fields edit an in-memory copy until Save, item-sharing switches edit choices until Share, and site reader Focus is a local preview control. They must not acquire disk writes or premature Saved announcements just to look like persisted fields. The D2/D3 wording above now makes that existing boundary explicit. The persisted contract is tested with declared fixture setters; the native product checks separately prove draft-only behavior and watermark's actual saved-value recovery.
+
+| Scoped evidence on `9c512e40` | Result |
+| --- | --- |
+| Initial named-primitive regression run | 3 failed, 2 passed, 15 not selected. ColorField's missing commit handler was a product contract defect. Two other failures were fixture issues: command spies receive context as a second argument, and happy-dom incorrectly activates a labelled checkbox when its nested Retry button is clicked |
+| `pnpm exec vitest run packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx packages/core/test/commits.test.ts` | Final 23 passed: same focused DOM nodes, field editability after refusal, pending-group isolation, stored Switch value, exact repeated Retry, acknowledged success, write-free Revert and shared exact 199/200 ms pending/confirmed boundaries |
+| Headless Chromium against existing gallery `Switch.6` | Passed: Retry invokes no native checkbox change and leaves it unchecked. Switch, Button, CommitMark and lockfile hashes match worker 15; no production Switch change was made to accommodate the happy-dom artifact |
+| `pnpm --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck`; final `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `node tools/component-inventory.mjs --write`; `pnpm check`; `git diff --check`; `pnpm --filter @focus-notes/desktop run build` | Passed; ColorField binding is represented in all 3 generated UI schemas, 780 documents/82 components/725 commands |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Colour contrast all-done\|a refused watermark\|Site preview counts actual reads"` | Final 3 passed together: actual colour edits/Fix perform zero settings writes before Save; native reader Focus toggles twice on the same focused element with zero early settings writes; existing local Apply/Publish failure recovery and persisted watermark Retry/Revert remain intact |
+| Exact pushed candidate `9c512e40` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\9c512e40\Open review build.cmd`. The visible `f2127c67`, gallery 5231 and docs 8787 remain unchanged. Named persisted ColorField/Switch behavior is contract-fixture proof, not a claim that the current draft-only controls now save individually. No full suite, CI wait, main app merge, release or real-account application write ran.
+
+### Phase-2 clause reconciliation, 9c512e40
+
+The audit's [D1–D8 map](../design/ui-states-audit.md#current-phase-2-evidence-reconciliation) is now reconciled against each row's observable clauses, including the newly found named-primitive gap and D8 initial/repeated outcomes. All 37 earlier recorded increment heads were verified as ancestors of `1d3deccf`; `9c512e40` directly follows it. Historical partial-slice paragraphs record what was missing at that time, not new open work after their later evidence.
+
+| Row | Clauses matched to recorded scoped proof | Boundary, not an invented implementation task |
+| --- | --- | --- |
+| D1 | 3 visible/error-first/coalesced outcomes; hard-dismiss warnings/errors; visible-only clocks and overlapping hover/focus/blur; queued reveal, retained recovery and focus; irreversible withdrawal explained before acting | Synthetic publication proves the supported irreversible branch; no same-link Undo is falsely promised |
+| D2 | Declared TextField/ColorField persistence; separate 200 ms beats; local locks, editable failed draft, exact Retry/Revert and stale ordering; independent AI details and provider-checked sealed key | Actual colour-copy editing remains a draft. Protocol fakes, not live-provider certification |
+| D3 | Named Switch's stable focusable input, saved boolean during pending/failure, exact Retry and acknowledged success; shared 200 ms timing; actual watermark failure/Retry/Revert and native local reader Focus | Watermark is segmented; no false claim that it is the Switch component or that draft switches save individually |
+| D4 | Segmented/ThemeGallery/FontChoice and compact PickerButton/MenuButton/IconButton feedback; retained attempts, group-only locking and one in-flight write; keyboard preview/500 ms pause, slider release/blur; actual persistence/reopening and AST/touch hover guard | The unrelated full-theme size-retry fixture failure stays recorded for later consolidation, not silently counted as green |
+| D5 | Files/Open/AI/Sharing/site known-empty versus loading/error; first-use/filtered/cleared variants, first actions and same-wrapper content replacement; exact component/section/view minimums; actual colour and deleted-history good news without an unnecessary action | The fourth site fallback is defensive/client-rendered, not a fourth normal first-use route |
+| D6 | Exact Open/New/Local/history/image recovery, optional safe Details, retained drafts/successful work, safe appearance/rewrite copy; no completed pin/create/import replay; actual read/decode and save acknowledgements | Completed import/clone receipts are in-process only; uncertain creation/import is not crash-resumable and must never be replayed blindly |
+| D7 | Actual step/count streams, exact elapsed threshold, safe-boundary Cancel, failed-step/partial receipts and final atomic outcomes; native repeated panel Reload/safe Feedback; resolved startup theme and shown-frame stream; single initial/repeated outcomes | Publish saves a local draft, not remote deployment. Startup proof is scoped first-show evidence, not the broad DSK-09 corpus |
+| D8 | Independent Agents/share/history tracks, exact 299/300 and 499/500 ms boundaries, 3-pass/static reduced-motion shimmer, retained refresh content, stale guards and exact scoped Retry; native first/repeated live outcomes with no generic duplicate | Older-page repeated refusal is unit proof; native list/version repetitions are DOM/live-region proof, not named screen-reader certification |
+
+**Review state:** no additional unmet implementation clause was identified within this authorized scoped evidence review. The branch and latest two-project candidate are ready for the owner's implementation review through the original main chat; this is not a phase-complete, merge or release declaration. Cross-slice consolidation/full validation was not authorized or run. The older sharing-preview type fixture and separate size-retry fixture remain explicit unrelated findings, not new scope or silent waivers.
+
+### Phase-2 visible implementation review, 9c512e40
+
+The original main chat requested that the latest candidate be opened for the owner, keeping the visible `f2127c67` review open. The canonical candidate launcher now runs `9c512e40` with its separate owner-review profile: Electron PID `64408`, launcher PID `39212`, session `uistates-owner-review15`. The launcher receipt records these identities. The window is visible; no OS keys, focus activation, maximising or window movement was used. Both distinct sample projects remain available, and the loopback repository endpoint returned both Field notes and Garden notes. The older owner review, gallery 5231 and docs 8787 remain untouched and available.
+
+**Try it in the already-open latest window:**
+
+1. Press Ctrl+Alt+O and choose Garden notes to open the second project's separate window. Compare its green/leaf identity and dark Settings with Field notes' blue/rocket identity and light Settings.
+2. In Settings → Project, change a name, colour or watermark; in Appearance, try theme/font/Reading values. Committed feedback follows the acknowledged save. Both projects keep their own choices.
+3. Visit Settings → Agents, More → Share and More → Note history. Their loading/recovery stays within the section; controlled initial/repeated refusals are in the scoped journeys, not permanently injected into this review.
+4. In the theme manager → Edit colors, type a failing colour and use Fix Text. The success row replaces the failure summary; editing the colour copy does not save it before the existing explicit Save.
+
+Only synthetic notes and loopback repositories are connected. This opens a review, not a phase-complete, merge, release or real-GitHub-testing result. Keep both owner-review instances open until the owner directs otherwise.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

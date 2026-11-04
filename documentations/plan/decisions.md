@@ -1,5 +1,31 @@
 # Decisions
 
+## D-343: the owner tests against real GitHub; agents never do
+
+**Decided (the owner, 5 November 2026, 02:43: "Testing against my real github, I'll do manually, you don't do anything.").** Testing against the owner's real GitHub account is done manually by the owner. Agents never sign in to, write to or publish through a real account. Their journeys, review candidates and evidence use fakes, local bare repositories and the sample projects. The one exception is pushing this repository's own branches and `main`. Evidence that needs a real account is recorded as the owner's to try, never claimed by an agent.
+
+Affects [gate evidence](gate-evidence.md), [Definition of Done](definition-of-done.md) and [UI states audit](../design/ui-states-audit.md).
+
+## D-342: compact setting actions keep the toolbar open
+
+**Decided (orchestrator for the merge, under the owner's "Rest you do as you see fit", 5 November 2026).** A compact setting action in the toolbar keeps the toolbar shown until its own-border commit feedback has finished and the person moves on. Examples are Focus mode, docking Files or the contents, and Reading size. This lets someone make several adjustments in a row and see each confirmed. The toolbar still closes on Escape or an outside click, and a command such as Find, Share or Settings… still closes it as before. In the More menu, a choice closes the menu unless it's pending, in which case the item stays inert and the menu stays open. No element is added to the writing window. Built in `b6375b3a`; [evidence](definition-of-done.md#phase-2-compact-focus-and-docking-b6375b3a).
+
+Affects [UI states audit](../design/ui-states-audit.md) (F2) and [the main UI](../experience/main-ui.html).
+
+## D-341: withdrawing a public share keeps its confirmation, not Undo
+
+**Decided (orchestrator for the merge, under the owner's "Rest you do as you see fit", 5 November 2026).** Withdrawing a share invalidates its link and passcode, and the access format refuses to reactivate it. Sharing again makes a new link. Undo would therefore promise something the app can't do, so withdrawal keeps its confirmation. The confirmation says plainly that this can't be undone and that sharing again makes a new link. Cancel keeps the share. This settles audit finding F10 by its own rule ("if the link can't come back, keep the confirmation and say so in it"). Built in `46c0cb31`.
+
+Affects [UI states audit](../design/ui-states-audit.md#f10-withdraw-asks-first-instead-of-offering-undo) and [Sharing](../design/views/sharing.md).
+
+## D-340: Themes follows this window's theme scope
+
+**Direction accepted from the original main, 5 November; numbered D-340 at the merge to `main`.** A Themes-panel choice updates whichever setting currently decides this window's colour theme: a project's fixed theme changes only that project; a project following App default changes the app's chosen slot, as before. Never release a fixed project to App default or change the app default as a side effect of that project's choice. No new controls or labels are added.
+
+Preview, persisted selection and Revert use that same scope. A refused write leaves the acknowledged theme applied; Revert restores the opening project theme without rewriting app theme slots. Another project's settings remain unchanged, and a sheet belonging to a previous project cannot save after project navigation. Built in `bc45a4e1`; [evidence](definition-of-done.md#phase-2-themes-project-scope-bc45a4e1) covers real computed tokens and process restart, not only selected tiles.
+
+Affects [project appearance](../experience/projects.md), [Theme manager](../design/views/theme-manager.html), [UI states audit](../design/ui-states-audit.md) and [waits](../architecture/perceived-performance.md). This corrects selection/application within the existing per-project theme intent.
+
 ## D-338: choose a folder in today's workspace
 
 **Decided (implementation coordinator, 3 November 2026).** Ship New note in…
