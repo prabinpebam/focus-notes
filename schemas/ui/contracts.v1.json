@@ -8629,6 +8629,13 @@
         "retryLabel": {
           "kind": "message"
         },
+        "retryBusy": {
+          "kind": "boolean",
+          "default": false
+        },
+        "retryBusyLabel": {
+          "kind": "message"
+        },
         "crop": {
           "kind": "boolean",
           "default": false,
@@ -8665,6 +8672,7 @@
           }
         },
         "retry": {},
+        "error": {},
         "size": {
           "payload": {
             "width": "number",
@@ -8676,7 +8684,8 @@
       "states": [
         "rest",
         "selected",
-        "broken"
+        "broken",
+        "retrying"
       ],
       "tokens": "cmp.imageFrame.*",
       "a11y": {
@@ -8702,6 +8711,31 @@
             },
             "retryLabel": {
               "t": "commit.retry"
+            }
+          }
+        },
+        {
+          "name": "retrying broken image",
+          "covers": [
+            "retrying"
+          ],
+          "props": {
+            "src": {
+              "get": "vm.gallery.imageSrc"
+            },
+            "broken": true,
+            "alt": {
+              "t": "gallery.sample"
+            },
+            "error": {
+              "t": "commit.failed"
+            },
+            "retryLabel": {
+              "t": "commit.retry"
+            },
+            "retryBusy": true,
+            "retryBusyLabel": {
+              "t": "uiStates.recovery.retrying"
             }
           }
         },
@@ -15688,7 +15722,7 @@
       "props": {
         "imageSources": {
           "kind": "list",
-          "of": "colorValues"
+          "of": "imageSources"
         },
         "imageMenu": {
           "kind": "list",
@@ -15698,6 +15732,12 @@
           "kind": "message"
         },
         "imageMissing": {
+          "kind": "message"
+        },
+        "imageRetryLabel": {
+          "kind": "message"
+        },
+        "imageRetryBusyLabel": {
           "kind": "message"
         },
         "documentKey": {
@@ -15831,7 +15871,21 @@
       "events": {
         "imageRead": {
           "payload": {
-            "src": "text"
+            "src": "text",
+            "key": "text"
+          }
+        },
+        "imageRetry": {
+          "payload": {
+            "src": "text",
+            "key": "text"
+          }
+        },
+        "imageFailed": {
+          "payload": {
+            "src": "text",
+            "value": "text",
+            "key": "text"
           }
         },
         "imageSelect": {

@@ -7,6 +7,7 @@ import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.t
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
+import { picture } from "./fre-fakes.ts";
 
 async function closeTestApp(l: Launched) {
   try {
@@ -92,6 +93,62 @@ test("History delays its own section, retries exact reads and acknowledges resto
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.version").length)).toBe(2);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.restore").length)).toBe(2);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.undo").length)).toBe(2);
+  } finally { await closeTestApp(l); }
+});
+
+test("Broken images keep their alt and scoped Retry, coalesce notices and recover actual reads and decodes", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "images.md");
+  const markdown = "# Image recovery\n\n![First image](a.png)\n\n![Second image](b.png)\n";
+  writeFileSync(note, markdown);
+  writeFileSync(join(dirs.docs, "b.png"), "invalid image bytes");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    const first = l.page.getByRole("group", { name: "First image", exact: true });
+    const second = l.page.getByRole("group", { name: "Second image", exact: true });
+    await expect(first).toContainText("This image couldn't be read.");
+    await expect(second).toContainText("This image couldn't be read.");
+    const notice = l.page.locator("#toasts").getByRole("alert").filter({ hasText: "Some images couldn't be read." });
+    await expect(notice).toHaveCount(1);
+    await expect(notice).toContainText("(2)");
+    await l.app.evaluate(({ ipcMain }) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
+      const original: unknown = handlers.get("image:read");
+      if (typeof original !== "function") throw new Error("Image reader unavailable");
+      ipcMain.removeHandler("image:read");
+      ipcMain.handle("image:read", async (event, ...args: unknown[]) => {
+        await new Promise(resolve => setTimeout(resolve, 600));
+        return original(event, ...args);
+      });
+    });
+    const retry = first.getByRole("button", { name: "Retry", exact: true });
+    await retry.focus();
+    await l.page.keyboard.press("Enter");
+    await expect(first.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(first.getByRole("button")).toBeFocused();
+    await expect(first).toContainText("First image");
+    await expect(retry).toBeVisible();
+    await expect(retry).toBeFocused();
+    await expect(notice).toHaveCount(1);
+    await expect(notice).toContainText("(2)");
+    const png = Buffer.from(picture().split(",")[1]!, "base64");
+    writeFileSync(join(dirs.docs, "a.png"), png);
+    writeFileSync(join(dirs.docs, "b.png"), png);
+    await retry.click();
+    await expect(first.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(second.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    const loadedFirst = l.page.getByRole("img", { name: "First image", exact: true });
+    await expect.poll(() => loadedFirst.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth === 128)).toBe(true);
+    await second.getByRole("button", { name: "Retry", exact: true }).click();
+    const loadedSecond = l.page.getByRole("img", { name: "Second image", exact: true });
+    await expect.poll(() => loadedSecond.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth === 128)).toBe(true);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:image.read").length)).toBe(5);
+    expect(readFileSync(note, "utf8")).toBe(markdown);
+    expect(readFileSync(join(dirs.docs, "a.png"))).toEqual(png);
+    expect(readFileSync(join(dirs.docs, "b.png"))).toEqual(png);
   } finally { await closeTestApp(l); }
 });
 

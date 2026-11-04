@@ -5,7 +5,7 @@ import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
   focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
-import type { ColorValue, KeyBinding, MenuSection } from "../../data.ts";
+import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
 import { imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
@@ -25,11 +25,15 @@ import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./EditorSurface.css.ts";
 
 export interface EditorSurfaceProps {
-  imageSources?: ColorValue[];
+  imageSources?: ImageSource[];
   imageMenu?: MenuSection[];
   imageMenuLabel?: string;
   imageMissing?: string;
-  onImageRead?: (payload: { src: string }) => void;
+  imageRetryLabel?: string;
+  imageRetryBusyLabel?: string;
+  onImageRead?: (payload: { src: string; key: string }) => void;
+  onImageRetry?: (payload: { src: string; key: string }) => void;
+  onImageFailed?: (payload: { src: string; value: string; key: string }) => void;
   onImageSelect?: (payload: ImagePayload) => void;
   onImageAction?: (payload: { id: string }) => void;
   onImageEdited?: (payload: { src: string; data: string }) => void;
@@ -169,7 +173,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
-  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", onImageRead, onImageSelect, onImageAction, onImageEdited, onImageEditError,
+  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageRetryLabel = "", imageRetryBusyLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
@@ -179,11 +183,11 @@ export function EditorSurface({
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const imageRenders = useRef(new Set<() => void>());
-  const imageOptions = useRef({ sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, read: onImageRead, select: onImageSelect, action: onImageAction });
-  imageOptions.current = { sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, read: onImageRead, select: onImageSelect, action: onImageAction };
+  const imageOptions = useRef({ documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction });
+  imageOptions.current = { documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction };
   const imageEditRef = useRef({ onImageEdited, onImageEditError });
   imageEditRef.current = { onImageEdited, onImageEditError };
-  useEffect(() => { for (const render of imageRenders.current) render(); }, [imageSources, imageMenu]);
+  useEffect(() => { for (const render of imageRenders.current) render(); }, [imageSources, imageMenu, documentKey, imageMissing, imageRetryLabel, imageRetryBusyLabel]);
   const scrollerRef = useRef<HTMLElement | null>(null);
   const minimapRef = useRef<DocMinimapHandle | null>(null);
   useAutoHideScrollbar(scrollerRef);

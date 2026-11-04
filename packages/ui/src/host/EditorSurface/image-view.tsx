@@ -5,18 +5,22 @@ import { Popover } from "react-aria-components";
 import { ImageFrame } from "../../primitives/ImageFrame/ImageFrame.tsx";
 import { CommandMenu } from "../../primitives/MenuButton/MenuButton.tsx";
 import { Spinner } from "../../primitives/Spinner/Spinner.tsx";
-import { Text } from "../../primitives/Text/Text.tsx";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import * as menuStyles from "../../primitives/MenuButton/MenuButton.css.ts";
-import type { ColorValue, MenuSection } from "../../data.ts";
+import type { ImageSource, MenuSection } from "../../data.ts";
 
 export interface ImagePayload { pos: number; src: string; alt?: string; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean }
 export interface ImageViewOptions {
-  sources: ColorValue[];
+  documentKey: string;
+  sources: ImageSource[];
   menu: MenuSection[];
   menuLabel: string;
   missing: string;
-  read?: (payload: { src: string }) => void;
+  retryLabel: string;
+  retryBusyLabel: string;
+  read?: (payload: { src: string; key: string }) => void;
+  retry?: (payload: { src: string; key: string }) => void;
+  failed?: (payload: { src: string; value: string; key: string }) => void;
   select?: (payload: ImagePayload) => void;
   action?: (payload: { id: string }) => void;
 }
@@ -27,10 +31,13 @@ function ImageNode({ payload, selected, options, select, capture }: { payload: I
   const boundary = useWindowBoundary();
   const source = options.sources.find((s) => s.id === payload.src);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  return <span ref={ref} onClick={() => select(true)} onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") { e.preventDefault(); e.stopPropagation(); select(false, true); } }} onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); } }}>
-    {source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected}
+  return <span ref={ref} onClick={(e) => { if (!(e.target instanceof Element && e.target.closest("button"))) select(true); }} onKeyDown={(e) => { if (!(e.target instanceof Element && e.target.closest("button")) && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") { e.preventDefault(); e.stopPropagation(); select(false, true); } }} onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); } }}>
+    {source?.failed || source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected}
+      broken={source.failed} error={options.missing} retryLabel={options.retryLabel} retryBusy={source.pending} retryBusyLabel={options.retryBusyLabel}
+      onRetry={() => options.retry?.({ src: payload.src, key: options.documentKey })}
+      onError={() => options.failed?.({ src: payload.src, value: source.value, key: options.documentKey })}
       onSize={setSize} onContextMenu={() => { select(); options.select?.({ ...capture(), ...size }); setOpen(true); }} />
-      : source ? <Text value={options.missing} /> : <Spinner />}
+      : <Spinner />}
     <Popover isOpen={open} onOpenChange={setOpen} triggerRef={ref} placement="bottom start" className={menuStyles.popover} {...boundary} data-floating-child="">
       <CommandMenu label={options.menuLabel} sections={options.menu} onAction={(p) => { setOpen(false); options.action?.(p); }} />
     </Popover>
@@ -43,6 +50,8 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     dom.contentEditable = "false";
     dom.dataset.imageNode = "";
     const root = createRoot(dom);
+    const key = options().documentKey;
+    let alive = true;
     let current = node;
     let selected = false;
     const select = (focus = false, all = false) => {
@@ -68,6 +77,7 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
         roundMixed: !roundAll && images.some((i) => i.rounded), limitMixed: !limitAll && images.some((i) => i.fitHeight) };
     };
     const render = () => {
+      if (!alive || options().documentKey !== key) return;
       const payload = capture();
       const selection = editor.state.selection;
       const inRange = !selection.empty && payload.pos >= selection.from && payload.pos < selection.to;
@@ -75,15 +85,23 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     };
     editor.on("selectionUpdate", render);
     renders.add(render);
-    queueMicrotask(() => { options().read?.({ src: String(current.attrs.src) }); render(); });
+    const requestRead = () => {
+      const src = String(current.attrs.src);
+      queueMicrotask(() => {
+        if (!alive || options().documentKey !== key || String(current.attrs.src) !== src) return;
+        options().read?.({ src, key });
+        render();
+      });
+    };
+    requestRead();
     return {
       dom,
-      update(next) { if (next.type !== current.type) return false; current = next; render(); return true; },
+      update(next) { if (next.type !== current.type) return false; const changed = next.attrs.src !== current.attrs.src; current = next; if (changed) requestRead(); render(); return true; },
       selectNode() { selected = true; render(); },
       deselectNode() { selected = false; render(); },
       stopEvent: (e) => e.type === "contextmenu" || e.type === "keydown",
       ignoreMutation: () => true,
-      destroy() { renders.delete(render); editor.off("selectionUpdate", render); queueMicrotask(() => root.unmount()); },
+      destroy() { alive = false; renders.delete(render); editor.off("selectionUpdate", render); queueMicrotask(() => root.unmount()); },
     };
   };
 }

@@ -17,7 +17,10 @@ export interface ImageFrameProps {
   broken?: boolean;
   error?: string;
   retryLabel?: string;
+  retryBusy?: boolean;
+  retryBusyLabel?: string;
   onRetry?: () => void;
+  onError?: () => void;
   /** Edit image: the crop frame over the preview. */
   crop?: boolean;
   rotation?: keyof typeof s.rotation;
@@ -31,7 +34,7 @@ export interface ImageFrameProps {
 }
 
 /** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, broken = false, error, retryLabel, onRetry, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
+export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
   const safe = src.startsWith("data:image/") ? src : undefined;
   const menu = onContextMenu ? {
     onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }); },
@@ -51,8 +54,8 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
           <Icon name="image" />
           {alt ? <span>{alt}</span> : null}
           {error ? <span role="status">{error}</span> : null}
-          {retryLabel ? <Button label={retryLabel} size="s" {...(onRetry ? { onPress: onRetry } : {})} /> : null}
-        </span> : safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} onLoad={(e) => onSize?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} /> : null}
+          {retryLabel ? <Button label={retryLabel} size="s" busy={retryBusy} busyLabel={retryBusy ? retryBusyLabel : undefined} {...(onRetry ? { onPress: onRetry } : {})} /> : null}
+        </span> : safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} onError={onError} onLoad={(e) => onSize?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} /> : null}
         {crop ? (
           <span className={`${s.crop}${cropWidth === undefined ? "" : ` ${s.cropCustom}`}`} style={cropWidth === undefined ? undefined : { [s.cropX.slice(4, -1)]: `${cropX ?? 0}%`, [s.cropY.slice(4, -1)]: `${cropY ?? 0}%`, [s.cropWidth.slice(4, -1)]: `${cropWidth}%`, [s.cropHeight.slice(4, -1)]: `${cropHeight ?? 100}%` } as CSSProperties} aria-hidden="true">
             {(["tl", "tr", "bl", "br"] as const).map((c) => <span key={c} className={`${s.handle} ${s.corner[c]}`} />)}

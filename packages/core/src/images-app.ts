@@ -1,14 +1,15 @@
 import type { AppState } from "./app.ts";
-import type { PlatformBridge } from "./bridge.ts";
+import { opErrorCode, type PlatformBridge } from "./bridge.ts";
 import type { Store } from "./store.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { noteReadOnly } from "./workspace-app.ts";
+import type { TaskTracker } from "./tasks.ts";
 
 type SelectedImage = { pos: number; src: string; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
 export interface ImagesState {
-  sources: readonly { id: string; value: string }[];
+  sources: readonly { id: string; value: string; pending: boolean; failed: boolean }[];
   selected?: SelectedImage;
   edit: boolean;
   x: string; y: string; width: string; height: string;
@@ -21,37 +22,62 @@ export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y:
 export function registerImages(ctx: {
   store: Store<AppState>; bridge: PlatformBridge; commands: CommandRegistry<AppState>; viewModels: ViewModelRegistry<AppState>; catalog: MessageCatalog;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
-  toast: (text: string, opts?: { tone?: "info" | "error" }) => number;
+  toast: (text: string, opts?: { tone?: "info" | "error"; subject?: string }) => number;
+  tracker: TaskTracker;
   itemSchema: Record<string, unknown>; describeItem: (id: string) => Record<string, unknown>;
 }) {
   const { store, bridge, commands, viewModels, catalog } = ctx;
   const state = () => store.state.ui.images;
   const set = (patch: Partial<ImagesState>) => store.update((s) => ({ ...s, ui: { ...s.ui, images: { ...s.ui.images, ...patch } } }));
   let noteKey = store.state.note.key;
-  const reading = new Set<string>();
+  const reading = new Map<string, symbol>();
+  const notified = new Set<string>();
   store.subscribe(() => {
     if (store.state.note.key === noteKey) return;
     noteKey = store.state.note.key;
     reading.clear();
+    notified.clear();
     set(IMAGES_CLOSED);
   });
   const writable = () => Boolean(state().selected) && !noteReadOnly(store.state);
-  commands.register<{ src: string }>({
-    id: "image.read", title: "image.menu",
-    run: async ({ src }) => {
-      const note = store.state.note.path;
-      if (!note || reading.has(src) || state().sources.some((s) => s.id === src)) return;
-      reading.add(src);
-      try {
-        if (!bridge.readImage) throw new Error("image-unavailable");
-        const data = await bridge.readImage(note, src);
-        if (store.state.note.path === note) set({ sources: [...state().sources.filter((s) => s.id !== src), { id: src, value: data }] });
-      } catch {
-        if (store.state.note.path === note) {
-          set({ sources: [...state().sources.filter((s) => s.id !== src), { id: src, value: "" }] });
-          ctx.toast(catalog.format("image.read.failed"), { tone: "error" });
-        }
-      } finally { reading.delete(src); }
+  const failed = (src: string, error: unknown) => {
+    console.error("Image read failed", opErrorCode(error));
+    const previous = state().sources.find(s => s.id === src);
+    set({ sources: [...state().sources.filter(s => s.id !== src), { id: src, value: previous?.value ?? "", pending: false, failed: true }] });
+    if (!notified.has(src)) {
+      notified.add(src);
+      ctx.toast(catalog.format("image.read.notice"), { tone: "error", subject: `image.read:${noteKey}` });
+    }
+  };
+  const read = async (src: string, key?: string, retry = false) => {
+    const note = store.state.note.path;
+    const document = store.state.note.key;
+    const previous = state().sources.find(s => s.id === src);
+    if (!note || key !== undefined && key !== document || reading.has(src) || previous && !retry) return;
+    const request = Symbol();
+    reading.set(src, request);
+    set({ sources: [...state().sources.filter(s => s.id !== src), { id: src, value: previous?.value ?? "", failed: previous?.failed ?? false, pending: true }] });
+    try {
+      const data = await ctx.tracker.section("image.read", "image.read.loading", async () => {
+        if (!bridge.readImage) throw new Error("Image reader unavailable");
+        const result = await bridge.readImage(note, src);
+        if (!result.startsWith("data:image/")) throw new Error("Invalid image source");
+        return result;
+      }, "fn:image.read");
+      if (store.state.note.path === note && store.state.note.key === document) {
+        set({ sources: [...state().sources.filter(s => s.id !== src), { id: src, value: data, pending: false, failed: false }] });
+      }
+    } catch (error) {
+      if (store.state.note.path === note && store.state.note.key === document) failed(src, error);
+    } finally { if (reading.get(src) === request) reading.delete(src); }
+  };
+  commands.register<{ src: string; key?: string }>({ id: "image.read", title: "image.menu", run: ({ src, key }) => read(src, key) });
+  commands.register<{ src: string; key?: string }>({ id: "image.retry", title: "commit.retry", run: ({ src, key }) => read(src, key, true) });
+  commands.register<{ src: string; value: string; key: string }>({
+    id: "image.failed", title: "image.menu",
+    run: ({ src, value, key }) => {
+      const cached = state().sources.find(s => s.id === src);
+      if (key === store.state.note.key && cached?.value === value && !cached.failed && !cached.pending) failed(src, new Error("Image decode failed"));
     },
   });
   commands.register<SelectedImage>({ id: "image.select", title: "image.menu", run: (selected) => set({ selected }) });
@@ -78,7 +104,10 @@ export function registerImages(ctx: {
       set({ selected: next });
     },
   });
-  const dataOf = () => state().sources.find((s) => s.id === state().selected?.src)?.value ?? "";
+  const dataOf = () => {
+    const source = state().sources.find(s => s.id === state().selected?.src);
+    return source && !source.failed && !source.pending ? source.value : "";
+  };
   const canEdit = () => writable() && state().selected?.count === 1 && Boolean(bridge.writeImage) && /^data:image\/(png|jpeg|webp);/.test(dataOf()) && !state().selected?.src.startsWith("data:");
   const valid = () => {
     const s = state(), image = s.selected;
@@ -121,7 +150,7 @@ export function registerImages(ctx: {
       try {
         await bridge.writeImage(savingNote, src, data, dataOf());
         if (savingNote !== store.state.note.path) return;
-        set({ saving: false, edit: false, sources: state().sources.map((s) => s.id === src ? { id: src, value: data } : s) });
+        set({ saving: false, edit: false, sources: state().sources.map((s) => s.id === src ? { ...s, value: data, pending: false, failed: false } : s) });
         ctx.toast(catalog.format("image.edit.saved"));
       } catch { set({ saving: false, error: catalog.format("image.edit.failed") }); }
     },
@@ -132,7 +161,7 @@ export function registerImages(ctx: {
     reads: ["ui.images", "note.path", "workspace"],
     setters: { x: "image.edit.x", y: "image.edit.y", width: "image.edit.width", height: "image.edit.height" },
     schema: { type: "object", properties: {
-      sources: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
+      sources: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" }, pending: { type: "boolean" }, failed: { type: "boolean" } } } },
       menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       edit: { type: "boolean" }, saving: { type: "boolean" }, invalid: { type: "boolean" }, error: { type: "string" }, src: { type: "string" }, rotation: { type: "string", enum: ["0", "90", "180", "270"] },
       x: { type: "string" }, y: { type: "string" }, width: { type: "string" }, height: { type: "string" },

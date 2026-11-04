@@ -1201,6 +1201,8 @@
   "files.heading": "Files",
   "block.image": "Image",
   "image.read.failed": "This image couldn't be read. Check that its file is still beside the note.",
+  "image.read.notice": "Some images couldn't be read. Use Retry on the affected images.",
+  "image.read.loading": "Reading image…",
   "image.edit.failed": "The image couldn't be saved. The original file has not been replaced.",
   "image.edit.cancel": "Cancel",
   "image.edit.invalid": "Keep the crop inside the image, with a width and height greater than zero.",

@@ -21,7 +21,7 @@ export type PropSpec =
   | { kind: "list"; of: ListOf; required?: boolean; description?: string };
 
 /** The kinds of structured list a prop can take; each one's item is in items.ts (D-198). */
-export type ListOf = "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks" | "themeTiles" | "colorValues" | "noteBlocks" | "siteThemes";
+export type ListOf = "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks" | "themeTiles" | "colorValues" | "imageSources" | "noteBlocks" | "siteThemes";
 
 export type PropKind = PropSpec["kind"];
 

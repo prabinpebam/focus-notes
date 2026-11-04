@@ -1272,7 +1272,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m),
     announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
   });
-  registerImages({ store, bridge, catalog, commands, viewModels, editorAction, toast, itemSchema: ITEM_SCHEMA, describeItem });
+  registerImages({ store, bridge, catalog, commands, viewModels, editorAction, toast, tracker, itemSchema: ITEM_SCHEMA, describeItem });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
     loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), holds: (path) => conflicts.holds(path),

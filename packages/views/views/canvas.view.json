@@ -824,6 +824,8 @@
           "imageMenu": { "get": "vm.images.menu" },
           "imageMenuLabel": { "t": "image.menu" },
           "imageMissing": { "t": "image.read.failed" },
+          "imageRetryLabel": { "t": "commit.retry" },
+          "imageRetryBusyLabel": { "t": "uiStates.recovery.retrying" },
           "documentKey": {
             "get": "vm.canvas.noteKey"
           },
@@ -960,7 +962,9 @@
               }
             }
           },
-          "imageRead": { "run": "image.read", "args": { "src": { "get": "event.src" } } },
+          "imageRead": { "run": "image.read", "args": { "src": { "get": "event.src" }, "key": { "get": "event.key" } } },
+          "imageRetry": { "run": "image.retry", "args": { "src": { "get": "event.src" }, "key": { "get": "event.key" } } },
+          "imageFailed": { "run": "image.failed", "args": { "src": { "get": "event.src" }, "value": { "get": "event.value" }, "key": { "get": "event.key" } } },
           "imageSelect": { "run": "image.select", "args": {
             "pos": { "get": "event.pos" }, "src": { "get": "event.src" },
             "rounded": { "get": "event.rounded" }, "fitHeight": { "get": "event.fitHeight" }, "mode": { "get": "event.mode" },

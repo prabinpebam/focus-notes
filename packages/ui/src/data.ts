@@ -116,6 +116,13 @@ export interface ColorValue {
   value: string;
 }
 
+export interface ImageSource {
+  id: string;
+  value: string;
+  pending: boolean;
+  failed: boolean;
+}
+
 /** One choice in a segmented control or filter. */
 export interface Option {
   id: string;

@@ -8339,6 +8339,32 @@
                 }
               ]
             },
+            "retryBusy": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "retryBusyLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "crop": {
               "anyOf": [
                 {
@@ -8423,6 +8449,9 @@
               "$ref": "#/$defs/actions"
             },
             "retry": {
+              "$ref": "#/$defs/actions"
+            },
+            "error": {
               "$ref": "#/$defs/actions"
             },
             "size": {
@@ -11722,6 +11751,32 @@
                 }
               ]
             },
+            "imageRetryLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "imageRetryBusyLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "documentKey": {
               "anyOf": [
                 {
@@ -12061,6 +12116,12 @@
           "additionalProperties": false,
           "properties": {
             "imageRead": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageRetry": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageFailed": {
               "$ref": "#/$defs/actions"
             },
             "imageSelect": {

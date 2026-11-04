@@ -3568,6 +3568,13 @@
         "retryLabel": {
           "kind": "message"
         },
+        "retryBusy": {
+          "kind": "boolean",
+          "default": false
+        },
+        "retryBusyLabel": {
+          "kind": "message"
+        },
         "crop": {
           "kind": "boolean",
           "default": false,
@@ -3604,6 +3611,7 @@
           }
         },
         "retry": {},
+        "error": {},
         "size": {
           "payload": {
             "width": "number",
@@ -3615,7 +3623,8 @@
       "states": [
         "rest",
         "selected",
-        "broken"
+        "broken",
+        "retrying"
       ],
       "tokens": "cmp.imageFrame.*",
       "a11y": {
@@ -3624,6 +3633,7 @@
       },
       "fixtures": [
         "broken image",
+        "retrying broken image",
         "mode column",
         "mode wide",
         "mode actual",
@@ -5476,7 +5486,7 @@
       "props": {
         "imageSources": {
           "kind": "list",
-          "of": "colorValues"
+          "of": "imageSources"
         },
         "imageMenu": {
           "kind": "list",
@@ -5486,6 +5496,12 @@
           "kind": "message"
         },
         "imageMissing": {
+          "kind": "message"
+        },
+        "imageRetryLabel": {
+          "kind": "message"
+        },
+        "imageRetryBusyLabel": {
           "kind": "message"
         },
         "documentKey": {
@@ -5619,7 +5635,21 @@
       "events": {
         "imageRead": {
           "payload": {
-            "src": "text"
+            "src": "text",
+            "key": "text"
+          }
+        },
+        "imageRetry": {
+          "payload": {
+            "src": "text",
+            "key": "text"
+          }
+        },
+        "imageFailed": {
+          "payload": {
+            "src": "text",
+            "value": "text",
+            "key": "text"
           }
         },
         "imageSelect": {
