@@ -79,7 +79,7 @@ test("QLT-06: Files → Recovered: Review opens it; a draft saved as a new note 
     await expect(card("Lost ideas")).toContainText(/Kept until /);
     await expect(card("Scratch")).toBeVisible();
     // In place of the tree, like Recently deleted.
-    await expect(files.getByRole("tree")).toHaveCount(0);
+    await expect(files.getByRole("tree", { name: "Notes and folders", exact: true })).toHaveCount(0);
     expect(await axeInBothThemes(l)).toEqual([]);
     await page.screenshot({ path: "../../test-results/screens/files-recovered.png" });
 
@@ -111,7 +111,7 @@ test("QLT-06: Files → Recovered: Review opens it; a draft saved as a new note 
     // By keyboard: back to the tree, then the footer's Recovered reaches the one left; open, copy, discard.
     await tabTo(page, files.getByRole("button", { name: "Browse files" }), 24);
     await page.keyboard.press("Enter");
-    await expect(files.getByRole("tree")).toBeVisible();
+    await expect(files.getByRole("tree", { name: "Notes and folders", exact: true })).toBeVisible();
     await tabTo(page, files.getByRole("button", { name: "Recovered · 1" }), 24);
     await page.keyboard.press("Enter");
     await expect(files.getByText("1 draft couldn't go back in its note.")).toBeVisible();

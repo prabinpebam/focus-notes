@@ -222,6 +222,30 @@ it("previews slider keys immediately, saves once after a 500 ms pause or blur, a
   } finally { act(() => root.unmount()); host.remove(); }
 });
 
+it("commits a queued slider value once when its tab is removed before the keyboard pause", async () => {
+  vi.useFakeTimers();
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const change = vi.fn();
+  act(() => root.render(createElement(Slider, {
+    label: "Focus dim", min: 0, max: 0.6, step: 0.05, value: 0.3, commit: "rest", onChange: change,
+  })));
+  try {
+    const input = host.querySelector<HTMLInputElement>("input")!;
+    act(() => {
+      input.focus();
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
+      input.dispatchEvent(new KeyboardEvent("keyup", { key: "End", bubbles: true, cancelable: true }));
+    });
+    expect(change).not.toHaveBeenCalled();
+    act(() => root.render(null));
+    expect(change).toHaveBeenCalledExactlyOnceWith({ value: 0.6 });
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(change).toHaveBeenCalledOnce();
+  } finally { act(() => root.unmount()); host.remove(); }
+});
+
 it("keeps a picker trigger focused and inert pending, with persistent failed and confirmed border feedback", () => {
   const host = document.createElement("div");
   document.body.append(host);

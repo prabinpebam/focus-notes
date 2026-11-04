@@ -137,6 +137,8 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     // The categories are a vertical tab list: the arrow keys move between them.
     await settings(page).getByRole("tab", { name: "Account" }).focus();
     await press(page, "ArrowDown");
+    await expect(settings(page).getByRole("tab", { name: "Project", exact: true })).toHaveAttribute("aria-selected", "true");
+    await press(page, "ArrowDown");
     await expect(settings(page).getByRole("tab", { name: "Workspace" })).toHaveAttribute("aria-selected", "true");
     await expect(settings(page).getByText(w.dirs.docs)).toBeVisible();
     expect(await settledAxe(page)).toEqual([]);

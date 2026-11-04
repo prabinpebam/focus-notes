@@ -59,7 +59,8 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
     let menu = await openMore(page);
     const item = () => menu.getByRole("menuitem", { name: /^Copy public link/ });
     await expect(item()).toHaveAttribute("aria-disabled", "true");
-    await expect(item()).toHaveAccessibleName("Copy public link Only public notes have a public link");
+    await expect(item()).toHaveAccessibleName("Copy public link");
+    await expect(item()).toHaveAccessibleDescription("Only public notes have a public link");
     await item().scrollIntoViewIfNeeded();
     await capture(page, "copy-public-link-private");
     await item().focus();

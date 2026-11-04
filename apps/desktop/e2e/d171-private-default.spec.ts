@@ -33,12 +33,13 @@ test("D-171: a fresh profile shows a private note, never the empty public one, a
   expect(w.publicFiles()).toEqual(["essay.md", "exploratory-conversation.md"]);
   await quit(l);
 
-  // Remembered as the last note, the empty public file still isn't reopened.
+  // With no usable remembered note, Open replaces the old automatic welcome creation (D-318).
   const again = workspace();
   writeFileSync(join(again.dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(again.dirs.docs, "notes", "exploratory-conversation.md") }));
   const l2 = await launch(again.dirs);
-  await expect(l2.page.getByRole("textbox", { name: "Note" })).toContainText("Welcome");
-  expect(again.privateFiles()).toEqual(["welcome.md"]);
+  await expect(l2.page.getByRole("region", { name: "Open", exact: true })).toBeVisible();
+  await expect(l2.page.getByRole("textbox", { name: "Note" })).toHaveCount(0);
+  expect(again.privateFiles()).toEqual([]);
   expect(again.publicFiles()).toEqual(["essay.md", "exploratory-conversation.md"]);
   await quit(l2);
 });

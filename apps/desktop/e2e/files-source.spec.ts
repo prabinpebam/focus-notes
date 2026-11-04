@@ -50,11 +50,11 @@ test("D-188: Files leads with the notes repository and @login, and Open local fo
     await files.getByRole("button", { name: /^Recently deleted/ }).click();
     await expect(files.getByRole("button", { name: "Browse files" })).toBeVisible();
     await files.getByRole("heading", { name: "Back to Files" }).getByRole("button").click();
-    await expect(files.getByRole("tree")).toBeVisible();
-    await expect(files.getByRole("heading", { name: "Files" })).toBeVisible();
+    await expect(files.getByRole("tree", { name: "Notes and folders", exact: true })).toBeVisible();
+    await expect(band.getByRole("button", { name: "Open ada/notes on GitHub" })).toBeVisible();
     await files.getByRole("button", { name: /^Recently deleted/ }).click();
     await files.getByRole("button", { name: "Browse files" }).click();
-    await expect(files.getByRole("tree")).toBeVisible();
+    await expect(files.getByRole("tree", { name: "Notes and folders", exact: true })).toBeVisible();
   } finally {
     await quit(l);
     w.server.close();

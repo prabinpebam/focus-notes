@@ -547,7 +547,7 @@ test("review feedback: project scheme reaches Settings and edge blur excludes bo
     })).toBe(true);
     await expect(l.page.locator('[data-scroll-edge="top"]')).toBeVisible();
     await expect(l.page.locator('[data-scroll-edge="bottom"]')).toBeVisible();
-    const shots = "E:\\Projects\\side-projects\\focus-notes-work\\review\\ui-states-owner-feedback";
+    const shots = process.env.FOCUS_NOTES_REVIEW_OUT ?? test.info().outputPath("ui-states-owner-feedback");
     mkdirSync(shots, { recursive: true });
     await l.page.screenshot({ path: join(shots, baseline ? "before.png" : "after.png") });
     if (!baseline) {

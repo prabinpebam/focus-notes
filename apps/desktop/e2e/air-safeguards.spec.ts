@@ -346,7 +346,7 @@ test("AIS-16: Settings Default is one list shared with Rewrite", async () => {
         const row = settings.locator("[data-item-card]").filter({ has: page.getByRole("radio", { name: "Default: Connection 0", exact: true }) });
         await row.getByRole("button", { name: "Change", exact: true }).click();
         expect(JSON.parse(readFileSync(aiFile, "utf8")).writer).toBe("c1");
-        await settings.getByRole("button", { name: "Cancel", exact: true }).click();
+        await settings.getByRole("button", { name: "Done", exact: true }).click();
         await page.keyboard.press("Escape");
         await expect(settings).toBeHidden();
         const dialog = await openRewrite(page, "A few words to rewrite.", "Keep my draft");

@@ -28,7 +28,7 @@ test("PRF-03: a 10,000-word note opens in 150 ms or less", async () => {
   const times: number[] = [];
   for (const name of ["Long note", "Welcome", "Long note", "Welcome", "Long note"]) {
     await page.keyboard.press(`${mod}+O`);
-    const row = fileRow(page.getByRole("complementary", { name: "Files" }), name);
+    const row = fileRow(page.getByRole("tree", { name: "Notes and folders", exact: true }), name);
     await row.click();
     await expect(row).toBeFocused();
     const before = (await measures(page, "fn:note.open")).length;

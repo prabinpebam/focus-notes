@@ -143,13 +143,13 @@ let compositingShown = false;
 export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean; args?: string[]; entrypoint?: string } = {}): Promise<Launched> {
   const log: string[] = [];
   const stateFile = join(dirs.userData, "state.json");
+  const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { version: 1 };
+  state.projectIntroSeen ??= true;
   if (!opts.firstRun) {
-    const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { version: 1, firstRun: "done" };
     state.firstRun ??= "done";
-    state.projectIntroSeen ??= true;
     if (!("lastNotePath" in state)) state.lastNotePath = seedReopenNote(dirs.docs);
-    writeFileSync(stateFile, JSON.stringify(state));
   }
+  writeFileSync(stateFile, JSON.stringify(state));
   // FOCUS_NOTES_E2E_WINDOW=1024x720 opens the window at a CI runner's size, to reproduce what only a small display shows.
   const size = /^(\d+)x(\d+)$/.exec(process.env.FOCUS_NOTES_E2E_WINDOW ?? "");
   const windowFile = join(dirs.userData, "window.json");

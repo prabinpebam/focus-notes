@@ -98,10 +98,13 @@ async function chooseByKeyboard(page: Page, name: string) {
 async function openFromFiles(page: Page, title: string, keyboardOnly: boolean) {
   await page.keyboard.press(`${mod}+O`);
   const files = page.getByRole("complementary", { name: "Files" });
-  const row = fileRow(files, title);
-  await expect(files.getByRole("tree")).toBeVisible();
+  const tree = files.getByRole("tree", { name: "Notes and folders", exact: true });
+  const row = fileRow(tree, title);
+  await expect(tree).toBeVisible();
   if (keyboardOnly) {
     await expect(files.getByRole("treeitem").and(page.locator(":focus"))).toHaveCount(1);
+    for (let i = 0; i < 10 && !(await tree.getByRole("treeitem").and(page.locator(":focus")).count()); i++) await page.keyboard.press("Tab");
+    await expect(tree.getByRole("treeitem").and(page.locator(":focus"))).toHaveCount(1);
     await page.keyboard.press("Home");
     for (let i = 0; i < 20 && !(await row.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("ArrowDown");
   } else {
@@ -272,6 +275,8 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
     } else {
       await button.click();
     }
+    await expect(page.getByRole("toolbar", { name: "Toolbar" })).toBeVisible();
+    await page.keyboard.press("Escape");
     await expect(page.getByRole("toolbar", { name: "Toolbar" })).toBeHidden();
     await expect(editor).toBeFocused();
     await settled(page);

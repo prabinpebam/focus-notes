@@ -22,10 +22,7 @@ async function openWorkspaceSettings(page: Page) {
   await press(page, `${mod}+,`);
   await expect(settings(page)).toBeVisible();
   const tab = settings(page).getByRole("tab", { name: "Workspace" });
-  if ((await tab.getAttribute("aria-selected")) !== "true") {
-    await settings(page).getByRole("tab", { selected: true }).focus();
-    await press(page, "ArrowDown");
-  }
+  await tab.click();
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
 /** A few frames more after a transition settles, so its last frames are in the record. */

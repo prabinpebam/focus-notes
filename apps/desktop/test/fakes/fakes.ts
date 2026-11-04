@@ -38,7 +38,10 @@ function realDirs(): string[] {
     ? execFileSync("where", ["git"], { encoding: "utf8", timeout: 60_000 }).split(/\r?\n/).find((l) => l.toLowerCase().endsWith("git.exe"))
     : execFileSync("which", ["git"], { encoding: "utf8", timeout: 60_000 }).trim();
   const dirs = [dirname(process.execPath), git ? dirname(git) : ""];
-  if (win) dirs.push(join(process.env.SystemRoot ?? "C:\\Windows", "System32"));
+  if (win) {
+    const system = join(process.env.SystemRoot ?? "C:\\Windows", "System32");
+    dirs.push(system, join(system, "WindowsPowerShell", "v1.0"));
+  }
   else dirs.push("/usr/bin", "/bin");
   return [...new Set(dirs.filter(Boolean))];
 }
@@ -52,7 +55,7 @@ let systemDirs: string[] | undefined;
  * whatever the computer has installed. Runners and developers' computers have the GitHub CLI in
  * /usr/bin or next to Git (Homebrew), so on macOS and Linux the system's folders are mirrored, once
  * per process, as links to every program in them except the helpers. On Windows Git's, Node's, and
- * System32's folders hold no helper (Git Credential Manager is in Git's mingw64 folder, which isn't
+ * System32's and Windows PowerShell's folders hold no helper (Git Credential Manager is in Git's mingw64 folder, which isn't
  * on PATH); that is checked, so a computer where it isn't so fails loudly rather than signing in.
  */
 function hermeticSystemDirs(): string[] {
@@ -122,7 +125,7 @@ export function makeFakes(opts: { token: string; login?: string; gcm?: boolean; 
   writeFileSync(join(root, "config.json"), JSON.stringify({ token: opts.token, login: opts.login ?? "ada", delayMs: opts.delayMs ?? 300 }));
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined && k.toUpperCase() !== "PATH" && !k.startsWith("GIT_") && !k.startsWith("GH_")) env[k] = v;
-  Object.assign(env, { PATH: [bin, ...hermeticSystemDirs()].join(delimiter), GIT_CONFIG_GLOBAL: gitconfig, GIT_CONFIG_NOSYSTEM: "1", FAKE_GH_DIR: root, HOME: home, USERPROFILE: home, GH_CONFIG_DIR: join(root, "gh-config") });
+  Object.assign(env, { PATH: [bin, ...hermeticSystemDirs()].join(delimiter), GIT_CONFIG_GLOBAL: gitconfig, GIT_CONFIG_NOSYSTEM: "1", FAKE_GH_DIR: root, HOME: home, USERPROFILE: home, GH_CONFIG_DIR: join(root, "gh-config"), PSModuleAnalysisCachePath: join(root, "powershell-module-cache") });
   const read = (name: string) => (existsSync(join(root, name)) ? readFileSync(join(root, name), "utf8") : "");
   return {
     root, env, home, gitconfig,

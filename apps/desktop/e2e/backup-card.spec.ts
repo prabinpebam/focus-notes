@@ -1,12 +1,10 @@
 import { test, expect } from "./fixtures.ts";
-import { writeFileSync } from "node:fs";
-import { join } from "node:path";
 import type { SyncReport } from "@focus-notes/core";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { launch, quit } from "./helpers.ts";
+import { instance } from "./instance.ts";
 
 async function start() {
-  const dirs = tempDirs();
-  writeFileSync(join(dirs.docs, "Welcome.md"), "# Welcome\n\nA saved note.\n");
+  const { dirs } = instance();
   const l = await launch(dirs);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await expect(l.page.locator("#saveState")).toBeVisible();
@@ -33,7 +31,7 @@ test("UI-12: an outlined icon replaces the desktop name; its hover card does not
     });
     expect(inset.left).toBeGreaterThan(0);
     expect(Math.abs(inset.left - inset.bottom)).toBeLessThan(1);
-    await expect(page.locator("#account")).toHaveText("");
+    await expect(page.getByRole("button", { name: /^Project settings for / })).toBeVisible();
     await icon.hover();
     const card = page.getByRole("dialog", { name: "Backup", exact: true });
     await expect(card).toBeVisible();
@@ -53,7 +51,7 @@ test("UI-12: an outlined icon replaces the desktop name; its hover card does not
     }).toBe(true);
     await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
     await expect(card).toContainText("No backup recorded in this session");
-    await expect(card.getByRole("button", { name: "Backup to GitHub", exact: true })).toBeDisabled();
+    await expect(card.getByRole("button", { name: "Backup to GitHub", exact: true })).toBeEnabled();
     await card.hover();
     await page.waitForTimeout(700);
     await expect(card).toBeVisible();

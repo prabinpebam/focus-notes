@@ -34,14 +34,16 @@ export function Slider({ label, value, min, max, step, valueText, format = "numb
   const keyboard = useRef(false);
   const queued = useRef<number | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const flushLatest = useRef<() => void>(() => {});
   useEffect(() => setDraft(value ?? min), [value, min]);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => flushLatest.current(), []);
   const flush = () => {
     clearTimeout(timer.current);
     const next = queued.current;
     queued.current = undefined;
     if (next !== undefined && commit !== "pending" && next !== value) onChange?.({ value: next });
   };
+  flushLatest.current = flush;
   const change = (v: number | number[]) => {
     if (commit === "pending") return;
     const next = Array.isArray(v) ? v[0]! : v;

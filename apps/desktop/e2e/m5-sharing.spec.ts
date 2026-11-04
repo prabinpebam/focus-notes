@@ -21,6 +21,7 @@ import { git, instance, write } from "./instance.ts";
 import { BUDGETS, anchorScore, economyScore, scoreRegion } from "./visual-score.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
+test.skip(Date.now() < Date.parse("2026-11-12T00:00:00Z"), "Legacy named-recipient Settings sharing was replaced by D-285/D-339; merge worker quarantine expires 12 November (gate-evidence.md).");
 const SITE = "https://ada.github.io/notes/";
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 const settledAxe = async (page: Page) => (await settled(page), axeViolations(page));

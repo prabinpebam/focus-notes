@@ -65,7 +65,7 @@ function lastNote(userData: string, note: string) {
 async function openFromFiles(page: Page, title: string) {
   await page.keyboard.press(`${mod}+O`);
   const files = page.getByRole("complementary", { name: "Files" });
-  await expect(files.getByRole("tree")).toBeVisible();
+  await expect(files.getByRole("tree", { name: "Notes and folders", exact: true })).toBeVisible();
   const row = files.getByRole("treeitem", { name: new RegExp(`^${title}\\b`) });
   await row.click();
   await expect(row).toBeFocused();

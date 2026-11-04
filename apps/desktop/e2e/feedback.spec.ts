@@ -218,6 +218,7 @@ test("QLT-07: from Spotlight, GitHub refusing this sign-in leads to Continue on 
     await settled(page);
     expect(await axeViolations(page)).toEqual([]);
     await shot(page, "failed-refused");
+    await expect(page.getByRole("region", { name: "Notifications" })).not.toContainText("Could not remember this note");
     await d.getByRole("button", { name: "Continue on GitHub" }).click();
     await expect(page.getByText("Report copied. Paste it into the issue.")).toBeVisible({ timeout: 20_000 });
     await expect(d).toHaveCount(0);
