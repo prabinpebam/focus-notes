@@ -33,6 +33,41 @@ const tb = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.tool
 const cust = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.toolbarCustomize", app.store.state) as Cust;
 
 describe("UI-08: choosing the toolbar's six actions", () => {
+  it("restores the last durable order if consecutive optimistic saves both fail", async () => {
+    const f = setup();
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    const rejects: ((error: Error) => void)[] = [];
+    f.bridge.saveAppState = () => new Promise((_resolve, reject) => { rejects.push(reject); });
+    const first = app.commands.run("toolbar.setPinned", { ids: "find.open,note.new" }).catch(error => error);
+    const second = app.commands.run("toolbar.setPinned", { ids: "find.open,note.save" }).catch(error => error);
+    await settle();
+    rejects[0]!(new Error("disk full"));
+    await settle();
+    rejects[1]!(new Error("disk full"));
+    expect(await first).toBeInstanceOf(Error);
+    expect(await second).toBeInstanceOf(Error);
+    expect(tb(app).items.map(i => i.id)).toEqual([...DEFAULT_TOOLBAR]);
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe(messages["toolbar.customize.saveFailed"]);
+  });
+
+  it("atomically applies composer order, validates it and restores it on restart", async () => {
+    const f = setup();
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    const next = ["find.open", "note.new", "note.open", "note.save"];
+    await app.commands.run("toolbar.setPinned", { ids: next.join(",") });
+    expect(tb(app).items.map(i => i.id)).toEqual(next);
+    expect(f.saved.at(-1)?.toolbarPinned).toEqual(next);
+    const restarted = createApp(setup({ pinned: f.saved.at(-1)?.toolbarPinned }).bridge, messages);
+    await restarted.start();
+    expect(tb(restarted).items.map(i => i.id)).toEqual(next);
+    for (const ids of ["find.open,find.open", "unknown.command", [...DEFAULT_TOOLBAR, "find.open"].join(",")]) {
+      await expect(app.commands.run("toolbar.setPinned", { ids })).rejects.toThrow("Invalid toolbar");
+      expect(tb(app).items.map(i => i.id)).toEqual(next);
+    }
+  });
+
   it("starts with the six defaults, and keeps only usable pinned actions", async () => {
     const app = createApp(setup().bridge, messages);
     await app.start();

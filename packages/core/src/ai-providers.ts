@@ -113,3 +113,11 @@ export interface AiFound {
   status?: "signed-in" | "signed-out" | "unsupported-version" | "unknown";
   error?: string;
 }
+
+/** One completed discovery probe; only public provider identities and sanitized reason codes. */
+export interface AiDiscoveryProgress {
+  provider: string;
+  status: "found" | "none" | "error";
+  found?: AiFound;
+  error?: string;
+}

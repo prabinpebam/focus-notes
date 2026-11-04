@@ -138,9 +138,12 @@ export class CopilotIntegration {
     }
   }
 
-  async discover(): Promise<AiFound | undefined> {
+  async discover(outer?: AbortSignal): Promise<AiFound | undefined> {
     const started = performance.now();
     const controller = new AbortController();
+    const abort = () => controller.abort(new AiError("cancelled"));
+    outer?.addEventListener("abort", abort, { once: true });
+    if (outer?.aborted) abort();
     const timer = setTimeout(() => controller.abort(new AiError("timeout")), 5000);
     let close: (() => Promise<void>) | undefined;
     try {
@@ -148,10 +151,12 @@ export class CopilotIntegration {
       close = runtime.close;
       return { provider: "copilot-cli", endpoint: "", models: [{ id: "auto", cloud: true }], status: "signed-in" };
     } catch (error) {
+      outer?.throwIfAborted();
       const e = failure(error);
       if (e.code === "cli-missing") return undefined;
       return { provider: "copilot-cli", endpoint: "", models: [], status: e.code === "cli-not-signed-in" ? "signed-out" : e.code === "cli-unsupported" ? "unsupported-version" : "unknown", error: e.code };
     } finally {
+      outer?.removeEventListener("abort", abort);
       clearTimeout(timer);
       await close?.();
       performance.measure("fn:ai.cliDiscover", { start: started, duration: performance.now() - started });

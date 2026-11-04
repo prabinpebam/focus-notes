@@ -10,6 +10,7 @@ export const contract = defineContract({
     targets: { kind: "list", of: "scanTargets", required: true },
     count: { kind: "message", required: true, description: "Beside the radar and announced at the end: \"Found 2 so far\", \"Found 3 apps\", \"Nothing running\"." },
     checkingLabel: { kind: "message", required: true, description: "A row that's still waiting for its answer: \"Checking\"." },
+    announceResult: { kind: "boolean", default: true, description: "Disable when the host announces the complete result and recovery reason." },
   },
   events: {},
   slots: {},

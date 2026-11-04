@@ -15,6 +15,7 @@ export interface ScanRadarProps {
   count: string;
   /** Read out with each row that's still waiting: "Checking". */
   checkingLabel: string;
+  announceResult?: boolean;
 }
 
 const iconOf = (name: string | undefined): IconName => ((ICON_NAMES as readonly string[]).includes(name ?? "") ? name as IconName : "sparkle");
@@ -25,7 +26,7 @@ const prop = (ref: string) => ref.slice(4, -1);
  * app asks, every place that answers lands as a blip on its own bearing, and one row per place says
  * what was asked and what came back. Reduced motion: no sweep and no pulse; rows and blips just appear.
  */
-export function ScanRadar({ label, phase = "scanning", targets, count, checkingLabel }: ScanRadarProps) {
+export function ScanRadar({ label, phase = "scanning", targets, count, checkingLabel, announceResult = true }: ScanRadarProps) {
   const n = Math.max(targets.length, 1);
   return (
     <div className={s.root} role="group" aria-busy={phase === "scanning"} aria-label={label}>
@@ -38,7 +39,7 @@ export function ScanRadar({ label, phase = "scanning", targets, count, checkingL
       </div>
       <div className={s.side}>
         <span className={s.count}>{count}</span>
-        <LiveRegion message={phase === "scanning" ? "" : count} />
+        {announceResult ? <LiveRegion message={phase === "scanning" ? "" : count} /> : null}
         <ul className={s.list}>
           {targets.map((target) => (
             <li key={target.id} className={s.row} data-status={target.status}>
