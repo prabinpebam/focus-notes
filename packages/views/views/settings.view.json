@@ -15,7 +15,10 @@
     "vm.shareNote",
     "vm.agents",
     "vm.keyboard",
-    "vm.ai"
+    "vm.ai",
+    "vm.project",
+    "vm.sharingSettings",
+    "vm.sharingPeople"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -98,6 +101,745 @@
                   "get": "vm.settings.section"
                 },
                 "cases": {
+                  "project": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "m"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "value": {
+                            "t": "project.settings.title"
+                          },
+                          "level": "2"
+                        }
+                      },
+                      {
+                        "type": "TextField",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.name"
+                          },
+                          "value": {
+                            "bind": "vm.project.name"
+                          },
+                          "description": {
+                            "t": "project.settings.nameHint"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Field",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.colour"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "xs",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "vm.project.accents"
+                                },
+                                "as": "a",
+                                "key": "a.id",
+                                "render": {
+                                  "type": "ProjectMark",
+                                  "on": {
+                                    "press": {
+                                      "run": "project.accent",
+                                      "args": {
+                                        "value": {
+                                          "get": "a.id"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "props": {
+                                    "accent": {
+                                      "get": "a.id"
+                                    },
+                                    "plate": "solid",
+                                    "size": "m",
+                                    "label": {
+                                      "get": "a.label"
+                                    },
+                                    "selected": {
+                                      "expr": {
+                                        "==": [
+                                          {
+                                            "get": "vm.project.accent"
+                                          },
+                                          {
+                                            "get": "a.id"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "project.mock.none"
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Field",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.logo"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "xs",
+                                  "wrap": true
+                                },
+                                "children": [
+                                  {
+                                    "each": {
+                                      "get": "vm.project.logos"
+                                    },
+                                    "as": "l",
+                                    "key": "l.id",
+                                    "render": {
+                                      "type": "ProjectMark",
+                                      "on": {
+                                        "press": {
+                                          "run": "project.logo",
+                                          "args": {
+                                            "value": {
+                                              "get": "l.id"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "props": {
+                                        "logo": {
+                                          "get": "l.id"
+                                        },
+                                        "accent": {
+                                          "get": "vm.project.accent"
+                                        },
+                                        "size": "m",
+                                        "label": {
+                                          "get": "l.label"
+                                        },
+                                        "selected": {
+                                          "expr": {
+                                            "==": [
+                                              {
+                                                "get": "vm.project.logo"
+                                              },
+                                              {
+                                                "get": "l.id"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "empty": {
+                                      "type": "Text",
+                                      "props": {
+                                        "value": {
+                                          "t": "project.mock.none"
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "s",
+                                  "align": "center"
+                                },
+                                "children": [
+                                  { "type": "ProjectMark", "when": { "expr": { "==": [{ "get": "vm.project.logo" }, "upload"] } }, "props": { "logo": "upload", "src": { "get": "vm.project.logoSrc" }, "accent": { "get": "vm.project.accent" }, "size": "m", "selected": true } },
+                                  { "type": "Button", "props": { "label": { "t": "project.settings.upload" }, "variant": "secondary" }, "on": { "press": { "run": "project.upload" } } },
+                                  { "type": "Text", "props": { "value": { "get": "vm.project.uploadError" }, "tone": "danger" } }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SegmentedControl",
+                        "props": {
+                          "label": {
+                            "t": "project.settings.watermark"
+                          },
+                          "options": {
+                            "get": "vm.project.watermarkOptions"
+                          },
+                          "value": {
+                            "bind": "vm.project.watermark"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "align": "start",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "none"
+                                },
+                                "children": [
+                                  {
+                                    "type": "PopoverPanel",
+                                    "on": {
+                                      "openChange": [
+                                        {
+                                          "run": "project.fontOpen",
+                                          "args": {
+                                            "value": {
+                                              "expr": {
+                                                "if": [
+                                                  {
+                                                    "get": "event.open"
+                                                  },
+                                                  "yes",
+                                                  "no"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "run": "project.fontHover",
+                                          "args": {
+                                            "value": ""
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "slots": {
+                                      "trigger": [
+                                        {
+                                          "type": "PickerButton",
+                                          "props": {
+                                            "variant": "fontTile",
+                                            "label": {
+                                              "t": "project.settings.fontShort"
+                                            },
+                                            "value": {
+                                              "get": "vm.project.fontValue"
+                                            },
+                                            "font": {
+                                              "get": "vm.project.scopeFont"
+                                            }
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "project.fontOpen",
+                                              "args": {
+                                                "value": "yes"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "content": [
+                                        {
+                                          "type": "Stack",
+                                          "props": {
+                                            "gap": "s"
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "Columns",
+                                              "props": {
+                                                "gap": "xs",
+                                                "cell": "choice"
+                                              },
+                                              "children": [
+                                                {
+                                                  "each": {
+                                                    "get": "vm.project.fonts"
+                                                  },
+                                                  "as": "f",
+                                                  "key": "f.id",
+                                                  "render": {
+                                                    "type": "FontChoice",
+                                                    "on": {
+                                                      "press": [
+                                                        {
+                                                          "run": "project.font",
+                                                          "args": {
+                                                            "value": {
+                                                              "get": "f.id"
+                                                            }
+                                                          }
+                                                        },
+                                                        {
+                                                          "run": "project.fontHover",
+                                                          "args": {
+                                                            "value": ""
+                                                          }
+                                                        },
+                                                        {
+                                                          "run": "project.fontOpen",
+                                                          "args": {
+                                                            "value": "no"
+                                                          }
+                                                        }
+                                                      ],
+                                                      "preview": {
+                                                        "run": "project.fontHover",
+                                                        "args": {
+                                                          "value": {
+                                                            "get": "f.id"
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    "props": {
+                                                      "font": {
+                                                        "get": "f.id"
+                                                      },
+                                                      "label": {
+                                                        "get": "f.label"
+                                                      },
+                                                      "selected": {
+                                                        "expr": {
+                                                          "==": [
+                                                            {
+                                                              "get": "vm.project.font"
+                                                            },
+                                                            {
+                                                              "get": "f.id"
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  "empty": {
+                                                    "type": "Text",
+                                                    "props": {
+                                                      "value": {
+                                                        "t": "project.mock.none"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "Button",
+                                              "on": {
+                                                "press": [
+                                                  {
+                                                    "run": "project.font",
+                                                    "args": {
+                                                      "value": "app"
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.fontHover",
+                                                    "args": {
+                                                      "value": ""
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.fontOpen",
+                                                    "args": {
+                                                      "value": "no"
+                                                    }
+                                                  }
+                                                ]
+                                              },
+                                              "props": {
+                                                "label": {
+                                                  "t": "project.settings.reset"
+                                                },
+                                                "variant": "subtle",
+                                                "size": "s",
+                                                "icon": "undo"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "props": {
+                                      "label": {
+                                        "t": "project.settings.font"
+                                      },
+                                      "open": {
+                                        "expr": {
+                                          "==": [
+                                            {
+                                              "get": "vm.project.fontOpen"
+                                            },
+                                            "yes"
+                                          ]
+                                        }
+                                      },
+                                      "placement": "top start",
+                                      "width": "tiles"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "none"
+                                },
+                                "children": [
+                                  {
+                                    "type": "PopoverPanel",
+                                    "on": {
+                                      "openChange": [
+                                        {
+                                          "run": "project.themeOpen",
+                                          "args": {
+                                            "value": {
+                                              "expr": {
+                                                "if": [
+                                                  {
+                                                    "get": "event.open"
+                                                  },
+                                                  "yes",
+                                                  "no"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "run": "project.themeHover",
+                                          "args": {
+                                            "value": ""
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "slots": {
+                                      "trigger": [
+                                        {
+                                          "type": "PickerButton",
+                                          "props": {
+                                            "variant": "themeTile",
+                                            "label": {
+                                              "t": "project.settings.themeShort"
+                                            },
+                                            "value": {
+                                              "get": "vm.project.themeValue"
+                                            },
+                                            "theme": {
+                                              "get": "vm.project.scopeTheme"
+                                            }
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "project.themeOpen",
+                                              "args": {
+                                                "value": "yes"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "content": [
+                                        {
+                                          "type": "Stack",
+                                          "props": {
+                                            "gap": "s"
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "ThemeGallery",
+                                              "on": {
+                                                "choose": [
+                                                  {
+                                                    "run": "project.theme",
+                                                    "args": {
+                                                      "value": {
+                                                        "get": "event.id"
+                                                      }
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeHover",
+                                                    "args": {
+                                                      "value": ""
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeOpen",
+                                                    "args": {
+                                                      "value": "no"
+                                                    }
+                                                  }
+                                                ],
+                                                "preview": {
+                                                  "run": "project.themeHover",
+                                                  "args": {
+                                                    "value": {
+                                                      "get": "event.id"
+                                                    }
+                                                  }
+                                                },
+                                                "revert": {
+                                                  "run": "project.themeHover",
+                                                  "args": {
+                                                    "value": ""
+                                                  }
+                                                }
+                                              },
+                                              "props": {
+                                                "label": {
+                                                  "t": "project.settings.theme"
+                                                },
+                                                "items": {
+                                                  "get": "vm.project.themeTiles"
+                                                },
+                                                "value": {
+                                                  "get": "vm.project.theme"
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "Button",
+                                              "on": {
+                                                "press": [
+                                                  {
+                                                    "run": "project.theme",
+                                                    "args": {
+                                                      "value": "app"
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeHover",
+                                                    "args": {
+                                                      "value": ""
+                                                    }
+                                                  },
+                                                  {
+                                                    "run": "project.themeOpen",
+                                                    "args": {
+                                                      "value": "no"
+                                                    }
+                                                  }
+                                                ]
+                                              },
+                                              "props": {
+                                                "label": {
+                                                  "t": "project.settings.reset"
+                                                },
+                                                "variant": "subtle",
+                                                "size": "s",
+                                                "icon": "undo"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "props": {
+                                      "label": {
+                                        "t": "project.settings.theme"
+                                      },
+                                      "open": {
+                                        "expr": {
+                                          "==": [
+                                            {
+                                              "get": "vm.project.themeOpen"
+                                            },
+                                            "yes"
+                                          ]
+                                        }
+                                      },
+                                      "placement": "top start",
+                                      "width": "tiles"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "project.settings.optionalHint"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Divider",
+                        "when": {
+                          "get": "vm.sharingPeople.available"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "l"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "justify": "between",
+                              "align": "center",
+                              "gap": "m",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "level": "3",
+                                  "value": {
+                                    "t": "share.invite.people"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "share.invite.open"
+                                  },
+                                  "variant": "primary",
+                                  "icon": "add"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "sharing.inviteOpen"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "share.invite.notShare"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "vm.sharingPeople.people"
+                                },
+                                "as": "p",
+                                "key": "p.id",
+                                "render": {
+                                  "type": "ItemCard",
+                                  "props": {
+                                    "title": {
+                                      "get": "p.login"
+                                    },
+                                    "initials": {
+                                      "get": "p.initials"
+                                    },
+                                    "detail": {
+                                      "get": "p.detail"
+                                    },
+                                    "badge": {
+                                      "get": "p.badge"
+                                    },
+                                    "personal": "title"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "label": {
+                                          "t": "share.invite.cancelInvite"
+                                        },
+                                        "size": "s",
+                                        "busy": {
+                                          "get": "vm.sharingPeople.busy"
+                                        }
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "sharing.inviteCancel",
+                                          "args": {
+                                            "id": {
+                                              "get": "p.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "share.invite.empty"
+                                    },
+                                    "tone": "muted"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "when": {
+                          "get": "vm.sharingPeople.available"
+                        }
+                      }
+                    ]
+                  },
                   "ai": {
                     "type": "Stack",
                     "id": "aiConnections",
@@ -125,35 +867,120 @@
                       {
                         "type": "LiveRegion",
                         "props": {
-                          "message": { "get": "vm.ai.writerSaveText" }
+                          "message": {
+                            "get": "vm.ai.writerSaveText"
+                          }
                         }
                       },
                       {
                         "type": "Stack",
                         "id": "aiDiscovery",
-                        "props": { "gap": "related" },
+                        "props": {
+                          "gap": "related"
+                        },
                         "children": [
                           {
                             "type": "Inline",
-                            "props": { "related": true, "label": { "t": "ai.found.find" } },
+                            "props": {
+                              "related": true,
+                              "label": {
+                                "t": "ai.found.find"
+                              }
+                            },
                             "children": [
                               {
                                 "type": "Button",
-                                "props": { "label": { "t": "ai.found.find" }, "busy": { "get": "vm.ai.discovering" } },
-                                "on": { "press": { "run": "ai.discover" } }
+                                "props": {
+                                  "label": {
+                                    "t": "ai.found.find"
+                                  },
+                                  "busy": {
+                                    "get": "vm.ai.discovering"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "ai.discover"
+                                  }
+                                }
                               },
-                              { "type": "Text", "props": { "value": { "t": "ai.found.hint" }, "role": "caption", "tone": "muted" } }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "ai.found.hint"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              }
                             ]
                           },
-                          { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.ai.discoverStatus" }, ""] } }, "props": { "value": { "get": "vm.ai.discoverStatus" }, "role": "caption", "announce": true } },
                           {
-                            "each": { "get": "vm.ai.found" }, "as": "f", "key": "f.id",
-                            "empty": { "type": "LiveRegion", "props": { "message": { "get": "vm.ai.discoverStatus" } } },
+                            "type": "Text",
+                            "when": {
+                              "expr": {
+                                "!=": [
+                                  {
+                                    "get": "vm.ai.discoverStatus"
+                                  },
+                                  ""
+                                ]
+                              }
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.ai.discoverStatus"
+                              },
+                              "role": "caption",
+                              "announce": true
+                            }
+                          },
+                          {
+                            "each": {
+                              "get": "vm.ai.found"
+                            },
+                            "as": "f",
+                            "key": "f.id",
+                            "empty": {
+                              "type": "LiveRegion",
+                              "props": {
+                                "message": {
+                                  "get": "vm.ai.discoverStatus"
+                                }
+                              }
+                            },
                             "render": {
                               "type": "ItemCard",
-                              "props": { "title": { "get": "f.name" }, "detail": { "get": "f.detail" }, "icon": "link" },
+                              "props": {
+                                "title": {
+                                  "get": "f.name"
+                                },
+                                "detail": {
+                                  "get": "f.detail"
+                                },
+                                "icon": "link"
+                              },
                               "children": [
-                                { "type": "Button", "props": { "label": { "t": "ai.found.use" }, "size": "s" }, "on": { "press": { "run": "ai.useFound", "args": { "value": { "get": "f.id" } } } } }
+                                {
+                                  "type": "Button",
+                                  "props": {
+                                    "label": {
+                                      "t": "ai.found.use"
+                                    },
+                                    "size": "s"
+                                  },
+                                  "on": {
+                                    "press": {
+                                      "run": "ai.useFound",
+                                      "args": {
+                                        "value": {
+                                          "get": "f.id"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
                               ]
                             }
                           }
@@ -177,16 +1004,35 @@
                             "badge": {
                               "get": "c.badge"
                             },
-                            "icon": { "get": "c.icon" },
-                            "choiceGroup": { "get": "vm.ai.choiceGroup" },
-                            "choiceValue": { "get": "c.id" },
-                            "selected": { "get": "c.writer" },
-                            "busy": { "get": "vm.ai.choosingWriter" },
-                            "label": { "get": "c.choiceLabel" },
+                            "icon": {
+                              "get": "c.icon"
+                            },
+                            "choiceGroup": {
+                              "get": "vm.ai.choiceGroup"
+                            },
+                            "choiceValue": {
+                              "get": "c.id"
+                            },
+                            "selected": {
+                              "get": "c.writer"
+                            },
+                            "busy": {
+                              "get": "vm.ai.choosingWriter"
+                            },
+                            "label": {
+                              "get": "c.choiceLabel"
+                            },
                             "personal": "title"
                           },
                           "on": {
-                            "choose": { "run": "ai.writer", "args": { "value": { "get": "event.value" } } }
+                            "choose": {
+                              "run": "ai.writer",
+                              "args": {
+                                "value": {
+                                  "get": "event.value"
+                                }
+                              }
+                            }
                           },
                           "children": [
                             {
@@ -227,7 +1073,9 @@
                                         "label": {
                                           "t": "ai.test"
                                         },
-                                        "busy": { "get": "vm.ai.choosingWriter" },
+                                        "busy": {
+                                          "get": "vm.ai.choosingWriter"
+                                        },
                                         "size": "s",
                                         "disabled": {
                                           "get": "c.testing"
@@ -253,7 +1101,9 @@
                                         "label": {
                                           "t": "ai.change"
                                         },
-                                        "busy": { "get": "vm.ai.choosingWriter" },
+                                        "busy": {
+                                          "get": "vm.ai.choosingWriter"
+                                        },
                                         "size": "s",
                                         "variant": "subtle"
                                       },
@@ -274,7 +1124,9 @@
                                         "label": {
                                           "t": "ai.remove"
                                         },
-                                        "busy": { "get": "vm.ai.choosingWriter" },
+                                        "busy": {
+                                          "get": "vm.ai.choosingWriter"
+                                        },
                                         "size": "s",
                                         "variant": "subtle"
                                       },
@@ -367,7 +1219,16 @@
                               },
                               {
                                 "type": "Text",
-                                "when": { "expr": { "!=": [{ "get": "vm.ai.status" }, ""] } },
+                                "when": {
+                                  "expr": {
+                                    "!=": [
+                                      {
+                                        "get": "vm.ai.status"
+                                      },
+                                      ""
+                                    ]
+                                  }
+                                },
                                 "props": {
                                   "value": {
                                     "get": "vm.ai.providerNote"
@@ -708,9 +1569,20 @@
                       {
                         "type": "Button",
                         "id": "aiAddConnection",
-                        "when": { "get": "vm.ai.addVisible" },
-                        "props": { "label": { "t": "ai.add" }, "variant": "primary" },
-                        "on": { "press": { "run": "ai.add" } }
+                        "when": {
+                          "get": "vm.ai.addVisible"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "ai.add"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "ai.add"
+                          }
+                        }
                       }
                     ]
                   },
@@ -1091,63 +1963,190 @@
                     },
                     "children": [
                       {
-                        "type": "Inline",
+                        "type": "ItemCard",
                         "props": {
-                          "justify": "between",
-                          "gap": "m",
-                          "wrap": true
+                          "title": {
+                            "get": "vm.project.name"
+                          },
+                          "detail": {
+                            "get": "vm.sharingSettings.site"
+                          },
+                          "badge": {
+                            "t": "share.settings.on"
+                          },
+                          "icon": "globe"
+                        },
+                        "when": {
+                          "get": "vm.sharingSettings.on"
                         },
                         "children": [
                           {
-                            "type": "Heading",
+                            "type": "Inline",
                             "props": {
-                              "level": "3",
+                              "gap": "s",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "site.preview.open"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "sharing.preview"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "share.settings.turnOff"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "sharing.confirmOpen",
+                                    "args": {
+                                      "kind": "turnOff"
+                                    }
+                                  }
+                                },
+                                "when": {
+                                  "get": "vm.sharingSettings.localReview"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ItemCard",
+                        "when": {
+                          "get": "vm.sharingSettings.off"
+                        },
+                        "props": {
+                          "title": {
+                            "get": "vm.project.name"
+                          },
+                          "detail": {
+                            "t": "share.settings.offDetail"
+                          },
+                          "badge": {
+                            "t": "share.settings.off"
+                          },
+                          "icon": "lock"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "share.settings.turnOn"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "sharing.firstOpen"
+                              }
+                            },
+                            "when": {
+                              "get": "vm.sharingSettings.localReview"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Divider"
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "share.settings.all"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "l",
+                          "wrap": true,
+                          "align": "end"
+                        },
+                        "children": [
+                          {
+                            "type": "SegmentedControl",
+                            "props": {
+                              "label": {
+                                "t": "share.settings.show"
+                              },
+                              "options": {
+                                "get": "vm.sharingSettings.filters"
+                              },
                               "value": {
-                                "t": "share.manage.heading"
+                                "bind": "vm.sharingSettings.filter"
                               }
                             }
                           },
                           {
-                            "type": "Button",
-                            "when": {
-                              "get": "vm.shareManage.available"
-                            },
+                            "type": "SearchField",
                             "props": {
                               "label": {
-                                "t": "share.manage.add"
+                                "t": "share.settings.find"
                               },
-                              "variant": "primary",
-                              "icon": "share"
-                            },
-                            "on": {
-                              "press": {
-                                "run": "share.manage.add"
+                              "placeholder": {
+                                "t": "share.settings.find.placeholder"
+                              },
+                              "value": {
+                                "bind": "vm.sharingSettings.query"
+                              },
+                              "clearLabel": {
+                                "t": "field.clear"
                               }
                             }
                           }
                         ]
                       },
                       {
-                        "type": "Text",
+                        "type": "StatusRow",
                         "when": {
-                          "get": "vm.shareManage.available"
+                          "get": "vm.sharingSettings.status"
                         },
                         "props": {
-                          "value": {
-                            "t": "share.manage.live"
+                          "message": {
+                            "get": "vm.sharingSettings.status"
                           },
-                          "tone": "muted"
+                          "tone": "success",
+                          "icon": "check"
                         }
                       },
                       {
                         "type": "Text",
                         "when": {
-                          "get": "vm.shareManage.loading"
+                          "get": "vm.sharingSettings.busy"
                         },
                         "props": {
                           "value": {
-                            "t": "share.manage.loading"
+                            "t": "share.item.preparing"
                           },
+                          "announce": true
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.sharingSettings.problem"
+                        },
+                        "props": {
+                          "value": {
+                            "get": "vm.sharingSettings.problem"
+                          },
+                          "tone": "danger",
                           "announce": true
                         }
                       },
@@ -1158,116 +2157,8 @@
                         },
                         "children": [
                           {
-                            "type": "Skeleton",
-                            "props": {
-                              "width": "full"
-                            }
-                          },
-                          {
-                            "type": "Skeleton",
-                            "props": {
-                              "width": "long"
-                            }
-                          },
-                          {
-                            "type": "Skeleton",
-                            "props": {
-                              "width": "medium"
-                            }
-                          }
-                        ],
-                        "when": {
-                          "get": "vm.shareManage.loading"
-                        }
-                      },
-                      {
-                        "type": "Text",
-                        "when": {
-                          "get": "vm.shareManage.unavailable"
-                        },
-                        "props": {
-                          "value": {
-                            "t": "share.manage.unavailable"
-                          }
-                        }
-                      },
-                      {
-                        "type": "Stack",
-                        "when": {
-                          "get": "vm.shareManage.failed"
-                        },
-                        "props": {
-                          "gap": "s",
-                          "align": "start"
-                        },
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "value": {
-                                "t": "share.manage.failed"
-                              },
-                              "tone": "danger",
-                              "announce": true
-                            }
-                          },
-                          {
-                            "type": "Button",
-                            "props": {
-                              "label": {
-                                "t": "share.manage.retry"
-                              }
-                            },
-                            "on": {
-                              "press": {
-                                "run": "share.manage.load"
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Text",
-                        "when": {
-                          "get": "vm.shareManage.noSite"
-                        },
-                        "props": {
-                          "value": {
-                            "t": "share.manage.noSite"
-                          },
-                          "tone": "warning"
-                        }
-                      },
-                      {
-                        "type": "Stack",
-                        "props": {
-                          "gap": "s"
-                        },
-                        "children": [
-                          {
-                            "type": "ItemCard",
-                            "when": {
-                              "get": "vm.shareManage.vault"
-                            },
-                            "props": {
-                              "title": {
-                                "t": "share.manage.vault.title"
-                              },
-                              "detail": {
-                                "t": "share.manage.vault.detail"
-                              },
-                              "badge": {
-                                "t": "share.manage.vault.badge"
-                              },
-                              "icon": "lock",
-                              "label": {
-                                "t": "share.manage.vault.label"
-                              }
-                            }
-                          },
-                          {
                             "each": {
-                              "get": "vm.shareManage.rows"
+                              "get": "vm.sharingSettings.rows"
                             },
                             "as": "row",
                             "key": "row.id",
@@ -1275,10 +2166,7 @@
                               "type": "ItemCard",
                               "props": {
                                 "title": {
-                                  "get": "row.name"
-                                },
-                                "initials": {
-                                  "get": "row.initials"
+                                  "get": "row.item"
                                 },
                                 "detail": {
                                   "get": "row.detail"
@@ -1286,55 +2174,42 @@
                                 "badge": {
                                   "get": "row.badge"
                                 },
-                                "label": {
-                                  "get": "row.label"
-                                },
-                                "personal": "title"
+                                "icon": {
+                                  "get": "row.icon"
+                                }
                               },
                               "children": [
                                 {
                                   "type": "Inline",
+                                  "when": {
+                                    "get": "row.live"
+                                  },
                                   "props": {
-                                    "gap": "s"
+                                    "gap": "xs",
+                                    "wrap": true
                                   },
                                   "children": [
                                     {
-                                      "type": "Button",
-                                      "when": {
-                                        "get": "row.active"
-                                      },
-                                      "props": {
-                                        "label": {
-                                          "get": "row.inviteLabel"
-                                        },
-                                        "size": "s",
-                                        "icon": "copy"
-                                      },
-                                      "on": {
-                                        "press": {
-                                          "run": "share.manage.invite",
-                                          "args": {
-                                            "id": {
-                                              "get": "row.id"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    {
                                       "type": "MenuButton",
                                       "props": {
-                                        "icon": "more",
+                                        "variant": "text",
                                         "label": {
-                                          "get": "row.moreLabel"
+                                          "t": "share.settings.copyAgain"
+                                        },
+                                        "text": {
+                                          "get": "vm.sharingSettings.copyLabel"
                                         },
                                         "sections": {
-                                          "get": "row.menu"
+                                          "get": "row.copyMenu"
+                                        },
+                                        "placement": "bottom end",
+                                        "disabled": {
+                                          "get": "vm.sharingSettings.busy"
                                         }
                                       },
                                       "on": {
                                         "action": {
-                                          "run": "share.manage.row",
+                                          "run": "sharing.copy",
                                           "args": {
                                             "id": {
                                               "get": "row.id"
@@ -1345,62 +2220,100 @@
                                           }
                                         }
                                       }
+                                    },
+                                    {
+                                      "type": "MenuButton",
+                                      "props": {
+                                        "variant": "text",
+                                        "label": {
+                                          "t": "share.settings.extend"
+                                        },
+                                        "text": {
+                                          "get": "vm.sharingSettings.extendLabel"
+                                        },
+                                        "sections": {
+                                          "get": "row.extendMenu"
+                                        },
+                                        "placement": "bottom end",
+                                        "disabled": {
+                                          "get": "vm.sharingSettings.busy"
+                                        }
+                                      },
+                                      "on": {
+                                        "action": {
+                                          "run": "sharing.extend",
+                                          "args": {
+                                            "id": {
+                                              "get": "row.id"
+                                            },
+                                            "action": {
+                                              "get": "event.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "label": {
+                                          "t": "share.row.withdraw"
+                                        },
+                                        "size": "s",
+                                        "disabled": {
+                                          "get": "vm.sharingSettings.busy"
+                                        }
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "sharing.confirmOpen",
+                                          "args": {
+                                            "kind": "withdraw",
+                                            "id": {
+                                              "get": "row.id"
+                                            }
+                                          }
+                                        }
+                                      }
                                     }
                                   ]
+                                },
+                                {
+                                  "type": "Button",
+                                  "props": {
+                                    "label": {
+                                      "t": "share.settings.deleteRecord"
+                                    },
+                                    "size": "s"
+                                  },
+                                  "on": {
+                                    "press": {
+                                      "run": "sharing.confirmOpen",
+                                      "args": {
+                                        "kind": "delete",
+                                        "id": {
+                                          "get": "row.id"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "when": {
+                                    "expr": {
+                                      "!": {
+                                        "get": "row.live"
+                                      }
+                                    }
+                                  }
                                 }
                               ]
                             },
                             "empty": {
-                              "type": "ItemCard",
+                              "type": "Text",
                               "props": {
-                                "title": {
-                                  "t": "share.manage.empty.title"
+                                "value": {
+                                  "t": "share.list.empty"
                                 },
-                                "detail": {
-                                  "t": "share.manage.empty.detail"
-                                },
-                                "badge": {
-                                  "t": "share.manage.empty.badge"
-                                },
-                                "icon": "share"
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "ItemCard",
-                        "when": {
-                          "get": "vm.shareManage.available"
-                        },
-                        "props": {
-                          "title": {
-                            "t": "share.manage.template.heading"
-                          },
-                          "detail": {
-                            "t": "share.manage.template.detail"
-                          },
-                          "badge": {
-                            "get": "vm.shareManage.templateBadge"
-                          },
-                          "icon": "mail",
-                          "label": {
-                            "t": "share.manage.template.heading"
-                          }
-                        },
-                        "children": [
-                          {
-                            "type": "Button",
-                            "props": {
-                              "label": {
-                                "t": "share.manage.template.edit"
-                              },
-                              "size": "s",
-                              "icon": "rename"
-                            },
-                            "on": {
-                              "press": {
-                                "run": "share.manage.templateOpen"
+                                "tone": "muted"
                               }
                             }
                           }
@@ -3926,6 +4839,661 @@
                         "run": "share.manage.add"
                       }
                     }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "sharingConfirm",
+        "when": {
+          "get": "vm.sharingSettings.confirmOpen"
+        },
+        "props": {
+          "title": {
+            "get": "vm.sharingSettings.confirmTitle"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingSettings.confirmOpen"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.confirmClose"
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.sharingSettings.dialog"
+                      },
+                      "turnOff"
+                    ]
+                  }
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.off.shared"
+                      },
+                      "detail": {
+                        "t": "share.off.shared.detail"
+                      },
+                      "badge": {
+                        "t": "share.badge.shared"
+                      },
+                      "icon": "lock"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.off.published"
+                      },
+                      "detail": {
+                        "t": "share.off.published.detail"
+                      },
+                      "badge": {
+                        "t": "share.badge.published"
+                      },
+                      "icon": "globe"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.sharingSettings.confirmText"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.sharingSettings.problem"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.sharingSettings.problem"
+                  },
+                  "tone": "danger"
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "s",
+                  "justify": "end"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.cancel"
+                      },
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.confirmClose"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.sharingSettings.confirmLabel"
+                      },
+                      "variant": "danger",
+                      "busy": {
+                        "get": "vm.sharingSettings.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.confirm"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "sharingFirst",
+        "when": {
+          "get": "vm.sharingSettings.firstOpen"
+        },
+        "props": {
+          "title": {
+            "t": "share.settings.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingSettings.firstOpen"
+          },
+          "size": "m",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.firstClose"
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "m",
+                  "align": "center"
+                },
+                "children": [
+                  {
+                    "type": "StepMark",
+                    "props": {
+                      "icon": "share",
+                      "tone": "accent",
+                      "size": "compact"
+                    }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "2",
+                      "value": {
+                        "t": "sharing.first.title",
+                        "args": {
+                          "project": {
+                            "get": "vm.project.name"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "share.first.lead"
+                  },
+                  "role": "lead"
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.first.created"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.repo"
+                      },
+                      "detail": {
+                        "get": "vm.sharingSettings.repo"
+                      },
+                      "icon": "github"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.site"
+                      },
+                      "detail": {
+                        "get": "vm.sharingSettings.site"
+                      },
+                      "icon": "globe"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.first.see"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.shared"
+                      },
+                      "badge": {
+                        "t": "share.badge.shared"
+                      },
+                      "icon": "lock"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.first.published"
+                      },
+                      "badge": {
+                        "t": "share.badge.published"
+                      },
+                      "icon": "globe"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "share.first.history"
+                  },
+                  "tone": "muted"
+                }
+              },
+              {
+                "type": "Inline",
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.first.more"
+                      },
+                      "variant": "subtle",
+                      "size": "s",
+                      "bleed": true,
+                      "expanded": {
+                        "get": "vm.sharingSettings.more"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.firstMore"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.sharingSettings.more"
+                },
+                "props": {
+                  "value": {
+                    "t": "share.first.more.detail"
+                  },
+                  "tone": "muted",
+                  "role": "secondary"
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.cancel"
+                      },
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.firstClose"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.first.turnOn"
+                      },
+                      "variant": "primary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.firstAccept"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "inviteDialog",
+        "when": {
+          "get": "vm.sharingPeople.open"
+        },
+        "props": {
+          "title": {
+            "t": "sharing.invite.title",
+            "args": {
+              "project": {
+                "get": "vm.project.name"
+              }
+            }
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingPeople.open"
+          },
+          "size": "m",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.inviteClose"
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "TextField",
+                "props": {
+                  "label": {
+                    "t": "share.invite.user"
+                  },
+                  "description": {
+                    "t": "share.invite.user.detail"
+                  },
+                  "placeholder": {
+                    "t": "share.invite.user.placeholder"
+                  },
+                  "value": {
+                    "bind": "vm.sharingPeople.user"
+                  },
+                  "autoFocus": true
+                }
+              },
+              {
+                "type": "ItemCard",
+                "when": {
+                  "expr": {
+                    "!=": [
+                      {
+                        "get": "vm.sharingPeople.user"
+                      },
+                      ""
+                    ]
+                  }
+                },
+                "props": {
+                  "title": {
+                    "get": "vm.sharingPeople.user"
+                  },
+                  "detail": {
+                    "t": "share.invite.account"
+                  },
+                  "icon": "github",
+                  "personal": "title"
+                }
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.sharingPeople.owner"
+                      },
+                      "org"
+                    ]
+                  }
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "SegmentedControl",
+                    "props": {
+                      "label": {
+                        "t": "share.invite.role"
+                      },
+                      "options": {
+                        "get": "vm.sharingPeople.roles"
+                      },
+                      "value": {
+                        "bind": "vm.sharingPeople.role"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.invite.roleDetail",
+                        "args": {
+                          "role": {
+                            "get": "vm.sharingPeople.role"
+                          }
+                        }
+                      },
+                      "tone": "muted",
+                      "role": "secondary"
+                    }
+                  },
+                  {
+                    "type": "StatusRow",
+                    "props": {
+                      "message": {
+                        "t": "share.invite.orgNote"
+                      },
+                      "tone": "info",
+                      "icon": "info"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.sharingPeople.owner"
+                      },
+                      "personal"
+                    ]
+                  }
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.invite.collaborator"
+                      },
+                      "detail": {
+                        "t": "share.invite.collaborator.detail"
+                      },
+                      "badge": {
+                        "t": "share.invite.onlyChoice"
+                      },
+                      "icon": "lock"
+                    }
+                  },
+                  {
+                    "type": "StatusRow",
+                    "props": {
+                      "message": {
+                        "t": "share.invite.personalNote"
+                      },
+                      "tone": "warning",
+                      "icon": "warning"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.sharingPeople.problem"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.sharingPeople.problem"
+                  },
+                  "tone": "danger",
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "between",
+                  "gap": "s",
+                  "wrap": true,
+                  "align": "center"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.invite.manage"
+                      },
+                      "variant": "subtle",
+                      "icon": "github",
+                      "bleed": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "sharing.inviteManage"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.cancel"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "sharing.inviteClose"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.invite.send"
+                          },
+                          "variant": "primary",
+                          "disabled": {
+                            "expr": {
+                              "==": [
+                                {
+                                  "get": "vm.sharingPeople.user"
+                                },
+                                ""
+                              ]
+                            }
+                          },
+                          "disabledReason": {
+                            "t": "share.invite.needUser"
+                          },
+                          "busy": {
+                            "get": "vm.sharingPeople.busy"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "sharing.inviteSend"
+                          }
+                        }
+                      }
+                    ]
                   }
                 ]
               }

@@ -61,7 +61,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 
 ## App and window
 
-**3 November planned key changes (KEY-09, RWR-91, SPT-10):** desktop only; browser writing and its substitute keymap are retired by D-292. Historical web-substitute columns below do not promise browser editing.
+**3 November key changes (KEY-09, RWR-91, SPT-10):** built on `wp-general-fixes`, integration pending; desktop only. New note in… uses today's writable Public/Private workspace folders without waiting for projects (D-338); project scope follows when project windows land. Browser writing and its substitute keymap are retired by D-292. Historical web-substitute columns below do not promise browser editing.
 
 | Action | macOS / iPadOS | Windows / Linux | Web substitute | Layer | Precedent |
 | --- | --- | --- | --- | --- | --- |

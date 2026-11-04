@@ -13,6 +13,14 @@
     "lastNotePath": {
       "type": "string"
     },
+    "projectIntroSeen": {
+      "type": "boolean",
+      "description": "The one-time Projects notice was dismissed on this device."
+    },
+    "localNotes": {
+      "type": "boolean",
+      "description": "This profile writes Local notes, without a project or GitHub backup."
+    },
     "appearance": {
       "enum": [
         "system",
@@ -56,8 +64,22 @@
       "description": "The docked Files panel's width in px, as resized on this device (D-187)."
     },
     "filesSort": {
-      "enum": ["changed"],
+      "enum": [
+        "changed"
+      ],
       "description": "The Files tree sorted by last change on this device; absent: by name (FIL-11, D-175)."
+    },
+    "filesPins": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "filesRecent": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "lightTheme": {
       "enum": [
@@ -132,6 +154,92 @@
       "items": {
         "type": "string",
         "pattern": "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*)+$"
+      }
+    },
+    "projectSettings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "accent",
+          "logo",
+          "watermark",
+          "font",
+          "theme"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "accent": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "watermark": {
+            "type": "string"
+          },
+          "font": {
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sharingDrafts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "owner",
+          "people"
+        ],
+        "properties": {
+          "owner": {
+            "enum": [
+              "org",
+              "personal"
+            ]
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "login",
+                "role"
+              ],
+              "properties": {
+                "login": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "theme": {
+            "type": "string"
+          },
+          "font": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "published": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },

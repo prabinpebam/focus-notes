@@ -4,7 +4,7 @@
  * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -20,6 +20,7 @@ import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { spawn } from "node:child_process";
+import { candidateGitHubApi, projectWindows, resumeProjectProfile } from "./projects.ts";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -86,6 +87,16 @@ const frameKind = frameKindFor(platform, process.argv, process.env);
 let windowFrame: AppWindowFrame | undefined;
 
 if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
+if (!process.env.FOCUS_NOTES_PROJECTS_PROFILE && !process.env.FOCUS_NOTES_PROJECT_NOTE) {
+  const rootProfile = app.getPath("userData");
+  const resume = resumeProjectProfile(rootProfile);
+  if (resume) {
+    process.env.FOCUS_NOTES_PROJECTS_PROFILE = rootProfile;
+    process.env.FOCUS_NOTES_DOCS = resume.folder;
+    process.env.FOCUS_NOTES_LOCAL_NOTES = resume.localNotes ? "1" : "";
+    app.setPath("userData", resume.profile);
+  }
+}
 /** A file in the app's data folder: only those the data inventory names (PRV-02). */
 const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
 // Chromium's working files go in one folder of the data folder, which the inventory lists as one item.
@@ -1197,7 +1208,125 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
+let rememberClosedProject: (() => Promise<void>) | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
+  const imagePath = async (note: unknown, src: unknown) => {
+    if (typeof src !== "string" || /^[a-z][a-z\d+.-]*:/i.test(src) || isAbsolute(src)) throw new Error("invalid-image");
+    const parent = await realpath(dirname(notePath(note)));
+    const path = await realpath(resolve(parent, src));
+    const rel = relative(parent, path);
+    if (rel.startsWith(`..${sep}`) || rel === ".." || isAbsolute(rel)) throw new Error("invalid-image");
+    return path;
+  };
+  const imageMime = (path: string) => {
+    const mime = ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif" })[extname(path).toLowerCase()];
+    if (!mime) throw new Error("invalid-image");
+    return mime;
+  };
+  handle("image:read", async (note, src) => {
+    if (typeof src === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(src) && src.length <= 28 * 1024 * 1024) return src;
+    const path = await imagePath(note, src);
+    const info = await stat(path);
+    if (!info.isFile() || info.size > 20 * 1024 * 1024) throw new Error("image-too-large");
+    return `data:${imageMime(path)};base64,${(await readFile(path)).toString("base64")}`;
+  });
+  handle("image:write", async (note, src, data, expected) => {
+    const path = await imagePath(note, src);
+    const mime = imageMime(path);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(mime) || typeof data !== "string" || !data.startsWith(`data:${mime};base64,`) || data.length > 28 * 1024 * 1024 || typeof expected !== "string") throw new Error("invalid-image");
+    const original = `data:${mime};base64,${(await readFile(path)).toString("base64")}`;
+    if (original !== expected) throw new Error("image-changed");
+    const temp = `${path}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temp, Buffer.from(data.slice(data.indexOf(",") + 1), "base64"), { flag: "wx" });
+      if (!Buffer.from(expected.slice(expected.indexOf(",") + 1), "base64").equals(await readFile(path))) throw new Error("image-changed");
+      await rename(temp, path);
+    } finally { await rm(temp, { force: true }); }
+  });
+  const projects = projectWindows(notesHome, async (path, content) => {
+    if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
+  }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi);
+  rememberClosedProject = projects.closed;
+  handle("projects:list", () => projects.list());
+  handle("projects:upload", () => projects.upload());
+  handle("projects:localNote", () => projects.localNote());
+  handle("projects:importLocal", (path: unknown, folder: unknown) => {
+    if (typeof path !== "string" || typeof folder !== "string") throw new Error("Invalid local import");
+    return projects.importLocal(path, folder);
+  });
+  handle("projects:edited", (path: unknown) => {
+    if (typeof path !== "string") throw new Error("Invalid recent note");
+    return projects.edited(path);
+  });
+  handle("projects:pin", (folder: unknown, path: unknown) => {
+    if (typeof folder !== "string" || (path !== undefined && typeof path !== "string")) throw new Error("Invalid project pin");
+    return projects.pin(folder, path);
+  });
+  handle("projects:lastNote", () => process.env.FOCUS_NOTES_PROJECT_NOTE || projects.lastNote());
+  handle("projects:position", (path: unknown) => {
+    if (typeof path !== "string") throw new Error("Invalid recent note");
+    return projects.position(path);
+  });
+  handle("projects:remember", (path: unknown, position: unknown) => {
+    if (typeof path !== "string") throw new Error("Invalid recent note");
+    if (position === undefined) return projects.remember(path);
+    if (!position || typeof position !== "object" || !("from" in position) || !("to" in position) || !("scroll" in position)
+      || typeof position.from !== "number" || !Number.isInteger(position.from) || position.from < 0
+      || typeof position.to !== "number" || !Number.isInteger(position.to) || position.to < 0
+      || typeof position.scroll !== "number" || !Number.isFinite(position.scroll) || position.scroll < 0) throw new Error("Invalid note position");
+    return projects.remember(path, { from: position.from, to: position.to, scroll: position.scroll });
+  });
+  handle("projects:choose", () => projects.choose());
+  handle("projects:parent", () => projects.parent());
+  handle("projects:chooseParent", (parent: unknown) => {
+    if (typeof parent !== "string") throw new Error("Invalid project parent");
+    return projects.chooseParent(parent);
+  });
+  handle("projects:check", (parent: unknown, name: unknown) => {
+    if (typeof parent !== "string" || typeof name !== "string") throw new Error("Invalid project folder");
+    return projects.check(parent, name);
+  });
+  handle("projects:create", (input: unknown) => {
+    if (!input || typeof input !== "object" || !("parent" in input) || typeof input.parent !== "string" || !("name" in input) || typeof input.name !== "string" || !("accent" in input) || typeof input.accent !== "string" || !("logo" in input) || typeof input.logo !== "string") throw new Error("Invalid new project");
+    return projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo });
+  });
+  handle("projects:open", (folder: unknown, note: unknown) => {
+    if (typeof folder !== "string" || (note !== undefined && typeof note !== "string")) throw new Error("Invalid project request");
+    return projects.open(folder, note);
+  });
+  // A project card's folder path shows that folder in File Explorer or Finder (owner, 4 November). Only a
+  // folder Open lists; journeys log it instead of opening a window over the owner's screen (D-141).
+  handle("projects:reveal", async (folder: unknown) => {
+    if (typeof folder !== "string") throw new Error("Invalid project folder");
+    const canonical = await projects.known(folder);
+    if (journey) return void process.stdout.write(`[focus-notes] reveal-project ${canonical}\n`);
+    const problem = await shell.openPath(canonical);
+    if (problem) throw new Error(problem);
+  });
+  // Open file… (owner, 4 November): the platform picker; a file in a known project opens in its window, else on its own.
+  handle("projects:openFile", () => projects.openFile());
+  // Open from GitHub… (owner, 4 November): the account's own repositories, then the first run's clone into
+  // a new project window. A review build reads only its local stand-in and clones from its local remotes.
+  const reviewGitHub = process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API;
+  const reviewRemotes = reviewGitHub ? process.env.FOCUS_NOTES_CANDIDATE_GIT_REMOTES : undefined;
+  const projectGitHub = async () => (reviewGitHub ? candidateGitHubApi(reviewGitHub) : (journey && !fakeApi ? undefined : (await account.api())?.api));
+  handle("projects:githubRepos", async () => {
+    const api = await projectGitHub();
+    if (!api) throw new Error("signedOut");
+    return (await api.ownRepos()).filter((r) => !r.template).map((r) => ({ owner: r.owner, name: r.name, private: r.private }));
+  });
+  handle("projects:openGitHub", async (owner: unknown, name: unknown) => {
+    if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    if (reviewGitHub && !reviewRemotes) throw new Error("This review build has no local remotes.");
+    const url = reviewRemotes ? `${reviewRemotes.replace(/\\/g, "/")}/${owner}/${name}.git` : remoteUrl(owner, name);
+    let folder = reviewGitHub ? join(dirname(notesHome()), name) : await freeFor(name);
+    for (let i = 2; reviewGitHub && existsSync(folder); i++) folder = join(dirname(notesHome()), `${name} ${i}`);
+    const r = await cloneWorkspace(setupRunner, url, folder, reviewGitHub ? undefined : isTemplateRemote);
+    if (!r.ok) throw new Error(r.problem);
+    const canonical = await realpath(r.folder ?? folder);
+    await projects.adopt(canonical, { name, accent: "teal", logo: "book" });
+    await projects.open(canonical);
+  });
   handle("note:read", async (p) => {
     try {
       return (await readParsed(notePath(p))).text;
@@ -1577,8 +1706,30 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const access = accessStore({
     dir: privateDir,
     site: pagesSite,
-    write: async (file, text) => void (await atomicWrite(file, text)),
+    write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: (file) => withGit((g) => g.written(file)),
+    writeNoteId: async (file, text, expected) => {
+      const outside = await atomicWrite(file, text, expected);
+      if (outside) throw new Error("access:scope.changed");
+    },
+    publish: async () => {
+      const g = await gitOpening;
+      if (!g) throw new Error("access:site.unavailable");
+      const report = await g.request("save");
+      if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
+    },
+    getSite: (site, signal) => async (path) => {
+      const base = new URL(site);
+      const url = new URL(path, base.href.endsWith("/") ? base : `${base.href}/`);
+      if (url.origin !== base.origin) throw new Error("access:site.unavailable");
+      let response: Response;
+      try {
+        response = await fetch(url, { redirect: "error", credentials: "omit", cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]) });
+      } catch { throw new Error(signal.aborted ? "access:cancelled" : "access:offline"); }
+      if (response.status === 404) return undefined;
+      if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? "access:signedOut" : "access:site.unavailable");
+      return response.text();
+    },
   });
   handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
   handle("access:apply", async (change) => {
@@ -1589,11 +1740,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
   const secretCopy = secretClipboard(appClipboard());
   handle("access:reveal", async (id) => access.reveal(id));
+  handle("access:words", () => access.prepareWords());
+  handle("access:ready", (id) => access.ready(id));
+  handle("access:cancelReady", (id) => access.cancelReady(id));
   handle("access:template", async (template) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.setTemplate(template);
   });
-  handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
+  handle("access:copy", async (id, what, invite) => access.handoff(id, what, invite, (text) => secretCopy.write(text)));
+  handleFrom("access:systemShare", async (e, id, invite) => {
+    if (process.platform !== "darwin") throw new Error("access:sheet.unavailable");
+    const window = BrowserWindow.fromWebContents(e.sender);
+    if (!window || window.isDestroyed()) throw new Error("access:sheet.unavailable");
+    await access.handoff(id, "information", invite, (text) => {
+      if (window.isDestroyed()) throw new Error("access:sheet.unavailable");
+      new ShareMenu({ texts: [text] }).popup({ window });
+    });
+  });
   // Local diagnostics (QLT-04, D-140): built and redacted here; copied or saved only when the person asks.
   const diag = diagnostics({
     // Started from its built script (journeys, `pnpm dev`), Electron would report its own version: read the app's.
@@ -1888,6 +2051,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("state:load", async () => {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
+      if (process.env.FOCUS_NOTES_PROJECT_NOTE) s.lastNotePath = notePath(process.env.FOCUS_NOTES_PROJECT_NOTE);
       return s && s.version === 1 ? s : { version: 1 };
     } catch {
       return { version: 1 };
@@ -2134,7 +2298,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.
@@ -2482,6 +2646,8 @@ app.whenReady().then(async () => {
     });
   }
   app.on("second-instance", (_e, argv) => {
+    const noteAt = argv.indexOf("--project-note");
+    if (noteAt >= 0 && argv[noteAt + 1]) mainWindow?.webContents.send("projects:note", notePath(argv[noteAt + 1]));
     linkArrived(argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined));
     showMain();
   });
@@ -2495,10 +2661,11 @@ app.on("window-all-closed", () => {
 // then commits and pushes (D-23) and releases the workspace's lock.
 let gitQuit = false;
 let draftsSettled = false;
+let projectRemembered = false;
 const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
   osSpelling?.dispose();
-  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (draftsSettled || !drafts)) return;
+  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (draftsSettled || !drafts) && projectRemembered) return;
   e.preventDefault();
   void Promise.allSettled([...writeQueues.values()])
     .then(async () => {
@@ -2512,6 +2679,13 @@ app.on("will-quit", (e) => {
     .then(async () => {
       if (!draftsSettled) await drafts?.settled().catch(() => {});
       draftsSettled = true;
+    })
+    .then(async () => {
+      if (!projectRemembered) {
+        try { await rememberClosedProject?.(); }
+        catch { console.error("Could not remember the last project."); }
+        projectRemembered = true;
+      }
     })
     .then(() => app.quit());
 });

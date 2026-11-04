@@ -6,7 +6,7 @@ import { test, expect } from "./fixtures.ts";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const ls = (dir: string) => readdirSync(dir).filter((n) => !n.startsWith(".")).sort();
@@ -59,7 +59,7 @@ test("FIL-15: Import files… brings Markdown, text, HTML and Word files into a 
     expect(web).not.toMatch(/alert|color:red|javascript:|example\.com|<script/);
     // A Word document's headings and emphasis become Markdown.
     expect(readFileSync(join(journal, "quarterly-plan.md"), "utf8")).toContain("# Quarterly plan\n\nShip the **import** feature.\n");
-    await expect(tree.getByRole("treeitem", { name: "Quarterly plan", exact: true })).toBeVisible();
+    await expect(fileRow(tree, "Quarterly plan")).toBeVisible();
 
     // Undo removes the whole batch and leaves what was there.
     await toasts.getByRole("button", { name: "Undo" }).click();

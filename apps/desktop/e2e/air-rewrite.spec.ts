@@ -98,6 +98,55 @@ const REWRITTEN = "# Plan\n\nKeep this. New **bold** words and `code`. Keep that
 
 test.describe.configure({ mode: "serial" });
 
+test("RWR-91, RWR-92: prompt keys never send during IME; write at caret sends no context and Undo restores", async () => {
+  const fake = fakeOllama();
+  const port = await fake.listen();
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, DATA_FILES.ai), JSON.stringify({
+    version: 2, writer: "fake",
+    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake" }],
+  }));
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, ORIGINAL);
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs);
+    const { page } = l;
+    page.on("pageerror", (error) => console.error(error));
+    const editor = page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toBeFocused();
+    await select(page, "Change this part.");
+    await page.keyboard.press("ArrowLeft");
+    await expect.poll(() => page.evaluate(() => getSelection()?.isCollapsed)).toBe(true);
+    await page.keyboard.press(`${mod}+Shift+R`);
+    const dialog = page.getByRole("region", { name: "Write with AI", exact: true });
+    await expect(dialog).toBeVisible();
+    const prompt = dialog.getByRole("textbox", { name: "Prompt" });
+    await prompt.fill("Write a greeting");
+    await page.keyboard.press("Enter");
+    await expect(prompt).toHaveValue("Write a greeting\n");
+    await prompt.dispatchEvent("keydown", { key: "Enter", ctrlKey: !macPlatform(), metaKey: macPlatform(), isComposing: true });
+    expect(fake.seen).toHaveLength(0);
+    fake.play(["Hello "]);
+    await page.keyboard.press(`${mod}+Enter`);
+    await expect(dialog).toBeHidden();
+    await expect.poll(() => readFileSync(note, "utf8"), PROMPTLY).toBe(ORIGINAL.replace("Change", "Hello Change"));
+    expect(fake.seen).toHaveLength(1);
+    const body = fake.seen[0]!.body as { messages: { content: string }[] };
+    expect(body.messages.at(-1)!.content).toBe("Write a greeting");
+    expect(JSON.stringify(body)).not.toContain("Keep this");
+    await editor.focus();
+    await page.keyboard.press(`${mod}+z`);
+    await expect.poll(() => readFileSync(note, "utf8"), PROMPTLY).toBe(ORIGINAL);
+  } finally {
+    fake.release();
+    if (l) await quit(l);
+    await fake.close();
+  }
+});
+
+function macPlatform() { return process.platform === "darwin"; }
+
 test("AI Rewrite: streams formatted and locked, Esc cancels the request and restores, finish saves as one undo step", async () => {
   test.setTimeout(120_000);
   const fake = fakeOllama();

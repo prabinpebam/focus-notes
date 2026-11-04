@@ -75,7 +75,7 @@ Official documentation, checked 30 October 2026. These products show the interac
 <ol class="slate-steps">
   <li class="slate-step">
     <p class="slate-step__title">Select and open</p>
-    <p>Select text in an editable note, then press <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd>), choose <strong>Rewrite…</strong> in the text menu (Windows and Linux) or the Edit menu, or run it from Spotlight. Planned D-282 / RWR-92: without a selection the same command opens <strong>Write with AI</strong> at the caret, not an error. It sends the prompt alone and inserts the answer there; no surrounding note context. Text-dependent presets are hidden. The original selection mode remains unchanged.</p>
+    <p>Select text in an editable note, then press <kbd>Ctrl+Shift+R</kbd> (<kbd>⇧⌘R</kbd>), choose <strong>Rewrite…</strong> in the text menu (Windows and Linux) or the Edit menu, or run it from Spotlight. Built in WP-P.2 (D-282 / RWR-92), pending CI integration: without a selection the same command opens <strong>Write with AI</strong> at the caret, not an error. It sends the prompt alone and inserts the answer there; no surrounding note context. Text-dependent presets are hidden. The original selection mode remains unchanged.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Prompt</p>
@@ -84,7 +84,7 @@ Official documentation, checked 30 October 2026. These products show the interac
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Generate</p>
-    <p><strong>Generate</strong> or planned <kbd>Ctrl+Enter</kbd> (<kbd>⌘Enter</kbd>) sends once to the visible integration. Plain Enter adds a line; composition never submits. The note becomes read-only and the affected range shimmers. A toast names <strong>Rewriting with ⟨service⟩…</strong> or <strong>Writing with ⟨service⟩…</strong>, with Stop. If the note changed since capture, send nothing and preserve the prompt: choose the selection/caret again. In Write mode only the prompt goes out; success is one insertion/undo step, and Stop/error restores the exact note, with no partial insertion saved (RWR-91, RWR-92).</p>
+    <p><strong>Generate</strong> or <kbd>Ctrl+Enter</kbd> (<kbd>⌘Enter</kbd>) sends once to the visible integration (WP-P.1, CI integration pending). Plain Enter adds a line; composition never submits. The note becomes read-only and the affected range shimmers. A toast names <strong>Rewriting with ⟨service⟩…</strong> or <strong>Writing with ⟨service⟩…</strong>, with Stop. If the note changed since capture, send nothing and preserve the prompt: choose the selection/caret again. In Write mode only the prompt goes out; success is one insertion/undo step, and Stop/error restores the exact note, with no partial insertion saved (RWR-91, RWR-92).</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Stream in place</p>

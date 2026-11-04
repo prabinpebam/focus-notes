@@ -4,6 +4,9 @@
   "ia": "IA-VIEW-CANVAS",
   "viewModels": [
     "vm.app",
+    "vm.project",
+    "vm.projects",
+    "vm.projectIntro",
     "vm.canvas",
     "vm.toolbar",
     "vm.shortcuts",
@@ -11,6 +14,7 @@
     "vm.format",
     "vm.slash",
     "vm.table",
+    "vm.images",
     "vm.block",
     "vm.feedback",
     "vm.picker",
@@ -42,6 +46,9 @@
   "root": {
     "type": "AppRoot",
     "props": {
+      "projectAccent": {
+        "get": "vm.project.accent"
+      },
       "scheme": {
         "get": "vm.app.scheme"
       },
@@ -86,6 +93,22 @@
       }
     },
     "children": [
+{
+  "type": "ProjectScope",
+  "props": {
+    "part": "plain",
+    "grow": true,
+    "accent": {
+      "get": "vm.project.accent"
+    },
+    "font": {
+      "get": "vm.project.scopeFont"
+    },
+    "theme": {
+      "get": "vm.project.scopeTheme"
+    }
+  },
+"children": [
       {
         "type": "WindowFrame",
         "when": {
@@ -797,6 +820,10 @@
           }
         },
         "props": {
+          "imageSources": { "get": "vm.images.sources" },
+          "imageMenu": { "get": "vm.images.menu" },
+          "imageMenuLabel": { "t": "image.menu" },
+          "imageMissing": { "t": "image.read.failed" },
           "documentKey": {
             "get": "vm.canvas.noteKey"
           },
@@ -892,6 +919,15 @@
               }
             }
           },
+          "position": {
+            "run": "note.position",
+            "args": {
+              "key": { "get": "event.key" },
+              "from": { "get": "event.from" },
+              "to": { "get": "event.to" },
+              "scroll": { "get": "event.scroll" }
+            }
+          },
           "ready": {
             "run": "app.ready"
           },
@@ -923,6 +959,17 @@
               }
             }
           },
+          "imageRead": { "run": "image.read", "args": { "src": { "get": "event.src" } } },
+          "imageSelect": { "run": "image.select", "args": {
+            "pos": { "get": "event.pos" }, "src": { "get": "event.src" },
+            "rounded": { "get": "event.rounded" }, "fitHeight": { "get": "event.fitHeight" }, "mode": { "get": "event.mode" },
+            "width": { "get": "event.width" }, "height": { "get": "event.height" },
+            "from": { "get": "event.from" }, "to": { "get": "event.to" }, "count": { "get": "event.count" },
+            "roundMixed": { "get": "event.roundMixed" }, "limitMixed": { "get": "event.limitMixed" }
+          } },
+          "imageAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } },
+          "imageEdited": { "run": "image.edited", "args": { "src": { "get": "event.src" }, "data": { "get": "event.data" } } },
+          "imageEditError": { "run": "image.edit.failed" },
           "findScope": {
             "run": "find.setScope",
             "args": {
@@ -934,6 +981,7 @@
           "rewriteCapture": {
             "run": "rewrite.captured",
             "args": {
+              "caret": { "get": "event.caret" },
               "text": {
                 "get": "event.text"
               }
@@ -1185,6 +1233,41 @@
             }
           }
         }
+      },
+      {
+        "type": "DialogPanel",
+        "id": "imageEdit",
+        "props": { "label": { "t": "image.edit.title" }, "open": { "get": "vm.images.edit" }, "size": "m", "height": "content" },
+        "on": { "openChange": { "run": "image.edit.close" } },
+        "slots": {
+          "header": [{ "type": "Heading", "props": { "level": "2", "value": { "t": "image.edit.title" } } }],
+          "footer": [{
+            "type": "Inline", "props": { "justify": "end", "gap": "s" },
+            "children": [
+              { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle", "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.close" } } },
+              { "type": "Button", "props": { "label": { "t": "image.edit.save" }, "variant": "primary", "busy": { "get": "vm.images.saving" }, "disabled": { "get": "vm.images.invalid" }, "disabledReason": { "t": "image.edit.invalid" } }, "on": { "press": { "run": "image.edit.save" } } }
+            ]
+          }]
+        },
+        "children": [{
+          "type": "Stack", "props": { "gap": "m" }, "children": [
+            { "type": "ImageFrame", "props": {
+              "src": { "get": "vm.images.src" }, "crop": true, "rotation": { "get": "vm.images.rotation" },
+              "cropX": { "get": "vm.images.cropX" }, "cropY": { "get": "vm.images.cropY" },
+              "cropWidth": { "get": "vm.images.cropWidth" }, "cropHeight": { "get": "vm.images.cropHeight" }
+            } },
+            { "type": "Inline", "props": { "gap": "s", "wrap": true, "align": "end" }, "children": [
+              { "type": "TextField", "props": { "label": { "t": "image.edit.left" }, "value": { "bind": "vm.images.x" }, "size": "m", "width": "number", "autoFocus": true } },
+              { "type": "TextField", "props": { "label": { "t": "image.edit.top" }, "value": { "bind": "vm.images.y" }, "size": "m", "width": "number" } },
+              { "type": "TextField", "props": { "label": { "t": "image.edit.width" }, "value": { "bind": "vm.images.width" }, "size": "m", "width": "number" } },
+              { "type": "TextField", "props": { "label": { "t": "image.edit.height" }, "value": { "bind": "vm.images.height" }, "size": "m", "width": "number" } },
+              { "type": "SegmentedControl", "props": { "label": { "t": "image.edit.turn" }, "options": { "get": "vm.images.rotations" }, "actions": true }, "on": { "action": { "run": "image.edit.rotate", "args": { "id": { "get": "event.id" } } } } }
+            ] },
+            { "type": "Text", "when": { "get": "vm.images.invalid" }, "props": { "value": { "t": "image.edit.invalid" }, "tone": "danger" } },
+            { "type": "Text", "props": { "value": { "get": "vm.images.error" }, "tone": "danger" } },
+            { "type": "Text", "props": { "value": { "t": "image.edit.warning" }, "role": "caption", "tone": "muted" } }
+          ]
+        }]
       },
       {
         "type": "TableControls",
@@ -3712,6 +3795,9 @@
                       },
                       {
                         "get": "vm.saveState.visible"
+                      },
+                      {
+                        "get": "vm.project.available"
                       }
                     ]
                   },
@@ -3806,10 +3892,22 @@
                 ]
               },
               {
+                "type": "ProjectPill",
+                "id": "localLocation",
+                "when": { "get": "vm.saveState.local" },
+                "props": {
+                  "name": { "get": "vm.saveState.location" },
+                  "icon": "hardDrive",
+                  "path": true,
+                  "label": { "get": "vm.saveState.locationLabel" }
+                },
+                "on": { "press": { "run": "note.revealLocal" } }
+              },
+              {
                 "type": "PopoverPanel",
                 "id": "backupDetails",
                 "when": {
-                  "get": "vm.saveState.visible"
+                  "get": "vm.saveState.backupVisible"
                 },
                 "props": {
                   "label": {
@@ -3880,6 +3978,18 @@
                     }
                   ]
                 }
+              },
+              {
+                "type": "ProjectPill",
+                "when": { "get": "vm.project.available" },
+                "props": {
+                  "name": { "get": "vm.project.name" },
+                  "logo": { "get": "vm.project.logo" },
+                  "src": { "get": "vm.project.logoSrc" },
+                  "accent": { "get": "vm.project.accent" },
+                  "label": { "t": "project.pill.label", "args": { "name": { "get": "vm.project.name" } } }
+                },
+                "on": { "press": { "run": "project.settings" } }
               },
               {
                 "type": "PillButton",
@@ -4001,7 +4111,7 @@
         },
         "props": {
           "label": {
-            "t": "files.heading"
+            "get": "vm.project.filesHeading"
           },
           "side": "start",
           "width": "files",
@@ -4072,7 +4182,7 @@
                             "value": {
                               "get": "vm.files.source.title"
                             },
-                            "role": "emphasis",
+                            "role": "title",
                             "lines": "one"
                           },
                           "when": {
@@ -4088,7 +4198,7 @@
                             "value": {
                               "get": "vm.files.source.title"
                             },
-                            "role": "emphasis",
+                            "role": "title",
                             "lines": "one",
                             "label": {
                               "get": "vm.files.source.repoLabel"
@@ -4209,11 +4319,11 @@
                           "props": {
                             "level": "2",
                             "value": {
-                              "t": "files.heading"
+                              "get": "vm.project.filesHeading"
                             }
                           },
                           "when": {
-                            "get": "vm.deleted.closed"
+                            "expr": { "and": [{ "get": "vm.deleted.closed" }, { "!": { "get": "vm.files.source.visible" } }] }
                           }
                         },
                         {
@@ -4224,7 +4334,7 @@
                           "props": {
                             "level": "2",
                             "value": {
-                              "t": "files.heading"
+                              "get": "vm.project.filesHeading"
                             },
                             "back": true,
                             "label": {
@@ -4245,7 +4355,7 @@
                           "props": {
                             "level": "2",
                             "value": {
-                              "t": "files.heading"
+                              "get": "vm.project.filesHeading"
                             },
                             "back": true,
                             "label": {
@@ -4559,6 +4669,24 @@
           ]
         },
         "children": [
+          {
+            "type": "FileTree",
+            "id": "filesShortcuts",
+            "when": { "get": "vm.deleted.closed" },
+            "props": {
+              "label": { "t": "files.heading" },
+              "items": { "get": "vm.files.shortcuts" },
+              "focusId": { "get": "vm.files.focusId" },
+              "menu": { "get": "vm.files.menu" },
+              "menuLabel": { "get": "vm.files.menuLabel" }
+            },
+            "on": {
+              "select": { "run": "files.selectShortcut", "args": { "id": { "get": "event.id" } } },
+              "action": { "run": "files.activateShortcut", "args": { "id": { "get": "event.id" } } },
+              "expand": { "run": "files.setExpanded", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } },
+              "menuAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
+            }
+          },
           {
             "type": "FileTree",
             "id": "filesTree",
@@ -9261,6 +9389,72 @@
           }
         ]
       }
-    ]
+    ,
+{
+  "type": "Layer",
+  "when": {
+    "get": "vm.project.watermarkOn"
+  },
+  "props": {
+    "layer": "panel",
+    "position": "bottomEnd"
+  },
+  "children": [
+    {
+      "type": "ProjectMark",
+      "props": {
+        "logo": {
+          "get": "vm.project.logo"
+        },
+        "src": { "get": "vm.project.logoSrc" },
+        "accent": {
+          "get": "vm.project.accent"
+        },
+        "initials": {
+          "get": "vm.project.name"
+        },
+        "size": "watermark"
+      }
+    }
+  ]
+},
+{
+  "type": "Layer",
+  "when": { "get": "vm.projectIntro.notice" },
+  "props": { "layer": "toast", "position": "bottomCenter" },
+  "children": [{
+    "type": "Surface", "props": { "variant": "raised", "shape": "popover", "elevation": "2", "padding": "m" },
+    "children": [{
+      "type": "Inline", "props": { "gap": "m", "align": "center", "wrap": true },
+      "children": [
+        { "type": "StepMark", "props": { "icon": "info", "tone": "accent", "size": "compact" } },
+        { "type": "Text", "props": { "value": { "t": "migrate.notice" }, "role": "label" } },
+        { "type": "Button", "props": { "label": { "t": "migrate.learn" }, "variant": "secondary" }, "on": { "press": { "run": "projects.learn" } } },
+        { "type": "Button", "props": { "label": { "t": "migrate.dismiss" }, "variant": "subtle" }, "on": { "press": { "run": "projects.dismissIntro" } } }
+      ]
+    }]
+  }]
+},
+{
+  "type": "Layer",
+  "when": { "expr": { "and": [{ "get": "vm.projects.open" }, { "get": "vm.projects.full" }] } },
+  "props": { "layer": "panel", "position": "window", "landmark": "region", "label": { "t": "project.open.title" } },
+  "children": [{
+    "type": "Surface", "props": { "variant": "canvas", "scroll": true, "padding": "xl" },
+    "children": [{
+      "type": "Center", "props": { "maxWidth": "wideContent" },
+      "children": [{
+        "type": "Stack", "props": { "gap": "xl" },
+        "children": [
+          { "type": "Heading", "props": { "value": { "t": "project.open.title" }, "level": "1" } },
+          { "use": "open.body" }
+        ]
+      }]
+    }]
+  }]
+}
+]
+}
+]
   }
 }

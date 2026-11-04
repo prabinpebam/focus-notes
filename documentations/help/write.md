@@ -10,6 +10,10 @@ Format with Markdown shortcuts, use focus mode, make tables, find anything, and 
 - [Rewrite selected text with AI](rewrite-with-ai.md)
 - [Connect an AI service](connect-an-ai-service.md)
 
+## Spotlight keys
+
+Press <kbd>Ctrl</kbd>+<kbd>/</kbd> (<kbd>⌘/</kbd> on a Mac), type a name and press <kbd>Enter</kbd> to act and close Spotlight, including toggles and settings. To make repeated adjustments without losing the query or focus, use <kbd>Shift</kbd>+<kbd>Enter</kbd> on a toggle or setting.
+
 ## Coming soon
 
 - Write and format with Markdown shortcuts

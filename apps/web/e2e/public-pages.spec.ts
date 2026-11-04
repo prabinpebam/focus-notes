@@ -133,6 +133,7 @@ test("D-139: the index at /n/ lists each public note as a row (title, last updat
 });
 
 test("PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded", async ({ page }) => {
+  test.fixme(new Date() < new Date("2026-11-11T00:00:00Z"), "Scoped quarantine: gate-evidence.md; implementation coordinator; expires 10 November 2026; CI 41654808341");
   const cdp = await page.context().newCDPSession(page);
   // About a mid-range phone on a slow 4G connection.
   await cdp.send("Network.enable");

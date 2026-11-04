@@ -10,6 +10,7 @@
   "windowMargin": { "$type": "dimension", "$value": "{window.margin}" },
   "windowShadow": { "$type": "shadow", "$value": "{shadow.1}" },
   "windowBorder": { "$type": "color", "$value": "{color.border}" },
+  "projectBorder": { "$type": "color", "$value": "{color.accentMuted}", "$description": "The project's full outer window outline (D-317)." },
   "windowBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "windowOutside": { "$type": "color", "$value": "{color.none}" }
 } } }

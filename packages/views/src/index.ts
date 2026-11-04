@@ -4,8 +4,15 @@ import theme from "../views/theme.view.json" with { type: "json" };
 import history from "../views/history.view.json" with { type: "json" };
 import feedback from "../views/feedback.view.json" with { type: "json" };
 import rewrite from "../views/rewrite.view.json" with { type: "json" };
+import newNote from "../views/newNote.view.json" with { type: "json" };
+import projects from "../views/projects.view.json" with { type: "json" };
+import projectNew from "../views/projectNew.view.json" with { type: "json" };
+import projectIntro from "../views/projectIntro.view.json" with { type: "json" };
+import localImport from "../views/localImport.view.json" with { type: "json" };
 import reader from "../views/reader.view.json" with { type: "json" };
 import share from "../views/share.view.json" with { type: "json" };
+import shareItem from "../views/shareItem.view.json" with { type: "json" };
+import sitePreview from "../views/sitePreview.view.json" with { type: "json" };
 import index from "../views/index.view.json" with { type: "json" };
 import siteLanding from "../views/siteLanding.view.json" with { type: "json" };
 import sitePage from "../views/sitePage.view.json" with { type: "json" };
@@ -13,9 +20,11 @@ import en from "../messages/en.json" with { type: "json" };
 import { mocks, mockData } from "../mocks/index.ts";
 import { shareMocks } from "../mocks/share/index.ts";
 import { uiStatesMocks } from "../mocks/ui-states/index.ts";
+import { openMocks } from "../mocks/open/index.ts";
+import { compose } from "./compose.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
-export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewrite };
+export const views: Record<string, unknown> = { canvas: compose(canvas), settings, theme, history, feedback, rewrite, newNote, shareItem, sitePreview, projects: compose(projects), projectNew, projectIntro, localImport };
 /**
  * Published pages' view documents (IA-VIEW-PUBLIC): the reader and the index of public notes (D-139),
  * rendered by the publisher at build time, and the share reader, rendered in the browser at s/ (WP-5.4).
@@ -31,4 +40,4 @@ export const messages: Record<string, Record<string, string>> = { en };/**
 export { mocks, mockData };
 
 /** Design mocks shown in the gallery before anything is wired (strict design mode): one group per area, each with its views, fake data and entries. */
-export const mockGroups = [shareMocks, uiStatesMocks];
+export const mockGroups = [openMocks, shareMocks, uiStatesMocks];

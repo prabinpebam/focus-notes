@@ -111,6 +111,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let findAllWasOpen = app.store.state.ui.findAll.open;
   let themeWasOpen = app.store.state.ui.theme.open;
   let feedbackWasOpen = app.store.state.ui.feedback.open;
+  let newNoteWasOpen = app.store.state.ui.files.newNote.open;
   const offStore = app.store.subscribe(() => {
     const { toolbarOpen, shortcuts, find, files, spotlight, findAll, theme, feedback } = app.store.state.ui;
     // Spotlight hands focus back where it was; if that's gone (a dialog it replaced), to the note.
@@ -128,6 +129,12 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
       }, 300);
     }
     feedbackWasOpen = feedback.open;
+    if (newNoteWasOpen && !files.newNote.open) {
+      setTimeout(() => {
+        if (!document.activeElement || document.activeElement === document.body) refocusNote(ui);
+      }, 300);
+    }
+    newNoteWasOpen = files.newNote.open;
     // Find in all notes closing: back to the note, unless a match it opened has the find bar's focus.
     if (findAllWasOpen && !findAll.open) {
       // Checked again when the note would take focus: a busy runner can open the match and focus

@@ -353,6 +353,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       [ui.settings.open, "settings.setOpen"], [ui.shortcuts.open, "shortcuts.setOpen"], [ui.picker.open, "picker.setOpen"],
       [ui.aboutOpen, "about.setOpen"], [ui.unlock.open && !ui.unlock.busy, "unlock.setOpen"],
       [ui.files.move.open, "move.setOpen"], [Boolean(ui.files.confirm), "files.setConfirmOpen"], [ui.feedback.open, "feedback.close"],
+      [ui.files.newNote.open && !ui.files.newNote.busy, "newNote.dismiss"],
     ];
     for (const [shown, id] of open) if (shown && commands.has(id)) void run(id, { open: false });
   };
@@ -433,6 +434,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   commands.register({ id: "spotlight.next", title: "command.spotlight.next", shortcut: { default: "Down", handledBy: scope }, layer: "basic", group: "spotlight", run: step(1) });
   commands.register({ id: "spotlight.prev", title: "command.spotlight.prev", shortcut: { default: "Up", handledBy: scope }, layer: "basic", group: "spotlight", run: step(-1) });
   commands.register({ id: "spotlight.run", title: "command.spotlight.run", shortcut: { default: "Enter", handledBy: scope }, layer: "basic", group: "spotlight", run: () => runActive(false) });
+  commands.register({ id: "spotlight.runKeep", title: "command.spotlight.runKeep", shortcut: { default: "Shift+Enter", handledBy: scope }, layer: "power", group: "spotlight", run: async () => {
+    const row = activeRow();
+    if (row && rowEnabled(row) && (row.kind === "setting" || (row.kind === "command" && commands.describe(row.key).checked !== undefined))) await perform(row, "run", true);
+  } });
   commands.register({ id: "spotlight.runAlt", title: "command.spotlight.runAlt", shortcut: { default: "Mod+Enter", handledBy: scope }, layer: "power", group: "spotlight", run: () => runActive(true) });
   const canShowActions = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && !s.ui.spotlight.fromLink && Boolean(s.ui.spotlight.rows.find((r) => r.id === s.ui.spotlight.activeId && actionsOf(r.kind)));
   const showActions = () => {
@@ -597,13 +602,19 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     }
   };
 
-  async function perform(row: SpotlightRow, id: ActionId): Promise<void> {
+  async function perform(row: SpotlightRow, id: ActionId, keepOpen = false): Promise<void> {
     const path = row.path ?? "";
-    // Commands that toggle and settings stay open, so Spotlight works as a quick settings panel.
-    if (id === "run" && (row.kind === "setting" || (row.kind === "command" && commands.describe(row.key).checked !== undefined))) {
+    if (id === "run" && (row.kind === "setting" || row.kind === "command")) {
       frecency.record(itemKey(row.kind, row.key), ctx.now());
-      if (row.kind === "setting") await settingById(row.key)?.step();
-      else await run(row.key);
+      const previous = sp();
+      if (!keepOpen) close();
+      try {
+        if (row.kind === "setting") await settingById(row.key)?.step();
+        else await run(row.key);
+      } catch (error) {
+        if (!keepOpen) set({ ...previous, focus: sp().focus + 1, busy: false });
+        throw error;
+      }
       return;
     }
     if (id === "reset") return settingById(row.key)?.reset();

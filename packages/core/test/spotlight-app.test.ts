@@ -185,7 +185,36 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
 });
 
 describe("SPT-04: states, the empty field, and no match", () => {
-  it("running a toggle leaves Spotlight open and its row shows the new state", async () => {
+  it("SPT-10: dismisses before a command opens and focuses its destination", async () => {
+    const app = createApp(desktop().bridge, messages);
+    let openDuringRun: boolean | undefined;
+    app.commands.register({ id: "test.destination", title: "command.focus.toggle", run: () => { openDuringRun = sp(app).open; } });
+    await app.start();
+    await app.commands.run("spotlight.commands");
+    await type(app, "focus mode");
+    const row = sp(app).rows.find((r) => r.key === "test.destination")!;
+    await app.commands.run("spotlight.setActive", { id: row.id });
+    await app.commands.run("spotlight.run");
+    expect(openDuringRun).toBe(false);
+    expect(sp(app).open).toBe(false);
+  });
+
+  it("SPT-10: a failed command retains the query and reports its error", async () => {
+    const app = createApp(desktop().bridge, messages);
+    app.commands.register({ id: "test.failure", title: "command.focus.toggle", run: () => { throw new Error("refused"); } });
+    await app.start();
+    const reported: unknown[] = [];
+    const off = app.commands.onRun((id, error) => { if (id === "test.failure" && error) reported.push(error); });
+    await app.commands.run("spotlight.commands");
+    await type(app, "focus mode");
+    const row = sp(app).rows.find((r) => r.key === "test.failure")!;
+    await app.commands.run("spotlight.setActive", { id: row.id });
+    await expect(app.commands.run("spotlight.run")).rejects.toThrow("refused");
+    expect(sp(app)).toMatchObject({ open: true, query: "focus mode" });
+    expect(reported).toHaveLength(1);
+    off();
+  });
+  it("SPT-10: Enter dismisses toggles; Shift+Enter retains query and live state", async () => {
     const { app } = await started();
     await app.commands.run("spotlight.commands");
     await type(app, "focus mode");
@@ -193,14 +222,21 @@ describe("SPT-04: states, the empty field, and no match", () => {
     await app.commands.run("spotlight.setActive", { id: row.id });
     await app.commands.run("spotlight.run");
     expect(app.store.state.focusMode).toBe(false);
+    expect(sp(app).open).toBe(false);
+    await app.commands.run("spotlight.commands");
+    await type(app, "focus mode");
+    expect(app.commands.match(key("Enter", { shiftKey: true }), ["spotlightField"])).toBe("spotlight.runKeep");
+    await app.commands.run("spotlight.runKeep");
+    expect(app.store.state.focusMode).toBe(true);
     expect(sp(app).open).toBe(true);
-    expect(vm(app).items.find((i) => i.id === row.id)?.state).toBe("Off");
+    expect(sp(app).query).toBe("focus mode");
+    expect(vm(app).items.find((i) => i.id === row.id)?.state).toBe("On");
     // Settings show their value and step it, staying open too.
     await type(app, "text size");
     const size = vm(app).items.find((i) => i.label === "Text size")!;
     expect(size.state).toBe("16 px");
     await app.commands.run("spotlight.setActive", { id: size.id });
-    await app.commands.run("spotlight.run");
+    await app.commands.run("spotlight.runKeep");
     expect(vm(app).items.find((i) => i.id === size.id)?.state).toBe("17 px");
   });
 
@@ -228,8 +264,9 @@ describe("SPT-04: states, the empty field, and no match", () => {
     await app.commands.run("spotlight.next");
     await app.commands.run("spotlight.run");
     expect(app.store.state.appearance.fontSize).toBe(17);
-    expect(sp(app).open).toBe(true);
+    expect(sp(app).open).toBe(false);
 
+    await app.commands.run("spotlight.open");
     await type(app, ">");
     expect(labels(app)).toEqual(actions);
   });
@@ -421,7 +458,7 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     await app.commands.run("spotlight.setOpen", { open: false });
 
     await act("ideas", "rename");
-    expect(app.store.state.ui.files).toMatchObject({ open: true, edit: { kind: "rename", value: "Ideas" } });
+    expect(app.store.state.ui.files).toMatchObject({ open: true, edit: { kind: "rename", value: "ideas" } });
     await app.commands.run("files.cancelEdit");
     await act("ideas", "moveTo");
     expect(app.store.state.ui.files.move).toMatchObject({ open: true, paths: [`${PRIV}/ideas.md`] });

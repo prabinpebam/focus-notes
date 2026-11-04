@@ -1,5 +1,7 @@
 # Rewrite with AI design
 
+**3 November implementation (WP-P.1 / WP-P.2, D-282; CI integration pending):** the approved prompt now accepts Ctrl+Enter / ⌘Enter once, preserves Enter and composition, and captures empty carets with the same anchored popover. Write mode hides text presets and sends the prompt alone to the selected integration. A stale document retains the prompt without a request. The existing streaming lock, rollback and single undo step also cover insertion. design
+
 **As built for 1 November 17:29 feedback (D-265/D-266/D-267; UX/UI verdict pending):** preset buttons inherit shared native-control metrics and symmetric centering; the directional Return button inherits shared opaque floating hover paint. No padding or color override exists in the Rewrite view. First/middle/last return geometry, mounted prompt/draft, Cancel, remembered integration and direct Generate from the previous delivery remain unchanged. Settings places the named Find/explanation group above the radio list and Add connection last. Default updates retain native focus and existing row identities, with an emphasized shared badge and no redundant success prose. See [shared rules](system/components.md), [Settings anatomy](../experience/ai-settings.md#single-list-default-choice-d-267-planned) and [observable checks](../plan/definition-of-done.md#settings-ai-single-list-stage). Only build, typecheck and static view/source checks are authorized; documentation remains unchecked.
 
 > [!NOTE]

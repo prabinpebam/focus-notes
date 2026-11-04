@@ -25,6 +25,7 @@ import "@fontsource/opendyslexic/400.css";
 import "@fontsource/opendyslexic/700.css";
 import { cssVarName } from "@focus-notes/tokens";
 import type { ColorValue } from "../../data.ts";
+import type { ProjectAccent } from "../../primitives/ProjectMark/presets.ts";
 import { setWindowElement } from "./in-window.tsx";
 import * as s from "./AppRoot.css.ts";
 
@@ -36,6 +37,8 @@ export interface AppRootProps {
   theme?: string;
   /** The content font (THM-03): a token mode; "mono" (Roboto Mono) is the default (D-78). */
   contentFont?: string;
+  /** The full outer window outline for the current project. */
+  projectAccent?: ProjectAccent | "app";
   /** Interface scale (DSY-03). Note text is unaffected. */
   uiScale?: number;
   platform: "macos" | "windows" | "linux" | "web";
@@ -91,7 +94,7 @@ function tokenDefaults(html: HTMLElement): { size: number; chars: number } | und
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
  * scheme, platform, reduced motion, reduced transparency, and pointer type.
  */
-export function AppRoot({ scheme, motion = "system", theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
+export function AppRoot({ scheme, motion = "system", theme, contentFont, projectAccent = "app", uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const applied = useRef<string[]>([]);
   useEffect(() => {
@@ -197,7 +200,7 @@ export function AppRoot({ scheme, motion = "system", theme, contentFont, uiScale
   }, [motion]);
 
   const root = (
-    <div ref={rootRef} className={`${s.root} ${s.frame[frame]}`} data-app-root="">
+    <div ref={rootRef} className={`${s.root} ${s.frame[frame]}${projectAccent === "app" ? "" : ` ${s.projectFrame[frame]}`}`} data-app-root="" data-project-accent={projectAccent === "app" ? undefined : projectAccent}>
       {/* Every desktop window drags by its top band, in every state (D-147). */}
       {platform === "web" ? null : <div className={s.band} data-drag-band="" data-title-band="" aria-hidden="true" />}
       {children}

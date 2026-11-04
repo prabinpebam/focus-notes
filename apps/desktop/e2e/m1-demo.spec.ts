@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { caret, fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mac = process.platform === "darwin";
@@ -98,7 +98,7 @@ async function chooseByKeyboard(page: Page, name: string) {
 async function openFromFiles(page: Page, title: string, keyboardOnly: boolean) {
   await page.keyboard.press(`${mod}+O`);
   const files = page.getByRole("complementary", { name: "Files" });
-  const row = files.getByRole("treeitem", { name: title, exact: true });
+  const row = fileRow(files, title);
   await expect(files.getByRole("tree")).toBeVisible();
   if (keyboardOnly) {
     await expect(files.getByRole("treeitem").and(page.locator(":focus"))).toHaveCount(1);

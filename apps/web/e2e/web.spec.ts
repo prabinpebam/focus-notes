@@ -340,7 +340,7 @@ test("Files on the web: this browser's notes go in folders and move by drag and 
   await page.keyboard.press(`${mod}+o`);
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => tree.getByRole("treeitem", { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?: .+\\.(?:md|markdown))?$`) });
   await expect(row("Local idea")).toBeFocused();
   await expect(row("This browser")).toHaveAttribute("aria-level", "1");
   await expect(row("Public, read-only")).toHaveAttribute("aria-level", "1");
@@ -406,7 +406,7 @@ test("FIL-09 on the web: moving and renaming rewrite links in this browser's not
   await page.keyboard.press(`${mod}+o`);
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => tree.getByRole("treeitem", { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?: .+\\.(?:md|markdown))?$`) });
   const toast = (t: string) => page.locator("#toasts").getByText(t);
 
   // Moving a note: the link to it, and its own link back, change in one batch.

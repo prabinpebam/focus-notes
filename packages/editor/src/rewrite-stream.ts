@@ -15,7 +15,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Fragment, Slice, type Node as ProseNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
 import { closeHistory } from "@tiptap/pm/history";
-import { pastedMarkdownBlocks } from "./paste.ts";
+import { keepEdgeSpaces, pastedMarkdownBlocks } from "./paste.ts";
 
 interface Mark { from: number; to: number; cls: string }
 export const REWRITE_DECORATION = new PluginKey<Mark | null>("rewriteDecoration");
@@ -232,7 +232,7 @@ export class RewriteStream {
 
   /** The original note with `markdown`'s blocks in place of the selection, and where they sit. A paragraph at either end joins the text around it. */
   #target(markdown: string): Target | null {
-    const blocks = pastedMarkdownBlocks(markdown);
+    const blocks = this.#from === this.#to ? keepEdgeSpaces(markdown, pastedMarkdownBlocks(markdown)) : pastedMarkdownBlocks(markdown);
     if (!blocks.length) return null;
     const content = Fragment.fromJSON(this.#original.type.schema, blocks);
     const open = (n: ProseNode | null) => (n?.type.name === "paragraph" ? 1 : 0);
@@ -291,8 +291,8 @@ export class RewriteStream {
   finish(): boolean {
     if (this.#done) return false;
     this.#stopTimer();
-    const text = this.#text.trim();
-    const target = text ? this.#target(text) : null;
+    const text = this.#from === this.#to ? this.#text : this.#text.trim();
+    const target = text.trim() ? this.#target(text) : null;
     if (!target || this.#editor.isDestroyed) {
       this.abort();
       return false;

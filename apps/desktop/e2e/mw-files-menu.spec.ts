@@ -6,7 +6,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -33,7 +33,7 @@ async function opened(dirs: ReturnType<typeof tempDirs>, env: Record<string, str
   await expect(editor).toBeFocused();
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => fileRow(tree, name);
   const items = (menu: ReturnType<Page["getByRole"]>) => menu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent));
   return { l, page, editor, files, tree, row, items };
 }
@@ -84,7 +84,7 @@ test("D-192: a row's menu opens its folder, and copies it as a file, as a path, 
   await row("journal").click({ button: "right" });
   const journalMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   expect(await journalMenu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent)))
-    .toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+    .toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy", "Copy as path", "Rename folder…", "Move to…", "Delete"]);
   await page.keyboard.press("Escape");
   await row("journal").click();
   await row("Ideas").click({ modifiers: [process.platform === "darwin" ? "Meta" : "Control"] });
@@ -113,7 +113,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await expect(ideasMenu).toBeVisible();
   await expect(row("Ideas")).toHaveAttribute("aria-selected", "true");
   await expect(row("Welcome to Focus Notes")).toHaveAttribute("aria-selected", "false");
-  expect(await items(ideasMenu)).toEqual(["Open", "Open containing folder", "Copy", "Copy as path", "Copy text", "Rename", "Duplicate", "Move to…", "Delete"]);
+  expect(await items(ideasMenu)).toEqual(["Open", "Open containing folder", "Copy", "Copy as path", "Copy text", "Rename file…", "Duplicate", "Move to…", "Delete"]);
   // Each item shows its shortcut.
   await expect(ideasMenu.getByRole("menuitem", { name: /^Rename/ })).toContainText(process.platform === "darwin" ? "↩" : "F2");
   await expect(ideasMenu.getByRole("menuitem", { name: /^Delete/ })).toContainText(process.platform === "darwin" ? "⌘⌫" : "Delete");
@@ -159,7 +159,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await more.dispatchEvent("pointerdown", { button: 0, pointerType: "mouse", isPrimary: true });
   const folderMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   await expect(folderMenu).toBeVisible();
-  expect(await items(folderMenu)).toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+  expect(await items(folderMenu)).toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy", "Copy as path", "Rename folder…", "Move to…", "Delete"]);
   await folderMenu.getByRole("menuitem", { name: /^New folder/ }).click();
   const name = tree.getByRole("textbox", { name: "Folder name" });
   await expect(name).toBeFocused();

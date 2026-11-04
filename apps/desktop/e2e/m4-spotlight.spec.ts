@@ -8,7 +8,7 @@
 import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { instance, write } from "./instance.ts";
 import { fixtureNotes } from "../../../tools/bench/fixtures.ts";
@@ -34,6 +34,24 @@ async function search(page: Page, text: string, first?: string | RegExp) {
   await field(page).fill(text);
   if (first) await expect(active(page)).toContainText(first);
 }
+
+test("SPT-10: Enter dismisses toggles and Shift+Enter retains focus and query", async () => {
+  const l = await started();
+  try {
+    const { page } = l;
+    await open(page, `${mod}+Shift+P`);
+    await search(page, "focus mode", "Focus mode");
+    await page.keyboard.press("Shift+Enter");
+    await expect(field(page)).toBeFocused();
+    await expect(field(page)).toHaveValue("focus mode");
+    await expect(active(page)).toContainText("Off");
+    await page.keyboard.press("Enter");
+    await expect(spotlight(page)).toBeHidden();
+    await expect(editor(page)).toBeFocused();
+  } finally {
+    await quit(l);
+  }
+});
 
 test("SPT-01, SPT-07 (M4 demo 1): in the 5,000-note fixture Mod+/ opens Spotlight from the note in under 50 ms; Mod+K stays the link key", async () => {
   const dirs = tempDirs();
@@ -122,11 +140,11 @@ test("SPT-01: Mod+/ opens Spotlight from the Files panel and from Settings; focu
   const { page } = l;
   const files = page.getByRole("complementary", { name: "Files" });
   await page.keyboard.press(`${mod}+O`);
-  await expect(files.getByRole("treeitem", { name: "Welcome", exact: true })).toBeFocused();
+  await expect(fileRow(files, "Welcome")).toBeFocused();
   await open(page);
   await page.keyboard.press("Escape");
   await expect(spotlight(page)).toBeHidden();
-  await expect(files.getByRole("treeitem", { name: "Welcome", exact: true })).toBeFocused();
+  await expect(fileRow(files, "Welcome")).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(files).toBeHidden();
   await expect(editor(page)).toBeFocused();
@@ -173,7 +191,7 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   for (let i = 0; i < 400 && !(await active(page).textContent())?.startsWith("Text size"); i++) await page.keyboard.press("ArrowDown");
   await expect(active(page)).toContainText("Text size");
   await expect(active(page)).toBeInViewport();
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Enter");
   await expect(textSize).toContainText("17 px");
   await expect(field(page)).toBeFocused();
 
@@ -190,9 +208,9 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   // Matches are marked, as Find in all notes marks them (one ResultList, D-109, D-110).
   await expect(results(page).getByRole("group", { name: "In notes" }).getByRole("option", { name: /Ideas/ }).locator("mark")).toHaveText(["foc"]);
 
-  // Running a toggle leaves Spotlight open and its row shows the new state; Esc closes it.
+  // Shift+Enter leaves Spotlight open and its row shows the new state; Esc closes it.
   while (!(await active(page).textContent())?.startsWith("Focus mode")) await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Enter");
   await expect(command).toContainText("Off");
   await expect(spotlight(page)).toBeVisible();
   await page.keyboard.press("Escape");
@@ -255,7 +273,7 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
   await expect(option(page, /^Light theme/).first()).toBeVisible();
   await search(page, "switch light", "Switch light and dark");
   await expect(active(page)).toContainText("Off");
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Enter");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe("ink");
   await expect(active(page)).toContainText("On");
   await field(page).fill("");

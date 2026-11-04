@@ -17,10 +17,12 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 import { inScope, noteId } from "@focus-notes/seal/grants";
+import { ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
 
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
   available: boolean;
+  localReview?: boolean;
   /** The Pages site's address, once publishing is set up. Links need it. */
   site?: string;
   /** The owner's own invite template, from `private/access-message.json`; missing, the default (D-143). */
@@ -37,12 +39,16 @@ export interface AccessBridge {
   /** Saves the invite template to `private/access-message.json`, or with null goes back to the default (D-143). */
   setTemplate(template: string | null): Promise<AccessListing>;
   /** One audience's link and passcode, for its open invite only (review L2). */
-  reveal(id: string): Promise<{ link?: string; passcode?: string }>;
+  reveal(id: string): Promise<{ link?: string; passcode?: string; accessCode?: string }>;
+  prepareWords?(): Promise<{ id: string; value: string }>;
+  ready?(id: string): Promise<void>;
+  cancelReady?(id: string): Promise<void>;
+  systemShare?(id: string, invite: { template: string }): Promise<void>;
   /**
    * Copies the link, the passcode, or the invite: the shell fills in the invite's link, passcode, and
    * site itself, and clears the clipboard after 90 s (review L1).
    */
-  copy(id: string, what: "invite" | "link" | "passcode", invite?: { template: string; values: InviteValues }): Promise<void>;
+  copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues }): Promise<void>;
 }
 
 // ---- the invite (SHR-09) ----
@@ -110,6 +116,8 @@ export interface ShareTemplateEditor {
   busy: boolean;
 }
 export interface ShareManageState {
+  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean };
+  item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;
   failed: boolean;
@@ -125,6 +133,8 @@ export interface ShareManageState {
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
+  settings: { filter: "all", query: "", status: "", problem: "", busy: false, dialog: "", id: "", off: false, more: false, resume: false },
+  item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
   template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings",
 };

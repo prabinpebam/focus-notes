@@ -157,7 +157,7 @@ describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {
     expect(app.store.state.note.path).toBe("Ideas/untitled.md");
     expect(vm(app).open).toBe(false);
   });
-  it("renaming a note edits its title, and the file name follows", async () => {
+  it("FIL-18: Rename file changes only the path, preserving the heading", async () => {
     const f = setup({ notes: { "idea.md": "# Idea\n\nBody\n" }, open: "idea.md" });
     const app = await started(f);
     await app.commands.run("files.open");
@@ -165,11 +165,10 @@ describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {
     expect(vm(app).items.find((i) => i.editing)).toMatchObject({ id: "idea.md", label: "Idea" });
     await app.commands.run("files.setEditValue", { value: "Better idea" });
     await app.commands.run("files.commitEdit");
-    expect(f.notes.get("better-idea.md")?.text).toBe("# Better idea\n\nBody\n");
+    expect(f.notes.get("better-idea.md")?.text).toBe("# Idea\n\nBody\n");
     expect(f.notes.has("idea.md")).toBe(false);
-    // The open note follows, showing its new title.
-    expect(app.store.state.note).toMatchObject({ path: "better-idea.md", initialMarkdown: "# Better idea\n\nBody\n" });
-    expect(vm(app).items.find((i) => i.id === "better-idea.md")).toMatchObject({ label: "Better idea", selected: true });
+    expect(app.store.state.note).toMatchObject({ path: "better-idea.md", initialMarkdown: "# Idea\n\nBody\n" });
+    expect(vm(app).items.find((i) => i.id === "better-idea.md")).toMatchObject({ label: "Idea", selected: true });
   });
   it("renaming a folder moves everything in it, and the open note follows", async () => {
     const f = setup({ notes: { "a/n.md": "# N\n" }, open: "a/n.md" });
@@ -338,7 +337,7 @@ describe("links follow renames and moves (FIL-09)", () => {
     expect(f.batches).toEqual([[{ op: "move", from: "Box", to: "Crate" }, { op: "write", path: "a.md", text: "[x](Crate/x.md) [y](./Crate/sub/y.md)\n", before: "[x](Box/x.md) [y](./Box/sub/y.md)\n" }]]);
     expect(text(f, "Crate/x.md")).toBe("# X\n\n[y](sub/y.md)\n");
   });
-  it("renaming a note by its title renames the file and rewrites links to it, all in one batch", async () => {
+  it("Rename file preserves the title and rewrites links to its new path, all in one batch", async () => {
     const f = setup({ notes: { "idea.md": "# Idea\n\nBody\n", "other.md": "# Other\n\n[i](idea.md) [j](<idea.md>)\n" } });
     const app = await started(f);
     await app.commands.run("files.open");
@@ -348,21 +347,22 @@ describe("links follow renames and moves (FIL-09)", () => {
     await app.commands.run("files.commitEdit");
     expect(f.batches).toEqual([[
       { op: "move", from: "idea.md", to: "better-idea.md" },
-      { op: "write", path: "better-idea.md", text: "# Better idea\n\nBody\n", before: "# Idea\n\nBody\n" },
+      { op: "write", path: "better-idea.md", text: "# Idea\n\nBody\n", before: "# Idea\n\nBody\n" },
       { op: "write", path: "other.md", text: "# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n", before: "# Other\n\n[i](idea.md) [j](<idea.md>)\n" },
     ]]);
     expect(text(f, "other.md")).toBe("# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n");
     expect(toasts(app)).toContain("Renamed to “Better idea”. Updated links in 1 note.");
   });
-  it("a file name that follows the title as it's typed (FIL-07) rewrites links to it in the same batch", async () => {
+  it("later title edits preserve the file name and incoming links (FIL-18)", async () => {
     const f = setup({ notes: { "idea.md": "# Idea\n", "other.md": "[i](idea.md)\n" }, open: "idea.md" });
     const app = await started(f);
     await app.commands.run("note.setContent", { value: "# Plan\n" });
     await app.commands.run("note.save");
     await settle();
-    expect(app.store.state.note.path).toBe("plan.md");
-    expect(f.batches).toEqual([[{ op: "move", from: "idea.md", to: "plan.md" }, { op: "write", path: "other.md", text: "[i](plan.md)\n", before: "[i](idea.md)\n" }]]);
-    expect(text(f, "plan.md")).toBe("# Plan\n");
+    expect(app.store.state.note.path).toBe("idea.md");
+    expect(f.batches).toEqual([]);
+    expect(text(f, "idea.md")).toBe("# Plan\n");
+    expect(text(f, "other.md")).toBe("[i](idea.md)\n");
   });
   it("the open note's links update in the editor, keeping what was typed before the move", async () => {
     const f = setup({ notes: { "a.md": "# A\n\n[b](b.md)\n", "b.md": "# B\n" }, folders: ["Box"], open: "a.md" });

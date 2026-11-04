@@ -131,6 +131,163 @@
       ]
     },
     {
+      "type": "OpenItem",
+      "tier": "primitive",
+      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+      "props": {
+        "kind": {
+          "kind": "enum",
+          "values": [
+            "project",
+            "file"
+          ],
+          "default": "file"
+        },
+        "title": {
+          "kind": "message",
+          "required": true,
+          "description": "The project's or file's name: the person's own words."
+        },
+        "detail": {
+          "kind": "message",
+          "description": "A file: its project and folder."
+        },
+        "path": {
+          "kind": "text",
+          "description": "A project: its folder's full path."
+        },
+        "pathLabel": {
+          "kind": "message",
+          "description": "The path's action: Show in File Explorer, or Show in Finder."
+        },
+        "logo": {
+          "kind": "enum",
+          "values": [
+            "book",
+            "briefcase",
+            "beaker",
+            "heart",
+            "star",
+            "leaf",
+            "rocket",
+            "lightbulb",
+            "music",
+            "camera",
+            "people",
+            "home",
+            "airplane",
+            "code",
+            "brush",
+            "trophy",
+            "earth",
+            "food",
+            "building",
+            "chat",
+            "diamond",
+            "flag",
+            "sparkle",
+            "pen",
+            "upload",
+            "none"
+          ],
+          "default": "none"
+        },
+        "src": {
+          "kind": "text",
+          "description": "An uploaded logo's sanitized SVG data URL."
+        },
+        "initials": {
+          "kind": "text"
+        },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "A file's type icon."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name: Pin, with the item's name."
+        },
+        "unpinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name while pinned: Unpin, with the item's name."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The open action's accessible name, when the title alone doesn't say it."
+        }
+      },
+      "events": {
+        "press": {},
+        "pin": {},
+        "reveal": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.openItem.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "title"
+      },
+      "fixtures": [
+        "project",
+        "project pinned",
+        "project uploaded logo",
+        "logo book",
+        "logo briefcase",
+        "logo beaker",
+        "logo heart",
+        "logo star",
+        "logo leaf",
+        "logo rocket",
+        "logo lightbulb",
+        "logo music",
+        "logo camera",
+        "logo people",
+        "logo home",
+        "logo airplane",
+        "logo code",
+        "logo brush",
+        "logo trophy",
+        "logo earth",
+        "logo food",
+        "logo building",
+        "logo chat",
+        "logo diamond",
+        "logo flag",
+        "logo sparkle",
+        "logo pen",
+        "initials, app accent",
+        "file",
+        "file pinned"
+      ]
+    },
+    {
       "type": "Text",
       "tier": "primitive",
       "description": "A run of interface text. Note text is never rendered with this; it lives in block components.",
@@ -1001,7 +1158,8 @@
             "moveField",
             "repoField",
             "spotlightField",
-            "findAllField"
+            "findAllField",
+            "newNoteField"
           ],
           "default": "none"
         },
@@ -1067,7 +1225,8 @@
         "keyScope moveField",
         "keyScope repoField",
         "keyScope spotlightField",
-        "keyScope findAllField"
+        "keyScope findAllField",
+        "keyScope newNoteField"
       ]
     },
     {
@@ -1900,6 +2059,11 @@
           "kind": "number",
           "min": 0,
           "description": "Each new value moves focus into the tree."
+        },
+        "windowed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Read-only reviews mount at most 200 rows; scrolling, keyboard navigation and type-ahead still cover the whole tree."
         },
         "editValue": {
           "kind": "text",
@@ -2993,6 +3157,11 @@
         "invalid": {
           "kind": "boolean",
           "default": false
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the chosen day focusable, without changing it while its action is being sent."
         }
       },
       "events": {
@@ -3008,7 +3177,8 @@
         "rest",
         "focused",
         "open",
-        "invalid"
+        "invalid",
+        "readOnly"
       ],
       "tokens": "cmp.datePicker.*",
       "a11y": {
@@ -3018,7 +3188,8 @@
       "fixtures": [
         "empty",
         "with a description",
-        "invalid"
+        "invalid",
+        "read only"
       ]
     },
     {
@@ -3239,6 +3410,18 @@
             "270"
           ],
           "default": "0"
+        },
+        "cropX": {
+          "kind": "number"
+        },
+        "cropY": {
+          "kind": "number"
+        },
+        "cropWidth": {
+          "kind": "number"
+        },
+        "cropHeight": {
+          "kind": "number"
         }
       },
       "events": {
@@ -3248,7 +3431,13 @@
             "y": "number"
           }
         },
-        "retry": {}
+        "retry": {},
+        "size": {
+          "payload": {
+            "width": "number",
+            "height": "number"
+          }
+        }
       },
       "slots": {},
       "states": [
@@ -4101,7 +4290,8 @@
             "pickerField",
             "formatToolbar",
             "linkEditor",
-            "firstRun"
+            "firstRun",
+            "rewritePrompt"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -4145,6 +4335,7 @@
         "keyScope formatToolbar",
         "keyScope linkEditor",
         "keyScope firstRun",
+        "keyScope rewritePrompt",
         "elevation 0",
         "elevation 1",
         "elevation 2",
@@ -4178,7 +4369,8 @@
             "window",
             "center",
             "bottomCenter",
-            "bottomStart"
+            "bottomStart",
+            "bottomEnd"
           ],
           "default": "center",
           "description": "window: the whole window below the title bar band, which stays the window's (dragging, the window controls): the full-window setup (D-126)."
@@ -4237,6 +4429,7 @@
         "position center",
         "position bottomCenter",
         "position bottomStart",
+        "position bottomEnd",
         "landmark none",
         "landmark banner",
         "landmark main",
@@ -4377,6 +4570,26 @@
           "default": "mono",
           "description": "The content font (THM-03)."
         },
+        "projectAccent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app",
+          "description": "The full outer project outline (D-317)."
+        },
         "uiScale": {
           "kind": "number",
           "min": 0.9,
@@ -4471,6 +4684,19 @@
         "contentFont hyperlegible",
         "contentFont dyslexic",
         "contentFont system",
+        "projectAccent red",
+        "projectAccent orange",
+        "projectAccent amber",
+        "projectAccent lime",
+        "projectAccent green",
+        "projectAccent teal",
+        "projectAccent cyan",
+        "projectAccent blue",
+        "projectAccent indigo",
+        "projectAccent violet",
+        "projectAccent pink",
+        "projectAccent slate",
+        "projectAccent app",
         "uiScale 1.5",
         "lineHeight 2, measure 50",
         "paragraphSpacing compact",
@@ -4802,14 +5028,21 @@
           "kind": "enum",
           "values": [
             "window",
+            "canvas",
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
+          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. canvas: only the scoped background, for the full-window website preview. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
         },
         "grow": {
           "kind": "boolean",
           "default": false
+        },
+        "contentSize": {
+          "kind": "number",
+          "min": 14,
+          "max": 32,
+          "description": "A subtree's reading size, used by the website preview; leaves app appearance unchanged."
         }
       },
       "events": {},
@@ -4826,7 +5059,9 @@
         "pattern": "none"
       },
       "fixtures": [
+        "local reading size",
         "part window",
+        "part canvas",
         "part plain",
         "accent red",
         "accent orange",
@@ -5050,6 +5285,20 @@
       "tier": "host",
       "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
       "props": {
+        "imageSources": {
+          "kind": "list",
+          "of": "colorValues"
+        },
+        "imageMenu": {
+          "kind": "list",
+          "of": "menuSections"
+        },
+        "imageMenuLabel": {
+          "kind": "message"
+        },
+        "imageMissing": {
+          "kind": "message"
+        },
         "documentKey": {
           "kind": "text",
           "required": true
@@ -5169,12 +5418,53 @@
         }
       },
       "events": {
+        "imageRead": {
+          "payload": {
+            "src": "text"
+          }
+        },
+        "imageSelect": {
+          "payload": {
+            "pos": "number",
+            "src": "text",
+            "rounded": "boolean",
+            "fitHeight": "boolean",
+            "mode": "text",
+            "width": "number",
+            "height": "number",
+            "from": "number",
+            "to": "number",
+            "count": "number",
+            "roundMixed": "boolean",
+            "limitMixed": "boolean"
+          }
+        },
+        "imageAction": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "imageEdited": {
+          "payload": {
+            "src": "text",
+            "data": "text"
+          }
+        },
+        "imageEditError": {},
         "change": {
           "payload": {
             "value": "text"
           }
         },
         "ready": {},
+        "position": {
+          "payload": {
+            "key": "text",
+            "from": "number",
+            "to": "number",
+            "scroll": "number"
+          }
+        },
         "findResult": {
           "payload": {
             "count": "number",
@@ -5196,7 +5486,8 @@
         },
         "rewriteCapture": {
           "payload": {
-            "text": "text"
+            "text": "text",
+            "caret": "boolean"
           }
         },
         "rewriteBegan": {
@@ -5844,6 +6135,11 @@
           "of": "noteBlocks",
           "required": true,
           "description": "The note as the Markdown bridge parses it."
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the selected reading block clear and dim the rest. Choose a block with the pointer, or focus the document and use Up/Down."
         }
       },
       "events": {},
@@ -5857,6 +6153,7 @@
         "name": "The page's landmarks name it; headings keep their levels."
       },
       "fixtures": [
+        "paragraph focus",
         "every block"
       ]
     }
@@ -6120,7 +6417,9 @@
     "upload",
     "caption",
     "description",
-    "sparkle"
+    "sparkle",
+    "pinFilled",
+    "documentText"
   ],
   "views": [
     {
@@ -6128,6 +6427,9 @@
       "ia": "IA-VIEW-CANVAS",
       "viewModels": [
         "vm.app",
+        "vm.project",
+        "vm.projects",
+        "vm.projectIntro",
         "vm.canvas",
         "vm.toolbar",
         "vm.shortcuts",
@@ -6135,6 +6437,7 @@
         "vm.format",
         "vm.slash",
         "vm.table",
+        "vm.images",
         "vm.block",
         "vm.feedback",
         "vm.picker",
@@ -6186,6 +6489,42 @@
       ]
     },
     {
+      "id": "localImport",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.localImport"
+      ]
+    },
+    {
+      "id": "newNote",
+      "viewModels": [
+        "vm.newNote"
+      ]
+    },
+    {
+      "id": "projectIntro",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.projectIntro"
+      ]
+    },
+    {
+      "id": "projectNew",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.projectNew",
+        "vm.project"
+      ]
+    },
+    {
+      "id": "projects",
+      "ia": "IA-VIEW-PROJECTS",
+      "viewModels": [
+        "vm.app",
+        "vm.projects"
+      ]
+    },
+    {
       "id": "reader",
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
@@ -6214,7 +6553,10 @@
         "vm.shareNote",
         "vm.agents",
         "vm.keyboard",
-        "vm.ai"
+        "vm.ai",
+        "vm.project",
+        "vm.sharingSettings",
+        "vm.sharingPeople"
       ]
     },
     {
@@ -6222,6 +6564,22 @@
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
         "vm.share"
+      ]
+    },
+    {
+      "id": "shareItem",
+      "ia": "IA-VIEW-SHARE",
+      "viewModels": [
+        "vm.shareItem"
+      ]
+    },
+    {
+      "id": "sitePreview",
+      "ia": "IA-VIEW-PUBLIC",
+      "viewModels": [
+        "vm.app",
+        "vm.project",
+        "vm.sharingPreview"
       ]
     },
     {

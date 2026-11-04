@@ -99,6 +99,8 @@ ipcRenderer.on("spelling:replace", (_e, word: unknown, replacement: unknown) => 
 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
+  readImage: (note: string, src: string) => ipcRenderer.invoke("image:read", note, src),
+  writeImage: (note: string, src: string, data: string, expected: string) => ipcRenderer.invoke("image:write", note, src, data, expected),
   // GPU or software compositing (D-121): the main process reads it, and tells of changes after a GPU crash.
   compositing: {
     initial: params.get("compositing") === "software" ? "software" : "gpu",
@@ -118,6 +120,33 @@ contextBridge.exposeInMainWorld("focusNotes", {
   readNotes: (paths: readonly string[]) => ipcRenderer.invoke("notes:read", paths),
   writeNote: (path: string, content: string, expected?: string) => ipcRenderer.invoke("note:write", path, content, expected),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
+  projects: {
+    local: params.get("localNotes") === "1",
+    localNote: () => ipcRenderer.invoke("projects:localNote"),
+    importLocal: (path: string, folder: string) => ipcRenderer.invoke("projects:importLocal", path, folder),
+    upload: () => ipcRenderer.invoke("projects:upload"),
+    edited: (path: string) => ipcRenderer.invoke("projects:edited", path),
+    pin: (folder: string, path?: string) => ipcRenderer.invoke("projects:pin", folder, path),
+    reveal: (folder: string) => ipcRenderer.invoke("projects:reveal", folder),
+    openFile: () => ipcRenderer.invoke("projects:openFile"),
+    githubRepos: () => ipcRenderer.invoke("projects:githubRepos"),
+    openGitHub: (owner: string, name: string) => ipcRenderer.invoke("projects:openGitHub", owner, name),
+    lastNote: () => ipcRenderer.invoke("projects:lastNote"),
+    position: (path: string) => ipcRenderer.invoke("projects:position", path),
+    remember: (path: string, position?: { from: number; to: number; scroll: number }) => ipcRenderer.invoke("projects:remember", path, position),
+    list: () => ipcRenderer.invoke("projects:list"),
+    choose: () => ipcRenderer.invoke("projects:choose"),
+    parent: () => ipcRenderer.invoke("projects:parent"),
+    chooseParent: (parent: string) => ipcRenderer.invoke("projects:chooseParent", parent),
+    check: (parent: string, name: string) => ipcRenderer.invoke("projects:check", parent, name),
+    create: (input: { parent: string; name: string; accent: string; logo: string }) => ipcRenderer.invoke("projects:create", input),
+    open: (folder: string, note?: string) => ipcRenderer.invoke("projects:open", folder, note),
+    onNote: (listener: (path: string) => void) => {
+      const handler = (_event: unknown, path: string) => listener(path);
+      ipcRenderer.on("projects:note", handler);
+      return () => ipcRenderer.removeListener("projects:note", handler);
+    },
+  },
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
   toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),
   // The page's title is the print job's name, and Save as PDF's file name (D-230).
@@ -206,6 +235,10 @@ contextBridge.exposeInMainWorld("focusNotes", {
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
+    prepareWords: () => ipcRenderer.invoke("access:words"),
+    ready: (id: string) => ipcRenderer.invoke("access:ready", id),
+    cancelReady: (id: string) => ipcRenderer.invoke("access:cancelReady", id),
+    systemShare: (id: string, invite: unknown) => ipcRenderer.invoke("access:systemShare", id, invite),
     setTemplate: (template: string | null) => ipcRenderer.invoke("access:template", template),
     copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
   },

@@ -46,7 +46,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
+    items: ["note.new", "note.newIn", "note.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
@@ -96,6 +96,8 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
+  { why: "New note picker and Spotlight keep-open key", ids: /^(newNote\.(dismiss|query|next|prev|accept|select|expand|newFolder|create)|spotlight\.runKeep)$/ },
+  { why: "fixed-item sharing dialog and Files row menu", ids: /^(share\.item\..+|files\.share)$/ },
   // Settings → AI's fields and the Rewrite dialog's own steps, and the editor's answers to it.
   { why: "AI settings and the Rewrite dialog", ids: /^(ai\.(load|edit|save|openSettings|add|cancel|provider|change|remove|writer|test|discover|useFound|models|model|privacy)|rewrite\.(captured|dismiss|prompt|preset|generate|began|cancel|deselected|keepPrompt|discardPrompt|writer))$/ },
   // What views, the editor, and the shell send as things change: values, events, and their own steps.

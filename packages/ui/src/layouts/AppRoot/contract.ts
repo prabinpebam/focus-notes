@@ -1,4 +1,5 @@
 import { defineContract } from "../../contract.ts";
+import { PROJECT_ACCENTS } from "../../primitives/ProjectMark/presets.ts";
 
 const THEMES = ["paper", "sepia", "harbor-light", "forest-light", "contrast-light", "ink", "dusk", "harbor-dark", "forest-dark", "contrast-dark"] as const;
 const FONTS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"] as const;
@@ -16,6 +17,7 @@ export const contract = defineContract({
     focusMode: { kind: "boolean", default: false },
     theme: { kind: "enum", values: THEMES, description: "The theme to show (THM-08). Defaults to Paper or Ink." },
     contentFont: { kind: "enum", values: FONTS, default: "mono", description: "The content font (THM-03)." },
+    projectAccent: { kind: "enum", values: [...PROJECT_ACCENTS, "app"], default: "app", description: "The full outer project outline (D-317)." },
     uiScale: { kind: "number", min: 0.9, max: 1.5, description: "Interface scale (DSY-03); note text is unaffected." },
     lineHeight: { kind: "number", min: 1.3, max: 2, description: "Line spacing (Theme manager → Reading); unset is font.lineHeight." },
     measure: { kind: "number", min: 50, max: 100, description: "Reading width in characters; unset is layout.measure." },
@@ -38,6 +40,7 @@ export const contract = defineContract({
     { name: "platform web", props: { scheme: "light", platform: "web" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
     ...THEMES.map((theme) => ({ name: `theme ${theme}`, props: { scheme: theme === "paper" || theme.endsWith("-light") || theme === "sepia" ? "light" : "dark", theme, platform: "windows" }, children: sample })),
     ...FONTS.map((contentFont) => ({ name: `contentFont ${contentFont}`, props: { scheme: "light", platform: "windows", contentFont }, children: sample })),
+    ...[...PROJECT_ACCENTS, "app"].map((projectAccent) => ({ name: `projectAccent ${projectAccent}`, props: { scheme: "light", platform: "windows", projectAccent }, children: sample })),
     { name: "uiScale 1.5", props: { scheme: "light", platform: "windows", uiScale: 1.5 }, children: sample },
     { name: "lineHeight 2, measure 50", props: { scheme: "light", platform: "windows", lineHeight: 2, measure: 50 }, children: sample },
     { name: "paragraphSpacing compact", props: { scheme: "light", platform: "windows", paragraphSpacing: "compact" }, children: sample },

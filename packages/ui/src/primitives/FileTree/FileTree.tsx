@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { Popover } from "react-aria-components";
 import { CommandMenu } from "../MenuButton/MenuButton.tsx";
 import * as menuStyles from "../MenuButton/MenuButton.css.ts";
@@ -16,6 +16,8 @@ export interface FileTreeProps {
   focusId?: string;
   /** A new value moves focus into the tree, to the focused row. */
   focusRequest?: number;
+  /** Read-only review: retain at most 200 mounted rows, including the focused row. */
+  windowed?: boolean;
   /** The inline name field of the row being named. */
   editValue?: string;
   editLabel?: string;
@@ -51,16 +53,35 @@ const EXPAND_AFTER_MS = 600;
 /** The last focus request each tree met, by id, kept while it's re-created (DEF-20). */
 const metRequests = new Map<string, number>();
 
-export function FileTree({ label, items, focusId, focusRequest, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction }: FileTreeProps) {
+export function FileTree({ label, items, focusId, focusRequest, windowed = false, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction }: FileTreeProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [dropId, setDropId] = useState("");
   const drag = useRef<{ source: string; ids: string[] } | null>(null);
   const hover = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const typed = useRef<TypeAheadState>({ text: "", at: -Infinity });
+  const keyboardFocus = useRef(false);
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const focused = byId.has(focusId ?? "") ? focusId! : items[0]?.id ?? "";
   const editing = items.find((i) => i.editing);
+  const [windowStart, setWindowStart] = useState(0);
+  const bounded = windowed && !editing && !items.some((item) => item.draggable);
+  const indices = useMemo(() => {
+    if (!bounded) return items.map((_, i) => i);
+    const start = Math.min(windowStart, Math.max(0, items.length - 199));
+    const visible = new Set(Array.from({ length: Math.min(199, items.length - start) }, (_, i) => start + i));
+    const at = items.findIndex((item) => item.id === focused);
+    if (at >= 0) visible.add(at);
+    return [...visible].sort((a, b) => a - b);
+  }, [items, bounded, windowStart, focused]);
+  const siblings = useMemo(() => {
+    const groups = new Map<string, number[]>();
+    items.forEach((item, index) => { const parent = item.parent ?? ""; const group = groups.get(parent) ?? []; group.push(index); groups.set(parent, group); });
+    const positions = new Map<number, { position: number; size: number }>();
+    for (const group of groups.values()) group.forEach((index, i) => positions.set(index, { position: i + 1, size: group.length }));
+    return positions;
+  }, [items]);
+  const spacer = (key: string, count: number) => count > 0 ? <div key={key} aria-hidden="true" className={s.spacer} ref={(el) => el?.style.setProperty(varName(s.skippedRows), String(count))} /> : null;
 
   // ---- the row's menu (D-162) ----
   const boundary = useWindowBoundary();
@@ -96,9 +117,10 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
     el?.scrollIntoView({ block: "nearest" });
   };
   // Focus follows the focused row while it's in the tree; a new request brings it in from outside.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (editing) return;
-    if (ref.current?.contains(document.activeElement)) focusRow(focused);
+    if (keyboardFocus.current || ref.current?.contains(document.activeElement)) focusRow(focused);
+    keyboardFocus.current = false;
   }, [focused, Boolean(editing)]);
   /**
    * A request made while the tree had no rows yet (opened before the workspace was listed): the
@@ -157,7 +179,11 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
     hover.current = null;
   };
 
-  const select = (itemId: string, mode: string) => onSelect?.({ id: itemId, mode });
+  const select = (itemId: string, mode: string) => {
+    keyboardFocus.current = Boolean(ref.current?.contains(document.activeElement));
+    if (bounded) setWindowStart(Math.max(0, items.findIndex((item) => item.id === itemId) - 99));
+    onSelect?.({ id: itemId, mode });
+  };
   const keyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     // Keys in the row's menu reach here through React's tree, not the DOM's: they're the menu's.
     if (e.target instanceof HTMLInputElement || e.altKey || !ref.current?.contains(e.target as Node)) return;
@@ -275,13 +301,24 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
 
   const errorId = `${id}-edit-error`;
   return (
-    <div ref={ref} id={id} role="tree" aria-label={label} aria-multiselectable="true" className={s.tree} data-key-scope="filesTree" onKeyDown={keyDown}>
-      {items.map((item) => {
+    <div ref={ref} id={id} role="tree" aria-label={label} aria-multiselectable="true" className={`${s.tree} ${bounded ? s.windowed : ""}`} data-key-scope="filesTree" onKeyDown={keyDown}
+      onScroll={bounded ? () => {
+        const tree = ref.current, row = tree?.querySelector<HTMLElement>('[role="treeitem"]');
+        if (!tree || !row) return;
+        const pitch = row.getBoundingClientRect().height + (parseFloat(getComputedStyle(tree).rowGap) || 0);
+        if (pitch > 0) setWindowStart(Math.max(0, Math.floor(tree.scrollTop / pitch) - 20));
+      } : undefined}>
+      {indices.map((index, n) => {
+        const item = items[index]!;
         const folder = item.kind !== "note";
         // A section's own control (its repository's backup, D-191); the row is then named by its label alone.
         const end = item.kind === "section" && item.accessory !== undefined ? sectionEnd[item.accessory] : undefined;
-        const labelId = end ? `${treeRowId(id, item.id)}-label` : undefined;
+        const labelId = !item.editing && (end || item.detail) ? `${treeRowId(id, item.id)}-label` : undefined;
+        const descriptionId = labelId && item.description && !end ? `${treeRowId(id, item.id)}-description` : undefined;
+        const detailId = item.detail && !item.editing ? `${treeRowId(id, item.id)}-detail` : undefined;
         return (
+          <Fragment key={item.id}>
+          {bounded ? spacer(`before-${item.id}`, index - (indices[n - 1] ?? -1) - 1) : null}
           <div
             key={item.id}
             id={treeRowId(id, item.id)}
@@ -290,8 +327,11 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
               if (el && menuAt?.id === item.id && menuAt.at === "row") anchor.current = el;
             }}
             role="treeitem"
-            aria-labelledby={labelId}
+            aria-labelledby={labelId ? [labelId, descriptionId, detailId].filter(Boolean).join(" ") : undefined}
+            aria-description={detailId ? item.title || undefined : undefined}
             aria-level={item.level}
+            aria-posinset={bounded ? siblings.get(index)?.position : undefined}
+            aria-setsize={bounded ? siblings.get(index)?.size : undefined}
             aria-selected={item.selected}
             aria-expanded={folder ? item.expanded : undefined}
             aria-busy={item.pending ? true : undefined}
@@ -346,7 +386,8 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
               <span className={s.label} id={labelId} dir="auto">{item.label}{item.description ? <span className={s.srOnly}>,</span> : null}</span>
             )}
             {/* The name is the row's text: "About, public" (Files → Accessibility). */}
-            {item.description && !item.editing ? <span className={s.description}>{item.description}</span> : null}
+            {item.description && !item.editing ? <span id={descriptionId} className={s.description}> {item.description}</span> : null}
+            {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
             {end ? (
               // Its own control, not the row's: its keys, clicks and presses stay with it (D-191).
@@ -387,8 +428,10 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
               />
             ) : null}
           </div>
+          </Fragment>
         );
       })}
+      {bounded ? spacer("after", items.length - (indices.at(-1) ?? -1) - 1) : null}
       {menuAt && menu.length ? (
         <Popover
           triggerRef={anchor}

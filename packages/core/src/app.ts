@@ -13,7 +13,7 @@ import { waits } from "@focus-notes/tokens";
 import { TaskTracker, busyProps, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
-import { joinPath, newNoteFolder } from "./workspace.ts";
+import { dirOf, joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { registerPublicLink } from "./public-link-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
@@ -32,9 +32,17 @@ import { registerToolbarCustomize, TOOLBAR_CUSTOMIZE_CLOSED, validPinned, type T
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
+import { registerProject } from "./project-app.ts";
+import { registerProjectIntro } from "./project-intro-app.ts";
+import { registerProjectOpen } from "./project-open-app.ts";
+import { registerProjectNew } from "./project-new-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerAi } from "./ai-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
+import { registerItemShare } from "./share-item.ts";
+import { registerSharingSettings } from "./sharing-settings.ts";
+import { registerSharingPeople } from "./sharing-people.ts";
+import { registerSharingPreview } from "./sharing-preview.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
@@ -45,6 +53,7 @@ import type { SearchService } from "./search/feed.ts";
 import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
 import { customThemesOf, isCustomId } from "./custom-themes.ts";
 import { headingCount } from "./outline.ts";
+import { registerImages, IMAGES_CLOSED, type ImagesState } from "./images-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -75,6 +84,7 @@ export interface AppState {
   /** How the window is composited, as the shell reports it (D-121): in software the note's edges fade without the blur. */
   compositing: Compositing;
   ui: {
+    images: ImagesState;
     toolbarOpen: boolean;
     /** The keyboard shortcut cheat sheet (IA-VIEW-SHORTCUTS). */
     shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
@@ -253,7 +263,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.publish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
@@ -316,7 +326,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED, print: PRINT_CLOSED },
+    ui: { images: IMAGES_CLOSED, toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED, print: PRINT_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -441,14 +451,26 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
+  registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
+  const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
+  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load, flush, toast });
+  registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
+  registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
+  registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
+  registerSharingPeople({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState });
+  registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
     outside: (path, mine, theirs) => conflicts.outside(path, mine, theirs),
     matched: (path) => conflicts.release(path),
     handOver: () => editorAction(FLUSH_EDITOR),
+    notesMoved: (moves) => {
+      notesMoved(moves);
+      for (const { from, to } of moves) conflicts.moved(from, to);
+    },
   });
 
   async function writeNow(): Promise<void> {
@@ -474,7 +496,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         return;
       }
       timing.mark(SAVED_MARK);
-      // The file name follows the title (FIL-07); a rename keeps the editor as it is.
+      // Only the provisional first-save name changes (FIL-18); later headings leave the path alone.
       await workspace.written(path, markdown);
       // A held note asks before its first backup only once it has the writer's words (D-158).
       heldNotes.written(path, store.state.note.path);
@@ -520,6 +542,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // The trail moves the moment the stepped-to note shows, not after the rest of opening finishes,
   // so forward pressed as soon as the note appears isn't lost (DEF-11).
   const trail = { paths: [] as string[], at: -1, step: undefined as { to: number; shown: boolean } | undefined };
+  const notesMoved = (moves: readonly { from: string; to: string }[]) => {
+    const paths = new Map(moves.map(({ from, to }) => [from, to]));
+    trail.paths = trail.paths.map((path) => paths.get(path) ?? path);
+    drafts.moved(moves);
+  };
   const visited = (path: string) => {
     const step = trail.step;
     if (step && trail.paths[step.to] === path) {
@@ -550,6 +577,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
 
   let opening: number | undefined;
+  type NotePosition = { key: string; from: number; to: number; scroll: number };
+  let notePosition: NotePosition | undefined;
+  let restorePosition: NotePosition | undefined;
+  let editingScored = false;
   const slashed = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
   /** Whether a path is in the workspace's Public root (`notes/`). */
   const publicInWorkspace = (path: string, folder: string) => slashed(path).startsWith(`${slashed(folder)}/notes/`);
@@ -575,7 +606,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     try {
       const md = await bridge.readNote(path);
       if (opts.accept && !opts.accept(md)) return false;
-      setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
+      const key = `${path}#${Date.now()}`;
+      if (bridge.projects) {
+        try {
+          const position = await bridge.projects.position(path);
+          restorePosition = position ? { ...position, key } : undefined;
+        } catch {
+          restorePosition = undefined;
+          toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+        }
+      }
+      notePosition = undefined;
+      editingScored = false;
+      setNote({ path, key, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.sawOnDisk(path, md);
       workspace.loaded(path, md);
       visited(path);
@@ -585,6 +628,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       drafts.opened(path, md);
       // A private note's name is private: it's never written to this browser's storage (D-90).
       if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
+      if (bridge.projects) {
+        try { await bridge.projects.remember(path); }
+        catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
+      }
       return true;
     } catch {
       setNote({ status: "error" });
@@ -594,8 +641,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   /** Writes any unsaved or previously failed change now. Resolves to whether the note is saved. */
   async function flush(): Promise<boolean> {
+    editorAction(FLUSH_EDITOR);
     if (saveTimer || store.state.note.saveState === "unsaved" || store.state.note.saveState === "error") saving = saving.then(writeNow);
     await saving;
+    const path = store.state.note.path;
+    if (bridge.projects && path && notePosition?.key === store.state.note.key) {
+      try { await bridge.projects.remember(path, notePosition); }
+      catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
+    }
     // Text that can't be written without overwriting the other version asks for a choice instead.
     if (conflicts.holds(store.state.note.path) && store.state.note.saveState !== "saved") {
       conflicts.offer(store.state.note.path);
@@ -663,6 +716,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The instance's notes are read-only in the browser (D-90), and so is a workspace this app
       // mustn't write (DST-05); the editor doesn't change them either.
       if (noteReadOnly(store.state)) return;
+      const path = store.state.note.path;
+      if (!editingScored && path && bridge.projects) {
+        editingScored = true;
+        void bridge.projects.edited(path).catch(() => toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }));
+      }
       warmUp.typed();
       typed(value);
     },
@@ -767,7 +825,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     enabled: (s) => s.workspace.access === "write",
     disabledReason: "command.note.new.readOnly",
     // With a title (Spotlight's Create note "…"), the note starts with it as its H1 and is named after it (FIL-07).
-    run: async ({ title }: { title?: unknown }) => {
+    run: async ({ title, folder: chosenFolder }: { title?: unknown; folder?: unknown }) => {
       const current = store.state.note.path;
       // With the Files panel open, the note goes into the selected folder (Files → Creating); else
       // into the open note's folder if it's private, or the Private root: private by default (SHR-01).
@@ -775,12 +833,21 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // then only a chosen folder counts, and the shell puts it in the Private root (D-171).
       const tree = store.state.workspace.tree;
       const known = tree.roots.length > 0;
-      const folder = known ? newNoteFolder(tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current) : files.newNoteFolder();
+      const folder = typeof chosenFolder === "string" ? chosenFolder : known ? newNoteFolder(tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current) : files.newNoteFolder();
+      if (chosenFolder !== undefined) {
+        const root = tree.roots.find((r) => folder === r.path || Boolean(folder?.startsWith(r.path + "/") || folder?.startsWith(r.path + "\\")));
+        if (!bridge.workspace?.apply || !root || root.readOnly || !folder || !files.canCreateIn(folder)) throw new Error("folder-unavailable");
+      }
       const near = folder !== undefined ? joinPath(folder, "untitled.md") : known && !isReadOnlyPath(current) ? current : undefined;
       const path = await bridge.newNotePath(near);
+      if (typeof chosenFolder === "string") {
+        const normal = (p: string) => bridge.platform === "windows" ? p.replace(/\\/g, "/").toLowerCase() : p;
+        if (normal(path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")))) !== normal(chosenFolder)) throw new Error("folder-unavailable");
+      }
       if (!(await flush())) return;
+      if (chosenFolder !== undefined && bridge.workspace?.apply) await bridge.workspace.apply([{ op: "create", path, text: "" }]);
+      else await bridge.writeNote(path, "");
       files.created(path);
-      await bridge.writeNote(path, "");
       // Without a private repository the shell held it: its pill shows from the start (D-158).
       await heldNotes.refresh();
       await load(path);
@@ -1077,6 +1144,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     });
   }
 
+  commands.register<NotePosition>({
+    id: "note.position", title: "command.app.ready",
+    run: (position) => {
+      if (position.key === store.state.note.key) notePosition = position;
+    },
+  });
   commands.register({
     id: "app.ready",
     title: "command.app.ready",
@@ -1089,6 +1162,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The caret is ready: the warm-up may begin (PRF-10).
       warmUp.start();
       drafts.editorReady();
+      const position = restorePosition;
+      restorePosition = undefined;
+      if (position) afterPaint(() => editorAction("note.restorePosition", position));
+      if (bridge.projects && !bridge.projects.local) afterPaint(() => projectIntro.ready());
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
@@ -1128,6 +1205,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m),
     announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
   });
+  registerImages({ store, bridge, catalog, commands, viewModels, editorAction, toast, itemSchema: ITEM_SCHEMA, describeItem });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
     loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), holds: (path) => conflicts.holds(path),
@@ -1135,7 +1213,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       workspace.movedOnDisk(from, to);
       conflicts.moved(from, to);
     },
-    notesMoved: (moves) => drafts.moved(moves),
+    notesMoved,
     describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id), tracker, htmlToMarkdown: options.htmlToMarkdown,
   });
   const browser = registerBrowserFeatures({
@@ -1278,7 +1356,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
       more: [
         ...(DEFAULT_TOOLBAR.some((d) => !s.toolbarPinned.includes(d)) ? [{ id: "actions", label: "menu.actions", items: DEFAULT_TOOLBAR.filter((d) => !s.toolbarPinned.includes(d)) as MenuEntry[] }] : []),
-        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({ ...g, items: g.items.filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)) })),
+        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
+          ...g,
+          items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
+            .filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)),
+        })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
@@ -1473,12 +1555,24 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const timeOfDay = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
   const when = (at: number) => timeOfDay.format(at);
   const backupDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const localLocation = (s: AppState) => Boolean(s.note.path && s.note.status === "ready" && bridge.workspace?.revealItem && !s.sync.git && !s.workspace.repo);
+  commands.register({
+    id: "note.revealLocal", title: `command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`, icon: "hardDrive",
+    enabled: localLocation,
+    run: async () => {
+      const path = store.state.note.path;
+      if (!path || !bridge.workspace?.revealItem) return;
+      try { await bridge.workspace.revealItem(path); }
+      catch { toast(catalog.format("toast.revealItemFailed"), { tone: "error" }); }
+    },
+  });
   viewModels.register({
     id: "vm.saveState",
     schema: {
       type: "object",
       properties: {
         visible: { type: "boolean" },
+        backupVisible: { type: "boolean" }, local: { type: "boolean" }, location: { type: "string" }, locationLabel: { type: "string" },
         interactive: { type: "boolean" },
         state: { type: "string", enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
         label: { type: "string" }, text: { type: "string" },
@@ -1487,7 +1581,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         icon: { type: "string" }, tone: { type: "string", enum: ["neutral", "accent", "danger", "success"] },
       },
     },
-    reads: ["sync", "note.saveState", "note.path", "note.status"],
+    reads: ["sync", "note.saveState", "note.path", "note.status", "workspace"],
     select: (s) => {
       const state = saveStateOf(s.sync, s.note.saveState === "unsaved" || s.note.saveState === "saving");
       const label = !catalog.has("save.state.savedLocal") ? ""
@@ -1496,8 +1590,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
       // The card opens even for local-only notes; its backup action explains when Git is unavailable.
       const backingUp = state === "syncing";
+      const local = localLocation(s);
+      const folder = dirOf(s.note.path ?? "");
+      const location = /^[A-Za-z]:[\\/]|^\//.test(folder) ? folder : joinPath(s.workspace.folder ?? "", folder);
+      const backupVisible = !local && Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready";
       return {
-        visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", interactive: Boolean(bridge.sync), state, label, text,
+        visible: local || backupVisible, backupVisible, local, location,
+        locationLabel: catalog.format("local.location.label", { location, action: catalog.format(`command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`) }),
+        interactive: Boolean(bridge.sync), state, label, text,
         backingUp, canBackUp: s.sync.git && !backingUp,
         backupTime: s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
           : catalog.format("save.backup.last", { time: backupDate.format(s.sync.backedUpAt) }),
@@ -1601,14 +1701,21 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       else if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
         files.restoreSort(appState.filesSort);
+        files.restoreShortcuts(appState.filesPins, appState.filesRecent);
         files.restorePinned(appState.filesPinned, appState.filesWidth);
         // Only the note the person last opened, and never an empty public file;
         // else the app's own note, in the Private root (D-171, SHR-01).
         const folder = store.state.workspace.folder;
         // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
-        const last = bridge.windows?.initialNote ?? appState.lastNotePath;
+        let remembered: string | undefined;
+        if (bridge.projects && !bridge.windows?.initialNote) {
+          try { remembered = await bridge.projects.lastNote(); }
+          catch { toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
+        }
+        const last = bridge.windows?.initialNote ?? remembered ?? appState.lastNotePath;
         const reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
-        if (!reopened) await load(await bridge.defaultNotePath());
+        if (!reopened && bridge.projects) await projects.start();
+        else if (!reopened) await load(await bridge.defaultNotePath());
         // A link the app was opened with goes on from the note it opened (D-165).
         void deepLinks.take();
       }

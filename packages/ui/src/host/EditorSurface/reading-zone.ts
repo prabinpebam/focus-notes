@@ -241,9 +241,11 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   // was carried along by that scroll in the next frame (DEF-25, run 38917526303: 105 then 222).
   const settleNow = () => {
     animator.finish();
-    if (!frame) return;
-    cancelAnimationFrame(frame);
-    keep();
+    if (frame) {
+      cancelAnimationFrame(frame);
+      keep();
+      animator.finish();
+    }
   };
   const offOpen = anchors.onOpen(settleNow);
   const glide = (dest: number) => animator.to(dest, "animate");

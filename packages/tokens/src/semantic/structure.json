@@ -615,6 +615,7 @@
   "opacity": {
     "$type": "number",
     "watermark": { "$value": 0.04, "$description": "A project's watermark on the canvas (D-313): barely there, outside the text." },
+    "tint": { "$value": 0.38, "$description": "A project's accent tint as a subtle wash over its card in Open (owner, 4 November); hovered, the full tint." },
     "disabled": {
       "$value": 0.4
     },

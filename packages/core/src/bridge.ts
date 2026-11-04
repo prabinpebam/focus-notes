@@ -21,6 +21,8 @@ import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.t
 export interface PlatformBridge {
   platform: Platform;
   readNote(path: string): Promise<string>;
+  readImage?(note: string, src: string): Promise<string>;
+  writeImage?(note: string, src: string, data: string, expected: string): Promise<void>;
   /** As readNote, but only a missing file is null; permission and other read failures still reject. */
   readNoteIfExists?(path: string): Promise<string | null>;
   /**
@@ -124,6 +126,34 @@ export interface PlatformBridge {
   recovery?: RecoveryBridge;
   /** Windows of their own, one note each (desktop, DSK-06, D-179). Absent where the shell has one window. */
   windows?: WindowsBridge;
+  /** Local project windows, isolated from each other's workspace services. */
+  projects?: {
+    local?: boolean;
+    localNote(): Promise<void>;
+    importLocal(path: string, folder: string): Promise<string>;
+    upload(): Promise<string | undefined>;
+    edited(path: string): Promise<void>;
+    pin(folder: string, path?: string): Promise<void>;
+    /** Shows a folder Open lists in File Explorer or Finder. */
+    reveal?(folder: string): Promise<void>;
+    /** Open file…: the platform picker; a file in this window's project comes back to open here. */
+    openFile?(): Promise<{ file: string; here: boolean } | undefined>;
+    /** Open from GitHub…: the account's own repositories (never templates). */
+    githubRepos?(): Promise<{ owner: string; name: string; private: boolean }[]>;
+    /** Clones a repository into a new project and opens its window. */
+    openGitHub?(owner: string, name: string): Promise<void>;
+    lastNote(): Promise<string | undefined>;
+    position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
+    remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;
+    list(): Promise<ProjectEntry[]>;
+    open(folder: string, note?: string): Promise<void>;
+    choose(): Promise<string | undefined>;
+    onNote?(listener: (path: string) => void): () => void;
+    parent(): Promise<string>;
+    chooseParent(parent: string): Promise<string | undefined>;
+    check(parent: string, name: string): Promise<{ folder: string; problem: string }>;
+    create(input: { parent: string; name: string; accent: string; logo: string }): Promise<string>;
+  };
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;
   /**
@@ -154,6 +184,19 @@ export interface PlatformBridge {
   ai?: AiBridge;
 }
 
+export interface ProjectEntry {
+  folder: string;
+  name: string;
+  accent: string;
+  logo: string;
+  logoSrc?: string;
+  lastNote?: string;
+  pinned?: boolean;
+  rank?: number;
+  recent?: { path: string; rank: number; pinned: boolean }[];
+  localNotes?: boolean;
+}
+
 /** Settings → AI as the window sees it: its connections and the Writer, never a key. */
 export interface AiSettingsView { writer: string; connections: import("./ai-providers.ts").AiConnectionView[] }
 /** A connection being added or changed; `key` crosses once, and an empty one keeps the saved key. */
@@ -175,7 +218,7 @@ export interface AiBridge {
    * `onRewriteEvent`. `path` identifies the source note. The visible integration and the person's
    * Generate action decide what is sent; private notes do not have a separate sending gate.
    */
-  rewriteStart(id: string, input: { text: string; instruction: string; path: string }): Promise<void>;
+  rewriteStart(id: string, input: { text: string; instruction: string; path: string; mode?: "write" }): Promise<void>;
   rewriteCancel(id: string): Promise<void>;
   onRewriteEvent(listener: (event: unknown) => void): () => void;
 }
@@ -549,7 +592,12 @@ export interface DemoBridge {
 }
 
 export interface AppStateFile {
+  sharingDrafts?: Record<string, import("./sharing-people.ts").SharingDraft>;
   version: 1;
+  projectIntroSeen?: boolean;
+  localNotes?: boolean;
+  /** Per-workspace identity kept only on this device while the project UX is being reviewed. */
+  projectSettings?: Record<string, import("./project-app.ts").ProjectSettings>;
   lastNotePath?: string;
   appearance?: "system" | "light" | "dark";
   fontSize?: number;
@@ -567,6 +615,8 @@ export interface AppStateFile {
   filesWidth?: number;
   /** The Files tree sorted by last change (FIL-11, D-175); absent: by name. */
   filesSort?: "changed";
+  filesPins?: string[];
+  filesRecent?: string[];
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;
   darkTheme?: string;

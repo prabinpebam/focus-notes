@@ -18,7 +18,7 @@ import {
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import {
-  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf,
+  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
   visibilityOf, walk, type RefusalReason, type WorkspaceTree,
 } from "./workspace.ts";
 
@@ -37,6 +37,8 @@ export interface FilesState {
   filter: string;
   /** How the tree is sorted (FIL-11, D-175): by name, or by last change. */
   sort: FilesSort;
+  pins: readonly string[];
+  visits: readonly string[];
   /** Bumped to move focus into the tree, to the focused row. */
   focusRequest: number;
   /** The inline name field: renaming a row, or naming a new folder in `parent`. */
@@ -64,12 +66,14 @@ export interface FilesState {
    * draft open read-only (its text once read); `back` is the row that takes focus on the way back.
    */
   recovered: { open: boolean; loading: boolean; drafts?: readonly RecoveredDraft[]; viewing?: { id: string; text?: string }; back?: string };
+  newNote: { open: boolean; query: string; activeId: string; expanded: readonly string[]; focus: number; busy: boolean; error: string };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [], unsaved: [],
+  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", pins: [], visits: [], focusRequest: 0, pending: [], unsaved: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
   recovered: { open: false, loading: false },
+  newNote: { open: false, query: "", activeId: "", expanded: [], focus: 0, busy: false, error: "" },
 };
 
 interface Ctx {
@@ -144,6 +148,15 @@ export function registerFiles(ctx: Ctx) {
     return nameOf(path);
   };
   const rootLabel = (id: string) => catalog.format(`files.root.${id === "local" && bridge.platform !== "web" ? "folder" : id}`);
+  let lastVisited = "";
+  store.subscribe(() => {
+    const path = store.state.note.path;
+    if (!path || path === lastVisited || store.state.note.status !== "ready") return;
+    lastVisited = path;
+    const visits = [path, ...files().visits.filter((p) => p !== path)].slice(0, 20);
+    setFiles(() => ({ visits }));
+    void ctx.persistAppState({ filesRecent: visits });
+  });
 
   // ---- opening, revealing, closing ----
   // Opened before the workspace was first listed: the current note is revealed once it is. Focus was
@@ -299,9 +312,43 @@ export function registerFiles(ctx: Ctx) {
     if (store.state.note.path !== row.path) await ctx.load(row.path);
   };
   commands.register<{ id: string }>({ id: "files.activate", title: "command.files.openItem", run: ({ id }) => activate(String(id)) });
+  commands.register<{ id: string }>({
+    id: "files.selectShortcut", title: "command.files.select",
+    run: ({ id }) => { if (!id.startsWith("root:")) reveal(id, false); },
+  });
+  commands.register<{ id: string }>({
+    id: "files.activateShortcut", title: "command.files.openItem",
+    run: async ({ id }) => {
+      if (id.startsWith("root:")) return setExpanded(id, files().collapsed.includes(id));
+      const found = findNode(tree(), id);
+      if (!found) return;
+      reveal(id, false);
+      if (found.node.kind === "note") await activate(id);
+    },
+  });
+  commands.register({
+    id: "files.pinItem", title: "command.files.pinItem", icon: "pin", group: "files",
+    enabled: (s) => Boolean(s.ui.files.selection.focus) && !isRootRow(s.ui.files.selection.focus),
+    checked: (s) => s.ui.files.pins.includes(s.ui.files.selection.focus),
+    run: async () => {
+      const path = files().selection.focus;
+      const pins = files().pins.includes(path) ? files().pins.filter((p) => p !== path) : [...files().pins, path];
+      setFiles(() => ({ pins }));
+      await ctx.persistAppState({ filesPins: pins });
+    },
+  });
   commands.register({
     id: "files.openItem", title: "command.files.openItem", shortcut: { macos: "Mod+Down", default: "Enter", handledBy: "filesTree" }, layer: "basic", group: "files",
     run: () => activate(files().selection.focus),
+  });
+  commands.register({
+    id: "files.share", title: "command.note.share", icon: "share",
+    enabled: (s) => Boolean(bridge.access) && Boolean(rowById(s.ui.files.selection.focus)) && !isRootRow(s.ui.files.selection.focus),
+    disabledReason: "command.note.share.reason",
+    run: async () => {
+      const row = rowById(files().selection.focus);
+      if (row) await commands.run("share.item.open", { path: row.path });
+    },
   });
 
   // ---- links that follow renames and moves (FIL-09, D-95) ----
@@ -734,7 +781,7 @@ export function registerFiles(ctx: Ctx) {
     }
   };
   commands.register<{ path?: string }>({
-    id: "files.revealItem", title: "command.files.revealItem", icon: "open",
+    id: "files.revealItem", title: `command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`, icon: "open",
     shortcut: { macos: "Mod+Alt+R", default: "Shift+Alt+R", handledBy: "files" }, layer: "pro", group: "files",
     enabled: (s) => {
       const r = focusedRow(s);
@@ -1064,9 +1111,87 @@ export function registerFiles(ctx: Ctx) {
   });
 
   // ---- creating and renaming (FIL-01, FIL-02) ----
+  let lastNewNoteFolder = "";
+  const setNewNote = (patch: Partial<FilesState["newNote"]>) => setFiles((f) => ({ newNote: { ...f.newNote, ...patch } }));
+  const folderTree = (): WorkspaceTree => {
+    const onlyFolders = (nodes: WorkspaceTree["roots"][number]["children"]): WorkspaceTree["roots"][number]["children"] =>
+      nodes.flatMap((node) => node.kind === "folder" ? [{ ...node, children: onlyFolders(node.children) }] : []);
+    return { roots: tree().roots.filter((r) => !r.readOnly && (r.id === "private" || r.id === "public")).map((r) => ({ ...r, children: onlyFolders(r.children) })) };
+  };
+  const pickerRows = () => visibleRows(folderTree(), { expanded: new Set(files().newNote.expanded), collapsed: new Set() }, files().newNote.query);
+  const validNewFolder = (path: string) => destinations(folderTree(), []).some((d) => d.path === path);
+  const pickerRefused = () => {
+    const error = catalog.format("newNote.folderUnavailable");
+    setNewNote({ error });
+    toast(error, { tone: "error" });
+  };
+  commands.register({
+    id: "note.newIn", title: "command.note.newIn", icon: "newNote", shortcut: { default: "Mod+Shift+N", web: null }, layer: "writer", group: "app",
+    enabled: (s) => s.workspace.access === "write",
+    run: async (_a, c) => {
+      if (files().newNote.busy) return;
+      if (files().newNote.open) { setNewNote({ focus: files().newNote.focus + 1 }); return; }
+      if (!tree().roots.length && ws) await rescan();
+      if (!tree().roots.length) return pickerRefused();
+      if (!folderTree().roots.length) return c.run("note.new");
+      const current = store.state.note.path;
+      const preferred = files().open ? targetFolder(tree(), rowsOf(store.state), files().selection.focus, current) : current ? dirOf(current) : undefined;
+      const activeId = preferred && validNewFolder(preferred) ? preferred : validNewFolder(lastNewNoteFolder) ? lastNewNoteFolder : folderTree().roots.find((r) => r.id === "private")?.path ?? folderTree().roots[0]!.path;
+      setFiles((f) => ({ edit: undefined, newNote: { open: true, query: "", activeId, expanded: destinations(folderTree(), []).map((d) => d.path), focus: f.newNote.focus + 1, busy: false, error: "" } }));
+    },
+  });
+  commands.register({ id: "newNote.dismiss", title: "command.note.newIn", run: () => {
+    if (!files().newNote.busy) setFiles((f) => ({ edit: undefined, newNote: { ...f.newNote, open: false, error: "" } }));
+  } });
+  commands.register<{ value: string }>({ id: "newNote.query", title: "command.note.newIn", run: ({ value }) => setNewNote({ query: String(value ?? "") }) });
+  for (const [id, key, direction] of [["newNote.next", "ArrowDown", 1], ["newNote.prev", "ArrowUp", -1]] as const) {
+    commands.register({ id, title: "command.note.newIn", shortcut: { default: key, handledBy: "newNoteField" }, layer: "writer", group: "files", run: () => {
+      const rows = pickerRows(), index = rows.findIndex((r) => r.path === files().newNote.activeId);
+      const row = rows[Math.max(0, Math.min(rows.length - 1, index + direction))];
+      if (row) setNewNote({ activeId: row.path });
+    } });
+  }
+  commands.register({ id: "newNote.accept", title: "command.note.newIn", shortcut: { default: "Enter", handledBy: "newNoteField" }, layer: "writer", group: "files", run: (_a, c) => c.run("newNote.create") });
+  commands.register<{ id: string }>({ id: "newNote.select", title: "command.note.newIn", run: ({ id }) => {
+    if (!files().newNote.open || files().newNote.busy) return;
+    const row = pickerRows().find((r) => r.id === id);
+    if (!row || !validNewFolder(row.path)) return pickerRefused();
+    setNewNote({ activeId: row.path, error: "" });
+  } });
+  commands.register<{ id: string; expanded: boolean }>({ id: "newNote.expand", title: "command.note.newIn", run: ({ id, expanded }) => {
+    setNewNote({ expanded: expanded ? [...new Set([...files().newNote.expanded, id])] : files().newNote.expanded.filter((p) => p !== id) });
+  } });
+  commands.register({ id: "newNote.newFolder", title: "command.files.newFolder", run: () => {
+    const parent = files().newNote.activeId;
+    if (!files().newNote.open || files().newNote.busy) return;
+    if (!validNewFolder(parent)) return pickerRefused();
+    setNewNote({ query: "", expanded: [...new Set([...files().newNote.expanded, parent])] });
+    setFiles(() => ({ edit: { kind: "newFolder", id: `new:${parent}`, parent, value: catalog.format("files.newFolderName"), error: "" } }));
+  } });
+  commands.register({ id: "newNote.create", title: "command.note.newIn", run: async (_a, c) => {
+    const picker = files().newNote;
+    if (!picker.open || picker.busy || files().edit) return;
+    if (!validNewFolder(picker.activeId)) return pickerRefused();
+    const previous = store.state.note.path;
+    setNewNote({ busy: true, error: "" });
+    try {
+      const create = () => c.run("note.new", { folder: picker.activeId });
+      await (ctx.tracker ? ctx.tracker.run("newNote.create", "newNote.creating", create) : create());
+      if (store.state.note.path === previous) {
+        setNewNote({ busy: false });
+        return;
+      }
+      lastNewNoteFolder = picker.activeId;
+      setNewNote({ open: false, busy: false });
+    } catch {
+      const error = catalog.format("newNote.createFailed");
+      setNewNote({ busy: false, error });
+      toast(error, { tone: "error" });
+    }
+  } });
   commands.register({
     id: "files.newFolder", title: "command.files.newFolder", icon: "folder",
-    shortcut: { default: "Mod+Shift+N", web: "Ctrl+Alt+Shift+N", handledBy: "files" }, layer: "writer", group: "files",
+    shortcut: { default: "Ctrl+Alt+N", macos: "Mod+Alt+N", web: "Ctrl+Alt+Shift+N", handledBy: "files" }, layer: "writer", group: "files",
     enabled: canWrite,
     run: () => {
       const s = store.state;
@@ -1090,7 +1215,7 @@ export function registerFiles(ctx: Ctx) {
       const row = rowById(files().selection.focus);
       if (!row || row.kind === "root") return;
       if (row.readOnly) return void refused("files.renameFailed", { what: catalog.format("files.quoted", { name: row.label }) }, "readOnly");
-      setFiles(() => ({ edit: { kind: "rename", id: row.id, parent: dirOf(row.path), value: row.label, error: "" } }));
+      setFiles(() => ({ edit: { kind: "rename", id: row.id, parent: dirOf(row.path), value: row.kind === "note" ? row.name.replace(/\.md$/i, "") : row.label, error: "" } }));
     },
   });
   commands.register<{ value: string }>({ id: "files.setEditValue", title: "command.files.rename", run: ({ value }) => setFiles((f) => (f.edit ? { edit: { ...f.edit, value: String(value ?? ""), error: "" } } : {})) });
@@ -1105,15 +1230,23 @@ export function registerFiles(ctx: Ctx) {
       if (!value) return cancelEdit();
       const plan = planCreateFolder(tree(), e.parent, value);
       if (plan.kind === "refused") return editError(plan.reason);
-      setFiles((f) => ({ edit: undefined, focusRequest: f.focusRequest + 1 }));
-      await perform(plan.tree, [{ op: "createFolder", path: plan.path }], {
+      const picking = files().newNote.open;
+      if (picking) {
+        if (files().newNote.busy) return;
+        setNewNote({ busy: true });
+      } else setFiles((f) => ({ edit: undefined, focusRequest: f.focusRequest + 1 }));
+      const saved = await perform(plan.tree, [{ op: "createFolder", path: plan.path }], {
         touched: [plan.path], select: [plan.path], done: catalog.format("files.folderCreated", { what: catalog.format("files.quoted", { name: value }) }),
         failed: (why) => catalog.format("files.createFailed", { what: catalog.format("files.quoted", { name: value }), reason: why }),
       });
+      if (picking) {
+        setNewNote({ busy: false, ...(saved ? { activeId: plan.path, focus: files().newNote.focus + 1 } : {}) });
+        if (saved) setFiles(() => ({ edit: undefined }));
+      }
       return;
     }
     const row = rowById(e.id);
-    if (!row || !value || value === row.label) return cancelEdit();
+    if (!row || !value || value === (row.kind === "note" ? row.name.replace(/\.md$/i, "") : row.label)) return cancelEdit();
     if (row.kind === "folder") {
       const plan = planRenameFolder(tree(), row.path, value);
       if (plan.kind === "refused") return editError(plan.reason);
@@ -1129,8 +1262,7 @@ export function registerFiles(ctx: Ctx) {
     await renameNote(row.path, value);
   }
   /**
-   * A note's name is its title: the H1 changes, and the file name follows unless published (FIL-07).
-   * The new text, the new name, and the links to it are one batch (FIL-09).
+   * Explicit file renaming leaves the heading and identity untouched; link changes are atomic (FIL-18).
    */
   async function renameNote(path: string, title: string): Promise<void> {
     let others: LinkWrite[] = [];
@@ -1138,9 +1270,10 @@ export function registerFiles(ctx: Ctx) {
       await ctx.exclusive(async () => {
         const isOpen = store.state.note.path === path;
         const text = isOpen ? await openText() : await bridge.readNote(path);
-        const next = retitle(text, title);
+        const next = text;
         const before = tree();
-        const plan = planRename(before, path, title);
+        const plan = planRename(before, path, title.replace(/\.md$/i, ""), { explicit: true });
+        if (!plan || plan.kind === "blocked") throw new Error(plan?.reason ?? "notFound");
         const to = plan?.kind === "renamed" ? plan.to : path;
         const moves = to === path ? [] : [{ from: path, to }];
         const writes = await planLinkWrites(before, moves, readForLinks({ path, text: next }));
@@ -1150,7 +1283,6 @@ export function registerFiles(ctx: Ctx) {
         await ws!.apply!([...moves.map((m) => ({ op: "move" as const, ...m })), { op: "write", path: to, text: own, before: text }, ...writeOps(others)]);
         if (moves.length) ctx.notesMoved?.(moves);
         if (plan?.kind === "renamed") setTree(plan.tree);
-        setTree(applyChanges(tree(), [{ path: to, kind: "note", exists: true, title }]));
         setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
         if (isOpen) {
           ctx.setNote({ path: to, key: `${to}#${Date.now()}`, initialMarkdown: own, markdown: own, saveState: "saved" });
@@ -1176,13 +1308,40 @@ export function registerFiles(ctx: Ctx) {
   const TREE_ITEM = {
     type: "object" as const,
     properties: Object.fromEntries([
-      ...["id", "label", "description", "title", "parent"].map((k) => [k, { type: "string" as const }]),
+      ...["id", "label", "description", "detail", "title", "parent"].map((k) => [k, { type: "string" as const }]),
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
       ["accessory", { type: "number" as const }],
       ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing"].map((k) => [k, { type: "boolean" as const }]),
     ]),
   };
+  viewModels.register({
+    id: "vm.newNote",
+    reads: ["ui.files.newNote", "ui.files.edit", "ui.files.pending", "workspace.tree"],
+    schema: { type: "object", properties: {
+      open: { type: "boolean" }, query: { type: "string" }, activeId: { type: "string" }, focusId: { type: "string" }, focus: { type: "number" },
+      items: { type: "array", items: TREE_ITEM }, editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" }, error: { type: "string" },
+      cannotCreate: { type: "boolean" }, cannotNewFolder: { type: "boolean" }, createLabel: { type: "string" },
+    } },
+    setters: { query: "newNote.query" },
+    select: () => {
+      const p = files().newNote, edit = files().edit;
+      const rows = p.open ? pickerRows() : [];
+      const items = rows.map((r) => ({ ...r, kind: r.kind === "root" ? "section" : "folder", label: r.kind === "root" ? rootLabel(r.rootId) : r.label, editing: false,
+        selected: r.path === p.activeId, current: false, pending: files().pending.includes(r.path), readOnly: p.busy, draggable: false, droppable: false }));
+      if (p.open && !p.busy && edit?.kind === "newFolder") {
+        const parent = rows.find((r) => r.path === edit.parent);
+        if (parent) items.splice(items.findIndex((r) => r.id === parent.id) + 1, 0, {
+          id: edit.id, path: edit.parent, name: "", kind: "folder", rootId: parent.rootId, level: parent.level + 1, label: edit.value, parent: parent.id,
+          expanded: false, hasChildren: false, published: false, selected: false, current: false, pending: false, readOnly: p.busy, draggable: false, droppable: false, editing: true,
+        });
+      }
+      return { ...p, items, focusId: rows.find((r) => r.path === p.activeId)?.id ?? "",
+        editValue: edit?.value ?? "", editError: edit?.error ?? "", editLabel: catalog.format("files.folderName"), cannotCreate: p.busy || Boolean(edit) || !validNewFolder(p.activeId),
+        cannotNewFolder: p.busy || Boolean(edit) || !canWrite(store.state) || !validNewFolder(p.activeId),
+        createLabel: catalog.format(p.busy ? edit?.kind === "newFolder" ? "newNote.creatingFolder" : "newNote.creating" : "newNote.create") };
+    },
+  });
   const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
   const NO_SOURCE = { visible: false, icon: "folder", title: "", login: "", hasLogin: false, label: "", revealable: false, repoLink: false, repoLabel: "", profileLink: false, profileLabel: "", titlePlain: false, loginPlain: false };
   /**
@@ -1194,7 +1353,7 @@ export function registerFiles(ctx: Ctx) {
     const repo = s.workspace.repo ?? "";
     const [owner = "", name = ""] = repo.split("/");
     const folder = (s.workspace.folder ?? "").split(/[\\/]/).filter(Boolean).pop() ?? "";
-    const title = repo ? (login && owner.toLowerCase() === login.toLowerCase() ? name : repo) : folder;
+    const title = repo ? name : folder;
     if (!title) return NO_SOURCE;
     const at = login ? catalog.format("files.source.login", { login }) : "";
     return {
@@ -1218,15 +1377,21 @@ export function registerFiles(ctx: Ctx) {
     const both = ["public", "private"].every((id) => roots.some((r) => r.id === id && !r.readOnly));
     const item = (id: string) => {
       const d = ctx.describeItem(id);
+      if (id === "files.pinItem") return { ...d, label: catalog.format(f.pins.includes(focus.path) ? "files.unpinItem" : "command.files.pinItem") };
       if (id === "files.openItem") return { ...d, label: catalog.format("files.menu.open") };
+      if (id === "files.rename" && focus.kind === "folder") return { ...d, label: catalog.format("files.renameFolder") };
       // New note runs the app's own, so it shows that shortcut, as the header's button does.
       if (id === "files.newNote" && newNoteShortcut()) return { ...d, shortcut: newNoteShortcut() };
       return d;
     };
-    const menu = rowMenu(focus, acted, {
+    const sections = rowMenu(focus, acted, {
       both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
-    }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    });
+    if (bridge.access && focus.kind !== "root") sections.splice(1, 0, ["files.share"]);
+    if (focus.kind !== "root" && commands.describe("files.publish").enabled) sections.splice(2, 0, ["files.publish"]);
+    const menu = sections.map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };
   };
@@ -1239,6 +1404,7 @@ export function registerFiles(ctx: Ctx) {
         open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
+        shortcuts: { type: "array", items: TREE_ITEM },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
         selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
@@ -1259,12 +1425,29 @@ export function registerFiles(ctx: Ctx) {
       const pending = new Set(f.pending);
       const unsaved = new Set(f.unsaved);
       const writable = canWrite(s);
+      const shortcuts: Record<string, unknown>[] = [];
+      for (const [section, paths] of [["pinned", f.pins], ["recent", f.visits.filter((p) => !f.pins.includes(p))]] as const) {
+        const id = `root:${section}`;
+        const expanded = !f.collapsed.includes(id);
+        const entries = paths.flatMap((path) => {
+          const found = findNode(s.workspace.tree, path);
+          if (!found || (section === "recent" && found.node.kind !== "note")) return [];
+          const label = titleOfNode(found.node);
+          if (f.filter && !label.toLocaleLowerCase().includes(f.filter.toLocaleLowerCase())) return [];
+          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id,
+            detail: dirOf(path).slice(found.root.path.length).replace(/^[\\/]+/, "") || catalog.format("files.location.root"), description: "", title: path,
+            selected: selected.has(path), current: path === s.note.path, expanded: false, hasChildren: false }];
+        });
+        shortcuts.push({ id, kind: "section", label: catalog.format(section === "pinned" ? "project.pinned" : "recent.title"), level: 1, expanded, hasChildren: entries.length > 0 });
+        if (expanded) shortcuts.push(...entries);
+      }
       const items: Record<string, unknown>[] = rows.map((r) => ({
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
         description: r.readOnly ? catalog.format("files.readOnly") : r.kind === "note" && unsaved.has(r.path) ? catalog.format("files.unsaved")
           : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : "",
-        title: r.kind === "note" ? r.name : "", parent: r.parent ?? "",
+        detail: r.kind === "note" && stemOf(r.name) !== r.label ? r.name : "",
+        title: r.kind === "note" ? r.path : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,
         draggable: writable && !r.readOnly && r.kind !== "root", droppable: writable && !r.readOnly && r.kind !== "note",
@@ -1285,12 +1468,12 @@ export function registerFiles(ctx: Ctx) {
       const notes = rows.filter((r) => r.kind !== "root").length;
       const pin = ctx.describeItem("files.togglePin");
       return {
-        source: whereFrom(s),
+        source: whereFrom(s), shortcuts,
         open: true, pinned: f.pinned, docked: f.pinned && f.fits, width: f.width ?? 0, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
         ...menuOf(s, rows),
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
         editValue: f.edit?.value ?? "", editError: f.edit?.error ?? "",
-        editLabel: catalog.format(f.edit?.kind === "newFolder" ? "files.folderName" : rows.find((r) => r.id === f.edit?.id)?.kind === "folder" ? "files.folderName" : "files.title"),
+        editLabel: catalog.format(f.edit?.kind === "newFolder" ? "files.folderName" : rows.find((r) => r.id === f.edit?.id)?.kind === "folder" ? "files.folderName" : "files.fileName"),
         filter: f.filter, empty: notes === 0,
         emptyText: f.filter.trim() ? catalog.format("files.noMatch", { query: f.filter.trim() }) : catalog.format("files.empty"),
         selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }),
@@ -1455,6 +1638,10 @@ export function registerFiles(ctx: Ctx) {
 
   return {
     /** Lists Recovered again: after launch has sorted the last session's drafts, and after one goes (D-221). */
+    restoreShortcuts(pins: readonly string[] = [], visits: readonly string[] = []): void {
+      setFiles(() => ({ pins, visits }));
+    },
+    canCreateIn: validNewFolder,
     listRecovered,
     /** At launch: the order chosen on this device (D-175). */
     restoreSort(sort: unknown): void {

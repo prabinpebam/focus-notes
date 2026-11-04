@@ -18,6 +18,120 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### General fixes: approved 3 November design
+
+The owner approved the designs at 19:39. WP-P.1 / WP-P.2 are pushed at
+`7f2c6bab`; WP-P.3 / WP-P.7 build the approved file-name separation and
+current-workspace picker (D-338). Built is not integrated: the exact combined
+head must have green Windows CI before main fast-forwards.
+
+| DoD row | Focused evidence | Status |
+| --- | --- | --- |
+| MP.4 | `pnpm exec vitest run packages/core/test/files-menu.test.ts packages/core/test/workspace-names.test.ts packages/core/test/keymap-layers.test.ts packages/core/test/workspace-app.test.ts packages/core/test/files-app.test.ts packages/core/test/ai-app.test.ts packages/core/test/spotlight-app.test.ts packages/ui/test/file-tree-detail.test.tsx packages/ui-runtime/test/refocus.test.ts tools/test/component-inventory.test.mjs`: 268 passed. `mw-workspace.spec.ts -g FIL-18`, `mw-links.spec.ts -g FIL-09` and `new-note-in.spec.ts -g FIL-17` passed with `FOCUS_NOTES_E2E=1`. Picker cancel writes no note, inline folders stay selected, creation guards newly taken paths, and filename renaming preserves content and updates links. | Focused behavior met; exact-head CI pending |
+| MP.5 | `7f2c6bab`: 118 focused units and four related journeys passed; candidate reached through normal UI, then closed. The continuation's combined units above include Spotlight and AI regressions. `air-safeguards.spec.ts -g "D-265, D-266"` passed in light/dark after using the stable Rewrite view region and checking equal visible padding with Button's icon-bearing token (D-331), not equal CSS boxes. | Focused behavior met; combined candidate and exact-head CI pending |
+
+Every local journey launch was invisible and followed by PID-scoped
+`close-test-apps.ps1 -WhatIf` and actual cleanup; no app instance remains.
+
+The combined branch includes main `6dcd3ab7`. Its final focused run passed
+268 units and all ten selected journeys:
+`pnpm --filter @focus-notes/desktop exec playwright test new-note-in.spec.ts mw-workspace.spec.ts air-safeguards.spec.ts m4-spotlight.spec.ts mw-files.spec.ts mw-links.spec.ts mw-files-menu.spec.ts --workers=1 -g 'FIL-17:|FIL-18:|D-265, D-266:|SPT-10:|SPT-01: Mod|FIL-01, FIL-02:|FIL-09:|D-192:|D-162:|D-161:'`.
+`pnpm check`, `pnpm typecheck` and the desktop build passed. The Files axe
+journey includes visible filename details: the accessible name contains all
+visible words, with actual text separators between spans; the full path is an
+accessible description, not zero-size text erroneously included in the visible
+label. The `e15e179d` candidate launcher was verified through the normal UI
+and closed; its exact-head run
+[41664634194](https://github.com/prabinpebam/focus-notes/actions/runs/41664634194)
+failed, so it was not merged.
+
+The coupled CI repairs preserve first-save path changes in navigation and
+recovery drafts, adapt title-only selectors to the visible filename detail,
+and use a held-note fixture that really moves files and retargets both held
+lists. History's inactive list was branch-specific: Spotlight now dismisses
+before dispatching the destination command, restoring its query on failure.
+No history quarantine was added.
+
+Rewrite's journey waits for the editor's committed selection, not two frames.
+The product synchronizes that selection before capturing it; its reading-zone
+settlement now also finishes an animation started by the pending band check
+before the prompt is placed. The regression failed with scroll position zero
+instead of 530 before the fix; all budgets and assertions remain unchanged.
+
+| Coupled repair check | Result, 3 November |
+| --- | --- |
+| `pnpm exec vitest run packages/ui/test/reading-zone-open.test.ts packages/core/test/spotlight-app.test.ts packages/core/test/conflicts-app.test.ts packages/core/test/diagnostics.test.ts packages/core/test/held-app.test.ts packages/core/test/keymap.test.ts packages/core/test/menu-bar.test.ts packages/core/test/workspace-app.test.ts` | 168 passed |
+| `pnpm check`; `pnpm typecheck`; `pnpm --filter @focus-notes/desktop run build` | All passed |
+| `pnpm --filter @focus-notes/desktop exec playwright test e2e/m4-power-keys.spec.ts e2e/m8-files-sort.spec.ts e2e/mw-files.spec.ts e2e/air-safeguards.spec.ts e2e/m8-note-history.spec.ts --workers=1 -g 'Back and forward\|FIL-11\|FIL-08\|D-265\|FIL-13' --repeat-each 3` | 15 passed; Rewrite exercised light/dark on each repeat; PID-scoped cleanup completed, no owned app remains |
+| `pnpm --filter @focus-notes/web run build`; `pnpm --filter @focus-notes/web exec playwright test e2e/web.spec.ts --workers=1 -g 'Files on the web\|FIL-09 on the web'` | Build and both journeys passed |
+| `pnpm bench --check --only 'opening and saving' --runs 3` | Opening 51 ms against 150 ms; typing-to-save 558 ms against 1,000 ms; passed, app closed |
+
+The repaired head `a1eca24e` passed the Windows unit/static/type/web/budget job
+and journey shards 2, 3 and 4 in
+[41671811307](https://github.com/prabinpebam/focus-notes/actions/runs/41671811307).
+Shard 1 still timed out finding the long-selection Rewrite prompt. Further
+software-rendered, 4x CPU-throttled and GPU repeats passed locally; that does
+not replace the red exact-head result. At the owner's direction, further
+CI waits and D-265 refinement are parked until owner review; the failure-only
+attachment was removed and no assertions were relaxed. Main remains unmerged.
+The existing four quarantines below retain their exact scope.
+
+#### Scoped CI quarantines, expires 10 November 2026
+
+Authorized by the implementation coordinator, not considered fixed. Only these
+four exact test titles use Playwright's `test.fixme` during the quarantine.
+The date guard automatically restores the unchanged assertions after
+10 November (UTC); no budget, selector or other test is relaxed.
+
+| Exact scope | Failure and run | Owner | Expiry | Status |
+| --- | --- | --- | --- | --- |
+| `apps/desktop/e2e/m5-snappy.spec.ts`: "PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms" | p95 56 ms, budget 50 ms; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341), also [41656910779](https://github.com/prabinpebam/focus-notes/actions/runs/41656910779) | Implementation coordinator | 10 November 2026 | Quarantined; actual performance fix queued |
+| `apps/desktop/e2e/doc-minimap.spec.ts`: "D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back" | Minimap row inactive when focused expected; runs 41654808341 and 41656910779 | Implementation coordinator | 10 November 2026 | Quarantined; focus fix queued |
+| `apps/web/e2e/public-pages.spec.ts`: "PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded" | LCP/INP/CLS lab gate; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341) | Implementation coordinator | 10 November 2026 | Quarantined; lab-metrics fix queued |
+| `apps/web/e2e/site.spec.ts`: "PRF-12: the landing page's LCP, INP and CLS on a throttled profile" | LCP/INP/CLS lab gate; run 41654808341 | Implementation coordinator | 10 November 2026 | Quarantined; lab-metrics fix queued |
+### WP-P.9 item-dialog candidate
+
+**Production-ready work in progress, not a merge candidate (3 November).** Owner-approved design D-335/D-336; first increment covers SHR-13 and parts of SHR-14/15/24 with real JSON and view models, not mocks. No access-file write, clipboard write, network publication or note write occurs in this increment.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts` | Passed 22 tests, including controlled 10,000-note counting and cancelled-count protection. |
+| `pnpm --filter @focus-notes/core run typecheck` | Passed. |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Passed: 632 documents, 78 components, 560 commands; regenerated catalogue. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1` | Passed 1 real-app journey: Files entry, counts/defaults, methods-off warning, custom passcode, nested Review/Escape/focus and unchanged access file. Earlier selector mismatches were corrected against the real React Aria control and approved copy; no assertion weakened. |
+| `pwsh tools\dev\close-test-apps.ps1 -OnlyPid <journey main PID>` | Ran in the journey's `finally`, including failed runs; no instances left by this journey. |
+| `pnpm check` | Passed: boundaries, chain, plan, licences/notices, generated files and UI contracts. Kit checks skip unchecked-out submodules in this isolated worktree. |
+| `pnpm typecheck` | Passed all workspace packages. |
+| `node E:\Projects\side-projects\focus-notes\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed the pinned Slate runtime check. |
+
+**Second increment, locally checked before worker rollover:** generated words, opaque code readers, identity-based snapshots, real deployment readiness, clipboard/native adapters and actual Share information are now wired. Missing note IDs are inserted through the existing expected-content atomic writer; duplicate selected IDs are refused. No name alias is emitted for a new access code. The configured production site must remain HTTPS: the journey initially failed because its HTTP URL was discarded by setup-cache validation. Its corrected HTTPS fixture uses an in-test loopback transport and the actual publisher/reader; production validation was not weakened.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\core\test\share-reader.test.ts packages\seal\test\item-sharing.test.ts apps\desktop\test\share-access.test.ts apps\desktop\test\share-publication.test.ts` | Passed 57 tests across five files: membership recheck, ID preservation/duplicates, exact passcode parsing, snapshot/following scopes, independent grants, enabled-method template validation, retry, cancellation and timeout. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1 -g "SHR-16:"` | Passed: real sealed deployment withheld until after first action; no early clipboard write; both methods open; reopening creates another grant without changing the first. |
+| `pnpm check` | Passed after regenerating the coupled DatePicker read-only component inventory; 633 documents, 78 components, 563 commands. |
+| `pnpm typecheck` | Passed every workspace package. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed before the final fixture-only correction. |
+| `pwsh tools\dev\close-test-apps.ps1 -OnlyPid <journey main PID>` | Ran in finally on failed and passing attempts; fixture HTTP server also closed. |
+
+**Third increment, D-339:** Shared before, existing-row Copy link, confirmed withdrawal and full-current-membership Add them are wired; grants retain their original link/passcode and snapshot identities. Review progressively exposes counts/rows and mounts at most 200 of a 10,000-row tree while retaining keyboard/type-ahead focus. Commands refuse mutations or copying during creation/word preparation and lock saved draft controls. Failures keep the grant for retry; stale readiness is invalidated rather than copied. Signed-out resume and deleted-item restoration use existing commands; their full journeys remain pending.
+
+| Check | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\seal\test\item-sharing.test.ts apps\desktop\test\share-access.test.ts apps\desktop\test\share-publication.test.ts packages\ui\test\file-tree-window.test.tsx packages\ui\test\type-ahead.test.ts` | Passed 65 tests across six files: draft/word locks, retry/cancellation, identity resolution/addition, BOM duplicates, opaque IDs, exact sealed authorization, all ciphertexts, stale root/site/membership handoff and 10,000-row keyboard focus. |
+| `pnpm typecheck` | Passed all packages after these source changes. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed the integrated source. |
+| Scoped `m1-toolbar.spec.ts`, `m5-public-link.spec.ts` and draft/review `item-sharing.spec.ts` journeys | Passed three coupled menu/draft journeys; Share… replaces the old popover entry without adding writing-window UI. |
+| `pnpm --filter @focus-notes/desktop exec playwright test m5-sharing.spec.ts --workers=1 -g "legacy Settings sharing"` | Passed the existing legacy Settings template/invite/expiry/withdrawal path, including its light/dark accessibility and visual-anchor checks. No new template editing flow was built. |
+| `pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1 -g "SHR-16:"` | Passed: no early copy; both actual readers; independent reopening; newer-note Add them keeps credentials, extends both readers and creates no grant; withdrawal cancellation keeps access. The fixture's folder is selected by normal click before keyboard expansion, not DOM focus alone. |
+| `pnpm --filter @focus-notes/web exec playwright test share-reader.spec.ts --workers=1 -g "SHR-10: a magic\|SHR-06:\|WP-P.10:"` | Passed four headless journeys: exact link scope, generic errors within both intentionally distinct entry forms, one-field no-name access codes, secret-fragment removal, legacy compatibility and light/dark/320 px accessibility. |
+| Security-reviewer follow-up | Original five findings and follow-up stale-readiness binding fixed. Final reviewer inspection: no remaining high-confidence finding. Static review only; actual macOS OS-sheet cancellation is not proved on Windows. |
+| Candidate `focus-notes-work\preview\candidates\d6b0a55f` | Original-head candidate opened through its pending-CI launcher, verified no early copy, both actual sealed readers and independent reopening; own app/site server closed. This candidate does not include the third increment. |
+
+**Open:** signed-out/deleted recovery journeys, actual browser review scrolling, design/accessibility comparison in narrow/light/dark, exact-head Windows CI and a refreshed candidate. MP.6/7/17/18/19/26 remain partially evidenced. Change…, template editing, first-site setup and public-item shares are coordinator-approved exclusions, not completed evidence. General fixes owns the red baseline and quarantine; this branch must not fast-forward main without its own exact-head green run.
+
 ### Store 1.1.0 preparation
 
 #### Store 1.1.0 release checklist (live)

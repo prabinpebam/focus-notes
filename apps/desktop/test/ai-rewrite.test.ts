@@ -21,6 +21,16 @@ const answering = (seen: Seen[], body: (url: string) => unknown) =>
 const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
 
 describe("AI connections (main process)", () => {
+  it("RWR-92: write mode sends the prompt alone and rejects note context", async () => {
+    const seen: Seen[] = [];
+    const ai = new AiService(file(), crypt, write, answering(seen, () => ({ message: { content: "Hello" } })));
+    await ai.save({ provider: "ollama", name: "Local", endpoint: "http://127.0.0.1:11434", model: "fake" });
+    expect(await collect(ai, { mode: "write", text: "", instruction: "Write a greeting" })).toEqual(["Hello"]);
+    const body = JSON.parse(seen[0]!.init.body as string) as { messages: { content: string }[] };
+    expect(body.messages.at(-1)!.content).toBe("Write a greeting");
+    await expect(collect(ai, { mode: "write", text: "Never send this note", instruction: "Write a greeting" })).rejects.toThrow("invalid-text");
+    expect(seen).toHaveLength(1);
+  });
   it("accepts https and this computer's http only", () => {
     expect(normalizeUrl("https://api.example.com/v1/")).toBe("https://api.example.com/v1");
     expect(normalizeUrl("http://127.0.0.1:11434")).toBe("http://127.0.0.1:11434");

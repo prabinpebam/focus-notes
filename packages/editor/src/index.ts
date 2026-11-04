@@ -3,7 +3,7 @@
  * and the Markdown session that keeps files byte-identical where untouched (EDT-10).
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
-import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor } from "@tiptap/core";
+import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor, type NodeViewRenderer } from "@tiptap/core";
 import { Selection, TextSelection } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
 import type { Node as DocNode } from "@tiptap/pm/model";
@@ -15,6 +15,7 @@ import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
+export type { NodeViewRenderer } from "@tiptap/core";
 export * from "./find.ts";
 export * from "./format.ts";
 export * from "./slash.ts";
@@ -109,6 +110,15 @@ registerBlock({ name: "tableRow", title: "block.tableRow", markdown: "native", i
 registerBlock({ name: "tableHeader", title: "block.tableHeader", markdown: "native", insertable: false });
 registerBlock({ name: "tableCell", title: "block.tableCell", markdown: "native", insertable: false });
 registerBlock({ name: "rawMarkdown", title: "block.rawMarkdown", markdown: "verbatim", insertable: false });
+registerBlock({ name: "image", title: "block.image", markdown: "native", insertable: false });
+
+const InlineImage = Node.create<{ view?: NodeViewRenderer }>({
+  name: "image", group: "block", atom: true, selectable: true,
+  addAttributes: () => ({ src: { default: "" }, alt: { default: "" }, title: { default: null }, rounded: { default: false }, fitHeight: { default: true }, mode: { default: "column" } }),
+  parseHTML: () => [{ tag: "img[src]" }],
+  renderHTML: ({ HTMLAttributes }) => ["img", HTMLAttributes],
+  addNodeView() { return this.options.view ?? null; },
+});
 
 /** Markdown the editor can't represent yet, kept verbatim and read-only (EXT-05). */
 export const RawMarkdown = Node.create({
@@ -321,6 +331,7 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
 });
 
 export interface CoreOptions {
+  imageView?: NodeViewRenderer;
   /** Opens a link through the shell (Mod+click). */
   openLink?: (href: string) => void;
   /** The class that keeps the selection visible while the link editor has focus. */
@@ -381,6 +392,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
     TaskList,
     TaskItem.configure({ nested: true }),
     RawMarkdown,
+    InlineImage.configure({ view: options.imageView }),
     AutoDirection,
     FenceOnEnter,
     SlashMenu,

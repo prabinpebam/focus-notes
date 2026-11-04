@@ -241,14 +241,14 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(f.files[welcome]).toBe("# Welcome\n\nTyped here. More.\n");
   });
 
-  it("DEF-26: a note renamed after its title on save keeps saving: what's on disk follows it", async () => {
+  it("DEF-26, FIL-18: an existing note keeps its path after a title edit and continues saving", async () => {
     const f = setup();
     const app = await started(f);
     await app.commands.run("note.setContent", { value: "# Hello there\n\nFirst.\n" });
     expect(await app.flush()).toBe(true);
     await done(app);
     const renamed = app.store.state.note.path!;
-    expect(renamed).not.toBe(welcome);
+    expect(renamed).toBe(welcome);
     expect(f.files[renamed]).toBe("# Hello there\n\nFirst.\n");
     await app.commands.run("note.setContent", { value: "# Hello there\n\nFirst. Second.\n" });
     expect(await app.flush()).toBe(true);

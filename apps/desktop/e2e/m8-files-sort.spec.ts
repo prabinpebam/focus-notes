@@ -13,7 +13,7 @@ const mod = process.platform === "darwin" ? "Meta" : "Control";
 const files = (page: Page) => page.getByRole("complementary", { name: "Files" });
 const tree = (page: Page) => files(page).getByRole("tree", { name: "Notes and folders" });
 /** The labels of the rows directly in the first root, in order. */
-const topRows = (page: Page) => tree(page).locator('[role="treeitem"][aria-level="2"]').evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ""));
+const topRows = (page: Page) => tree(page).locator('[role="treeitem"][aria-level="2"] > span[dir="auto"]').allTextContents();
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
 test("FIL-11: the sort menu orders the tree by last change, folders first, and it's remembered", async () => {

@@ -9,6 +9,7 @@ import { createServer, type Server } from "node:http";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
+import { tokens } from "../../../packages/tokens/dist/tokens.ts";
 import { launch, quit, tempDirs, PROMPTLY, type Launched } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -55,13 +56,20 @@ async function select(page: Page, text: string) {
     throw new Error(`"${text}" isn't in the note`);
   }, text);
   await expect.poll(() => page.evaluate(() => getSelection()?.toString() ?? "")).toBe(text);
-  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect.poll(() => page.locator("[data-editor]").evaluate((element) => {
+    const editor = (element as HTMLElement & {
+      editor?: { state: { selection: { from: number; to: number }; doc: { textBetween: (from: number, to: number, separator: string) => string } } };
+    }).editor;
+    if (!editor) throw new Error("The note editor is not mounted");
+    const { selection, doc } = editor.state;
+    return doc.textBetween(selection.from, selection.to, "\n\n");
+  })).toBe(text);
 }
 /** Select, open Rewrite and type the prompt; the dialog is left open. */
 async function openRewrite(page: Page, text: string, prompt?: string) {
   await select(page, text);
   await page.keyboard.press(`${mod}+Shift+R`);
-  const dialog = page.getByRole("region", { name: "Rewrite", exact: true });
+  const dialog = page.locator('#rewrite[role="region"]');
   await expect(dialog).toBeVisible();
   if (prompt !== undefined) await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
   return dialog;
@@ -123,12 +131,14 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         await expect(returnAbove).toBeVisible();
         await returnAbove.hover();
         await expect(returnAbove).toHaveAttribute("data-hovered", "true");
-        expect(await returnAbove.evaluate((el) => {
+        expect(await returnAbove.evaluate((el, bearingToken) => {
           const style = getComputedStyle(el);
+          const raw = getComputedStyle(el).getPropertyValue(bearingToken.replace(/^var\(|\)$/g, "")).trim();
+          const bearing = parseFloat(raw) * (raw.endsWith("rem") ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1);
           return style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundImage !== "none"
             && style.alignItems === "center" && style.justifyContent === "center"
-            && style.paddingLeft === style.paddingRight;
-        })).toBe(true);
+            && Math.abs(parseFloat(style.paddingLeft) + bearing - parseFloat(style.paddingRight)) < 0.1;
+        }, tokens.cmp.button.iconBearing)).toBe(true);
         await returnAbove.click();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeVisible();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue("Keep this exact draft");

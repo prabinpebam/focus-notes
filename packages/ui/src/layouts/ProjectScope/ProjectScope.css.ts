@@ -7,5 +7,6 @@ export const base = style({ display: "flex", flexDirection: "column", minWidth: 
 export const grow = style({ flexGrow: 1 });
 export const part = styleVariants({
   window: { backgroundColor: t.background, borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, boxShadow: t.shadow, overflow: "hidden", position: "relative" },
+  canvas: { backgroundColor: t.background, overflow: "hidden" },
   plain: {},
 });

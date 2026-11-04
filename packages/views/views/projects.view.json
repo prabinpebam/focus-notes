@@ -1,0 +1,264 @@
+{
+ "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+ "id": "projects",
+ "ia": "IA-VIEW-PROJECTS",
+ "overlay": true,
+ "viewModels": [
+  "vm.app",
+  "vm.projects"
+ ],
+ "focus": "projectSearch",
+ "root": {
+  "type": "Stack",
+  "children": [
+   {
+    "type": "Dialog",
+    "when": {
+     "expr": {
+      "and": [
+       {
+        "get": "vm.projects.dialog"
+       },
+       {
+        "!": [
+         {
+          "get": "vm.projects.githubOpen"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    "props": {
+     "title": {
+      "t": "project.open.title"
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "get": "vm.projects.open"
+     },
+     "size": "xl",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "run": "projects.close"
+     }
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "xl"
+      },
+      "children": [
+       {
+        "use": "open.body"
+       },
+       {
+        "type": "Inline",
+        "props": {
+         "align": "end"
+        },
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "project.cancel"
+           },
+           "variant": "secondary"
+          },
+          "on": {
+           "press": {
+            "run": "projects.close"
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "slots": {}
+   },
+   {
+    "type": "Dialog",
+    "when": {
+     "get": "vm.projects.githubOpen"
+    },
+    "props": {
+     "title": {
+      "t": "project.github.title"
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "get": "vm.projects.githubOpen"
+     },
+     "size": "m",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "run": "projects.githubBack"
+     }
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "xl"
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "ItemCard",
+          "when": {
+           "get": "vm.projects.githubWaiting"
+          },
+          "props": {
+           "title": {
+            "t": "project.open.loading"
+           },
+           "skeleton": true
+          }
+         },
+         {
+          "each": {
+           "get": "vm.projects.repos"
+          },
+          "as": "repo",
+          "key": "repo.id",
+          "empty": {
+           "type": "Text",
+           "when": {
+            "expr": {
+             "and": [
+              {
+               "!": [
+                {
+                 "get": "vm.projects.githubLoading"
+                }
+               ]
+              },
+              {
+               "==": [
+                {
+                 "get": "vm.projects.githubError"
+                },
+                ""
+               ]
+              }
+             ]
+            }
+           },
+           "props": {
+            "value": {
+             "t": "project.github.empty"
+            },
+            "tone": "muted"
+           }
+          },
+          "render": {
+           "type": "ItemCard",
+           "props": {
+            "title": {
+             "get": "repo.label"
+            },
+            "detail": {
+             "get": "repo.description"
+            },
+            "icon": "github",
+            "personal": "title",
+            "busy": {
+             "get": "repo.busy"
+            },
+            "disabled": {
+             "get": "vm.projects.githubPending"
+            }
+           },
+           "on": {
+            "press": {
+             "run": "projects.githubOpen",
+             "args": {
+              "id": {
+               "get": "repo.id"
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       {
+        "type": "Text",
+        "when": {
+         "get": "vm.projects.githubPending"
+        },
+        "props": {
+         "value": {
+          "get": "vm.projects.githubStatus"
+         },
+         "tone": "muted",
+         "announce": true
+        }
+       },
+       {
+        "type": "StatusRow",
+        "when": {
+         "expr": {
+          "!=": [
+           {
+            "get": "vm.projects.githubError"
+           },
+           ""
+          ]
+         }
+        },
+        "props": {
+         "message": {
+          "get": "vm.projects.githubError"
+         },
+         "tone": "danger"
+        }
+       },
+       {
+        "type": "Inline",
+        "props": {
+         "align": "end"
+        },
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "project.github.back"
+           },
+           "variant": "secondary"
+          },
+          "on": {
+           "press": {
+            "run": "projects.githubBack"
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "slots": {}
+   }
+  ]
+ }
+}

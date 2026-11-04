@@ -6,7 +6,8 @@
  * generator. Web Crypto only, no Node: the window imports the checks.
  */
 import { normalizePassphrase, passphraseStrength, randomBytes, randomId, SALT_BYTES, toB64url } from "./format.ts";
-import { GRANT_ID, isActive, LINK_SECRET_BYTES, normalizeName, type AccessFile, type Grant, type GrantScope } from "./grants.ts";
+import { GRANT_ID, isActive, LINK_SECRET_BYTES, newShareCode, normalizeName, type AccessFile, type Grant, type GrantScope } from "./grants.ts";
+import { isSafePath } from "./format.ts";
 
 /** The longest audience name (schemas/access.schema.json). */
 export const NAME_MAX = 80;
@@ -40,6 +41,7 @@ export function expiryUntil(day: string): string | undefined {
 }
 
 export type AccessProblem =
+  | TemplateProblem
   | "name.empty" | "name.long" | "name.taken" | "name.reserved" | "name.invalid"
   | "waysIn.none" | "passcode.short" | "passcode.weak" | "scope.empty" | "expiry.past" | "expiry.far"
   | "notFound" | "owner" | "withdrawn";
@@ -56,9 +58,15 @@ export interface ScopeInput { notes: string[]; folders: string[] }
 /** A passcode the owner typed, or a request for main-issued words (only those are stored as `generated`). */
 export type PasscodeInput = { value: string } | { generate: true };
 /** How the main process makes words (seal/words.ts); the window has none, so it can't claim them. */
-export interface ApplyOptions { generate?: () => string }
+export interface ApplyOptions {
+  generate?: () => string;
+  /** Trusted filesystem resolution, never accepted from the renderer. */
+  resolvedItemNotes?: { grantId?: string; notes: readonly string[]; ids: readonly string[] };
+}
 export interface AudienceInput { name: string; link: boolean; passcode?: PasscodeInput; scope: ScopeInput; expiresAt: string | null }
 export type AccessChange =
+  | { op: "createItem"; item: NonNullable<Grant["item"]>; notes: string[]; link: boolean; passcode?: PasscodeInput; wordsId?: string; expiresAt: string | null }
+  | { op: "addItemNotes"; id: string; notes: string[] }
   | { op: "create"; audience: AudienceInput }
   /** `passcode: null` removes it; a missing field stays as it is. */
   | { op: "update"; id: string; link?: boolean; passcode?: PasscodeInput | null; scope?: ScopeInput; expiresAt?: string | null }
@@ -69,10 +77,15 @@ export type AccessChange =
 export interface Audience {
   id: string; name: string; scope: GrantScope; createdAt: string; expiresAt?: string | null; revokedAt?: string | null;
   link: boolean; passcode: boolean; generated: boolean;
+  shareCode?: string;
+  item?: Grant["item"];
+  /** Current private folder members outside a snapshot, supplied only by the desktop listing. */
+  unsharedNotes?: string[];
 }
 export const audienceOf = (g: Grant): Audience => ({
   id: g.id, name: g.name, scope: g.scope, createdAt: g.createdAt, expiresAt: g.expiresAt ?? null, revokedAt: g.revokedAt ?? null,
   link: Boolean(g.link), passcode: Boolean(g.passcode), generated: Boolean(g.passcode?.generated),
+  ...(g.shareCode ? { shareCode: g.shareCode, item: g.item } : {}),
 });
 type Timed = Pick<Grant, "expiresAt" | "revokedAt">;
 const inForce = (g: Timed, now: number) => !g.revokedAt && (!g.expiresAt || Date.parse(g.expiresAt) > now);
@@ -146,6 +159,13 @@ function checkPasscode(p: PasscodeInput, o: ApplyOptions): { value: string; gene
   return { value: normalizePassphrase(p.value), generated: false };
 }
 const newLink = () => ({ secret: toB64url(randomBytes(LINK_SECRET_BYTES)) });
+const resolvedIds = (notes: readonly string[], o: ApplyOptions, grantId?: string) => {
+  const r = o.resolvedItemNotes;
+  if (!r || r.grantId !== grantId || r.ids.length !== notes.length || !r.ids.length ||
+    r.ids.some((id) => !id) || new Set(r.ids).size !== r.ids.length ||
+    JSON.stringify([...r.notes].sort()) !== JSON.stringify([...notes].sort())) throw new AccessEditError("scope.empty");
+  return [...r.ids];
+};
 
 /**
  * The access file with one change made, and the audience it was made to. Throws AccessEditError for
@@ -153,6 +173,24 @@ const newLink = () => ({ secret: toB64url(randomBytes(LINK_SECRET_BYTES)) });
  * in use, a weak passcode, an expiry in the past, or the vault's grant.
  */
 export function applyAccessChange(access: AccessFile, change: AccessChange, now = new Date(), o: ApplyOptions = {}): { access: AccessFile; id: string } {
+  if (change.op === "createItem") {
+    const { item } = change;
+    if (!isSafePath(item.folder ? `${item.path}/_.md` : item.path) || change.notes.some((p) => !isSafePath(p) || (item.folder ? !p.startsWith(`${item.path}/`) : p !== item.path))) throw new AccessEditError("scope.empty");
+    if (!change.link && !change.passcode) throw new AccessEditError("waysIn.none");
+    const scope = item.includeLater && item.folder ? tidyScope({ notes: [], folders: [item.path] })
+      : { ids: resolvedIds(change.notes, o), notes: [], folders: [] };
+    let shareCode = newShareCode();
+    while (access.grants.some((g) => g.shareCode === shareCode)) shareCode = newShareCode();
+    let id = randomId("s", 16);
+    while (access.grants.some((g) => g.id === id)) id = randomId("s", 16);
+    const grant: Grant = {
+      id, name: "", shareCode, item: { ...item, notePaths: [...change.notes] }, salt: toB64url(randomBytes(SALT_BYTES)), scope,
+      createdAt: now.toISOString(), expiresAt: checkExpiry(change.expiresAt, now),
+      ...(change.link ? { link: newLink() } : {}),
+      ...(change.passcode ? { passcode: checkPasscode(change.passcode, o) } : {}),
+    };
+    return { id, access: { ...access, grants: [...access.grants, grant] } };
+  }
   if (change.op === "create") {
     const a = change.audience;
     const bad = nameProblem(access, a.name, undefined, now);
@@ -181,6 +219,14 @@ export function applyAccessChange(access: AccessFile, change: AccessChange, now 
   if (change.op === "delete") return replace(undefined);
   if (g.revokedAt) throw new AccessEditError("withdrawn");
   if (change.op === "withdraw") return replace({ ...g, revokedAt: now.toISOString() });
+  if (change.op === "addItemNotes") {
+    if (!isActive(g, now.getTime()) || !g.shareCode || !g.item?.folder || g.item.includeLater ||
+      !g.scope.ids?.length || g.scope.all || g.scope.notes?.length || g.scope.folders?.length ||
+      change.notes.some((path) => !isSafePath(path) || !path.startsWith(`${g.item!.path}/`))) throw new AccessEditError("scope.empty");
+    const ids = resolvedIds(change.notes, o, g.id);
+    return replace({ ...g, scope: { ids: [...new Set([...g.scope.ids, ...ids])], notes: [], folders: [] },
+      item: { ...g.item, notePaths: [...new Set([...(g.item.notePaths ?? []), ...change.notes])] } });
+  }
 
   const next: Grant = { ...g };
   if (change.scope) next.scope = tidyScope(change.scope);
@@ -223,6 +269,20 @@ const parseExpiry = (v: unknown): string | null => {
 /** A change as the window sent it, checked field by field: anything unexpected is refused. */
 export function parseAccessChange(v: unknown): AccessChange {
   if (!isObj(v)) throw new Error("Not a share change");
+  if (v.op === "createItem") {
+    const i = v.item;
+    if (!only(v, ["op", "item", "notes", "link", "passcode", "wordsId", "expiresAt"]) || !isObj(i) ||
+      !only(i, ["path", "label", "folder", "includeLater"]) || typeof i.path !== "string" || i.path.length > 1000 ||
+      typeof i.label !== "string" || i.label.length > 500 || hasHiddenText(i.label) || /[\r\n]/.test(i.label) ||
+      typeof i.folder !== "boolean" || typeof i.includeLater !== "boolean" || typeof v.link !== "boolean" ||
+      (v.wordsId !== undefined && (typeof v.wordsId !== "string" || !GRANT_ID.test(v.wordsId)))) throw new Error("Not a share change");
+    return {
+      op: "createItem", item: { path: i.path, label: i.label, folder: i.folder, includeLater: i.includeLater },
+      notes: strings(v.notes, 10_000), link: v.link,
+      ...(typeof v.wordsId === "string" ? { wordsId: v.wordsId } : {}),
+      ...(v.passcode !== undefined ? { passcode: parsePasscode(v.passcode) } : {}), expiresAt: parseExpiry(v.expiresAt),
+    };
+  }
   if (v.op === "create") {
     const a = v.audience;
     if (!only(v, ["op", "audience"]) || !isObj(a) || !only(a, ["name", "link", "passcode", "scope", "expiresAt"]) || typeof a.name !== "string" || a.name.length > 500 || typeof a.link !== "boolean") {
@@ -231,6 +291,10 @@ export function parseAccessChange(v: unknown): AccessChange {
     return { op: "create", audience: { name: a.name, link: a.link, ...(a.passcode !== undefined ? { passcode: parsePasscode(a.passcode) } : {}), scope: parseScope(a.scope), expiresAt: parseExpiry(a.expiresAt) } };
   }
   if (typeof v.id !== "string" || !GRANT_ID.test(v.id)) throw new Error("Not a share change");
+  if (v.op === "addItemNotes") {
+    if (!only(v, ["op", "id", "notes"])) throw new Error("Not a share change");
+    return { op: "addItemNotes", id: v.id, notes: strings(v.notes, 10_000) };
+  }
   if (v.op === "withdraw" || v.op === "delete") {
     if (!only(v, ["op", "id"])) throw new Error("Not a share change");
     return { op: v.op, id: v.id };
@@ -279,6 +343,23 @@ const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
 export const HIDDEN_TEXT = /[\p{Cf}\u0000-\u0008\u000B-\u001F\u007F-\u009F\u2028\u2029]/u;
 /** Whether text has a hidden character (above). */
 export const hasHiddenText = (s: string) => HIDDEN_TEXT.test(s);
+
+const ITEM_PLACEHOLDERS = ["title", "link", "site", "accessCode", "expires"] as const;
+export type ItemInviteValues = Partial<Record<typeof ITEM_PLACEHOLDERS[number], string>>;
+export function itemInviteText(template: string, values: ItemInviteValues): string {
+  if (!template.trim()) throw new AccessEditError("template.empty");
+  if (template.length > TEMPLATE_MAX || template.split(/\r?\n/).length > TEMPLATE_LINES) throw new AccessEditError("template.long");
+  if (hasHiddenText(template.replace(/\r\n/g, "\n"))) throw new AccessEditError("template.invalid");
+  for (const [, placeholder] of template.matchAll(PLACEHOLDER)) {
+    if (!(ITEM_PLACEHOLDERS as readonly string[]).includes(placeholder!)) throw new AccessEditError("template.unknown");
+  }
+  const text = template.split(/\r?\n/)
+    .filter((line) => ITEM_PLACEHOLDERS.every((p) => !line.includes(`{${p}}`) || values[p]))
+    .map((line) => line.replace(/\{(title|link|site|accessCode|expires)\}/g, (_, p: keyof ItemInviteValues) => values[p]!)).join("\n").trim();
+  if (!(values.link && text.includes(values.link)) &&
+    !(values.site && values.accessCode && text.includes(values.site) && text.includes(values.accessCode))) throw new AccessEditError("template.noWayIn");
+  return text;
+}
 
 /**
  * Why a template can't be used, if it can't: empty, too long, hidden characters, a placeholder the

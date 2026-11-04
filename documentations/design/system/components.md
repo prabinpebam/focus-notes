@@ -59,7 +59,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | PopoverPanel | primitive | `closed`, `open` | 8 | `open` |
 | MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 9 | None |
 | Shortcut | primitive | `rest` | 2 | None |
-| SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 15 | `focused` |
+| SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 5 | `hover`, `focusVisible` |
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
@@ -88,7 +88,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | StrengthMeter | primitive | `rest` | 5 | None |
 | Switch | primitive | `rest`, `checked`, `disabled`, `hover`, `focusVisible` | 4 | `hover`, `focusVisible` |
 | ProgressBar | primitive | `rest` | 3 | None |
-| DatePicker | primitive | `rest`, `focused`, `open`, `invalid` | 3 | `focused`, `open` |
+| DatePicker | primitive | `rest`, `focused`, `open`, `invalid`, `readOnly` | 4 | `focused`, `open` |
 | ProjectMark | primitive | `rest`, `selected` | 39 | None |
 | ImageFrame | primitive | `rest`, `selected` | 10 | None |
 | FontChoice | primitive | `rest`, `selected` | 7 | None |
@@ -106,7 +106,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Stack | layout | `rest` | 18 | None |
 | Inline | layout | `rest` | 19 | None |
 | Columns | layout | `rest` | 2 | None |
-| Surface | layout | `rest` | 24 | None |
+| Surface | layout | `rest` | 25 | None |
 | Layer | layout | `rest` | 19 | None |
 | Center | layout | `rest` | 11 | None |
 | AppRoot | layout | `rest` | 29 | None |
@@ -114,13 +114,13 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Field | layout | `rest`, `error` | 2 | None |
 | Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
-| ProjectScope | layout | `rest` | 33 | None |
+| ProjectScope | layout | `rest` | 35 | None |
 | ReaderPage | layout | `rest` | 1 | None |
 | PrintPage | layout | `rest` | 2 | None |
 | SitePage | layout | `rest` | 3 | None |
 | SiteSection | layout | `rest` | 5 | None |
 | SiteGrid | layout | `rest` | 1 | None |
-| NoteContent | block component | `rest` | 1 | None |
+| NoteContent | block component | `rest` | 2 | None |
 | SecureKeyField | compound component | `empty` | 1 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
@@ -275,7 +275,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Center** | Implemented | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |
 | **Split** | Planned | Two panes, optionally resizable | `start` and `end` sizes (tokens), `resizable`, `collapseBelow` (a size class) |
 | **Spacer** | Planned | Takes the remaining space in a Stack or Inline | None |
-| **ProjectScope** | Implemented | A project's accent, colour theme and writing font over a subtree (D-313, D-316): token scopes on the semantic roles, so several project looks or a live preview can sit side by side | `accent` 12 presets or app; `theme` any app theme or app (Follow app); `font` any writing font or app; `part` window (the subtle colour outline) or plain; never a tinted title bar (D-324) |
+| **ProjectScope** | Implemented | A project's accent, colour theme and writing font over a subtree (D-313, D-316): token scopes on the semantic roles, so several project looks or a live preview can sit side by side | `accent` 12 presets or app; `theme` any app theme or app (Follow app); `font` any writing font or app; optional `contentSize` 14–32 for the website preview's local reading size; `part` window (the subtle colour outline), canvas (the whole scoped background without a frame) or plain; never a tinted title bar (D-324). The website preview uses this scope, not a second AppRoot that would change document-wide appearance. |
 | **Surface** | Implemented | The only way to get a background, border, radius, or shadow | `variant` canvas, frost, raised, sunken, inverted. `shape` window, sheet, popover, control. `padding` |
 | **ScrollArea** | Planned | Scrolling with consistent scrollbars and edge fades | `axis`, `fade` |
 | **Layer** | Implemented | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark, and put the desktop title bar band under its content: the window's top `layout.titleBar` (44 px), the drag region, which its own content (the trigger) never is (DSK-02, D-106) | `layer`, `position` (topBand, topEnd (the window controls, in the 44 px band, D-104, D-106), belowTopBand, fill, center, bottomCenter, bottomStart), `landmark` (none, banner, main, complementary, region) with `label` (main: the first run's card, while no note shows, D-101), `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |
@@ -295,7 +295,7 @@ As built (WP-5.1, D-114), note content renders on published pages through one bl
 
 | Component | Status | Renders |
 | --- | --- | --- |
-| **NoteContent** | Implemented | A note's blocks (`blocks`, a view model's note as the Markdown bridge parses it), read-only; tokens `cmp.noteContent.*`, aliasing the same semantic tokens as the editor surface |
+| **NoteContent** | Implemented | A note's blocks (`blocks`, a view model's note as the Markdown bridge parses it), read-only; optional `focusMode` dims the other reading blocks using the shared focus token. Select a block with the pointer, or focus the document and use Up/Down. Default rendering is unchanged; tokens `cmp.noteContent.*`, aliasing the same semantic tokens as the editor surface |
 | **ParagraphBlock** | Composed | Paragraphs, with `dir="auto"`. Drawn inside NoteContent and by the editor |
 | **HeadingBlock** | Composed | Note headings 1 to 6, using the `font.content.h*` ratios. Drawn inside NoteContent and by the editor |
 | **ListBlock** | Composed | Bulleted, numbered, and task lists, with task checkboxes. Drawn inside NoteContent and by the editor |

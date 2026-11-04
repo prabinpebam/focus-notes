@@ -616,8 +616,12 @@ export class AiService {
    */
   async *stream(input: unknown, signal: AbortSignal): AsyncGenerator<string> {
     const a = (input ?? {}) as Record<string, unknown>;
-    if (typeof a.text !== "string" || !a.text.trim() || a.text.length > MAX_TEXT) throw new Error("invalid-text");
+    const writing = a.mode === "write";
+    if (a.mode !== undefined && !writing) throw new Error("invalid-mode");
+    if (typeof a.text !== "string" || (writing ? a.text !== "" : !a.text.trim()) || a.text.length > MAX_TEXT) throw new Error("invalid-text");
     if (typeof a.instruction !== "string" || !a.instruction.trim() || a.instruction.length > MAX_INSTRUCTION) throw new Error("invalid-instruction");
+    const system = writing ? "You write text for a writer. Follow the user's prompt. Reply with only the requested text, without a preamble or commentary." : SYSTEM;
+    const user = writing ? a.instruction.trim() : `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`;
     const s = await this.#read();
     const c = s.connections.find((x) => x.id === s.writer);
     if (!c) throw new AiError("not-configured");
@@ -625,7 +629,7 @@ export class AiService {
     if (p.shape === "copilot-cli") {
       const started = performance.now();
       let first = true;
-      for await (const text of this.#copilot.stream(SYSTEM, `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`, c.model, signal, this.#limit("generate", false))) {
+      for await (const text of this.#copilot.stream(system, user, c.model, signal, this.#limit("generate", false))) {
         if (first) measure("fn:ai.firstToken", started);
         first = false;
         yield text;
@@ -635,7 +639,7 @@ export class AiService {
     }
     const key = this.#open(c);
     if (p.key === "required" && !key) throw new AiError("key-required");
-    const call = streamCall(p, generateCall(p, c, key, SYSTEM, `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`, 4096));
+    const call = streamCall(p, generateCall(p, c, key, system, user, 4096));
     const local = isLoopback(call.url);
     const started = performance.now();
     let first = true;

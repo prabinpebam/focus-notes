@@ -1,0 +1,34 @@
+{
+  "open": true,
+  "full": false,
+  "dialog": true,
+  "pending": false,
+  "loading": false,
+  "recentWaiting": false,
+  "entriesWaiting": false,
+  "githubOpen": false,
+  "githubLoading": false,
+  "githubWaiting": false,
+  "githubPending": false,
+  "githubStatus": "",
+  "githubError": "",
+  "repos": [{ "id": "r/x", "label": "x", "description": "", "busy": false }],
+  "error": "",
+  "query": "",
+  "active": "",
+  "recent": [
+    { "id": "r1", "label": "Chapter 3 — The exile", "description": "Ramayana · drafts", "icon": "documentText", "pinned": true },
+    { "id": "r2", "label": "welcome", "description": "Ramayana · notes", "icon": "documentText", "pinned": false },
+    { "id": "r3", "label": "Spring planting plan", "description": "Garden · beds / north", "icon": "documentText", "pinned": false },
+    { "id": "r4", "label": "Issue 14 outline", "description": "Club newsletter · issues", "icon": "documentText", "pinned": false },
+    { "id": "r5", "label": "Pitch deck notes", "description": "Startup plan · notes", "icon": "documentText", "pinned": false },
+    { "id": "r6", "label": "Grandma's dal", "description": "Recipes · lentils", "icon": "documentText", "pinned": false }
+  ],
+  "entries": [
+    { "id": "p1", "name": "Ramayana", "folder": "E:\\Projects\\writing\\books\\retellings\\ramayana-modern-prose", "accent": "teal", "logo": "book", "logoSrc": "", "pinned": true },
+    { "id": "p2", "name": "Garden", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden", "accent": "green", "logo": "leaf", "logoSrc": "", "pinned": false },
+    { "id": "p3", "name": "Club newsletter", "folder": "D:\\Shared\\Community\\Running club\\newsletter-2026", "accent": "pink", "logo": "chat", "logoSrc": "", "pinned": false },
+    { "id": "p4", "name": "Startup plan", "folder": "C:\\Users\\Prabin\\OneDrive - Personal\\Ventures\\startup-plan", "accent": "indigo", "logo": "rocket", "logoSrc": "", "pinned": false },
+    { "id": "p5", "name": "Recipes", "folder": "C:\\Users\\Prabin\\Documents\\Recipes", "accent": "amber", "logo": "food", "logoSrc": "", "pinned": false }
+  ]
+}

@@ -8,7 +8,7 @@
 import { test, expect } from "./fixtures.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs } from "./helpers.ts";
+import { caret, fileRow, launch, quit, tempDirs } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const rename = process.platform === "darwin" ? "Enter" : "F2";
@@ -37,7 +37,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   await expect(editor).toBeFocused();
   const files = page.getByRole("complementary", { name: "Files" });
   const tree = files.getByRole("tree", { name: "Notes and folders" });
-  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const row = (name: string) => fileRow(tree, name);
   const toast = (text: string) => page.locator("#toasts").getByText(text);
 
   // Typing in the open note, then moving a note it links to: what was typed is kept (saved first).
@@ -78,13 +78,13 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   expect(read("Welcome.md")).toBe("# Welcome to Focus Notes\n\n![pic](Crate/assets/pic.png)\n\nSee [the plan](Shelf/plan.md#steps) and [inside](Crate/inner.md).\n\nTyped before the move.\n");
   expect(read("Crate", "inner.md")).toBe("# Inner\n\nSee [the plan][p].\n\n[p]: <../Shelf/plan.md> \"The plan\"\n");
 
-  // Renaming a note by its title renames the file (FIL-07), and links to it follow.
+  // Rename file leaves its heading alone, and links to the new path follow.
   await row("Plan").click();
   await page.keyboard.press(rename);
-  await tree.getByRole("textbox", { name: "Title" }).fill("Master plan");
+  await tree.getByRole("textbox", { name: "File name" }).fill("Master plan");
   await page.keyboard.press("Enter");
   await expect(toast("Renamed to “Master plan”. Updated links in 3 notes.")).toBeVisible({ timeout: 10_000 });
-  expect(read("Shelf", "master-plan.md")).toBe("# Master plan\n\nBack [home](../Welcome.md). Not a link: `[home](Welcome.md)`.\n");
+  expect(read("Shelf", "master-plan.md")).toBe("# Plan\n\nBack [home](../Welcome.md). Not a link: `[home](Welcome.md)`.\n");
   expect(existsSync(join(docs, "Shelf", "plan.md"))).toBe(false);
   expect(read("Crate", "inner.md")).toBe("# Inner\n\nSee [the plan][p].\n\n[p]: <../Shelf/master-plan.md> \"The plan\"\n");
   expect(read("Locked", "blocker.md")).toBe("# Blocker\n\n[plan](../Shelf/master-plan.md)\n");

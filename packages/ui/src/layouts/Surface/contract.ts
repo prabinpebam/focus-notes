@@ -14,7 +14,7 @@ export const contract = defineContract({
     minimum: { kind: "enum", values: ["none", "component", "section", "view"], default: "none", description: "The wrapper's minimum block size, shared by populated, empty and loading content." },
     busy: { kind: "boolean", description: "This region is loading; its placeholders stay decorative." },
     label: { kind: "message", description: "Names a region when its content changes independently." },
-    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun"], default: "none", description: "Keys registered for this scope work while focus is inside." },
+    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun", "rewritePrompt"], default: "none", description: "Keys registered for this scope work while focus is inside." },
   },
   events: {},
   slots: { default: { accepts: "any" } },
@@ -31,7 +31,7 @@ export const contract = defineContract({
     ...["none", "window", "sheet", "popover", "control", "round"].map((shape) => ({
       name: `shape ${shape}`, props: { shape, padding: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
-    ...["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun"].map((keyScope) => ({
+    ...["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun", "rewritePrompt"].map((keyScope) => ({
       name: `keyScope ${keyScope}`, props: { keyScope, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
     ...["0", "1", "2", "3"].map((elevation) => ({

@@ -51,6 +51,8 @@ globalStyle(p('ul[data-type="taskList"] li[data-checked="true"] > div'), { color
 globalStyle(p("::selection"), { backgroundColor: t.selection });
 // Scrolling blocks (wide tables and code) take focus, so a keyboard can scroll them (A11Y).
 globalStyle(p("[tabindex]:focus-visible"), { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusWidth });
+globalStyle(p('> [data-focus-muted="true"]'), { opacity: tokens.focus.dimOpacity });
+globalStyle(`${prose}:focus-visible`, { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusWidth });
 
 // Tables (Tables → Anatomy): a hairline frame with small corners, the header row on the surface
 // color in semibold, scrolling sideways inside its frame when wide (SHR-06: readable from 320 px).

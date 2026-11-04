@@ -16,6 +16,43 @@ import type { TaskView } from "../src/tasks.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
+
+describe("RWR-91 / RWR-92: decisive prompt keys and write at caret", () => {
+  it("only Mod+Enter in the prompt generates; Enter and IME pass through", async () => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    await t.commands.run("rewrite.prompt", { value: "Make it warmer" });
+    const event = { key: "Enter", ctrlKey: true, metaKey: false, shiftKey: false, altKey: false };
+    expect(t.commands.match(event, ["rewritePrompt"])).toBe("rewrite.generate");
+    expect(t.commands.match({ ...event, ctrlKey: false }, ["rewritePrompt"])).toBeUndefined();
+    expect(t.commands.match({ ...event, isComposing: true }, ["rewritePrompt"])).toBeUndefined();
+    expect(t.commands.match(event)).toBeUndefined();
+    await t.commands.run("rewrite.generate");
+    await t.commands.run("rewrite.generate");
+    expect(t.editor.filter((id) => id === "rewrite.begin")).toHaveLength(1);
+  });
+  it("captures an empty caret and sends only the prompt, with no note context", async () => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "", caret: true });
+    expect(t.vm()).toMatchObject({ open: true, caret: true });
+    await t.commands.run("rewrite.prompt", { value: "Write a greeting" });
+    await t.commands.run("rewrite.generate");
+    await t.commands.run("rewrite.began", { ok: true });
+    await settle();
+    const input = JSON.parse(t.calls.find((c) => c.startsWith("start:"))!.replace(/^start:[^:]+:/, ""));
+    expect(input).toEqual({ text: "", instruction: "Write a greeting", path: "C:/ws/notes/a.md", mode: "write" });
+  });
+  it("keeps the prompt open when the captured note is stale, without sending", async () => {
+    const t = setup();
+    await t.commands.run("rewrite.captured", { text: "", caret: true });
+    await t.commands.run("rewrite.prompt", { value: "Keep this prompt" });
+    await t.commands.run("rewrite.generate");
+    await t.commands.run("rewrite.began", { ok: false });
+    expect(t.vm()).toMatchObject({ open: true, prompt: "Keep this prompt" });
+    expect(t.calls.some((c) => c.startsWith("start:"))).toBe(false);
+    expect(t.toasts).toHaveLength(1);
+  });
+});
 const conn = (over: Partial<AiSettingsView["connections"][number]> = {}) => ({
   id: "w", provider: "openai", name: "OpenAI", endpoint: "", model: "gpt-x", deployment: "", apiVersion: "", account: "", hasKey: true, consented: false, ...over,
 });

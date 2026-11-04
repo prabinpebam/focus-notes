@@ -173,7 +173,7 @@ async function noteTimes() {
     for (let i = 0; i < 2 * Math.max(runs, 3); i++) {
       const name = i % 2 === 0 ? "Long note" : "Bench fixture";
       await page.keyboard.press(`${mod}+O`);
-      const row = page.getByRole("complementary", { name: "Files" }).getByRole("treeitem", { name, exact: true });
+      const row = page.getByRole("complementary", { name: "Files" }).getByRole("treeitem").filter({ has: page.locator('span[dir="auto"]').filter({ hasText: new RegExp(`^${name}$`) }) });
       await row.click();
       const before = (await opens()).length;
       await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Enter");

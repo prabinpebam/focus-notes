@@ -29,6 +29,23 @@ function open(markdown: string, selected: string) {
 }
 
 describe("RewriteStream", () => {
+  it("RWR-92: inserts at an empty caret, preserves outside bytes and undoes in one step", () => {
+    const original = "# Title\r\n\r\nAlpha beta gamma.\r\n";
+    const { editor, target, raw, run } = open(original, "beta");
+    const caret = { from: target.from, to: target.from };
+    const stream = new RewriteStream(editor, caret, classes, now);
+    stream.push("new ");
+    stream.push("words ");
+    expect(stream.finish()).toBe(true);
+    expect(raw()).toBe(original.replace("beta", "new words beta"));
+    expect(run(undo)).toBe(true);
+    expect(raw()).toBe(original);
+    expect(run(undo)).toBe(false);
+    const stopped = new RewriteStream(editor, caret, classes, now);
+    stopped.push("discarded");
+    stopped.abort();
+    expect(raw()).toBe(original);
+  });
   it("streams in place, locked, then Ctrl+Z restores the selection and Ctrl+Y the rewrite", () => {
     const { editor, target, md, run } = open("# Title\n\nKeep this. Change this part. Keep that.\n", "Change this part.");
     const stream = new RewriteStream(editor, target, classes, now);

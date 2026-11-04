@@ -4,25 +4,154 @@
  * time and copied by the main process (L1), passcodes are made here (L5), a damaged file's error
  * never quotes it (L6), and the clipboard is cleared after 90 s if it still holds the secret (L1).
  */
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { accessStore, siteFromGitConfig } from "../src/main/share/access.ts";
+import { accessStore, siteFromGitConfig, type AccessStoreOptions } from "../src/main/share/access.ts";
+import { publish as publishSite } from "@focus-notes/seal/publish";
 import { secretClipboard } from "../src/main/share/clipboard.ts";
 
 const SITE = "https://ada.github.io/notes/";
-function store(text?: string) {
+function store(text?: string, site: () => Promise<string> = async () => SITE, options: Partial<AccessStoreOptions> = {}) {
   const dir = join(mkdtempSync(join(tmpdir(), "fn-access-")), "private");
   mkdirSync(dir);
   if (text !== undefined) writeFileSync(join(dir, "access.json"), text);
   const written: string[] = [];
-  const s = accessStore({ dir: () => dir, site: async () => SITE, write: async (f, t) => writeFileSync(f, t), written: (f) => void written.push(f) });
+  const s = accessStore({
+    dir: () => dir, site, write: async (f, t) => writeFileSync(f, t),
+    writeNoteId: async (f, text, expected) => {
+      if (readFileSync(f, "utf8") !== expected) throw new Error("access:scope.changed");
+      writeFileSync(f, text);
+    },
+    written: (f) => void written.push(f),
+    ...options,
+  });
   return { s, dir, written, file: () => JSON.parse(readFileSync(join(dir, "access.json"), "utf8")) };
 }
 const create = (passcode?: unknown) => ({ op: "create", audience: { name: "Asha", link: true, ...(passcode ? { passcode } : {}), scope: { notes: ["a.md"], folders: [] }, expiresAt: null } });
 
 describe("the window's view of access.json", () => {
+  it.each(["membership", "root", "site"])("cached readiness is bound to %s before a repeated native handoff", async (change) => {
+    let currentDir = "", currentSite = SITE;
+    const t = store(undefined, async () => currentSite, {
+      dir: () => currentDir,
+      publish: async () => { await publishSite({ private: currentDir, site: join(t.dir, "published"), owner: "fixture" }); },
+      getSite: () => async (path) => {
+        const file = join(t.dir, "published", ...path.split("/"));
+        return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+      },
+    });
+    currentDir = t.dir;
+    try {
+      mkdirSync(join(t.dir, "notes", "drafts"), { recursive: true });
+      writeFileSync(join(t.dir, "notes", "drafts", "one.md"), "# One\n");
+      const { id } = await t.s.apply({
+        op: "createItem", item: { path: "drafts", label: "Drafts", folder: true, includeLater: false },
+        notes: ["drafts/one.md"], link: true, expiresAt: null,
+      });
+      await t.s.ready(id);
+      const sent: string[] = [];
+      await t.s.handoff(id, "link", undefined, (text) => { sent.push(text); });
+      if (change === "membership") renameSync(join(t.dir, "notes", "drafts", "one.md"), join(t.dir, "notes", "one.md"));
+      if (change === "root") {
+        currentDir = join(t.dir, "copied");
+        cpSync(join(t.dir, "notes"), join(currentDir, "notes"), { recursive: true });
+        writeFileSync(join(currentDir, "access.json"), readFileSync(join(t.dir, "access.json")));
+      }
+      if (change === "site") currentSite = "https://ada.github.io/copied/";
+      await expect(t.s.handoff(id, "link", undefined, (text) => { sent.push(text); })).rejects.toThrow("access:notReady");
+      expect(sent).toHaveLength(1);
+    } finally { rmSync(t.dir, { recursive: true, force: true }); }
+  });
+  it("Add them checks full current membership, resolves new identities and preserves every existing credential", async () => {
+    const t = store();
+    mkdirSync(join(t.dir, "notes", "drafts"), { recursive: true });
+    writeFileSync(join(t.dir, "notes", "drafts", "one.md"), "# One\n");
+    const { id } = await t.s.apply({
+      op: "createItem", item: { path: "drafts", label: "Drafts", folder: true, includeLater: false },
+      notes: ["drafts/one.md"], link: true, expiresAt: null,
+    });
+    const original = t.file().grants[0];
+    writeFileSync(join(t.dir, "notes", "drafts", "two.md"), "# Two\n");
+    await expect(t.s.apply({ op: "addItemNotes", id, notes: ["drafts/two.md"] })).rejects.toThrow("access:scope.changed");
+    expect(t.file().grants[0]).toEqual(original);
+    await t.s.apply({ op: "addItemNotes", id, notes: ["drafts/one.md", "drafts/two.md"] });
+    expect(t.file().grants[0]).toMatchObject({ id, link: original.link, salt: original.salt, expiresAt: original.expiresAt });
+    expect(t.file().grants[0].scope.ids).toHaveLength(2);
+    expect(t.file().grants[0].scope.notes).toEqual([]);
+    await expect(t.s.secret(id, "link")).rejects.toThrow("access:notReady");
+    writeFileSync(join(t.dir, "notes", "unreviewed.md"), `\uFEFF---\nid: ${original.scope.ids[0]}\n---\n# Not shared\n`);
+    await expect(t.s.apply({ op: "addItemNotes", id, notes: ["drafts/one.md", "drafts/two.md"] })).rejects.toThrow("access:scope.duplicateId");
+  });
+  it("withdrawal requested during site resolution prevents the actual native credential handoff", async () => {
+    let block = false, release!: (value: string) => void, entered!: () => void;
+    const started = new Promise<void>((resolve) => { entered = resolve; });
+    const t = store(undefined, async () => {
+      if (!block) return SITE;
+      entered();
+      return new Promise<string>((resolve) => { release = resolve; });
+    });
+    const { id } = await t.s.apply(create());
+    block = true;
+    const sent: string[] = [];
+    const copy = t.s.handoff(id, "link", undefined, (text) => { sent.push(text); });
+    await started;
+    const withdraw = t.s.apply({ op: "withdraw", id });
+    block = false;
+    release(SITE);
+    await expect(copy).rejects.toThrow("access:notReady");
+    await withdraw;
+    expect(sent).toHaveLength(0);
+  });
+  it("native sheet cancellation cannot deliver credentials from a pending handoff", async () => {
+    let block = false, release!: (value: string) => void, entered!: () => void;
+    const started = new Promise<void>((resolve) => { entered = resolve; });
+    const t = store(undefined, async () => {
+      if (!block) return SITE;
+      entered();
+      return new Promise<string>((resolve) => { release = resolve; });
+    });
+    const { id } = await t.s.apply(create());
+    block = true;
+    const sent: string[] = [];
+    const copy = t.s.handoff(id, "link", undefined, (text) => { sent.push(text); });
+    await started;
+    t.s.cancelReady(id);
+    block = false;
+    release(SITE);
+    await expect(copy).rejects.toThrow("access:notReady");
+    expect(sent).toHaveLength(0);
+  });
+  it("rechecks item membership and copies no newly created share before its site is ready", async () => {
+    const t = store();
+    mkdirSync(join(t.dir, "notes", "drafts"), { recursive: true });
+    writeFileSync(join(t.dir, "notes", "drafts", "one.md"), "# One\n");
+    const change = {
+      op: "createItem", item: { path: "drafts", label: "Drafts", folder: true, includeLater: false },
+      notes: ["drafts/one.md"], link: true, expiresAt: null,
+    };
+    writeFileSync(join(t.dir, "notes", "drafts", "two.md"), "# Two\n");
+    await expect(t.s.apply(change)).rejects.toThrow("access:scope.changed");
+    expect(existsSync(join(t.dir, "access.json"))).toBe(false);
+    const { id } = await t.s.apply({ ...change, notes: ["drafts/one.md", "drafts/two.md"] });
+    expect(t.file().grants[0].scope.ids.every((n: string) => /^n[a-z2-7]{16}$/.test(n))).toBe(true);
+    expect(readFileSync(join(t.dir, "notes", "drafts", "one.md"), "utf8")).toContain("# One\n");
+    await expect(t.s.secret(id, "link")).rejects.toThrow("access:notReady");
+    expect(JSON.stringify(await t.s.load())).not.toContain(t.file().grants[0].link.secret);
+  });
+  it("keeps existing front matter and refuses duplicate note identities before sharing", async () => {
+    const t = store();
+    mkdirSync(join(t.dir, "notes"));
+    writeFileSync(join(t.dir, "notes", "one.md"), "---\nid: same-id\ncustom: keep\n---\n# One\n");
+    writeFileSync(join(t.dir, "notes", "other.md"), "---\nid: same-id\n---\n# Other private note\n");
+    await expect(t.s.apply({
+      op: "createItem", item: { path: "one.md", label: "One", folder: false, includeLater: false },
+      notes: ["one.md"], link: true, expiresAt: null,
+    })).rejects.toThrow("access:scope.duplicateId");
+    expect(existsSync(join(t.dir, "access.json"))).toBe(false);
+    expect(readFileSync(join(t.dir, "notes", "one.md"), "utf8")).toBe("---\nid: same-id\ncustom: keep\n---\n# One\n");
+  });
   it("lists audiences without any secret (L2), and makes passcodes here (L5)", async () => {
     const t = store();
     const r = await t.s.apply(create({ generate: true }));

@@ -39,7 +39,7 @@ test("PRF-11: a change made in another editor shows in the open note within 500 
   await quit(l);
 });
 
-test("FIL-07: a new note's file follows its title as it's typed", async () => {
+test("FIL-18: first-save name survives title edits and restart", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);
   const { page } = l;
@@ -55,6 +55,12 @@ test("FIL-07: a new note's file follows its title as it's typed", async () => {
   await page.keyboard.type("Writing happens one line at a time.");
   await expect.poll(() => readdirSync(dirs.docs).sort(), { timeout: 5000 }).toEqual(["Welcome.md", "on-focus.md"]);
   await expect.poll(() => readFileSync(join(dirs.docs, "on-focus.md"), "utf8"), { timeout: 5000 }).toBe("# On focus\n\nWriting happens one line at a time.\n");
+  await page.keyboard.press(caret.docStart);
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+End");
+  await page.keyboard.type("A new title");
+  await expect.poll(() => readFileSync(join(dirs.docs, "on-focus.md"), "utf8")).toContain("# A new title");
+  expect(readdirSync(dirs.docs).sort()).toEqual(["Welcome.md", "on-focus.md"]);
   // A note whose name was chosen by hand keeps it.
   expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toContain("# Welcome to Focus Notes");
   await quit(l);

@@ -392,9 +392,9 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 <h2 id="mp" data-reader-personas="product design engineering">MP: Projects and simpler sharing</h2>
 
-**Current authorization: specification and planning only.** All six follow-up product choices are accepted by the owner on 3 November, 13:35. Lookahead does not authorize implementation, tests, package changes or actions on real data/accounts. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates.
+**Current authorization:** the owner approved the designs on 3 November at 19:39 and authorized implementation against the DoD. WP-P.1, WP-P.2, WP-P.3 and WP-P.7 are built on `wp-general-fixes`, with focused evidence and exact-head CI still required before integration. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates.
 
-**Planned, strict design; no runtime built.** The [3 November direction](next-direction.md) supersedes browser writing and named sharing. Earlier MW/browser/demo packages describe historical work only, not a second roadmap. D-292 retires that product completely; WP-P.13 preserves existing drafts before removing its runtime. Ordinary file import remains, not a browser ease-in plan.
+**Remaining packages are planned.** The [3 November direction](next-direction.md) supersedes browser writing and named sharing. Earlier MW/browser/demo packages describe historical work only, not a second roadmap. D-292 retires that product completely; WP-P.13 preserves existing drafts before removing its runtime. Ordinary file import remains, not a browser ease-in plan.
 
 **You can:** keep unrelated projects in distinct windows, find recent files by place, pin folders/projects, jot locally or edit a stray file, share one item without recipients and publish a clean website. Delivers UC-PROJ-01 to UC-PROJ-08, UC-FILE-12, UC-RWR-12 and UC-SHARE-07 to UC-SHARE-10, plus the revised existing writing/sharing capabilities.
 
@@ -406,7 +406,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
 | WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13, PRJ-18, PRJ-19 | WP-P.4 | security, design-system, accessibility |
 | WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07, FIL-19 | WP-P.4, WP-P.3 | code, design-system, accessibility |
-| WP-P.7 | Choose a place before writing | FIL-17, KEY-09 | WP-P.4 | code, design-system, accessibility |
+| WP-P.7 | Choose a place before writing (today's workspace, D-338) | FIL-17, KEY-09 | none | code, design-system, accessibility |
 | WP-P.8 | Local notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
 | WP-P.9 | Item-first share dialog | SHR-13, SHR-14, SHR-15, SHR-16 | WP-5.3, WP-P.16 | code, security, design-system, accessibility |
 | WP-P.10 | Shares without names or revealing identifiers | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |

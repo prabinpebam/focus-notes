@@ -109,6 +109,19 @@ export function colorsOf(id: string, draft?: ThemeDraft, custom?: CustomTheme): 
   if (draft?.base === id) for (const k of KEYS) if (draft.colors[k]) for (const t of KEY_COLORS[k]) colors[t] = draft.colors[k]!;
   return colors;
 }
+
+export function themeTilesOf(a: Appearance, draft: ThemeDraft | undefined, catalog: MessageCatalog) {
+  const all = [...(a.customThemes ?? []).map((t) => ({ id: t.id, kind: t.kind, custom: t })), ...BUILT_IN_THEMES.map((t) => ({ id: t.id, kind: t.kind, custom: undefined }))];
+  return all.map((t) => {
+    const slot = a.lightTheme === t.id ? catalog.format("theme.slot.light") : a.darkTheme === t.id ? catalog.format("theme.slot.dark") : "";
+    const level = t.custom && !t.custom.readable ? "low" : textContrast(colorsOf(t.id, draft, t.custom)).level;
+    const badge = catalog.format(`theme.level.${level}`);
+    const description = `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}`;
+    const own = t.custom ? { sample: t.custom.base, colors: Object.entries(t.custom.tokens).map(([id, value]) => ({ id, value })) } : {};
+    const group = a.customThemes?.length ? { group: catalog.format(t.custom ? "theme.yours" : "theme.group.builtIn") } : {};
+    return { id: t.id, label: t.custom?.name ?? catalog.format(themeById(t.id)?.title ?? t.id), kind: t.kind, slot, badge, description: t.custom ? `${catalog.format("theme.yours")}, ${description}` : description, ...own, ...group };
+  });
+}
 /** The draft's colors as token overrides for the root, while its base is the theme showing. */
 export const draftTokens = (s: S): { id: string; value: string }[] => {
   const d = s.ui.theme.draft;
@@ -482,17 +495,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       const showing = shownTheme(s);
       const chosen = schemeOf(a) === "dark" ? a.darkTheme : a.lightTheme;
       // Yours first (custom themes, THM-04), then the built-in ones. A custom theme failing the guard says so (THM-13).
-      const all = [...(a.customThemes ?? []).map((t) => ({ id: t.id, kind: t.kind, custom: t })), ...BUILT_IN_THEMES.map((t) => ({ id: t.id, kind: t.kind, custom: undefined }))];
-      const tiles = all.map((t) => {
-        const slot = a.lightTheme === t.id ? catalog.format("theme.slot.light") : a.darkTheme === t.id ? catalog.format("theme.slot.dark") : "";
-        const level = t.custom && !t.custom.readable ? "low" : textContrast(colorsOf(t.id, st.draft, t.custom)).level;
-        const badge = catalog.format(`theme.level.${level}`);
-        const description = `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}`;
-        const own = t.custom ? { sample: t.custom.base, colors: Object.entries(t.custom.tokens).map(([id, value]) => ({ id, value })) } : {};
-        // With custom themes, the gallery is in two groups: Yours, then Focus Notes (the built-in ones).
-        const group = a.customThemes?.length ? { group: catalog.format(t.custom ? "theme.yours" : "theme.group.builtIn") } : {};
-        return { id: t.id, label: t.custom?.name ?? name(t.id), kind: t.kind, slot, badge, description: t.custom ? `${catalog.format("theme.yours")}, ${description}` : description, ...own, ...group };
-      });
+      const tiles = themeTilesOf(a, st.draft, catalog);
       const colors = colorsOf(showing, st.draft, customOf(a, showing));
       const tc = textContrast(colors);
       const high = themeById(customOf(a, showing)?.base ?? showing)?.contrast === "high";

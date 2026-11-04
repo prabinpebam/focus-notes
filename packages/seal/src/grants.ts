@@ -10,6 +10,9 @@ export interface Grant {
   id: string;
   /** The audience. The vault's grant is named "You". */
   name: string;
+  /** New item shares use a random code, never a lookup derived from this private label. */
+  shareCode?: string;
+  item?: { path: string; label: string; folder: boolean; includeLater: boolean; notePaths?: string[] };
   owner?: boolean;
   salt: string;
   /** PBKDF2-SHA256 of the vault passphrase (format.derivePasscodeBits). The passphrase is never stored. */
@@ -24,7 +27,7 @@ export interface Grant {
   revokedAt?: string | null;
 }
 /** Note IDs or paths, folder prefixes (which include notes added later), or every private note. */
-export interface GrantScope { all?: boolean; notes?: string[]; folders?: string[] }
+export interface GrantScope { ids?: string[]; all?: boolean; notes?: string[]; folders?: string[] }
 export interface AccessFile { version: 1; nameSalt?: string; grants: Grant[] }
 
 /** Neither withdrawn nor expired. */
@@ -39,7 +42,7 @@ export const grantScope = (g: Grant): GrantScope => (g.owner ? g.scope : { ...g.
 
 /** A note's `id` from its front matter, the only key the app writes there. */
 export function noteId(text: string): string | undefined {
-  const fm = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
+  const fm = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
   const id = fm && /^id:[ \t]*(["']?)([^\r\n"']+)\1[ \t]*$/m.exec(fm[1]!);
   return id?.[2]?.trim() || undefined;
 }
@@ -49,8 +52,29 @@ const folderPrefix = (f: string) => f.replace(/^\/+/, "").replace(/\/*$/, "/");
 /** Whether a grant's scope opens this note: by its ID or path, under a shared folder, or everything. */
 export function inScope(scope: GrantScope, note: { path: string; id?: string | undefined }): boolean {
   if (scope.all) return true;
+  if (note.id !== undefined && scope.ids?.includes(note.id)) return true;
   if (scope.notes?.some((n) => n === note.path || (note.id !== undefined && n === note.id))) return true;
   return scope.folders?.some((f) => note.path.startsWith(folderPrefix(f))) ?? false;
+}
+
+/** New item snapshots have no path/ID fallback, and folder members leave when moved out. */
+export function inGrantScope(g: Grant, note: { path: string; id?: string }): boolean {
+  if (g.item?.folder && !note.path.startsWith(`${g.item.path}/`)) return false;
+  return inScope(grantScope(g), note);
+}
+
+/** Authenticated authorization fingerprint: never emitted in unauthenticated metadata. */
+export async function authorizationRevision(g: Grant, notes: readonly { path: string; id?: string }[]): Promise<string> {
+  const text = JSON.stringify({
+    id: g.id, scope: { all: Boolean(g.scope.all), ids: [...(g.scope.ids ?? [])].sort(),
+      notes: [...(g.scope.notes ?? [])].sort(), folders: [...(g.scope.folders ?? [])].sort() },
+    item: g.item ? { path: g.item.path, folder: g.item.folder, includeLater: g.item.includeLater } : null,
+    expiresAt: g.expiresAt ? new Date(g.expiresAt).toISOString() : null,
+    link: g.link?.secret ?? null, passcode: g.passcode?.value ?? null,
+    notes: notes.filter((n) => inGrantScope(g, n)).map((n) => ({ path: n.path, id: n.id ?? null })).sort((a, b) => a.path.localeCompare(b.path)),
+  });
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -118,6 +142,7 @@ export const keyringRole = {
   vault: "vault",
   link: (id: string) => `link|${id}`,
   passcode: (lookup: string) => `passcode|${lookup}`,
+  code: (code: string) => `code|${code}`,
 } as const;
 
 // ---- link keys ----
@@ -170,3 +195,18 @@ export function parseShareFragment(hash: string): { id: string; secret: string }
   return GRANT_ID.test(id) && LINK_SECRET.test(secret) && fromB64url(secret).length === LINK_SECRET_BYTES ? { id, secret } : undefined;
 }
 export const passcodeKeyringPath = (build: string, lookup: string) => `_access/${build}/p/${lookup}.json`;
+export const SHARE_CODE = /^[A-HJ-NP-Z2-9]{8}$/;
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export function newShareCode(): string {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
+  return [...bytes].map((b) => CODE_ALPHABET[b & 31]).join("");
+}
+export const displayShareCode = (code: string) => `${code.slice(0, 4)}-${code.slice(4)}`;
+export const codeKeyringPath = (build: string, code: string) => `_access/${build}/c/${code}.json`;
+/** Only the identifier is normalized. Consume exactly one separator; retain the secret verbatim. */
+export function parseAccessCode(value: string): { code: string; passcode: string } | undefined {
+  const match = /^([a-zA-Z2-9]{4})-?([a-zA-Z2-9]{4})[ \t]([\s\S]+)$/.exec(value);
+  if (!match) return undefined;
+  const code = `${match[1]}${match[2]}`.toUpperCase();
+  return SHARE_CODE.test(code) ? { code, passcode: match[3]! } : undefined;
+}

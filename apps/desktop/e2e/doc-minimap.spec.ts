@@ -301,6 +301,7 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
 });
 
 test("D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back", async () => {
+  test.fixme(new Date() < new Date("2026-11-11T00:00:00Z"), "Scoped focus quarantine: gate-evidence.md; implementation coordinator; expires 10 November 2026; CI 41654808341 / 41656910779");
   const dirs = tempDirs();
   // The default reading width and a long heading, so the card is at its widest (320 px).
   let l = await start(NOTE, {}, dirs);

@@ -4,7 +4,7 @@ import { REFOCUS_EVENT } from "@focus-notes/ui";
 
 /** A panel that takes focus while it's open: the formatting toolbar, Files, Spotlight, and the dialogs. */
 export function panelOpen(ui: AppState["ui"]): boolean {
-  return ui.toolbarOpen || ui.shortcuts.open || ui.files.open || ui.theme.open || ui.spotlight.open || ui.findAll.open;
+  return ui.toolbarOpen || ui.shortcuts.open || ui.files.open || ui.files.newNote.open || ui.theme.open || ui.spotlight.open || ui.findAll.open;
 }
 
 /**

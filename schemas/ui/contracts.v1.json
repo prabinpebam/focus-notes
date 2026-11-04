@@ -216,6 +216,580 @@
       ]
     },
     {
+      "type": "OpenItem",
+      "tier": "primitive",
+      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+      "props": {
+        "kind": {
+          "kind": "enum",
+          "values": [
+            "project",
+            "file"
+          ],
+          "default": "file"
+        },
+        "title": {
+          "kind": "message",
+          "required": true,
+          "description": "The project's or file's name: the person's own words."
+        },
+        "detail": {
+          "kind": "message",
+          "description": "A file: its project and folder."
+        },
+        "path": {
+          "kind": "text",
+          "description": "A project: its folder's full path."
+        },
+        "pathLabel": {
+          "kind": "message",
+          "description": "The path's action: Show in File Explorer, or Show in Finder."
+        },
+        "logo": {
+          "kind": "enum",
+          "values": [
+            "book",
+            "briefcase",
+            "beaker",
+            "heart",
+            "star",
+            "leaf",
+            "rocket",
+            "lightbulb",
+            "music",
+            "camera",
+            "people",
+            "home",
+            "airplane",
+            "code",
+            "brush",
+            "trophy",
+            "earth",
+            "food",
+            "building",
+            "chat",
+            "diamond",
+            "flag",
+            "sparkle",
+            "pen",
+            "upload",
+            "none"
+          ],
+          "default": "none"
+        },
+        "src": {
+          "kind": "text",
+          "description": "An uploaded logo's sanitized SVG data URL."
+        },
+        "initials": {
+          "kind": "text"
+        },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "A file's type icon."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name: Pin, with the item's name."
+        },
+        "unpinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name while pinned: Unpin, with the item's name."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The open action's accessible name, when the title alone doesn't say it."
+        }
+      },
+      "events": {
+        "press": {},
+        "pin": {},
+        "reveal": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.openItem.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "title"
+      },
+      "fixtures": [
+        {
+          "name": "project",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project pinned",
+          "covers": [
+            "selected"
+          ],
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "rocket",
+            "accent": "pink",
+            "pinned": true,
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project uploaded logo",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.long"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "upload",
+            "src": {
+              "get": "vm.gallery.logoSrc"
+            },
+            "accent": "indigo",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "logo book",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "book",
+            "accent": "red"
+          }
+        },
+        {
+          "name": "logo briefcase",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "briefcase",
+            "accent": "orange"
+          }
+        },
+        {
+          "name": "logo beaker",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "beaker",
+            "accent": "amber"
+          }
+        },
+        {
+          "name": "logo heart",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "heart",
+            "accent": "lime"
+          }
+        },
+        {
+          "name": "logo star",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "star",
+            "accent": "green"
+          }
+        },
+        {
+          "name": "logo leaf",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "leaf",
+            "accent": "teal"
+          }
+        },
+        {
+          "name": "logo rocket",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "rocket",
+            "accent": "cyan"
+          }
+        },
+        {
+          "name": "logo lightbulb",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "lightbulb",
+            "accent": "blue"
+          }
+        },
+        {
+          "name": "logo music",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "music",
+            "accent": "indigo"
+          }
+        },
+        {
+          "name": "logo camera",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "camera",
+            "accent": "violet"
+          }
+        },
+        {
+          "name": "logo people",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "people",
+            "accent": "pink"
+          }
+        },
+        {
+          "name": "logo home",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "home",
+            "accent": "slate"
+          }
+        },
+        {
+          "name": "logo airplane",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "airplane",
+            "accent": "red"
+          }
+        },
+        {
+          "name": "logo code",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "code",
+            "accent": "orange"
+          }
+        },
+        {
+          "name": "logo brush",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "brush",
+            "accent": "amber"
+          }
+        },
+        {
+          "name": "logo trophy",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "trophy",
+            "accent": "lime"
+          }
+        },
+        {
+          "name": "logo earth",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "earth",
+            "accent": "green"
+          }
+        },
+        {
+          "name": "logo food",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "food",
+            "accent": "teal"
+          }
+        },
+        {
+          "name": "logo building",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "building",
+            "accent": "cyan"
+          }
+        },
+        {
+          "name": "logo chat",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "chat",
+            "accent": "blue"
+          }
+        },
+        {
+          "name": "logo diamond",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "diamond",
+            "accent": "indigo"
+          }
+        },
+        {
+          "name": "logo flag",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "flag",
+            "accent": "violet"
+          }
+        },
+        {
+          "name": "logo sparkle",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "sparkle",
+            "accent": "pink"
+          }
+        },
+        {
+          "name": "logo pen",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "pen",
+            "accent": "slate"
+          }
+        },
+        {
+          "name": "initials, app accent",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "initials": {
+              "get": "vm.gallery.initials"
+            },
+            "logo": "none",
+            "accent": "app"
+          }
+        },
+        {
+          "name": "file",
+          "props": {
+            "kind": "file",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "icon": "documentText",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "file pinned",
+          "covers": [
+            "selected"
+          ],
+          "props": {
+            "kind": "file",
+            "title": {
+              "t": "gallery.long"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "icon": "documentText",
+            "pinned": true,
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "Text",
       "tier": "primitive",
       "description": "A run of interface text. Note text is never rendered with this; it lives in block components.",
@@ -2630,7 +3204,8 @@
             "moveField",
             "repoField",
             "spotlightField",
-            "findAllField"
+            "findAllField",
+            "newNoteField"
           ],
           "default": "none"
         },
@@ -2886,6 +3461,18 @@
               "t": "field.clear"
             },
             "keyScope": "findAllField"
+          }
+        },
+        {
+          "name": "keyScope newNoteField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "newNoteField"
           }
         }
       ]
@@ -4668,6 +5255,11 @@
           "kind": "number",
           "min": 0,
           "description": "Each new value moves focus into the tree."
+        },
+        "windowed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Read-only reviews mount at most 200 rows; scrolling, keyboard navigation and type-ahead still cover the whole tree."
         },
         "editValue": {
           "kind": "text",
@@ -6864,6 +7456,11 @@
         "invalid": {
           "kind": "boolean",
           "default": false
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the chosen day focusable, without changing it while its action is being sent."
         }
       },
       "events": {
@@ -6879,7 +7476,8 @@
         "rest",
         "focused",
         "open",
-        "invalid"
+        "invalid",
+        "readOnly"
       ],
       "tokens": "cmp.datePicker.*",
       "a11y": {
@@ -6920,6 +7518,18 @@
               "t": "gallery.sample"
             },
             "invalid": true
+          }
+        },
+        {
+          "name": "read only",
+          "covers": [
+            "readOnly"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "readOnly": true
           }
         }
       ]
@@ -7499,6 +8109,18 @@
             "270"
           ],
           "default": "0"
+        },
+        "cropX": {
+          "kind": "number"
+        },
+        "cropY": {
+          "kind": "number"
+        },
+        "cropWidth": {
+          "kind": "number"
+        },
+        "cropHeight": {
+          "kind": "number"
         }
       },
       "events": {
@@ -7508,7 +8130,13 @@
             "y": "number"
           }
         },
-        "retry": {}
+        "retry": {},
+        "size": {
+          "payload": {
+            "width": "number",
+            "height": "number"
+          }
+        }
       },
       "slots": {},
       "states": [
@@ -10158,7 +10786,8 @@
             "pickerField",
             "formatToolbar",
             "linkEditor",
-            "firstRun"
+            "firstRun",
+            "rewritePrompt"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -10600,6 +11229,24 @@
           ]
         },
         {
+          "name": "keyScope rewritePrompt",
+          "props": {
+            "keyScope": "rewritePrompt",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "elevation 0",
           "props": {
             "elevation": "0",
@@ -10700,7 +11347,8 @@
             "window",
             "center",
             "bottomCenter",
-            "bottomStart"
+            "bottomStart",
+            "bottomEnd"
           ],
           "default": "center",
           "description": "window: the whole window below the title bar band, which stays the window's (dragging, the window controls): the full-window setup (D-126)."
@@ -11093,6 +11741,32 @@
           "name": "position bottomStart",
           "props": {
             "position": "bottomStart"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position bottomEnd",
+          "props": {
+            "position": "bottomEnd"
           },
           "children": [
             {
@@ -11509,6 +12183,26 @@
           ],
           "default": "mono",
           "description": "The content font (THM-03)."
+        },
+        "projectAccent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app",
+          "description": "The full outer project outline (D-317)."
         },
         "uiScale": {
           "kind": "number",
@@ -11945,6 +12639,240 @@
             "scheme": "light",
             "platform": "windows",
             "contentFont": "system"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent red",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "red"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent orange",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "orange"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent amber",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "amber"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent lime",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "lime"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent green",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "green"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent teal",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "teal"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent cyan",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "cyan"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent blue",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "blue"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent indigo",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "indigo"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent violet",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "violet"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent pink",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "pink"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent slate",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "slate"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "projectAccent app",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "app"
           },
           "children": [
             {
@@ -12908,14 +13836,21 @@
           "kind": "enum",
           "values": [
             "window",
+            "canvas",
             "plain"
           ],
           "default": "plain",
-          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
+          "description": "window: the canvas behind it with the project's subtle colour outline, clipped to the window's shape. canvas: only the scoped background, for the full-window website preview. plain: only the scope. There's no tinted band: windows, dialogs and modals never get a coloured title bar or project tint (D-324)."
         },
         "grow": {
           "kind": "boolean",
           "default": false
+        },
+        "contentSize": {
+          "kind": "number",
+          "min": 14,
+          "max": 32,
+          "description": "A subtree's reading size, used by the website preview; leaves app appearance unchanged."
         }
       },
       "events": {},
@@ -12933,9 +13868,44 @@
       },
       "fixtures": [
         {
+          "name": "local reading size",
+          "props": {
+            "contentSize": 20,
+            "font": "serif",
+            "theme": "paper"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "part window",
           "props": {
             "part": "window",
+            "accent": "teal"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "part canvas",
+          "props": {
+            "part": "canvas",
             "accent": "teal"
           },
           "children": [
@@ -14105,6 +15075,20 @@
       "tier": "host",
       "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
       "props": {
+        "imageSources": {
+          "kind": "list",
+          "of": "colorValues"
+        },
+        "imageMenu": {
+          "kind": "list",
+          "of": "menuSections"
+        },
+        "imageMenuLabel": {
+          "kind": "message"
+        },
+        "imageMissing": {
+          "kind": "message"
+        },
         "documentKey": {
           "kind": "text",
           "required": true
@@ -14224,12 +15208,53 @@
         }
       },
       "events": {
+        "imageRead": {
+          "payload": {
+            "src": "text"
+          }
+        },
+        "imageSelect": {
+          "payload": {
+            "pos": "number",
+            "src": "text",
+            "rounded": "boolean",
+            "fitHeight": "boolean",
+            "mode": "text",
+            "width": "number",
+            "height": "number",
+            "from": "number",
+            "to": "number",
+            "count": "number",
+            "roundMixed": "boolean",
+            "limitMixed": "boolean"
+          }
+        },
+        "imageAction": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "imageEdited": {
+          "payload": {
+            "src": "text",
+            "data": "text"
+          }
+        },
+        "imageEditError": {},
         "change": {
           "payload": {
             "value": "text"
           }
         },
         "ready": {},
+        "position": {
+          "payload": {
+            "key": "text",
+            "from": "number",
+            "to": "number",
+            "scroll": "number"
+          }
+        },
         "findResult": {
           "payload": {
             "count": "number",
@@ -14251,7 +15276,8 @@
         },
         "rewriteCapture": {
           "payload": {
-            "text": "text"
+            "text": "text",
+            "caret": "boolean"
           }
         },
         "rewriteBegan": {
@@ -15215,6 +16241,11 @@
           "of": "noteBlocks",
           "required": true,
           "description": "The note as the Markdown bridge parses it."
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Keep the selected reading block clear and dim the rest. Choose a block with the pointer, or focus the document and use Up/Down."
         }
       },
       "events": {},
@@ -15228,6 +16259,15 @@
         "name": "The page's landmarks name it; headings keep their levels."
       },
       "fixtures": [
+        {
+          "name": "paragraph focus",
+          "props": {
+            "blocks": {
+              "get": "vm.gallery.noteBlocks"
+            },
+            "focusMode": true
+          }
+        },
         {
           "name": "every block",
           "props": {
