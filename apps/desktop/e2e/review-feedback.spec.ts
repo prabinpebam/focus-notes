@@ -57,7 +57,10 @@ for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and p
     await pointerModality(l.page);
     await expect(target.getByRole("button", { name: "Unpin Pin target", exact: true, includeHidden: true })).toBeHidden();
     await expect(target.locator('[data-file-icon="pin"]')).toBeVisible();
-    expect(await label.boundingBox()).toEqual(labelBox);
+    const pinnedRowBox = (await target.boundingBox())!, pinnedLabelBox = (await label.boundingBox())!;
+    expect({ ...pinnedLabelBox, x: pinnedLabelBox.x - pinnedRowBox.x, y: pinnedLabelBox.y - pinnedRowBox.y }).toEqual({
+      ...labelBox, x: labelBox.x - rowBox.x, y: labelBox.y - rowBox.y,
+    });
     await target.focus();
     await l.page.keyboard.press("Tab");
     await expect(target.getByRole("button", { name: "Unpin Pin target", exact: true })).toBeFocused();
