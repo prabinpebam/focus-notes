@@ -274,11 +274,11 @@
                                   "align": "center"
                                 },
                                 "children": [
-                                  { "type": "ProjectMark", "when": { "expr": { "==": [{ "get": "vm.project.logo" }, "upload"] } }, "props": { "logo": "upload", "src": { "get": "vm.project.logoSrc" }, "accent": { "get": "vm.project.accent" }, "size": "m", "selected": true } },
-                                  { "type": "Button", "props": { "label": { "t": "project.settings.upload" }, "variant": "secondary", "disabled": { "expr": { "==": [{ "get": "vm.project.logoCommit" }, "pending"] } } }, "on": { "press": { "run": "project.upload" } } },
-                                  { "type": "Text", "props": { "value": { "get": "vm.project.uploadError" }, "tone": "danger" } }
+                                  { "type": "ProjectMark", "when": { "expr": { "==": [{ "get": "vm.project.logoChoice" }, "upload"] } }, "props": { "logo": "upload", "src": { "get": "vm.project.uploadSrc" }, "accent": { "get": "vm.project.accent" }, "size": "m", "selected": true } },
+                                  { "type": "Button", "props": { "label": { "t": "project.settings.upload" }, "variant": "secondary", "commit": { "get": "vm.project.uploadCommit" }, "busy": { "expr": { "==": [{ "get": "vm.project.logoCommit" }, "pending"] } } }, "on": { "press": { "run": "project.upload" } } }
                                 ]
-                              }
+                              },
+                              { "type": "StatusRow", "when": { "get": "vm.project.uploadFailed" }, "props": { "message": { "get": "vm.project.uploadError" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "project.upload" } } }
                             ]
                           }
                         ]
@@ -288,7 +288,7 @@
                         "when": { "get": "vm.project.logoFailed" },
                         "props": { "gap": "s", "align": "center", "wrap": true },
                         "children": [
-                          { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.logo", "command": "project.logo", "value": { "get": "vm.project.logoChoice" } } } } },
+                          { "type": "StatusRow", "props": { "message": { "get": "vm.project.logoError" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "project.logoRetry" } } },
                           { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.logo" } } } }
                         ]
                       },

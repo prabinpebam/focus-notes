@@ -166,6 +166,55 @@ test("reading sliders preview keyboard changes, retain failed values, retry and 
   } finally { restore(); await closeTestApp(l); }
 });
 
+test("SVG logo upload keeps its source on failure, retries without a picker and preserves the saved mark on Revert", async () => {
+  const dirs = tempDirs();
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  const logoFile = join(dirs.docs, "review-logo.svg");
+  writeFileSync(logoFile, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/></svg>');
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  try {
+    await l.app.evaluate(({ dialog }, file) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] });
+    }, logoFile);
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    const upload = settings.getByRole("button", { name: "Upload SVG…", exact: true });
+    if (existsSync(stateFile)) renameSync(stateFile, backup);
+    mkdirSync(stateFile);
+    await upload.click();
+    await expect(settings.getByText("Couldn't save this logo. Your choice is kept here; the saved logo is unchanged. Try again or revert.", { exact: true })).toBeVisible();
+    await expect(settings.locator('img[src^="data:image/svg+xml"]')).toBeVisible();
+    restore();
+    await l.app.evaluate(({ dialog }) => {
+      dialog.showOpenDialog = async () => { throw new Error("Retry must not reopen the picker"); };
+    });
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    const saved = () => Object.values(JSON.parse(readFileSync(stateFile, "utf8")).projectSettings ?? {})[0] as { logo: string; logoSrc: string } | undefined;
+    await expect.poll(() => saved()?.logo).toBe("upload");
+    expect(saved()?.logoSrc).toMatch(/^data:image\/svg\+xml/);
+    await settings.getByRole("button", { name: "Rocket", exact: true }).click();
+    await expect.poll(() => saved()?.logo).toBe("rocket");
+    await settings.getByRole("button", { name: "Close", exact: true }).click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await l.app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, logoFile);
+    renameSync(stateFile, backup);
+    mkdirSync(stateFile);
+    await upload.click();
+    await expect(settings.getByRole("button", { name: "Revert", exact: true })).toBeVisible();
+    restore();
+    await settings.getByRole("button", { name: "Revert", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Rocket", exact: true })).toHaveAttribute("aria-pressed", "true");
+    expect(saved()?.logo).toBe("rocket");
+  } finally { restore(); await closeTestApp(l); }
+});
+
 test("notification Retry stays above Settings and reachable with F6 while the modal stays open", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

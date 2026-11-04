@@ -23,6 +23,7 @@ export function registerProject(ctx: {
 }) {
   const { store, commands, viewModels, catalog } = ctx;
   const transient = { fontOpen: "no", themeOpen: "no", fontHover: "", themeHover: "", uploadError: "" };
+  let selectingLogo = false;
   const folder = () => store.state.workspace.folder ?? "";
   const settings = (): ProjectSettings => ctx.appState().projectSettings?.[folder()] ?? {
     name: folder().split(/[\\/]/).filter(Boolean).at(-1) ?? catalog.format("project.settings.title"),
@@ -63,18 +64,53 @@ export function registerProject(ctx: {
     },
   });
   for (const field of ["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)]) reg(field);
+  const logoCommit = () => store.state.commits.find((item) => item.target === "vm.project.logo");
+  const uploadSource = (value: unknown) => {
+    if (!value || typeof value !== "object" || !("logoSrc" in value) || typeof value.logoSrc !== "string"
+      || !("folder" in value) || value.folder !== folder()) throw new Error("The logo belongs to another project");
+    return value.logoSrc;
+  };
+  commands.register<{ value: unknown }>({
+    id: "project.logoUpload", title: "project.settings.upload",
+    run: async ({ value }) => {
+      await save({ logo: "upload", logoSrc: uploadSource(value) });
+      changed();
+    },
+  });
+  const retryLogo = async () => {
+    const commit = logoCommit();
+    if (!commit || commit.phase !== "failed") throw new Error("No failed logo change to retry");
+    try {
+      await commands.run("commit.run", { target: commit.target, command: commit.command, value: commit.value, label: catalog.format("project.settings.logo") });
+    } catch (error) {
+      if (logoCommit()?.phase !== "failed") throw error;
+      console.error("Project logo commit failed", error);
+    }
+  };
+  commands.register({ id: "project.logoRetry", title: "commit.retry", run: retryLogo });
   commands.register({
     id: "project.upload", title: "project.settings.upload", enabled: () => Boolean(ctx.bridge.projects),
     run: async () => {
+      if (selectingLogo || logoCommit()?.phase === "pending") return;
+      const key = folder();
+      if (!key) throw new Error("No project is open");
+      selectingLogo = true;
       transient.uploadError = ""; changed();
       try {
         const logoSrc = await ctx.bridge.projects!.upload();
         if (logoSrc === undefined) return;
-        await save({ logo: "upload", logoSrc });
-      } catch {
-        transient.uploadError = catalog.format("project.settings.uploadFailed");
+        if (key !== folder()) throw new Error("The project changed while choosing a logo");
+        await commands.run("commit.run", {
+          target: "vm.project.logo", command: "project.logoUpload", value: { folder: key, logoSrc },
+          label: catalog.format("project.settings.logo"),
+        });
+      } catch (error) {
+        console.error("Project logo upload failed", error);
+        if (logoCommit()?.phase !== "failed") transient.uploadError = catalog.format("project.settings.uploadFailed");
+      } finally {
+        selectingLogo = false;
+        changed();
       }
-      changed();
     },
   });
   commands.register({
@@ -90,6 +126,9 @@ export function registerProject(ctx: {
     commits: ["name", "accent", "logo", "watermark", "font", "theme"],
     schema: { type: "object", properties: {
       available: { type: "boolean" }, local: { type: "boolean" }, watermarkOn: { type: "boolean" },
+      uploadChoosing: { type: "boolean" }, uploadFailed: { type: "boolean" },
+      uploadCommit: { type: "string", enum: ["rest", "pending", "confirmed", "failed"] },
+      uploadSrc: text, logoError: text,
       ...Object.fromEntries(["name", "accent", "logo", "logoSrc", "watermark", "font", "theme", "fontValue", "themeValue", "scopeFont", "scopeTheme", "filesHeading", ...Object.keys(transient)].map((field) => [field, text])),
       accents: { type: "array", items: option }, logos: { type: "array", items: option },
       fonts: { type: "array", items: option }, watermarkOptions: { type: "array", items: option },
@@ -108,7 +147,7 @@ export function registerProject(ctx: {
         const commit = state.commits.find((item) => item.target === `vm.project.${field}`);
         return {
           phase: commit?.phase ?? "rest",
-          value: commit && commit.phase !== "confirmed" && typeof commit.value === "string" ? commit.value : current[field],
+          value: commit && commit.phase !== "confirmed" ? typeof commit.value === "string" ? commit.value : field === "logo" ? "upload" : current[field] : current[field],
           failed: commit?.phase === "failed",
         };
       };
@@ -120,8 +159,14 @@ export function registerProject(ctx: {
       }));
       const fontChoice = choiceOf("font").value;
       const themeChoice = choiceOf("theme").value;
+      const logo = logoCommit();
+      const uploaded = logo?.command === "project.logoUpload";
+      const source = uploaded && logo.value && typeof logo.value === "object" && "logoSrc" in logo.value && typeof logo.value.logoSrc === "string" ? logo.value.logoSrc : current.logoSrc ?? "";
       return {
         ...current, ...transient, ...choices, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
+        uploadChoosing: selectingLogo, uploadFailed: Boolean(transient.uploadError),
+        uploadCommit: selectingLogo || logo?.phase === "pending" && uploaded ? "pending" : uploaded ? logo.phase : "rest",
+        uploadSrc: source, logoError: catalog.format(uploaded ? "project.settings.uploadSaveFailed" : "commit.choiceFailed"),
         accent: ctx.bridge.projects?.local ? "app" : current.accent,
         filesHeading: catalog.format(ctx.bridge.projects?.local ? "quick.title" : "files.heading"),
         scopeFont: transient.fontHover || current.font, scopeTheme: transient.themeHover || current.theme,
