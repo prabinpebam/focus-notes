@@ -182,7 +182,7 @@ test("Open and Recent empty first actions choose a real project and replace thei
   } finally { await closeTestApp(l); }
 });
 
-test("Site preview first actions use Files and real content replaces all three empty treatments", async () => {
+test("Site preview first actions use Files and real content replaces and clears all three reachable empty lists", async () => {
   const { dirs } = instance();
   const note = join(dirs.docs, "private", "notes", "welcome.md"), bytes = readFileSync(note);
   rmSync(join(dirs.docs, "notes", "hello.md"));
@@ -206,11 +206,17 @@ test("Site preview first actions use Files and real content replaces all three e
       await settings.getByRole("button", { name: "Preview site…", exact: true }).click();
       await expect(preview).toBeVisible();
     };
-    for (const [action, title] of [["Add link", "No navigation links"], ["Add section", "No sections yet"], ["Choose note", "No published notes"]] as const) {
+    for (const [action, title, detail] of [
+      ["Add link", "No navigation links", "Choose a published note for the navigation."],
+      ["Add section", "No sections yet", "Group published notes into a section."],
+      ["Choose note", "No published notes", "Choose a note to include in your site."],
+    ] as const) {
       await openPreview();
       for (const title of ["No navigation links", "No sections yet", "No published notes"]) await expect(preview.getByText(title, { exact: true })).toBeVisible();
       const empty = preview.locator("[data-tone=neutral]").filter({ hasText: title });
-      expect(await empty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBeGreaterThan(0);
+      expect(await empty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBe(160);
+      expect(await empty.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(160);
+      await expect(empty).toContainText(detail);
       await preview.getByRole("button", { name: action, exact: true }).click();
       await expect(preview).toHaveCount(0);
       await expect(files).toBeVisible();
@@ -225,6 +231,17 @@ test("Site preview first actions use Files and real content replaces all three e
     await expect(preview.getByText("Home sample", { exact: true })).toBeVisible();
     await preview.getByRole("button", { name: "Essays", exact: true }).click();
     await expect(preview.getByText("Section sample", { exact: true })).toBeVisible();
+    await preview.getByRole("button", { name: "Close preview", exact: true }).click();
+    rmSync(join(dirs.docs, "notes", "home.md"));
+    rmSync(join(dirs.docs, "notes", "Essays", "second.md"));
+    await l.page.getByRole("dialog", { name: "Settings", exact: true }).getByRole("button", { name: "Close", exact: true }).click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+p" : "Control+Alt+p");
+    await expect(files.getByRole("treeitem").filter({ hasText: "Home sample" })).toHaveCount(0);
+    await expect(files.getByRole("treeitem").filter({ hasText: "Section sample" })).toHaveCount(0);
+    await openPreview();
+    for (const title of ["No navigation links", "No sections yet", "No published notes"]) await expect(preview.getByText(title, { exact: true })).toBeVisible();
+    await expect(preview.getByText("Home sample", { exact: true })).toHaveCount(0);
+    await expect(preview.getByText("Section sample", { exact: true })).toHaveCount(0);
     expect(readFileSync(note)).toEqual(bytes);
     expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
   } finally { await closeTestApp(l); }
