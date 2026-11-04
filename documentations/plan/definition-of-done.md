@@ -7,6 +7,17 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
+### Phase-2 code Copy overlay, a0e29706
+
+The shared CodeBlock uses an absolute top-right IconButton, retaining the supplied localized Copy name/tooltip. Source text fills the code box rather than yielding a column to a text button; token-based top clearance avoids covering source bytes, and line breaks are preserved.
+
+| Scoped check on `a0e29706` | Result |
+| --- | --- |
+| `pnpm tokens`; UI and desktop package typechecks; `pnpm ui:check`; `node tools/check-boundaries.mjs`; desktop build | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "Agents code Copy"` | Passed: real Agents JSON block uses full text width; button is absolute/top-right/icon-only, is named Copy and exposes its keyboard tooltip; copying preserves exact JSON bytes in memory, never the owner's clipboard |
+
+**Try it:** Settings → Agents, then focus or hover the small Copy icon at the code block's top-right. This is fix 4 of 5; Settings scrolling and the combined review candidate remain outstanding.
+
 ### Phase-2 menu description tooltips, f879f991
 
 Shared MenuButton command, choice and submenu content keeps reasons as accessible descriptions rather than visible secondary lines. Tooltip placement reuses the existing Tooltip primitive; unavailable commands remain keyboard reachable, inert and described. No labels or behavior outside menu presentation change.

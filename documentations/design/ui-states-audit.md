@@ -12,6 +12,8 @@
 
 ### Owner feedback queue, 5 November
 
+**Code Copy, `a0e29706`:** shared CodeBlock uses the existing IconButton with accessible Copy name/tooltip, positioned top-right rather than consuming a text column. Code preserves line breaks and fills the available width; token clearance prevents the icon obscuring the source. Native Agents proof checks actual geometry, icon-only content, keyboard tooltip and exact copied bytes using the isolated memory clipboard. Fix 4 of 5; Settings navigation remains.
+
 **Menu descriptions, `f879f991`:** shared command, choice and submenu primitives no longer show secondary explanation rows. Reasons remain stable accessible descriptions, with the shared positioned tooltip on hover or focus; unavailable items stay reachable and cannot run. Native proof checks the Publish reason's clipped one-pixel description, accessible name/description, keyboard focus tooltip and hover tooltip. No per-view copy fork. Fix 3 of 5; code Copy and Settings scrolling remain.
 
 **Structural layers, `b031948f`:** one AppRoot full-app portal now removes dialog/window/fill Layers and modal scrims from panel stacking contexts. Docked/floating panels have distinct named token roles; menus/tooltips remain above overlays and notifications last. Raw-index and portal-ownership guards plus a native Connect-over-Files hit-test pass. [Contract](system/overview.html#window-stacking) and [evidence](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f). This is fix 2 of 5; no new owner candidate yet.
