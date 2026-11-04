@@ -235,6 +235,23 @@ Hover and focus now pause a notification independently. The primitive reports on
 
 Both apps ran invisibly, closed and received own-PID cleanup (`-WhatIf`, then actual). The gallery migrated to fresh worker folder 7, HTTP 200 verified; only folder 6's verified gallery process was stopped, then its clean inactive folder removed. Candidate `0db24cb0` remains the latest inspected build until the next refresh. Withdrawal confirmation and AI groups are next; phase 2 is not complete. No full suite, CI wait or app merge ran.
 
+### Phase-2 irreversible withdrawal, 46c0cb31
+
+The existing access format rejects edits to a withdrawn grant. A subsequent share creates a different ID/link, so Undo cannot honestly restore the same link. The existing item and Settings confirmations remain; both now say that withdrawal cannot be undone and sharing again creates a new link. The publication delay and downloaded-copy limitation remain explicit. No vault or grant restoration mechanism was added.
+
+| Check on `46c0cb31` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\seal\test\access.test.ts` | 68 passed; confirmation before mutation, cancel safety, refused reactivation and new-link identity |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test item-sharing.spec.ts --workers=1 -g "SHR-16: first copy"` | Passed: real local sealing/publication, safe default Cancel, explicit irreversible consequence, cancelled grant unchanged, confirmed withdrawal, old link rejected after publication and exact pre-withdrawal note bytes kept |
+| `pnpm check` | Passed |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed `46c0cb31`: existing project/Reading/compact/empty paths, retained Retry, actual wrapped notification overlap, final editor focus; invisible app closed and own-PID cleanup ran |
+
+The initial sharing fixture opened the new Open surface without a selected note; it now explicitly selects its synthetic Hello note. The second assertion compared the note to its pre-publication text instead of retaining the ID assigned by publication; corrected to compare exact bytes immediately before withdrawal. The final journey passes. Candidate timing inspection initially left its pointer over the newly created pill after dismissing an earlier notice; moving it back to the editor before starting the clock measurement fixes the fixture. The candidate uses the standard renderer focus emulation, never OS focus.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\46c0cb31\Open review build.cmd`. Notification overlap and the prior settings/Reading paths are inspected; withdrawal's proof is the separate synthetic sharing journey, not a real account. D1's requested irreversible alternative is verified. AI groups, remaining recovery/empty/streamed work and complete delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
