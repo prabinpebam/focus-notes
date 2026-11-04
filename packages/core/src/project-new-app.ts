@@ -96,6 +96,7 @@ export function registerProjectNew(ctx: {
       steps = state.created ? steps.filter(step => step.id !== "open").map(step => ({ ...step, status: "done" })) : [{ id: "create", status: "running" }];
       steps.push({ id: "open", status: "waiting" });
       request = state.created ? undefined : crypto.randomUUID();
+      const previousError = state.retrying ? state.error : "";
       if (!state.retrying) { state.error = ""; recovery = undefined; }
       changed();
       try {
@@ -128,6 +129,7 @@ export function registerProjectNew(ctx: {
           state.error = catalog.format(state.created ? "project.new.openFailed" : "project.new.failed");
           console.error("New project failed", recovery, opErrorCode(error));
         }
+        if (state.error === previousError) tracker.announceOutcome(state.error);
       }
       finally { request = undefined; state.pending = false; changed(); }
     },

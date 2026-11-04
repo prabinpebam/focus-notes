@@ -123,8 +123,8 @@ it("a refused local Publish announces no success and Retry emits one acknowledge
   const t = await fixture();
   await t.run("sharing.publishOpen", { path: "/w/notes/b.md" });
   vi.useFakeTimers();
-  const first = deferred<void>(), retry = deferred<void>();
-  const save = vi.spyOn(t.bridge, "saveAppState").mockImplementationOnce(() => first.promise).mockImplementationOnce(() => retry.promise);
+  const first = deferred<void>(), retry = deferred<void>(), accepted = deferred<void>();
+  const save = vi.spyOn(t.bridge, "saveAppState").mockImplementationOnce(() => first.promise).mockImplementationOnce(() => retry.promise).mockImplementationOnce(() => accepted.promise);
   const work = t.run("sharing.publish");
   await vi.advanceTimersByTimeAsync(1000);
   const announced = t.app.store.state.announcement.n;
@@ -136,8 +136,14 @@ it("a refused local Publish announces no success and Retry emits one acknowledge
   const recovery = t.run("sharing.operationRetry");
   await vi.advanceTimersByTimeAsync(1000);
   expect(t.app.store.state.announcement.n).toBe(announced + 1);
-  retry.resolve(); await recovery;
-  expect(save).toHaveBeenCalledTimes(2);
-  expect(t.app.store.state.announcement.n).toBe(announced + 1);
+  retry.reject(new Error("EACCES private-path")); await recovery;
+  expect(t.app.store.state.announcement.n).toBe(announced + 2);
+  expect(t.app.store.state.announcement.text).toBe(en["sharing.operation.saveFailed"]);
+  expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(0);
+  const success = t.run("sharing.operationRetry");
+  await vi.advanceTimersByTimeAsync(1000);
+  accepted.resolve(); await success;
+  expect(save).toHaveBeenCalledTimes(3);
+  expect(t.app.store.state.announcement.n).toBe(announced + 3);
   expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(1);
 });

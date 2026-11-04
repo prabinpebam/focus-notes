@@ -96,12 +96,12 @@ describe("Open", () => {
   });
 
   it("opens a created project again without replaying creation, retaining its choices during Retry", async () => {
-    let creates = 0, opens = 0, finish!: () => void;
+    let creates = 0, opens = 0, finish!: () => void, refuse!: (error: Error) => void;
     const app = appWith({
       parent: async () => "C:\\Projects",
       check: async (_parent, name) => ({ folder: `C:\\Projects\\${name}`, problem: "" }),
       create: async () => { creates++; return book.folder; },
-      open: async () => { if (++opens === 1) throw new Error("notFound"); await new Promise<void>(resolve => { finish = resolve; }); },
+      open: async () => { if (++opens === 1) throw new Error("notFound"); await new Promise<void>((resolve, reject) => { finish = resolve; refuse = reject; }); },
     });
     await app.commands.run("projects.new");
     await app.commands.run("projects.newname", { value: "Book" });
@@ -112,7 +112,16 @@ describe("Open", () => {
     await expect.poll(() => opens).toBe(2);
     expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: true, retrying: true, name: "Book", error: en["project.new.openFailed"] });
     expect(creates).toBe(1);
-    finish(); await retry;
+    vi.useFakeTimers();
+    await vi.advanceTimersByTimeAsync(1000);
+    const announced = app.store.state.announcement.n;
+    refuse(new Error("notFound")); await retry;
+    expect(app.store.state.announcement).toMatchObject({ n: announced + 1, text: en["project.new.openFailed"] });
+    const accepted = app.commands.run("projects.newRecover");
+    await vi.advanceTimersByTimeAsync(1000);
+    finish(); await accepted;
+    expect(creates).toBe(1);
+    expect(opens).toBe(3);
     expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: false, error: "" });
   });
 

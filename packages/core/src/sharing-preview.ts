@@ -46,7 +46,8 @@ export function registerSharingPreview(ctx: {
     if (state.busy) return;
     retry = command;
     parts = labels.map(label => ({ label, status: "waiting" }));
-    set({ busy: true, problem: state.operation === target ? state.problem : "", operation: target, cancelRequested: false, cancelled: false, atomic: false });
+    const previousProblem = state.operation === target ? state.problem : "";
+    set({ busy: true, problem: previousProblem, operation: target, cancelRequested: false, cancelled: false, atomic: false });
     try { await tracker.run(target, message, work, undefined, measure, command === "sharing.publish" ? "none" : "success"); retry = undefined; set({ problem: "" }); }
     catch (error) {
       if (state.cancelRequested && error instanceof DOMException && error.name === "AbortError") {
@@ -58,6 +59,7 @@ export function registerSharingPreview(ctx: {
       console.error("Site preview operation failed", target, opErrorCode(error));
       const problem = catalog.format(command === "sharing.preview" ? "sharing.operation.readFailed" : "sharing.operation.saveFailed");
       set({ problem });
+      if (problem === previousProblem) tracker.announceOutcome(problem);
     }
     finally { set({ busy: false, atomic: false }); }
   };

@@ -723,7 +723,7 @@ describe("PRF-13, D-149: no step waits in silence", () => {
       return { ok: false, cancelled: true, folder: "/kept" };
     };
     t.bridge.firstRun!.cancelClone = async () => {};
-    t.bridge.firstRun!.resumeClone = async () => { resumes++; return { ok: true, folder: "/kept" }; };
+    t.bridge.firstRun!.resumeClone = async () => { resumes++; return resumes === 1 ? { ok: false, cancelled: true, folder: "/kept" } : { ok: true, folder: "/kept" }; };
     await t.app.start();
     await settle();
     const downloading = t.run("firstRun.clone", { id: "ada/notes" });
@@ -742,6 +742,10 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     await t.run("firstRun.clone", { id: "ada/notes" });
     expect(clones).toBe(1);
     expect(resumes).toBe(1);
+    expect(t.app.store.state.announcement).toMatchObject({ n: announced + 1, text: en["firstRun.clone.cancelled"] });
+    expect(t.calls).not.toContain("openWorkspace");
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(resumes).toBe(2);
     expect(t.calls.filter((x) => x === "openWorkspace")).toHaveLength(1);
   });
 

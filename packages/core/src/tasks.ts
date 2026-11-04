@@ -121,6 +121,11 @@ export class TaskTracker {
     this.#clock = clock;
   }
 
+  /** Reannounce an unchanged, retained live outcome after another attempt finishes. */
+  announceOutcome(message: string): void {
+    this.#events.announce(message);
+  }
+
   /** Local live outcomes own their announcement; waits and visible task phases remain tracked. */
   run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string, measure?: string, outcomes: OutcomeAnnouncements = "all"): Promise<T> {
     return this.#run(target, message, work, doneMessage, false, measure, outcomes);

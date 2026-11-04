@@ -165,6 +165,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const state = () => store.state.firstRun;
   const set = (patch: Partial<FirstRunState>) => store.update((s) => ({ ...s, firstRun: { ...s.firstRun, ...patch } }));
   const setWs = (patch: Partial<FirstRunState["workspace"]>) => store.update((s) => ({ ...s, firstRun: { ...s.firstRun, workspace: { ...s.firstRun.workspace, ...patch } } }));
+  const workspaceOutcome = (patch: Partial<FirstRunState["workspace"]>) => {
+    const error = patch.error, repeated = error && error === state().workspace.error;
+    setWs(patch);
+    if (repeated) tracker?.announceOutcome(error);
+  };
   const setSignIn = (patch: Partial<FirstRunState["signIn"]>) => store.update((s) => ({ ...s, firstRun: { ...s.firstRun, signIn: { ...s.firstRun.signIn, ...patch } } }));
   const setLogin = (login: string) => { if (store.state.account.login !== login) store.update((s) => ({ ...s, account: { login } })); };
   const bump = () => set({ focus: state().focus + 1 });
@@ -483,7 +488,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     setWs({ passphrase: "", confirm: "", error: "", field: "", strength: 0, more: false });
     const r = await busy("create", () => bridge.setup!.start({ instance: w.instance, private: w.private, folder: w.folder, publish: w.publish }, passphrase));
     if (r) store.update((s) => ({ ...s, setup: { available: true, report: r } }));
-    else setWs({ error: "firstRun.workspace.error.failed" });
+    else workspaceOutcome({ error: "firstRun.workspace.error.failed" });
     bump();
   });
   reg("firstRun.cancelSetup", async () => {
@@ -497,7 +502,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const options = report.options;
     const resumed = await busy("create", () => bridge.setup!.start(options));
     if (resumed) store.update((s) => ({ ...s, setup: { available: true, report: resumed } }));
-    else setWs({ error: "firstRun.workspace.error.failed" });
+    else workspaceOutcome({ error: "firstRun.workspace.error.failed" });
     bump();
   });
   reg<{ value: string }>("firstRun.setQuery", (a) => {
@@ -516,8 +521,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   commands.register({ id: "firstRun.prevRepo", title: "command.firstRun.prevRepo", shortcut: { default: "Up", handledBy: "repoField" }, layer: "basic", group: "files", run: moveActive(-1) });
   const opened = async (r: WorkspaceResult | undefined) => {
     if (!r) return;
-    if (r.cancelled) return (setWs({ result: r, error: r.ok ? "firstRun.clone.completeKept" : r.folder ? "firstRun.clone.cancelled" : "firstRun.clone.notStarted" }), bump());
-    if (!r.ok) return (setWs({ result: r, error: `firstRun.workspace.problem.${r.problem ?? "failed"}` }), bump());
+    if (r.cancelled) return (workspaceOutcome({ result: r, error: r.ok ? "firstRun.clone.completeKept" : r.folder ? "firstRun.clone.cancelled" : "firstRun.clone.notStarted" }), bump());
+    if (!r.ok) return (workspaceOutcome({ result: r, error: `firstRun.workspace.problem.${r.problem ?? "failed"}` }), bump());
     setWs({ result: r, error: "" });
     await commands.run("firstRun.openWorkspace");
   };
