@@ -201,9 +201,14 @@ export interface ProjectEntry {
 export interface AiSettingsView { writer: string; connections: import("./ai-providers.ts").AiConnectionView[] }
 /** A connection being added or changed; `key` crosses once, and an empty one keeps the saved key. */
 export interface AiConnectionInput { id?: string; provider: string; name: string; endpoint: string; model: string; deployment?: string; apiVersion?: string; account?: string; key?: string }
+export interface AiConnectionDetailInput { id?: string; provider: string; field: "name" | "endpoint" | "model" | "deployment" | "apiVersion" | "account"; value: string }
 export interface AiBridge {
   settings(): Promise<AiSettingsView>;
   save(input: AiConnectionInput): Promise<AiSettingsView>;
+  /** One independent detail. Never accepts a key or contacts a provider. */
+  saveDetail(input: AiConnectionDetailInput): Promise<AiSettingsView & { id: string }>;
+  /** Provider-check a synthetic request before sealing a replacement key durably. */
+  saveKey(input: { id: string; key: string }): Promise<AiSettingsView>;
   remove(id: string): Promise<AiSettingsView>;
   writer(id: string): Promise<AiSettingsView>;
   /** One short synthetic request to the saved connection; never note text. Rejects with a reason code. */

@@ -1228,6 +1228,25 @@
                                 }
                               },
                               {
+                                "type": "Text",
+                                "props": {
+                                  "role": "label",
+                                  "value": {
+                                    "t": "ai.details.heading"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "ai.details.hint"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
                                 "type": "MenuButton",
                                 "props": {
                                   "label": {
@@ -1239,6 +1258,12 @@
                                   },
                                   "sections": {
                                     "get": "vm.ai.providerMenu"
+                                  },
+                                  "busy": {
+                                    "get": "vm.ai.formPending"
+                                  },
+                                  "commit": {
+                                    "get": "vm.ai.providerCommit"
                                   }
                                 },
                                 "on": {
@@ -1251,6 +1276,64 @@
                                     }
                                   }
                                 }
+                              },
+                              {
+                                "type": "Stack",
+                                "when": {
+                                  "get": "vm.ai.providerFailed"
+                                },
+                                "props": {
+                                  "gap": "s"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "t": "commit.choiceFailed"
+                                      },
+                                      "role": "caption",
+                                      "tone": "danger"
+                                    }
+                                  },
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "s"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "label": {
+                                            "t": "commit.retry"
+                                          },
+                                          "size": "s"
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "ai.retryProvider"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "label": {
+                                            "t": "commit.revert"
+                                          },
+                                          "variant": "subtle",
+                                          "size": "s"
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "ai.revertProvider"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ]
                               },
                               {
                                 "type": "Text",
@@ -1279,18 +1362,7 @@
                                     "t": "ai.name"
                                   },
                                   "value": {
-                                    "get": "vm.ai.name"
-                                  }
-                                },
-                                "on": {
-                                  "change": {
-                                    "run": "ai.edit",
-                                    "args": {
-                                      "field": "name",
-                                      "value": {
-                                        "get": "event.value"
-                                      }
-                                    }
+                                    "bind": "vm.ai.name"
                                   }
                                 }
                               },
@@ -1304,21 +1376,10 @@
                                     "t": "ai.endpoint"
                                   },
                                   "value": {
-                                    "get": "vm.ai.endpoint"
+                                    "bind": "vm.ai.endpoint"
                                   },
                                   "type": "url",
                                   "required": true
-                                },
-                                "on": {
-                                  "change": {
-                                    "run": "ai.edit",
-                                    "args": {
-                                      "field": "endpoint",
-                                      "value": {
-                                        "get": "event.value"
-                                      }
-                                    }
-                                  }
                                 }
                               },
                               {
@@ -1331,20 +1392,9 @@
                                     "t": "ai.account"
                                   },
                                   "value": {
-                                    "get": "vm.ai.account"
+                                    "bind": "vm.ai.account"
                                   },
                                   "required": true
-                                },
-                                "on": {
-                                  "change": {
-                                    "run": "ai.edit",
-                                    "args": {
-                                      "field": "account",
-                                      "value": {
-                                        "get": "event.value"
-                                      }
-                                    }
-                                  }
                                 }
                               },
                               {
@@ -1357,20 +1407,9 @@
                                     "t": "ai.deployment"
                                   },
                                   "value": {
-                                    "get": "vm.ai.deployment"
+                                    "bind": "vm.ai.deployment"
                                   },
                                   "required": true
-                                },
-                                "on": {
-                                  "change": {
-                                    "run": "ai.edit",
-                                    "args": {
-                                      "field": "deployment",
-                                      "value": {
-                                        "get": "event.value"
-                                      }
-                                    }
-                                  }
                                 }
                               },
                               {
@@ -1383,18 +1422,7 @@
                                     "t": "ai.apiVersion"
                                   },
                                   "value": {
-                                    "get": "vm.ai.apiVersion"
-                                  }
-                                },
-                                "on": {
-                                  "change": {
-                                    "run": "ai.edit",
-                                    "args": {
-                                      "field": "apiVersion",
-                                      "value": {
-                                        "get": "event.value"
-                                      }
-                                    }
+                                    "bind": "vm.ai.apiVersion"
                                   }
                                 }
                               },
@@ -1414,20 +1442,9 @@
                                         "t": "ai.model"
                                       },
                                       "value": {
-                                        "get": "vm.ai.model"
+                                        "bind": "vm.ai.model"
                                       },
                                       "required": true
-                                    },
-                                    "on": {
-                                      "change": {
-                                        "run": "ai.edit",
-                                        "args": {
-                                          "field": "model",
-                                          "value": {
-                                            "get": "event.value"
-                                          }
-                                        }
-                                      }
                                     }
                                   },
                                   {
@@ -1465,11 +1482,14 @@
                                           },
                                           "sections": {
                                             "get": "vm.ai.modelMenu"
+                                          },
+                                          "commit": {
+                                            "get": "vm.ai.modelCommit"
                                           }
                                         },
                                         "on": {
                                           "action": {
-                                            "run": "ai.model",
+                                            "run": "ai.chooseModel",
                                             "args": {
                                               "value": {
                                                 "get": "event.id"
@@ -1513,6 +1533,15 @@
                                   {
                                     "type": "Text",
                                     "props": {
+                                      "role": "label",
+                                      "value": {
+                                        "t": "ai.key.heading"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
                                       "value": {
                                         "get": "vm.ai.keyState"
                                       },
@@ -1527,17 +1556,47 @@
                                         "get": "vm.ai.keyLabel"
                                       },
                                       "saveLabel": {
-                                        "t": "ai.save"
+                                        "t": "ai.key.save"
+                                      },
+                                      "pendingLabel": {
+                                        "t": "ai.key.checking"
+                                      },
+                                      "savedLabel": {
+                                        "t": "ai.key.confirmed"
+                                      },
+                                      "commit": {
+                                        "get": "vm.ai.keyCommit"
+                                      },
+                                      "entryScope": {
+                                        "get": "vm.ai.keyScope"
+                                      },
+                                      "error": {
+                                        "get": "vm.ai.keyError"
+                                      },
+                                      "retryLabel": {
+                                        "t": "commit.retry"
+                                      },
+                                      "revertLabel": {
+                                        "t": "commit.revert"
+                                      },
+                                      "disabled": {
+                                        "get": "vm.ai.cannotSaveKey"
+                                      },
+                                      "disabledReason": {
+                                        "t": "ai.key.saveReason"
                                       }
                                     },
                                     "on": {
                                       "save": {
-                                        "run": "ai.save",
+                                        "run": "ai.saveKey",
                                         "args": {
                                           "key": {
                                             "get": "event.key"
                                           }
                                         }
+                                      },
+                                      "revert": {
+                                        "run": "ai.revertKey"
                                       }
                                     }
                                   }
@@ -1554,35 +1613,16 @@
                                     "type": "Button",
                                     "props": {
                                       "label": {
-                                        "t": "ai.cancel"
+                                        "get": "vm.ai.formCloseLabel"
                                       },
-                                      "variant": "subtle"
+                                      "variant": "subtle",
+                                      "busy": {
+                                        "get": "vm.ai.formPending"
+                                      }
                                     },
                                     "on": {
                                       "press": {
                                         "run": "ai.cancel"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "Button",
-                                    "when": {
-                                      "get": "vm.ai.noKeyField"
-                                    },
-                                    "props": {
-                                      "label": {
-                                        "t": "ai.save"
-                                      },
-                                      "disabled": {
-                                        "get": "vm.ai.cannotSave"
-                                      },
-                                      "disabledReason": {
-                                        "t": "ai.save.reason"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "ai.save"
                                       }
                                     }
                                   }

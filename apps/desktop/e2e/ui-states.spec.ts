@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
@@ -19,6 +20,136 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+test("AI details commit independently and key Save checks before persistence, retaining failures and secrets locally", async () => {
+  test.setTimeout(120_000);
+  const dirs = tempDirs();
+  const file = join(dirs.userData, DATA_FILES.ai), backup = `${file}.before-failure`;
+  const note = join(dirs.docs, "ai-commits.md");
+  writeFileSync(note, "# AI commits\n\nThese note words must never enter a key check.\n");
+  const noteBytes = readFileSync(note);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+  const requests: string[] = [];
+  let hold = true, status = 200, respond: (() => void) | undefined;
+  const release = () => { const finish = respond; respond = undefined; finish?.(); };
+  const server = createServer((req, res) => {
+    let body = "";
+    req.on("data", chunk => { body += String(chunk); });
+    req.on("end", () => {
+      requests.push(body);
+      const finish = () => {
+        res.writeHead(status, { "content-type": "application/json" });
+        res.end(JSON.stringify({ choices: [{ message: { content: "OK" } }] }));
+      };
+      if (hold) respond = finish; else finish();
+    });
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Synthetic provider did not bind");
+  writeFileSync(file, JSON.stringify({
+    version: 2, writer: "synthetic",
+    connections: [{ id: "synthetic", provider: "compatible", name: "AI writing", endpoint: `http://127.0.0.1:${address.port}/v1`, model: "model-a", deployment: "", apiVersion: "", account: "" }],
+  }));
+  const saved = () => JSON.parse(readFileSync(file, "utf8")).connections[0] as { name: string; model: string; key?: string };
+  const restore = () => {
+    if (existsSync(file) && statSync(file).isDirectory()) rmSync(file, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, file);
+  };
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs);
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "AI", exact: true }).click();
+    await settings.getByRole("button", { name: "Change", exact: true }).click();
+    await expect(settings.getByText("Connection details", { exact: true })).toBeVisible();
+    await expect(settings.getByText("Access key", { exact: true })).toBeVisible();
+    const name = settings.getByRole("textbox", { name: "Name", exact: true });
+    const model = settings.getByRole("textbox", { name: "Model", exact: true });
+    await name.fill("Kept writing connection");
+    renameSync(file, backup); mkdirSync(file);
+    await name.press("Tab");
+    await expect(settings.getByText("Couldn't save this change. What you typed is still here.", { exact: true })).toBeVisible();
+    await expect(name).toHaveValue("Kept writing connection");
+    restore();
+    await model.fill("model-b"); await model.press("Tab");
+    await expect.poll(() => saved().model).toBe("model-b");
+    expect(saved().name).toBe("AI writing");
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => saved().name).toBe("Kept writing connection");
+    expect(requests).toHaveLength(0);
+
+    const key = settings.getByLabel("API key (optional)", { exact: true });
+    await key.fill("synthetic-key-one");
+    await settings.getByRole("button", { name: "Save key", exact: true }).click();
+    await expect.poll(() => requests.length).toBe(1);
+    const checking = settings.getByRole("button", { name: "Checking key…", exact: true });
+    await expect(checking).toHaveAttribute("aria-busy", "true");
+    await expect(key).toHaveAttribute("readonly", "");
+    expect(saved().key).toBeUndefined();
+    await expect(key).toHaveValue("synthetic-key-one");
+    await name.fill("Independent during key check"); await name.press("Tab");
+    await expect.poll(() => saved().name).toBe("Independent during key check");
+    expect(saved().key).toBeUndefined();
+    release();
+    await expect(settings.getByRole("button", { name: "Access key saved", exact: true })).toBeVisible();
+    await expect(key).toHaveValue("");
+    const sealed = saved().key;
+    expect(sealed).toBeTruthy();
+    expect(readFileSync(file, "utf8")).not.toContain("synthetic-key-one");
+    await expect(settings.getByRole("button", { name: "Save key", exact: true })).toBeVisible();
+
+    hold = false; status = 401;
+    await key.fill("synthetic-key-two");
+    await settings.getByRole("button", { name: "Save key", exact: true }).click();
+    const kept = settings.getByText(/Your entry is kept here\. The saved key is unchanged/);
+    await expect(kept).toBeVisible();
+    await expect(key).toHaveValue("synthetic-key-two");
+    expect(saved().key).toBe(sealed);
+    await expect(settings.getByRole("button", { name: "Access key saved", exact: true })).toHaveCount(0);
+
+    status = 200; hold = true;
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => requests.length).toBe(3);
+    renameSync(file, backup); mkdirSync(file);
+    release();
+    await expect(settings.getByRole("button", { name: "Save key", exact: true }).locator("[data-border-progress]")).toHaveAttribute("data-border-progress", "failed");
+    await expect(key).toHaveValue("synthetic-key-two");
+    restore();
+    expect(saved().key).toBe(sealed);
+    await settings.getByRole("button", { name: "Revert", exact: true }).click();
+    await expect(key).toHaveValue("");
+    expect(requests).toHaveLength(3);
+    expect(saved().key).toBe(sealed);
+
+    hold = false;
+    await key.fill("synthetic-key-two");
+    await settings.getByRole("button", { name: "Save key", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Access key saved", exact: true })).toBeVisible();
+    await expect(key).toHaveValue("");
+    expect(saved().key).not.toBe(sealed);
+    for (const body of requests) {
+      expect(JSON.parse(body)).toMatchObject({ messages: [{ role: "system", content: "Reply with the single word OK." }, { role: "user", content: "Connection test." }] });
+      expect(body).not.toContain("These note words");
+    }
+    expect(await settings.innerText()).not.toContain("synthetic-key");
+    expect(readFileSync(note)).toEqual(noteBytes);
+    await key.fill("do-not-carry-to-another-destination");
+    const endpoint = settings.getByRole("textbox", { name: "Address", exact: true });
+    await endpoint.fill(`http://127.0.0.1:${address.port}/v2`); await endpoint.press("Tab");
+    await expect(key).toHaveValue("");
+    await expect.poll(() => saved().key).toBeUndefined();
+    expect(requests).toHaveLength(4);
+    await settings.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Change", exact: true })).toBeVisible();
+  } finally {
+    release(); restore();
+    if (l) await closeTestApp(l);
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
+
 test("known-empty wrappers keep their first actions local and filtered Open can clear its search", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);
@@ -32,6 +163,14 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
     await expect(settings.getByText("No AI connections", { exact: true })).not.toBeVisible();
     await settings.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(settings.getByText("No AI connections", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Add connection", exact: true }).click();
+    await settings.getByRole("button", { name: "Service", exact: true }).click();
+    await l.page.getByRole("menuitemcheckbox", { name: "GitHub Copilot (on this computer)", exact: true }).click();
+    await expect(settings.getByRole("textbox", { name: "Model", exact: true })).toHaveValue("auto");
+    await settings.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Change", exact: true })).toBeVisible();
+    await expect(settings.getByText("No AI connections", { exact: true })).toHaveCount(0);
+    expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.ai), "utf8")).connections).toHaveLength(1);
     await settings.getByRole("button", { name: "Close", exact: true }).click();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
     const open = l.page.getByRole("dialog", { name: "Open", exact: true }).or(l.page.getByRole("region", { name: "Open", exact: true }));

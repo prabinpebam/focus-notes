@@ -109,6 +109,42 @@
         "saveLabel": {
           "kind": "message",
           "required": true
+        },
+        "pendingLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "savedLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "entryScope": {
+          "kind": "text",
+          "description": "Non-secret connection/destination identity; changing it clears the local key."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ]
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
+        "revertLabel": {
+          "kind": "message"
+        },
+        "disabled": {
+          "kind": "boolean"
+        },
+        "disabledReason": {
+          "kind": "message"
         }
       },
       "events": {
@@ -116,11 +152,17 @@
           "payload": {
             "key": "text"
           }
+        },
+        "revert": {
+          "payload": {}
         }
       },
       "slots": {},
       "states": [
-        "empty"
+        "empty",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "space.*",
       "a11y": {
@@ -128,7 +170,10 @@
         "name": "label"
       },
       "fixtures": [
-        "empty"
+        "empty",
+        "pending",
+        "confirmed",
+        "failed"
       ]
     },
     {

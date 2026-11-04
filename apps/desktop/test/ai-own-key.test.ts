@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CommandRegistry, MessageCatalog, Store, ViewModelRegistry, type AiBridge } from "@focus-notes/core";
+import { CommandRegistry, CommitTracker, MessageCatalog, Store, ViewModelRegistry, type AiBridge, type CommitView } from "@focus-notes/core";
 import { registerAi } from "@focus-notes/core/ai-app";
 import en from "../../../packages/views/messages/en.json" with { type: "json" };
 import { AiService, reasonOf } from "../src/main/ai-rewrite.ts";
@@ -32,6 +32,8 @@ function owner() {
     settings: () => service.settings() as never, save: (i) => service.save(i) as never, remove: (id) => service.remove(id) as never,
     writer: (id) => service.writer(id) as never, test: (id) => service.test(id) as never, discover: () => service.discover(),
     models: (i) => service.models(i),
+    saveDetail: (input) => service.saveDetail(input),
+    saveKey: (input) => service.saveKey(input),
     rewriteStart: async (id, input) => {
       const abort = new AbortController();
       rewrites.set(id, abort);
@@ -47,7 +49,7 @@ function owner() {
     rewriteCancel: async (id) => rewrites.get(id)?.abort(),
     onRewriteEvent: (l) => ((listener = l), () => { listener = undefined; }),
   };
-  const store = new Store({ note: { status: "ready", key: "k1", path: "C:/ws/notes/a.md" }, ui: { toolbarOpen: false }, workspace: { tree: { roots: [] } }, tasks: [] });
+  const store = new Store({ note: { status: "ready", key: "k1", path: "C:/ws/notes/a.md" }, ui: { toolbarOpen: false }, workspace: { tree: { roots: [] } }, tasks: [], commits: [] as CommitView[] });
   const commands = new CommandRegistry(() => store.state, (r) => store.update(r), "windows");
   const viewModels = new ViewModelRegistry<typeof store.state>();
   const editor: { id: string; text?: string }[] = [];
@@ -55,10 +57,11 @@ function owner() {
   registerAi({
     store, bridge: { ai } as never, catalog: new MessageCatalog("en", en as Record<string, string>), commands, viewModels,
     tracker: { run: async (_target, _message, work) => work() },
+    commits: new CommitTracker(0, commits => store.update(s => ({ ...s, commits }))),
     editorAction: (id, args) => void editor.push({ id, ...(typeof args?.text === "string" ? { text: args.text } : {}) }),
     announce: () => {}, toast: (m) => (toasts.push(m), toasts.length),
   });
-  const settingsVm = () => viewModels.select("vm.ai", store.state) as { connections: { id: string; keyText: string; testText: string }[]; status: string; formOpen: boolean };
+  const settingsVm = () => viewModels.select("vm.ai", store.state) as { connections: { id: string; keyText: string; testText: string }[]; status: string; formOpen: boolean; keyError: string; keyCommit: string };
   return { file, commands, settingsVm, editor, toasts };
 }
 
@@ -72,12 +75,14 @@ describe("the owner's own OpenAI or Anthropic key, from Settings → AI to a rew
       const t = owner();
       const from = fake.seen.length;
 
-      // Settings → AI: Add connection, choose the service, name a model, paste the key, Save.
+      // Details persist independently; only the separate key group checks a provider.
       await t.commands.run("ai.load");
       await t.commands.run("ai.add");
       await t.commands.run("ai.provider", { value: id });
-      await t.commands.run("ai.edit", { field: "model", value: "model-a" });
-      await t.commands.run("ai.save", { key: KEY });
+      await t.commands.run("ai.detail.model", { value: "model-a" });
+      await t.commands.run("ai.saveKey", { key: KEY });
+      expect(t.settingsVm().keyCommit).toBe("confirmed");
+      await t.commands.run("ai.cancel");
       const saved = t.settingsVm();
       expect(saved.formOpen).toBe(false);
       expect(saved.connections).toHaveLength(1);
@@ -112,17 +117,18 @@ describe("the owner's own OpenAI or Anthropic key, from Settings → AI to a rew
     });
   }
 
-  it("a wrong key fails Test with the service's own refusal, in plain words", async () => {
+  it("a wrong key is refused before persistence, in plain words without a Saved claim", async () => {
     fake.use(provider("openai", { key: "the-right-one" }));
     const t = owner();
     await t.commands.run("ai.load");
     await t.commands.run("ai.add");
     await t.commands.run("ai.provider", { value: "openai" });
-    await t.commands.run("ai.edit", { field: "model", value: "model-a" });
-    await t.commands.run("ai.save", { key: KEY });
-    await t.commands.run("ai.test", { value: t.settingsVm().connections[0]!.id });
-    const text = t.settingsVm().connections[0]!.testText;
-    expect(text).toMatch(/^Test failed: /);
+    await t.commands.run("ai.detail.model", { value: "model-a" });
+    await t.commands.run("ai.saveKey", { key: KEY });
+    const text = t.settingsVm().keyError;
+    expect(t.settingsVm()).toMatchObject({ formOpen: true, keyCommit: "failed" });
+    expect(text).toContain("The service refused the key.");
     expect(text).not.toContain(KEY);
+    expect(JSON.parse(readFileSync(t.file, "utf8")).connections[0].key).toBeUndefined();
   });
 });

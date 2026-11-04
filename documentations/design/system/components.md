@@ -125,7 +125,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SiteSection | layout | `rest` | 5 | None |
 | SiteGrid | layout | `rest` | 1 | None |
 | NoteContent | block component | `rest` | 2 | None |
-| SecureKeyField | compound component | `empty` | 1 | None |
+| SecureKeyField | compound component | `empty`, `pending`, `confirmed`, `failed` | 4 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
 | Dialog | compound component | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |

@@ -420,28 +420,31 @@ export class AiService {
     }
   }
   /** A checked connection from the window's input; the key is sealed at once, never kept as text. */
-  #fromInput(input: unknown, old?: Connection): Connection {
+  #fromInput(input: unknown, old?: Connection, detailsOnly = false): Connection {
     const a = (input ?? {}) as Record<string, unknown>;
     const p = aiProvider(a.provider);
     if (!p) throw new Error("invalid-provider");
+    const endpoint = str(a.endpoint) || p.endpoint;
     const c: Connection = {
       id: old?.id ?? randomUUID(), provider: p.id, name: str(a.name, 100) || p.label,
-      endpoint: p.endpointEditable ? normalizeUrl(str(a.endpoint) || p.endpoint) : "",
+      endpoint: p.endpointEditable ? detailsOnly && !endpoint ? "" : normalizeUrl(endpoint) : "",
       model: str(a.model, 200) || (p.shape === "copilot-cli" ? "auto" : ""), deployment: str(a.deployment, 100), apiVersion: str(a.apiVersion, 40), account: str(a.account, 64),
     };
-    const base = baseOf(p, c);
+    if (p.fields.includes("account") && c.account && !/^[A-Za-z0-9]{1,64}$/.test(c.account)) throw new Error("invalid-account");
+    const missingAddress = (p.endpointEditable && !c.endpoint) || (p.fields.includes("account") && !c.account);
+    const base = detailsOnly && missingAddress ? "" : baseOf(p, c);
     // A saved key, and its Test, stay only with the same provider at the same address: a key never follows an edited endpoint (D-259).
     const same = Boolean(old && old.provider === p.id && baseOrEmpty(p, old) === base);
     if (same && old?.key) c.key = old.key;
     if (same && old?.lastTest) c.lastTest = old.lastTest;
     const listed = this.#listed.get(base)?.get(c.model);
     if (listed === true || (listed === undefined && same && old?.modelCloud && old.model === c.model)) c.modelCloud = true;
-    if (p.shape === "azure" ? !/^[\w.-]{1,100}$/.test(c.deployment) : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
+    if (p.shape === "azure" ? !(detailsOnly && !c.deployment) && !/^[\w.-]{1,100}$/.test(c.deployment) : !detailsOnly && !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
     if (typeof a.key === "string" && a.key) {
       if (p.shape === "copilot-cli") throw new Error("invalid-key");
       c.key = this.#seal(a.key);
     }
-    if (p.key === "required" && !c.key) throw new AiError(old?.key && old.provider === p.id ? "key-new-address" : "key-required");
+    if (!detailsOnly && p.key === "required" && !c.key) throw new AiError(old?.key && old.provider === p.id ? "key-new-address" : "key-required");
     // Consent stays only while it covers the same provider, destination and model.
     if (old?.consent && old.consent === consentScope(c)) c.consent = old.consent;
     return c;
@@ -461,6 +464,48 @@ export class AiService {
         s.connections.push(c);
       }
       if (!s.writer && s.connections.length === 1 && at < 0) s.writer = c.id;
+    });
+  }
+  /** One independent detail, without a key or a provider request. Incomplete details remain editable. */
+  async saveDetail(input: unknown): Promise<AiSettings & { id: string }> {
+    const a = (input ?? {}) as Record<string, unknown>;
+    const field = ["name", "endpoint", "model", "deployment", "apiVersion", "account"].find(field => field === a.field);
+    if (!field || typeof a.value !== "string") throw new Error("invalid-field");
+    let id = "";
+    const settings = await this.#change(s => {
+      const old = typeof a.id === "string" ? s.connections.find(c => c.id === a.id) : undefined;
+      if (a.id !== undefined && !old) throw new AiError("connection-unavailable");
+      const c = this.#fromInput({ ...(old?.provider === a.provider ? old : {}), provider: a.provider, [field]: a.value, key: undefined }, old, true);
+      id = c.id;
+      if (old) s.connections = s.connections.map(x => x.id === id ? c : x);
+      else {
+        if (s.connections.length >= MAX_CONNECTIONS) throw new Error("too-many");
+        s.connections.push(c);
+      }
+      const p = aiProvider(c.provider)!;
+      if (!s.writer && (c.model || c.deployment) && (!p.endpointEditable || c.endpoint) && (!p.fields.includes("account") || c.account) && p.key !== "required") s.writer = id;
+    });
+    return { ...settings, id };
+  }
+  /** Check only synthetic text before storing a replacement key; never put an unchecked key on disk. */
+  async saveKey(input: unknown): Promise<AiSettings> {
+    const a = (input ?? {}) as Record<string, unknown>;
+    if (typeof a.id !== "string" || typeof a.key !== "string" || !a.key) throw new Error("invalid-key");
+    await this.#tail;
+    const old = (await this.#read()).connections.find(c => c.id === a.id);
+    if (!old) throw new AiError("connection-unavailable");
+    const checked = this.#fromInput({ ...old, key: a.key }, old);
+    const key = checked.key;
+    if (!key) throw new Error("invalid-key");
+    await this.#checkConnection(checked);
+    const fields = ["provider", "endpoint", "model", "deployment", "apiVersion", "account", "key"] as const;
+    return this.#change(s => {
+      const current = s.connections.find(c => c.id === old.id);
+      if (!current || fields.some(field => current[field] !== old[field])) throw new AiError("connection-unavailable");
+      current.key = key;
+      current.lastTest = { ok: true, at: new Date().toISOString() };
+      delete current.consent;
+      if (!s.writer) s.writer = current.id;
     });
   }
   remove(id: unknown): Promise<AiSettings> {
@@ -518,6 +563,20 @@ export class AiService {
     });
   }
 
+  async #checkConnection(c: Connection): Promise<void> {
+    const p = aiProvider(c.provider)!;
+    if (p.shape === "copilot-cli") {
+      for await (const _text of this.#copilot.stream(SYSTEM, "Reply with the single word OK.", c.model, new AbortController().signal, this.#limit("test", false))) {}
+      return;
+    }
+    if (p.shape === "azure" ? !c.deployment : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
+    const key = this.#open(c);
+    if (p.key === "required" && !key) throw new AiError("key-required");
+    const call = generateCall(p, c, key, "Reply with the single word OK.", "Connection test.", 16);
+    const local = isLoopback(call.url);
+    if (!answered(p, await this.#json(call, this.#limit("test", local), local, MAX_JSON.test))) throw new AiError("provider-format");
+  }
+
   /** Test: one synthetic request for a few tokens to the saved connection, never note text. Settings disclosed it first. */
   async test(id: unknown): Promise<AiSettings> {
     const c = (await this.#read()).connections.find((x) => x.id === id);
@@ -526,14 +585,10 @@ export class AiService {
     const started = performance.now();
     try {
       const p = aiProvider(c.provider)!;
-      if (p.shape === "copilot-cli") {
-        for await (const _text of this.#copilot.stream(SYSTEM, "Reply with the single word OK.", c.model, new AbortController().signal, this.#limit("test", false))) {}
-      } else {
+      await this.#checkConnection(c);
+      if (p.shape !== "copilot-cli") {
         const key = this.#open(c);
-        if (p.key === "required" && !key) throw new AiError("key-required");
-        const call = generateCall(p, c, key, "Reply with the single word OK.", "Connection test.", 16);
-        const local = isLoopback(call.url);
-        if (!answered(p, await this.#json(call, this.#limit("test", local), local, MAX_JSON.test))) throw new AiError("provider-format");
+        const local = isLoopback(baseOf(p, c));
         // Ollama: the Test also learns whether the model runs here or is routed to the cloud.
         const listCall = p.shape === "ollama" ? modelsCall(p, c, key) : undefined;
         if (listCall) {
@@ -626,6 +681,7 @@ export class AiService {
     const c = s.connections.find((x) => x.id === s.writer);
     if (!c) throw new AiError("not-configured");
     const p = aiProvider(c.provider)!;
+    if (p.shape === "azure" ? !c.deployment : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
     if (p.shape === "copilot-cli") {
       const started = performance.now();
       let first = true;

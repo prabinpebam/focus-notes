@@ -253,6 +253,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   ai: {
     settings: () => ipcRenderer.invoke("ai:settings"),
     save: (input: unknown) => ipcRenderer.invoke("ai:save", input),
+    saveDetail: (input: unknown) => ipcRenderer.invoke("ai:saveDetail", input),
+    saveKey: (input: unknown) => ipcRenderer.invoke("ai:saveKey", input),
     remove: (id: string) => ipcRenderer.invoke("ai:remove", id),
     writer: (id: string) => ipcRenderer.invoke("ai:writer", id),
     test: (id: string) => ipcRenderer.invoke("ai:test", id),

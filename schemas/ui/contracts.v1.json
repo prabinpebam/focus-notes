@@ -181,6 +181,42 @@
         "saveLabel": {
           "kind": "message",
           "required": true
+        },
+        "pendingLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "savedLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "entryScope": {
+          "kind": "text",
+          "description": "Non-secret connection/destination identity; changing it clears the local key."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ]
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
+        "revertLabel": {
+          "kind": "message"
+        },
+        "disabled": {
+          "kind": "boolean"
+        },
+        "disabledReason": {
+          "kind": "message"
         }
       },
       "events": {
@@ -188,11 +224,17 @@
           "payload": {
             "key": "text"
           }
+        },
+        "revert": {
+          "payload": {}
         }
       },
       "slots": {},
       "states": [
-        "empty"
+        "empty",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "space.*",
       "a11y": {
@@ -211,6 +253,85 @@
             },
             "saveLabel": {
               "t": "gallery.action"
+            },
+            "pendingLabel": {
+              "t": "ai.key.checking"
+            },
+            "savedLabel": {
+              "t": "ai.key.confirmed"
+            },
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "saveLabel": {
+              "t": "gallery.action"
+            },
+            "pendingLabel": {
+              "t": "ai.key.checking"
+            },
+            "savedLabel": {
+              "t": "ai.key.confirmed"
+            },
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "saveLabel": {
+              "t": "gallery.action"
+            },
+            "pendingLabel": {
+              "t": "ai.key.checking"
+            },
+            "savedLabel": {
+              "t": "ai.key.confirmed"
+            },
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "saveLabel": {
+              "t": "gallery.action"
+            },
+            "pendingLabel": {
+              "t": "ai.key.checking"
+            },
+            "savedLabel": {
+              "t": "ai.key.confirmed"
+            },
+            "commit": "failed",
+            "error": {
+              "t": "ai.key.kept"
+            },
+            "retryLabel": {
+              "t": "commit.retry"
+            },
+            "revertLabel": {
+              "t": "commit.revert"
             }
           }
         }

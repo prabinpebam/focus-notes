@@ -13,7 +13,7 @@ import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import type { TaskTracker, TaskView } from "./tasks.ts";
+import type { CommitTracker, CommitView, TaskTracker, TaskView } from "./tasks.ts";
 import type { WorkspaceTree } from "./workspace.ts";
 
 interface S {
@@ -21,6 +21,7 @@ interface S {
   ui: { toolbarOpen: boolean };
   workspace: { tree: WorkspaceTree };
   tasks: TaskView[];
+  commits: CommitView[];
 }
 
 interface Ctx<St extends S> {
@@ -30,6 +31,7 @@ interface Ctx<St extends S> {
   commands: CommandRegistry<St>;
   viewModels: ViewModelRegistry<St>;
   tracker: Pick<TaskTracker, "run">;
+  commits: Pick<CommitTracker, "run" | "clear">;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   announce: (text: string) => void;
   toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }) => unknown;
@@ -58,7 +60,7 @@ const blankDraft = (provider = "ollama"): Draft => {
   return { provider, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: p.shape === "copilot-cli" ? "auto" : "", deployment: "", apiVersion: p.shape === "azure" ? AZURE_API_VERSION : "", account: "" };
 };
 
-export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, tracker, editorAction, announce, toast }: Ctx<St>) {
+export function registerAi<St extends S>({ store, bridge, catalog, commands, viewModels, tracker, commits, editorAction, announce, toast }: Ctx<St>) {
   const ai = bridge.ai;
   const changed = () => store.update((s) => ({ ...s }));
   const t = (key: string, args?: Record<string, unknown>) => catalog.format(key, args);
@@ -89,6 +91,13 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let choosingWriter = false;
   const testing = new Set<string>();
   const testErrors = new Map<string, string>();
+  let writing = Promise.resolve();
+  let formGeneration = 0;
+  let foundChoice: number | undefined;
+  let keyError = "";
+  const detailPending = () => store.state.commits.some(c => c.target.startsWith("vm.ai.") && c.target !== "vm.ai.key" && c.phase === "pending");
+  const formPending = () => detailPending() || store.state.commits.some(c => c.target === "vm.ai.key" && c.phase === "pending");
+  const keyScope = () => JSON.stringify([formGeneration, draft.provider, draft.endpoint, draft.account]);
 
   const where = (provider: string, endpoint: string, model = "", modelCloud = false) =>
     t(aiRunsInCloud(provider, endpoint, model, modelCloud) ? "ai.where.cloud" : "ai.where.local");
@@ -142,15 +151,17 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
 
   viewModels.register({
     id: "vm.ai",
+    setters: Object.fromEntries(DRAFT_FIELDS.map(field => [field, `ai.detail.${field}`])),
+    commits: DRAFT_FIELDS,
     // Its values live in this module, not in state: selected again on every change (`changed()`).
     reads: "*",
     schema: { type: "object", properties: {
       ...Object.fromEntries([
         "writerName", "status", "formTitle", "providerName", "keyLabel", "keyState", "destination", "testInfo", "modelsStatus", "discoverStatus",
-        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup",
+        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup", "keyCommit", "keyError", "keyScope", "formCloseLabel", "modelCommit", "providerCommit",
       ].map((k) => [k, { type: "string" as const }])),
       ...Object.fromEntries([
-        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter", "empty",
+        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter", "empty", "formPending", "cannotSaveKey", "providerFailed",
       ].map((k) => [k, { type: "boolean" as const }])),
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
@@ -199,6 +210,13 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         destination: t("ai.destination", { host: destination(draft.provider, draft.endpoint, draft.account), where: where(p.id, draft.endpoint || p.endpoint, draft.model, draftCloud()) }),
         testInfo: t("ai.test.info"),
         status,
+        keyCommit: store.state.commits.find(c => c.target === "vm.ai.key")?.phase ?? "rest",
+        modelCommit: store.state.commits.find(c => c.target === "vm.ai.model")?.phase ?? "rest",
+        providerCommit: store.state.commits.find(c => c.target === "vm.ai.provider")?.phase ?? "rest",
+        providerFailed: store.state.commits.some(c => c.target === "vm.ai.provider" && c.phase === "failed"),
+        keyError, keyScope: keyScope(), formPending: formPending(),
+        formCloseLabel: t(draft.id ? "ai.done" : "ai.cancel"),
+        cannotSaveKey: !draft.id || detailPending() || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
         cannotSave: busy || choosingWriter || (azure ? !draft.deployment.trim() : !draft.model.trim()) || (p.endpointEditable && !draft.endpoint.trim()) || (p.fields.includes("account") && !draft.account.trim()),
       };
     },
@@ -207,16 +225,82 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const reg = (id: string, run: (a: Record<string, unknown>) => unknown, extra: Partial<Parameters<CommandRegistry<St>["register"]>[0]> = {}) =>
     commands.register({ id, title: `command.${id}`, ...extra, run: async (a: Record<string, unknown>) => { await run(a ?? {}); } });
   const input = (): AiConnectionInput => ({ ...(draft.id ? { id: draft.id } : {}), provider: draft.provider, name: draft.name, endpoint: draft.endpoint, model: draft.model, deployment: draft.deployment, apiVersion: draft.apiVersion, account: draft.account });
-  const openForm = (d: Draft, hasKey = false, saved?: AiConnectionView) => { draft = d; draftHasKey = hasKey; draftSaved = saved; models = []; modelsStatus = ""; formOpen = true; status = ""; changed(); };
+  const openForm = (d: Draft, hasKey = false, saved?: AiConnectionView) => {
+    if (formPending()) throw new Error("An AI connection change is still pending");
+    for (const field of [...DRAFT_FIELDS, "key", "provider"]) commits.clear(`vm.ai.${field}`);
+    formGeneration++;
+    foundChoice = undefined;
+    draft = d; draftHasKey = hasKey; draftSaved = saved; models = []; modelsStatus = ""; formOpen = true; status = ""; keyError = ""; changed();
+  };
+  for (const field of DRAFT_FIELDS) reg(`ai.detail.${field}`, a => {
+    if (!ai || !formOpen || typeof a.value !== "string") throw new Error("Invalid AI connection detail");
+    const value = a.value, generation = formGeneration, provider = draft.provider;
+    const saving = writing.then(async () => {
+      const started = performance.now();
+      try {
+        const result = await ai.saveDetail({ ...(draft.id ? { id: draft.id } : {}), provider, field, value });
+        if (generation !== formGeneration) return;
+        apply(result);
+        const saved = connections.find(c => c.id === result.id);
+        if (!saved) throw new Error("Saved AI connection is unavailable");
+        const before = keyScope();
+        draft = { id: saved.id, provider: saved.provider, name: saved.name, endpoint: saved.endpoint, model: saved.model, deployment: saved.deployment, apiVersion: saved.apiVersion, account: saved.account };
+        if (before !== keyScope() && !store.state.commits.some(c => c.target === "vm.ai.key" && c.phase === "pending")) {
+          commits.clear("vm.ai.key"); keyError = "";
+        }
+        draftSaved = saved; draftHasKey = saved.hasKey;
+        if (store.state.commits.some(c => c.target === "vm.ai.provider" && c.phase === "failed")) commits.clear("vm.ai.provider");
+        changed();
+      } finally { performance.measure("fn:ai.saveDetail", { start: started, duration: performance.now() - started }); }
+    });
+    writing = saving.then(() => {}, () => {});
+    return saving;
+  });
+  reg("ai.chooseModel", a => commands.run("commit.run", { target: "vm.ai.model", command: "ai.detail.model", value: a.value, label: t("ai.model") }));
+  reg("ai.saveKey", async a => {
+    const key = typeof a.key === "string" ? a.key : "";
+    delete a.key;
+    if (!ai || !draft.id || formPending() || !key) throw new Error("AI key save is unavailable");
+    const id = draft.id, generation = formGeneration, scope = keyScope(), started = performance.now();
+    keyError = "";
+    try {
+      await commits.run("vm.ai.key", "ai.saveKey", undefined, async () => {
+        const saved = await ai.saveKey({ id, key });
+        if (generation !== formGeneration) return;
+        apply(saved);
+        draftSaved = connections.find(c => c.id === id); draftHasKey = Boolean(draftSaved?.hasKey);
+      });
+      announce(t("ai.key.confirmed"));
+    } catch (error) {
+      keyError = scope !== keyScope() ? t("ai.key.changed") : `${reason(error, "ai.key.error")} ${t("ai.key.kept")}`;
+      console.error("AI key save failed", reasonCode(String((error as Error)?.message ?? "")).code || "save");
+    } finally { performance.measure("fn:ai.saveKey", { start: started, duration: performance.now() - started }); }
+    changed();
+  });
+  reg("ai.revertKey", () => { commits.clear("vm.ai.key"); keyError = ""; changed(); });
 
   reg("ai.load", load);
   reg("ai.add", () => openForm(blankDraft()));
-  reg("ai.cancel", () => { formOpen = false; status = ""; changed(); });
-  reg("ai.provider", (a) => {
+  reg("ai.cancel", () => {
+    if (formPending()) return;
+    formOpen = false; status = ""; changed();
+  });
+  reg("ai.provider", async (a) => {
     const p = aiProvider(a.value);
-    if (!p || p.id === draft.provider) return;
+    if (!p || (p.id === draft.provider && !store.state.commits.some(c => c.target === "vm.ai.provider" && c.phase === "failed"))) return;
     // Another provider's form starts afresh: its own fields, never the last one's key or endpoint.
-    openForm({ ...blankDraft(p.id), ...(draft.id ? { id: draft.id } : {}) });
+    if (p.id !== draft.provider) openForm({ ...blankDraft(p.id), ...(draft.id ? { id: draft.id } : {}) });
+    try {
+      await commits.run("vm.ai.provider", "ai.provider", p.id, () => commands.run("ai.detail.name", { value: draft.name }));
+      announce(t("commit.namedSaved", { name: t("ai.provider") }));
+    } catch (error) {
+      console.error("AI provider save failed", reasonCode(String((error as Error)?.message ?? "")).code || "save");
+    }
+  });
+  reg("ai.retryProvider", () => commands.run("ai.provider", { value: draft.provider }));
+  reg("ai.revertProvider", () => {
+    const saved = connections.find(c => c.id === draft.id);
+    openForm(saved ? { id: saved.id, provider: saved.provider, name: saved.name, endpoint: saved.endpoint, model: saved.model, deployment: saved.deployment, apiVersion: saved.apiVersion, account: saved.account } : blankDraft(), saved?.hasKey, saved);
   });
   reg("ai.edit", (a) => {
     const field = DRAFT_FIELDS.find((f) => f === a.field);
@@ -310,8 +394,8 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       announce(discoverStatus || (found.some((f) => f.provider === "copilot-cli" && f.status === "signed-in") ? t("ai.found.copilot") : ""));
     }
   });
-  reg("ai.useFound", (a) => {
-    const f = found[Number(a.value)];
+  reg("ai.useFound", async (a) => {
+    const index = Number(a.value), f = found[index];
     if (!f) return;
     if (f.provider === "copilot-cli") {
       status = f.status === "signed-in" ? "" : reason(new Error(f.error ?? "provider-error"), "ai.error.provider");
@@ -320,10 +404,15 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     }
     const p = aiProvider(f.provider)!;
     const local = f.models.find((m) => !m.cloud);
-    openForm({ ...blankDraft(p.id), endpoint: f.endpoint, model: local?.id ?? "" });
+    if (!formOpen || foundChoice !== index) {
+      openForm({ ...blankDraft(p.id), endpoint: f.endpoint, model: local?.id ?? "" });
+      foundChoice = index;
+    }
     models = f.models;
     modelsStatus = f.models.length ? "" : t("ai.models.none");
     changed();
+    await commands.run("commit.run", { target: "vm.ai.endpoint", command: "ai.detail.endpoint", value: f.endpoint, label: t("ai.endpoint") });
+    if (local) await commands.run("commit.run", { target: "vm.ai.model", command: "ai.detail.model", value: local.id, label: t("ai.model") });
   });
   reg("ai.models", async () => {
     if (!ai) return;

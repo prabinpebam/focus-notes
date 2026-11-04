@@ -6,13 +6,14 @@
  */
 import { describe, expect, it } from "vitest";
 import { registerAi, reasonCode } from "../src/ai-app.ts";
+import { aiProvider } from "../src/ai-providers.ts";
 import type { AiBridge, AiSettingsView } from "../src/bridge.ts";
 import { CommandRegistry } from "../src/commands.ts";
 import { MessageCatalog } from "../src/messages.ts";
 import { Store } from "../src/store.ts";
 import { ViewModelRegistry } from "../src/view-models.ts";
 import type { WorkspaceTree } from "../src/workspace.ts";
-import type { TaskView } from "../src/tasks.ts";
+import { CommitTracker, type CommitView, type TaskView } from "../src/tasks.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -88,6 +89,14 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
   const ai: AiBridge = {
     settings: async () => settings,
     save: async () => settings, remove: async () => settings, test: async () => settings,
+    saveDetail: async a => {
+      const p = aiProvider(a.provider)!;
+      const old = settings.connections.find(c => c.id === a.id);
+      const saved = old?.provider === p.id ? { ...old } : conn({ id: a.id ?? "created", provider: p.id, name: p.label, endpoint: p.endpointEditable ? p.endpoint : "", model: p.shape === "copilot-cli" ? "auto" : "", hasKey: false });
+      Object.assign(saved, { [a.field]: a.value });
+      settings = { ...settings, connections: [...settings.connections.filter(c => c.id !== saved.id), saved] };
+      return { ...settings, id: saved.id };
+    }, saveKey: async () => settings,
     writer: async (id) => {
       calls.push(`writer:${id}`);
       await opts.writerWait;
@@ -108,6 +117,7 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
     ui: { toolbarOpen: false },
     workspace: { tree: opts.tree ?? { roots: [] } },
     tasks: [] as TaskView[],
+    commits: [] as CommitView[],
   });
   const commands = new CommandRegistry(() => store.state, (r) => store.update(r), "windows");
   const viewModels = new ViewModelRegistry<typeof store.state>();
@@ -115,9 +125,15 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
   const editor: string[] = [];
   const toasts: string[] = [];
   const said: string[] = [];
+  const commits = new CommitTracker(0, commits => store.update(s => ({ ...s, commits })));
+  commands.register<{ target: string; command: string; value: unknown }>({
+    id: "commit.run", title: "commit.save",
+    run: a => commits.run(a.target, a.command, a.value, () => commands.run(a.command, { value: a.value })),
+  });
   registerAi({
     store, bridge: { ai } as never, catalog, commands, viewModels,
     tracker: { run: async (_target, _message, work) => work() },
+    commits,
     editorAction: (id) => void editor.push(id), announce: (t) => void said.push(t),
     toast: (m) => (toasts.push(m), toasts.length),
   });
@@ -132,8 +148,146 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
     if (editor.at(-1) === "rewrite.begin") await commands.run("rewrite.began", { ok: true });
     await settle();
   };
-  return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, ai, setSettings: (v: AiSettingsView) => { settings = v; }, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
+  return { store, commands, settingsVm, calls, editor, toasts, said, vm, begin, rewriteId, ai, commits, setSettings: (v: AiSettingsView) => { settings = v; }, emit: (e: object) => listener?.({ id: rewriteId(), ...e }) };
 }
+
+describe("independent AI detail commits and the separately checked key", () => {
+  it("persists a provider with ready defaults without an unrelated field edit or a second form Save", async () => {
+    const t = setup({ connections: [] });
+    await t.commands.run("ai.load"); await t.commands.run("ai.add");
+    await t.commands.run("ai.provider", { value: "copilot-cli" });
+    expect(t.settingsVm()).toMatchObject({ providerName: "GitHub Copilot (on this computer)", model: "auto", formCloseLabel: "Done", providerCommit: "confirmed" });
+    expect(t.settingsVm().connections).toHaveLength(1);
+    await t.commands.run("ai.cancel");
+    expect(t.settingsVm()).toMatchObject({ empty: false, formOpen: false });
+  });
+
+  it("retains a failed provider choice for Retry and reverts without writing", async () => {
+    const t = setup(); await t.commands.run("ai.load"); await t.commands.run("ai.change", { value: "w" });
+    const save = t.ai.saveDetail;
+    let writes = 0;
+    t.ai.saveDetail = async () => { writes++; throw new Error("storage refused"); };
+    await t.commands.run("ai.provider", { value: "anthropic" });
+    expect(t.settingsVm()).toMatchObject({ providerName: "Anthropic Claude", providerFailed: true });
+    await t.commands.run("ai.revertProvider");
+    expect(t.settingsVm()).toMatchObject({ providerName: "OpenAI", providerFailed: false });
+    expect(writes).toBe(1);
+    await t.commands.run("ai.provider", { value: "anthropic" });
+    t.ai.saveDetail = save;
+    await t.commands.run("ai.retryProvider");
+    expect(t.settingsVm()).toMatchObject({ providerName: "Anthropic Claude", providerCommit: "confirmed" });
+  });
+
+  it("persists a discovered endpoint and model, and reuses the partial connection on Retry", async () => {
+    const t = setup({ connections: [] });
+    t.ai.discover = async () => [{ provider: "ollama", endpoint: "http://127.0.0.1:12345", models: [{ id: "local-model", cloud: false }] }];
+    await t.commands.run("ai.discover");
+    const save = t.ai.saveDetail;
+    let refuse = true;
+    t.ai.saveDetail = async a => {
+      if (refuse && a.field === "model") throw new Error("storage refused");
+      return save(a);
+    };
+    await expect(t.commands.run("ai.useFound", { value: "0" })).rejects.toThrow("storage refused");
+    expect(t.settingsVm().connections).toHaveLength(1);
+    refuse = false;
+    await t.commands.run("ai.useFound", { value: "0" });
+    expect(t.settingsVm()).toMatchObject({ endpoint: "http://127.0.0.1:12345", model: "local-model", formCloseLabel: "Done" });
+    expect(t.settingsVm().connections).toHaveLength(1);
+  });
+
+  it("serializes first-field creation without losing an independent neighbor or creating two connections", async () => {
+    const t = setup({ connections: [] });
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.add");
+    let release!: () => void;
+    const saved = conn({ id: "created", provider: "ollama", name: "Writing", model: "", hasKey: false });
+    const inputs: unknown[] = [];
+    t.ai.saveDetail = async a => {
+      inputs.push(a);
+      if (inputs.length === 1) await new Promise<void>(resolve => { release = resolve; });
+      Object.assign(saved, { [a.field]: a.value });
+      return { writer: "", connections: [{ ...saved }], id: saved.id };
+    };
+    const name = t.commands.run("commit.run", { target: "vm.ai.name", command: "ai.detail.name", value: "Writing" });
+    const model = t.commands.run("commit.run", { target: "vm.ai.model", command: "ai.detail.model", value: "model-a" });
+    await settle();
+    expect(t.settingsVm()).toMatchObject({ formPending: true, cannotSaveKey: true });
+    expect(inputs).toHaveLength(1);
+    release(); await Promise.all([name, model]);
+    expect(inputs).toEqual([
+      { provider: "ollama", field: "name", value: "Writing" },
+      { id: "created", provider: "ollama", field: "model", value: "model-a" },
+    ]);
+    expect(t.settingsVm()).toMatchObject({ name: "Writing", model: "model-a", formOpen: true, formCloseLabel: "Done" });
+  });
+
+  it("keeps a failed detail's exact retry value while another field persists and Revert is write-free", async () => {
+    const t = setup(); await t.commands.run("ai.load"); await t.commands.run("ai.change", { value: "w" });
+    let refuse = true, writes = 0;
+    const saved = conn();
+    t.ai.saveDetail = async a => {
+      writes++;
+      if (a.field === "name" && refuse) throw new Error("storage refused");
+      Object.assign(saved, { [a.field]: a.value });
+      return { writer: "w", connections: [{ ...saved }], id: "w" };
+    };
+    await expect(t.commands.run("commit.run", { target: "vm.ai.name", command: "ai.detail.name", value: "Kept name" })).rejects.toThrow("storage refused");
+    await t.commands.run("commit.run", { target: "vm.ai.model", command: "ai.detail.model", value: "model-b" });
+    expect(t.settingsVm()).toMatchObject({ name: "OpenAI", model: "model-b" });
+    const failed = t.store.state.commits.find(c => c.target === "vm.ai.name")!;
+    expect(failed).toMatchObject({ phase: "failed", value: "Kept name" });
+    refuse = false;
+    await t.commands.run("commit.run", { target: failed.target, command: failed.command, value: failed.value });
+    expect(t.settingsVm().name).toBe("Kept name");
+    const before = writes;
+    t.commits.clear(failed.target);
+    expect(writes).toBe(before);
+  });
+
+  it("never retains a raw key in commits or view models, and never announces Saved on provider or storage failure", async () => {
+    const t = setup(); await t.commands.run("ai.load"); await t.commands.run("ai.change", { value: "w" });
+    const key = "synthetic-secret-not-for-state";
+    let reject!: (e: Error) => void;
+    t.ai.saveKey = async () => new Promise((_resolve, fail) => { reject = fail; });
+    const saving = t.commands.run("ai.saveKey", { key });
+    await settle();
+    expect(t.settingsVm()).toMatchObject({ keyCommit: "pending", formPending: true });
+    expect(JSON.stringify(t.store.state)).not.toContain(key);
+    expect(JSON.stringify(t.settingsVm())).not.toContain(key);
+    reject(new Error("unauthorized")); await saving;
+    expect(t.settingsVm()).toMatchObject({ keyCommit: "failed", formOpen: true });
+    expect(t.settingsVm().keyError).toContain("The saved key is unchanged");
+    expect(t.said).not.toContain("Access key saved");
+    t.ai.saveKey = async () => { throw new Error("storage refused"); };
+    await t.commands.run("ai.saveKey", { key });
+    expect(t.settingsVm().keyCommit).toBe("failed");
+    expect(t.said).not.toContain("Access key saved");
+    await t.commands.run("ai.revertKey");
+    expect(t.settingsVm()).toMatchObject({ keyCommit: "rest", keyError: "" });
+    t.ai.saveKey = async () => ({ writer: "w", connections: [conn()] });
+    await t.commands.run("ai.saveKey", { key });
+    expect(t.settingsVm().keyCommit).toBe("confirmed");
+    expect(t.said).toContain("Access key saved");
+    expect(JSON.stringify(t.store.state)).not.toContain(key);
+  });
+
+  it("requires a fresh key entry when a destination changes during the provider check", async () => {
+    const t = setup({ connection: { provider: "compatible", endpoint: "https://old.example.test/v1" } });
+    await t.commands.run("ai.load"); await t.commands.run("ai.change", { value: "w" });
+    const before = t.settingsVm().keyScope;
+    let reject!: (e: Error) => void;
+    t.ai.saveKey = async () => new Promise((_resolve, fail) => { reject = fail; });
+    const checking = t.commands.run("ai.saveKey", { key: "synthetic-entry" });
+    await settle();
+    t.ai.saveDetail = async () => ({ writer: "w", connections: [conn({ provider: "compatible", endpoint: "https://new.example.test/v1", hasKey: false })], id: "w" });
+    await t.commands.run("commit.run", { target: "vm.ai.endpoint", command: "ai.detail.endpoint", value: "https://new.example.test/v1" });
+    expect(t.settingsVm().keyScope).not.toBe(before);
+    reject(new Error("connection-unavailable")); await checking;
+    expect(t.settingsVm().keyError).toBe("The connection details changed. Enter the key again for this destination.");
+    expect(t.said).not.toContain("Access key saved");
+  });
+});
 
 describe("Settings Default shares Rewrite's Writer (D-267)", () => {
   it("changes the same ID in both directions without sending note text", async () => {
