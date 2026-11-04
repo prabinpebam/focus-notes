@@ -1703,7 +1703,9 @@ test("Reading size retains a failed value, retries exactly that value and leaves
 test("theme and font choices keep failed drafts, retry their own choice and reopen stored settings", async () => {
   const dirs = tempDirs();
   const stateFile = join(dirs.userData, DATA_FILES.state);
-  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", appearance: "light" }));
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Themes recovery\n");
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note, appearance: "light" }));
   const l = await launch(dirs);
   const backup = `${stateFile}.before-failure`;
   const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };

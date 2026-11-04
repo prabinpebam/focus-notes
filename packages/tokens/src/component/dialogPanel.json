@@ -65,6 +65,7 @@
         "$type": "dimension",
         "$value": "{layout.dialogMinHeight}"
       },
+      "navigationHeight": { "$type": "dimension", "$value": "{breakpoint.medium}" },
       "top": {
         "$type": "dimension",
         "$value": "{layout.dialogTop}"

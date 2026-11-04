@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Tab, TabList, TabPanel, Tabs as AriaTabs } from "react-aria-components";
 import type { Option } from "../../data.ts";
+import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./Tabs.css.ts";
 
 export interface TabsProps {
@@ -13,6 +14,7 @@ export interface TabsProps {
   autoFocus?: boolean;
   /** Gallery modal: temporary options share the design system's segmented track. */
   segmented?: boolean;
+  scrollPanel?: boolean;
   id?: string;
   /** Under the list, on every tab: an action for the whole set (Settings' Send feedback, D-203). */
   footer?: ReactNode;
@@ -28,21 +30,28 @@ export interface TabsProps {
  * resting on the panel then, within React's commit; the dialog around it moves focus on to that
  * control (DialogPanel, DEF-12).
  */
-export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, segmented, id, footer, children, onChange }: TabsProps) {
+export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, segmented, scrollPanel = false, id, footer, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
   // Vertical tabs need room for the list and the panel side by side; without it (a narrow window,
   // 320 px reflow) they lay out across, over the panel, and the arrow keys go left and right.
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useAutoHideScrollbar(panelRef, scrollPanel);
   const [narrow, setNarrow] = useState(false);
   useLayoutEffect(() => {
     const el = rootRef.current;
     if (orientation !== "vertical" || !el) return;
-    const check = () => setNarrow(el.getBoundingClientRect().width < (parseFloat(getComputedStyle(el).getPropertyValue(s.besideVar.replace(/^var\(|\)$/g, ""))) || 0));
+    const check = () => {
+      const style = getComputedStyle(el);
+      const read = (variable: string) => parseFloat(style.getPropertyValue(variable.replace(/^var\(|\)$/g, ""))) || 0;
+      const box = el.getBoundingClientRect();
+      setNarrow(box.width < read(s.besideVar) || scrollPanel && box.height < read(s.navHeightVar));
+    };
     check();
     const observer = new ResizeObserver(check);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [orientation]);
+  }, [orientation, scrollPanel]);
   const laid = orientation === "vertical" && !narrow ? "vertical" : "horizontal";
   // Once, as the selected tab is first drawn (the collection draws its tabs after the list).
   const focused = useRef(!autoFocus);
@@ -57,7 +66,7 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     </TabList>
   );
   return (
-    <AriaTabs ref={rootRef} className={s.root[laid]} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
+    <AriaTabs ref={rootRef} className={`${s.root[laid]}${scrollPanel ? ` ${s.scrollRoot}` : ""}`} data-scroll-panel={scrollPanel ? "" : undefined} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
       {footer ? (
         // The list and its footer share the column and its divider; the footer sits right under the tabs.
         // `data-side-nav`: the column is the side navigation that runs the body's full height (D-123).
@@ -67,7 +76,7 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
         </div>
       ) : tabList(s.list[laid])}
       {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
-      <TabPanel key={selected} id={selected} className={s.panel[laid]}>{children}</TabPanel>
+      <TabPanel ref={panelRef} key={selected} id={selected} className={`${s.panel[laid]}${scrollPanel ? ` ${s.scroller}` : ""}`}>{children}</TabPanel>
     </AriaTabs>
   );
 }

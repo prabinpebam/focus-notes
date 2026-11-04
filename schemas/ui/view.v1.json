@@ -3993,7 +3993,8 @@
                 {
                   "enum": [
                     "stable",
-                    "content"
+                    "content",
+                    "navigation"
                   ]
                 },
                 {
@@ -4705,6 +4706,19 @@
               ]
             },
             "segmented": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "scrollPanel": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -13094,7 +13108,8 @@
                 {
                   "enum": [
                     "stable",
-                    "content"
+                    "content",
+                    "navigation"
                   ]
                 },
                 {

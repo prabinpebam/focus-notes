@@ -1,6 +1,12 @@
 {
   "cmp": {
     "tabs": {
+      "navMinHeight": { "$type": "dimension", "$value": "{layout.dialogMinHeight}" },
+      "scrollbarSize": { "$type": "dimension", "$value": "{size.scrollbar}" },
+      "scrollbarInset": { "$type": "dimension", "$value": "{border.scrollbarInset}" },
+      "scrollbarThumb": { "$type": "color", "$value": "{color.scrollbar}" },
+      "scrollbarThumbHover": { "$type": "color", "$value": "{color.scrollbarHover}" },
+      "scrollbarTrack": { "$type": "color", "$value": "{color.none}" },
       "gap": {
         "$type": "dimension",
         "$value": "{space.xs}"

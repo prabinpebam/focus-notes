@@ -10,7 +10,7 @@ export interface DialogProps {
   open?: boolean;
   size?: "s" | "m" | "l" | "xl";
   /** stable (default): at least 400 px and never shrinking while open; content: as tall as its content (confirmations). */
-  height?: "stable" | "content";
+  height?: "stable" | "content" | "navigation";
   /** Controls that stay above the scrolling body. */
   toolbar?: ReactNode;
   id?: string;

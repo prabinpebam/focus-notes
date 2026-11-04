@@ -1,6 +1,7 @@
 import { createVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { track, segment as segments } from "../SegmentedControl/SegmentedControl.css.ts";
+import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 export const segmentTrack = track.horizontal;
 export const segment = segments.horizontal;
@@ -9,6 +10,10 @@ const t = tokens.cmp.tabs;
 
 /** The narrowest vertical tabs fit in, list and panel side by side; narrower, they're laid out across (Tabs.tsx, D-111). */
 export const besideVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const navHeightVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const scrollRoot = style({ vars: { [navHeightVar]: t.navMinHeight }, flexGrow: 1, minHeight: 0, overflow: "hidden" });
+export const scroller = style({ flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.gap });
+minimalScrollbar(scroller, t);
 
 const rootBase = style({ vars: { [besideVar]: `calc(${t.listWidth} + ${t.panelGap} + ${t.panelMinWidth})` }, display: "flex", gap: t.panelGap, fontFamily: t.font, minWidth: 0 });
 export const root = {

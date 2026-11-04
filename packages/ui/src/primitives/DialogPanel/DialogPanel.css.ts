@@ -60,6 +60,7 @@ export const size = {
  * never-shrink agree at every window size. A confirmation (`content`) fits its content.
  */
 export const height = {
+  navigation: style({ height: `min(${t.navigationHeight}, 100%)`, minHeight: `min(${t.navigationHeight}, 100%)` }),
   stable: style({ minHeight: `min(max(${t.minHeight}, ${fallbackVar(grownVar, "0px")}), 100%)` }),
   content: style({}),
 };
@@ -129,6 +130,7 @@ export const body = style({
     "&:last-child": { paddingBlockEnd: t.padding, marginBlockEnd: 0, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
   },
 });
+export const fixedBody = style({ overflow: "hidden", scrollbarGutter: "auto", paddingInlineEnd: t.padding });
 minimalScrollbar(body, t);
 
 /** The raised surface, or the theme's frosted one (Foundations → Surfaces). */

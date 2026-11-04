@@ -78,6 +78,46 @@ for (const projectTheme of ["app", "sepia"]) test(`Themes applies real tokens an
   } finally { await close(); }
 });
 
+test("Settings keeps navigation fixed and scrolls only content, with a short-window fallback", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  try {
+    await l.app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler("agents:load");
+      ipcMain.handle("agents:load", () => ({
+        permissions: { connect: false, readPublic: true, readPrivate: false, edit: false, createPublic: true, folders: "all" },
+        changedOutside: false, snippets: [{ id: "vscode", text: Array.from({ length: 100 }, (_, i) => `Line ${i}`).join("\n") }], recent: [],
+        cli: { available: false, installed: false, onPath: false },
+      }));
+    });
+    await l.page.keyboard.press("Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Agents", exact: true }).click();
+    for (const [width, height] of [[1400, 850], [1024, 720], [600, 480], [480, 360]]) {
+      await l.app.evaluate(({ BrowserWindow }, size) => {
+        BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("index.html"))!.setSize(size[0]!, size[1]!);
+      }, [width!, height!]);
+      const nav = settings.locator("[data-side-nav]");
+      const list = settings.getByRole("tablist");
+      await expect(list).toHaveAttribute("aria-orientation", height! >= 720 ? "vertical" : "horizontal");
+      const panel = settings.getByRole("tabpanel");
+      const before = await nav.boundingBox();
+      await panel.evaluate(el => { el.scrollTop = 500; });
+      await expect.poll(() => panel.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+      expect(await nav.boundingBox()).toEqual(before);
+      expect(await settings.locator("[data-dialog-body]").evaluate(el => ({ top: el.scrollTop, overflow: getComputedStyle(el).overflowY }))).toEqual({ top: 0, overflow: "hidden" });
+      expect(await nav.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+      for (const tab of await list.getByRole("tab").all()) await expect(tab).toBeInViewport();
+      await expect(settings.getByRole("button", { name: /Send feedback/ })).toBeInViewport();
+    }
+  } finally {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
+
 test("Agents code Copy is an accessible top-right icon overlay without a reserved text column", async () => {
   const dirs = tempDirs();
   const text = '{\n  "mcpServers": { "focus-notes": { "command": "focus-notes", "args": ["mcp"] } }\n}';
@@ -212,7 +252,10 @@ test("review feedback: project scheme reaches Settings and edge blur excludes bo
     const files = l.page.getByRole("complementary", { name: "Files", exact: true });
     await expect(files).toHaveAttribute("data-docked", "");
     await expect(l.page.locator("[data-doc-minimap-card]")).toHaveAttribute("data-docked", "");
-    await l.page.locator("[data-editor-scroller]").evaluate(el => { el.scrollTop = 500; });
+    await expect.poll(() => l.page.locator("[data-editor-scroller]").evaluate(el => {
+      el.scrollTop = 500;
+      return el.hasAttribute("data-fade-top");
+    })).toBe(true);
     await expect(l.page.locator('[data-scroll-edge="top"]')).toBeVisible();
     await expect(l.page.locator('[data-scroll-edge="bottom"]')).toBeVisible();
     const shots = "E:\\Projects\\side-projects\\focus-notes-work\\review\\ui-states-owner-feedback";

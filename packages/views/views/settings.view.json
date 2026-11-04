@@ -42,7 +42,8 @@
           "open": {
             "get": "vm.settings.open"
           },
-          "size": "l"
+          "size": "l",
+          "height": "navigation"
         },
         "on": {
           "openChange": {
@@ -69,6 +70,7 @@
                 "bind": "vm.settings.section"
               },
               "orientation": "vertical",
+              "scrollPanel": true,
               "autoFocus": {
                 "get": "vm.settings.focusTabs"
               }

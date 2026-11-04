@@ -1453,10 +1453,11 @@
           "kind": "enum",
           "values": [
             "stable",
-            "content"
+            "content",
+            "navigation"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: clamped 600 px with a fixed body, content supplies its own scroller."
         },
         "material": {
           "kind": "enum",
@@ -1503,6 +1504,7 @@
         "name": "label"
       },
       "fixtures": [
+        "height navigation",
         "size s",
         "height content",
         "size l",
@@ -1847,6 +1849,11 @@
           "kind": "boolean",
           "default": false,
           "description": "Temporary options in a shared segmented track."
+        },
+        "scrollPanel": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Only the selected content panel scrolls. Navigation stays fixed; short or narrow containers switch to wrapping horizontal tabs."
         }
       },
       "events": {
@@ -1877,6 +1884,7 @@
         "name": "label"
       },
       "fixtures": [
+        "fixed navigation and scrolling panel",
         "first selected",
         "orientation vertical",
         "orientation vertical with footer"
@@ -6306,10 +6314,11 @@
           "kind": "enum",
           "values": [
             "stable",
-            "content"
+            "content",
+            "navigation"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: a clamped 600 px shell with a non-scrolling body and independently scrolling tab content."
         },
         "size": {
           "kind": "enum",
@@ -6349,6 +6358,7 @@
         "name": "title"
       },
       "fixtures": [
+        "height navigation",
         "size s",
         "height content",
         "size l with toolbar",

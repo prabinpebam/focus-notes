@@ -123,7 +123,7 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
           {header ? <div className={s.region}>{header}</div> : null}
           {fixed ? <div className={s.region}>{fixed}</div> : null}
           {/* The body can take focus so its content can be scrolled from the keyboard, even when nothing in it is actionable. */}
-          <div className={s.body} ref={bodyRef} data-dialog-body="" tabIndex={0} role="region" aria-label={label}>{children}</div>
+          <div className={`${s.body}${height === "navigation" ? ` ${s.fixedBody}` : ""}`} ref={bodyRef} data-dialog-body="" tabIndex={height === "navigation" ? -1 : 0} role="region" aria-label={label}>{children}</div>
           {footer ? <div className={s.region}>{footer}</div> : null}
         </Dialog>
       </Modal>

@@ -8,7 +8,7 @@ export const contract = defineContract({
     title: { kind: "message", required: true },
     closeLabel: { kind: "message", required: true },
     open: { kind: "boolean", default: false },
-    height: { kind: "enum", values: ["stable", "content"], default: "stable", description: "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)." },
+    height: { kind: "enum", values: ["stable", "content", "navigation"], default: "stable", description: "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: a clamped 600 px shell with a non-scrolling body and independently scrolling tab content." },
     size: { kind: "enum", values: ["s", "m", "l", "xl"], default: "l", description: "m is a form that fits its content (Send feedback, D-203), 640 px like Spotlight; xl is the conflict resolver's: most of the window, up to layout.dialogXL." },
   },
   events: { openChange: { payload: { open: "boolean" } } },
@@ -18,6 +18,7 @@ export const contract = defineContract({
   a11y: { pattern: "modal dialog", name: "title" },
   uncovered: { entering: GAP.motion, exiting: GAP.motion },
   fixtures: [
+    { name: "height navigation", covers: ["open"], props: { title: { t: "settings.title" }, closeLabel: { t: "dialog.close" }, open: true, height: "navigation" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "size s", covers: ["open"], props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "height content", covers: ["open"], props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     {
