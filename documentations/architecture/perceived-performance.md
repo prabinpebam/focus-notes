@@ -31,10 +31,12 @@ The [partial-safe recovery evidence](../plan/definition-of-done.md#phase-2-parti
 
 | Operation | Class / pattern | Place and words | Measure / target |
 | --- | --- | --- | --- |
-| Open an already-created project again | Responsive → waiting; keep choices and original failure | New project's error row: Retry → Trying again…; never rerun completed creation | Planned `fn:project.create` / tracker coverage; controlled held-Open journey proves retained state only |
+| Create/open a new project | Responsive → long; named whole-operation task and actual backend step receipts | Existing New project dialog; completed/total ProgressBar, current StepMark, elapsed after 3 s, Cancel → Stopping after this step…; completed files retained | `fn:project.create`; active-request filtering, exact 2999/3000 ms elapsed and completed-receipt units; real held loopback repository/cancellation and Open-only Retry journeys passed |
 | Retry Local import | Responsive → waiting; retain source, target and request receipt | Import sheet's error row: Retry → Trying again…; list/input remain mounted; one complete copy | Planned `fn:local.import` / tracker coverage; actual destination-refusal journey and partial-write units prove safety only |
 
 Completed Local import receipts live for the current desktop process. Crash-persistent recovery and streaming remain unaccepted. If setup failed without returning a created-project receipt, the UI offers a location change rather than replaying uncertain creation.
+
+The [New project stream evidence](../plan/definition-of-done.md#phase-2-streamed-new-project) adds real check/folder/profile receipts, an actual repository step only when that backend work runs, and the final Open step. Cancel waits for the current atomic step, aborts before the next, and never deletes partial files. Cancellation after a completed profile retains its receipt and skips Open; Retry opens it once without creating again. Screen readers hear Stopped, not a false failure. This does not claim crash-resumable setup, Publish or first-clone/push streaming.
 
 ## History recovery
 
