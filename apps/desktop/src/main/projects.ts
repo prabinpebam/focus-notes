@@ -194,17 +194,22 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const profile = known.get(canonical);
     if (!profile) throw new Error("Choose a project folder first");
     const localNotes = (await state(profile)).localNotes === true;
+    // Only the canonical absolute path reaches the new process: a renderer string could carry a
+    // Chromium switch that realpath() still resolves to a note inside the project.
+    let target: string | undefined;
     if (note) {
+      if (!isAbsolute(note)) throw new Error("That note isn't in this project");
       const path = await realpath(note);
       const within = relative(canonical, path);
-      if (within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("That note isn't in this project");
+      if (!isAbsolute(path) || within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("That note isn't in this project");
+      target = path;
     }
-    if (canonical === await realpath(home()) && !note) return;
+    if (canonical === await realpath(home()) && !target) return;
     // One process and single-instance lock per project keep all existing workspace services scoped.
     if (profile === app.getPath("userData") && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
-    const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(note ? ["--project-note", note] : [])];
+    const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(target ? ["--project-note", target] : [])];
     const child = spawn(process.execPath, args, {
-      env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", ...(note ? { FOCUS_NOTES_PROJECT_NOTE: note } : { FOCUS_NOTES_PROJECT_NOTE: "" }) },
+      env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", FOCUS_NOTES_PROJECT_NOTE: target ?? "" },
       stdio: "ignore",
     });
     await new Promise<void>((accept, reject) => { child.once("spawn", accept); child.once("error", reject); });

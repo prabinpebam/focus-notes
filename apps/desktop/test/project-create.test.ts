@@ -1,18 +1,30 @@
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+import { EventEmitter } from "node:events";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ProjectCreateProgress } from "@focus-notes/core";
 import { projectWindows } from "../src/main/projects.ts";
 
 const paths = vi.hoisted(() => ({ profile: "" }));
+const spawned = vi.hoisted(() => [] as { args: string[]; env: Record<string, string | undefined> }[]);
 vi.mock("electron", () => ({
-  app: { getPath: () => paths.profile },
+  app: { getPath: () => paths.profile, isPackaged: true, getAppPath: () => "" },
   dialog: {},
   safeStorage: { isEncryptionAvailable: () => true },
 }));
+vi.mock("node:child_process", async (actual) => ({
+  ...(await actual<typeof import("node:child_process")>()),
+  spawn: (_file: string, args: string[], options: { env: Record<string, string | undefined> }) => {
+    spawned.push({ args, env: options.env });
+    const child = new EventEmitter();
+    queueMicrotask(() => child.emit("spawn"));
+    return child;
+  },
+}));
 const roots: string[] = [];
 afterEach(async () => {
+  spawned.length = 0;
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
 async function setup() {
@@ -50,4 +62,24 @@ it("stops at a safe boundary without deleting a completed folder or overwriting 
   await writeFile(note, "# Kept bytes\n");
   await expect(projects.create(input)).rejects.toThrow("exists");
   expect(await readFile(note, "utf8")).toBe("# Kept bytes\n");
+});
+
+it("hands another project window only the note's canonical absolute path, never a renderer string", async () => {
+  const { root, projects } = await setup();
+  const folder = await projects.create({ parent: root, name: "Book", accent: "teal", logo: "book" });
+  const note = join(folder, "notes", "a.md");
+  await writeFile(note, "# A\n");
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    // realpath() resolves this switch-shaped string against the working directory to the real note.
+    const switched = `--gpu-launcher=calc${sep}..${sep}${relative(root, note)}`;
+    expect(await realpath(switched)).toBe(await realpath(note));
+    await expect(projects.open(folder, switched)).rejects.toThrow("isn't in this project");
+  } finally { process.chdir(cwd); }
+  expect(spawned).toEqual([]);
+  await projects.open(folder, `${folder}${sep}notes${sep}..${sep}notes${sep}a.md`);
+  const canonical = await realpath(note);
+  expect(spawned.map(s => s.args)).toEqual([["--project-note", canonical]]);
+  expect(spawned[0]!.env.FOCUS_NOTES_PROJECT_NOTE).toBe(canonical);
 });
