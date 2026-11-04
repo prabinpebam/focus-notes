@@ -504,6 +504,23 @@ The journey caught a real percentage mismatch: ProgressBar takes 0–100, not a 
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b70e3334\Open review build.cmd`. Settings → Sharing → Preview site; controlled delays/refusals belong to the separate synthetic inspection, not owner notes. The current visible `f2127c67` review remains open. Phase 2, first clone/push and W9 remain unfinished.
 
+### Phase-2 first-setup cancellation, a9425fee
+
+The existing setup engine reports every actual step and its Git download percentage. Its UI now also counts completed/skipped receipts out of the real nine steps and offers safe Cancel: the active step finishes, its receipt is saved, and the next step does not start. Files, repositories and local receipts are never removed by Cancel. A stopped receipt survives reopening; Resume passes the existing options and skips completed steps. The final private-first push stays atomic: a stop request waits for its result, success shows all nine receipts, and refusal stays a failure with recovery rather than a false cancellation. This is setup only, not the separate Open-from-GitHub clone path.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\setup.test.ts apps\desktop\test\setup-git.test.ts packages\core\test\first-run.test.ts` | 93 passed, including existing real local Git setup, preserved retry/idempotency and the new UI count/Cancel/Resume and clone/final-push regressions |
+| `pnpm exec vitest run apps\desktop\test\setup.test.ts -t "setup cancellation keeps completed receipts"` | Final 3 passed; added refusal-after-Cancel keeps the offline failure and all eight prior receipts. Reopening retains the cancelled receipt |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | Passed; 779 documents, 82 components, 722 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "First setup stops after its real clone receipt"` | Passed in invisible Electron: actual 4/9→5/9 clone receipt, elapsed, safe Cancel, persisted receipt, Resume without repeating clone, actual 8/9→9/9 private-first push, completed-not-cancelled truth, equal local/remote Git heads and unchanged synthetic note |
+| Exact-head candidate `a9425fee` | Both Field notes and Garden notes, their distinct settings and both loopback repositories inspected invisibly and closed; owner `f2127c67` remained untouched |
+
+Two engine regressions first failed because Cancel did not exist. The first journey attempt used an outdated exact action name; using the current composite Create-my-notes accessible name fixed only the fixture. The passing journey closed its own app with own-PID cleanup. PowerShell's tracked module-analysis cache changed during that cleanup and was restored, not committed. All repository/API activity in the journey was synthetic and local; no real account write, full suite, CI wait, main app merge or release ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a9425fee\Open review build.cmd` retains both review projects. First-run controlled waits and local remotes belong to the separate synthetic journey, not those review projects or owner data. Separate clone cancellation, W9 and remaining phase-2 acceptance stay in progress.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
