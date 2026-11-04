@@ -219,7 +219,7 @@ async function spotlightTimes() {
     writeFileSync(p, n.markdown);
   }
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
-  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(docs, "Welcome.md") }));
   const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_E2E: "1" } });
   try {
     const page = await app.firstWindow();

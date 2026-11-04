@@ -100,7 +100,7 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
   const { _electron } = createRequire(join(root, "apps", "desktop", "package.json"))("@playwright/test");
   const docs = generateWorkspace(notes);
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
-  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(docs, "Welcome.md") }));
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(docs, "Welcome.md") }));
   // The warm-up after start is on, as people have it (PRF-10). GitHub's API points at a closed port.
   const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_E2E: "1" } });
   try {

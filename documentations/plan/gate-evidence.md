@@ -34,6 +34,8 @@ CI run 41923188572 passed all 2,833 unit tests but is not green: benchmark start
 
 The next continuation passed the Files clipboard/menu and byte-for-byte link-rewrite journeys, font-band/wheel and keybinding journeys, and a real slider tab-switch persistence check. Tooltip portals again prefer their control's landmark; the keyboard-tooltip accessibility journey passes. Feedback recovery was genuinely covered by an unrelated notification at 480 × 360: a five-point paint hit-test failed before the layering fix and passed afterward, while the F6 notification recovery journey still passes. No benchmark budgets or baselines have been changed.
 
+The combined candidate passes `pnpm check`, full `pnpm typecheck`, 197 UI/notification unit tests, the Paper and forced-colour accessibility paths, and both default-window visual-quality journeys. `node tools/bench/run.mjs --check --runs 1` completed every benchmark after aligning the separate large-workspace and Spotlight returning-writer fixtures: all absolute budgets passed (323 MB memory, 0.04% idle CPU, 32.8 ms reopen, 65 ms open, 543 ms save, 11 ms Spotlight). The command still reports a local startup-baseline regression: cold 1,097 ms versus 214 ms and warm 512 ms versus 201 ms, within their unchanged 2,500/1,500 ms budgets. This is measured evidence, not a green local benchmark claim; no budget or baseline was loosened. Exact-head Windows CI remains the merge gate.
+
 ### General fixes: approved 3 November design
 
 The owner approved the designs at 19:39. WP-P.1 / WP-P.2 are pushed at
