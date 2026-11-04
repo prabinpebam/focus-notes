@@ -392,6 +392,23 @@ The first journey tried finding the selected private note in an unopened Files t
 
 **Try it after the next candidate refresh:** Share a synthetic note, change its expiry while preparing, and inspect its existing sharing history. Controlled failures belong only to the scoped journey. The currently open owner review remains the earlier `cd0cede9`; this slice is pushed but not in that running instance. Complete D5, D7 streaming/crash receipts, remaining tracker coverage and any remaining static/hover acceptance are still in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 Files known-empty and first action, 6218b99d
+
+Files no longer labels a collapsed nonempty root as empty. A filtered query checks actual matching content, independently of collapsed roots. Initial listing is now a named read task: unknown and failed reads cannot show the empty wrapper; failure offers scoped Retry with safe copy, retains its error while retrying and logs only a known diagnostic code. Watcher events and acknowledged note saves are queued over the scan snapshot, including bridges without watchers. Retry itself never writes a note.
+
+| Check on `6218b99d` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\files-app.test.ts packages\core\test\workspace-app.test.ts packages\core\test\workspace-names.test.ts packages\core\test\tasks.test.ts` | 68 passed: collapsed/filter/unknown/failure distinctions, read-only Retry, duplicate Retry exclusion, retained watcher events and acknowledged saves, existing names and task timing |
+| `pnpm --filter @focus-notes/core run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey selectors |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check` | Passed: 779 documents, 82 components, 714 commands; generated files unchanged |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final save-queue correction |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Files distinguishes collapsed content"` | Passed: collapse retains nonempty truth, filtered empty clears its query, removing only the synthetic fixture note reveals known-empty, its own New note action fills the same connected Files body, one named listing measure |
+| Exact pushed-head candidate inspection | `6218b99d` inspected invisibly through existing project/Reading/compact/notification/AI/Agents/Open flows and new collapsed/filtered Files; closed, own-PID `-WhatIf` then actual cleanup |
+
+Two regressions failed before implementation. Early journey attempts corrected a missing last-note fixture, model-selection rather than DOM-focus navigation, the SearchField role and the empty action's visible text selector; the final unchanged-runtime repeat passed. No unrelated empty-start repair was made. Candidate inspection helper initially had a duplicate local declaration; fixed before it started an app. All started inspection/test instances closed; the explicitly requested `cd0cede9` owner instance stayed open.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\Open review build.cmd` includes all prior slices and the local GitHub stand-in. Collapse Files, search for an absent title, then Clear search. The synthetic first-note replacement and refused listing Retry belong to scoped evidence, not the owner's notes. This is bounded D5 evidence, not acceptance of every empty/all-done surface or an independent delayed initial-scan journey. Recently-deleted read failure/good-news treatment, other first actions, D7 streaming/crash receipts, remaining tracker coverage and hover/static acceptance remain in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

@@ -55,6 +55,14 @@ The [independent sharing evidence](../plan/definition-of-done.md#phase-2-share-i
 | --- | --- | --- | --- |
 | Prepare/retry an item's sharing list | Responsive → waiting; independent section | Existing Share dialog row; Preparing sharing… / scoped Retry → Trying again… | `fn:share.item.prepare`; exact 300/500 ms units and independent held/refused desktop journey |
 
+## Files initial listing
+
+The [Files known-empty evidence](../plan/definition-of-done.md#phase-2-files-known-empty-and-first-action-6218b99d) separates a successful empty scan from unknown or failed content. Initial listing and its scoped read-only Retry use a named section task. A first-load shape is delayed 300 ms and, once shown, held at least 500 ms by the shared tracker. Retry retains its error row; snapshot completion reapplies queued watcher events and acknowledged saves. This is no speed claim and does not claim an independent delayed initial-scan desktop journey.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Initial/retry Files scan | Responsive → waiting; independent section | Existing Files body; Reading your notes…; failure says notes weren't changed, Retry → Trying again… | `fn:workspace.list`; shared 300/500 ms task units, read/write-queue safety units and real known-empty first-action journey |
+
 ## Image read recovery
 
 The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-recovery-cd0cede9) covers actual missing-file and native decode refusal, retained layout/alt/Retry and unchanged note bytes. It makes no speed claim. The read task includes the shared 300 ms sign delay and 500 ms minimum once shown; an existing broken frame stays mounted throughout Retry. Distinct failures coalesce per note, never one interrupting notice per Retry.
