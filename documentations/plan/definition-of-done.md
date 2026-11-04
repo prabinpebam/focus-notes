@@ -376,6 +376,22 @@ The owner asked for the most complete reviewable app immediately, before the nex
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\Open review build.cmd`. Project/Reading settings and AI groups include all pushed phase-2 increments. Open from GitHub lists `review-user/example-notes` and clones only from the candidate's local bare repository; no real account is connected. The visible owner instance is explicitly exempt from ordinary inspection cleanup and stays open. This launch does not accept outstanding D5/D7/share-item D8 work.
 
+### Phase-2 share-item independent section, 2ce9b22d
+
+The share-item list now has delayed/failed desktop evidence independent of Agents and history. Retry retains the existing error row while only its action is inert; expiry and method choices stay editable. Successful reads clear the original failure. A failed refresh keeps acknowledged history instead of replacing it with a loading shape; closed/reopened item generations reject old results. Preparation uses the named `fn:share.item.prepare` task measure; diagnostics contain only the known error code.
+
+| Check on `2ce9b22d` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\core\test\tasks.test.ts` | 40 passed: exact 300/500 ms shape timing, held error during Retry, editable expiry, retained history, no grant mutation and rejected late closed-item reads |
+| `pnpm --filter @focus-notes/core run typecheck`; `pnpm --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey correction |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check` | Passed: 779 documents, 82 components, 713 commands; no stale generated files |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Share item delays its own section"` | Passed: held/refused real sharing-read handler, finite/static reduced-motion shapes, retained editable choices and history through Retry, four named measures, no access mutation, unchanged note bytes |
+
+The first journey tried finding the selected private note in an unopened Files tree; the final fixture uses the normal toolbar More → Share action and passes. The invisible test app closed with own-PID `-WhatIf`, then actual cleanup; the expressly requested owner-review instance remained open and untouched.
+
+**Try it after the next candidate refresh:** Share a synthetic note, change its expiry while preparing, and inspect its existing sharing history. Controlled failures belong only to the scoped journey. The currently open owner review remains the earlier `cd0cede9`; this slice is pushed but not in that running instance. Complete D5, D7 streaming/crash receipts, remaining tracker coverage and any remaining static/hover acceptance are still in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

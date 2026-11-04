@@ -47,6 +47,14 @@ The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-re
 | Restore selected version | Responsive → waiting; named save task | Restore this version → Restoring version…; retained error and scoped Retry | `fn:history.restore`; current draft saved first; no success or dismissal before restored write acknowledgement |
 | Undo restored text | Responsive → waiting; named save task | Existing notification action, retained failure and Retry | `fn:history.undo`; original Undo text survives refusal; no success announcement before write acknowledgement |
 
+## Share-item section recovery
+
+The [independent sharing evidence](../plan/definition-of-done.md#phase-2-share-item-independent-section-2ce9b22d) uses held/refused local reads, not a latency improvement claim. Preparation is a named section task: no shape before 300 ms, at least 500 ms once visible, three shimmer passes then still, static with reduced motion. A refresh keeps acknowledged sharing history. Retry retains its error and the editable choices, makes only its own action inert and never creates or replays a grant.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Prepare/retry an item's sharing list | Responsive → waiting; independent section | Existing Share dialog row; Preparing sharing… / scoped Retry → Trying again… | `fn:share.item.prepare`; exact 300/500 ms units and independent held/refused desktop journey |
+
 ## Image read recovery
 
 The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-recovery-cd0cede9) covers actual missing-file and native decode refusal, retained layout/alt/Retry and unchanged note bytes. It makes no speed claim. The read task includes the shared 300 ms sign delay and 500 ms minimum once shown; an existing broken frame stays mounted throughout Retry. Distinct failures coalesce per note, never one interrupting notice per Retry.
