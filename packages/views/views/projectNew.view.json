@@ -60,7 +60,7 @@
             { "type": "ItemCard", "props": { "title": { "t": "project.new.makesNoSite" }, "detail": { "t": "project.new.makesNoSiteDetail" }, "icon": "globe" } }
           ] }
         } },
-        { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projectNew.error" }, ""] } }, "props": { "value": { "get": "vm.projectNew.error" } } },
+        { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.projectNew.error" }, ""] } }, "props": { "message": { "get": "vm.projectNew.error" }, "tone": "danger", "actionLabel": { "get": "vm.projectNew.recoveryAction" }, "actionBusy": { "get": "vm.projectNew.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } }, "on": { "action": { "run": "projects.newRecover" } } },
         { "type": "Text", "when": { "expr": { "and": [{ "get": "vm.projectNew.pending" }, { "get": "vm.projectNew.confirm" }] } }, "props": { "value": { "t": "project.new.creating" } } },
         { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
           { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "projects.newClose" } } },

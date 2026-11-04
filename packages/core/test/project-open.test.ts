@@ -23,6 +23,76 @@ const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.proj
 const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", logo: "book" } as ProjectEntry;
 
 describe("Open", () => {
+  it("retries the original Local copy with one request receipt after a lost acknowledgement", async () => {
+    const calls: [string, string, string | undefined][] = [];
+    const app = appWith({
+      local: true, list: async () => [book], remember: async () => {},
+      importLocal: async (path, folder, request) => {
+        calls.push([path, folder, request]);
+        if (calls.length === 1) throw new Error("sensitive lost reply");
+        return `${folder}\\draft.md`;
+      },
+    });
+    app.store.update(s => ({ ...s, note: { ...s.note, path: "C:\\Local\\draft.md", markdown: "# Kept", initialMarkdown: "# Kept", saveState: "saved" } }));
+    await app.commands.run("local.import");
+    await app.commands.run("local.copyTo", { id: book.folder });
+    expect(app.viewModels.select("vm.localImport", app.store.state)).toMatchObject({ open: true, error: en["quick.import.failed"], recoveryAction: "Retry" });
+    expect(JSON.stringify(app.viewModels.select("vm.localImport", app.store.state))).not.toContain("sensitive");
+    await app.commands.run("local.importRetry");
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toEqual(calls[1]);
+    expect(calls[0]?.[2]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(app.store.state.note.markdown).toBe("# Kept");
+    expect(app.viewModels.select("vm.localImport", app.store.state)).toMatchObject({ open: false, error: "" });
+  });
+
+  it("retries Local target listing in place rather than copying an unknown target", async () => {
+    let lists = 0;
+    const app = appWith({ local: true, list: async () => { if (++lists === 1) throw new Error("refused"); return [book]; } });
+    app.store.update(s => ({ ...s, note: { ...s.note, path: "C:\\Local\\draft.md" } }));
+    await app.commands.run("local.import");
+    expect(app.viewModels.select("vm.localImport", app.store.state)).toMatchObject({ error: en["quick.import.listFailed"], recoveryAction: "Retry" });
+    await app.commands.run("local.importRetry");
+    expect(app.viewModels.select("vm.localImport", app.store.state)).toMatchObject({ open: true, error: "", targets: [expect.objectContaining({ id: book.folder })] });
+  });
+
+  it("opens a created project again without replaying creation, retaining its choices during Retry", async () => {
+    let creates = 0, opens = 0, finish!: () => void;
+    const app = appWith({
+      parent: async () => "C:\\Projects",
+      check: async (_parent, name) => ({ folder: `C:\\Projects\\${name}`, problem: "" }),
+      create: async () => { creates++; return book.folder; },
+      open: async () => { if (++opens === 1) throw new Error("notFound"); await new Promise<void>(resolve => { finish = resolve; }); },
+    });
+    await app.commands.run("projects.new");
+    await app.commands.run("projects.newname", { value: "Book" });
+    for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+    await app.commands.run("projects.newCreate");
+    expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", error: en["project.new.openFailed"], recoveryAction: "Retry" });
+    const retry = app.commands.run("projects.newRecover");
+    await expect.poll(() => opens).toBe(2);
+    expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: true, retrying: true, name: "Book", error: en["project.new.openFailed"] });
+    expect(creates).toBe(1);
+    finish(); await retry;
+    expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: false, error: "" });
+  });
+
+  it("does not blindly retry project creation when setup may have partially succeeded", async () => {
+    let creates = 0, picks = 0;
+    const app = appWith({
+      parent: async () => "C:\\Projects",
+      check: async () => ({ folder: book.folder, problem: "" }),
+      create: async () => { creates++; throw new Error("partial setup"); },
+      chooseParent: async () => { picks++; return undefined; },
+    });
+    await app.commands.run("projects.new");
+    await app.commands.run("projects.newname", { value: "Book" });
+    for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+    await app.commands.run("projects.newCreate");
+    expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: true, name: "Book", error: en["project.new.failed"], recoveryAction: en["project.new.change"] });
+    await app.commands.run("projects.newRecover");
+    expect(creates).toBe(1); expect(picks).toBe(1);
+  });
   it("retries a failed list in place, keeping the query, previous entries and error while only Retry is pending", async () => {
     let reads = 0, release!: (entries: ProjectEntry[]) => void;
     const app = appWith({ list: async () => {

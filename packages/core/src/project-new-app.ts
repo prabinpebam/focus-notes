@@ -1,22 +1,26 @@
 import type { App } from "./app.ts";
-import type { PlatformBridge } from "./bridge.ts";
+import { opErrorCode, type PlatformBridge } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 
 export function registerProjectNew(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"]; bridge: PlatformBridge; catalog: MessageCatalog;
 }) {
   const { store, commands, viewModels, bridge, catalog } = ctx;
-  const state = { open: false, step: 1, name: "", parent: "", folder: "", accent: "teal", logo: "book", error: "", problem: "", pending: false, created: "" };
+  const state = { open: false, step: 1, name: "", parent: "", folder: "", accent: "teal", logo: "book", error: "", problem: "", pending: false, retrying: false, created: "" };
+  let recovery: "open" | "folder" | undefined;
   let revision = 0;
   const changed = () => store.update((s) => ({ ...s }));
   async function validate() {
     const at = ++revision;
-    state.pending = true; state.error = ""; changed();
+    state.pending = true;
+    if (!state.retrying) { state.error = ""; recovery = undefined; }
+    changed();
     try {
       const result = await bridge.projects!.check(state.parent, state.name);
       if (at !== revision) return;
       state.folder = result.folder; state.problem = result.problem;
       state.error = result.problem && state.name ? catalog.format(`project.new.problem.${result.problem}`, { folder: state.folder }) : "";
+      if (!state.error) recovery = undefined;
     } catch {
       if (at !== revision) return;
       state.problem = "access"; state.error = catalog.format("project.new.problem.access", { folder: state.parent });
@@ -26,6 +30,7 @@ export function registerProjectNew(ctx: {
     id: "projects.new", title: "project.new", icon: "add", layer: "basic", group: "app", enabled: () => Boolean(bridge.projects),
     run: async () => {
       await commands.run("projects.close");
+      recovery = undefined;
       Object.assign(state, { open: true, step: 1, name: "", accent: "teal", logo: "book", error: "", problem: "", created: "", pending: true });
       changed();
       try { state.parent = await bridge.projects!.parent(); }
@@ -62,13 +67,30 @@ export function registerProjectNew(ctx: {
   commands.register({
     id: "projects.newCreate", title: "project.new.create", enabled: () => state.step === 4 && !state.pending && !state.problem,
     run: async () => {
-      state.pending = true; state.error = ""; changed();
+      state.pending = true;
+      if (!state.retrying) { state.error = ""; recovery = undefined; }
+      changed();
       try {
         if (!state.created) state.created = await bridge.projects!.create({parent: state.parent, name: state.name, accent: state.accent, logo: state.logo});
         await bridge.projects!.open(state.created);
-        state.open = false;
-      } catch { state.error = catalog.format("project.new.failed"); }
+        state.open = false; state.error = ""; recovery = undefined;
+      } catch (error) {
+        recovery = state.created ? "open" : "folder";
+        state.error = catalog.format(state.created ? "project.new.openFailed" : "project.new.failed");
+        console.error("New project failed", recovery, opErrorCode(error));
+      }
       finally { state.pending = false; changed(); }
+    },
+  });
+  commands.register({
+    id: "projects.newRecover", title: "commit.retry", enabled: () => state.open && Boolean(recovery) && !state.pending,
+    run: async () => {
+      state.retrying = true; changed();
+      try {
+        if (recovery === "open") await commands.run("projects.newCreate");
+        else if (recovery === "folder") await commands.run("projects.newFolder");
+        else throw new Error("No New project action to recover");
+      } finally { state.retrying = false; changed(); }
     },
   });
   commands.register({ id: "projects.newContinue", title: "project.next", run: () => commands.run(state.step === 4 ? "projects.newCreate" : "projects.newNext") });
@@ -76,11 +98,12 @@ export function registerProjectNew(ctx: {
   viewModels.register({
     id: "vm.projectNew", reads: "*", setters: { name: "projects.newname", accent: "projects.newaccent", logo: "projects.newlogo" },
     schema: { type: "object", properties: {
-      open: { type: "boolean" }, pending: { type: "boolean" }, cannotNext: { type: "boolean" }, cannotBack: { type: "boolean" }, confirm: { type: "boolean" },
-      step: { type: "number" }, stepName: text, stepLabel: text, nextLabel: text, name: text, parent: text, folder: text, accent: text, logo: text, error: text,
+      open: { type: "boolean" }, pending: { type: "boolean" }, retrying: { type: "boolean" }, cannotNext: { type: "boolean" }, cannotBack: { type: "boolean" }, confirm: { type: "boolean" },
+      step: { type: "number" }, stepName: text, stepLabel: text, nextLabel: text, name: text, parent: text, folder: text, accent: text, logo: text, error: text, recoveryAction: text,
     } },
     select: () => ({
       ...state, cannotNext: state.pending || !state.name.trim() || Boolean(state.problem), cannotBack: state.pending || state.step <= 1, confirm: state.step === 4,
+      recoveryAction: recovery ? catalog.format(recovery === "open" ? "commit.retry" : "project.new.change") : "",
       stepName: ["name", "private", "look", "confirm"][state.step - 1],
       stepLabel: catalog.format("project.new.stepOf", { n: state.step }),
       nextLabel: catalog.format(state.step === 4 ? "project.new.create" : "project.next"),

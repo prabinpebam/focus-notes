@@ -1250,9 +1250,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("projects:list", () => projects.list());
   handle("projects:upload", () => projects.upload());
   handle("projects:localNote", () => projects.localNote());
-  handle("projects:importLocal", (path: unknown, folder: unknown) => {
-    if (typeof path !== "string" || typeof folder !== "string") throw new Error("Invalid local import");
-    return projects.importLocal(path, folder);
+  handle("projects:importLocal", (path: unknown, folder: unknown, request: unknown) => {
+    if (typeof path !== "string" || typeof folder !== "string" || (request !== undefined && (typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request)))) throw new Error("Invalid local import");
+    return projects.importLocal(path, folder, request);
   });
   handle("projects:edited", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");

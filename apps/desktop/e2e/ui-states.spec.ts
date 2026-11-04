@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
-import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
+import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 
@@ -19,6 +19,72 @@ async function closeTestApp(l: Launched) {
     }
   }
 }
+
+test("New project and Local import recover without repeating completed creation or copying a partial note", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "local-draft.md");
+  writeFileSync(note, "# Local draft\n\nKeep these exact bytes.\n");
+  const before = readFileSync(note);
+  const destination = join(dirs.userData, "Imported");
+  const notes = join(destination, "notes"), held = `${notes}.held`;
+  mkdirSync(notes, { recursive: true });
+  const targetProfile = join(dirs.userData, DATA_FOLDERS.projectProfiles, "synthetic-import");
+  mkdirSync(targetProfile, { recursive: true });
+  writeFileSync(join(targetProfile, DATA_FILES.projectFolder), destination);
+  writeFileSync(join(targetProfile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done" }));
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", localNotes: true, projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_LOCAL_NOTES: "1", FOCUS_NOTES_LOCAL_NOTES_HOME: dirs.docs });
+  try {
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    await l.page.getByRole("menuitem", { name: "Import into project…", exact: true }).click();
+    const sheet = l.page.getByRole("dialog", { name: "Import into project", exact: true });
+    renameSync(notes, held); writeFileSync(notes, "blocked directory");
+    await sheet.getByRole("option", { name: /Imported/ }).click();
+    const failure = sheet.locator("[data-status-row=danger]");
+    await expect(failure).toContainText("Your Local note is unchanged.");
+    expect(readFileSync(note)).toEqual(before);
+    rmSync(notes); renameSync(held, notes);
+    await failure.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(sheet).not.toBeVisible();
+    expect(readdirSync(notes)).toEqual(["local-draft.md"]);
+    expect(readFileSync(join(notes, "local-draft.md"))).toEqual(before);
+    expect(readFileSync(note)).toEqual(before);
+
+    await l.app.evaluate(({ ipcMain }, folder) => {
+      let creates = 0, opens = 0;
+      ipcMain.removeHandler("projects:check");
+      ipcMain.handle("projects:check", (_event, _parent, name) => ({ folder: `${folder}\\${name}`, problem: "" }));
+      ipcMain.removeHandler("projects:create");
+      ipcMain.handle("projects:create", () => { Reflect.set(globalThis, "fnUiStatesCreates", ++creates); return folder; });
+      ipcMain.removeHandler("projects:open");
+      ipcMain.handle("projects:open", async () => {
+        if (++opens === 1) throw new Error("sensitive diagnostic notFound");
+        await new Promise(resolve => setTimeout(resolve, 600));
+      });
+    }, destination);
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+    await l.page.getByRole("dialog", { name: "Open", exact: true }).getByRole("button", { name: "New project…", exact: true }).click();
+    const project = l.page.getByRole("dialog", { name: "New project", exact: true });
+    await project.getByRole("textbox", { name: "Project name", exact: true }).fill("Kept project choices");
+    for (let i = 0; i < 3; i++) await project.getByRole("button", { name: "Next", exact: true }).click();
+    await project.getByRole("button", { name: "Create project", exact: true }).click();
+    const projectFailure = project.locator("[data-status-row=danger]");
+    await expect(projectFailure).toContainText("The project was created but couldn’t open.");
+    expect(await project.innerText()).not.toContain("sensitive diagnostic");
+    await projectFailure.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(projectFailure.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(project.getByRole("heading", { name: "Kept project choices", exact: true })).toBeVisible();
+    await expect(project).not.toBeVisible();
+    expect(await l.app.evaluate(() => Reflect.get(globalThis, "fnUiStatesCreates"))).toBe(1);
+    expect(readFileSync(note)).toEqual(before);
+    expect(readdirSync(notes)).toEqual(["local-draft.md"]);
+  } finally {
+    if (existsSync(held)) { if (existsSync(notes)) rmSync(notes); renameSync(held, notes); }
+    await closeTestApp(l);
+  }
+});
 
 test("AI details commit independently and key Save checks before persistence, retaining failures and secrets locally", async () => {
   test.setTimeout(120_000);

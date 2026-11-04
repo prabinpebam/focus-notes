@@ -10,7 +10,9 @@ export function registerProjectOpen(ctx: {
   const { store, commands, viewModels, bridge } = ctx;
   const state = { open: false, full: false, query: "", active: "", pending: false, loading: false, retrying: false, searchFocus: 0, error: "", details: "", entries: [] as ProjectEntry[] };
   const github = { open: false, loading: false, pending: "", error: "", repos: [] as { owner: string; name: string; private: boolean }[] };
-  const localImport = { open: false, pending: false, error: "", targets: [] as {id: string; label: string; description: string}[] };
+  const localImport = { open: false, pending: false, retrying: false, error: "", targets: [] as {id: string; label: string; description: string}[] };
+  let importRecovery: { command: string; args: Record<string, unknown> } | undefined;
+  let importReceipt: { path: string; folder: string; request: string } | undefined;
   const changed = () => store.update((s) => ({ ...s }));
   let recovery: { command: string; args: Record<string, unknown> } | undefined;
   let listing = 0;
@@ -68,11 +70,18 @@ export function registerProjectOpen(ctx: {
   commands.register({
     id: "local.import", title: "quick.import.button", group: "app", icon: "folder", enabled: () => Boolean(bridge.projects?.local && store.state.note.path),
     run: async () => {
-      localImport.open = true; localImport.pending = true; localImport.error = ""; changed();
+      localImport.open = true; localImport.pending = true;
+      if (!localImport.retrying) { localImport.error = ""; importRecovery = undefined; importReceipt = undefined; }
+      changed();
       try {
         const entries = await bridge.projects!.list();
         localImport.targets = entries.filter(e => !e.localNotes).map(e => ({id: e.folder, label: e.name, description: e.folder}));
-      } catch { localImport.error = ctx.catalog.format("project.open.failed"); }
+        localImport.error = ""; importRecovery = undefined;
+      } catch (error) {
+        localImport.error = ctx.catalog.format("quick.import.listFailed");
+        importRecovery = { command: "local.import", args: {} };
+        console.error("Local import failed", "list", opErrorCode(error));
+      }
       finally { localImport.pending = false; changed(); }
     },
   });
@@ -80,16 +89,36 @@ export function registerProjectOpen(ctx: {
   commands.register<{id: string}>({
     id: "local.copyTo", title: "quick.import.button", enabled: () => localImport.open && !localImport.pending,
     run: async ({id}) => {
-      localImport.pending = true; localImport.error = ""; changed();
+      localImport.pending = true;
+      if (!localImport.retrying) localImport.error = "";
+      changed();
       try {
         if (!await ctx.flush()) throw new Error("Local note is not saved");
-        const path = store.state.note.path;
+        const path = localImport.retrying ? importReceipt?.path ?? store.state.note.path : store.state.note.path;
         if (!path) throw new Error("No local note");
-        const copied = await bridge.projects!.importLocal(path, id);
+        if (!importReceipt || importReceipt.path !== path || importReceipt.folder !== id) {
+          importReceipt = { path, folder: id, request: globalThis.crypto.randomUUID() };
+        }
+        const copied = await bridge.projects!.importLocal(path, id, importReceipt.request);
         localImport.open = false;
+        localImport.error = ""; importRecovery = undefined;
         ctx.toast(ctx.catalog.format("quick.import.saved", {name: copied.split(/[\\/]/).at(-1) ?? ""}));
-      } catch { localImport.error = ctx.catalog.format("quick.import.failed"); }
+      } catch (error) {
+        localImport.error = ctx.catalog.format("quick.import.failed");
+        importRecovery = { command: "local.copyTo", args: { id } };
+        console.error("Local import failed", "copy", opErrorCode(error));
+      }
       finally { localImport.pending = false; changed(); }
+    },
+  });
+  commands.register({
+    id: "local.importRetry", title: "commit.retry", enabled: () => localImport.open && Boolean(importRecovery) && !localImport.pending,
+    run: async () => {
+      const failed = importRecovery;
+      if (!failed) throw new Error("No Local import to retry");
+      localImport.retrying = true; changed();
+      try { await commands.run(failed.command, failed.args); }
+      finally { localImport.retrying = false; changed(); }
     },
   });
   commands.register<{value: string}>({ id: "projects.query", title: "project.open.search", run: ({value}) => { state.query = value; changed(); } });
@@ -185,8 +214,8 @@ export function registerProjectOpen(ctx: {
   const text = { type: "string" as const };
   viewModels.register({
     id: "vm.localImport", reads: "*",
-    schema: {type: "object", properties: {open: {type: "boolean"}, pending: {type: "boolean"}, error: text, targets: {type: "array", items: {type: "object", properties: {id: text, label: text, description: text}}}}},
-    select: () => ({...localImport}),
+    schema: {type: "object", properties: {open: {type: "boolean"}, pending: {type: "boolean"}, retrying: {type: "boolean"}, recoveryAction: text, error: text, targets: {type: "array", items: {type: "object", properties: {id: text, label: text, description: text}}}}},
+    select: () => ({...localImport, recoveryAction: importRecovery ? ctx.catalog.format("commit.retry") : ""}),
   });
   const menu = { type: "array" as const, items: { type: "object" as const, properties: { id: text, items: { type: "array" as const, items: { type: "object" as const, properties: { id: text, label: text, icon: text } } } } } };
   const item = { type: "object" as const, properties: { id: text, label: text, description: text, icon: text, pinned: { type: "boolean" as const }, menu } };

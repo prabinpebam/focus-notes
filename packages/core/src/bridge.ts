@@ -130,7 +130,8 @@ export interface PlatformBridge {
   projects?: {
     local?: boolean;
     localNote(): Promise<void>;
-    importLocal(path: string, folder: string): Promise<string>;
+    /** A retained request ID returns the same completed copy rather than importing twice after a lost reply. */
+    importLocal(path: string, folder: string, request?: string): Promise<string>;
     upload(): Promise<string | undefined>;
     edited(path: string): Promise<void>;
     pin(folder: string, path?: string): Promise<void>;

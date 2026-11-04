@@ -13,7 +13,7 @@
       "type": "Stack", "props": { "gap": "s" }, "children": [
         { "type": "ResultList", "id": "localImportTargets", "props": { "label": { "t": "quick.import.where" }, "items": { "get": "vm.localImport.targets" } }, "on": { "action": { "run": "local.copyTo", "args": { "id": { "get": "event.id" } } } } },
         { "type": "Text", "props": { "value": { "t": "quick.import.keep" }, "role": "caption", "tone": "muted" } },
-        { "type": "Text", "props": { "value": { "get": "vm.localImport.error" }, "tone": "danger" } },
+        { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.localImport.error" }, ""] } }, "props": { "message": { "get": "vm.localImport.error" }, "tone": "danger", "actionLabel": { "get": "vm.localImport.recoveryAction" }, "actionBusy": { "get": "vm.localImport.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } }, "on": { "action": { "run": "local.importRetry" } } },
         { "type": "Inline", "props": { "justify": "end" }, "children": [
           { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary", "disabled": { "get": "vm.localImport.pending" }, "disabledReason": { "t": "project.open.preparing" } }, "on": { "press": { "run": "local.importClose" } } }
         ] }

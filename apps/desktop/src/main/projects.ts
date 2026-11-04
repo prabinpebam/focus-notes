@@ -1,6 +1,6 @@
 import { app, dialog, safeStorage } from "electron";
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { access, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
@@ -10,6 +10,7 @@ import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi } from "@focus-notes/github";
 import { parseRecord } from "./workspace/record.ts";
+import { localImportCopies } from "./local-import.ts";
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
@@ -250,7 +251,8 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }
     await open(folder, note);
   }
-  async function importLocal(path: string, project: string) {
+  const copyLocal = localImportCopies();
+  async function importLocal(path: string, project: string, request: string = randomUUID()) {
     const source = await realpath(path);
     const local = await realpath(localHome());
     const rel = relative(local, source);
@@ -263,13 +265,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       : existsSync(join(folder, "notes")) ? join(folder, "notes") : folder;
     const text = await readFile(source, "utf8");
     const name = basename(source, extname(source));
-    for (let i = 1; ; i++) {
-      const target = join(destination, `${name}${i === 1 ? "" : ` ${i}`}.md`);
-      try { await writeFile(target, text, { flag: "wx" }); return target; }
-      catch (error) {
-        if (!error || typeof error !== "object" || !("code" in error) || error.code !== "EEXIST") throw error;
-      }
-    }
+    return copyLocal(request, source, destination, name, text);
   }
   async function chooseParent(parent: string): Promise<string | undefined> {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"], defaultPath: parent });

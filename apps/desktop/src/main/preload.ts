@@ -123,7 +123,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   projects: {
     local: params.get("localNotes") === "1",
     localNote: () => ipcRenderer.invoke("projects:localNote"),
-    importLocal: (path: string, folder: string) => ipcRenderer.invoke("projects:importLocal", path, folder),
+    importLocal: (path: string, folder: string, request?: string) => ipcRenderer.invoke("projects:importLocal", path, folder, request),
     upload: () => ipcRenderer.invoke("projects:upload"),
     edited: (path: string) => ipcRenderer.invoke("projects:edited", path),
     pin: (folder: string, path?: string) => ipcRenderer.invoke("projects:pin", folder, path),
