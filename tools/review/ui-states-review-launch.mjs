@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { mkdirSync, existsSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, existsSync, writeFileSync, readFileSync, openSync, closeSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync, spawn } from "node:child_process";
@@ -8,8 +8,17 @@ import { createRequire } from "node:module";
 const candidate = dirname(fileURLToPath(import.meta.url));
 const worker = "__REVIEW_WORKTREE__";
 const inspect = process.argv.includes("--inspect");
+const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^FOCUS_NOTES_E2E/i.test(key)));
+if (!inspect && !process.argv.includes("--owner-shell")) {
+  const command = join(candidate, "Open review build.cmd").replaceAll("'", "''");
+  execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
+    `$ErrorActionPreference='Stop'; $shell=New-Object -ComObject Shell.Application; $shell.ShellExecute('${command}', '--owner-shell', '${candidate.replaceAll("'", "''")}', 'open', 1)`],
+  { env: cleanEnv, stdio: "inherit" });
+  console.log("Normal Windows Shell launch requested; wait for exposed-window verification before reporting it open.");
+  process.exit(0);
+}
 const profile = join(candidate, inspect ? "feedback-inspection-profile" : "owner-review-profile");
-const gitEnv = { ...process.env, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: join(candidate, "local.gitconfig") };
+const gitEnv = { ...cleanEnv, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: join(candidate, "local.gitconfig") };
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, env: gitEnv, stdio: "pipe" });
 const remotes = join(candidate, "local-git");
 const samples = [
@@ -60,7 +69,8 @@ const envFor = sample => ({
   ...gitEnv, FOCUS_NOTES_USER_DATA: sample.profile, FOCUS_NOTES_PROJECTS_PROFILE: profile,
   FOCUS_NOTES_DOCS: sample.workspace, FOCUS_NOTES_LOCAL_NOTES_HOME: join(candidate, "Local notes"),
   FOCUS_NOTES_GITHUB_API: origin, FOCUS_NOTES_CANDIDATE_GITHUB_API: origin,
-  FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_E2E: "1", FOCUS_NOTES_E2E_VISIBLE: inspect ? "0" : "1",
+  FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes,
+  ...(inspect ? { FOCUS_NOTES_E2E: "1", FOCUS_NOTES_E2E_VISIBLE: "0" } : {}),
 });
 const close = () => { server.closeAllConnections(); server.close(); };
 if (inspect) {
@@ -100,9 +110,23 @@ if (inspect) {
     }
   } finally { close(); }
 } else {
-  const child = spawn(join(candidate, "electron.exe"), [join(candidate, "app")], { env: envFor(samples[0]), stdio: "ignore" });
+  const env = envFor(samples[0]);
+  const log = openSync(join(candidate, "owner-review-app.log"), "a");
+  const child = spawn(join(candidate, "electron.exe"), [join(candidate, "app")], { env, stdio: ["ignore", log, log] });
+  closeSync(log);
   child.once("error", error => { console.error(error); close(); process.exitCode = 1; });
   child.once("exit", close);
-  writeFileSync(join(candidate, "owner-review-process.json"), JSON.stringify({ pid: child.pid, launcherPid: process.pid, origin, profile, commit: basename(candidate) }));
-  console.log(`Owner review running: PID ${child.pid}; local GitHub ${origin}; Open > Garden notes opens the second project window.`);
+  child.once("spawn", () => {
+    const receipt = join(candidate, "owner-review-process.json");
+    writeFileSync(receipt, JSON.stringify({
+      pid: child.pid, launcherPid: process.pid, origin, profile, commit: basename(candidate),
+      e2eVariables: Object.keys(env).filter(key => /^FOCUS_NOTES_E2E/i.test(key)),
+    }));
+    console.log(`Owner review started: PID ${child.pid}; verification pending; Open > Garden notes opens the second project window.`);
+    const verification = spawn("pwsh", ["-NoProfile", "-File", join(candidate, "verify-owner-review.ps1"), "-Receipt", receipt], { env: cleanEnv, stdio: "inherit" });
+    verification.once("error", error => console.error("Owner review is NOT verified:", error));
+    verification.once("exit", code => {
+      if (code !== 0) console.error("Owner review is NOT verified as exposed. Check owner-review-app.log; do not activate or relaunch it automatically.");
+    });
+  });
 }
