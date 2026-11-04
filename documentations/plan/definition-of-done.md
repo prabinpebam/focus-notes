@@ -409,6 +409,19 @@ Two regressions failed before implementation. Early journey attempts corrected a
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\Open review build.cmd` includes all prior slices and the local GitHub stand-in. Collapse Files, search for an absent title, then Clear search. The synthetic first-note replacement and refused listing Retry belong to scoped evidence, not the owner's notes. This is bounded D5 evidence, not acceptance of every empty/all-done surface or an independent delayed initial-scan journey. Recently-deleted read failure/good-news treatment, other first actions, D7 streaming/crash receipts, remaining tracker coverage and hover/static acceptance remain in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 owner review refresh, 6218b99d
+
+The owner's priority direction at 20:23 stopped the next implementation slice for an immediate latest combined launch. After `git fetch origin --no-recurse-submodules`, exact `git log vq-ui-states..origin/vq-open-cards` returned no commits: Open cards are already included in pushed `6218b99d80d9c7783cb271204d2f2a81f84d83b3`. No merge, source change or additional build was needed; the exact candidate already built and inspected at 20:19 was reused without rolling back image recovery.
+
+| Check | Result |
+| --- | --- |
+| `node E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\review-launch.mjs --inspect` | Passed again: normal Project/AI settings, Open, local-only GitHub repository list and Open file with synthetic picker selection; invisible inspection closed with own-PID `-WhatIf`, then actual cleanup |
+| `E:\Projects\side-projects\focus-notes-work\preview\candidates\6218b99d\Open review build.cmd` | Separate visible owner-review instance left open; actual Electron PID 51232, launcher parent 55868, exact candidate command verified; loopback `/user/repos` returned HTTP 200 |
+| Earlier owner instance | PID 51996 and parent 60712 remain open and untouched; neither was silently replaced |
+| Suites/CI/app merge | Not run: priority launch reused exact verified output, with no runtime changes |
+
+**Try it:** the launcher above includes Open file/Open from GitHub, broken-image recovery and all later sharing/Files slices. The GitHub list is a synthetic loopback stand-in with a local bare repository, not a real account. This expressly requested visible instance stays open. Phase 2 remains in progress; the launch does not accept remaining D5/D7 or hover/static work.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
