@@ -357,11 +357,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   }, options.clock);
   const clock = options.clock ?? { now: () => Date.now(), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
   const commits = new CommitTracker(waits.confirmMinimum, (items) => store.update((s) => ({ ...s, commits: items })), clock);
-  commands.register<{ target: string; command: string; value: unknown }>({
+  commands.register<{ target: string; command: string; value: unknown; label?: string }>({
     id: "commit.run", title: "commit.save",
-    run: async ({ target, command, value }) => {
+    run: async ({ target, command, value, label }) => {
       if (!commands.describe(command).enabled) throw new Error(`Setting unavailable: ${command}`);
+      const done = catalog.format(label ? "commit.namedSaved" : "commit.saved", label ? { name: label } : undefined);
       await commits.run(target, command, value, () => commands.run(command, { value }));
+      announce(done);
     },
   });
   commands.register<{ target: string }>({

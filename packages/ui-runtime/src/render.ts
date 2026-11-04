@@ -186,7 +186,7 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
   const commit = target ? scope.state.commits.find((item) => item.target === target) : undefined;
   const runCommit = async (command: string, value: unknown) => {
     try {
-      await deps.app.commands.run("commit.run", { target, command, value });
+      await deps.app.commands.run("commit.run", { target, command, value, ...(typeof props.label === "string" ? { label: props.label } : {}) });
       return true;
     } catch (error) {
       console.error("Setting commit failed", error);

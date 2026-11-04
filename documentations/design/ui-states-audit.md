@@ -28,6 +28,8 @@ The watermark-specific refusal journey now verifies that its failed On choice re
 
 The app's theme-manager Appearance and Paragraph spacing groups now opt into the same declared commit lane; tab navigation and explicit-save colour drafts do not. A failed appearance choice stays local while paragraph spacing can save independently; Retry keeps both changes and reopening preserves them. Choice errors name the choice rather than saying it was typed. Core/runtime/desktop typechecks, 28 related unit tests, the theme-manager refusal/independent-group/Retry/reopening journey and the updated scale journey pass. The legacy category assertion now includes the Project section brought in by the prerequisite merge. Other app controls, sliders and explicit-save groups remain unaccepted; the same 54 inherited static findings remain.
 
+Confirmed commits now use the existing polite live region once per successful write. Bound controls supply their label, such as “Name saved.”; unnamed action-driven commits use “Change saved.” Pending, failed, Revert and expiry do not claim a save, and retained values never enter the announcement. Core/runtime/desktop typechecks and 35 focused unit tests pass; the invisible project-name refusal/Retry journey reaches the named live-region confirmation while Settings remains open. This is DOM/role evidence, not live screen-reader certification.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.

@@ -156,10 +156,13 @@ test("project name saves on blur, keeps a rejected draft and retries without los
     await name.press("Tab");
     await expect(settings.getByText("Couldn't save this change. What you typed is still here.", { exact: true })).toBeVisible();
     await expect(name).toHaveValue("Kept project draft");
+    const savedNotice = l.page.getByRole("status").filter({ hasText: "Name saved." });
+    await expect(savedNotice).toHaveCount(0);
     rmSync(stateFile, { recursive: true });
     if (existsSync(backup)) renameSync(backup, stateFile);
     await settings.getByRole("button", { name: "Retry", exact: true }).click();
     await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).projectSettings?.[dirs.docs]?.name).toBe("Kept project draft");
+    await expect(savedNotice).toHaveText("Name saved.");
     await settings.getByRole("button", { name: "Close", exact: true }).click();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
     await settings.getByRole("tab", { name: "Project", exact: true }).click();

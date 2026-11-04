@@ -75,3 +75,31 @@ it("keeps the saved watermark off after refusal and changes the writing surface 
   await app.commands.run("commit.run", args);
   expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({ watermark: "on", watermarkOn: true });
 });
+
+it("announces a confirmed commit once, not pending, failed or clearing, and never speaks the retained draft", async () => {
+  vi.useFakeTimers();
+  try {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const app = setup(save);
+    const args = { target: "vm.project.name", command: "project.name", value: "A private draft", label: "Project name" };
+    const first = app.commands.run("commit.run", args);
+    expect(app.store.state.announcement.n).toBe(0);
+    await vi.advanceTimersByTimeAsync(199);
+    expect(app.store.state.announcement.n).toBe(0);
+    await vi.advanceTimersByTimeAsync(1);
+    await first;
+    expect(app.store.state.announcement).toEqual({ text: "Project name saved.", n: 1 });
+    save.mockRejectedValue(new Error("disk full"));
+    const failed = expect(app.commands.run("commit.run", { ...args, value: "Another retained draft" })).rejects.toThrow("disk full");
+    await vi.advanceTimersByTimeAsync(200);
+    await failed;
+    expect(app.store.state.announcement).toEqual({ text: "Project name saved.", n: 1 });
+    save.mockResolvedValue(undefined);
+    const retry = app.commands.run("commit.run", { ...args, value: "Another retained draft" });
+    await vi.advanceTimersByTimeAsync(200);
+    await retry;
+    expect(app.store.state.announcement).toEqual({ text: "Project name saved.", n: 2 });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(app.store.state.announcement.n).toBe(2);
+  } finally { vi.useRealTimers(); }
+});
