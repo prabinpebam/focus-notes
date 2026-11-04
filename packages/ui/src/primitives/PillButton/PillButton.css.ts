@@ -8,6 +8,7 @@ const t = tokens.cmp.pillButton;
 // It stays at full opacity so its text keeps AA contrast.
 
 export const pill = style({
+  position: "relative",
   ...controlMetrics,
   display: "inline-flex",
   alignItems: "center",

@@ -1679,6 +1679,40 @@
                 }
               ]
             },
+            "feedback": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "inline",
+                    "border"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "busyLabel": {
               "anyOf": [
                 {
@@ -3553,7 +3587,7 @@
     },
     "c_CommitMark": {
       "type": "object",
-      "description": "The commit track's trailing mark (ui-states, F2): nothing at rest, a spinner while a changed value is saved, a green tick in a circle that draws itself in once it's kept, an error icon if it failed. One fixed box, so nothing shifts. Decorative; the live region says it.",
+      "description": "Commit feedback (ui-states, F2): an inline spinner/tick/error when there is room, or a travelling border, success border and danger border on a compact control. The border inherits the control's shape and becomes dashed under reduced motion. Decorative; recovery and announcements live outside it.",
       "required": [
         "type"
       ],
@@ -3591,6 +3625,22 @@
                     "pending",
                     "confirmed",
                     "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "variant": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "inline",
+                    "border"
                   ]
                 },
                 {
@@ -4592,6 +4642,24 @@
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
                 },
                 {
                   "$ref": "#/$defs/read"

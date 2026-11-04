@@ -22,6 +22,7 @@ export const groupLabel = style({
 });
 
 export const tile = style({
+  position: "relative",
   display: "flex",
   flexDirection: "column",
   gap: t.padding,

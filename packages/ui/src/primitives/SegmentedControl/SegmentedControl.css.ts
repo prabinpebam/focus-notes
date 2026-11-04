@@ -38,6 +38,7 @@ export const track = {
 };
 
 const segmentBase = style({
+  position: "relative",
   display: "inline-flex",
   alignItems: "center",
   gap: t.padding,

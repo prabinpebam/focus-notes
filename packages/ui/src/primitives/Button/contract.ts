@@ -16,6 +16,8 @@ export const contract = defineContract({
     pressed: { kind: "boolean", default: false },
     expanded: { kind: "boolean", description: "A disclosure button (More options, Having trouble?): whether what it shows is open (aria-expanded)." },
     busy: { kind: "boolean", default: false, description: "A wait it started (Waits, D-199): inert at once; after wait.signDelay a Spinner replaces its icon." },
+    feedback: { kind: "enum", values: ["inline", "border"], default: "inline", description: "Use the element's own border when no icon slot fits." },
+    commit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "Compact commit states: travelling border, success border, danger border. Recovery is outside the button." },
     busyLabel: { kind: "text", description: "Its words while the wait shows (\"Signing out…\"), and the task tracker's done words after it." },
     disabled: { kind: "boolean", default: false },
     disabledReason: { kind: "message", requiredWhen: "disabled" },
@@ -29,6 +31,8 @@ export const contract = defineContract({
   a11y: { pattern: "button", name: "label" },
   uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: [
+    { name: "border feedback", props: { label: { t: "gallery.action" }, size: "s", feedback: "border", busy: true } },
+    ...["rest", "pending", "confirmed", "failed"].map((commit) => ({ name: `border ${commit}`, props: { label: { t: "gallery.action" }, size: "s", commit } })),
     ...variants.map((variant) => ({ name: `variant ${variant}`, props: { label: { t: "gallery.action" }, variant } })),
     { name: "size s", props: { label: { t: "gallery.action" }, size: "s" } },
     ...variants.flatMap((variant) => (["s", "m", "l"] as const).flatMap((size) => [undefined, "start", "end"].map((iconPosition) => ({

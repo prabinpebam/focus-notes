@@ -575,7 +575,8 @@
                           "variant": "primary",
                           "busy": {
                             "get": "local.playing"
-                          }
+                          },
+                          "feedback": "border"
                         },
                         "on": {
                           "press": [
@@ -613,7 +614,8 @@
                           "variant": "secondary",
                           "busy": {
                             "get": "local.playing"
-                          }
+                          },
+                          "feedback": "border"
                         },
                         "on": {
                           "press": [
@@ -651,7 +653,8 @@
                           "variant": "secondary",
                           "busy": {
                             "get": "local.playing"
-                          }
+                          },
+                          "feedback": "border"
                         },
                         "on": {
                           "press": [
@@ -675,7 +678,8 @@
                           "variant": "secondary",
                           "busy": {
                             "get": "local.playing"
-                          }
+                          },
+                          "feedback": "border"
                         },
                         "on": {
                           "press": [

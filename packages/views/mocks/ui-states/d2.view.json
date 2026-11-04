@@ -769,7 +769,8 @@
                           "variant": "primary",
                           "busy": {
                             "get": "local.playing"
-                          }
+                          },
+                          "feedback": "border"
                         },
                         "on": {
                           "press": [

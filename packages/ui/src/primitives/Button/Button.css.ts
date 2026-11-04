@@ -4,6 +4,7 @@ import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
 const t = tokens.cmp.button;
 
+export const borderAnchor = style({ position: "relative" });
 export const base = style({
   ...controlMetrics,
   display: "inline-flex",

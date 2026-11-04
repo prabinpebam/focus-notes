@@ -25,10 +25,5 @@
   "labelWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}", "$description": "The name's weight." },
   "stateSize": { "$type": "dimension", "$value": "{font.uiSecondary}", "$description": "The On or Off word and the description." },
   "duration": { "$type": "duration", "$value": "{motion.micro}", "$description": "The thumb's slide; reduced motion makes it instant." },
-  "easing": { "$type": "cubicBezier", "$value": "{easing.standard}", "$description": "The thumb's slide." },
-  "busyRing": { "$type": "color", "$value": "{color.accent}", "$description": "The spinner drawn in the thumb while a change is being saved (F2): the switch itself stays, focused and locked." },
-  "busyTrack": { "$type": "color", "$value": "{color.border}", "$description": "The rest of the thumb's spinner ring." },
-  "busyWidth": { "$type": "dimension", "$value": "{border.focus}", "$description": "The thumb spinner's line." },
-  "spin": { "$type": "duration", "$value": "{motion.spin}", "$description": "One turn of the thumb's spinner; reduced motion stands it still." },
-  "busyThumb": { "$type": "color", "$value": "{color.surface}", "$description": "The thumb while it holds the spinner, so the ring reads on either track." }
+  "easing": { "$type": "cubicBezier", "$value": "{easing.standard}", "$description": "The thumb's slide." }
 } } }

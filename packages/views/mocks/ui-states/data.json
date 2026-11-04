@@ -101,7 +101,7 @@
     "c99": "After · proposed",
     "c100": "Play the timing",
     "c101": "Local simulation only. Nothing here saves a setting or contacts a service.",
-    "c102": "The pending spinner sits inside the switch’s thumb, keeping the track visible. This follows the audit’s proposal; the skill describes replacing the control in its box. Approve the treatment by eye before phase 2.",
+    "c102": "The compact switch track uses its own border: a travelling arc while pending, a success outline when confirmed, and a danger outline on failure. Retry stays below the row. Reduced motion holds a dashed pending border.",
     "c103": "1. Notifications",
     "c104": "2. Fields",
     "c105": "4. Choices",
@@ -791,7 +791,25 @@
     "c789": "How to review",
     "c790": "Open a slice, compare Before and After, then Play. Use light, dark and reduced motion from the page header.",
     "c791": "Reply with “approve 2, 3” or “change 2: …”. Every approval is recorded on the audit page; no slice is approved by default.",
-    "c792": "Empty states are shown only where content can be absent; Off and an empty field are not empty containers."
+    "c792": "Empty states are shown only where content can be absent; Off and an empty field are not empty containers.",
+    "borderTitle": "Feedback that fits",
+    "borderRoom": "Room for a spinner",
+    "borderCompact": "No room: border becomes the spinner",
+    "borderRoomDetail": "A free trailing slot holds the spinner, tick or error icon. The label stays still.",
+    "borderCompactDetail": "The selected element keeps its shape and label. Its border sweeps, confirms in green or holds a danger outline.",
+    "borderName": "Project name",
+    "borderValue": "Field notes",
+    "borderAppearance": "Appearance",
+    "borderTheme": "Theme",
+    "borderPill": "Project",
+    "borderSave": "Save",
+    "borderPlay": "Play",
+    "borderPending": "Show pending",
+    "borderConfirmed": "Show confirmed",
+    "borderError": "Show error",
+    "borderRetry": "Retry",
+    "borderFailure": "Couldn’t keep this change. Your previous choice is safe.",
+    "borderTiming": "200 ms pending · 1.5 s confirmed · idle. Reduced motion holds a dashed border, without sweeping."
   },
   "name": "Field journal",
   "color": "#5c7560",
@@ -825,5 +843,7 @@
       "badge": "AA"
     }
   ],
-  "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='180' viewBox='0 0 480 180'%3E%3Crect width='480' height='180' fill='%235c7560'/%3E%3Cpath d='M0 180L140 40L250 150L350 70L480 180' fill='%23c9d6c6'/%3E%3C/svg%3E"
+  "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='180' viewBox='0 0 480 180'%3E%3Crect width='480' height='180' fill='%235c7560'/%3E%3Cpath d='M0 180L140 40L250 150L350 70L480 180' fill='%23c9d6c6'/%3E%3C/svg%3E",
+  "borderChoice": "system",
+  "borderTheme": "paper"
 }

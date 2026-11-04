@@ -147,8 +147,8 @@ export function ThemeGallery({ label, items, value, previewing, commit, focusReq
             <span className={s.label}>{t.label}</span>
             {t.slot ? <span className={s.slot}>{` ${t.slot}`}</span> : null}
             <span className={s.badge} aria-hidden="true">{t.badge}</span>
-            {commit ? <CommitMark state={t.id === value ? commit : "rest"} /> : null}
           </span>
+          {commit && t.id === value ? <CommitMark variant="border" state={commit} /> : null}
           {t.description ? <span id={`${baseId}-${t.id}`} hidden>{t.description}</span> : null}
         </div>
   );

@@ -6,6 +6,8 @@ import { controlLabel } from "../control.css.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
+import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
+import type { CommitState } from "../CommitMark/CommitMark.tsx";
 import { useBusy } from "../../behaviors/busy.ts";
 import type { IconName } from "../../icon-names.ts";
 import * as s from "./Button.css.ts";
@@ -23,6 +25,10 @@ export interface ButtonProps {
   expanded?: boolean;
   /** A wait it started (Waits, D-199): inert at once; after the busy delay a Spinner replaces its icon. */
   busy?: boolean;
+  /** Compact controls use their own border rather than adding an icon beside the label. */
+  feedback?: "inline" | "border";
+  /** Optional gallery/commit feedback; recovery belongs outside the button. */
+  commit?: CommitState;
   /** Its words while the wait shows ("Signing out…"), and the tracker's done words after it ("Published"). */
   busyLabel?: string;
   disabled?: boolean;
@@ -36,13 +42,14 @@ export interface ButtonProps {
   onPress?: () => void;
 }
 
-export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, busyLabel, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
-  const { inert, name, attrs, ref } = useBusy({ busy, busyLabel, label, disabled });
+export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, feedback = "inline", commit, busyLabel, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
+  const borderFeedback = feedback === "border" || commit !== undefined;
+  const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
   const keepNoteFocus = useContext(CompanionContext);
   const floating = useContext(FloatingContext) && (variant === "secondary" || variant === "subtle");
   const common = {
     id,
-    className: [s.base, s.size[size], ...(icon ? [iconPosition === "start" ? s.iconStart[size] : s.iconEnd[size]] : []), s.variant[variant], ...(floating ? [s.floating] : []), ...(bleed ? [s.bleed[size]] : [])].join(" "),
+    className: [s.base, s.size[size], ...(icon ? [iconPosition === "start" ? s.iconStart[size] : s.iconEnd[size]] : []), s.variant[variant], ...(floating ? [s.floating] : []), ...(bleed ? [s.bleed[size]] : []), ...(borderFeedback ? [s.borderAnchor] : [])].join(" "),
     "data-floating-control": floating ? "" : undefined,
     "data-bleed": bleed ? "" : undefined,
     ...attrs,
@@ -52,7 +59,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
     preventFocusOnPress: keepNoteFocus,
   };
   // Busy, the icon's cell holds a Spinner too, shown after the busy delay; a button without an icon says it in words.
-  const glyph = icon ? (busy ? (
+  const glyph = icon ? (busy && !borderFeedback ? (
     <span className={s.busyGlyph}>
       <span className={s.busyIcon}><Icon name={icon} size="s" /></span>
       <span className={s.busySpinner}><Spinner size="s" /></span>
@@ -63,6 +70,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
       {iconPosition === "start" ? glyph : null}
       <span className={`${s.label} ${controlLabel}`}>{name}</span>
       {iconPosition === "end" ? glyph : null}
+      {borderFeedback ? <BorderProgress state={commit ?? (busy ? "pending" : "rest")} /> : null}
     </>
   );
   const button = toggle ? (

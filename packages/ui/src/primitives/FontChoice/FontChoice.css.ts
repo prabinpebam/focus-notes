@@ -6,6 +6,7 @@ const t = tokens.cmp.fontChoice;
 // Built like a theme manager tile, at its size (owner, 3 November 19:05): a sample box as tall as its
 // swatch, then the full name, so the Font and Theme popovers show the same tiles.
 export const base = style({
+  position: "relative",
   display: "flex", flexDirection: "column", alignItems: "stretch", gap: t.gap, width: "100%", padding: t.padding, boxSizing: "border-box",
   borderRadius: t.radius, borderStyle: "none", backgroundColor: t.background,
   color: t.text, cursor: "pointer", textAlign: "start",

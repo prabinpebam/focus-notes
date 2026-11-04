@@ -226,7 +226,8 @@
                                   "label": {
                                     "get": "vm.mockUiStates.copy.c515"
                                   },
-                                  "busy": true
+                                  "busy": true,
+                                  "feedback": "border"
                                 }
                               }
                             ]

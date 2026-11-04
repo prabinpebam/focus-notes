@@ -159,6 +159,416 @@
             ]
           },
           {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.borderTitle"
+                  },
+                  "level": "2"
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "s",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.borderPlay"
+                      },
+                      "size": "s",
+                      "busy": {
+                        "get": "local.borderPlaying"
+                      },
+                      "feedback": "border"
+                    },
+                    "on": {
+                      "press": [
+                        {
+                          "set": "local.borderPlaying",
+                          "to": true
+                        },
+                        {
+                          "set": "local.borderPhase",
+                          "to": "pending"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "confirmMinimum"
+                          }
+                        },
+                        {
+                          "set": "local.borderPhase",
+                          "to": "confirmed"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "doneDuration"
+                          }
+                        },
+                        {
+                          "set": "local.borderPhase",
+                          "to": "rest"
+                        },
+                        {
+                          "set": "local.borderPlaying",
+                          "to": false
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.borderPending"
+                      },
+                      "size": "s",
+                      "busy": {
+                        "get": "local.borderPlaying"
+                      },
+                      "feedback": "border"
+                    },
+                    "on": {
+                      "press": [
+                        {
+                          "set": "local.borderPhase",
+                          "to": "pending"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.borderConfirmed"
+                      },
+                      "size": "s",
+                      "busy": {
+                        "get": "local.borderPlaying"
+                      },
+                      "feedback": "border"
+                    },
+                    "on": {
+                      "press": [
+                        {
+                          "set": "local.borderPhase",
+                          "to": "confirmed"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.borderError"
+                      },
+                      "size": "s",
+                      "busy": {
+                        "get": "local.borderPlaying"
+                      },
+                      "feedback": "border"
+                    },
+                    "on": {
+                      "press": [
+                        {
+                          "set": "local.borderPhase",
+                          "to": "failed"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.borderTiming"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              },
+              {
+                "type": "Columns",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "Surface",
+                    "props": {
+                      "variant": "raised",
+                      "shape": "control",
+                      "padding": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.borderRoom"
+                              },
+                              "level": "3"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.borderRoomDetail"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "TextField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.borderName"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.copy.borderValue"
+                              },
+                              "commit": {
+                                "get": "local.borderPhase"
+                              },
+                              "error": {
+                                "get": "vm.mockUiStates.copy.borderFailure"
+                              },
+                              "retryLabel": {
+                                "get": "vm.mockUiStates.copy.borderRetry"
+                              }
+                            },
+                            "on": {
+                              "retry": [
+                                {
+                                  "set": "local.borderPlaying",
+                                  "to": true
+                                },
+                                {
+                                  "set": "local.borderPhase",
+                                  "to": "pending"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "confirmMinimum"
+                                  }
+                                },
+                                {
+                                  "set": "local.borderPhase",
+                                  "to": "confirmed"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "doneDuration"
+                                  }
+                                },
+                                {
+                                  "set": "local.borderPhase",
+                                  "to": "rest"
+                                },
+                                {
+                                  "set": "local.borderPlaying",
+                                  "to": false
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Surface",
+                    "props": {
+                      "variant": "raised",
+                      "shape": "control",
+                      "padding": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.borderCompact"
+                              },
+                              "level": "3"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.borderCompactDetail"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "SegmentedControl",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.borderAppearance"
+                              },
+                              "options": {
+                                "get": "vm.mockUiStates.appearance"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.borderChoice"
+                              },
+                              "commit": {
+                                "get": "local.borderPhase"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.mockUiStates.copy.borderSave"
+                                  },
+                                  "size": "s",
+                                  "commit": {
+                                    "get": "local.borderPhase"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "PillButton",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.mockUiStates.copy.borderPill"
+                                  },
+                                  "commit": {
+                                    "get": "local.borderPhase"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "ThemeGallery",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.borderTheme"
+                              },
+                              "items": {
+                                "get": "vm.mockUiStates.themes"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.borderTheme"
+                              },
+                              "commit": {
+                                "get": "local.borderPhase"
+                              }
+                            }
+                          },
+                          {
+                            "type": "StatusRow",
+                            "props": {
+                              "message": {
+                                "get": "vm.mockUiStates.copy.borderFailure"
+                              },
+                              "tone": "danger",
+                              "actionLabel": {
+                                "get": "vm.mockUiStates.copy.borderRetry"
+                              }
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.borderPhase"
+                                  },
+                                  "failed"
+                                ]
+                              }
+                            },
+                            "on": {
+                              "action": [
+                                {
+                                  "set": "local.borderPlaying",
+                                  "to": true
+                                },
+                                {
+                                  "set": "local.borderPhase",
+                                  "to": "pending"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "confirmMinimum"
+                                  }
+                                },
+                                {
+                                  "set": "local.borderPhase",
+                                  "to": "confirmed"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "doneDuration"
+                                  }
+                                },
+                                {
+                                  "set": "local.borderPhase",
+                                  "to": "rest"
+                                },
+                                {
+                                  "set": "local.borderPlaying",
+                                  "to": false
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "type": "Heading",
             "props": {
               "value": {
@@ -836,5 +1246,9 @@
         "id": "review"
       }
     ]
+  },
+  "local": {
+    "borderPhase": "rest",
+    "borderPlaying": false
   }
 }

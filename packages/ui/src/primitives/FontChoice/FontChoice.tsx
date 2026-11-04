@@ -18,10 +18,11 @@ export interface FontChoiceProps {
 /** A writing font shown in itself, so the choice is made by eye (D-316); every cell is the same size. */
 export function FontChoice({ font, label, selected = false, commit, onPress, onPreview }: FontChoiceProps) {
   return (
-    <Button className={`${s.base}${selected ? ` ${s.selected}` : ""}`} data-font-scope={font} aria-pressed={selected} aria-disabled={commit === "pending" || undefined} aria-busy={selected && commit === "pending" || undefined}
+    <Button className={`${s.base}${selected && (!commit || commit === "rest") ? ` ${s.selected}` : ""}`} data-font-scope={font} aria-pressed={selected} aria-disabled={commit === "pending" || undefined} aria-busy={selected && commit === "pending" || undefined}
       {...(onPress ? { onPress: () => { if (commit !== "pending") onPress(); } } : {})} {...(onPreview ? { onHoverStart: () => { if (commit !== "pending") onPreview(); }, onFocus: () => { if (commit !== "pending") onPreview(); } } : {})}>
       <span className={s.sample} aria-hidden="true">Aa</span>
-      <span className={s.name}>{label}{commit ? <CommitMark state={selected ? commit : "rest"} /> : null}</span>
+      <span className={s.name}>{label}</span>
+      {commit && selected ? <CommitMark variant="border" state={commit} /> : null}
     </Button>
   );
 }

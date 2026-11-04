@@ -1,7 +1,57 @@
-import { keyframes, style } from "@vanilla-extract/css";
+import { createVar, keyframes, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.commitMark;
+const angle = createVar({ syntax: "<angle>", inherits: false, initialValue: "0deg" });
+const coverage = createVar({ syntax: "<angle>", inherits: false, initialValue: "360deg" });
+const sweep = keyframes({ to: { vars: { [angle]: "360deg" } } });
+const reveal = keyframes({ from: { vars: { [coverage]: "0deg" } }, to: { vars: { [coverage]: "360deg" } } });
+const still = {
+  animation: "none",
+  background: "none",
+  maskImage: "none",
+  padding: 0,
+  borderStyle: "dashed",
+  borderWidth: t.borderStroke,
+  borderColor: t.borderPending,
+} as const;
+
+/** An overlay, not another icon slot: the positioned parent's own radius shapes the travelling arc. */
+export const border = style({
+  position: "absolute",
+  inset: 0,
+  borderRadius: "inherit",
+  padding: t.borderStroke,
+  pointerEvents: "none",
+  maskImage: "linear-gradient(currentColor 0 0), linear-gradient(currentColor 0 0)",
+  maskClip: "content-box, border-box",
+  maskComposite: "exclude",
+  selectors: {
+    '&[data-border-progress="pending"]': {
+      background: `conic-gradient(from ${angle}, ${t.borderTrack} calc(1turn - ${t.borderArc} * 1turn), ${t.borderPending} 0)`,
+      animationName: sweep,
+      animationDuration: t.borderSpin,
+      animationTimingFunction: "linear",
+      animationIterationCount: "infinite",
+    },
+    '&[data-border-progress="confirmed"]': {
+      background: `conic-gradient(${t.tick} ${coverage}, transparent 0)`,
+      animationName: reveal,
+      animationDuration: t.draw,
+      animationTimingFunction: t.easing,
+      animationFillMode: "both",
+    },
+    '&[data-border-progress="failed"]': { background: t.failed },
+    'html[data-motion="reduced"] &': { animation: "none" },
+    'html[data-motion="reduced"] &[data-border-progress="pending"]': still,
+  },
+  "@media": {
+    "(prefers-reduced-motion: reduce)": {
+      animation: "none",
+      selectors: { '&[data-border-progress="pending"]': still },
+    },
+  },
+});
 
 const draw = keyframes({ from: { strokeDashoffset: 1 }, to: { strokeDashoffset: 0 } });
 const grow = keyframes({ from: { transform: "scale(0.6)", opacity: 0 }, to: { transform: "scale(1)", opacity: 1 } });

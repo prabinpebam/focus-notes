@@ -1,6 +1,11 @@
 { "cmp": { "commitMark": {
   "size": { "$type": "dimension", "$value": "{size.iconM}", "$description": "The trailing slot: one fixed box that holds the spinner, the tick or the error icon in turn, so nothing shifts (F2)." },
   "stroke": { "$type": "dimension", "$value": "{border.focus}", "$description": "The tick's and the circle's line." },
+  "borderStroke": { "$type": "dimension", "$value": "{border.focus}", "$description": "The inset progress border on a compact control; never takes room from its label." },
+  "borderArc": { "$type": "number", "$value": "{progress.borderArc}", "$description": "The fraction of a turn occupied by the travelling border arc." },
+  "borderTrack": { "$type": "color", "$value": "{color.border}", "$description": "The quiet remainder of a pending compact control's border." },
+  "borderPending": { "$type": "color", "$value": "{color.accent}", "$description": "The travelling arc; a stationary dashed border under reduced motion." },
+  "borderSpin": { "$type": "duration", "$value": "{motion.spin}", "$description": "One sweep around the element's own shape." },
   "tick": { "$type": "color", "$value": "{color.success}", "$description": "The commit colour: the confirmed tick and circle, at least 3:1 against the field." },
   "tickFill": { "$type": "color", "$value": "{color.successMuted}", "$description": "The quiet fill inside the confirmed circle." },
   "failed": { "$type": "color", "$value": "{color.danger}", "$description": "The failed icon." },

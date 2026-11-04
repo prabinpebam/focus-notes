@@ -1,4 +1,11 @@
 {
+  "progress": {
+    "borderArc": {
+      "$type": "number",
+      "$value": 0.22,
+      "$description": "The fraction of a turn occupied by compact controls' travelling border arc."
+    }
+  },
   "font": {
     "content": {
       "$type": "fontFamily",

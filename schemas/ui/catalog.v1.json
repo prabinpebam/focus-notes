@@ -390,6 +390,25 @@
           "default": false,
           "description": "A wait it started (Waits, D-199): inert at once; after wait.signDelay a Spinner replaces its icon."
         },
+        "feedback": {
+          "kind": "enum",
+          "values": [
+            "inline",
+            "border"
+          ],
+          "default": "inline",
+          "description": "Use the element's own border when no icon slot fits."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Compact commit states: travelling border, success border, danger border. Recovery is outside the button."
+        },
         "busyLabel": {
           "kind": "text",
           "description": "Its words while the wait shows (\"Signing out…\"), and the task tracker's done words after it."
@@ -432,6 +451,11 @@
         "name": "label"
       },
       "fixtures": [
+        "border feedback",
+        "border rest",
+        "border pending",
+        "border confirmed",
+        "border failed",
         "variant primary",
         "variant secondary",
         "variant subtle",
@@ -1276,7 +1300,7 @@
     {
       "type": "CommitMark",
       "tier": "primitive",
-      "description": "The commit track's trailing mark (ui-states, F2): nothing at rest, a spinner while a changed value is saved, a green tick in a circle that draws itself in once it's kept, an error icon if it failed. One fixed box, so nothing shifts. Decorative; the live region says it.",
+      "description": "Commit feedback (ui-states, F2): an inline spinner/tick/error when there is room, or a travelling border, success border and danger border on a compact control. The border inherits the control's shape and becomes dashed under reduced motion. Decorative; recovery and announcements live outside it.",
       "props": {
         "state": {
           "kind": "enum",
@@ -1287,6 +1311,15 @@
             "failed"
           ],
           "default": "rest"
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "inline",
+            "border"
+          ],
+          "default": "inline",
+          "description": "Inline when there is a free icon slot; border follows the positioned parent's radius without displacing its content."
         }
       },
       "events": {},
@@ -1306,7 +1339,8 @@
         "state rest",
         "state pending",
         "state confirmed",
-        "state failed"
+        "state failed",
+        "border overlay"
       ]
     },
     {
@@ -1808,6 +1842,16 @@
         "label": {
           "kind": "message",
           "required": true
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "The pill's own border shows the commit state without taking label space."
         }
       },
       "events": {
@@ -1826,6 +1870,10 @@
         "name": "label"
       },
       "fixtures": [
+        "border rest",
+        "border pending",
+        "border confirmed",
+        "border failed",
         "unlock",
         "glyph bounds pill"
       ]

@@ -63,7 +63,7 @@ export function SegmentedControl({ label, options, value, orientation = "horizon
       <Label className={s.label}>{label}</Label>
       <span className={s.track[orientation]}>
         {options.map((o) => (
-          <Radio key={o.id} value={o.id} className={s.segment[orientation]}>{o.label}{commit ? <CommitMark state={o.id === value ? commit : "rest"} /> : null}</Radio>
+          <Radio key={o.id} value={o.id} className={s.segment[orientation]}>{o.label}{commit && o.id === value ? <CommitMark variant="border" state={commit} /> : null}</Radio>
         ))}
       </span>
     </RadioGroup>{commit === "failed" && error ? <CommitFailure message={error} {...(retryLabel ? { retryLabel } : {})} {...(revertLabel ? { revertLabel } : {})} {...(onRetry ? { onRetry } : {})} {...(onRevert ? { onRevert } : {})} /> : null}</>

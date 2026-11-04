@@ -17,9 +17,8 @@ export interface SwitchProps {
   /** Required with `disabled`: shown in place of the description, so the reason is always visible. */
   disabledReason?: string;
   /**
-   * The commit track (F2): pending draws a spinner in the thumb and locks the switch (still focused, still
-   * the stored value); confirmed shows the tick beside the state word; failed shows the stored value, the
-   * error icon and `error` below with Retry.
+   * The compact track's own border shows pending, confirmed or failed; the stored value stays put
+   * while pending, and a failure offers Retry below the row.
    */
   commit?: CommitState;
   error?: string;
@@ -47,12 +46,11 @@ export function Switch({ label, checked, onLabel, offLabel, description, disable
       onChange={(value) => onChange?.({ value })}
       {...(id ? { id } : {})}
     >
-      <span className={s.track} aria-hidden="true"><span className={s.thumb} /></span>
+      <span className={s.track} aria-hidden="true"><span className={s.thumb} />{commit ? <CommitMark variant="border" state={commit} /> : null}</span>
       <span className={s.text}>
         <span className={s.name}>
           <span className={s.label}>{label}</span>
           <span className={s.state} aria-hidden="true">{checked ? onLabel : offLabel}</span>
-          {commit === "confirmed" || commit === "failed" ? <CommitMark state={commit} /> : null}
         </span>
         {note ? <span className={s.description}>{note}</span> : null}
         {commit === "failed" && error ? <CommitFailure message={error} retryLabel={retryLabel} onRetry={onRetry} /> : null}
