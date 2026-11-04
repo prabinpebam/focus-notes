@@ -6,6 +6,9 @@ import { BLOCK_LIST_SCHEMA, type App } from "@focus-notes/core";
 import type { Contract } from "@focus-notes/ui/contracts";
 import { mocks, mockData } from "@focus-notes/views";
 import { VIEW_SCHEMA_URL } from "./migrate.ts";
+import { cssVarName } from "@focus-notes/tokens";
+
+export interface GalleryAppearance { scheme?: "light" | "dark"; motion?: "system" | "reduced" }
 
 export interface GalleryFixture { id: string; type: string; label: string }
 
@@ -25,7 +28,7 @@ export interface MockGroup {
 export function galleryFixtures(contracts: readonly Contract[]): GalleryFixture[] {
   return contracts.flatMap((c) => c.fixtures.map((f, i) => ({ id: `${c.type}.${i}`, type: c.type, label: `${c.type}: ${f.name}` })));
 }
-export function galleryViews(contracts: readonly Contract[], scheme: "light" | "dark" = "light", mockGroups: readonly MockGroup[] = []): Record<string, unknown> {
+export function galleryViews(contracts: readonly Contract[], scheme: "light" | "dark" = "light", mockGroups: readonly MockGroup[] = [], motion: "system" | "reduced" = "system"): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const group of mockGroups) for (const entry of group.entries) {
     const doc = group.views[entry.view] as { focus?: string; local?: Record<string, unknown>; root: unknown };
@@ -35,7 +38,7 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
       viewModels: ["vm.app", "vm.gallery", ...Object.keys(group.models).map((m) => `vm.${m}`)],
       ...(doc.focus ? { focus: doc.focus } : {}),
       local: { ...doc.local, ...entry.local },
-      root: { type: "AppRoot", props: { scheme, platform: { get: "vm.app.platform" } }, children: [doc.root] },
+      root: { type: "AppRoot", props: { scheme, motion, platform: { get: "vm.app.platform" } }, children: [doc.root] },
     };
   }
   for (const c of contracts) {
@@ -131,7 +134,7 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
 }
 
 /** Registers the gallery's view model and its navigation command on an app. */
-export function registerGallery(app: App, contracts: readonly Contract[], navigate: (id: string) => void, mockGroups: readonly MockGroup[] = []): void {
+export function registerGallery(app: App, contracts: readonly Contract[], navigate: (id: string, appearance?: GalleryAppearance) => void, mockGroups: readonly MockGroup[] = []): void {
   const fixtures = galleryFixtures(contracts);
   for (const group of mockGroups) for (const [name, data] of Object.entries(group.models)) {
     app.viewModels.register({ id: `vm.${name}`, schema: schemaOf(data) as never, select: () => data as never });
@@ -320,7 +323,16 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
   const mockSchema = schemaOf(mockData) as { properties: Record<string, unknown> };
   for (const k of Object.keys(mockSchema.properties)) if (k.endsWith("Blocks")) mockSchema.properties[k] = BLOCK_LIST_SCHEMA;
   app.viewModels.register({ id: "vm.mocks", schema: mockSchema as never, select: () => mockData });
-  app.commands.register<{ id: string }>({ id: "gallery.open", title: "gallery.title", run: ({ id }) => navigate(String(id)) });
+  app.commands.register<{ id: string; scheme?: "light" | "dark"; motion?: "system" | "reduced" }>({ id: "gallery.open", title: "gallery.title", run: ({ id, scheme, motion }) => navigate(String(id), { ...(scheme ? { scheme } : {}), ...(motion ? { motion } : {}) }) });
+  app.commands.register<{ duration: "confirmMinimum" | "doneDuration" | "noticeLong" | "toastDuration" | "signDelay" | "signMinimum" }>({
+    id: "gallery.wait", title: "gallery.title",
+    run: async ({ duration }) => {
+      const value = getComputedStyle(document.documentElement).getPropertyValue(cssVarName(`wait.${duration}`)).trim();
+      const ms = parseFloat(value) * (value.endsWith("ms") ? 1 : 1000);
+      if (!Number.isFinite(ms) || ms < 0) throw new Error(`Missing gallery timing token: wait.${duration}`);
+      await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    },
+  });
 }
 
 /** A JSON Schema read off fake data, so the mocks' view model needs no hand-kept schema. */

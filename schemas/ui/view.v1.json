@@ -8897,6 +8897,22 @@
                 }
               ]
             },
+            "motion": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "system",
+                    "reduced"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "platform": {
               "anyOf": [
                 {

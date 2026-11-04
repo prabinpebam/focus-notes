@@ -1,0 +1,422 @@
+{
+  "focus": "review",
+  "local": {
+    "phase": "rest",
+    "retry": "failed",
+    "playing": false,
+    "dismissed": false
+  },
+  "root": {
+    "type": "Center",
+    "props": {
+      "maxWidth": "wideContent"
+    },
+    "children": [
+      {
+        "type": "Stack",
+        "props": {
+          "gap": "xl",
+          "padding": "xl"
+        },
+        "children": [
+          {
+            "type": "Inline",
+            "props": {
+              "gap": "s",
+              "wrap": true,
+              "align": "center"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c219"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.hub"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c220"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d8",
+                      "scheme": "light"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c221"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d8",
+                      "scheme": "dark"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c222"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d8",
+                      "motion": "reduced"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c223"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d8",
+                      "motion": "system"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "s"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.c224"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              },
+              {
+                "type": "Heading",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.c225"
+                  },
+                  "level": "1"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.c226"
+                  },
+                  "role": "secondary",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "sunken",
+              "shape": "control",
+              "padding": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "m"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c227"
+                      },
+                      "level": "2"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c215"
+                      },
+                      "role": "secondary",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "raised",
+              "shape": "control",
+              "padding": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "m"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c228"
+                      },
+                      "level": "2"
+                    }
+                  },
+                  {
+                    "type": "StatusRow",
+                    "props": {
+                      "message": {
+                        "get": "vm.mockUiStates.copy.c216"
+                      },
+                      "tone": "info"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c217"
+                      },
+                      "role": "body",
+                      "tone": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "raised",
+              "shape": "control",
+              "padding": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "m"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c229"
+                      },
+                      "level": "2"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c230"
+                      },
+                      "role": "secondary",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c218"
+                      },
+                      "role": "secondary",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Inline",
+            "props": {
+              "gap": "s",
+              "wrap": true,
+              "align": "center"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c231"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d1"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c232"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d2"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c233"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d3"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c234"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d4"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c235"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d5"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c236"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d6"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c237"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d7"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "id": "review"
+      }
+    ]
+  }
+}

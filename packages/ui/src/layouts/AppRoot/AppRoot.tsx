@@ -30,6 +30,8 @@ import * as s from "./AppRoot.css.ts";
 
 export interface AppRootProps {
   scheme: "light" | "dark";
+  /** Gallery review can request reduced motion without changing the operating system. */
+  motion?: "system" | "reduced";
   /** The theme to show; defaults to Paper or Ink for the scheme (THM-08). */
   theme?: string;
   /** The content font (THM-03): a token mode; "mono" (Roboto Mono) is the default (D-78). */
@@ -89,7 +91,7 @@ function tokenDefaults(html: HTMLElement): { size: number; chars: number } | und
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
  * scheme, platform, reduced motion, reduced transparency, and pointer type.
  */
-export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
+export function AppRoot({ scheme, motion = "system", theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const applied = useRef<string[]>([]);
   useEffect(() => {
@@ -175,7 +177,7 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     ];
     const cleanups = queries.map(([q, key, value]) => {
       const mq = window.matchMedia(q);
-      const apply = () => (mq.matches ? (html.dataset[key] = value) : delete html.dataset[key]);
+      const apply = () => ((mq.matches || (key === "motion" && motion === "reduced")) ? (html.dataset[key] = value) : delete html.dataset[key]);
       apply();
       mq.addEventListener("change", apply);
       return () => mq.removeEventListener("change", apply);
@@ -192,7 +194,7 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
       cleanups.forEach((c) => c());
       observer.disconnect();
     };
-  }, []);
+  }, [motion]);
 
   const root = (
     <div ref={rootRef} className={`${s.root} ${s.frame[frame]}`} data-app-root="">

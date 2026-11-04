@@ -4053,6 +4053,15 @@
           ],
           "required": true
         },
+        "motion": {
+          "kind": "enum",
+          "values": [
+            "system",
+            "reduced"
+          ],
+          "default": "system",
+          "description": "Preview reduced motion without changing the operating system; never forces motion on."
+        },
         "platform": {
           "kind": "enum",
           "values": [
@@ -4174,6 +4183,7 @@
         "pattern": "application root"
       },
       "fixtures": [
+        "reduced motion",
         "scheme light",
         "scheme dark",
         "platform linux",

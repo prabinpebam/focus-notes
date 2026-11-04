@@ -1,0 +1,984 @@
+{
+  "focus": "review",
+  "local": {
+    "phase": "rest",
+    "retry": "failed",
+    "playing": false,
+    "dismissed": false
+  },
+  "root": {
+    "type": "Center",
+    "props": {
+      "maxWidth": "wideContent"
+    },
+    "children": [
+      {
+        "type": "Stack",
+        "props": {
+          "gap": "xl",
+          "padding": "xl"
+        },
+        "children": [
+          {
+            "type": "Inline",
+            "props": {
+              "gap": "s",
+              "wrap": true,
+              "align": "center"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c32"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.hub"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c33"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d2",
+                      "scheme": "light"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c34"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d2",
+                      "scheme": "dark"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c35"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d2",
+                      "motion": "reduced"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c36"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d2",
+                      "motion": "system"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "s"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.c37"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              },
+              {
+                "type": "Heading",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.c38"
+                  },
+                  "level": "1"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.mockUiStates.copy.c39"
+                  },
+                  "role": "secondary",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "sunken",
+              "shape": "control",
+              "padding": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "m"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c40"
+                      },
+                      "level": "2"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c1"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c2"
+                      },
+                      "value": {
+                        "get": "vm.mockUiStates.name"
+                      }
+                    }
+                  },
+                  {
+                    "type": "ColorField",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c3"
+                      },
+                      "value": {
+                        "get": "vm.mockUiStates.color"
+                      },
+                      "swatch": {
+                        "get": "vm.mockUiStates.color"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c4"
+                      },
+                      "role": "secondary",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "raised",
+              "shape": "control",
+              "padding": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "m"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c41"
+                      },
+                      "level": "2"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c5"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c6"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "TextField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c7"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.name"
+                              },
+                              "commit": "rest"
+                            }
+                          },
+                          {
+                            "type": "ColorField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c8"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "swatch": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "commit": "rest"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c9"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "TextField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c10"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.name"
+                              },
+                              "commit": "pending"
+                            }
+                          },
+                          {
+                            "type": "ColorField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c11"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "swatch": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "commit": "pending"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c12"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "TextField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c13"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.name"
+                              },
+                              "commit": "confirmed"
+                            }
+                          },
+                          {
+                            "type": "ColorField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c14"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "swatch": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "commit": "confirmed"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c15"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "TextField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c16"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.name"
+                              },
+                              "commit": "failed",
+                              "error": {
+                                "get": "vm.mockUiStates.copy.c17"
+                              },
+                              "retryLabel": {
+                                "t": "commit.retry"
+                              },
+                              "revertLabel": {
+                                "t": "commit.revert"
+                              }
+                            },
+                            "on": {
+                              "retry": [
+                                {
+                                  "set": "local.retry",
+                                  "to": "pending"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "confirmMinimum"
+                                  }
+                                },
+                                {
+                                  "set": "local.retry",
+                                  "to": "confirmed"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "doneDuration"
+                                  }
+                                },
+                                {
+                                  "set": "local.retry",
+                                  "to": "rest"
+                                }
+                              ],
+                              "revert": {
+                                "set": "local.retry",
+                                "to": "rest"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ColorField",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c18"
+                              },
+                              "value": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "swatch": {
+                                "get": "vm.mockUiStates.color"
+                              },
+                              "commit": "failed",
+                              "error": {
+                                "get": "vm.mockUiStates.copy.c19"
+                              },
+                              "retryLabel": {
+                                "t": "commit.retry"
+                              },
+                              "revertLabel": {
+                                "t": "commit.revert"
+                              }
+                            },
+                            "on": {
+                              "retry": [
+                                {
+                                  "set": "local.retry",
+                                  "to": "pending"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "confirmMinimum"
+                                  }
+                                },
+                                {
+                                  "set": "local.retry",
+                                  "to": "confirmed"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "doneDuration"
+                                  }
+                                },
+                                {
+                                  "set": "local.retry",
+                                  "to": "rest"
+                                }
+                              ],
+                              "revert": {
+                                "set": "local.retry",
+                                "to": "rest"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c20"
+                      },
+                      "role": "secondary",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c21"
+                      },
+                      "placeholder": {
+                        "get": "vm.mockUiStates.copy.c22"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "raised",
+              "shape": "control",
+              "padding": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "m"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c42"
+                      },
+                      "level": "2"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c43"
+                      },
+                      "role": "secondary",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "wrap": true,
+                      "align": "center"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c23"
+                          },
+                          "variant": "primary",
+                          "busy": {
+                            "get": "local.playing"
+                          }
+                        },
+                        "on": {
+                          "press": [
+                            {
+                              "set": "local.playing",
+                              "to": true
+                            },
+                            {
+                              "set": "local.phase",
+                              "to": "pending"
+                            },
+                            {
+                              "run": "gallery.wait",
+                              "args": {
+                                "duration": "confirmMinimum"
+                              }
+                            },
+                            {
+                              "set": "local.phase",
+                              "to": "confirmed"
+                            },
+                            {
+                              "run": "gallery.wait",
+                              "args": {
+                                "duration": "doneDuration"
+                              }
+                            },
+                            {
+                              "set": "local.phase",
+                              "to": "rest"
+                            },
+                            {
+                              "set": "local.playing",
+                              "to": false
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.mockUiStates.copy.c24"
+                          },
+                          "role": "caption",
+                          "tone": "muted"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c25"
+                      },
+                      "value": {
+                        "get": "vm.mockUiStates.name"
+                      },
+                      "commit": {
+                        "get": "local.phase"
+                      },
+                      "error": {
+                        "get": "vm.mockUiStates.copy.c26"
+                      },
+                      "retryLabel": {
+                        "t": "commit.retry"
+                      },
+                      "revertLabel": {
+                        "t": "commit.revert"
+                      }
+                    },
+                    "on": {
+                      "retry": [
+                        {
+                          "set": "local.retry",
+                          "to": "pending"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "confirmMinimum"
+                          }
+                        },
+                        {
+                          "set": "local.retry",
+                          "to": "confirmed"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "doneDuration"
+                          }
+                        },
+                        {
+                          "set": "local.retry",
+                          "to": "rest"
+                        }
+                      ],
+                      "revert": {
+                        "set": "local.retry",
+                        "to": "rest"
+                      }
+                    }
+                  },
+                  {
+                    "type": "ColorField",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c27"
+                      },
+                      "value": {
+                        "get": "vm.mockUiStates.color"
+                      },
+                      "swatch": {
+                        "get": "vm.mockUiStates.color"
+                      },
+                      "commit": {
+                        "get": "local.phase"
+                      },
+                      "error": {
+                        "get": "vm.mockUiStates.copy.c28"
+                      },
+                      "retryLabel": {
+                        "t": "commit.retry"
+                      },
+                      "revertLabel": {
+                        "t": "commit.revert"
+                      }
+                    },
+                    "on": {
+                      "retry": [
+                        {
+                          "set": "local.retry",
+                          "to": "pending"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "confirmMinimum"
+                          }
+                        },
+                        {
+                          "set": "local.retry",
+                          "to": "confirmed"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "doneDuration"
+                          }
+                        },
+                        {
+                          "set": "local.retry",
+                          "to": "rest"
+                        }
+                      ],
+                      "revert": {
+                        "set": "local.retry",
+                        "to": "rest"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c29"
+                      },
+                      "level": "3"
+                    }
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c30"
+                      },
+                      "value": {
+                        "get": "vm.mockUiStates.name"
+                      },
+                      "commit": {
+                        "get": "local.retry"
+                      },
+                      "error": {
+                        "get": "vm.mockUiStates.copy.c31"
+                      },
+                      "retryLabel": {
+                        "t": "commit.retry"
+                      },
+                      "revertLabel": {
+                        "t": "commit.revert"
+                      }
+                    },
+                    "on": {
+                      "retry": [
+                        {
+                          "set": "local.retry",
+                          "to": "pending"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "confirmMinimum"
+                          }
+                        },
+                        {
+                          "set": "local.retry",
+                          "to": "confirmed"
+                        },
+                        {
+                          "run": "gallery.wait",
+                          "args": {
+                            "duration": "doneDuration"
+                          }
+                        },
+                        {
+                          "set": "local.retry",
+                          "to": "rest"
+                        }
+                      ],
+                      "revert": {
+                        "set": "local.retry",
+                        "to": "rest"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": {
+              "value": {
+                "get": "vm.mockUiStates.copy.c44"
+              },
+              "role": "secondary",
+              "tone": "muted"
+            }
+          },
+          {
+            "type": "Inline",
+            "props": {
+              "gap": "s",
+              "wrap": true,
+              "align": "center"
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c45"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d1"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c46"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d3"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c47"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d4"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c48"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d5"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c49"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d6"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c50"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d7"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "get": "vm.mockUiStates.copy.c51"
+                  },
+                  "variant": "subtle"
+                },
+                "on": {
+                  "press": {
+                    "run": "gallery.open",
+                    "args": {
+                      "id": "mock.uistates.d8"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "id": "review"
+      }
+    ]
+  }
+}
