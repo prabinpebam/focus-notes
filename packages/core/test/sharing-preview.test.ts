@@ -13,7 +13,7 @@ async function fixture() {
   let saved: AppStateFile = { version: 1, firstRun: "done", lastNotePath: "/w/notes/a.md", sharingDrafts: { "/w": { owner: "personal", people: [] } } };
   const bridge: PlatformBridge = {
     platform: "windows", readNote: async path => path.endsWith("b.md") ? "# B\n" : "# A\n",
-    writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/w/notes/new.md",
+    writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/w/notes/new.md", defaultNotePath: async () => "/w/notes/a.md",
     loadAppState: async () => saved, saveAppState: async value => { saved = value; },
     systemScheme: () => "light", onSystemSchemeChange: () => () => {},
     workspace: {
