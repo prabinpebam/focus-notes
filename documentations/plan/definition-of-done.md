@@ -364,6 +364,18 @@ The gallery fixture's busy label initially used a raw text value where the check
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\Open review build.cmd`; in a synthetic note, reference an unavailable image, restore its file and choose its Retry. The controlled journey also tests a corrupt image and another refusal. All app runs were invisible and ended with own-PID `-WhatIf`, then actual cleanup. Complete D5, share-item D8 proof, streaming, crash receipts and remaining tracker coverage are still in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 owner review launch, cd0cede9
+
+The owner asked for the most complete reviewable app immediately, before the next implementation slice. Both implementation heads were clean/pushed. `git merge-base --is-ancestor origin/vq-open-cards HEAD` succeeded at exact `cd0cede9bb538495c982f9fe73fb6162a232c1a0`; latest Open head `34fa5dea` is already included, so no consolidation merge was required. The previously built exact-head candidate was reused, not replaced with a dirty build.
+
+| Check | Result |
+| --- | --- |
+| `node E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\review-launch.mjs --inspect` | Passed: invisible normal-UI Project/AI settings, Open, local-only GitHub repository list and Open file using a synthetic file-picker selection; inspection closed, own-PID `-WhatIf` then actual cleanup |
+| `Open review build.cmd` | Launched visibly for the owner with a fresh `owner-review-profile`; process/window verified and local stand-in `/user/repos` returned HTTP 200 |
+| Additional suites/CI | Not run, as requested for this priority launch; no runtime source or dependency changes, no app merge to main or release |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\Open review build.cmd`. Project/Reading settings and AI groups include all pushed phase-2 increments. Open from GitHub lists `review-user/example-notes` and clones only from the candidate's local bare repository; no real account is connected. The visible owner instance is explicitly exempt from ordinary inspection cleanup and stays open. This launch does not accept outstanding D5/D7/share-item D8 work.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
