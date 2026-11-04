@@ -158,7 +158,27 @@ The theme gallery and Reading font menu now use the approved commit track. Faile
 | `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "theme and font choices"` | Passed: real storage refusal, stored note unchanged, theme Retry after another preview, font Revert/Retry and persistence after reopening |
 | `pnpm check` and UI schema regeneration | Passed: no view findings, fixture gaps or stale generated output |
 
-Journey apps were invisible, closed, and followed by own-PID cleanup (`-WhatIf`, then actual). No full suite, CI wait or app merge ran. GitHub rejected two ordinary non-thin pushes with `Internal Server Error`; this verified increment is committed locally, not yet remotely persisted. The candidate remains `47101d57` until the next exact-head refresh. Remaining compact controls, AI save groups, notification acceptance, recovery and streamed long operations are still in progress.
+Journey apps were invisible, closed, and followed by own-PID cleanup (`-WhatIf`, then actual). No full suite, CI wait or app merge ran. GitHub rejected two ordinary non-thin pushes with `Internal Server Error`; a subsequent ordinary push of `b6375b3a` persisted this increment too. The refreshed candidate below includes both worker-6 commits.
+
+### Phase-2 compact focus and docking, b6375b3a
+
+The existing Focus mode toolbar button, Files pin and contents pin use the same own-border commit treatment. Roomy menu rows keep inline marks; Retry remains outside compact controls, in the existing notification. Persistence completes before the acknowledged value changes. Files previously discarded its persistence promise; refusal now surfaces and leaves the saved docking unchanged. Retry carries the original intended boolean, so an old Retry cannot toggle an already-correct setting backwards. Pending locks only its own command. These compact setting actions keep the toolbar open for feedback, without changing ordinary outside dismissal or adding writing-window elements.
+
+| Check on `b6375b3a` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\settings-failures.test.ts packages\core\test\files-app.test.ts packages\core\test\outline.test.ts packages\ui\test\commit-controls.test.tsx` | 48 passed: refusal keeps stored values, exact-value Retry, duplicate-write lock, outline behavior and shared compact feedback |
+| `pnpm exec vitest run packages\core\test\menu-bar.test.ts packages\core\test\files-menu.test.ts -t "sends the menu bar\|the pin keeps\|pinned from closed\|Mod\+O doesn\|docked \(D-187\)"` | 5 passed, 35 skipped: pending menu availability and existing Files docking behavior |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm --filter @focus-notes/desktop run build` | Passed; output copied into the exact-head candidate after committing without further source edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "compact focus and docking"` | Passed: real state-file write refusal on all three controls, old value retained, outside Retry persists the intended value, note bytes unchanged |
+| `pnpm check`, UI schema regeneration and component inventory | Passed, 773 documents, 82 components, 693 commands |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed head `b6375b3a`: theme/font, Focus mode, Files docking and contents docking reached through normal UI, alongside previous project/slider/empty-state paths |
+
+The initial candidate inspection assumed Focus mode defaulted to Off; the app defaults to On. Its synthetic fixture now explicitly starts Off, then verifies On. The initial compact journey was obstructed by the existing project-renaming notice; it now dismisses that notice through its real button. Candidate and journey apps were invisible, closed and followed by own-PID cleanup.
+
+**Unrelated inherited checks, not acceptance:** the broader six-file unit selection exposed existing Files menu pin-item/source expectations, notification ordering and native-menu command inventories; the exact affected cases above pass. Three old `m1-toolbar.spec.ts` UI-07 journeys stop before any compact action because their empty-start fixture no longer supplies the expected Note textbox. Their toolbar visibility expectation was updated for the deliberate behavior, but those journeys are not claimed green. No full suite, CI wait, merge or unrelated repair ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b6375b3a\Open review build.cmd`. Settings → Appearance → theme manager → Themes/Reading; then toolbar Focus mode, Files → Dock Files, More → Dock contents. Font size, AI save groups, notification acceptance, remaining recovery/streamed work and independent delayed history/share journeys remain in progress.
 
 ## Projects and simpler sharing
 
