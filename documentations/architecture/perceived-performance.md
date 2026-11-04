@@ -23,6 +23,17 @@ The [Open recovery evidence](../plan/definition-of-done.md#phase-2-scoped-open-r
 | --- | --- | --- | --- |
 | Retry a failed Open action | Responsive → waiting; local recovery action, retained error/content | Error row: Retry → Trying again…; other input stays available | Planned `fn:project.open` / `fn:project.list` coverage; held-list journey verifies the state, but complete tracker/timing instrumentation remains unaccepted |
 
+## New project and Local import recovery
+
+The [partial-safe recovery evidence](../plan/definition-of-done.md#phase-2-partial-safe-newlocal-recovery-651b1340) proves recovery targets and data safety, not a latency improvement or complete long-operation timing.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Open an already-created project again | Responsive → waiting; keep choices and original failure | New project's error row: Retry → Trying again…; never rerun completed creation | Planned `fn:project.create` / tracker coverage; controlled held-Open journey proves retained state only |
+| Retry Local import | Responsive → waiting; retain source, target and request receipt | Import sheet's error row: Retry → Trying again…; list/input remain mounted; one complete copy | Planned `fn:local.import` / tracker coverage; actual destination-refusal journey and partial-write units prove safety only |
+
+Completed Local import receipts live for the current desktop process. Crash-persistent recovery and streaming remain unaccepted. If setup failed without returning a created-project receipt, the UI offers a location change rather than replaying uncertain creation.
+
 ## Image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.

@@ -288,6 +288,25 @@ The journey caught the shared busy helper's persistent outcome-label semantics: 
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cf5859a2\Open review build.cmd`; Ctrl+Alt+O opens the retained-content surface. Controlled failures are in the scoped journey, not permanently injected into this candidate. This is not complete D6 acceptance: New project and Local import need partial-success-safe recovery; same-project note-read failure propagation, history/broken-image recovery, complete task timing, empty/streamed work and independent delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 partial-safe New/Local recovery, 651b1340
+
+New project's completed `created` receipt is retained: a failed Open retries only that project, never creation. When creation itself fails before returning a receipt, setup may already exist; recovery keeps the choices and offers a location change instead of pretending creation can safely be replayed. A cancelled location picker leaves that error and draft intact.
+
+Local import retains the original note, target and request ID through Retry. The desktop stages a complete file in the chosen destination, then publishes it with an exclusive hard link; collisions are never overwritten and a partial staging write cannot appear as a Markdown note. Completed in-session requests return their original copy receipt, including after a lost reply or concurrent Retry. Failed staging is cleaned before Retry. Unsupported hard-link destinations fail visibly rather than falling back to an unsafe partial write. The source note is never removed.
+
+| Check on `651b1340` | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\local-import.test.ts packages\core\test\project-open.test.ts` | 19 passed: lost/concurrent acknowledgement, one completed copy, exact original target/request, collision safety, partial staging and link refusal/cleanup, listing recovery, retained project choices and non-repeated creation |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 710 commands; generated output current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "New project and Local import recover"` | Passed: actual destination refusal, same-sheet Retry, one byte-exact imported note and unchanged source; controlled creation/Open refusal with retained choices, held Retry and exactly one creation |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head; earlier settings/Reading/compact/notification paths plus separate AI groups, actual Agents and filtered Open inspected invisibly |
+
+The first journey reached and recovered Local import, then used “New project” instead of the real “New project…” label. Corrected the selector and the combined journey passed. Apps were invisible, closed and followed by own-PID cleanup (`-WhatIf`, then actual). Worker 8 verified both npm and pnpm Microsoft feeds, installed fresh dependencies/tokens, migrated only folder 7's verified gallery process to folder 8 and verified HTTP 200 before removing the clean inactive predecessor.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\651b1340\Open review build.cmd`. Recovery failures are injected only in the scoped journey. This slice does not claim crash-persistent import receipts, resumable partial project setup or D7 streaming. Same-project note-read failure propagation, complete tracker/timing, history/broken-image recovery, complete empty-state acceptance and independent delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
