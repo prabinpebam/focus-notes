@@ -10,13 +10,15 @@ import { popoverEdgeVar } from "./AppRoot.css.ts";
  */
 let windowElement: HTMLElement | null = null;
 let windowFrame = "";
+let overlayElement: HTMLElement | null = null;
 const listeners = new Set<() => void>();
 
 /** Set by AppRoot while it draws the window; null for a native window (the viewport is the window). */
-export function setWindowElement(el: HTMLElement | null, frame = ""): void {
-  if (windowElement === el && windowFrame === frame) return;
+export function setWindowElement(el: HTMLElement | null, frame = "", overlays: HTMLElement | null = null): void {
+  if (windowElement === el && windowFrame === frame && overlayElement === overlays) return;
   windowElement = el;
   windowFrame = frame;
+  overlayElement = overlays;
   for (const l of listeners) l();
 }
 
@@ -24,6 +26,17 @@ const subscribe = (l: () => void) => {
   listeners.add(l);
   return () => listeners.delete(l);
 };
+
+export function useOverlayContainers() {
+  const overlays = useSyncExternalStore(subscribe, () => overlayElement, () => null);
+  const window = useSyncExternalStore(subscribe, () => windowElement, () => null);
+  return { overlays, window };
+}
+
+export function FullAppOverlay({ children }: { children?: ReactNode }) {
+  const { overlays } = useOverlayContainers();
+  return overlays ? createPortal(children, overlays) : <>{children}</>;
+}
 
 /** Renders its children inside the drawn window, with overlays they open portaled there too. */
 export function InWindow({ children }: { children?: ReactNode }) {

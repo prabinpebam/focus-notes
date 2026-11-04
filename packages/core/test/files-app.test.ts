@@ -213,6 +213,61 @@ describe("opening the panel (IA-VIEW-FILES)", () => {
     expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "confirmed" });
   });
 
+  it("pins the explicit hovered row only after acknowledgement and retries that exact intention", async () => {
+    const f = setup({ notes: { "other.md": "# Other\n" }, folders: ["ideas"] });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    const before = structuredClone(app.store.state.ui.files.selection);
+    let reject!: (error: Error) => void;
+    f.bridge.saveAppState = () => new Promise((_resolve, no) => { reject = no; });
+    const pin = app.commands.run("files.pinItem", { value: { path: "other.md", pinned: true } });
+    await settle();
+    expect(app.store.state.ui.files.pins).toEqual([]);
+    expect(app.store.state.ui.files.selection).toEqual(before);
+    expect(vm(app).items.find(item => item.id === "other.md")).toMatchObject({ pinLabel: "Pin Other" });
+    expect(vm(app).items.find(item => item.id === "other.md")).toMatchObject({ pinCommit: "pending" });
+    await app.commands.run("files.select", { id: "welcome.md", mode: "single" });
+    const failure = expect(pin).rejects.toThrow("disk full");
+    reject(new Error("disk full"));
+    await failure;
+    expect(app.store.state.ui.files.pins).toEqual([]);
+    await app.commands.run("app.reportFailure", { command: "files.pinItem", args: { value: { path: "other.md", pinned: true } } });
+    const toast = app.store.state.ui.toasts[0]!;
+    expect(toast.action).toMatchObject({ command: "files.pinItem", args: { value: { path: "other.md", pinned: true } } });
+    f.bridge.saveAppState = async () => {};
+    await app.commands.run("files.pinItem", { value: { path: "other.md", pinned: true } });
+    await app.commands.run("toast.action", { id: toast.id });
+    expect(app.store.state.ui.files.pins).toEqual(["other.md"]);
+    await Promise.all([
+      app.commands.run("files.pinItem", { value: { path: "ideas", pinned: true } }),
+      app.commands.run("files.pinItem", { value: { path: "welcome.md", pinned: true } }),
+    ]);
+    expect(app.store.state.ui.files.pins).toEqual(["other.md", "ideas", "welcome.md"]);
+    await app.commands.run("files.pinItem", { value: { path: "other.md", pinned: false } });
+    expect(app.store.state.ui.files.pins).toEqual(["ideas", "welcome.md"]);
+    expect(f.notes.get("other.md")?.text).toBe("# Other\n");
+  });
+
+  it("keeps a failed menu pin's target when selection moves before Retry", async () => {
+    const f = setup({ notes: { "other.md": "# Other\n" } });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "other.md", mode: "single" });
+    let reject!: (error: Error) => void;
+    f.bridge.saveAppState = () => new Promise((_resolve, no) => { reject = no; });
+    const pin = app.commands.run("command.run", { id: "files.pinItem" });
+    await settle();
+    await app.commands.run("files.select", { id: "welcome.md", mode: "single" });
+    const failure = expect(pin).rejects.toThrow("disk full");
+    reject(new Error("disk full")); await failure;
+    await app.commands.run("app.reportFailure", { command: "command.run", args: { id: "files.pinItem" } });
+    const toast = app.store.state.ui.toasts[0]!;
+    expect(toast.action).toMatchObject({ command: "files.pinItem", args: { value: { path: "other.md", pinned: true } } });
+    f.bridge.saveAppState = async () => {};
+    await app.commands.run("toast.action", { id: toast.id });
+    expect(app.store.state.ui.files.pins).toEqual(["other.md"]);
+  });
+
   it("Open… opens it with the current note revealed and focused, and again closes it", async () => {
     const f = setup({ notes: { "journal/day.md": "# Day one\n" }, open: "journal/day.md" });
     const app = await started(f);

@@ -1453,10 +1453,11 @@
           "kind": "enum",
           "values": [
             "stable",
-            "content"
+            "content",
+            "navigation"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: clamped 600 px with a fixed body, content supplies its own scroller."
         },
         "material": {
           "kind": "enum",
@@ -1503,6 +1504,7 @@
         "name": "label"
       },
       "fixtures": [
+        "height navigation",
         "size s",
         "height content",
         "size l",
@@ -1847,6 +1849,11 @@
           "kind": "boolean",
           "default": false,
           "description": "Temporary options in a shared segmented track."
+        },
+        "scrollPanel": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Only the selected content panel scrolls. Navigation stays fixed; short or narrow containers switch to wrapping horizontal tabs."
         }
       },
       "events": {
@@ -1877,6 +1884,7 @@
         "name": "label"
       },
       "fixtures": [
+        "fixed navigation and scrolling panel",
         "first selected",
         "orientation vertical",
         "orientation vertical with footer"
@@ -2228,6 +2236,12 @@
           "payload": {
             "id": "text"
           }
+        },
+        "pin": {
+          "payload": {
+            "id": "text",
+            "pinned": "boolean"
+          }
         }
       },
       "slots": {
@@ -2249,7 +2263,11 @@
         "dropTarget",
         "pending",
         "readOnly",
-        "menuOpen"
+        "menuOpen",
+        "pinAvailable",
+        "pinPending",
+        "pinConfirmed",
+        "pinFailed"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -2257,6 +2275,7 @@
         "name": "label"
       },
       "fixtures": [
+        "same-slot pin action and acknowledged outcomes",
         "sections, folders, the current note, and a multiple selection",
         "naming a folder, with an error"
       ]
@@ -6466,10 +6485,11 @@
           "kind": "enum",
           "values": [
             "stable",
-            "content"
+            "content",
+            "navigation"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: a clamped 600 px shell with a non-scrolling body and independently scrolling tab content."
         },
         "size": {
           "kind": "enum",
@@ -6509,6 +6529,7 @@
         "name": "title"
       },
       "fixtures": [
+        "height navigation",
         "size s",
         "height content",
         "size l with toolbar",
@@ -6684,12 +6705,13 @@
       "mask",
       "contextual",
       "trigger",
+      "docked",
       "panel",
       "anchored",
       "dialog",
       "popover",
-      "toast",
-      "tooltip"
+      "tooltip",
+      "toast"
     ],
     "motion": [
       "micro",

@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button } from "../Button/Button.tsx";
+import { IconButton } from "../IconButton/IconButton.tsx";
 import * as s from "./CodeBlock.css.ts";
 
 export interface CodeBlockProps {
@@ -19,7 +19,7 @@ export function CodeBlock({ value, label, copyLabel, size = "m", id, onCopy }: C
       {label ? <span id={labelId} className={s.label} dir="auto">{label}</span> : null}
       <div className={`${s.box} ${s.box_[size]}`}>
         <code className={`${s.code} ${s.code_[size]}`} data-personal="">{value}</code>
-        <Button label={copyLabel} icon="copy" size={size === "l" ? "m" : "s"} variant={size === "l" ? "secondary" : "subtle"} {...(onCopy ? { onPress: onCopy } : {})} />
+        <div className={s.copy}><IconButton label={copyLabel} icon="copy" {...(onCopy ? { onPress: onCopy } : {})} /></div>
       </div>
     </div>
   );

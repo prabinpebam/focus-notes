@@ -103,9 +103,6 @@
     },
     "font": {
       "get": "vm.project.scopeFont"
-    },
-    "theme": {
-      "get": "vm.project.scopeTheme"
     }
   },
 "children": [
@@ -4688,6 +4685,7 @@
               "menuLabel": { "get": "vm.files.menuLabel" }
             },
             "on": {
+              "pin": { "run": "files.pinItem", "args": { "id": { "get": "event.id" }, "pinned": { "get": "event.pinned" } } },
               "select": { "run": "files.selectShortcut", "args": { "id": { "get": "event.id" } } },
               "action": { "run": "files.activateShortcut", "args": { "id": { "get": "event.id" } } },
               "expand": { "run": "files.setExpanded", "args": { "id": { "get": "event.id" }, "expanded": { "get": "event.expanded" } } },
@@ -5029,6 +5027,7 @@
               }
             },
             "on": {
+              "pin": { "run": "files.pinItem", "args": { "id": { "get": "event.id" }, "pinned": { "get": "event.pinned" } } },
               "menuAction": {
                 "run": "command.run",
                 "args": {

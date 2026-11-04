@@ -131,6 +131,7 @@
         "$value": "{space.xs}"
       },
       "dock": {
+        "layer": { "$type": "number", "$value": "{layer.docked}" },
         "$description": "Docked Files (D-187): flush to the window's left edge below the title band, a hairline on its inner side, resized from that side.",
         "width": { "$type": "dimension", "$value": "{layout.dockFiles}" },
         "min": { "$type": "dimension", "$value": "{layout.dockMin}" },

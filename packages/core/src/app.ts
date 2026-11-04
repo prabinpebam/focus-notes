@@ -51,7 +51,7 @@ import { WarmUp } from "./warmup.ts";
 import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightState } from "./spotlight-app.ts";
 import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } from "./find-all-app.ts";
 import type { SearchService } from "./search/feed.ts";
-import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
+import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, projectAppearance, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
 import { customThemesOf, isCustomId } from "./custom-themes.ts";
 import { headingCount } from "./outline.ts";
 import { registerImages, IMAGES_CLOSED, type ImagesState } from "./images-app.ts";
@@ -1136,7 +1136,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const attempted = action?.command ?? command;
       const attemptedArgs = action?.args ?? args;
       const original = attempted === "command.run" && typeof attemptedArgs?.id === "string" ? attemptedArgs.id : attempted;
-      const target = original ? commandCommitTargets[original] : undefined;
+      const pinValue = attemptedArgs?.value;
+      const pinPath = typeof pinValue === "object" && pinValue !== null && "path" in pinValue && typeof pinValue.path === "string" ? pinValue.path : attempted === "files.pinItem" ? attemptedArgs?.id : undefined;
+      const pinFailure = original === "files.pinItem" ? store.state.commits.filter(item => item.command === "files.saveItemPin" && item.phase === "failed" && (typeof pinPath !== "string" || item.target === `vm.files.itemPin:${pinPath}`)).sort((a, b) => a.id - b.id).at(-1) : undefined;
+      const target = pinFailure?.target ?? (original ? commandCommitTargets[original] : undefined);
       const failed = target ? store.state.commits.find((item) => item.target === target && item.phase === "failed") : undefined;
       const retryCommand = failed ? target === "vm.app.fontSize" ? "font.reset" : original : attempted;
       const retryArgs = failed ? { value: failed.value } : attemptedArgs;
@@ -1355,7 +1358,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
-  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,
+  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, project, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,
     // A workspace (its Private or Public root) holds theme files; a plain folder of notes doesn't (D-173).
     themesAvailable: () => { const roots = store.state.workspace.tree.roots; return !roots.length || roots.some((r) => r.id === "private" || r.id === "public"); } });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
@@ -1526,8 +1529,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       // A custom theme shows through its base's styles with its own colors over them (D-173).
-      const projectTheme = themeById(project.theme());
-      const root = projectTheme ? { theme: projectTheme.id, scheme: projectTheme.kind, colors: [] } : rootTheme(s);
+      const root = rootTheme({ ...s, appearance: projectAppearance(s.appearance, project.theme()) });
       const theme = root.theme;
       const a = { ...s.appearance, ...s.ui.theme.readingPreview };
       return {

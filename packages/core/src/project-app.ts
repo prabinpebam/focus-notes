@@ -31,10 +31,11 @@ export function registerProject(ctx: {
   };
   const changed = () => store.update((state) => ({ ...state }));
   let writing = Promise.resolve();
-  const save = (patch: Partial<ProjectSettings>) => {
-    const key = folder();
+  const save = (patch: Partial<ProjectSettings>, extra: Partial<AppStateFile> = {}, key = folder()) => {
+    if (key !== folder()) throw new Error("The project changed while saving its settings");
     const fallback = settings();
     const write = writing.then(() => ctx.persistAppState({
+      ...extra,
       projectSettings: { ...ctx.appState().projectSettings, [key]: { ...(ctx.appState().projectSettings?.[key] ?? fallback), ...patch } },
     }));
     writing = write.then(() => {}, () => {});
@@ -180,5 +181,9 @@ export function registerProject(ctx: {
       };
     },
   });
-  return { theme: () => transient.themeHover || settings().theme };
+  return {
+    theme: () => transient.themeHover || settings().theme,
+    current: () => folder() ? { folder: folder(), theme: settings().theme } : undefined,
+    saveTheme: (key: string, theme: string, patch?: Partial<AppStateFile>) => save({ theme }, patch, key),
+  };
 }

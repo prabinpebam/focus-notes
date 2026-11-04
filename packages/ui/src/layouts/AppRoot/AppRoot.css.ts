@@ -30,6 +30,10 @@ export const root = style({
   backgroundColor: t.background,
   color: t.text,
 });
+export const overlays = style({
+  position: "fixed", inset: 0, zIndex: tokens.layer.dialog,
+  isolation: "isolate", pointerEvents: "none",
+});
 
 // The app-built window (D-14): the page is transparent and the window is drawn inside it, with the
 // 20 px corners and the shadow in the margin around it. The window is the containing block for fixed

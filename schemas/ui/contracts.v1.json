@@ -4050,10 +4050,11 @@
           "kind": "enum",
           "values": [
             "stable",
-            "content"
+            "content",
+            "navigation"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: clamped 600 px with a fixed body, content supplies its own scroller."
         },
         "material": {
           "kind": "enum",
@@ -4104,6 +4105,29 @@
         "exiting": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
       },
       "fixtures": [
+        {
+          "name": "height navigation",
+          "covers": [
+            "open"
+          ],
+          "props": {
+            "label": {
+              "t": "settings.title"
+            },
+            "open": true,
+            "height": "navigation"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "size s",
           "covers": [
@@ -4842,6 +4866,11 @@
           "kind": "boolean",
           "default": false,
           "description": "Temporary options in a shared segmented track."
+        },
+        "scrollPanel": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Only the selected content panel scrolls. Navigation stays fixed; short or narrow containers switch to wrapping horizontal tabs."
         }
       },
       "events": {
@@ -4876,6 +4905,29 @@
         "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
+        {
+          "name": "fixed navigation and scrolling panel",
+          "props": {
+            "label": {
+              "t": "settings.categories"
+            },
+            "items": {
+              "get": "vm.gallery.options"
+            },
+            "orientation": "vertical",
+            "scrollPanel": true
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "first selected",
           "covers": [
@@ -5669,6 +5721,12 @@
           "payload": {
             "id": "text"
           }
+        },
+        "pin": {
+          "payload": {
+            "id": "text",
+            "pinned": "boolean"
+          }
         }
       },
       "slots": {
@@ -5690,7 +5748,11 @@
         "dropTarget",
         "pending",
         "readOnly",
-        "menuOpen"
+        "menuOpen",
+        "pinAvailable",
+        "pinPending",
+        "pinConfirmed",
+        "pinFailed"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -5704,6 +5766,23 @@
         "menuOpen": "Opened by interaction: the gallery shows it closed, and no journey checks it open yet."
       },
       "fixtures": [
+        {
+          "name": "same-slot pin action and acknowledged outcomes",
+          "covers": [
+            "pinAvailable",
+            "pinPending",
+            "pinConfirmed",
+            "pinFailed"
+          ],
+          "props": {
+            "label": {
+              "t": "files.tree"
+            },
+            "items": {
+              "get": "vm.gallery.treePins"
+            }
+          }
+        },
         {
           "name": "sections, folders, the current note, and a multiple selection",
           "covers": [
@@ -17087,10 +17166,11 @@
           "kind": "enum",
           "values": [
             "stable",
-            "content"
+            "content",
+            "navigation"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: a clamped 600 px shell with a non-scrolling body and independently scrolling tab content."
         },
         "size": {
           "kind": "enum",
@@ -17134,6 +17214,32 @@
         "exiting": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
       },
       "fixtures": [
+        {
+          "name": "height navigation",
+          "covers": [
+            "open"
+          ],
+          "props": {
+            "title": {
+              "t": "settings.title"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "height": "navigation"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "size s",
           "covers": [

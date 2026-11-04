@@ -31,6 +31,56 @@ it("uses the project's resolved theme for the window and overlays, including cha
   expect(app.viewModels.select("vm.app", app.store.state)).toMatchObject({ theme: "ink", scheme: "dark" });
 });
 
+it("Themes changes the fixed project's theme, previews real window tokens, and reverts without changing app defaults or another project", async () => {
+  let saved: AppStateFile = { version: 1 };
+  let refuse = false;
+  const app = setup(async state => {
+    if (refuse) throw new Error("disk full");
+    saved = state;
+  });
+  const view = (id: string) => app.viewModels.select(id, app.store.state);
+  await app.commands.run("project.theme", { value: "sepia" });
+  app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: "C:\\Garden" } }));
+  await app.commands.run("project.theme", { value: "ink" });
+  app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: "C:\\Project" } }));
+  const defaults = { ...app.store.state.appearance };
+  await app.commands.run("theme.manager.open");
+  expect(view("vm.themeManager")).toMatchObject({ showing: "sepia", themeChoice: "sepia" });
+  await app.commands.run("theme.preview", { id: "dusk" });
+  expect(view("vm.app")).toMatchObject({ theme: "dusk", scheme: "dark" });
+  await app.commands.run("theme.previewEnd");
+  expect(view("vm.app")).toMatchObject({ theme: "sepia", scheme: "light" });
+  refuse = true;
+  await expect(app.commands.run("theme.setChoice", { value: "dusk" })).rejects.toThrow("disk full");
+  expect(view("vm.app")).toMatchObject({ theme: "sepia" });
+  expect(saved.projectSettings?.["C:\\Project"]?.theme).toBe("sepia");
+  refuse = false;
+  await app.commands.run("theme.setChoice", { value: "dusk" });
+  expect(view("vm.app")).toMatchObject({ theme: "dusk", scheme: "dark" });
+  expect(saved.projectSettings?.["C:\\Project"]?.theme).toBe("dusk");
+  expect(saved.projectSettings?.["C:\\Garden"]?.theme).toBe("ink");
+  expect(app.store.state.appearance).toEqual(defaults);
+  await app.commands.run("theme.manager.revert");
+  expect(view("vm.app")).toMatchObject({ theme: "sepia", scheme: "light" });
+  expect(saved.projectSettings?.["C:\\Project"]?.theme).toBe("sepia");
+  expect(saved.projectSettings?.["C:\\Garden"]?.theme).toBe("ink");
+  expect(app.store.state.appearance).toEqual(defaults);
+});
+
+it("Themes changes app slots only for a following project and rejects a stale sheet after project navigation", async () => {
+  let saved: AppStateFile = { version: 1 };
+  const app = setup(async state => { saved = state; });
+  await app.commands.run("project.theme", { value: "app" });
+  await app.commands.run("theme.manager.open");
+  await app.commands.run("theme.setChoice", { value: "dusk" });
+  expect(saved).toMatchObject({ darkTheme: "dusk", appearance: "dark" });
+  expect(saved.projectSettings?.["C:\\Project"]?.theme).toBe("app");
+  app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: "C:\\Garden" } }));
+  await expect(app.commands.run("theme.setChoice", { value: "sepia" })).rejects.toThrow("project changed");
+  await expect(app.commands.run("theme.manager.revert")).rejects.toThrow("project changed");
+  expect(saved.projectSettings?.["C:\\Garden"]).toBeUndefined();
+});
+
 it("keeps an uploaded logo source across a refused save and retries without reopening the picker", async () => {
   const source = "data:image/svg+xml;base64,PHN2Zy8+";
   const upload = vi.fn().mockResolvedValue(source);

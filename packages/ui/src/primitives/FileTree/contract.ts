@@ -24,14 +24,16 @@ export const contract = defineContract({
     editChange: { payload: { value: "text" }, binds: "editValue" },
     editBlur: {},
     menuAction: { payload: { id: "text" } },
+    pin: { payload: { id: "text", pinned: "boolean" } },
   },
   // Controls at a section row's trailing end, by its `accessory` index: each section's repository backup (D-191).
   slots: { sectionEnd: { accepts: ["PopoverPanel"] } },
-  states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen"],
+  states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen", "pinAvailable", "pinPending", "pinConfirmed", "pinFailed"],
   tokens: "cmp.fileTree.*",
   a11y: { pattern: "tree (multi-selectable) with type-ahead", name: "label" },
   uncovered: { hover: GAP.hover, focusVisible: GAP.focusVisible, dropTarget: GAP.drag, menuOpen: GAP.open },
   fixtures: [
+    { name: "same-slot pin action and acknowledged outcomes", covers: ["pinAvailable", "pinPending", "pinConfirmed", "pinFailed"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treePins" } } },
     { name: "sections, folders, the current note, and a multiple selection", covers: ["rest", "selected", "current", "multiSelected", "pending", "readOnly"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.tree" }, focusId: { get: "vm.gallery.treeFocus" } } },
     { name: "naming a folder, with an error", covers: ["editing", "invalid"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treeEditing" }, editValue: { get: "vm.gallery.query" }, editLabel: { get: "vm.gallery.treeEditLabel" }, editError: { get: "vm.gallery.treeEditError" } } },
   ],

@@ -80,6 +80,10 @@ export interface TreeItem {
   editing?: boolean;
   /** A section's control at its trailing end: an index into the tree's sectionEnd slot (D-191). */
   accessory?: number;
+  pinned?: boolean;
+  /** Enables the in-place pin action, named by the view model. */
+  pinLabel?: string;
+  pinCommit?: "rest" | "pending" | "confirmed" | "failed";
 }
 
 /**

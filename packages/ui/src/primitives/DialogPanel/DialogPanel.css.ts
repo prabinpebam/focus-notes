@@ -6,6 +6,7 @@ const t = tokens.cmp.dialogPanel;
 
 export const overlay = style({
   position: "fixed",
+  pointerEvents: "auto",
   inset: 0,
   zIndex: t.layer,
   display: "flex",
@@ -59,6 +60,7 @@ export const size = {
  * never-shrink agree at every window size. A confirmation (`content`) fits its content.
  */
 export const height = {
+  navigation: style({ height: `min(${t.navigationHeight}, 100%)`, minHeight: `min(${t.navigationHeight}, 100%)` }),
   stable: style({ minHeight: `min(max(${t.minHeight}, ${fallbackVar(grownVar, "0px")}), 100%)` }),
   content: style({}),
 };
@@ -98,7 +100,7 @@ export const dialog = style({
 export const region = style({
   paddingInline: t.padding,
   flexShrink: 0,
-  selectors: { "&:first-child": { paddingBlockStart: t.padding }, "&:last-child": { paddingBlockEnd: t.padding } },
+  selectors: { "&[data-dialog-first]": { paddingBlockStart: t.padding }, "&[data-dialog-last]": { paddingBlockEnd: t.padding } },
 });
 
 // The body's corners at the dialog's edge follow its rounding, so what scrolls (and the scrollbar) stays inside it.
@@ -124,10 +126,11 @@ export const body = style({
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     // At the dialog's top or bottom edge, the dialog's padding is inside the scroller: content keeps
     // that spacing at rest, scrolls right to the edge, and what scrolls into view keeps it too.
-    "&:first-child": { paddingBlockStart: t.padding, marginBlockStart: 0, scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
-    "&:last-child": { paddingBlockEnd: t.padding, marginBlockEnd: 0, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
+    "&[data-dialog-first]": { paddingBlockStart: t.padding, marginBlockStart: 0, scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
+    "&[data-dialog-last]": { paddingBlockEnd: t.padding, marginBlockEnd: 0, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
   },
 });
+export const fixedBody = style({ overflow: "hidden", scrollbarGutter: "auto", paddingInlineEnd: t.padding });
 minimalScrollbar(body, t);
 
 /** The raised surface, or the theme's frosted one (Foundations → Surfaces). */

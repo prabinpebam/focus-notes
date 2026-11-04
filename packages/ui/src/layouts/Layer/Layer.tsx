@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { cornerClearance, pinnedSheet } from "../../behaviors/pinned-sheet.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
 import { FloatingContext, LayerContext } from "./floating.ts";
+import { FullAppOverlay } from "../AppRoot/in-window.tsx";
 import * as s from "./Layer.css.ts";
 
 export interface LayerProps {
@@ -42,10 +43,10 @@ export function Layer({ layer = "panel", position = "center", dragBand, avoidPin
     window.addEventListener("resize", measure);
     return () => { off(); ro.disconnect(); window.removeEventListener("resize", measure); };
   }, [avoidPinned, position]);
-  return (
+  const content = (
     <FloatingContext.Provider value={true}>
       <LayerContext.Provider value={layer}>
-      <div ref={ref} id={id} data-react-aria-top-layer={layer === "toast" ? "" : undefined} className={`${s.base} ${s.layer[layer]} ${s.position[position]}${avoidPinned ? ` ${s.avoidPinned}` : ""}`} role={ROLE[landmark]} aria-label={label}>
+      <div ref={ref} id={id} data-layer={layer} data-layer-position={position} data-react-aria-top-layer={layer === "toast" ? "" : undefined} className={`${s.base} ${s.layer[layer]} ${s.position[position]}${avoidPinned ? ` ${s.avoidPinned}` : ""}`} role={ROLE[landmark]} aria-label={label}>
         {/* The band is the window's top 44 px, whatever the layer's height; the content above it is never dragged. */}
         {dragBand ? <div className={s.band} data-drag-band="" /> : null}
         <div className={s.content} data-no-drag="">{children}</div>
@@ -53,4 +54,5 @@ export function Layer({ layer = "panel", position = "center", dragBand, avoidPin
       </LayerContext.Provider>
     </FloatingContext.Provider>
   );
+  return layer === "dialog" || position === "window" || position === "fill" ? <FullAppOverlay>{content}</FullAppOverlay> : content;
 }

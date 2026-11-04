@@ -701,7 +701,7 @@
   "layer": {
     "$type": "number",
     "underlay": { "$value": -1, "$description": "A local isolated surface's background, below its hit area." },
-    "$description": "The stacking order (D-207). A surface takes its layer from its role, never from what it happens to overlap: what's drawn on the note, the window's chrome, persistent panels, transient surfaces pinned to the note, modal dialogs, menus and popovers opened from a control, toasts, tooltips.",
+    "$description": "One window stacking contract: content and chrome < docked panels < floating panels < anchored surfaces < full-app overlays and modals < menus and tooltips < notifications. Full-app surfaces portal to the AppRoot overlay host, never a panel stacking context.",
     "canvas": {
       "$value": 0,
       "$description": "The note itself."
@@ -718,29 +718,33 @@
       "$value": 3,
       "$description": "The window's chrome: the title bar band, the trigger and the window controls."
     },
-    "panel": {
+    "docked": {
       "$value": 4,
+      "$description": "Docked side panels and their headers; below floating panels."
+    },
+    "panel": {
+      "$value": 5,
       "$description": "Persistent surfaces beside or over the note: the side sheets, the find bar, the account corner."
     },
     "anchored": {
-      "$value": 5,
+      "$value": 6,
       "$description": "Transient surfaces pinned to the note's selection or caret (the format toolbar, the slash menu, the link editor and card): above every panel, below a modal dialog."
     },
     "dialog": {
-      "$value": 6,
+      "$value": 7,
       "$description": "Modal dialogs, their scrim, and full-window steps."
     },
     "popover": {
-      "$value": 7,
-      "$description": "Menus, popovers and pickers opened from a control anywhere, a dialog's included: above everything they can open from."
-    },
-    "toast": {
       "$value": 8,
-      "$description": "Toasts and skip links."
+      "$description": "Menus, popovers and pickers opened from a control anywhere, a dialog's included: above everything they can open from."
     },
     "tooltip": {
       "$value": 9,
-      "$description": "Tooltips and the window's resize edges: always on top."
+      "$description": "Tooltips and window resize edges; above overlays and menus, below notifications."
+    },
+    "toast": {
+      "$value": 10,
+      "$description": "Notifications and skip links: above every application surface."
     }
   },
   "breakpoint": {

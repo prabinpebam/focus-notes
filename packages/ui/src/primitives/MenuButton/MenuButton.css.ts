@@ -54,9 +54,7 @@ export const item = style({
   "@media": { "(forced-colors: active)": { selectors: { "&[data-focused]": { backgroundColor: t.forcedFocused, color: t.forcedFocusedText, forcedColorAdjust: "none" } } } },
 });
 
-// The label, and under it why an unavailable item is unavailable (Foundations → States). The reason
-// keeps full contrast; only the label dims.
-export const label = style({ flexGrow: 1, display: "flex", flexDirection: "column", paddingBlock: t.reasonPaddingBlock });
+export const label = style({ flexGrow: 1, display: "flex", flexDirection: "column" });
 export const labelRow = style({ display: "flex", alignItems: "center", gap: t.gap });
 const unavailable = `${item}[aria-disabled="true"] &`;
 export const labelText = style({
@@ -64,7 +62,6 @@ export const labelText = style({
   selectors: { [unavailable]: { opacity: t.disabledOpacity } },
   "@media": { "(forced-colors: active)": { selectors: { [unavailable]: { color: t.textDisabled } } } },
 });
-export const reason = style({ color: t.textMuted, fontSize: t.captionSize });
 export const check = style({ width: t.captionSize, display: "inline-flex", justifyContent: "center", color: t.text });
 // In the interface font, as everywhere else shortcuts show (a <kbd> would be monospace).
 // An unavailable item's shortcut dims with its label; in forced colors, a focused one is in the
