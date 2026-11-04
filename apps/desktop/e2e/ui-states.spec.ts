@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createServer } from "node:http";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
 import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
@@ -21,6 +21,68 @@ async function closeTestApp(l: Launched) {
     }
   }
 }
+
+test("Files initial scan is independent, never reports unknown or refused content empty and retries only the read", async () => {
+  const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md"), before = "# Welcome\n\nInitial listing stays independent.\n";
+  writeFileSync(note, before);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const entrypoint = join(dirs.userData, "held-scan.cjs");
+  const main = pathToFileURL(fileURLToPath(new URL("../out/main/main.mjs", import.meta.url))).href;
+  writeFileSync(entrypoint, `
+const { ipcMain } = require("electron");
+const handle = ipcMain.handle.bind(ipcMain);
+let scans = 0;
+ipcMain.handle = (channel, handler) => handle(channel, channel !== "workspace:scan" ? handler : async (...args) => {
+  const request = ++scans;
+  await new Promise(resolve => { globalThis.uiStatesReleaseScan = resolve; });
+  if (request === 1) throw new Error("private-path-and-token");
+  return handler(...args);
+});
+import(${JSON.stringify(main)});
+`);
+  const l = await launch(dirs, {}, { entrypoint });
+  try {
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("Initial listing stays independent.");
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+p" : "Control+Alt+p");
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    const body = await files.locator("[data-sheet-body]").elementHandle();
+    if (!body) throw new Error("Files content wrapper is unavailable");
+    const shapes = files.locator("[data-shimmer]");
+    await expect(shapes).toHaveCount(3);
+    await expect(files.getByText("No notes yet", { exact: true })).toHaveCount(0);
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationIterationCount)).toBe("3");
+    await l.page.emulateMedia({ reducedMotion: "reduce" });
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationName)).toBe("none");
+    const releaseScan = () => l.app.evaluate(() => {
+      const release: unknown = Reflect.get(globalThis, "uiStatesReleaseScan");
+      if (typeof release !== "function") throw new Error("Held initial scan is unavailable");
+      Reflect.deleteProperty(globalThis, "uiStatesReleaseScan");
+      release();
+    });
+    await releaseScan();
+    const error = files.locator("[data-status-row=danger]");
+    await expect(error).toContainText("Couldn't list your notes.");
+    await expect(error).not.toContainText("private-path-and-token");
+    await expect(shapes).toHaveCount(0);
+    await expect(files.getByText("No notes yet", { exact: true })).toHaveCount(0);
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    const filter = files.getByRole("searchbox", { name: "Filter by name", exact: true });
+    await filter.fill("unmatched initial scan");
+    await expect(error).toBeVisible();
+    await expect(editor).toContainText("Initial listing stays independent.");
+    await releaseScan();
+    await expect(error).toHaveCount(0);
+    await expect(filter).toHaveValue("unmatched initial scan");
+    await expect(files.getByText("No matches", { exact: true })).toBeVisible();
+    await files.getByRole("button", { name: "Clear search", exact: true }).click();
+    await expect(fileRow(files.getByRole("tree", { name: "Notes and folders", exact: true }), "Welcome")).toBeVisible();
+    expect(await body.evaluate(el => el.isConnected)).toBe(true);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:workspace.list").length)).toBe(2);
+    expect(readFileSync(note, "utf8")).toBe(before);
+  } finally { await closeTestApp(l); }
+});
 
 test("Recently deleted never calls failed history empty, retains rows through Retry and shows good news only after an acknowledged empty read", async () => {
   const { dirs } = instance();
