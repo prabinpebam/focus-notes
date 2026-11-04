@@ -210,6 +210,12 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "public:About.md", kind: "note", level: 2, label: "About", parent: "root:public", description: "read-only", readOnly: true },
     ],
     treeFocus: "journal/2026-10-12.md",
+    treePins: [
+      { id: "ideas", kind: "folder", level: 1, label: "Ideas", pinLabel: "Pin", pinned: false, pinCommit: "rest" },
+      { id: "pending.md", kind: "note", level: 1, label: "Saving pin", pinLabel: "Pin", pinned: false, pinCommit: "pending" },
+      { id: "confirmed.md", kind: "note", level: 1, label: "Pinned", pinLabel: "Unpin", pinned: true, pinCommit: "confirmed" },
+      { id: "failed.md", kind: "note", level: 1, label: "Pin not saved", pinLabel: "Pin", pinned: false, pinCommit: "failed" },
+    ],
     treeEditing: [
       { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
       { id: "new:", kind: "folder", level: 2, label: "bold", parent: "root:private", editing: true },
@@ -299,6 +305,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         matches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, header: { type: "boolean" }, highlights: { type: "array", items: { type: "array", items: { type: "number" } } } } } },
         matchFirst: { type: "string" },
         tree: { type: "array", items: TREE_ITEM },
+        treePins: { type: "array", items: TREE_ITEM },
         treeFocus: { type: "string" },
         treeEditing: { type: "array", items: TREE_ITEM },
         treeEditLabel: { type: "string" },

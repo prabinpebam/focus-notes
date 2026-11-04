@@ -1136,7 +1136,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const attempted = action?.command ?? command;
       const attemptedArgs = action?.args ?? args;
       const original = attempted === "command.run" && typeof attemptedArgs?.id === "string" ? attemptedArgs.id : attempted;
-      const target = original ? commandCommitTargets[original] : undefined;
+      const pinValue = attemptedArgs?.value;
+      const pinPath = typeof pinValue === "object" && pinValue !== null && "path" in pinValue && typeof pinValue.path === "string" ? pinValue.path : attempted === "files.pinItem" ? attemptedArgs?.id : undefined;
+      const pinFailure = original === "files.pinItem" ? store.state.commits.filter(item => item.command === "files.saveItemPin" && item.phase === "failed" && (typeof pinPath !== "string" || item.target === `vm.files.itemPin:${pinPath}`)).sort((a, b) => a.id - b.id).at(-1) : undefined;
+      const target = pinFailure?.target ?? (original ? commandCommitTargets[original] : undefined);
       const failed = target ? store.state.commits.find((item) => item.target === target && item.phase === "failed") : undefined;
       const retryCommand = failed ? target === "vm.app.fontSize" ? "font.reset" : original : attempted;
       const retryArgs = failed ? { value: failed.value } : attemptedArgs;

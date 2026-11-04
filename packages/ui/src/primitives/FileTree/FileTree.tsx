@@ -4,6 +4,7 @@ import { CommandMenu } from "../MenuButton/MenuButton.tsx";
 import * as menuStyles from "../MenuButton/MenuButton.css.ts";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import { Icon } from "../Icon/Icon.tsx";
+import { IconButton } from "../IconButton/IconButton.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import type { MenuSection, TreeItem } from "../../data.ts";
 import * as s from "./FileTree.css.ts";
@@ -35,6 +36,7 @@ export interface FileTreeProps {
   onEditChange?: (p: { value: string }) => void;
   onEditBlur?: () => void;
   onMenuAction?: (p: { id: string }) => void;
+  onPin?: (p: { id: string; pinned: boolean }) => void;
 }
 
 /** A registered property's name, from the var() vanilla-extract gives. */
@@ -53,7 +55,7 @@ const EXPAND_AFTER_MS = 600;
 /** The last focus request each tree met, by id, kept while it's re-created (DEF-20). */
 const metRequests = new Map<string, number>();
 
-export function FileTree({ label, items, focusId, focusRequest, windowed = false, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction }: FileTreeProps) {
+export function FileTree({ label, items, focusId, focusRequest, windowed = false, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction, onPin }: FileTreeProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [dropId, setDropId] = useState("");
@@ -313,7 +315,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
         const folder = item.kind !== "note";
         // A section's own control (its repository's backup, D-191); the row is then named by its label alone.
         const end = item.kind === "section" && item.accessory !== undefined ? sectionEnd[item.accessory] : undefined;
-        const labelId = !item.editing && (end || item.detail) ? `${treeRowId(id, item.id)}-label` : undefined;
+        const labelId = !item.editing && (end || item.detail || item.pinLabel) ? `${treeRowId(id, item.id)}-label` : undefined;
         const descriptionId = labelId && item.description && !end ? `${treeRowId(id, item.id)}-description` : undefined;
         const detailId = item.detail && !item.editing ? `${treeRowId(id, item.id)}-detail` : undefined;
         return (
@@ -361,7 +363,25 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
                 <Icon name={item.expanded ? "chevronDown" : "chevronRight"} size="s" />
               </span>
             ) : <span className={s.chevron} aria-hidden="true" />}
-            {item.kind !== "section" ? <span className={s.icon} aria-hidden="true"><Icon name={folder ? "folder" : "document"} size="s" /></span> : null}
+            {item.kind !== "section" ? (
+              <span className={s.icon}>
+                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} aria-hidden="true"><Icon name={folder ? "folder" : "document"} size="s" /></span>
+                {item.pinLabel && !item.editing ? (
+                  <span className={s.pinControl} data-pin-commit={item.pinCommit}
+                    data-key-scope="filesSection" data-key-scope-stop=""
+                    onKeyDown={e => e.stopPropagation()}
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
+                    onDoubleClick={e => e.stopPropagation()}
+                    onContextMenu={e => e.stopPropagation()}
+                    onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}>
+                    <IconButton icon={item.pinned ? "pinOff" : "pin"} label={item.pinLabel}
+                      toggle pressed={item.pinned} commit={item.pinCommit}
+                      onPress={() => onPin?.({ id: item.id, pinned: !item.pinned })} />
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
             {item.editing ? (
               <span className={s.edit}>
                 <input

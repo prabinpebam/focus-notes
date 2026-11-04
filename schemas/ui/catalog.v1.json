@@ -2230,6 +2230,12 @@
           "payload": {
             "id": "text"
           }
+        },
+        "pin": {
+          "payload": {
+            "id": "text",
+            "pinned": "boolean"
+          }
         }
       },
       "slots": {
@@ -2251,7 +2257,11 @@
         "dropTarget",
         "pending",
         "readOnly",
-        "menuOpen"
+        "menuOpen",
+        "pinAvailable",
+        "pinPending",
+        "pinConfirmed",
+        "pinFailed"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -2259,6 +2269,7 @@
         "name": "label"
       },
       "fixtures": [
+        "same-slot pin action and acknowledged outcomes",
         "sections, folders, the current note, and a multiple selection",
         "naming a folder, with an error"
       ]

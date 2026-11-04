@@ -1,11 +1,174 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmdirSync, writeFileSync } from "node:fs";
 import { cssVarName, themeValues } from "../../../packages/tokens/dist/tokens.ts";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "./fixtures.ts";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs } from "./helpers.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
+import { pointerModality, settled } from "./visual-quality.ts";
+import type { Locator } from "@playwright/test";
+
+for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and persists the exact row in ${appearance}`, async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md"), other = join(dirs.docs, "Other.md"), folder = join(dirs.docs, "Ideas");
+  const text = "# Kept welcome\n\nNever change these bytes.\n", targetText = "# Pin target\n\nKeep me too.\n";
+  writeFileSync(note, text); writeFileSync(other, targetText); mkdirSync(folder);
+  writeFileSync(join(folder, "Leaf.md"), "# Leaf\n");
+  const stateFile = join(dirs.userData, "state.json"), held = `${stateFile}.held`;
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note, appearance }));
+  let l = await launch(dirs);
+  const close = async () => {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  };
+  const pins = (): string[] => JSON.parse(readFileSync(stateFile, "utf8")).filesPins ?? [];
+  const open = async () => {
+    await l.page.keyboard.press("Control+o");
+    const tree = l.page.getByRole("tree", { name: "Notes and folders", exact: true });
+    await expect(fileRow(tree, "Kept welcome")).toBeVisible();
+    return tree;
+  };
+  try {
+    const tree = await open(), target = fileRow(tree, "Pin target"), ideas = fileRow(tree, "Ideas");
+    const label = target.locator('span[dir="auto"]').first();
+    await pointerModality(l.page);
+    await l.page.getByRole("textbox", { name: "Note", exact: true }).focus();
+    const button = target.getByRole("button", { name: "Pin", exact: true, includeHidden: true });
+    await expect(button).toBeHidden();
+    const rowBox = (await target.boundingBox())!, labelBox = (await label.boundingBox())!;
+    await target.hover();
+    await expect(button).toBeVisible();
+    expect(await target.boundingBox()).toEqual(rowBox);
+    expect(await label.boundingBox()).toEqual(labelBox);
+    await button.click();
+    await expect.poll(pins).toEqual([other]);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:files.pin").length)).toBeGreaterThan(0);
+    await expect(fileRow(tree, "Kept welcome")).toHaveAttribute("aria-selected", "true");
+    await expect(target).toHaveAttribute("aria-selected", "false");
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Never change these bytes.");
+    await target.focus();
+    await l.page.keyboard.press("Tab");
+    await expect(target.getByRole("button", { name: "Unpin", exact: true })).toBeFocused();
+    await expect(target.getByRole("button", { name: "Unpin", exact: true })).not.toHaveAttribute("data-commit", "pending");
+    await l.page.keyboard.press("Space");
+    await expect.poll(pins).toEqual([]);
+    await ideas.hover();
+    await ideas.getByRole("button", { name: "Pin", exact: true }).click();
+    await expect.poll(pins).toEqual([folder]);
+    await expect(target.getByRole("button", { name: "Pin", exact: true })).not.toHaveAttribute("data-commit", "pending");
+    await expect(ideas).toHaveAttribute("aria-expanded", "false");
+    renameSync(stateFile, held); mkdirSync(stateFile);
+    try {
+      await target.hover();
+      await target.getByRole("button", { name: "Pin", exact: true }).click();
+      await expect(target.locator('[data-commit="failed"]')).toBeVisible();
+      expect(JSON.parse(readFileSync(held, "utf8")).filesPins).toEqual([folder]);
+      await fileRow(tree, "Kept welcome").click();
+    } finally { rmdirSync(stateFile); renameSync(held, stateFile); }
+    await l.page.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(pins).toEqual([folder, other]);
+    await close();
+    l = await launch(dirs);
+    await open();
+    const shortcuts = l.page.locator("#filesShortcuts");
+    await expect(fileRow(shortcuts, "Ideas")).toBeVisible();
+    await expect(fileRow(shortcuts, "Pin target")).toBeVisible();
+    const cdp = await l.page.context().newCDPSession(l.page);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+    await fileRow(shortcuts, "Ideas").getByRole("button", { name: "Unpin", exact: true }).click();
+    await expect.poll(pins).toEqual([other]);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+    expect(readFileSync(note, "utf8")).toBe(text);
+    expect(readFileSync(other, "utf8")).toBe(targetText);
+  } finally { await close(); }
+});
+
+for (const appearance of ["light", "dark"]) test(`Close tooltip never changes dialog geometry in ${appearance}`, async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  const text = "# Close hover\n\nKeep these exact bytes.\n";
+  writeFileSync(note, text);
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
+    version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note, appearance,
+  }));
+  const l = await launch(dirs);
+  const check = async (dialog: Locator, height: string) => {
+    await expect(dialog.locator("..")).toHaveAttribute("data-height", height);
+    await settled(l.page);
+    const before = (await dialog.boundingBox())!;
+    const close = dialog.getByRole("button", { name: "Close", exact: true });
+    const tooltip = l.page.getByRole("tooltip", { name: "Close", exact: true });
+    const measure = async (show: () => Promise<void>, hide: () => Promise<void>) => {
+      const [frames] = await Promise.all([
+        dialog.evaluate(async el => {
+          const frames = [];
+          for (let i = 0; i < 80; i++) {
+            await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+            const r = el.getBoundingClientRect();
+            frames.push({ x: r.x, y: r.y, width: r.width, height: r.height });
+          }
+          return frames;
+        }),
+        (async () => {
+          await show();
+          await expect(tooltip).toBeVisible();
+          expect(await tooltip.evaluate(el => Boolean(el.closest("[data-dialog-modal]")))).toBe(false);
+          await hide();
+          await expect(tooltip).toHaveCount(0);
+        })(),
+      ]);
+      for (const frame of frames) for (const key of ["x", "y", "width", "height"] as const) {
+        expect(Math.abs(frame[key] - before[key]), `${height} ${key} changed with Close tooltip`).toBeLessThanOrEqual(0.5);
+      }
+    };
+    for (let i = 0; i < 2; i++) {
+      await pointerModality(l.page);
+      await measure(() => close.hover(), () => pointerModality(l.page));
+    }
+    await measure(async () => { await l.page.keyboard.press("Tab"); await close.focus(); }, async () => { await dialog.locator("[data-dialog-body]").focus(); });
+    const padding = await dialog.evaluate(el => {
+      const body = el.querySelector("[data-dialog-body]")!;
+      const before = getComputedStyle(body).paddingBottom;
+      const portal = document.createElement("div");
+      portal.style.position = "fixed";
+      portal.setAttribute("role", "tooltip");
+      el.append(portal);
+      try { return { before, after: getComputedStyle(body).paddingBottom }; }
+      finally { portal.remove(); }
+    });
+    expect(padding.after).toBe(padding.before);
+    await close.click();
+    await expect(dialog).toHaveCount(0);
+  };
+  try {
+    for (const [width, height] of [[1132, 812], [480, 360]]) {
+      await l.app.evaluate(({ BrowserWindow }, size) => {
+        BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("index.html"))!.setSize(size[0]!, size[1]!);
+      }, [width!, height!]);
+      await l.page.keyboard.press("Control+,");
+      await check(l.page.getByRole("dialog", { name: "Settings", exact: true }), "navigation");
+      await l.page.keyboard.press("Control+Alt+o");
+      const open = l.page.getByRole("dialog", { name: "Open", exact: true }).or(l.page.getByRole("region", { name: "Open", exact: true }));
+      await open.getByRole("button", { name: "New project…", exact: true }).click();
+      await check(l.page.getByRole("dialog", { name: "New project", exact: true }), "stable");
+      await l.page.keyboard.press("Escape");
+      await l.page.keyboard.press("Control+,");
+      await l.page.getByRole("dialog", { name: "Settings", exact: true }).getByRole("button", { name: "Send feedback", exact: true }).click();
+      const feedback = l.page.getByRole("dialog", { name: "Send feedback", exact: true });
+      await feedback.getByRole("radiogroup", { name: "Kind" }).getByText("Idea", { exact: true }).click();
+      await check(feedback, "content");
+    }
+    expect(readFileSync(note, "utf8")).toBe(text);
+  } finally {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
 
 for (const projectTheme of ["app", "sepia"]) test(`Themes applies real tokens and survives reopening with project theme ${projectTheme}`, async () => {
   const dirs = tempDirs();

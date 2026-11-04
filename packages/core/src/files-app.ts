@@ -337,15 +337,37 @@ export function registerFiles(ctx: Ctx) {
       if (found.node.kind === "note") await activate(id);
     },
   });
-  commands.register({
+  type PinIntent = { path: string; pinned: boolean };
+  let pinWrites: Promise<void> = Promise.resolve();
+  commands.register<{ value: PinIntent }>({
+    id: "files.saveItemPin", title: "command.files.pinItem",
+    run: async ({ value }) => {
+      if (!value || typeof value.path !== "string" || typeof value.pinned !== "boolean" || !findNode(store.state.workspace.tree, value.path)) throw new Error("Invalid Files pin");
+      const started = performance.now();
+      const write = async () => {
+        const pins = value.pinned
+          ? files().pins.includes(value.path) ? [...files().pins] : [...files().pins, value.path]
+          : files().pins.filter(path => path !== value.path);
+        await ctx.persistAppState({ filesPins: pins });
+        setFiles(() => ({ pins }));
+      };
+      const result = pinWrites.then(write, write);
+      pinWrites = result;
+      try { await result; }
+      finally { performance.measure("fn:files.pin", { start: started, duration: performance.now() - started }); }
+    },
+  });
+  commands.register<{ id?: string; pinned?: boolean; value?: PinIntent }>({
     id: "files.pinItem", title: "command.files.pinItem", icon: "pin", group: "files",
     enabled: (s) => Boolean(s.ui.files.selection.focus) && !isRootRow(s.ui.files.selection.focus),
     checked: (s) => s.ui.files.pins.includes(s.ui.files.selection.focus),
-    run: async () => {
-      const path = files().selection.focus;
-      const pins = files().pins.includes(path) ? files().pins.filter((p) => p !== path) : [...files().pins, path];
-      setFiles(() => ({ pins }));
-      await ctx.persistAppState({ filesPins: pins });
+    run: ({ id, pinned, value }) => {
+      const path = value?.path ?? id ?? files().selection.focus;
+      return commands.run("commit.run", {
+        target: `vm.files.itemPin:${path}`, command: "files.saveItemPin",
+        value: value ?? { path, pinned: pinned ?? !files().pins.includes(path) },
+        label: catalog.format("command.files.pinItem"),
+      });
     },
   });
   commands.register({
@@ -1337,11 +1359,12 @@ export function registerFiles(ctx: Ctx) {
   const TREE_ITEM = {
     type: "object" as const,
     properties: Object.fromEntries([
-      ...["id", "label", "description", "detail", "title", "parent"].map((k) => [k, { type: "string" as const }]),
+      ...["id", "label", "description", "detail", "title", "parent", "pinLabel"].map((k) => [k, { type: "string" as const }]),
+      ["pinCommit", { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] }],
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
       ["accessory", { type: "number" as const }],
-      ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing"].map((k) => [k, { type: "boolean" as const }]),
+      ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing", "pinned"].map((k) => [k, { type: "boolean" as const }]),
     ]),
   };
   viewModels.register({
@@ -1455,6 +1478,11 @@ export function registerFiles(ctx: Ctx) {
       const pending = new Set(f.pending);
       const unsaved = new Set(f.unsaved);
       const writable = canWrite(s);
+      const pinState = (path: string) => ({
+        pinned: f.pins.includes(path),
+        pinLabel: catalog.format(f.pins.includes(path) ? "files.unpinItem" : "command.files.pinItem"),
+        pinCommit: s.commits.find(item => item.target === `vm.files.itemPin:${path}`)?.phase ?? "rest",
+      });
       const shortcuts: Record<string, unknown>[] = [];
       for (const [section, paths] of [["pinned", f.pins], ["recent", f.visits.filter((p) => !f.pins.includes(p))]] as const) {
         const id = `root:${section}`;
@@ -1464,7 +1492,7 @@ export function registerFiles(ctx: Ctx) {
           if (!found || (section === "recent" && found.node.kind !== "note")) return [];
           const label = titleOfNode(found.node);
           if (f.filter && !label.toLocaleLowerCase().includes(f.filter.toLocaleLowerCase())) return [];
-          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id,
+          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id, ...pinState(path),
             detail: dirOf(path).slice(found.root.path.length).replace(/^[\\/]+/, "") || catalog.format("files.location.root"), description: "", title: path,
             selected: selected.has(path), current: path === s.note.path, expanded: false, hasChildren: false }];
         });
@@ -1480,6 +1508,7 @@ export function registerFiles(ctx: Ctx) {
         title: r.kind === "note" ? r.path : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,
+        ...(r.kind !== "root" ? pinState(r.id) : {}),
         draggable: writable && !r.readOnly && r.kind !== "root", droppable: writable && !r.readOnly && r.kind !== "note",
         editing: f.edit?.kind === "rename" && f.edit.id === r.id,
         // Private and Public each carry their repository's backup at the trailing end (D-191).
