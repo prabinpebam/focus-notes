@@ -153,6 +153,18 @@
 <p>The six defaults are a proposal (<a href="../plan/decisions.md">D-18</a>). In P1 the writer can pin any six commands (UI-08). Anything unpinned moves into ⋯ automatically, so the six-action cap always holds.</p>
 <p><strong>As built (WP-8.3, <a href="../plan/decisions.md">D-170</a>).</strong> <em>Customize toolbar…</em>, in ⋯ and in Settings → Keyboard, lists the pinned actions in order, each with <em>Move up</em>, <em>Move down</em>, and <em>Unpin</em>, and the other actions with <em>Pin</em>. It also has <em>Reset to default</em>. The pinnable actions are the six defaults and ⋯'s commands. An unpinned default joins a first ⋯ group, <em>Actions</em>. The choice is kept on this device.</p>
 
+<h3 id="customize-toolbar-visual">Customize toolbar, visual (proposed, owner 5 November)</h3>
+<p><strong>Strict design, not wired; awaiting the owner's sign-off</strong> (<a href="../plan/decisions.md#pending-number-orchestrator-a-visual-toolbar-customizer-and-a-scan-worth-watching">pending decision</a>, DD-IA-08). It replaces the list of text buttons above with the toolbar itself:</p>
+<ul>
+  <li><strong>A wide dialog</strong> (<code>dialogL</code>) whose top is the real expanded toolbar: the same frame, buttons, ⋯ and tooltips (name and shortcut on hover, never written out). Hover and press work; pressing runs nothing.</li>
+  <li><strong>The catalogue below</strong>: every action that can be added, grouped by category, in 4 columns (3 or fewer when narrow). Each is the toolbar's own icon button with its name beside it.</li>
+  <li><strong>Drag to arrange.</strong> Drag from the catalogue or within the toolbar; an insertion marker shows exactly where it lands. Drag a toolbar button away from the toolbar to remove it.</li>
+  <li><strong>Hold to replace.</strong> Rest a dragged button on a slot for 1 second: the button there lifts half out of its slot. Move away and it settles back; drop and it slides out and fades while the new one settles in.</li>
+  <li><strong>Six at most.</strong> With six on the toolbar the marker is red and dropping between slots adds nothing; remove one, or hold to replace.</li>
+  <li><strong>Keyboard and screen readers.</strong> Space or Enter picks a button up, the arrow keys move it, Space or Enter drops it, Esc cancels, Delete removes a toolbar button, and Shift+Enter on a slot while carrying replaces it. Every pick up, move, drop, replace, removal and "toolbar is full" is announced.</li>
+  <li><strong>Reduced motion</strong> keeps the marker and the lifted button, without the slides and fades.</li>
+</ul>
+
 <h3 id="the-menu">The ⋯ menu</h3>
 <table>
   <thead><tr><th>Group</th><th>Items (shortcut)</th></tr></thead>
