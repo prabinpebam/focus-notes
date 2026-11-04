@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { git, instance, write } from "./instance.ts";
 
 async function closeTestApp(l: Launched) {
   try {
@@ -19,6 +20,80 @@ async function closeTestApp(l: Launched) {
     }
   }
 }
+
+test("History delays its own section, retries exact reads and acknowledges restore and Undo only after saving", async () => {
+  const { dirs } = instance();
+  const repository = join(dirs.docs, "private"), note = join(repository, "notes", "welcome.md");
+  const before = "# Welcome\n\nFirst line.\n\nLater paragraph.\n";
+  write(note, before);
+  git(repository, "commit", "-q", "-am", "Save later paragraph");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("Later paragraph.");
+    await l.app.evaluate(({ ipcMain }) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
+      for (const channel of ["history:versions", "history:version", "note:write"]) {
+        const original: unknown = handlers.get(channel);
+        if (typeof original !== "function") throw new Error(`Missing ${channel}`);
+        let attempts = 0;
+        ipcMain.removeHandler(channel);
+        ipcMain.handle(channel, async (event, ...args: unknown[]) => {
+          const attempt = ++attempts;
+          await new Promise(resolve => setTimeout(resolve, 600));
+          if (attempt === 1 || channel === "note:write" && attempt === 3) throw new Error("private-path-and-token");
+          return original(event, ...args);
+        });
+      }
+    });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    await l.page.getByRole("menuitem", { name: "Note history", exact: true }).click();
+    const sheet = l.page.getByRole("complementary", { name: "Note history", exact: true });
+    await expect(sheet.locator("[data-shimmer]").first()).toBeVisible();
+    await expect(editor).toContainText("Later paragraph.");
+    const error = sheet.locator("[data-status-row=danger]");
+    await expect(error).toContainText("Couldn't read this note's history.");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(sheet.getByRole("option")).toHaveCount(2);
+    await expect(error).not.toBeVisible();
+    await sheet.getByRole("option").last().click();
+    await expect(sheet.locator("#historyVersionLoading [data-shimmer]").first()).toBeVisible();
+    await expect(error).toContainText("Couldn't read that version.");
+    await error.getByText("Details", { exact: true }).click();
+    await expect(error).not.toContainText("private-path-and-token");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    const preview = sheet.getByRole("region", { name: /^Viewing the version from / });
+    await expect(preview).toContainText("First line.");
+    await expect(preview).not.toContainText("Later paragraph.");
+    await expect(error).not.toBeVisible();
+    await sheet.getByRole("button", { name: "Restore this version", exact: true }).click();
+    await expect(error).toContainText("Couldn't save the restored version.");
+    expect(readFileSync(note, "utf8")).toBe(before);
+    await expect(preview).toBeVisible();
+    await expect(l.page.locator("#toasts")).not.toContainText("Restored the version from");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(sheet).not.toBeVisible();
+    expect(readFileSync(note, "utf8")).toBe("# Welcome\n\nFirst line.\n");
+    const toasts = l.page.locator("#toasts");
+    await toasts.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(toasts).toContainText("Couldn't save Undo.");
+    expect(readFileSync(note, "utf8")).toBe("# Welcome\n\nFirst line.\n");
+    await toasts.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => readFileSync(note, "utf8")).toBe(before);
+    await expect(editor).toContainText("Later paragraph.");
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.list").length)).toBe(2);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.version").length)).toBe(2);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.restore").length)).toBe(2);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.undo").length)).toBe(2);
+  } finally { await closeTestApp(l); }
+});
 
 test("New project and Local import recover without repeating completed creation or copying a partial note", async () => {
   const dirs = tempDirs();

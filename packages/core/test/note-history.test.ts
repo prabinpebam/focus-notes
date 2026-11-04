@@ -4,7 +4,7 @@
  * now; Restore this version saves its text as a new version, and the toast's Undo puts back the text
  * it replaced. The log that lists versions follows renames and is parsed without Git here.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, isVersionFile, NOTE_HISTORY_PAGE, parseVersionLog, VERSION_LOG_ARGS, type NoteVersion, type PlatformBridge, type SyncReport } from "../src/index.ts";
@@ -93,8 +93,140 @@ const VERSIONS: NoteVersion[] = [
   { commit: "c0ffee1", at: T0 - 26 * H, author: "Ann", file: "notes/hello.md" },
 ];
 const TEXTS = { c0ffee3: "# Welcome\n\nNow.\n", c0ffee2: "# Welcome\n\nEarlier.\n", c0ffee1: "# Welcome\n\nFirst.\n" };
+afterEach(() => vi.useRealTimers());
 
 describe("Note history in the app (FIL-13)", () => {
+  it("retries the failed older page without replacing loaded versions or their preview", async () => {
+    const many = Array.from({ length: NOTE_HISTORY_PAGE + 3 }, (_, i) => ({ ...VERSIONS[0]!, commit: `aa${String(i).padStart(5, "0")}` }));
+    const f = setup({ versions: many, texts: { aa00000: "# Retained\n" } });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    await app.commands.run("history.choose", { id: "aa00000" });
+    const read = f.bridge.workspace!.versions!;
+    let fail = true;
+    f.bridge.workspace!.versions = async (path, page) => {
+      if (fail) throw new Error("private-path-and-token");
+      return read(path, page);
+    };
+    await app.commands.run("history.more");
+    expect(app.store.state.ui.history).toMatchObject({ versions: many.slice(0, NOTE_HISTORY_PAGE), chosen: "aa00000", text: "# Retained\n", listFailed: true });
+    expect(app.store.state.ui.history.details).not.toContain("private-path-and-token");
+    fail = false;
+    await app.commands.run("history.retry");
+    expect(f.pages.at(-1)?.from?.commit).toBe(many[NOTE_HISTORY_PAGE - 1]!.commit);
+    expect(app.store.state.ui.history.versions).toEqual(many);
+    expect(app.store.state.ui.history).toMatchObject({ chosen: "aa00000", text: "# Retained\n", failed: false });
+  });
+
+  it("retains the shown version on failure and retries the exact selected version", async () => {
+    const f = setup({ versions: VERSIONS, texts: TEXTS });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    await app.commands.run("history.choose", { id: "c0ffee3" });
+    const read = f.bridge.workspace!.version!;
+    const attempts: string[] = [];
+    let fail = true;
+    f.bridge.workspace!.version = async (path, commit, file) => {
+      attempts.push(commit);
+      if (fail) throw new Error("private-version");
+      return read(path, commit, file);
+    };
+    await app.commands.run("history.choose", { id: "c0ffee1" });
+    expect(app.store.state.ui.history).toMatchObject({ chosen: "c0ffee3", text: TEXTS.c0ffee3, failed: true });
+    fail = false;
+    await app.commands.run("history.retry");
+    expect(attempts).toEqual(["c0ffee1", "c0ffee1"]);
+    expect(app.store.state.ui.history).toMatchObject({ chosen: "c0ffee1", text: TEXTS.c0ffee1, failed: false });
+  });
+
+  it("delays version shapes 300 ms, holds them 500 ms and discards a read after Back", async () => {
+    const f = setup({ versions: VERSIONS, texts: TEXTS });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    vi.useFakeTimers();
+    let resolve!: (text: string) => void;
+    f.bridge.workspace!.version = () => new Promise(done => { resolve = done; });
+    const choosing = app.commands.run("history.choose", { id: "c0ffee1" });
+    await vi.advanceTimersByTimeAsync(299);
+    expect(app.viewModels.select("vm.history", app.store.state)).toMatchObject({ versionLoading: false });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(app.viewModels.select("vm.history", app.store.state)).toMatchObject({ versionLoading: true });
+    resolve(TEXTS.c0ffee1);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(app.viewModels.select("vm.history", app.store.state)).toMatchObject({ versionLoading: true });
+    await vi.advanceTimersByTimeAsync(1);
+    await choosing;
+    expect(vm(app).showing).toBe(true);
+    const obsolete = app.commands.run("history.choose", { id: "c0ffee2" });
+    await app.commands.run("history.back");
+    resolve(TEXTS.c0ffee2);
+    await obsolete;
+    expect(vm(app).showing).toBe(false);
+  });
+
+  it("never announces restore/Undo before a successful save, and Retry preserves the original Undo text", async () => {
+    const f = setup({ versions: VERSIONS, texts: TEXTS });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    await app.commands.run("history.choose", { id: "c0ffee1" });
+    expect(app.viewModels.select("vm.history", app.store.state)).toMatchObject({ restoreBusyLabel: "", moreBusyLabel: "" });
+    const write = f.bridge.writeNote;
+    f.bridge.writeNote = async () => { throw new Error("refused"); };
+    await app.commands.run("history.restore");
+    expect(vm(app).open).toBe(true);
+    expect(f.files[NOTE]).toBe(TEXTS.c0ffee3);
+    expect(app.store.state.ui.history.error).toContain("Couldn't save");
+    expect(app.store.state.ui.toasts.some(t => t.message.startsWith("Restored the version"))).toBe(false);
+    f.bridge.writeNote = write;
+    await app.commands.run("history.retry");
+    expect(vm(app).open).toBe(false);
+    expect(f.files[NOTE]).toBe(TEXTS.c0ffee1);
+    f.bridge.writeNote = async () => { throw new Error("refused"); };
+    await app.commands.run("history.undoRestore");
+    expect(f.files[NOTE]).toBe(TEXTS.c0ffee1);
+    expect(app.store.state.announcement.text).not.toBe(messages["history.restoreUndone"]);
+    expect(app.commands.describe("history.undoRestore").enabled).toBe(true);
+    f.bridge.writeNote = write;
+    await app.commands.run("history.undoRestore");
+    expect(f.files[NOTE]).toBe(TEXTS.c0ffee3);
+    expect(app.store.state.announcement.text).toBe(messages["history.restoreUndone"]);
+    expect(f.writes).toEqual([TEXTS.c0ffee1, TEXTS.c0ffee3]);
+  });
+
+  it("does not replace an unsaved draft when its pre-restore save is refused", async () => {
+    const f = setup({ versions: VERSIONS, texts: TEXTS });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    await app.commands.run("history.choose", { id: "c0ffee1" });
+    await app.commands.run("note.setContent", { value: "# Unsaved draft\n" });
+    f.bridge.writeNote = async () => { throw new Error("refused"); };
+    await app.commands.run("history.restore");
+    expect(app.store.state.note.markdown).toBe("# Unsaved draft\n");
+    expect(f.files[NOTE]).toBe(TEXTS.c0ffee3);
+    expect(vm(app).open).toBe(true);
+    expect(f.writes).toEqual([]);
+  });
+
+  it("retries review rather than overwriting text edited after a failed restore", async () => {
+    const f = setup({ versions: VERSIONS, texts: TEXTS });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    await app.commands.run("history.choose", { id: "c0ffee1" });
+    const write = f.bridge.writeNote;
+    f.bridge.writeNote = async () => { throw new Error("refused"); };
+    await app.commands.run("history.restore");
+    await app.commands.run("note.setContent", { value: "# New draft\n" });
+    await app.commands.run("history.retry");
+    expect(app.store.state.ui.history.error).toContain("The note changed");
+    f.bridge.writeNote = write;
+    await app.commands.run("history.retry");
+    expect(app.store.state.note.markdown).toBe("# New draft\n");
+    expect(f.writes).toEqual([]);
+    await app.commands.run("history.restore");
+    await app.commands.run("history.undoRestore");
+    expect(f.files[NOTE]).toBe("# New draft\n");
+  });
+
   it("keeps the previous versions on a failed refresh and ignores an older response after reopening the same note", async () => {
     const f = setup({ versions: VERSIONS, texts: TEXTS });
     const app = await started(f);

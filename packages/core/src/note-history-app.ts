@@ -6,14 +6,14 @@
  * the toast's Undo puts back the text it replaced.
  */
 import type { AppState } from "./app.ts";
-import type { PlatformBridge } from "./bridge.ts";
+import { opErrorCode, type PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { compareVersions, NOTE_HISTORY_PAGE, versionsByDay, type NoteVersion } from "./history.ts";
 import { isReadOnlyPath } from "./notes.ts";
-import type { TaskTracker } from "./tasks.ts";
+import { busyProps, type TaskTracker } from "./tasks.ts";
 
 export interface HistoryState {
   open: boolean;
@@ -29,6 +29,10 @@ export interface HistoryState {
   /** The versions couldn't be read. */
   failed: boolean;
   listFailed?: boolean;
+  error?: string;
+  details?: string;
+  retrying?: boolean;
+  saving?: boolean;
   /** Older versions than those read are there: Show older versions reads the next page. */
   more: boolean;
   /** A version's text is being read. */
@@ -63,33 +67,65 @@ export function registerNoteHistory(ctx: Ctx) {
   let replaced: { path: string; text: string } | undefined;
   let generation = 0;
   let selection = 0;
+  let writing = false;
+  let recovery: { command: string; args: Record<string, unknown> } | undefined;
+  let restoreReceipt: { path: string; text: string; before: string; commit: string; at: number } | undefined;
+  let undoReceipt: { path: string; text: string } | undefined;
+  const clearFailure = () => {
+    recovery = undefined;
+    set({ failed: false, listFailed: false, error: "", details: "" });
+  };
+  const fail = (kind: "list" | "more" | "version" | "restore", error: unknown, commit?: string) => {
+    const code = opErrorCode(error);
+    console.error("History action failed", kind, code);
+    recovery = {
+      command: kind === "list" ? "history.open" : kind === "more" ? "history.more" : kind === "version" ? "history.choose" : "history.restore",
+      args: commit ? { id: commit } : {},
+    };
+    set({ failed: true, listFailed: kind === "list" || kind === "more",
+      error: catalog.format(kind === "list" || kind === "more" ? "history.failed" : kind === "version" ? "history.versionFailed" : "history.restoreFailed"),
+      details: catalog.format("history.failureDetails", { operation: kind, code }) });
+  };
 
   async function choose(commit: string): Promise<void> {
     const h = history();
     const v = h.versions.find((x) => x.commit === commit);
-    if (!h.path || !v) return;
+    if (!h.path || !v || writing) return;
     const request = ++selection;
+    restoreReceipt = undefined;
+    if (!h.retrying) clearFailure();
     set({ active: commit, reading: true });
-    const text = await bridge.workspace?.version?.(h.path, commit, v.file).catch(() => undefined);
-    if (request !== selection || history().path !== h.path || !history().open) return;
-    set(text === undefined ? { chosen: undefined, text: undefined, failed: true, reading: false } : { chosen: commit, text, failed: false, reading: false });
+    try {
+      const text = await tracker.section("history.version", "history.reading", async () => {
+        const result = await bridge.workspace?.version?.(h.path!, commit, v.file);
+        if (result === undefined) throw new Error("History version unavailable");
+        return result;
+      }, "fn:history.version");
+      if (request !== selection || history().path !== h.path || !history().open) return;
+      clearFailure();
+      set({ chosen: commit, text });
+    } catch (error) {
+      if (request === selection && history().path === h.path && history().open) fail("version", error, commit);
+    } finally {
+      if (request === selection && history().path === h.path && history().open) set({ reading: false });
+    }
   }
 
   /**
    * Reads a page of versions, newest first: from HEAD, or from the oldest one read (listed again, and
    * dropped). One more than a page tells whether there are older ones.
    */
-  const page = async (path: string, from?: NoteVersion): Promise<NoteVersion[] | undefined> => {
-    const read = await tracker.section("history.load", "history.loading", async () => {
+  const page = async (path: string, from?: NoteVersion): Promise<NoteVersion[]> => {
+    const read = await tracker.section("history.load", from ? "history.loadingMore" : "history.loading", async () => {
       if (!bridge.workspace?.versions) throw new Error("History unavailable");
       return bridge.workspace.versions(path, { limit: NOTE_HISTORY_PAGE + 1 + (from ? 1 : 0), ...(from ? { from: { commit: from.commit, file: from.file } } : {}) });
-    }).catch(() => undefined);
-    return from ? read?.filter((v) => v.commit !== from.commit) : read;
+    }, "fn:history.list");
+    return from ? read.filter((v) => v.commit !== from.commit) : read;
   };
 
   commands.register({
     id: "history.open", title: "command.history.open", icon: "history", layer: "power", group: "app",
-    enabled: () => available() && Boolean(store.state.note.path), disabledReason: "command.history.open.none",
+    enabled: () => !writing && available() && Boolean(store.state.note.path), disabledReason: "command.history.open.none",
     run: async () => {
       const path = store.state.note.path;
       if (!path || !bridge.workspace?.versions) return;
@@ -97,61 +133,144 @@ export function registerNoteHistory(ctx: Ctx) {
       selection++;
       const previous = history();
       const retained = previous.open && previous.path === path ? previous : HISTORY_CLOSED;
-      set({ ...retained, open: true, loading: true, reading: false, listFailed: false, failed: false, path, focus: previous.focus + 1 });
+      if (!previous.retrying) clearFailure();
+      set({ ...retained, open: true, loading: true, reading: false, path, focus: previous.focus + 1,
+        ...(!previous.retrying ? { listFailed: false, failed: false, error: "", details: "" } : {}) });
       // Read only now, as the sheet opens, a page at a time (D-175).
-      const read = await page(path);
-      if (request !== generation || history().path !== path || !history().open) return;
-      const versions = read?.slice(0, NOTE_HISTORY_PAGE) ?? retained.versions;
-      set({ loading: false, versions, failed: !read, listFailed: !read, more: read ? read.length > NOTE_HISTORY_PAGE : retained.more,
-        ...(read ? { active: versions[0]?.commit, chosen: undefined, text: undefined, reading: false } : {}) });
+      try {
+        const read = await page(path);
+        if (request !== generation || history().path !== path || !history().open) return;
+        const versions = read.slice(0, NOTE_HISTORY_PAGE);
+        clearFailure();
+        const retainedChoice = versions.some(v => v.commit === retained.chosen);
+        set({ versions, more: read.length > NOTE_HISTORY_PAGE, active: versions.some(v => v.commit === retained.active) ? retained.active : versions[0]?.commit,
+          ...(!retainedChoice ? { chosen: undefined, text: undefined } : {}) });
+      } catch (error) {
+        if (request === generation && history().path === path && history().open) fail("list", error);
+      } finally {
+        if (request === generation && history().path === path && history().open) set({ loading: false });
+      }
     },
   });
-  commands.register({ id: "history.close", title: "command.history.close", run: () => { generation++; selection++; set({ ...HISTORY_CLOSED, focus: history().focus }); } });
+  commands.register({ id: "history.close", title: "command.history.close", run: () => { generation++; selection++; recovery = undefined; restoreReceipt = undefined; set({ ...HISTORY_CLOSED, focus: history().focus }); } });
+  commands.register({
+    id: "history.retry", title: "commit.retry",
+    enabled: () => history().open && Boolean(recovery) && !history().retrying && !writing,
+    run: async () => {
+      const failed = recovery;
+      if (!failed) throw new Error("No history action to retry");
+      const path = history().path;
+      set({ retrying: true });
+      try { await commands.run(failed.command, failed.args); }
+      finally { if (history().path === path && history().open) set({ retrying: false }); }
+    },
+  });
   commands.register({
     id: "history.more", title: "command.history.more",
-    enabled: () => history().more && !history().loading,
+    enabled: () => !writing && history().more && !history().loading,
     run: async () => {
       const h = history();
       if (!h.path || !h.more || h.loading) return;
       const request = ++generation;
-      set({ loading: true, listFailed: false });
-      const read = await page(h.path, h.versions.at(-1));
-      if (request !== generation || history().path !== h.path || !history().open) return;
-      const older = read?.slice(0, NOTE_HISTORY_PAGE) ?? [];
-      const known = new Set(h.versions.map((v) => v.commit));
-      set({ loading: false, versions: [...history().versions, ...older.filter((v) => !known.has(v.commit))], more: read ? read.length > NOTE_HISTORY_PAGE : h.more, failed: !read, listFailed: !read });
+      if (!h.retrying) clearFailure();
+      set({ loading: true });
+      try {
+        const read = await page(h.path, h.versions.at(-1));
+        if (request !== generation || history().path !== h.path || !history().open) return;
+        const older = read.slice(0, NOTE_HISTORY_PAGE);
+        const known = new Set(h.versions.map((v) => v.commit));
+        clearFailure();
+        set({ versions: [...history().versions, ...older.filter((v) => !known.has(v.commit))], more: read.length > NOTE_HISTORY_PAGE });
+      } catch (error) {
+        if (request === generation && history().path === h.path && history().open) fail("more", error);
+      } finally {
+        if (request === generation && history().path === h.path && history().open) set({ loading: false });
+      }
     },
   });
   commands.register<{ id: string }>({ id: "history.setActive", title: "command.history.open", run: ({ id }) => { if (!id.startsWith(DAY)) set({ active: id }); } });
-  commands.register<{ id: string }>({ id: "history.choose", title: "command.history.choose", run: ({ id }) => choose(id) });
+  commands.register<{ id: string }>({ id: "history.choose", title: "command.history.choose", enabled: () => !writing, run: ({ id }) => choose(id) });
   // Back to current: the list again, where the version was chosen.
-  commands.register({ id: "history.back", title: "command.history.back", run: () => set({ chosen: undefined, text: undefined, focus: history().focus + 1 }) });
+  commands.register({ id: "history.back", title: "command.history.back", enabled: () => !writing, run: () => { selection++; restoreReceipt = undefined; clearFailure(); set({ chosen: undefined, text: undefined, reading: false, focus: history().focus + 1 }); } });
   commands.register({
     id: "history.restore", title: "command.history.restore",
-    enabled: () => history().text !== undefined && history().path === store.state.note.path && !isReadOnlyPath(store.state.note.path),
+    enabled: () => !writing && !history().reading && history().text !== undefined && history().path === store.state.note.path && !isReadOnlyPath(store.state.note.path),
     run: async () => {
       const h = history();
       const v = h.versions.find((x) => x.commit === h.chosen);
       if (!v || h.text === undefined || !h.path || h.path !== store.state.note.path) return;
-      replaced = { path: h.path, text: store.state.note.markdown };
-      setNote({ key: `${h.path}#history-${v.commit}-${Date.now()}`, initialMarkdown: h.text, markdown: h.text, saveState: "unsaved" });
-      set({ ...HISTORY_CLOSED, focus: h.focus });
-      await flush();
-      const done = catalog.format("history.restored", { at: v.at });
-      announce(done);
-      toast(done, { action: { command: "history.undoRestore", label: catalog.format("files.undo") } });
+      if (restoreReceipt && restoreReceipt.text !== store.state.note.markdown) {
+        restoreReceipt = undefined;
+        fail("restore", new Error("History target changed"));
+        set({ error: catalog.format("history.restoreChanged") });
+        recovery = { command: "history.choose", args: { id: v.commit } };
+        return;
+      }
+      const request = generation;
+      const chosen = selection;
+      if (!h.retrying) clearFailure();
+      writing = true;
+      set({ saving: true });
+      try {
+        await tracker.run("history.restore", "history.restoring", async () => {
+          if (!restoreReceipt) {
+            if (!await flush()) throw new Error("Current note was not saved");
+            if (store.state.note.path !== h.path || request !== generation || chosen !== selection) throw new Error("History target changed");
+            restoreReceipt = { path: h.path!, text: h.text!, before: store.state.note.markdown, commit: v.commit, at: v.at };
+            setNote({ key: `${h.path}#history-${v.commit}-${Date.now()}`, initialMarkdown: h.text, markdown: h.text, saveState: "unsaved" });
+          }
+          const receipt = restoreReceipt;
+          if (receipt.path !== store.state.note.path || receipt.text !== store.state.note.markdown || receipt.commit !== h.chosen) throw new Error("History target changed");
+          if (!await flush()) throw new Error("Restored note was not saved");
+          replaced = { path: receipt.path, text: receipt.before };
+          undoReceipt = undefined;
+          restoreReceipt = undefined;
+          if (request === generation && chosen === selection && history().open) {
+            clearFailure();
+            set({ ...HISTORY_CLOSED, focus: h.focus });
+          }
+          const done = catalog.format("history.restored", { at: receipt.at });
+          announce(done);
+          toast(done, { action: { command: "history.undoRestore", label: catalog.format("files.undo") } });
+        }, undefined, "fn:history.restore");
+      } catch (error) {
+        if (request === generation && chosen === selection && history().open) fail("restore", error);
+        else { console.error("History restore failed", opErrorCode(error)); toast(catalog.format("history.restoreFailed"), { tone: "error" }); }
+      } finally {
+        writing = false;
+        if (request === generation && history().open) set({ saving: false });
+      }
     },
   });
   commands.register({
     id: "history.undoRestore", title: "command.history.undoRestore",
-    enabled: () => replaced !== undefined && replaced.path === store.state.note.path,
+    enabled: () => !writing && replaced !== undefined && replaced.path === store.state.note.path,
     run: async () => {
       const r = replaced;
       if (!r || r.path !== store.state.note.path) return;
-      replaced = undefined;
-      setNote({ key: `${r.path}#history-undo-${Date.now()}`, initialMarkdown: r.text, markdown: r.text, saveState: "unsaved" });
-      await flush();
-      announce(catalog.format("history.restoreUndone"));
+      if (undoReceipt && undoReceipt.text !== store.state.note.markdown) {
+        console.error("History undo target changed");
+        toast(catalog.format("history.undoChanged"), { tone: "error", action: { command: "history.open", label: catalog.format("command.history.open") } });
+        return;
+      }
+      writing = true;
+      try {
+        await tracker.run("history.undo", "history.undoing", async () => {
+          if (!undoReceipt) {
+            if (!await flush() || store.state.note.path !== r.path) throw new Error("Current note was not saved");
+            undoReceipt = r;
+            setNote({ key: `${r.path}#history-undo-${Date.now()}`, initialMarkdown: r.text, markdown: r.text, saveState: "unsaved" });
+          }
+          if (undoReceipt.text !== store.state.note.markdown) throw new Error("History target changed");
+          if (!await flush()) throw new Error("Undo was not saved");
+          replaced = undefined;
+          undoReceipt = undefined;
+          announce(catalog.format("history.restoreUndone"));
+        }, undefined, "fn:history.undo");
+      } catch (error) {
+        console.error("History undo failed", opErrorCode(error));
+        toast(catalog.format("history.undoFailed"), { tone: "error", action: { command: "history.undoRestore", label: catalog.format("commit.retry") } });
+      } finally { writing = false; }
     },
   });
 
@@ -163,7 +282,7 @@ export function registerNoteHistory(ctx: Ctx) {
     return days === 0 ? catalog.format("deleted.today") : days === 1 ? catalog.format("deleted.yesterday") : catalog.format("deleted.day", { at });
   };
   // Rows and blocks are rebuilt only when the history or the version shown changes: never per keystroke.
-  let memo: { h?: HistoryState; md?: string; waiting?: boolean; vm?: unknown } = {};
+  let memo: { h?: HistoryState; md?: string; tasks?: AppState["tasks"]; waiting?: boolean; versionWaiting?: boolean; vm?: unknown } = {};
   viewModels.register({
     id: "vm.history",
     schema: {
@@ -172,6 +291,8 @@ export function registerNoteHistory(ctx: Ctx) {
         open: { type: "boolean" }, status: { type: "string" }, items: { type: "array", items: ITEM }, activeId: { type: "string" }, loading: { type: "boolean" }, listFailed: { type: "boolean" },
         showing: { type: "boolean" }, versionLabel: { type: "string" }, blocks: { type: "array", items: BLOCK }, emptyText: { type: "string" },
         canRestore: { type: "boolean" }, more: { type: "boolean" }, focus: { type: "number" },
+        error: { type: "string" }, details: { type: "string" }, retrying: { type: "boolean" }, saving: { type: "boolean" }, versionLoading: { type: "boolean" },
+        restoreDisabled: { type: "boolean" }, moreBusy: { type: "boolean" }, restoreBusyLabel: { type: "string" }, moreBusyLabel: { type: "string" },
       },
     },
     reads: ["ui.history", "note.path", "tasks"],
@@ -180,7 +301,8 @@ export function registerNoteHistory(ctx: Ctx) {
       // The current text is read only while a version shows, and then only to compare it once.
       const md = h.text !== undefined ? s.note.markdown : undefined;
       const waiting = h.loading && s.tasks.findLast(t => t.target === "history.load")?.phase === "on";
-      if (memo.h === h && memo.md === md && memo.waiting === waiting && memo.vm) return memo.vm as never;
+      const versionWaiting = h.reading && s.tasks.findLast(t => t.target === "history.version")?.phase === "on";
+      if (memo.h === h && memo.md === md && memo.tasks === s.tasks && memo.waiting === waiting && memo.versionWaiting === versionWaiting && memo.vm) return memo.vm as never;
       const now = new Date();
       const items = versionsByDay(h.versions).flatMap((g) => [
         { id: `${DAY}${g.day}`, label: dayLabel(g.at, now), header: true },
@@ -197,14 +319,19 @@ export function registerNoteHistory(ctx: Ctx) {
         open: h.open, status, items, activeId: h.active ?? "",
         // The first versions are on their way: placeholders where the list will be (D-208).
         loading: h.open && waiting && !h.versions.length, listFailed: h.listFailed === true,
+        error: h.error ?? "", details: h.details ?? "", retrying: h.retrying === true, saving: h.saving === true,
+        versionLoading: h.open && versionWaiting && h.text === undefined,
         showing: Boolean(v && h.text !== undefined),
         versionLabel: v ? catalog.format("history.viewing", { at: v.at }) : "",
         blocks: v && h.text !== undefined ? compareVersions(h.text, md ?? "").mine : [],
         emptyText: catalog.format("conflict.emptyNote"),
         canRestore: Boolean(v && h.text !== undefined && h.path === s.note.path && !isReadOnlyPath(s.note.path)),
-        more: h.more && !h.loading, focus: h.focus,
+        restoreDisabled: h.reading || h.retrying === true,
+        restoreBusyLabel: h.saving ? busyProps(s.tasks, "history.restore", (key, args) => catalog.format(key, args)).busyLabel ?? "" : "",
+        moreBusyLabel: h.loading && h.versions.length ? busyProps(s.tasks, "history.load", (key, args) => catalog.format(key, args)).busyLabel ?? "" : "",
+        more: h.more, moreBusy: h.loading && h.versions.length > 0, focus: h.focus,
       };
-      memo = { h, md, waiting, vm };
+      memo = { h, md, tasks: s.tasks, waiting, versionWaiting, vm };
       return vm;
     },
   });

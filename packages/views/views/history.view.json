@@ -66,7 +66,7 @@
             },
             {
               "type": "Text",
-              "when": { "expr": { "!": [{ "get": "vm.history.listFailed" }] } },
+              "when": { "expr": { "!": [{ "get": "vm.history.error" }] } },
               "props": {
                 "value": {
                   "get": "vm.history.status"
@@ -110,9 +110,14 @@
               },
               {
                 "type": "StatusRow",
-                "when": { "get": "vm.history.listFailed" },
-                "props": { "message": { "t": "history.failed" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
-                "on": { "action": { "run": "history.open" } }
+                "when": { "expr": { "!=": [{ "get": "vm.history.error" }, ""] } },
+                "props": {
+                  "message": { "get": "vm.history.error" }, "tone": "danger",
+                  "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.history.retrying" },
+                  "actionBusyLabel": { "t": "uiStates.recovery.retrying" },
+                  "details": { "get": "vm.history.details" }, "detailsLabel": { "t": "uiStates.recovery.details" }
+                },
+                "on": { "action": { "run": "history.retry" } }
               },
               {
                 "type": "ResultList",
@@ -161,13 +166,24 @@
                     "t": "command.history.more"
                   },
                   "variant": "subtle",
-                  "size": "s"
+                  "size": "s",
+                  "busy": { "get": "vm.history.moreBusy" }, "busyLabel": { "get": "vm.history.moreBusyLabel" }
                 },
                 "on": {
                   "press": {
                     "run": "history.more"
                   }
                 }
+              },
+              {
+                "type": "Stack",
+                "id": "historyVersionLoading",
+                "when": { "get": "vm.history.versionLoading" },
+                "props": { "gap": "s" },
+                "children": [
+                  { "type": "Skeleton", "props": { "shape": "row" } },
+                  { "type": "Skeleton", "props": { "shape": "row" } }
+                ]
               },
               {
                 "type": "Stack",
@@ -214,7 +230,11 @@
                         "props": {
                           "label": {
                             "t": "command.history.restore"
-                          }
+                          },
+                          "busy": { "get": "vm.history.saving" },
+                          "busyLabel": { "get": "vm.history.restoreBusyLabel" },
+                          "disabled": { "get": "vm.history.restoreDisabled" },
+                          "disabledReason": { "t": "history.restore.wait" }
                         },
                         "on": {
                           "press": {
