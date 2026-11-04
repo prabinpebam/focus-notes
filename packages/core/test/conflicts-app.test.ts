@@ -283,7 +283,7 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     await app.commands.run("files.open");
     await app.commands.run("files.drop", { source: `${PRIV}/b.md`, target: `${PRIV}/drafts` });
     await done(app);
-    expect(lastToast(app)?.message).toBe("Couldn't move “B”: a note it changes was changed outside Focus Notes, so nothing was changed.");
+    expect(toasts(app).find(t => t.tone === "error")?.message).toBe("Couldn't move “B”: a note it changes was changed outside Focus Notes, so nothing was changed.");
     expect(f.files[welcome]).toBe("# Welcome\n\nSee [B](b.md). Written elsewhere.\n");
     expect(f.files[`${PRIV}/b.md`]).toBe("# B\n");
     // A note not open, changed between the app reading it and the batch writing it: refused too.
@@ -295,7 +295,7 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     await app.commands.run("files.drop", { source: `${PRIV}/b.md`, target: `${PRIV}/drafts` });
     await done(app);
     expect(f.files[`${PRIV}/c.md`]).toBe("# C\n\n[b](b.md) and more, written elsewhere.\n");
-    expect(lastToast(app)?.message).toBe("Couldn't move “B”: a note it changes was changed outside Focus Notes, so nothing was changed.");
+    expect(toasts(app).find(t => t.tone === "error")?.message).toBe("Couldn't move “B”: a note it changes was changed outside Focus Notes, so nothing was changed.");
   });
 
   it("DEF-26: a note waiting for a conflict choice and moved in Files keeps waiting at its new path, its saves held", async () => {
@@ -675,7 +675,7 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(app.store.state.ui.conflict.busy).toBe(false);
     expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
     expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
-    expect(lastToast(app)?.message).toBe(messages["conflict.copyFailed"]);
+    expect(toasts(app).find(t => t.tone === "error")?.message).toBe(messages["conflict.copyFailed"]);
     f.bridge.workspace!.apply = apply;
     await app.commands.run("conflict.choose", { choice: "theirs" });
     expect(vm(app).open).toBe(false);
@@ -778,7 +778,7 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     await app.commands.run("conflict.choose", { choice: "theirs" });
     expect(f.batches).toHaveLength(0);
     expect(vm(app).open).toBe(true);
-    expect(lastToast(app)?.message).toBe(messages["conflict.readFailed"]);
+    expect(toasts(app).find(t => t.tone === "error")?.message).toBe(messages["conflict.readFailed"]);
     expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
   });
 

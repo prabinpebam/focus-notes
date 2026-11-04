@@ -1,5 +1,11 @@
 # Decisions
 
+## D-344: confirm publication against the workspace's own Pages site
+
+**Decided (orchestrator for the merge, under the owner's "Rest you do as you see fit", 5 November 2026).** After publishing through Git, the main process may read the workspace's configured GitHub Pages site to check that the published access metadata has arrived. This is a new, explicit network destination beyond the GitHub API: only the configured site's origin, no renderer-selected host, no credentials, no redirects and no cached success. Each request has a ten-second timeout and follows cancellation. A missing page remains pending; offline or refused responses remain an explicit recoverable failure, never a successful publication. Agent evidence uses local protocol fakes only, as D-343 requires.
+
+Affects [Security and privacy](../architecture/security-and-privacy.md), [Sharing](../design/views/sharing.md) and [gate evidence](gate-evidence.md).
+
 ## D-343: the owner tests against real GitHub; agents never do
 
 **Decided (the owner, 5 November 2026, 02:43: "Testing against my real github, I'll do manually, you don't do anything.").** Testing against the owner's real GitHub account is done manually by the owner. Agents never sign in to, write to or publish through a real account. Their journeys, review candidates and evidence use fakes, local bare repositories and the sample projects. The one exception is pushing this repository's own branches and `main`. Evidence that needs a real account is recorded as the owner's to try, never claimed by an agent.

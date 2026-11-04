@@ -124,7 +124,8 @@ describe("PRF-14: custom keys add no work while nothing changes (candidate X)", 
     changed!();
     await settle();
     expect(app.store.state.keybindings.version).toBe(1);
-    expect((app.viewModels.select("vm.app", app.store.state) as { editorKeymap: unknown }).editorKeymap).not.toBe(keymap);
+    // This changes an app shortcut, not an editor binding: the editor's structurally equal map is reused.
+    expect((app.viewModels.select("vm.app", app.store.state) as { editorKeymap: unknown }).editorKeymap).toBe(keymap);
   });
 
   it("matching a key asks held and enabled only of the commands whose key it is", () => {

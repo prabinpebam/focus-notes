@@ -1,5 +1,5 @@
 import { _electron as electron, expect, type ElectronApplication, type Locator, type Page } from "@playwright/test";
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { flipFuses, FuseV1Options, FuseVersion } from "@electron/fuses";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -98,6 +98,18 @@ export const tempDirs = () => ({
   docs: mkdtempSync(join(tmpdir(), "fn-docs-")),
 });
 
+/** A returning writer has a note to reopen; an empty history intentionally opens Projects (D-318). */
+export function seedReopenNote(docs: string): string {
+  const workspace = existsSync(join(docs, ".focus-notes", "workspace.json"));
+  const root = workspace ? join(docs, ...(existsSync(join(docs, "private", "notes")) ? ["private", "notes"] : ["notes"])) : docs;
+  const path = join(root, workspace ? "welcome.md" : "Welcome.md");
+  if (!existsSync(path)) {
+    mkdirSync(root, { recursive: true });
+    writeFileSync(path, "# Welcome to Focus Notes\n\nEverything you write here is saved as plain Markdown on your computer.\n");
+  }
+  return path;
+}
+
 /**
  * Tells a page it has focus, though its window never takes the computer's (D-104 (7)): keys,
  * focus, and `:focus-visible` then behave as in the active window. Playwright's keys and pointer
@@ -131,7 +143,13 @@ let compositingShown = false;
 export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean; args?: string[]; entrypoint?: string } = {}): Promise<Launched> {
   const log: string[] = [];
   const stateFile = join(dirs.userData, "state.json");
-  if (!opts.firstRun && !existsSync(stateFile)) writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done" }));
+  if (!opts.firstRun) {
+    const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { version: 1, firstRun: "done" };
+    state.firstRun ??= "done";
+    state.projectIntroSeen ??= true;
+    if (!("lastNotePath" in state)) state.lastNotePath = seedReopenNote(dirs.docs);
+    writeFileSync(stateFile, JSON.stringify(state));
+  }
   // FOCUS_NOTES_E2E_WINDOW=1024x720 opens the window at a CI runner's size, to reproduce what only a small display shows.
   const size = /^(\d+)x(\d+)$/.exec(process.env.FOCUS_NOTES_E2E_WINDOW ?? "");
   const windowFile = join(dirs.userData, "window.json");

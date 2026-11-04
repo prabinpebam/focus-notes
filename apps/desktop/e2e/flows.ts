@@ -7,7 +7,7 @@
 import { expect, type Locator, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, tempDirs, type Launched } from "./helpers.ts";
+import { launch, seedReopenNote, tempDirs, type Launched } from "./helpers.ts";
 import { configure, git, instance } from "./instance.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
 import { card, existingInstance, heading, start, world, type World } from "./github-world.ts";
@@ -99,7 +99,7 @@ export async function conflictFlow(mode: "light" | "dark", size: Size, hooks: Fl
   writeFileSync(join(other, "notes", "welcome.md"), "# Welcome\n\nFirst line.\n\nWritten on the other computer, a paragraph long enough to wrap in a narrow pane.\n");
   git(other, "commit", "-q", "-am", "Edit on the other computer");
   git(other, "push", "-q");
-  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: mode }));
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: mode, lastNotePath: seedReopenNote(dirs.docs) }));
   if (size) writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, ...size } }));
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_POINTER_GAP_MS: "0" });
   const { page } = l;

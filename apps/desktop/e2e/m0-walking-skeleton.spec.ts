@@ -29,9 +29,11 @@ test("M0: launch to the blank canvas, type, save as Markdown, and reopen", async
   // focus (DD-DSK-04); a note with headings adds the document minimap's rail (UI-13, D-185).
   const windowButtons = await page.getByRole("group", { name: "Window controls" }).getByRole("button").count();
   const minimap = await page.getByRole("navigation", { name: "Contents" }).getByRole("button").count();
-  // The save indicator stays in its corner at all times (UI-12), quiet and icon-only.
-  await expect(page.locator("#saveState")).toBeVisible();
-  expect(await page.getByRole("button").count() - windowButtons - minimap - 1).toBe(1);
+  // Local-only notes show their location, never a GitHub backup indicator.
+  await expect(page.getByRole("button", { name: /^Show in File Explorer:/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Project settings for / })).toBeVisible();
+  await expect(page.locator("#saveState")).toHaveCount(0);
+  expect(await page.getByRole("button").count() - windowButtons - minimap - 2).toBe(1);
   // (They also show while the window isn't the active one: m2-titlebar.spec.ts.)
   if (process.platform !== "darwin") await expect(page.getByRole("group", { name: "Window controls" })).toHaveCSS("opacity", "0");
 

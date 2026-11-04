@@ -46,7 +46,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.newIn", "note.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
+    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
@@ -96,6 +96,17 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
+  { why: "commit feedback and retry controls", ids: /^commit\.(run|revert)$/ },
+  { why: "Project settings fields and controls", ids: /^project\..+$/ },
+  { why: "Open view and New project steps; Open itself is in File", ids: /^projects\.(?!open$).+$/ },
+  { why: "Local notes import dialog", ids: /^local\..+$/ },
+  { why: "Sharing settings, publication and preview steps", ids: /^sharing\..+$/ },
+  { why: "image controls and image editor events", ids: /^image\..+$/ },
+  { why: "AI provider detail fields and recovery controls", ids: /^ai\.(detail\..+|chooseModel|saveKey|revertKey|retryProvider|revertProvider)$/ },
+  { why: "renderer failure and panel reload events", ids: /^app\.(reportFailure|reloadPanel)$/ },
+  { why: "notification layout and note position events", ids: /^(toast\.wrapped|note\.position)$/ },
+  { why: "Files row pins and shortcuts", ids: /^files\.(publish|selectShortcut|activateShortcut|saveItemPin|pinItem)$/ },
+  { why: "panel retry, reading preview and local-note reveal controls", ids: /^(files\.retryDeleted|history\.retry|reading\.preview|note\.revealLocal)$/ },
   { why: "New note picker and Spotlight keep-open key", ids: /^(newNote\.(dismiss|query|next|prev|accept|select|expand|newFolder|create)|spotlight\.runKeep)$/ },
   { why: "fixed-item sharing dialog and Files row menu", ids: /^(share\.item\..+|files\.share)$/ },
   // Settings → AI's fields and the Rewrite dialog's own steps, and the editor's answers to it.

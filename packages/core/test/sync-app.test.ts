@@ -4,8 +4,10 @@
  */
 import { describe, expect, it } from "vitest";
 import { createApp, type PlatformBridge, type SyncReport, type AppStateFile } from "../src/index.ts";
+import en from "../../views/messages/en.json" with { type: "json" };
 
 const messages = {
+  ...en,
   "command.note.save": "Save", "command.note.open": "Open", "command.note.setContent": "Set",
   "task.saving": "Saving…", "task.saved": "Saved", "task.synced": "Saved and synced",
   "toast.retry": "Retry", "toast.saveFailed": "Couldn't save.", "trigger.saveProblem": "Couldn't save", "trigger.syncProblem": "Couldn't sync",

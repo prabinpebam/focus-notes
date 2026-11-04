@@ -101,9 +101,24 @@ test("UI-07: ⋯ holds the rest: text size steps and the theme mode, each showin
   await expect.poll(size).toBe("17px");
 
   // The shortcuts work too, and reset returns to 16 px (THM-06, D-78).
+  const readyForSizeKey = async () => {
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await page.getByRole("textbox", { name: "Note" }).focus();
+    await page.keyboard.press(`${mod}+.`);
+    await page.getByRole("button", { name: "More", exact: true }).click();
+    await expect(menu.getByRole("menuitem", { name: /^Smaller text/ })).not.toHaveAttribute("aria-disabled", "true");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  };
+  await readyForSizeKey();
   await page.keyboard.press(`${mod}+-`);
+  await expect.poll(size).toBe("16px");
+  await readyForSizeKey();
   await page.keyboard.press(`${mod}+-`);
   await expect.poll(size).toBe("15px");
+  await readyForSizeKey();
   await page.keyboard.press(`${mod}+0`);
   await expect.poll(size).toBe("16px");
   await quit(l);
@@ -212,7 +227,8 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   await expect(settings).not.toHaveAttribute("aria-disabled", "true");
   await expect(settings).toHaveAccessibleName(process.platform === "darwin" ? "Settings… ⌘," : "Settings… Ctrl+,");
   const help = menu.getByRole("menuitem", { name: /^Help and docs/ });
-  await expect(help).toHaveAccessibleName("Help and docs Help and docs arrive in a later preview");
+  await expect(help).toHaveAccessibleName("Help and docs");
+  await expect(help).toHaveAccessibleDescription("Help and docs arrive in a later preview");
   // Choosing an unavailable item does nothing and keeps the menu open.
   await help.focus();
   await page.keyboard.press("Enter");

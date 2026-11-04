@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createApp, chordMatches, formatChord, SAVE_DELAY_MS, type PlatformBridge, type AppStateFile } from "../src/index.ts";
+import en from "../../views/messages/en.json" with { type: "json" };
 
 function fakeBridge(files: Record<string, string> = {}, overrides: Partial<PlatformBridge> = {}) {
   let state: AppStateFile = { version: 1 };
@@ -110,7 +111,7 @@ describe("saving (EDT-11 write-to-disk part, QLT-03)", () => {
 describe("appearance", () => {
   it("toggles light and dark and remembers it", async () => {
     const f = fakeBridge();
-    const app = createApp(f.bridge, messages);
+    const app = createApp(f.bridge, en);
     await app.start();
     expect(app.viewModels.select("vm.app", app.store.state).scheme).toBe("light");
     await app.commands.run("appearance.toggle");

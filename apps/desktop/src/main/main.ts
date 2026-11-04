@@ -1,8 +1,9 @@
 /**
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
  * window, the file system, and the user's own `git`. It allows no network requests from the
- * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
- * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
+ * renderer; Git talks to the workspace's remotes (WP-3.3). Main-process requests include GitHub's
+ * API for setup and sharing, configured AI integrations, and the workspace's own Pages site to
+ * confirm publication without credentials or redirects (D-344).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";

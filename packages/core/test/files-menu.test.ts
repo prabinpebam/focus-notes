@@ -192,6 +192,17 @@ const menuIds = (app: ReturnType<typeof createApp>) => vm(app).menu.map((s) => s
 
 describe("the menu in the app (D-162)", () => {
   const notes = { "private:welcome.md": "# Welcome\n", "private:ideas.md": "---\nid: n-7\n---\n# Ideas\n\nSee [w](welcome.md).\n", "public:about.md": "# About\n" };
+  it("keeps a private browser note's recent entry and pin in memory, never persistent storage (PRV-02)", async () => {
+    const f = setup(notes, { lastNotePath: "public:about.md" });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
+    await app.commands.run("files.openItem");
+    await app.commands.run("files.pinItem", { id: "private:ideas.md" });
+    expect(app.store.state.ui.files.visits).toContain("private:ideas.md");
+    expect(app.store.state.ui.files.pins).toContain("private:ideas.md");
+    expect(JSON.stringify(f.saved)).not.toContain("private:ideas.md");
+  });
   it("Open containing folder shows a note in the system's file manager; a folder or section opens itself, only where the shell can (D-192)", async () => {
     const f = setup(notes);
     const shown: string[] = [];
@@ -202,10 +213,10 @@ describe("the menu in the app (D-162)", () => {
     const app = await started(f);
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
-    expect(menuIds(app)[0]).toEqual(["files.openItem", "files.revealItem"]);
+    expect(menuIds(app)[0]).toEqual(["files.openItem", "files.pinItem", "files.revealItem"]);
     expect(menuIds(app).flat()).not.toContain("files.openFolderItem");
     const item = vm(app).menu.flatMap((s) => s.items).find((i) => i.id === "files.revealItem");
-    expect(item).toMatchObject({ label: "Open containing folder", shortcut: "Alt+Shift+R" });
+    expect(item).toMatchObject({ label: "Show in File Explorer", shortcut: "Alt+Shift+R" });
     await app.commands.run("files.revealItem");
     await app.commands.run("files.select", { id: "root:public", mode: "replace" });
     expect(menuIds(app).flat()).toContain("files.openFolderItem");
@@ -274,25 +285,25 @@ describe("the menu in the app (D-162)", () => {
     f.bridge.workspace!.copyItems = async () => { throw new Error("notFound"); };
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     await app.commands.run("files.copyItem");
-    expect(app.store.state.ui.toasts.at(-1)?.message).toBe("Couldn't copy that. It may have moved or been deleted.");
+    expect(app.store.state.ui.toasts.find(t => t.tone === "error")?.message).toBe("Couldn't copy that. It may have moved or been deleted.");
   });
   it("acts on what's focused: labels, shortcuts and the menu's name follow the item", async () => {
     const app = await started(setup(notes));
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
-    expect(menuIds(app)).toEqual([["files.openItem"], ["files.rename", "files.duplicate", "files.moveTo"], ["files.makePublic"], ["files.delete"]]);
+    expect(menuIds(app)).toEqual([["files.openItem", "files.pinItem"], ["files.rename", "files.duplicate", "files.moveTo"], ["files.makePublic"], ["files.delete"]]);
     const items = vm(app).menu.flatMap((s) => s.items);
     expect(items.find((i) => i.id === "files.openItem")?.label).toBe("Open");
     expect(items.find((i) => i.id === "files.delete")?.shortcut).toBe("Delete");
     expect(items.find((i) => i.id === "files.moveTo")?.shortcut).toBe("Ctrl+Shift+M");
     expect(vm(app).menuLabel).toBe("Actions for “Ideas”");
     await app.commands.run("files.select", { id: "private:drafts", mode: "replace" });
-    expect(menuIds(app)[0]).toEqual(["files.newNote", "files.newFolder"]);
+    expect(menuIds(app)[0]).toEqual(["files.newNote", "files.pinItem", "files.newFolder"]);
     await app.commands.run("files.select", { id: "root:private", mode: "replace" });
     expect(menuIds(app)).toEqual([["files.newNote", "files.newFolder"]]);
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     await app.commands.run("files.select", { id: "public:about.md", mode: "toggle" });
-    expect(menuIds(app)).toEqual([["files.duplicate", "files.moveTo"], ["files.makePublic", "files.makePrivate"], ["files.delete"]]);
+    expect(menuIds(app)).toEqual([["files.duplicate", "files.pinItem", "files.moveTo"], ["files.makePublic", "files.makePrivate"], ["files.delete"]]);
     expect(vm(app).menuLabel).toBe("Actions for 2 items");
   });
   it("Duplicate makes “⟨title⟩ copy” beside it in one batch, retitled, without the id, links as they were; selected; Undo removes it", async () => {
@@ -360,7 +371,7 @@ describe("Import files in the app (FIL-15, D-210)", () => {
     const app = await started(importing(undefined), { htmlToMarkdown });
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: "private:drafts", mode: "replace" });
-    expect(menuIds(app)[0]).toEqual(["files.newNote", "files.newFolder", "files.import"]);
+    expect(menuIds(app)[0]).toEqual(["files.newNote", "files.pinItem", "files.newFolder", "files.import"]);
     expect(vm(app).menu.flatMap((s) => s.items).find((i) => i.id === "files.import")?.label).toBe("Import files…");
     const without = await started(importing(undefined));
     await without.commands.run("files.open");
@@ -497,7 +508,7 @@ describe("pinning the panel (D-161)", () => {
     expect(revealed).toEqual([1]);
     // Someone else's repository keeps its owner; signed out, no login.
     app.store.update((s) => ({ ...s, account: { login: "" }, workspace: { ...s.workspace, repo: "team/shared" } }));
-    expect(where()).toMatchObject({ title: "team/shared", login: "", hasLogin: false, label: "Notes from team/shared" });
+    expect(where()).toMatchObject({ title: "shared", login: "", hasLogin: false, label: "Notes from team/shared" });
     // No GitHub repository: the folder's name; no folder (the browser): nothing to show or open.
     app.store.update((s) => ({ ...s, workspace: { ...s.workspace, repo: undefined } }));
     expect(where()).toMatchObject({ visible: true, icon: "folder", title: "my-notes" });

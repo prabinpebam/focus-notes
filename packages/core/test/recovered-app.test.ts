@@ -199,7 +199,7 @@ describe("QLT-06: Files → Recovered", () => {
     await done(app);
     expect(f.calls.filter((c) => c.startsWith("remove:"))).toEqual([]);
     expect(f.drafts()).toHaveLength(1);
-    expect(lastToast(app)).toMatchObject({ tone: "error", message: "Couldn't save “Lost ideas” as a new note: the file system refused it, and nothing was changed. The draft is still here." });
+    expect(app.store.state.ui.toasts.find(t => t.tone === "error")).toMatchObject({ tone: "error", message: "Couldn't save “Lost ideas” as a new note: the file system refused it, and nothing was changed. The draft is still here." });
     expect(vm(app)).toMatchObject({ open: true, drafts: [{ id: IDEAS.id }] });
   });
 
@@ -246,7 +246,7 @@ describe("QLT-06: Files → Recovered", () => {
     await f.bridge.recovery!.remove(IDEAS.id);
     await app.commands.run("files.openRecovered", { id: IDEAS.id });
     await done(app);
-    expect(lastToast(app)).toMatchObject({ tone: "error", message: "“Lost ideas” isn't there anymore. It may have been saved or discarded in another window." });
+    expect(app.store.state.ui.toasts.find(t => t.tone === "error")).toMatchObject({ tone: "error", message: "“Lost ideas” isn't there anymore. It may have been saved or discarded in another window." });
     expect(vm(app)).toMatchObject({ listing: true, drafts: [{ id: OLD.id }] });
   });
 });

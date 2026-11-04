@@ -157,7 +157,7 @@ export function registerFiles(ctx: Ctx) {
     lastVisited = path;
     const visits = [path, ...files().visits.filter((p) => p !== path)].slice(0, 20);
     setFiles(() => ({ visits }));
-    void ctx.persistAppState({ filesRecent: visits });
+    void ctx.persistAppState({ filesRecent: visits.filter(p => sourceOf(p) !== "private") });
   });
 
   // ---- opening, revealing, closing ----
@@ -348,7 +348,7 @@ export function registerFiles(ctx: Ctx) {
         const pins = value.pinned
           ? files().pins.includes(value.path) ? [...files().pins] : [...files().pins, value.path]
           : files().pins.filter(path => path !== value.path);
-        await ctx.persistAppState({ filesPins: pins });
+        await ctx.persistAppState({ filesPins: pins.filter(path => sourceOf(path) !== "private") });
         setFiles(() => ({ pins }));
       };
       const result = pinWrites.then(write, write);

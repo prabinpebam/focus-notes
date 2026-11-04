@@ -9,6 +9,12 @@ import type { PMNode } from "@focus-notes/markdown";
 
 interface Article { id: string; title: string; section: string; excerpt: string; updated: string; blocks: PMNode[] }
 
+export const SHARING_WAITS = {
+  publish: "sharing.publishDraft",
+  preview: "sharing.preview",
+  apply: "sharing.previewSave",
+} as const;
+
 export function registerSharingPreview(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"]; catalog: MessageCatalog; tracker: TaskTracker;
   appState: () => AppStateFile; persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
@@ -42,13 +48,14 @@ export function registerSharingPreview(ctx: {
   const stopped = () => { if (state.cancelRequested) throw new DOMException("Site preview stopped", "AbortError"); };
   const completed = (index: number) => { parts[index]!.status = "done"; changed(); };
   const start = (index: number) => { stopped(); parts[index]!.status = "running"; changed(); };
-  const busy = async (command: string, target: string, message: string, measure: string, labels: string[], work: () => Promise<void>) => {
+  const busy = async (command: string, operation: keyof typeof SHARING_WAITS, message: string, measure: string, labels: string[], work: () => Promise<void>) => {
+    const target = SHARING_WAITS[operation];
     if (state.busy) return;
     retry = command;
     parts = labels.map(label => ({ label, status: "waiting" }));
     const previousProblem = state.operation === target ? state.problem : "";
     set({ busy: true, problem: previousProblem, operation: target, cancelRequested: false, cancelled: false, atomic: false });
-    try { await tracker.run(target, message, work, undefined, measure, command === "sharing.publish" ? "none" : "success"); retry = undefined; set({ problem: "" }); }
+    try { await tracker.run(SHARING_WAITS[operation], message, work, undefined, measure, command === "sharing.publish" ? "none" : "success"); retry = undefined; set({ problem: "" }); }
     catch (error) {
       if (state.cancelRequested && error instanceof DOMException && error.name === "AbortError") {
         parts = parts.map(part => part.status === "running" ? { ...part, status: "waiting" } : part);
@@ -88,7 +95,7 @@ export function registerSharingPreview(ctx: {
     requireLocal();
     const node = findNode(store.state.workspace.tree, state.target)?.node;
     if (!node) throw new Error(catalog.format("share.state.deleted"));
-    await busy("sharing.publish", "sharing.publishDraft", "sharing.publish.saving", "fn:sharing.publishDraft",
+    await busy("sharing.publish", "publish", "sharing.publish.saving", "fn:sharing.publishDraft",
       [catalog.format("sharing.operation.select"), catalog.format("sharing.operation.saveDraft")], async () => {
       start(0);
       const published = [...new Set([...(draft().published ?? []), ...leaves(node, state.target).map(n => n.path)])];
@@ -119,7 +126,7 @@ export function registerSharingPreview(ctx: {
       return node?.kind === "note" ? [{ path, node }] : [];
     });
     const notes = [...new Map([...publicNotes, ...selected].map(n => [n.path, n])).values()];
-    await busy("sharing.preview", "sharing.preview", "sharing.preview.preparing", "fn:site.preview",
+    await busy("sharing.preview", "preview", "sharing.preview.preparing", "fn:site.preview",
       [...notes.map(({ node }) => catalog.format("sharing.operation.read", { title: node.title || node.name })), catalog.format("sharing.operation.show")], async () => {
       const paths = new Set(notes.map(n => {
         const root = rootOf(tree, n.path)!;
@@ -156,7 +163,7 @@ export function registerSharingPreview(ctx: {
   reg<Record<string, never>>("sharing.previewApply", async () => {
     if (state.busy) return;
     requireLocal();
-    await busy("sharing.previewApply", "sharing.previewSave", "sharing.preview.saving", "fn:site.settings",
+    await busy("sharing.previewApply", "apply", "sharing.preview.saving", "fn:site.settings",
       [catalog.format("sharing.operation.appearance"), catalog.format("sharing.operation.saveSettings")], async () => {
       start(0);
       const appearance = { theme: state.theme, font: state.font, size: Number(state.size) };

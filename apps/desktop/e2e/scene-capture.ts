@@ -80,7 +80,7 @@ export async function startDemo(opts: { size: Size; theme: "light" | "dark"; sta
     mkdirSync(join(file, ".."), { recursive: true });
     writeFileSync(file, text);
   }
-  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", ...opts.state }));
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "On writing slowly.md"), ...opts.state }));
   // Opened inactive like every journey window.
   writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: opts.size.width, height: opts.size.height } }));
   const l = await launch(dirs, {}, { args: opts.args });

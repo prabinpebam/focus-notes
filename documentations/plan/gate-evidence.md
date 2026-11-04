@@ -18,6 +18,14 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### UI-states merge candidate: CI alignment, 5 November
+
+The returning-writer journey fixture now supplies a real note to reopen and marks the project terminology introduction as already seen. A new install still runs the first-run path; an explicitly empty `lastNotePath` still reaches Open (D-318). Product launch behavior is unchanged. The older checks now assert the approved local location and project pills, menu accessible descriptions, row pins and pending compact-setting feedback rather than their superseded presentation.
+
+Local evidence: `pnpm check` and `pnpm typecheck` passed; `pnpm exec vitest run packages/core` passed all 1,319 tests; the M0 and M1-toolbar files passed all 11 journeys; M2-window and M3-conflicts passed all 15 applicable journeys (10 platform/screen-only skips). `pnpm --filter @focus-notes/web exec playwright test e2e/a11y.spec.ts` passed all three web accessibility journeys. The Slate runtime check passed. The core suite also exposed a real privacy regression: private browser note paths reached persisted Files recent entries. Recent entries and pins now retain those paths in memory only, with regression assertions. D-344 records the publication-check destination.
+
+These are focused results, not permission to move main: the exact pushed candidate must still pass all four Windows journey shards and the Windows test job. No mass failure quarantine is accepted.
+
 ### General fixes: approved 3 November design
 
 The owner approved the designs at 19:39. WP-P.1 / WP-P.2 are pushed at

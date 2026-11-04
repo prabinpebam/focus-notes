@@ -24,9 +24,9 @@ const ticks = (s: string) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
 
 describe("PRV-02: the desktop's data folder", () => {
   it("names every file and folder the app keeps there, each with what removes it", () => {
-    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "ai.json", "avatar.json", "first-run.json", "keybindings.json", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
+    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "ai.json", "avatar.json", "first-run.json", "keybindings.json", "last-project-note.dat", "last-project.json", "project-folder.txt", "project-recent.dat", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
     const paths = DESKTOP_DATA.map((i) => i.path.split("#")[0]);
-    expect(Object.values(DATA_FOLDERS)).toEqual(["recovery"]);
+    expect(Object.values(DATA_FOLDERS)).toEqual(["recovery", "project-profiles"]);
     for (const f of [...Object.values(DATA_FILES), ...[...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS)].map((c) => `${c}/`)]) expect(paths).toContain(f);
     for (const i of DESKTOP_DATA) expect(i.removedBy.length).toBeGreaterThan(0);
     expect(RECENT_STATE_KEYS).toEqual(["lastNotePath"]);
@@ -45,7 +45,7 @@ describe("PRV-02: the desktop's data folder", () => {
   it("is the inventory in Security and privacy: every data-folder file there is in the code, and every one in the code is there", () => {
     const rows = docRows();
     const inDataFolder = rows.filter((r) => /app's data folder/.test(r[1] ?? ""));
-    const documented = new Set(inDataFolder.flatMap((r) => ticks(r[1]!).filter((t) => /\.jsonl?$|\.lock$|\/$/.test(t) || (LOCK_FILES as readonly string[]).includes(t))));
+    const documented = new Set(inDataFolder.flatMap((r) => ticks(r[1]!).filter((t) => /\.(jsonl?|lock|dat|txt)$|\/$/.test(t) || (LOCK_FILES as readonly string[]).includes(t))));
     const code = new Set([...Object.values(DATA_FILES), ...[...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS)].map((c) => `${c}/`), ...LOCK_FILES]);
     expect([...documented].sort()).toEqual([...code].sort());
     // No row is listed twice.
