@@ -7,6 +7,17 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
+### Phase-2 menu description tooltips, f879f991
+
+Shared MenuButton command, choice and submenu content keeps reasons as accessible descriptions rather than visible secondary lines. Tooltip placement reuses the existing Tooltip primitive; unavailable commands remain keyboard reachable, inert and described. No labels or behavior outside menu presentation change.
+
+| Scoped check on `f879f991` | Result |
+| --- | --- |
+| UI and desktop package typechecks; `pnpm ui:check`; `node tools/check-boundaries.mjs`; desktop build | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "menu explanations"` | Passed: Publish has its unchanged accessible name and stable reason description; description occupies no secondary row; tooltip appears on focus and hover and clears on focus departure |
+
+**Try it:** open More and focus or hover Publish. Only its label appears in the menu; its explanation appears as a tooltip. No publishing is performed. This is fix 3 of 5, not phase completion; owner review remains unchanged.
+
 ### Phase-2 structural overlay layers, b031948f
 
 The [window stacking contract](../design/system/overview.html#window-stacking) is implemented in the candidate only. One direct AppRoot host isolates full-app surfaces from panels; modal descendants send their menus back to the window root. Docked panels, floating panels, full-app surfaces, menus/tooltips and notifications have named, ordered token roles. The former raw scroll-fade index now uses the mask token. No app workflow or note persistence changed.

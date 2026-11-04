@@ -12,6 +12,8 @@
 
 ### Owner feedback queue, 5 November
 
+**Menu descriptions, `f879f991`:** shared command, choice and submenu primitives no longer show secondary explanation rows. Reasons remain stable accessible descriptions, with the shared positioned tooltip on hover or focus; unavailable items stay reachable and cannot run. Native proof checks the Publish reason's clipped one-pixel description, accessible name/description, keyboard focus tooltip and hover tooltip. No per-view copy fork. Fix 3 of 5; code Copy and Settings scrolling remain.
+
 **Structural layers, `b031948f`:** one AppRoot full-app portal now removes dialog/window/fill Layers and modal scrims from panel stacking contexts. Docked/floating panels have distinct named token roles; menus/tooltips remain above overlays and notifications last. Raw-index and portal-ownership guards plus a native Connect-over-Files hit-test pass. [Contract](system/overview.html#window-stacking) and [evidence](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f). This is fix 2 of 5; no new owner candidate yet.
 
 The five new owner fixes supersede the earlier implementation pause: Themes application, structural full-app overlay layering, menu-description tooltips, icon-only code Copy overlay, and fixed Settings navigation, in that order. Toolbar customizer and AI-scan designs remain a separate track. Phase 2 is still in progress; only after all five will one new two-project owner candidate replace the existing review.
