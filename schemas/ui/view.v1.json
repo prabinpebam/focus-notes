@@ -5734,6 +5734,63 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "retryLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "revertLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -5748,6 +5805,15 @@
           "additionalProperties": false,
           "properties": {
             "change": {
+              "$ref": "#/$defs/actions"
+            },
+            "preview": {
+              "$ref": "#/$defs/actions"
+            },
+            "retry": {
+              "$ref": "#/$defs/actions"
+            },
+            "revert": {
               "$ref": "#/$defs/actions"
             }
           }

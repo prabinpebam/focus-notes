@@ -2395,6 +2395,25 @@
           ],
           "default": "number",
           "description": "How the value is spoken: a number, or a percentage of 1."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Commit feedback beside the value; pending locks only this slider without moving focus."
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
+        "revertLabel": {
+          "kind": "message"
         }
       },
       "events": {
@@ -2403,14 +2422,24 @@
             "value": "number"
           },
           "binds": "value"
-        }
+        },
+        "preview": {
+          "payload": {
+            "value": "number"
+          }
+        },
+        "retry": {},
+        "revert": {}
       },
       "slots": {},
       "states": [
         "rest",
         "hover",
         "dragging",
-        "focusVisible"
+        "focusVisible",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.slider.*",
       "a11y": {
@@ -2420,7 +2449,10 @@
       "fixtures": [
         "at the middle",
         "at the start",
-        "format percent"
+        "format percent",
+        "commit pending",
+        "commit confirmed",
+        "commit failed"
       ]
     },
     {

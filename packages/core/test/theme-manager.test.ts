@@ -46,7 +46,7 @@ it("keeps a failed appearance choice local while another reading group saves, th
   let reject = false;
   const t = await started({ save: async () => { if (reject) throw new Error("disk full"); } });
   await t.run("theme.manager.open");
-  expect(t.app.viewModels.get("vm.themeManager")?.commits).toEqual(["mode", "reading.spacing"]);
+  expect(t.app.viewModels.get("vm.themeManager")?.commits).toEqual(["mode", "reading.spacing", "reading.lineHeight", "reading.measure", "reading.focusDim"]);
   const mode = { target: "vm.themeManager.mode", command: "appearance.setMode", value: "dark" };
   reject = true;
   await expect(t.run("commit.run", mode)).rejects.toThrow("disk full");
@@ -58,6 +58,32 @@ it("keeps a failed appearance choice local while another reading group saves, th
   expect(t.app.store.state.appearance.mode).toBe("system");
   await t.run("commit.run", mode);
   expect(t.state()).toMatchObject({ appearance: "dark", paragraphSpacing: "airy" });
+});
+
+it("previews reading without writing, rolls the note back on refusal, retains formatted drafts and retries independently", async () => {
+  let reject = false;
+  const t = await started({ save: async () => { if (reject) throw new Error("disk full"); } });
+  await t.run("theme.manager.open");
+  await t.run("reading.preview", { field: "measure", value: 85 });
+  expect(t.vm("vm.app").measure).toBe(85);
+  expect(t.vm().reading.measureText).toBe("85 characters");
+  expect(t.state().measure).toBeUndefined();
+  expect(t.app.store.state.appearance.measure).toBe(70);
+  const args = { target: "vm.themeManager.reading.measure", command: "reading.setMeasure", value: 85 };
+  reject = true;
+  await expect(t.run("commit.run", args)).rejects.toThrow("disk full");
+  expect(t.vm("vm.app").measure).toBeUndefined();
+  expect(t.vm().reading.measureText).toBe("85 characters");
+  reject = false;
+  await t.run("commit.run", { target: "vm.themeManager.reading.lineHeight", command: "reading.setLineHeight", value: 1.8 });
+  expect(t.state()).toMatchObject({ lineHeight: 1.8 });
+  expect(t.state().measure).toBeUndefined();
+  await t.run("commit.run", args);
+  expect(t.state()).toMatchObject({ lineHeight: 1.8, measure: 85 });
+  await t.run("reading.preview", { field: "focusDim", value: 0.5 });
+  expect(t.vm("vm.app").focusDim).toBe(0.5);
+  await t.run("theme.manager.close");
+  expect(t.vm("vm.app").focusDim).toBeUndefined();
 });
 
 describe("THM-07: the theme manager's gallery previews on the real note", () => {

@@ -1454,13 +1454,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode", "outlinePinned", "outlineWidth", "ui.files.pinned", "ui.files.width", "compositing", "ui.theme.preview", "ui.theme.draft", "keybindings.version"],
+    reads: ["appearance", "focusMode", "outlinePinned", "outlineWidth", "ui.files.pinned", "ui.files.width", "compositing", "ui.theme.preview", "ui.theme.draft", "ui.theme.readingPreview", "keybindings.version"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       // A custom theme shows through its base's styles with its own colors over them (D-173).
       const root = rootTheme(s);
       const theme = root.theme;
-      const a = s.appearance;
+      const a = { ...s.appearance, ...s.ui.theme.readingPreview };
       return {
         scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode, outlinePinned: s.outlinePinned, outlineWidth: s.outlineWidth ?? 0, filesDock: s.ui.files.pinned, filesWidth: s.ui.files.width ?? 0,
         contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap: editorKeymapOf(s.keybindings.version), compositing: s.compositing,

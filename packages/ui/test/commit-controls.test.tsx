@@ -6,9 +6,46 @@ import { SegmentedControl } from "../src/primitives/SegmentedControl/SegmentedCo
 import { TextField } from "../src/primitives/TextField/TextField.tsx";
 import { ProjectMark } from "../src/primitives/ProjectMark/ProjectMark.tsx";
 import { PickerButton } from "../src/primitives/PickerButton/PickerButton.tsx";
+import { Slider } from "../src/primitives/Slider/Slider.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.useRealTimers());
+
+it("previews slider keys immediately, saves once after a 500 ms pause or blur, and retains the focusable thumb while pending", async () => {
+  vi.useFakeTimers();
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const change = vi.fn(), preview = vi.fn();
+  const render = (commit: "rest" | "pending") => act(() => root.render(createElement(Slider, {
+    label: "Reading width", min: 50, max: 100, step: 5, value: 70, commit, onChange: change, onPreview: preview,
+  })));
+  try {
+    render("rest");
+    const input = host.querySelector<HTMLInputElement>("input")!;
+    const arrow = () => {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+      input.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowRight", bubbles: true, cancelable: true }));
+    };
+    act(() => { input.focus(); arrow(); });
+    act(arrow);
+    expect(preview).toHaveBeenLastCalledWith({ value: 80 });
+    expect(change).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(499));
+    expect(change).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(change).toHaveBeenCalledExactlyOnceWith({ value: 80 });
+    render("pending");
+    expect(document.activeElement).toBe(input);
+    expect(input.disabled).toBe(false);
+    act(arrow);
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(change).toHaveBeenCalledTimes(1);
+    render("rest");
+    act(() => { arrow(); input.blur(); });
+    expect(change).toHaveBeenLastCalledWith({ value: 85 });
+  } finally { act(() => root.unmount()); host.remove(); }
+});
 
 it("keeps a picker trigger focused and inert pending, with persistent failed and confirmed border feedback", () => {
   const host = document.createElement("div");

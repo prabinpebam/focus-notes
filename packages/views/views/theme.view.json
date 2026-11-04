@@ -376,6 +376,9 @@
                           "valueText": {
                             "get": "vm.themeManager.reading.lineHeightText"
                           }
+                        },
+                        "on": {
+                          "preview": { "run": "reading.preview", "args": { "field": "lineHeight", "value": { "get": "event.value" } } }
                         }
                       },
                       {
@@ -393,6 +396,9 @@
                           "valueText": {
                             "get": "vm.themeManager.reading.measureText"
                           }
+                        },
+                        "on": {
+                          "preview": { "run": "reading.preview", "args": { "field": "measure", "value": { "get": "event.value" } } }
                         }
                       },
                       {
@@ -425,6 +431,9 @@
                             "get": "vm.themeManager.reading.focusDimText"
                           },
                           "format": "percent"
+                        },
+                        "on": {
+                          "preview": { "run": "reading.preview", "args": { "field": "focusDim", "value": { "get": "event.value" } } }
                         }
                       },
                       {

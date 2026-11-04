@@ -110,6 +110,62 @@ test("theme-manager appearance and paragraph choices retain failures and retry w
   }
 });
 
+test("reading sliders preview keyboard changes, retain failed values, retry and reopen stored settings", async () => {
+  const dirs = tempDirs();
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", appearance: "light", measure: 70 }));
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  try {
+    const open = async () => {
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+      const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+      await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+      await settings.getByRole("button", { name: "Open theme manager", exact: true }).click();
+      await l.page.getByRole("tab", { name: "Reading", exact: true }).click();
+    };
+    await open();
+    const theme = l.page.getByRole("complementary", { name: "Theme", exact: true });
+    const width = theme.getByRole("slider", { name: "Reading width", exact: true });
+    await width.focus();
+    await width.press("ArrowRight");
+    await width.press("ArrowRight");
+    expect(JSON.parse(readFileSync(stateFile, "utf8")).measure).toBe(70);
+    await expect(theme.getByText("80 characters", { exact: true })).toBeVisible();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).measure).toBe(80);
+    await expect(width).toBeFocused();
+    await expect(width.locator("xpath=ancestor::*[@data-commit][1]")).not.toHaveAttribute("data-commit", "pending");
+    renameSync(stateFile, backup);
+    mkdirSync(stateFile);
+    await width.press("ArrowRight");
+    await expect(theme.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    await expect(width).toHaveValue("85");
+    await expect(theme.getByText("85 characters", { exact: true })).toBeVisible();
+    restore();
+    const line = theme.getByRole("slider", { name: "Line spacing", exact: true });
+    await line.focus();
+    await line.press("End");
+    await line.press("Tab");
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).lineHeight).toBe(2);
+    await theme.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).measure).toBe(85);
+    const dim = theme.getByRole("slider", { name: "Focus dim", exact: true });
+    await dim.focus();
+    await dim.press("End");
+    await dim.press("Tab");
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).focusDim).toBe(0.6);
+    await theme.getByRole("button", { name: "Close", exact: true }).click();
+    await open();
+    await expect(width).toHaveValue("85");
+    await expect(line).toHaveValue("2");
+    await expect(dim).toHaveValue("0.6");
+  } finally { restore(); await closeTestApp(l); }
+});
+
 test("notification Retry stays above Settings and reachable with F6 while the modal stays open", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

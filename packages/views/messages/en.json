@@ -2145,6 +2145,7 @@
   "reading.size": "Size",
   "reading.sizeText": "{size} px",
   "reading.lineHeight": "Line spacing",
+  "command.reading.preview": "Preview reading setting",
   "reading.measure": "Reading width",
   "reading.measureText": "{count} characters",
   "reading.spacing": "Paragraph spacing",

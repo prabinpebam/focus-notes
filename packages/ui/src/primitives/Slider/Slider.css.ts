@@ -10,6 +10,7 @@ export const row = style({ display: "flex", justifyContent: "space-between", ali
 // Like every form label: body size, semibold (D-111).
 export const label = style({ color: t.label, fontWeight: t.weight, fontSize: t.labelSize });
 export const output = style({ color: t.value, fontVariantNumeric: "tabular-nums" });
+export const result = style({ display: "inline-flex", alignItems: "center", gap: t.gap });
 
 // The track is the thumb's height in the layout, so the row's rhythm is the same as any other
 // control's (D-111); its pointer target reaches a hit-size band above and below it.

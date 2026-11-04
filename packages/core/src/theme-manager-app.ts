@@ -23,6 +23,7 @@ import {
 import type { ViewModelRegistry } from "./view-models.ts";
 import { themeValues } from "@focus-notes/tokens";
 import { customColors, customThemesOf, isCustomId, parseThemeFile, themeSlug, type CustomTheme } from "./custom-themes.ts";
+import type { CommitView } from "./tasks.ts";
 
 export const THEME_TABS = ["themes", "reading", "colors"] as const;
 export type ThemeTab = (typeof THEME_TABS)[number];
@@ -57,6 +58,7 @@ export interface ThemeManagerState {
   tab: ThemeTab;
   /** The theme the gallery's keyboard focus is previewing on the note. */
   preview?: string;
+  readingPreview?: Partial<Pick<Appearance, "lineHeight" | "measure" | "focusDim">>;
   /** Bumped to move focus to the gallery's showing theme. */
   focusRequest: number;
   /** What was active when the sheet opened, for Revert. */
@@ -73,6 +75,7 @@ export const THEME_MANAGER_CLOSED: ThemeManagerState = { open: false, tab: "them
 
 interface S {
   appearance: Appearance;
+  commits?: CommitView[];
   ui: { theme: ThemeManagerState; toolbarOpen: boolean };
 }
 
@@ -184,8 +187,14 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
 
   /** Reading settings: kept in the store and persisted like the rest of appearance (synced when Sync appearance is on). */
   const setReading = async (patch: Partial<Pick<Appearance, "lineHeight" | "measure" | "paragraphSpacing" | "focusDim">>) => {
-    await persistAppState(patch);
-    store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
+    try {
+      await persistAppState(patch);
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
+    } finally {
+      const readingPreview = { ...state().readingPreview };
+      for (const key of ["lineHeight", "measure", "focusDim"] as const) if (key in patch) delete readingPreview[key];
+      set({ readingPreview });
+    }
   };
 
   /**
@@ -229,15 +238,15 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     },
   });
   reg("theme.manager.close", () => {
-    const { preview, ...rest } = state();
-    void preview;
+    const { preview, readingPreview, ...rest } = state();
+    void preview; void readingPreview;
     store.update((s) => ({ ...s, ui: { ...s.ui, theme: { ...rest, open: false, typing: {} } } }));
   });
   reg<{ value: string }>("theme.manager.setTab", (a) => {
     const v = str(a);
     if ((THEME_TABS as readonly string[]).includes(v)) {
-      const { preview, ...rest } = state();
-      void preview;
+      const { preview, readingPreview, ...rest } = state();
+      void preview; void readingPreview;
       store.update((s) => ({ ...s, ui: { ...s.ui, theme: { ...rest, tab: v as ThemeTab } } }));
     }
   });
@@ -303,6 +312,13 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   });
 
   // ---- Reading ----
+  reg<{ field: string; value: number }>("reading.preview", ({ field, value }) => {
+    const range = field === "lineHeight" ? LINE_HEIGHT : field === "measure" ? MEASURE : field === "focusDim" ? FOCUS_DIM : undefined;
+    if (!range) throw new Error(`Unknown reading preview: ${field}`);
+    const next = onSteps(value, range);
+    if (next === undefined) throw new Error(`Invalid reading preview: ${field}`);
+    set({ readingPreview: { ...state().readingPreview, [field]: next } });
+  });
   reg<{ value: string }>("reading.setFont", async (a) => {
     if ((CONTENT_FONTS as readonly string[]).includes(str(a))) await commands.run(`font.content.${str(a)}`);
   });
@@ -487,12 +503,16 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       tab: "theme.manager.setTab", mode: "appearance.setMode", "reading.lineHeight": "reading.setLineHeight",
       "reading.measure": "reading.setMeasure", "reading.spacing": "reading.setParagraphSpacing", "reading.focusDim": "reading.setFocusDim",
     },
-    commits: ["mode", "reading.spacing"],
-    reads: ["ui.theme", "appearance"],
+    commits: ["mode", "reading.spacing", "reading.lineHeight", "reading.measure", "reading.focusDim"],
+    reads: ["ui.theme", "appearance", "commits"],
     select: (s) => {
       const st = s.ui.theme;
       if (!st.open) return { open: false, tab: st.tab, tabs: [], mode: s.appearance.mode, modes: [], tiles: [], showing: "", previewing: false, focusRequest: st.focusRequest, status: "", themeMenuLabel: "", hasThemeMenu: false, themeMenu: [], reading: {}, colors: { rows: [] } };
       const a = s.appearance;
+      const displayed = (field: "lineHeight" | "measure" | "focusDim", fallback: number) => {
+        const commit = s.commits?.find((item) => item.target === `vm.themeManager.reading.${field}` && item.phase !== "confirmed");
+        return st.readingPreview?.[field] ?? (typeof commit?.value === "number" ? commit.value : a[field] ?? fallback);
+      };
       const showing = shownTheme(s);
       const chosen = schemeOf(a) === "dark" ? a.darkTheme : a.lightTheme;
       // Yours first (custom themes, THM-04), then the built-in ones. A custom theme failing the guard says so (THM-13).
@@ -545,9 +565,9 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         reading: {
           font: a.contentFont, fontText, fontLabel: catalog.format("reading.fontLabel", { font: fontText }), fontMenu, sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
           canSmaller: commands.describe("font.smaller").enabled, canLarger: commands.describe("font.larger").enabled,
-          lineHeight: a.lineHeight, lineHeightText: a.lineHeight.toFixed(1), measure: a.measure, measureText: catalog.format("reading.measureText", { count: a.measure }),
+          lineHeight: a.lineHeight, lineHeightText: displayed("lineHeight", LINE_HEIGHT.default).toFixed(1), measure: a.measure, measureText: catalog.format("reading.measureText", { count: displayed("measure", MEASURE.default) }),
           spacing: a.paragraphSpacing, spacings: PARAGRAPH_SPACINGS.map((id) => ({ id, label: catalog.format(`reading.spacing.${id}`) })),
-          focusDim: a.focusDim ?? Number(themeValues[showing]?.["focus.dimOpacity"] ?? 0.3), focusDimText: catalog.format("reading.percent", { value: Math.round((a.focusDim ?? Number(themeValues[showing]?.["focus.dimOpacity"] ?? 0.3)) * 100) }),
+          focusDim: a.focusDim ?? Number(themeValues[showing]?.["focus.dimOpacity"] ?? 0.3), focusDimText: catalog.format("reading.percent", { value: Math.round(displayed("focusDim", Number(themeValues[showing]?.["focus.dimOpacity"] ?? 0.3)) * 100) }),
         },
         colors: {
           note: draft ? catalog.format("colors.copyNote", { name: name(draft.base) }) : catalog.format("colors.builtInNote", { name: name(showing) }),
