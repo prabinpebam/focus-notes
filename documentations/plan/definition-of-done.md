@@ -221,6 +221,20 @@ Candidate and journey apps were invisible, closed and followed by own-PID `-What
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\0db24cb0\Open review build.cmd`. Reading → Smaller/Larger text; while writing, an unsupported underline shows a warning. The separate journey injects the refused writes; the candidate contains only synthetic data.
 
+### Phase-2 overlapping notification pauses, b68775f8
+
+Hover and focus now pause a notification independently. The primitive reports only a change in their union, so leaving hover while a button remains focused, or leaving focus while hovering, cannot restart the timer. Focus moving between the pill's buttons also keeps the pause.
+
+| Check on `b68775f8` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\ui\test\notification-layer.test.tsx packages\core\test\notifications.test.ts` | 10 passed; both overlap orders, internal focus movement, retained queue clocks and focus restoration |
+| `pnpm --filter @focus-notes/ui --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "notification lifetime stays paused"` | 2 passed: actual hover/F6 focus, 8 seconds with one cause remaining, then visible at the retained 4,999 ms and gone at 5,000 ms; note bytes unchanged |
+| `pnpm check` | Passed, including generated component inventory and `ui:check` |
+
+Both apps ran invisibly, closed and received own-PID cleanup (`-WhatIf`, then actual). The gallery migrated to fresh worker folder 7, HTTP 200 verified; only folder 6's verified gallery process was stopped, then its clean inactive folder removed. Candidate `0db24cb0` remains the latest inspected build until the next refresh. Withdrawal confirmation and AI groups are next; phase 2 is not complete. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
