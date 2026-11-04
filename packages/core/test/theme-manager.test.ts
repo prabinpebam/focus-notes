@@ -81,6 +81,51 @@ it("keeps failed theme/font choices local, writes theme and scheme together, and
   expect(t.vm().themeChoice).toBe("dusk");
 });
 
+it("keeps a failed size visible without changing the note, retries exactly that size and reverts without writing", async () => {
+  let reject = true;
+  const writes: AppStateFile[] = [];
+  const t = await started({ save: async (value) => { if (reject) throw new Error("disk full"); writes.push(value); } });
+  await t.run("theme.manager.open");
+  await expect(t.run("font.larger")).rejects.toThrow("disk full");
+  expect(t.vm().reading).toMatchObject({ sizeChoice: 17, sizeText: "17 px", sizeCommit: "failed", sizeFailed: true });
+  expect(t.vm("vm.app")).toMatchObject({ fontSize: 16, fontSizeSmaller: 15, fontSizeLarger: 17 });
+  await t.run("commit.revert", { target: "vm.app.fontSize" });
+  expect(writes).toEqual([]);
+  expect(t.vm().reading).toMatchObject({ sizeText: "16 px", sizeFailed: false });
+  await expect(t.run("font.larger")).rejects.toThrow("disk full");
+  await t.run("app.reportFailure", { command: "font.larger" });
+  const retry = t.app.store.state.ui.toasts[0]!;
+  expect(retry.action).toMatchObject({ command: "font.reset", args: { value: 17 } });
+  reject = false;
+  await t.run("font.setSize", { value: 32 });
+  await t.run("toast.action", { id: retry.id });
+  expect(t.state().fontSize).toBe(17);
+  expect(t.vm().reading).toMatchObject({ sizeText: "17 px", sizeCommit: "confirmed", sizeFailed: false });
+  await t.run("font.reset");
+  expect(t.state().fontSize).toBe(16);
+  await expect(t.run("font.setSize", { value: 19 })).rejects.toThrow("Invalid text size");
+  expect(t.state().fontSize).toBe(16);
+});
+
+it("locks only the size group while saving and keeps the originating controls available for feedback", async () => {
+  let release!: () => void;
+  let block = false;
+  let writes = 0;
+  const t = await started({ save: async () => { if (!block) return; writes++; await new Promise<void>((resolve) => { release = resolve; }); } });
+  await t.run("theme.manager.open");
+  block = true;
+  const saving = t.run("font.larger");
+  await Promise.resolve();
+  expect(t.vm().reading).toMatchObject({ sizeChoice: 17, sizePending: true, canSmaller: false, canLarger: false });
+  expect(t.app.commands.describe("font.reset").enabled).toBe(false);
+  expect(t.app.commands.describe("focus.toggle").enabled).toBe(true);
+  await t.run("font.smaller");
+  expect(writes).toBe(1);
+  release();
+  await saving;
+  expect(t.vm().reading).toMatchObject({ sizePending: false, canSmaller: true, canLarger: true, sizeCommit: "confirmed" });
+});
+
 it("rejects unknown theme/font values instead of confirming an unperformed save", async () => {
   const t = await started();
   await expect(t.run("commit.run", { target: "vm.themeManager.choice", command: "theme.setChoice", value: "missing" })).rejects.toThrow("Unknown theme");

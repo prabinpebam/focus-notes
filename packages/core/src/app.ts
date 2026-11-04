@@ -361,6 +361,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     "focus.toggle": "vm.app.focusMode",
     "outline.togglePin": "vm.app.outlinePinned",
     "files.togglePin": "vm.files.pinned",
+    "font.larger": "vm.app.fontSize",
+    "font.smaller": "vm.app.fontSize",
+    "font.reset": "vm.app.fontSize",
   };
   commands.register<{ target: string; command: string; value: unknown; label?: string }>({
     id: "commit.run", title: "commit.save",
@@ -768,6 +771,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     });
   }
   const setFontSize = async (size: number) => {
+    if (!(FONT_STEPS as readonly number[]).includes(size)) throw new Error("Invalid text size");
     await persistAppState({ fontSize: size });
     store.update((s) => ({ ...s, appearance: { ...s.appearance, fontSize: size } }));
   };
@@ -776,16 +780,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     const at = i < 0 ? FONT_STEPS.indexOf(DEFAULT_FONT_SIZE) : i;
     return FONT_STEPS[Math.min(FONT_STEPS.length - 1, Math.max(0, at + dir))]!;
   };
-  commands.register({
+  commands.register<{ value: number }>({ id: "font.setSize", title: "reading.size", run: ({ value }) => setFontSize(value) });
+  const fontSizePending = (s: AppState) => s.commits.some((item) => item.target === "vm.app.fontSize" && item.phase === "pending");
+  const commitFontSize = (value: number) => commands.run("commit.run", { target: "vm.app.fontSize", command: "font.setSize", value, label: catalog.format("reading.size") });
+  commands.register<{ value?: number }>({
     id: "font.larger", title: "command.font.larger", icon: "font",
     shortcut: { default: "Mod+=", quiet: ["Mod+Plus", "Mod+Shift+Plus"] }, layer: "writer", group: "app",
-    enabled: (s) => s.appearance.fontSize < FONT_STEPS[FONT_STEPS.length - 1]!,
-    run: () => setFontSize(step(1)),
+    enabled: (s) => !fontSizePending(s) && s.appearance.fontSize < FONT_STEPS[FONT_STEPS.length - 1]!,
+    run: ({ value }) => commitFontSize(value ?? step(1)),
   });
-  commands.register({
+  commands.register<{ value?: number }>({
     id: "font.smaller", title: "command.font.smaller", icon: "font", shortcut: { default: "Mod+-" }, layer: "writer", group: "app",
-    enabled: (s) => s.appearance.fontSize > FONT_STEPS[0],
-    run: () => setFontSize(step(-1)),
+    enabled: (s) => !fontSizePending(s) && s.appearance.fontSize > FONT_STEPS[0],
+    run: ({ value }) => commitFontSize(value ?? step(-1)),
   });
   // Theme choices (THM-08) and content fonts (THM-03): one command each, so menus, Spotlight, and agents can run them.
   const setAppearance = async (patch: Partial<Pick<AppState["appearance"], "lightTheme" | "darkTheme" | "contentFont" | "uiScale">>) => {
@@ -814,7 +821,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   commands.register({ id: "ui.scaleUp", title: "command.ui.scaleUp", enabled: (s) => s.appearance.uiScale < UI_SCALES[UI_SCALES.length - 1]!, run: () => setAppearance({ uiScale: scaleStep(1) }) });
   commands.register({ id: "ui.scaleDown", title: "command.ui.scaleDown", enabled: (s) => s.appearance.uiScale > UI_SCALES[0], run: () => setAppearance({ uiScale: scaleStep(-1) }) });
   commands.register({ id: "ui.scaleReset", title: "command.ui.scaleReset", run: () => setAppearance({ uiScale: 1 }) });
-  commands.register({ id: "font.reset", title: "command.font.reset", shortcut: { default: "Mod+0" }, layer: "writer", group: "app", run: () => setFontSize(DEFAULT_FONT_SIZE) });
+  commands.register<{ value?: number }>({ id: "font.reset", title: "command.font.reset", shortcut: { default: "Mod+0" }, layer: "writer", group: "app", enabled: (s) => !fontSizePending(s), run: ({ value }) => commitFontSize(value ?? DEFAULT_FONT_SIZE) });
   commands.register<{ value: boolean }>({
     id: "focus.setMode", title: "command.focus.toggle",
     run: async ({ value }, ctx) => {
@@ -1111,7 +1118,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const original = command === "command.run" && typeof args?.id === "string" ? args.id : command;
       const target = original ? commandCommitTargets[original] : undefined;
       const failed = target ? store.state.commits.find((item) => item.target === target && item.phase === "failed") : undefined;
-      const retryCommand = failed ? original : command;
+      const retryCommand = failed ? target === "vm.app.fontSize" ? "font.reset" : original : command;
       const retryArgs = failed ? { value: failed.value } : args;
       toast(catalog.format("toast.actionFailed"), {
         tone: "error",
@@ -1463,6 +1470,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         scheme: { type: "string", enum: ["light", "dark"] },
         platform: { type: "string", enum: ["macos", "windows", "linux", "web"] },
         fontSize: { type: "number" },
+        fontSizeSmaller: { type: "number" }, fontSizeLarger: { type: "number" },
         focusMode: { type: "boolean" },
         outlineCommit: { type: "string" },
         /** The document minimap's card docked (D-186, D-187), its width, and Files' docking as the canvas arbitrates it (D-187). */
@@ -1493,7 +1501,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const theme = root.theme;
       const a = { ...s.appearance, ...s.ui.theme.readingPreview };
       return {
-        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode, outlinePinned: s.outlinePinned,
+        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform,         fontSize: a.fontSize, fontSizeSmaller: step(-1), fontSizeLarger: step(1), focusMode: s.focusMode, outlinePinned: s.outlinePinned,
         outlineCommit: s.commits.find((item) => item.target === "vm.app.outlinePinned")?.phase ?? "rest",
         outlineWidth: s.outlineWidth ?? 0, filesDock: s.ui.files.pinned, filesWidth: s.ui.files.width ?? 0,
         contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap: editorKeymapOf(s.keybindings.version), compositing: s.compositing,

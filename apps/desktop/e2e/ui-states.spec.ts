@@ -238,6 +238,60 @@ test("compact focus and docking controls retain stored values on failure and rec
   } finally { restore(); await closeTestApp(l); }
 });
 
+test("Reading size retains a failed value, retries exactly that value and leaves other reading choices alone", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Reading size\n\nKept text.\n");
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note, fontSize: 16, paragraphSpacing: "airy" }));
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  const saved = () => JSON.parse(readFileSync(stateFile, "utf8"));
+  const actualSize = () => l.page.locator("[data-editor]").evaluate((element) => getComputedStyle(element).fontSize);
+  try {
+    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
+    const open = async () => {
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+      const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+      await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+      await settings.getByRole("button", { name: "Open theme manager", exact: true }).click();
+    };
+    await open();
+    const manager = l.page.getByRole("complementary", { name: "Theme", exact: true });
+    await manager.getByRole("tab", { name: "Reading", exact: true }).click();
+    const reading = manager.getByRole("tabpanel", { name: "Reading", exact: true });
+    block();
+    await reading.getByRole("button", { name: "Larger text", exact: true }).click();
+    await expect(reading.getByText("17 px", { exact: true })).toBeVisible();
+    await expect(reading.locator("[data-commit=failed]")).toHaveCount(1);
+    await expect(reading.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    expect(await actualSize()).toBe("16px");
+    restore();
+    await reading.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => saved().fontSize).toBe(17);
+    await expect.poll(actualSize).toBe("17px");
+    await expect(reading.getByRole("button", { name: "Smaller text", exact: true })).not.toHaveAttribute("aria-disabled", "true");
+    block();
+    await reading.getByRole("button", { name: "Smaller text", exact: true }).click();
+    await expect(reading.getByText("16 px", { exact: true })).toBeVisible();
+    await expect(reading.locator("[data-commit=failed]")).toHaveCount(1);
+    restore();
+    await reading.getByRole("button", { name: "Revert", exact: true }).click();
+    await expect(reading.getByText("17 px", { exact: true })).toBeVisible();
+    expect(saved()).toMatchObject({ fontSize: 17, paragraphSpacing: "airy" });
+    expect(await actualSize()).toBe("17px");
+    await manager.getByRole("button", { name: "Close", exact: true }).click();
+    await open();
+    await manager.getByRole("tab", { name: "Reading", exact: true }).click();
+    await expect(reading.getByText("17 px", { exact: true })).toBeVisible();
+  } finally { restore(); await closeTestApp(l); }
+});
+
 test("theme and font choices keep failed drafts, retry their own choice and reopen stored settings", async () => {
   const dirs = tempDirs();
   const stateFile = join(dirs.userData, DATA_FILES.state);

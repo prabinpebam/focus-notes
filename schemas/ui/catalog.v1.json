@@ -6725,7 +6725,8 @@
       "id": "theme",
       "ia": "IA-VIEW-THEME",
       "viewModels": [
-        "vm.themeManager"
+        "vm.themeManager",
+        "vm.app"
       ]
     }
   ],

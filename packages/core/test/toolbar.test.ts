@@ -75,13 +75,15 @@ describe("the toolbar (UI-04, UI-07)", () => {
     expect(sheet.groups.flatMap((g) => g.rows.map((r) => r.id))).not.toContain("settings.open");
   });
 
-  it("UI-07: every enabled item runs, and running one closes the toolbar", async () => {
+  it("UI-07: a setting keeps its feedback visible; other actions close the toolbar", async () => {
     const app = appFor("windows");
     await app.commands.run("toolbar.setOpen", { open: true });
     expect(vmOf(app).open).toBe(true);
     await app.commands.run("command.run", { id: "font.larger" });
-    expect(vmOf(app).open).toBe(false);
+    expect(vmOf(app).open).toBe(true);
     expect(app.store.state.appearance.fontSize).toBe(17);
+    await app.commands.run("command.run", { id: "appearance.toggle" });
+    expect(vmOf(app).open).toBe(false);
     // An unknown ID is refused rather than run.
     await app.commands.run("command.run", { id: "nope" });
   });

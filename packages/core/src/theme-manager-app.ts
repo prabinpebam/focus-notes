@@ -488,6 +488,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
             font: STR, fontText: STR, fontLabel: STR, fontMenu: { type: "array", items: { type: "object", properties: { id: STR, label: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR, checked: BOOL } } } } } }, sizeText: STR, canSmaller: BOOL, canLarger: BOOL,
             lineHeight: NUM, lineHeightText: STR, measure: NUM, measureText: STR, spacing: { type: "string", enum: [...PARAGRAPH_SPACINGS] }, spacings: { type: "array", items: OPTION },
             focusDim: NUM, focusDimText: STR, fontChoice: STR, fontCommit: STR, fontFailed: BOOL,
+            sizeChoice: NUM, sizeCommit: STR, sizeFailed: BOOL, sizePending: BOOL, sizeSmallerReason: STR, sizeLargerReason: STR,
           },
         },
         colors: {
@@ -511,6 +512,9 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       const a = s.appearance;
       const themeCommit = s.commits?.find((item) => item.target === "vm.themeManager.choice");
       const fontCommit = s.commits?.find((item) => item.target === "vm.themeManager.reading.font");
+      const sizeCommit = s.commits?.find((item) => item.target === "vm.app.fontSize");
+      const sizeChoice = typeof sizeCommit?.value === "number" && sizeCommit.phase !== "confirmed" ? sizeCommit.value : a.fontSize;
+      const sizePending = sizeCommit?.phase === "pending";
       const themeDraft = typeof themeCommit?.value === "string" && themeCommit.phase !== "confirmed" ? themeCommit.value : undefined;
       const fontChoice = typeof fontCommit?.value === "string" && fontCommit.phase !== "confirmed" ? fontCommit.value : a.contentFont;
       const displayed = (field: "lineHeight" | "measure" | "focusDim", fallback: number) => {
@@ -569,7 +573,9 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         status: catalog.format("theme.status", { ratio: ratioText(tc.ratio), level: catalog.format(`theme.level.${tc.level}`) }),
         reading: {
           font: a.contentFont, fontText, fontLabel: catalog.format("reading.fontLabel", { font: fontText }), fontMenu, fontChoice,
-          fontCommit: fontCommit?.phase ?? "rest", fontFailed: fontCommit?.phase === "failed", sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
+          fontCommit: fontCommit?.phase ?? "rest", fontFailed: fontCommit?.phase === "failed", sizeText: catalog.format("reading.sizeText", { size: sizeChoice }),
+          sizeChoice, sizeCommit: sizeCommit?.phase ?? "rest", sizeFailed: sizeCommit?.phase === "failed", sizePending,
+          sizeSmallerReason: catalog.format(sizePending ? "task.saving" : "reading.sizeMin"), sizeLargerReason: catalog.format(sizePending ? "task.saving" : "reading.sizeMax"),
           canSmaller: commands.describe("font.smaller").enabled, canLarger: commands.describe("font.larger").enabled,
           lineHeight: a.lineHeight, lineHeightText: displayed("lineHeight", LINE_HEIGHT.default).toFixed(1), measure: a.measure, measureText: catalog.format("reading.measureText", { count: displayed("measure", MEASURE.default) }),
           spacing: a.paragraphSpacing, spacings: PARAGRAPH_SPACINGS.map((id) => ({ id, label: catalog.format(`reading.spacing.${id}`) })),

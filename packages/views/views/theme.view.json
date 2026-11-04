@@ -3,7 +3,8 @@
   "id": "theme",
   "ia": "IA-VIEW-THEME",
   "viewModels": [
-    "vm.themeManager"
+    "vm.themeManager",
+    "vm.app"
   ],
   "focus": "themeGallery",
   "overlay": true,
@@ -368,12 +369,13 @@
                                     }
                                   },
                                   "disabledReason": {
-                                    "t": "reading.sizeMin"
+                                    "get": "vm.themeManager.reading.sizeSmallerReason"
                                   }
                                 },
                                 "on": {
                                   "press": {
-                                    "run": "font.smaller"
+                                    "run": "commit.run",
+                                    "args": { "target": "vm.app.fontSize", "command": "font.setSize", "value": { "get": "vm.app.fontSizeSmaller" }, "label": { "t": "reading.size" } }
                                   }
                                 }
                               },
@@ -382,9 +384,12 @@
                                 "props": {
                                   "value": {
                                     "get": "vm.themeManager.reading.sizeText"
-                                  },
-                                  "announce": true
+                                  }
                                 }
+                              },
+                              {
+                                "type": "CommitMark",
+                                "props": { "state": { "get": "vm.themeManager.reading.sizeCommit" } }
                               },
                               {
                                 "type": "Button",
@@ -401,14 +406,35 @@
                                     }
                                   },
                                   "disabledReason": {
-                                    "t": "reading.sizeMax"
+                                    "get": "vm.themeManager.reading.sizeLargerReason"
                                   }
                                 },
                                 "on": {
                                   "press": {
-                                    "run": "font.larger"
+                                    "run": "commit.run",
+                                    "args": { "target": "vm.app.fontSize", "command": "font.setSize", "value": { "get": "vm.app.fontSizeLarger" }, "label": { "t": "reading.size" } }
                                   }
                                 }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Inline",
+                            "when": { "get": "vm.themeManager.reading.sizeFailed" },
+                            "props": { "gap": "s", "wrap": true },
+                            "children": [
+                              {
+                                "type": "StatusRow",
+                                "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } },
+                                "on": { "action": { "run": "commit.run", "args": {
+                                  "target": "vm.app.fontSize", "command": "font.setSize",
+                                  "value": { "get": "vm.themeManager.reading.sizeChoice" }, "label": { "t": "reading.size" }
+                                } } }
+                              },
+                              {
+                                "type": "Button",
+                                "props": { "label": { "t": "commit.revert" }, "variant": "subtle", "size": "s" },
+                                "on": { "press": { "run": "commit.revert", "args": { "target": "vm.app.fontSize" } } }
                               }
                             ]
                           }
@@ -501,7 +527,9 @@
                               "label": {
                                 "t": "reading.reset"
                               },
-                              "variant": "secondary"
+                              "variant": "secondary",
+                              "disabled": { "get": "vm.themeManager.reading.sizePending" },
+                              "disabledReason": { "t": "task.saving" }
                             },
                             "on": {
                               "press": {
