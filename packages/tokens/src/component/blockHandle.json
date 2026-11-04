@@ -5,7 +5,7 @@
       "width": { "$type": "dimension", "$value": "{size.iconM}" },
       "height": { "$type": "dimension", "$value": "{size.iconL}" },
       "hit": { "$type": "dimension", "$value": "{table.handleHit}" },
-      "gap": { "$type": "dimension", "$value": "{space.xl}" },
+      "gap": { "$type": "dimension", "$value": "{space.gutter}" },
       "dropLine": { "$type": "dimension", "$value": "{border.focus}" },
       "radius": { "$type": "dimension", "$value": "{radius.small}" },
       "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },

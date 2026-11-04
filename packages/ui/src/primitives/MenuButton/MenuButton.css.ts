@@ -23,7 +23,11 @@ export const popover = style({
   boxSizing: "border-box",
   display: "flex",
   flexDirection: "column",
-  overflow: "hidden",
+  // It is the scroll container when its content isn't a menu that scrolls itself: never clipped (spacing SP-5).
+  overflowX: "hidden",
+  overflowY: "auto",
+  scrollbarWidth: "none",
+  scrollPaddingBlock: t.padding,
 });
 
 // Its items have a gap between their highlight shapes (D-111). When the window is too short for it,

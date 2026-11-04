@@ -3,11 +3,11 @@
     "resultList": {
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "itemHeight": {
         "$type": "dimension",
@@ -15,7 +15,7 @@
       },
       "itemPaddingInline": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "itemRadius": {
         "$type": "dimension",
@@ -23,7 +23,7 @@
       },
       "itemGap": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "text": {
         "$type": "color",
@@ -99,12 +99,12 @@
       },
       "groupGap": {
         "$type": "dimension",
-        "$value": "{space.l}",
+        "$value": "{space.stackGroup}",
         "$description": "Between groups of results (Spotlight's Top hit, Notes…): at least twice the space between a group's items (spacing SP-1, SP-8)."
       },
       "headerPaddingBlock": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "header": {
         "$type": "color",

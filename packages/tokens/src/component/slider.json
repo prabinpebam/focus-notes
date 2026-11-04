@@ -1,9 +1,14 @@
 {
   "cmp": {
     "slider": {
+      "thumbHit": {
+        "$type": "dimension",
+        "$value": "{size.hit}",
+        "$description": "The thumb's pointer target, by an invisible extension around its 16 px dot (spacing SP-6)."
+      },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "trackHeight": {
         "$type": "dimension",

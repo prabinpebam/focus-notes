@@ -1,7 +1,7 @@
 {
  "type": "Stack",
  "props": {
-  "gap": "xl"
+  "gap": "stackSection"
  },
  "children": [
   {
@@ -27,7 +27,7 @@
   {
    "type": "Inline",
    "props": {
-    "gap": "s",
+    "gap": "inlineItem",
     "wrap": true
    },
    "children": [
@@ -111,13 +111,13 @@
   {
    "type": "Columns",
    "props": {
-    "gap": "xxl"
+    "gap": "gutter"
    },
    "children": [
     {
      "type": "Stack",
      "props": {
-      "gap": "m"
+      "gap": "stackGroup"
      },
      "children": [
       {
@@ -133,7 +133,7 @@
       {
        "type": "Stack",
        "props": {
-        "gap": "xxs"
+        "gap": "stackPair"
        },
        "children": [
         {
@@ -238,7 +238,7 @@
     {
      "type": "Stack",
      "props": {
-      "gap": "m"
+      "gap": "stackGroup"
      },
      "children": [
       {
@@ -254,7 +254,7 @@
       {
        "type": "Stack",
        "props": {
-        "gap": "s"
+        "gap": "stackItem"
        },
        "children": [
         {

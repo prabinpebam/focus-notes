@@ -17,7 +17,7 @@
   "blockGapLines": { "$type": "number", "$value": "{font.blockGapLines}" },
   "headingAfter": { "$type": "dimension", "$value": "{layout.headingAfter}" },
   "listItemGap": { "$type": "dimension", "$value": "{layout.listItemGap}" },
-  "space": { "$type": "dimension", "s": { "$value": "{space.s}" }, "m": { "$value": "{space.m}" }, "l": { "$value": "{space.l}" } },
+  "space": { "$type": "dimension", "s": { "$value": "{space.scale.s}" }, "m": { "$value": "{space.scale.m}" }, "l": { "$value": "{space.scale.l}" } },
   "link": { "$type": "color", "$value": "{color.link}" },
   "selection": { "$type": "color", "$value": "{color.selection}" },
   "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
@@ -38,7 +38,7 @@
   "tableRadius": { "$type": "dimension", "$value": "{radius.small}" },
   "tableHeader": { "$type": "color", "$value": "{color.surface}" },
   "tableHeaderWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
-  "tableCellBlock": { "$type": "dimension", "$value": "{space.s}" },
-  "tableCellInline": { "$type": "dimension", "$value": "{space.m}" },
+  "tableCellBlock": { "$type": "dimension", "$value": "{space.scale.s}" },
+  "tableCellInline": { "$type": "dimension", "$value": "{space.scale.m}" },
   "printLines": { "$type": "number", "$value": "{print.lines}" }
 } } }

@@ -107,7 +107,7 @@
                   "project": {
                     "type": "Stack",
                     "props": {
-                      "gap": "m"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -144,7 +144,7 @@
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "xs",
+                              "gap": "inlinePair",
                               "wrap": true
                             },
                             "children": [
@@ -197,7 +197,7 @@
                       {
                         "type": "Inline",
                         "when": { "get": "vm.project.accentFailed" },
-                        "props": { "gap": "s", "align": "center", "wrap": true },
+                        "props": { "gap": "inlineItem", "align": "center", "wrap": true },
                         "children": [
                           { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.accent", "command": "project.accent", "value": { "get": "vm.project.accentChoice" } } } } },
                           { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.accent" } } } }
@@ -214,13 +214,13 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "s"
+                              "gap": "stackItem"
                             },
                             "children": [
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "xs",
+                                  "gap": "inlinePair",
                                   "wrap": true
                                 },
                                 "children": [
@@ -273,7 +273,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "align": "center"
                                 },
                                 "children": [
@@ -289,7 +289,7 @@
                       {
                         "type": "Inline",
                         "when": { "get": "vm.project.logoFailed" },
-                        "props": { "gap": "s", "align": "center", "wrap": true },
+                        "props": { "gap": "inlineItem", "align": "center", "wrap": true },
                         "children": [
                           { "type": "StatusRow", "props": { "message": { "get": "vm.project.logoError" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "project.logoRetry" } } },
                           { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.logo" } } } }
@@ -312,13 +312,13 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "s",
+                              "gap": "inlineItem",
                               "align": "start",
                               "wrap": true
                             },
@@ -388,13 +388,13 @@
                                         {
                                           "type": "Stack",
                                           "props": {
-                                            "gap": "s"
+                                            "gap": "stackItem"
                                           },
                                           "children": [
                                             {
                                               "type": "Columns",
                                               "props": {
-                                                "gap": "xs",
+                                                "gap": "inlinePair",
                                                 "cell": "choice"
                                               },
                                               "children": [
@@ -534,7 +534,7 @@
                                   },
                                   {
                                     "type": "Inline", "when": { "get": "vm.project.fontFailed" },
-                                    "props": { "gap": "s", "align": "center", "wrap": true },
+                                    "props": { "gap": "inlineItem", "align": "center", "wrap": true },
                                     "children": [
                                       { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.font", "command": "project.font", "value": { "get": "vm.project.fontChoice" } } } } },
                                       { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.font" } } } }
@@ -607,7 +607,7 @@
                                         {
                                           "type": "Stack",
                                           "props": {
-                                            "gap": "s"
+                                            "gap": "stackItem"
                                           },
                                           "children": [
                                             {
@@ -726,7 +726,7 @@
                                   },
                                   {
                                     "type": "Inline", "when": { "get": "vm.project.themeFailed" },
-                                    "props": { "gap": "s", "align": "center", "wrap": true },
+                                    "props": { "gap": "inlineItem", "align": "center", "wrap": true },
                                     "children": [
                                       { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.theme", "command": "project.theme", "value": { "get": "vm.project.themeChoice" } } } } },
                                       { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.theme" } } } }
@@ -757,7 +757,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "l"
+                          "gap": "stackGroup"
                         },
                         "children": [
                           {
@@ -765,7 +765,7 @@
                             "props": {
                               "justify": "between",
                               "align": "center",
-                              "gap": "m",
+                              "gap": "inlineItem",
                               "wrap": true
                             },
                             "children": [
@@ -807,7 +807,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "s"
+                              "gap": "stackItem"
                             },
                             "children": [
                               {
@@ -881,7 +881,7 @@
                     "type": "Stack",
                     "id": "aiConnections",
                     "props": {
-                      "gap": "section"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -913,7 +913,7 @@
                         "type": "Stack",
                         "id": "aiDiscovery",
                         "props": {
-                          "gap": "related"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -1075,7 +1075,7 @@
                             {
                               "type": "Stack",
                               "props": {
-                                "gap": "s"
+                                "gap": "stackItem"
                               },
                               "children": [
                                 {
@@ -1101,7 +1101,7 @@
                                 {
                                   "type": "Inline",
                                   "props": {
-                                    "gap": "s"
+                                    "gap": "inlineItem"
                                   },
                                   "children": [
                                     {
@@ -1212,13 +1212,13 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "l"
+                          "padding": "insetMd"
                         },
                         "children": [
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackItem"
                             },
                             "children": [
                               {
@@ -1286,7 +1286,7 @@
                                   "get": "vm.ai.providerFailed"
                                 },
                                 "props": {
-                                  "gap": "s"
+                                  "gap": "stackItem"
                                 },
                                 "children": [
                                   {
@@ -1302,7 +1302,7 @@
                                   {
                                     "type": "Inline",
                                     "props": {
-                                      "gap": "s"
+                                      "gap": "inlineItem"
                                     },
                                     "children": [
                                       {
@@ -1435,7 +1435,7 @@
                                   "get": "vm.ai.showModel"
                                 },
                                 "props": {
-                                  "gap": "s"
+                                  "gap": "stackItem"
                                 },
                                 "children": [
                                   {
@@ -1453,7 +1453,7 @@
                                   {
                                     "type": "Inline",
                                     "props": {
-                                      "gap": "s"
+                                      "gap": "inlineItem"
                                     },
                                     "children": [
                                       {
@@ -1530,7 +1530,7 @@
                                   "get": "vm.ai.showKey"
                                 },
                                 "props": {
-                                  "gap": "s"
+                                  "gap": "stackItem"
                                 },
                                 "children": [
                                   {
@@ -1608,7 +1608,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "justify": "end"
                                 },
                                 "children": [
@@ -1667,7 +1667,7 @@
                   "account": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -1694,7 +1694,7 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "m"
+                          "gap": "inlineGroup"
                         },
                         "children": [
                           {
@@ -1706,7 +1706,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "s",
+                              "gap": "stackItem",
                               "grow": true
                             },
                             "children": [
@@ -1735,7 +1735,7 @@
                           "get": "vm.settings.account.signedIn"
                         },
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
@@ -1775,7 +1775,7 @@
                           "get": "vm.settings.account.signedIn"
                         },
                         "props": {
-                          "gap": "s",
+                          "gap": "inlineItem",
                           "wrap": true
                         },
                         "children": [
@@ -1816,7 +1816,7 @@
                           "get": "vm.settings.account.signedIn"
                         },
                         "props": {
-                          "gap": "s",
+                          "gap": "stackItem",
                           "align": "start"
                         },
                         "children": [
@@ -1878,7 +1878,7 @@
                           "get": "vm.settings.account.signedOut"
                         },
                         "props": {
-                          "gap": "s"
+                          "gap": "inlineItem"
                         },
                         "children": [
                           {
@@ -1902,7 +1902,7 @@
                   "workspace": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -1917,7 +1917,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
@@ -1942,7 +1942,7 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "s",
+                          "gap": "inlineItem",
                           "wrap": true
                         },
                         "children": [
@@ -2014,7 +2014,7 @@
                           "get": "vm.settings.workspace.canRemove"
                         },
                         "props": {
-                          "gap": "s"
+                          "gap": "inlineItem"
                         },
                         "children": [
                           {
@@ -2037,7 +2037,7 @@
                   "sharing": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -2061,7 +2061,7 @@
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "s",
+                              "gap": "inlineItem",
                               "wrap": true
                             },
                             "children": [
@@ -2156,7 +2156,7 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "l",
+                          "gap": "inlineGroup",
                           "wrap": true,
                           "align": "end"
                         },
@@ -2235,7 +2235,7 @@
                       {
                         "type": "Stack",
                         "when": { "get": "vm.sharingSettings.waiting" },
-                        "props": { "gap": "s" },
+                        "props": { "gap": "stackItem" },
                         "children": [
                           { "type": "ItemCard", "props": { "title": { "t": "share.manage.loading" }, "skeleton": true } },
                           { "type": "ItemCard", "props": { "title": { "t": "share.manage.loading" }, "skeleton": true } },
@@ -2254,7 +2254,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -2286,7 +2286,7 @@
                                     "get": "row.live"
                                   },
                                   "props": {
-                                    "gap": "xs",
+                                    "gap": "inlinePair",
                                     "wrap": true
                                   },
                                   "children": [
@@ -2426,7 +2426,7 @@
                   "agents": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -2444,7 +2444,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -2495,7 +2495,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "m"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -2507,7 +2507,7 @@
                             "render": {
                               "type": "Stack",
                               "props": {
-                                "gap": "xs",
+                                "gap": "stackPair",
                                 "align": "start"
                               },
                               "children": [
@@ -2586,7 +2586,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "m"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -2643,7 +2643,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -2713,7 +2713,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs",
+                          "gap": "stackPair",
                           "align": "start"
                         },
                         "children": [
@@ -2749,7 +2749,7 @@
                   "appearance": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -2764,7 +2764,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s",
+                          "gap": "stackItem",
                           "align": "start"
                         },
                         "children": [
@@ -2820,7 +2820,7 @@
                           "get": "vm.settings.appearance.canSync"
                         },
                         "props": {
-                          "gap": "xs",
+                          "gap": "stackPair",
                           "align": "start"
                         },
                         "children": [
@@ -2857,7 +2857,7 @@
                   "keyboard": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -2880,7 +2880,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
@@ -2913,7 +2913,7 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "s",
+                          "gap": "inlineItem",
                           "wrap": true
                         },
                         "children": [
@@ -2958,7 +2958,7 @@
                           "get": "vm.keyboard.confirmingReset"
                         },
                         "props": {
-                          "gap": "s",
+                          "gap": "stackItem",
                           "align": "start"
                         },
                         "children": [
@@ -2975,7 +2975,7 @@
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "s"
+                              "gap": "inlineItem"
                             },
                             "children": [
                               {
@@ -3022,7 +3022,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
@@ -3064,7 +3064,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs",
+                          "gap": "stackPair",
                           "align": "start"
                         },
                         "children": [
@@ -3097,7 +3097,7 @@
                   "about": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -3124,7 +3124,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -3153,7 +3153,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s"
+                          "gap": "stackItem"
                         },
                         "when": {
                           "get": "vm.diagnostics.ready"
@@ -3245,7 +3245,7 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "s",
+                          "gap": "inlineItem",
                           "wrap": true
                         },
                         "children": [
@@ -3344,7 +3344,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -3394,7 +3394,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "end",
-                  "gap": "s"
+                  "gap": "inlineItem"
                 },
                 "children": [
                   {
@@ -3470,7 +3470,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -3497,7 +3497,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "end",
-                  "gap": "s"
+                  "gap": "inlineItem"
                 },
                 "children": [
                   {
@@ -3595,7 +3595,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -3665,7 +3665,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -3680,7 +3680,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true
                     },
                     "children": [
@@ -3730,7 +3730,7 @@
                   "get": "vm.shareEditor.passcode"
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -3753,7 +3753,7 @@
                       "get": "vm.shareEditor.generate"
                     },
                     "props": {
-                      "gap": "m",
+                      "gap": "inlineItem",
                       "justify": "between",
                       "wrap": true
                     },
@@ -3817,14 +3817,14 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
                     "type": "Inline",
                     "props": {
                       "justify": "between",
-                      "gap": "m"
+                      "gap": "inlineItem"
                     },
                     "children": [
                       {
@@ -3868,7 +3868,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true
                     },
                     "children": [
@@ -3966,7 +3966,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "end",
-                  "gap": "s"
+                  "gap": "inlineItem"
                 },
                 "children": [
                   {
@@ -4041,7 +4041,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -4062,7 +4062,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "xs"
+                  "gap": "stackPair"
                 },
                 "children": [
                   {
@@ -4079,13 +4079,13 @@
                     "props": {
                       "variant": "sunken",
                       "shape": "control",
-                      "padding": "m"
+                      "padding": "insetMd"
                     },
                     "children": [
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
@@ -4123,7 +4123,7 @@
               {
                 "type": "Inline",
                 "props": {
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "wrap": true
                 },
                 "children": [
@@ -4199,7 +4199,7 @@
                   "get": "vm.shareInvite.hasPasscode"
                 },
                 "props": {
-                  "gap": "xs"
+                  "gap": "stackPair"
                 },
                 "children": [
                   {
@@ -4248,7 +4248,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "between",
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "wrap": true
                 },
                 "children": [
@@ -4318,7 +4318,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -4349,7 +4349,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "end",
-                  "gap": "s"
+                  "gap": "inlineItem"
                 },
                 "children": [
                   {
@@ -4425,7 +4425,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -4450,7 +4450,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -4465,7 +4465,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true
                     },
                     "children": [
@@ -4512,7 +4512,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "xs"
+                  "gap": "stackPair"
                 },
                 "children": [
                   {
@@ -4539,13 +4539,13 @@
                     "props": {
                       "variant": "sunken",
                       "shape": "control",
-                      "padding": "m"
+                      "padding": "insetMd"
                     },
                     "children": [
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs"
+                          "gap": "stackPair"
                         },
                         "children": [
                           {
@@ -4584,7 +4584,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "between",
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "wrap": true
                 },
                 "children": [
@@ -4612,7 +4612,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s"
+                      "gap": "inlineItem"
                     },
                     "children": [
                       {
@@ -4690,7 +4690,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -4708,7 +4708,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -4755,14 +4755,14 @@
                   "get": "vm.shareNote.hasPeople"
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
                     "type": "Inline",
                     "props": {
                       "justify": "between",
-                      "gap": "m"
+                      "gap": "inlineItem"
                     },
                     "children": [
                       {
@@ -4904,7 +4904,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "between",
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "wrap": true
                 },
                 "children": [
@@ -4976,7 +4976,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -4992,7 +4992,7 @@
                   }
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -5050,7 +5050,7 @@
               {
                 "type": "Inline",
                 "props": {
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "justify": "end"
                 },
                 "children": [
@@ -5119,13 +5119,13 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
                 "type": "Inline",
                 "props": {
-                  "gap": "m",
+                  "gap": "inlineItem",
                   "align": "center"
                 },
                 "children": [
@@ -5165,7 +5165,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -5206,7 +5206,7 @@
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -5294,7 +5294,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "end",
-                  "gap": "s"
+                  "gap": "inlineItem"
                 },
                 "children": [
                   {
@@ -5364,7 +5364,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -5421,7 +5421,7 @@
                   }
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -5478,7 +5478,7 @@
                   }
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -5525,7 +5525,7 @@
                 "type": "Inline",
                 "props": {
                   "justify": "between",
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "wrap": true,
                   "align": "center"
                 },
@@ -5549,7 +5549,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s"
+                      "gap": "inlineItem"
                     },
                     "children": [
                       {

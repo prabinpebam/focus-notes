@@ -3,11 +3,11 @@
     "colorField": {
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "rowGap": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.stackItem}"
       },
       "height": {
         "$type": "dimension",
@@ -15,7 +15,7 @@
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "swatchSize": {
         "$type": "dimension",

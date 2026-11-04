@@ -8,7 +8,8 @@ export const base = style({
   borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: "transparent",
 });
 export const size = styleVariants({
-  inline: { width: t.size.inline, height: t.size.inline }, s: { width: t.size.s, height: t.size.s }, m: { width: t.size.m, height: t.size.m }, l: { width: t.size.l, height: t.size.l },
+  // The box is the glyph (inside a ProjectPill, a bare plate): no border, so the glyph fits its box (spacing SP-4).
+  inline: { width: t.size.inline, height: t.size.inline, borderWidth: 0 }, s: { width: t.size.s, height: t.size.s }, m: { width: t.size.m, height: t.size.m }, l: { width: t.size.l, height: t.size.l },
   xl: { width: t.size.xl, height: t.size.xl }, watermark: { width: t.size.watermark, height: t.size.watermark },
 });
 export const glyphSize = styleVariants({

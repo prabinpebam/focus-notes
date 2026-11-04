@@ -35,7 +35,7 @@
               "type": "Inline",
               "props": {
                 "justify": "between",
-                "gap": "s"
+                "gap": "inlineItem"
               },
               "children": [
                 {
@@ -85,7 +85,7 @@
               "type": "Inline",
               "props": {
                 "justify": "between",
-                "gap": "s",
+                "gap": "inlineItem",
                 "align": "center",
                 "grow": true
               },
@@ -142,7 +142,7 @@
                   "themes": {
                     "type": "Stack",
                     "props": {
-                      "gap": "s"
+                      "gap": "stackItem"
                     },
                     "children": [
                       {
@@ -229,7 +229,7 @@
                       {
                         "type": "Inline",
                         "when": { "get": "vm.themeManager.themeFailed" },
-                        "props": { "gap": "s", "wrap": true },
+                        "props": { "gap": "inlineItem", "wrap": true },
                         "children": [
                           {
                             "type": "StatusRow",
@@ -254,13 +254,13 @@
                   "reading": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs",
+                          "gap": "stackPair",
                           "align": "start"
                         },
                         "children": [
@@ -311,7 +311,7 @@
                           {
                             "type": "Inline",
                             "when": { "get": "vm.themeManager.reading.fontFailed" },
-                            "props": { "gap": "s", "wrap": true },
+                            "props": { "gap": "inlineItem", "wrap": true },
                             "children": [
                               {
                                 "type": "StatusRow",
@@ -333,7 +333,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "xs",
+                          "gap": "stackPair",
                           "align": "start"
                         },
                         "children": [
@@ -349,7 +349,7 @@
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "s",
+                              "gap": "inlineItem",
                               "align": "center",
                               "wrap": true
                             },
@@ -421,7 +421,7 @@
                           {
                             "type": "Inline",
                             "when": { "get": "vm.themeManager.reading.sizeFailed" },
-                            "props": { "gap": "s", "wrap": true },
+                            "props": { "gap": "inlineItem", "wrap": true },
                             "children": [
                               {
                                 "type": "StatusRow",
@@ -518,7 +518,7 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "s"
+                          "gap": "inlineItem"
                         },
                         "children": [
                           {
@@ -544,7 +544,7 @@
                   "colors": {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "stackGroup"
                     },
                     "children": [
                       {
@@ -565,7 +565,7 @@
                         "render": {
                           "type": "Stack",
                           "props": {
-                            "gap": "xs",
+                            "gap": "stackPair",
                             "align": "start"
                           },
                           "children": [

@@ -76,11 +76,11 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.xl}"
+        "$value": "{space.insetLg}"
       },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.inlineGroup}"
       },
       "font": {
         "$type": "fontFamily",
@@ -132,7 +132,7 @@
       },
       "bodySlack": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       }
     }
   }

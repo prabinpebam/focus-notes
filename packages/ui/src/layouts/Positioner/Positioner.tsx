@@ -37,7 +37,7 @@ const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
  * Anchors floating content to a range in the note (Components → Positioner): centered on it, never
  * covering it, kept on screen, following it as it scrolls, and hidden while it's out of view.
  */
-export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "s", landmark = "none", label, id, children, onDismiss, returnAboveLabel, returnBelowLabel, focusRequest }: PositionerProps) {
+export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "stackItem", landmark = "none", label, id, children, onDismiss, returnAboveLabel, returnBelowLabel, focusRequest }: PositionerProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const edgeRef = useRef<HTMLDivElement | null>(null);

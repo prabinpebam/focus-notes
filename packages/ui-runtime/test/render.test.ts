@@ -62,9 +62,9 @@ describe("renderer overhead (DSY-11)", () => {
     const { app } = setup(items);
     const view = doc({
       type: "AppRoot", props: { scheme: "light", platform: "windows" },
-      children: [{ type: "Stack", props: { gap: "s" }, children: [{
+      children: [{ type: "Stack", props: { gap: "stackItem" }, children: [{
         each: { get: "vm.bench.items" }, as: "item", key: "item.id",
-        render: { type: "Inline", props: { gap: "s" }, children: [
+        render: { type: "Inline", props: { gap: "inlineItem" }, children: [
           { type: "Icon", props: { name: "document" } },
           { type: "Text", props: { value: { get: "item.label" }, tone: "muted" } },
           { type: "Button", props: { label: { get: "item.label" }, variant: "subtle" }, on: { press: { run: "bench.pick", args: { id: { get: "item.id" } } } } },
@@ -74,7 +74,7 @@ describe("renderer overhead (DSY-11)", () => {
     });
     const { AppRoot, Stack, Inline, Icon, Text, Button } = registry as Record<string, (p: any) => ReactNode>;
     const byHand = () => renderToString(h(AppRoot!, { scheme: "light", platform: "windows" },
-      h(Stack!, { gap: "s" }, items.map((it) => h(Inline!, { key: it.id, gap: "s" },
+      h(Stack!, { gap: "stackItem" }, items.map((it) => h(Inline!, { key: it.id, gap: "inlineItem" },
         h(Icon!, { name: "document" }), h(Text!, { value: it.label, tone: "muted" }),
         h(Button!, { label: it.label, variant: "subtle", onPress: () => app.commands.run("bench.pick", { id: it.id }) }))))));
     const viaRuntime = () => render(app, view);

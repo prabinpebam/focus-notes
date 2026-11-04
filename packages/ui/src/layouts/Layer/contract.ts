@@ -19,10 +19,10 @@ export const contract = defineContract({
   a11y: { pattern: "none" },
   fixtures: [
     ...["contextual", "trigger", "panel", "dialog", "toast", "tooltip"].map((layer) => ({
-      name: `layer ${layer}`, props: { layer, position: "center" }, children: [{ type: "Surface", props: { variant: "frost", padding: "m", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
+      name: `layer ${layer}`, props: { layer, position: "center" }, children: [{ type: "Surface", props: { variant: "frost", padding: "insetMd", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
     })),
     ...["topBand", "topEnd", "belowTopBand", "fill", "window", "center", "bottomCenter", "bottomStart", "bottomEnd"].map((position) => ({
-      name: `position ${position}`, props: { position }, children: [{ type: "Surface", props: { variant: "frost", padding: "m", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
+      name: `position ${position}`, props: { position }, children: [{ type: "Surface", props: { variant: "frost", padding: "insetMd", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
     })),
     ...["none", "banner", "main", "complementary", "region"].map((landmark) => ({
       name: `landmark ${landmark}`, props: { landmark, label: { t: "gallery.sample" } }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],

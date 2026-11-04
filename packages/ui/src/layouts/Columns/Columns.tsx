@@ -11,6 +11,6 @@ export interface ColumnsProps {
 }
 
 /** Equal columns while each has room, stacked when not (D-142). */
-export function Columns({ gap = "m", cell = "sheet", id, children }: ColumnsProps) {
+export function Columns({ gap = "inlineGroup", cell = "sheet", id, children }: ColumnsProps) {
   return <div id={id} className={`${s.base} ${s.cell[cell]} ${s.gap[gap]}`}>{children}</div>;
 }

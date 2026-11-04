@@ -29,6 +29,6 @@
   "ring": { "$type": "color", "$value": "{color.accent}" },
   "track": { "$type": "color", "$value": "{color.border}" },
   "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },
-  "ringGap": { "$type": "dimension", "$value": "{space.xs}" },
+  "ringGap": { "$type": "dimension", "$value": "{space.inlinePair}" },
   "duration": { "$type": "duration", "$value": "{motion.spin}" }
 } } }

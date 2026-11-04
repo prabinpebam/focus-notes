@@ -3,7 +3,7 @@
     "textField": {
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "height": {
         "$type": "dimension",
@@ -29,7 +29,7 @@
       },
       "paddingBlock": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "lineHeight": {
         "$type": "number",
@@ -37,7 +37,7 @@
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "radius": {
         "$type": "dimension",
@@ -71,7 +71,7 @@
       },
       "slotRoom": {
         "$type": "dimension",
-        "$value": "{space.xl}",
+        "$value": "{space.scale.xl}",
         "$description": "The input's end padding while a commit mark can show, so the words never run under it."
       },
       "background": {

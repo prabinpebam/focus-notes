@@ -35,7 +35,7 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "duration": {
         "$type": "duration",

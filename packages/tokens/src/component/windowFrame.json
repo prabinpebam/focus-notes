@@ -5,6 +5,6 @@
   "layer": { "$type": "number", "$value": "{layer.tooltip}" },
   "snapPreview": { "$type": "color", "$value": "{color.accent}" },
   "snapPreviewOpacity": { "$type": "number", "$value": "{window.snapPreviewOpacity}" },
-  "menuInset": { "$type": "dimension", "$value": "{space.s}" },
+  "menuInset": { "$type": "dimension", "$value": "{space.insetSm}" },
   "menuTop": { "$type": "dimension", "$value": "{window.titleBarHeight}" }
 } } }

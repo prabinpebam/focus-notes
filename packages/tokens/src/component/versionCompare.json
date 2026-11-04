@@ -1,7 +1,7 @@
 { "cmp": { "versionCompare": {
-  "gap": { "$type": "dimension", "$value": "{space.s}" },
-  "pillGap": { "$type": "dimension", "$value": "{space.xs}" },
-  "paddingInline": { "$type": "dimension", "$value": "{space.s}" },
+  "gap": { "$type": "dimension", "$value": "{space.inlineItem}" },
+  "pillGap": { "$type": "dimension", "$value": "{space.inlinePair}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.insetSm}" },
   "height": { "$type": "dimension", "$value": "{size.controlS}" },
   "radius": { "$type": "dimension", "$value": "{radius.round}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },

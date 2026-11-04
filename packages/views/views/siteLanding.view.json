@@ -77,13 +77,13 @@
         {
           "type": "Stack",
           "props": {
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
               "type": "Inline",
               "props": {
-                "gap": "l",
+                "gap": "inlineGroup",
                 "wrap": true
               },
               "children": [
@@ -190,7 +190,7 @@
           {
             "type": "Inline",
             "props": {
-              "gap": "m",
+              "gap": "inlineItem",
               "wrap": true,
               "justify": "center"
             },
@@ -524,7 +524,7 @@
           {
             "type": "Inline",
             "props": {
-              "gap": "m",
+              "gap": "inlineItem",
               "wrap": true,
               "justify": "center"
             },

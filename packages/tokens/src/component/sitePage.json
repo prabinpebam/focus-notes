@@ -18,10 +18,10 @@
   "wide": { "$type": "dimension", "$value": "{layout.wideContent}", "$description": "The header's, footer's and sections' width." },
   "gutter": { "$type": "dimension", "$value": "{layout.gutter}" },
   "gutterCompact": { "$type": "dimension", "$value": "{layout.gutterCompact}" },
-  "headerBlock": { "$type": "dimension", "$value": "{space.l}" },
-  "navGap": { "$type": "dimension", "$value": "{space.l}" },
-  "top": { "$type": "dimension", "$value": "{space.xxl}" },
-  "gap": { "$type": "dimension", "$value": "{space.xl}" },
-  "sectionGap": { "$type": "dimension", "$value": "{space.xxl}" },
-  "edge": { "$type": "dimension", "$value": "{space.m}" }
+  "headerBlock": { "$type": "dimension", "$value": "{space.scale.l}" },
+  "navGap": { "$type": "dimension", "$value": "{space.inlineGroup}" },
+  "top": { "$type": "dimension", "$value": "{space.scale.xxl}" },
+  "gap": { "$type": "dimension", "$value": "{space.gutter}" },
+  "sectionGap": { "$type": "dimension", "$value": "{space.stackSection}" },
+  "edge": { "$type": "dimension", "$value": "{space.scale.m}" }
 } } }

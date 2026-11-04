@@ -3,9 +3,9 @@
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
   "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
   "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
-  "gap": { "$type": "dimension", "$value": "{space.s}" },
-  "paddingBlock": { "$type": "dimension", "$value": "{space.s}" },
-  "paddingInline": { "$type": "dimension", "$value": "{space.m}" },
+  "gap": { "$type": "dimension", "$value": "{space.inlineItem}" },
+  "paddingBlock": { "$type": "dimension", "$value": "{space.insetSm}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.scale.m}" },
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
   "size": { "$type": "dimension", "$value": "{font.uiBody}" },
@@ -16,7 +16,7 @@
   "warning": { "$type": "color", "background": { "$value": "{color.warningMuted}" }, "icon": { "$value": "{color.warning}" } },
   "info": { "$type": "color", "background": { "$value": "{color.infoMuted}" }, "icon": { "$value": "{color.info}" } },
   "success": { "$type": "color", "background": { "$value": "{color.successMuted}" }, "icon": { "$value": "{color.success}" } },
-  "actionGap": { "$type": "dimension", "$value": "{space.xs}", "$description": "Between the sentence and its action, and between the action and Details (F5)." },
+  "actionGap": { "$type": "dimension", "$value": "{space.inlinePair}", "$description": "Between the sentence and its action, and between the action and Details (F5)." },
   "detail": { "$type": "color", "$value": "{color.textMuted}", "$description": "The text behind Details: the technical cause." },
   "detailSize": { "$type": "dimension", "$value": "{font.uiSecondary}", "$description": "The Details text." }
 } } }

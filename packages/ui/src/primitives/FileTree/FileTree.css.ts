@@ -59,8 +59,9 @@ export const section = style({
 export const chevron = style({ display: "inline-flex", flexShrink: 0, width: t.iconSize, height: t.iconSize, alignItems: "center", justifyContent: "center", color: t.textMuted });
 export const icon = style({ position: "relative", display: "inline-flex", flexShrink: 0, width: t.iconSize, height: t.iconSize, color: t.textMuted });
 export const typeIcon = style({ display: "inline-flex" });
+// Its box is the pin button's hit area, centred on the type icon it replaces, inside the row's padding box (spacing SP-4).
 export const pinControl = style({
-  position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", visibility: "hidden",
+  position: "absolute", inset: `calc((${t.iconSize} - ${t.pinSize}) / 2)`, display: "flex", alignItems: "center", justifyContent: "center", visibility: "hidden",
 });
 globalStyle(`${row}:focus-within ${typeIcon}`, { visibility: "hidden" });
 globalStyle(`${row}:focus-within ${pinControl}, ${pinControl}[data-pin-commit]:not([data-pin-commit="rest"])`, { visibility: "visible" });
@@ -72,7 +73,8 @@ globalStyle(`${pinControl} button`, { flexShrink: 0 });
 globalStyle(`${pinControl}`, { "@media": { "(hover: none)": { visibility: "visible" } } });
 globalStyle(`${typeIcon}`, { "@media": { "(hover: none)": { visibility: "hidden" } } });
 export const label = style({ flexGrow: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
-export const description = style({ flexShrink: 0, color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight, textTransform: "none" });
+// It gives way after the label, ending in an ellipsis, so the row keeps its end inset in a narrow window (spacing SP-4).
+export const description = style({ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight, textTransform: "none" });
 globalStyle(`${row}[aria-selected="true"] :is(${chevron}, ${icon}, ${description})`, { color: t.selectionTextMuted });
 /** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });

@@ -37,20 +37,20 @@
        {
         "type": "Stack",
         "props": {
-         "gap": "l",
-         "padding": "xl"
+         "gap": "stackGroup",
+         "padding": "insetLg"
         },
         "children": [
          {
           "type": "Stack",
           "props": {
-           "gap": "s"
+           "gap": "stackItem"
           },
           "children": [
            {
             "type": "Inline",
             "props": {
-             "gap": "s",
+             "gap": "inlineItem",
              "align": "center"
             },
             "children": [
@@ -107,7 +107,7 @@
            {
             "type": "Inline",
             "props": {
-             "gap": "xs",
+             "gap": "inlinePair",
              "wrap": true,
              "label": {
               "t": "project.mock.steps"
@@ -229,7 +229,7 @@
          {
           "type": "Columns",
           "props": {
-           "gap": "l"
+           "gap": "inlineGroup"
           },
           "children": [
            {
@@ -243,9 +243,9 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s",
+               "gap": "inlineItem",
                "align": "center",
-               "padding": "s"
+               "padding": "insetSm"
               },
               "children": [
                {
@@ -262,8 +262,8 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "s",
-               "padding": "m"
+               "gap": "stackItem",
+               "padding": "insetMd"
               },
               "children": [
                {
@@ -288,7 +288,7 @@
            {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -302,8 +302,8 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackItem",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
@@ -326,7 +326,7 @@
                     "props": {
                      "variant": "sunken",
                      "shape": "control",
-                     "padding": "xs"
+                     "padding": "insetSm"
                     },
                     "children": [
                      {
@@ -383,9 +383,9 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s",
+                 "gap": "inlineItem",
                  "align": "center",
-                 "padding": "s"
+                 "padding": "insetSm"
                 },
                 "children": [
                  {
@@ -488,7 +488,7 @@
             {
              "type": "Inline",
              "props": {
-              "gap": "s",
+              "gap": "inlineItem",
               "justify": "end"
              },
              "children": [
@@ -530,13 +530,13 @@
            {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
               "type": "Inline",
               "props": {
-               "gap": "xs",
+               "gap": "inlinePair",
                "align": "end"
               },
               "children": [
@@ -619,7 +619,7 @@
             {
              "type": "Inline",
              "props": {
-              "gap": "s",
+              "gap": "inlineItem",
               "justify": "end"
              },
              "children": [
@@ -661,7 +661,7 @@
            {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {

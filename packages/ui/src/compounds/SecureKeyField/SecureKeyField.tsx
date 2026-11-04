@@ -26,7 +26,7 @@ export function SecureKeyField({ label, saveLabel, pendingLabel, savedLabel, ent
   useEffect(() => { if (commit === "confirmed") setKey(""); }, [commit]);
   useEffect(() => setKey(""), [entryScope]);
   const save = () => onSave?.({ key });
-  return <Stack gap="s">
+  return <Stack gap="stackItem">
     <TextField label={label} type="password" value={key} readOnly={commit === "pending"} onChange={event => setKey(event.value)} />
     <Button label={commit === "pending" ? pendingLabel : commit === "confirmed" ? savedLabel : saveLabel} commit={commit} disabled={commit !== "pending" && (disabled || !key)} {...(disabledReason ? { disabledReason } : {})} onPress={save} />
     {commit === "failed" && error ? <CommitFailure message={error} {...(key && retryLabel ? { retryLabel, onRetry: save } : {})} {...(revertLabel ? { revertLabel, onRevert: () => { setKey(""); onRevert?.(); } } : {})} /> : null}

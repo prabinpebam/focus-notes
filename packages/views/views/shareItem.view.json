@@ -23,7 +23,7 @@
         "children": [
           {
             "type": "Stack",
-            "props": { "gap": "l" },
+            "props": { "gap": "stackGroup" },
             "children": [
               {
                 "type": "ItemCard",
@@ -102,7 +102,7 @@
               },
               {
                 "type": "Columns",
-                "props": { "gap": "l" },
+                "props": { "gap": "inlineGroup" },
                 "children": [
                   {
                     "type": "Switch",
@@ -139,7 +139,7 @@
               {
                 "type": "Stack",
                 "when": { "get": "vm.shareItem.passcode" },
-                "props": { "gap": "s" },
+                "props": { "gap": "stackItem" },
                 "children": [
                   {
                     "type": "SegmentedControl",
@@ -153,10 +153,10 @@
                   {
                     "type": "Stack",
                     "when": { "expr": { "!": { "get": "vm.shareItem.ownMode" } } },
-                    "props": { "gap": "s" },
+                    "props": { "gap": "stackItem" },
                     "children": [
                       { "type": "Text", "props": { "value": { "get": "vm.shareItem.generated" } } },
-                      { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+                      { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
                         { "type": "Button", "props": { "label": { "t": "share.dialog.copyPasscode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
                           "on": { "press": { "run": "share.item.action", "args": { "what": "passcode" } } } },
                         { "type": "Button", "props": { "label": { "t": "share.dialog.newWords" }, "disabled": { "get": "vm.shareItem.controlsLocked" }, "disabledReason": { "get": "vm.shareItem.controlReason" } },
@@ -167,7 +167,7 @@
                   {
                     "type": "Stack",
                     "when": { "get": "vm.shareItem.ownMode" },
-                    "props": { "gap": "s" },
+                    "props": { "gap": "stackItem" },
                     "children": [
                       {
                         "type": "TextField",
@@ -197,7 +197,7 @@
                 "props": { "value": { "t": "share.state.deleted" }, "tone": "danger" }
               },
               {
-                "type": "Inline", "when": { "get": "vm.shareItem.deleted" }, "props": { "gap": "s", "wrap": true },
+                "type": "Inline", "when": { "get": "vm.shareItem.deleted" }, "props": { "gap": "inlineItem", "wrap": true },
                 "children": [
                   { "type": "Button", "props": { "label": { "t": "share.state.restore" }, "disabled": { "get": "vm.shareItem.restoreDisabled" }, "disabledReason": { "get": "vm.shareItem.restoreReason" } }, "on": { "press": { "run": "share.item.restore" } } },
                   { "type": "Button", "props": { "label": { "t": "share.state.close" } }, "on": { "press": { "run": "share.item.setOpen", "args": { "open": false } } } }
@@ -206,7 +206,7 @@
               { "type": "Button", "when": { "get": "vm.shareItem.signedOut" }, "props": { "label": { "t": "share.state.signIn" } }, "on": { "press": { "run": "share.item.signIn" } } },
               {
                 "type": "Inline",
-                "props": { "gap": "s", "wrap": true },
+                "props": { "gap": "inlineItem", "wrap": true },
                 "children": [
                   { "type": "Button", "props": { "label": { "get": "vm.shareItem.primaryLabel" }, "variant": "primary", "busy": { "get": "vm.shareItem.busy" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
                     "on": { "press": { "run": "share.item.action", "args": { "what": "primary" } } } },
@@ -222,28 +222,28 @@
               { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.status" }, ""] } }, "props": { "value": { "get": "vm.shareItem.status" }, "announce": true } },
               { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.progress" }, ""] } }, "props": { "value": { "get": "vm.shareItem.progress" }, "tone": "muted", "role": "secondary" } },
               {
-                "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "s" },
+                "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "stackItem" },
                 "children": [
                   { "type": "Heading", "props": { "value": { "t": "share.dialog.preview" }, "level": "3" } },
                   { "each": { "get": "vm.shareItem.lines" }, "as": "line", "key": "line.id", "render": { "type": "Text", "props": { "value": { "get": "line.text" } } }, "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } } }
                 ]
               },
               {
-                "type": "Stack", "when": { "get": "vm.shareItem.hasHistory" }, "props": { "gap": "s" },
+                "type": "Stack", "when": { "get": "vm.shareItem.hasHistory" }, "props": { "gap": "stackItem" },
                 "children": [
                   { "type": "Divider" },
                   { "type": "Button", "props": { "label": { "t": "share.dialog.before", "args": { "count": { "get": "vm.shareItem.historyCount" } } }, "variant": "subtle", "expanded": { "get": "vm.shareItem.historyOpen" } }, "on": { "press": { "run": "share.item.toggleHistory" } } },
                   {
-                    "type": "Stack", "when": { "get": "vm.shareItem.historyOpen" }, "props": { "gap": "s" },
+                    "type": "Stack", "when": { "get": "vm.shareItem.historyOpen" }, "props": { "gap": "stackItem" },
                     "children": [
-                      { "type": "Inline", "when": { "get": "vm.shareItem.hasNewer" }, "props": { "gap": "s", "wrap": true }, "children": [
+                      { "type": "Inline", "when": { "get": "vm.shareItem.hasNewer" }, "props": { "gap": "inlineItem", "wrap": true }, "children": [
                         { "type": "StatusRow", "props": { "message": { "t": "share.dialog.newer", "args": { "count": { "get": "vm.shareItem.newerCount" } } }, "tone": "info", "icon": "info" } },
                         { "type": "Button", "props": { "label": { "t": "share.dialog.addThem" }, "size": "s", "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.addThem" } } }
                       ] },
                       { "each": { "get": "vm.shareItem.history" }, "as": "row", "key": "row.id", "render": {
                         "type": "ItemCard", "props": { "title": { "get": "row.methods" }, "detail": { "get": "row.detail" }, "badge": { "get": "row.badge" }, "icon": "share" },
                         "children": [
-                          { "type": "Inline", "when": { "get": "row.active" }, "props": { "gap": "s", "wrap": true },
+                          { "type": "Inline", "when": { "get": "row.active" }, "props": { "gap": "inlineItem", "wrap": true },
                             "children": [
                               { "type": "Button", "when": { "get": "row.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "size": "s", "disabled": { "get": "vm.shareItem.busy" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.row", "args": { "id": { "get": "row.id" }, "what": "link" } } } },
                               { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s", "disabled": { "get": "vm.shareItem.busy" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.row", "args": { "id": { "get": "row.id" }, "what": "withdraw" } } } }
@@ -264,10 +264,10 @@
         "props": { "title": { "t": "share.withdraw.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.shareItem.confirmOpen" }, "size": "s", "height": "content" },
         "on": { "openChange": { "run": "share.item.setConfirmOpen", "args": { "open": { "get": "event.open" } } } },
         "children": [
-          { "type": "Stack", "props": { "gap": "l" }, "children": [
+          { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "Text", "props": { "value": { "t": "share.withdraw.text" } } },
             { "type": "Text", "when": { "get": "vm.shareItem.hasProblem" }, "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger" } },
-            { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+            { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
               { "type": "Button", "props": { "label": { "t": "share.manage.cancel" }, "autoFocus": true }, "on": { "press": { "run": "share.item.setConfirmOpen", "args": { "open": false } } } },
               { "type": "Button", "props": { "label": { "t": "share.withdraw.confirm" }, "variant": "danger", "busy": { "get": "vm.shareItem.busy" } }, "on": { "press": { "run": "share.item.withdraw" } } }
             ] }
@@ -289,7 +289,7 @@
         "children": [
           {
             "type": "Stack",
-            "props": { "gap": "l" },
+            "props": { "gap": "stackGroup" },
             "children": [
               { "type": "Text", "props": { "value": { "get": "vm.shareItem.reviewSummary" }, "tone": "muted", "role": "secondary" } },
               {

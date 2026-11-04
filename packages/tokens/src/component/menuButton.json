@@ -35,11 +35,11 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "itemPaddingInline": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "itemHeight": {
         "$type": "dimension",
@@ -47,11 +47,11 @@
       },
       "itemGap": {
         "$type": "dimension",
-        "$value": "{space.xxs}"
+        "$value": "{space.scale.xxs}"
       },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "minWidth": {
         "$type": "dimension",
@@ -118,7 +118,7 @@
       },
       "reasonPaddingBlock": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "headerWeight": {
         "$type": "fontWeight",
@@ -142,7 +142,7 @@
       },
       "pillPaddingInline": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "pillRadius": {
         "$type": "dimension",
@@ -206,11 +206,11 @@
       },
       "textPaddingInline": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "textGap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "textRadius": {
         "$type": "dimension",

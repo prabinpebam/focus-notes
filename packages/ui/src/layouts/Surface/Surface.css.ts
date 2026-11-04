@@ -1,5 +1,5 @@
 import { style, styleVariants } from "@vanilla-extract/css";
-import { tokens, breakpoints } from "@focus-notes/tokens";
+import { tokens, tokenGroups, breakpoints } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.surface;
@@ -40,17 +40,12 @@ const sb = t;
 export const clip = style({ overflow: "hidden" });
 export const body = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", outline: "none" });
 minimalScrollbar(body, sb);
-const sp = tokens.space;
+const roles = tokenGroups.space;
+const sp = tokens.space as unknown as Record<(typeof roles)[number], string>;
 // What scrolls into view (a focused button) keeps the padding around it, so its focus ring is never cut.
 const pad = (v: string) => ({ padding: v, paddingInlineEnd: `max(0px, calc(${v} - ${sb.scrollbarSize}))`, scrollPadding: v });
-export const bodyPadding = styleVariants({
-  related: pad(sp.related), section: pad(sp.section),
-  none: {}, xxs: pad(sp.xxs), xs: pad(sp.xs), s: pad(sp.s), m: pad(sp.m), l: pad(sp.l), xl: pad(sp.xl), xxl: pad(sp.xxl), xxxl: pad(sp.xxxl),
-});
+export const bodyPadding = styleVariants(Object.fromEntries(roles.map((k) => [k, k === "none" ? {} : pad(sp[k])])) as Record<(typeof roles)[number], ReturnType<typeof pad> | Record<string, never>>);
 // In a short window (below breakpoint.short) the scroller's padding can step down (the full-window setup, D-131).
 const shortQuery = `(max-height: ${breakpoints.short - 1}px)`;
 const shortPad = (v: string) => ({ "@media": { [shortQuery]: pad(v) } });
-export const bodyShortPadding = styleVariants({
-  related: shortPad(sp.related), section: shortPad(sp.section),
-  none: shortPad(sp.none), xxs: shortPad(sp.xxs), xs: shortPad(sp.xs), s: shortPad(sp.s), m: shortPad(sp.m), l: shortPad(sp.l), xl: shortPad(sp.xl), xxl: shortPad(sp.xxl), xxxl: shortPad(sp.xxxl),
-});
+export const bodyShortPadding = styleVariants(Object.fromEntries(roles.map((k) => [k, shortPad(sp[k])])) as Record<(typeof roles)[number], ReturnType<typeof shortPad>>);

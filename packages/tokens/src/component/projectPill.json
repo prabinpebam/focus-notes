@@ -13,7 +13,7 @@
   "paddingStart": { "$type": "dimension", "$value": "{size.pillInsetStart}", "$description": "Optical: the icon's side bearing makes up the rest, so the visible inset is uniform all round." },
   "paddingEnd": { "$type": "dimension", "$value": "{size.pillInsetEnd}" },
   "paddingTextOnly": { "$type": "dimension", "$value": "{size.pillInsetEnd}", "$description": "With no logo, both ends." },
-  "gap": { "$type": "dimension", "$value": "{space.xxs}" },
+  "gap": { "$type": "dimension", "$value": "{space.scale.xxs}" },
   "radius": { "$type": "dimension", "$value": "{radius.round}" },
   "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
   "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },

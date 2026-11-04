@@ -44,20 +44,20 @@
        {
         "type": "Stack",
         "props": {
-         "gap": "l",
-         "padding": "xl"
+         "gap": "stackGroup",
+         "padding": "insetLg"
         },
         "children": [
          {
           "type": "Stack",
           "props": {
-           "gap": "s"
+           "gap": "stackItem"
           },
           "children": [
            {
             "type": "Inline",
             "props": {
-             "gap": "s",
+             "gap": "inlineItem",
              "align": "center"
             },
             "children": [
@@ -114,7 +114,7 @@
            {
             "type": "Inline",
             "props": {
-             "gap": "xs",
+             "gap": "inlinePair",
              "wrap": true,
              "label": {
               "t": "project.mock.steps"
@@ -295,7 +295,7 @@
            "launch": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -319,8 +319,8 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackItem",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
@@ -347,9 +347,9 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s",
+                 "gap": "inlineItem",
                  "align": "center",
-                 "padding": "s"
+                 "padding": "insetSm"
                 },
                 "children": [
                  {
@@ -394,7 +394,7 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s",
+               "gap": "inlineItem",
                "wrap": true,
                "align": "center"
               },
@@ -474,8 +474,8 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "gap": "stackGroup",
+               "padding": "insetMd",
                "grow": true
               },
               "children": [
@@ -492,7 +492,7 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s"
+                 "gap": "inlineItem"
                 },
                 "children": [
                  {
@@ -522,9 +522,9 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s",
+               "gap": "inlineItem",
                "align": "center",
-               "padding": "s"
+               "padding": "insetSm"
               },
               "children": [
                {
@@ -577,8 +577,8 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "gap": "stackGroup",
+               "padding": "insetMd",
                "grow": true
               },
               "children": [
@@ -609,7 +609,7 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s",
+                 "gap": "inlineItem",
                  "wrap": true
                 },
                 "children": [
@@ -672,13 +672,13 @@
                {
                 "type": "Columns",
                 "props": {
-                 "gap": "l"
+                 "gap": "inlineGroup"
                 },
                 "children": [
                  {
                   "type": "Stack",
                   "props": {
-                   "gap": "s"
+                   "gap": "stackItem"
                   },
                   "children": [
                    {
@@ -767,7 +767,7 @@
                  {
                   "type": "Stack",
                   "props": {
-                   "gap": "s"
+                   "gap": "stackItem"
                   },
                   "children": [
                    {
@@ -800,13 +800,13 @@
                      "props": {
                       "variant": "raised",
                       "shape": "control",
-                      "padding": "s"
+                      "padding": "insetSm"
                      },
                      "children": [
                       {
                        "type": "Inline",
                        "props": {
-                        "gap": "m",
+                        "gap": "inlineItem",
                         "align": "center"
                        },
                        "children": [
@@ -940,13 +940,13 @@
                      "props": {
                       "variant": "raised",
                       "shape": "control",
-                      "padding": "s"
+                      "padding": "insetSm"
                      },
                      "children": [
                       {
                        "type": "Inline",
                        "props": {
-                        "gap": "m",
+                        "gap": "inlineItem",
                         "align": "center"
                        },
                        "children": [
@@ -1070,7 +1070,7 @@
            "inProject": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -1084,8 +1084,8 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackItem",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
@@ -1112,9 +1112,9 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s",
+                 "gap": "inlineItem",
                  "align": "center",
-                 "padding": "s"
+                 "padding": "insetSm"
                 },
                 "children": [
                  {
@@ -1159,7 +1159,7 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s",
+               "gap": "inlineItem",
                "align": "center"
               },
               "children": [
@@ -1198,7 +1198,7 @@
            "dialog": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackItem"
             },
             "children": [
              {
@@ -1212,8 +1212,8 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackItem",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
@@ -1240,9 +1240,9 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s",
+                 "gap": "inlineItem",
                  "align": "center",
-                 "padding": "s"
+                 "padding": "insetSm"
                 },
                 "children": [
                  {
@@ -1342,7 +1342,7 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "s"
+                 "gap": "stackItem"
                 },
                 "children": [
                  {
@@ -1363,7 +1363,7 @@
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "s",
+                   "gap": "inlineItem",
                    "wrap": true
                   },
                   "children": [
@@ -1426,13 +1426,13 @@
                  {
                   "type": "Columns",
                   "props": {
-                   "gap": "l"
+                   "gap": "inlineGroup"
                   },
                   "children": [
                    {
                     "type": "Stack",
                     "props": {
-                     "gap": "s"
+                     "gap": "stackItem"
                     },
                     "children": [
                      {
@@ -1521,7 +1521,7 @@
                    {
                     "type": "Stack",
                     "props": {
-                     "gap": "s"
+                     "gap": "stackItem"
                     },
                     "children": [
                      {
@@ -1554,13 +1554,13 @@
                        "props": {
                         "variant": "raised",
                         "shape": "control",
-                        "padding": "s"
+                        "padding": "insetSm"
                        },
                        "children": [
                         {
                          "type": "Inline",
                          "props": {
-                          "gap": "m",
+                          "gap": "inlineItem",
                           "align": "center"
                          },
                          "children": [
@@ -1694,13 +1694,13 @@
                        "props": {
                         "variant": "raised",
                         "shape": "control",
-                        "padding": "s"
+                        "padding": "insetSm"
                        },
                        "children": [
                         {
                          "type": "Inline",
                          "props": {
-                          "gap": "m",
+                          "gap": "inlineItem",
                           "align": "center"
                          },
                          "children": [
@@ -1826,7 +1826,7 @@
            "opening": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -1840,15 +1840,15 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackGroup",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "m",
+                   "gap": "inlineItem",
                    "align": "center"
                   },
                   "children": [
@@ -1888,7 +1888,7 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s",
+               "gap": "inlineItem",
                "wrap": true
               },
               "children": [
@@ -1947,7 +1947,7 @@
            "opened": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -1962,7 +1962,7 @@
              {
               "type": "Columns",
               "props": {
-               "gap": "l"
+               "gap": "inlineGroup"
               },
               "children": [
                {
@@ -1976,8 +1976,8 @@
                  {
                   "type": "Stack",
                   "props": {
-                   "gap": "m",
-                   "padding": "l",
+                   "gap": "stackItem",
+                   "padding": "insetMd",
                    "grow": true
                   },
                   "children": [
@@ -2004,9 +2004,9 @@
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "s",
+                   "gap": "inlineItem",
                    "align": "center",
-                   "padding": "s"
+                   "padding": "insetSm"
                   },
                   "children": [
                    {
@@ -2059,8 +2059,8 @@
                  {
                   "type": "Stack",
                   "props": {
-                   "gap": "m",
-                   "padding": "l",
+                   "gap": "stackItem",
+                   "padding": "insetMd",
                    "grow": true
                   },
                   "children": [
@@ -2087,9 +2087,9 @@
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "s",
+                   "gap": "inlineItem",
                    "align": "center",
-                   "padding": "s"
+                   "padding": "insetSm"
                   },
                   "children": [
                    {
@@ -2136,7 +2136,7 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s"
+               "gap": "inlineItem"
               },
               "children": [
                {
@@ -2161,7 +2161,7 @@
            "focused": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -2207,8 +2207,8 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "gap": "stackGroup",
+               "padding": "insetMd",
                "grow": true
               },
               "children": [
@@ -2225,7 +2225,7 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "s"
+                 "gap": "inlineItem"
                 },
                 "children": [
                  {
@@ -2272,7 +2272,7 @@
            "new": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -2286,8 +2286,8 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackGroup",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
@@ -2309,7 +2309,7 @@
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "s",
+                   "gap": "inlineItem",
                    "wrap": true
                   },
                   "children": [
@@ -2392,7 +2392,7 @@
                 {
                  "type": "Inline",
                  "props": {
-                  "gap": "m",
+                  "gap": "inlineItem",
                   "align": "center",
                   "justify": "between"
                  },
@@ -2477,7 +2477,7 @@
                   "name": {
                    "type": "Inline",
                    "props": {
-                    "gap": "s",
+                    "gap": "inlineItem",
                     "justify": "end"
                    },
                    "children": [
@@ -2535,7 +2535,7 @@
                   "private": {
                    "type": "Inline",
                    "props": {
-                    "gap": "s",
+                    "gap": "inlineItem",
                     "justify": "end"
                    },
                    "children": [
@@ -2595,7 +2595,7 @@
                   "look": {
                    "type": "Inline",
                    "props": {
-                    "gap": "s",
+                    "gap": "inlineItem",
                     "justify": "end"
                    },
                    "children": [
@@ -2655,7 +2655,7 @@
                   "confirm": {
                    "type": "Inline",
                    "props": {
-                    "gap": "s",
+                    "gap": "inlineItem",
                     "justify": "end"
                    },
                    "children": [
@@ -2739,7 +2739,7 @@
                  "name": {
                   "type": "Stack",
                   "props": {
-                   "gap": "m"
+                   "gap": "stackGroup"
                   },
                   "children": [
                    {
@@ -2808,7 +2808,7 @@
                  "private": {
                   "type": "Stack",
                   "props": {
-                   "gap": "m"
+                   "gap": "stackGroup"
                   },
                   "children": [
                    {
@@ -2823,7 +2823,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center"
                     },
                     "children": [
@@ -2857,7 +2857,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center"
                     },
                     "children": [
@@ -2901,7 +2901,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center"
                     },
                     "children": [
@@ -2955,13 +2955,13 @@
                  "look": {
                   "type": "Stack",
                   "props": {
-                   "gap": "m"
+                   "gap": "stackGroup"
                   },
                   "children": [
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineItem",
                      "align": "center"
                     },
                     "children": [
@@ -2999,7 +2999,7 @@
                      {
                       "type": "Inline",
                       "props": {
-                       "gap": "xs",
+                       "gap": "inlinePair",
                        "wrap": true
                       },
                       "children": [
@@ -3066,7 +3066,7 @@
                      {
                       "type": "Inline",
                       "props": {
-                       "gap": "xs",
+                       "gap": "inlinePair",
                        "wrap": true
                       },
                       "children": [
@@ -3139,13 +3139,13 @@
                  "confirm": {
                   "type": "Stack",
                   "props": {
-                   "gap": "m"
+                   "gap": "stackGroup"
                   },
                   "children": [
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center"
                     },
                     "children": [
@@ -3202,7 +3202,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center",
                      "justify": "between"
                     },
@@ -3210,7 +3210,7 @@
                      {
                       "type": "Inline",
                       "props": {
-                       "gap": "m",
+                       "gap": "inlineGroup",
                        "align": "center"
                       },
                       "children": [
@@ -3287,7 +3287,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center",
                      "justify": "between"
                     },
@@ -3295,7 +3295,7 @@
                      {
                       "type": "Inline",
                       "props": {
-                       "gap": "m",
+                       "gap": "inlineGroup",
                        "align": "center"
                       },
                       "children": [
@@ -3367,13 +3367,13 @@
                     "props": {
                      "variant": "sunken",
                      "shape": "popover",
-                     "padding": "s"
+                     "padding": "insetSm"
                     },
                     "children": [
                      {
                       "type": "Stack",
                       "props": {
-                       "gap": "xs"
+                       "gap": "stackPair"
                       },
                       "children": [
                        {
@@ -3446,7 +3446,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "m",
+                     "gap": "inlineGroup",
                      "align": "center"
                     },
                     "children": [
@@ -3498,7 +3498,7 @@
            "creating": {
             "type": "Stack",
             "props": {
-             "gap": "m"
+             "gap": "stackGroup"
             },
             "children": [
              {
@@ -3512,15 +3512,15 @@
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
-                 "padding": "l",
+                 "gap": "stackGroup",
+                 "padding": "insetMd",
                  "grow": true
                 },
                 "children": [
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "m",
+                   "gap": "inlineGroup",
                    "align": "center"
                   },
                   "children": [
@@ -3587,7 +3587,7 @@
              {
               "type": "Inline",
               "props": {
-               "gap": "s"
+               "gap": "inlineItem"
               },
               "children": [
                {
@@ -3629,17 +3629,17 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "gap": "stackGroup",
+               "padding": "insetMd",
                "grow": true
               },
               "children": [
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
+                 "gap": "stackItem",
                  "align": "center",
-                 "padding": "xl"
+                 "padding": "insetLg"
                 },
                 "children": [
                  {
@@ -3660,7 +3660,7 @@
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "s",
+                   "gap": "inlineItem",
                    "justify": "center",
                    "wrap": true
                   },
@@ -3718,17 +3718,17 @@
              {
               "type": "Stack",
               "props": {
-               "gap": "m",
-               "padding": "l",
+               "gap": "stackGroup",
+               "padding": "insetMd",
                "grow": true
               },
               "children": [
                {
                 "type": "Stack",
                 "props": {
-                 "gap": "m",
+                 "gap": "stackItem",
                  "align": "center",
-                 "padding": "xl"
+                 "padding": "insetLg"
                 },
                 "children": [
                  {
@@ -3758,7 +3758,7 @@
                  {
                   "type": "Inline",
                   "props": {
-                   "gap": "s",
+                   "gap": "inlineItem",
                    "justify": "center",
                    "wrap": true
                   },

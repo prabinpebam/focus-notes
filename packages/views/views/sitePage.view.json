@@ -76,13 +76,13 @@
         {
           "type": "Stack",
           "props": {
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
               "type": "Inline",
               "props": {
-                "gap": "l",
+                "gap": "inlineGroup",
                 "wrap": true
               },
               "children": [

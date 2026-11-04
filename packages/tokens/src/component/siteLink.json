@@ -12,7 +12,7 @@
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "height": { "$type": "dimension", "$value": "{size.controlL}" },
   "hit": { "$type": "dimension", "$value": "{size.hit}" },
-  "paddingInline": { "$type": "dimension", "$value": "{space.xl}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.insetLg}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },

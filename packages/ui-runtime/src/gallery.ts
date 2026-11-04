@@ -53,7 +53,7 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
         : {
             type: "AppRoot",
             props: { scheme, platform: { get: "vm.app.platform" } },
-            children: [{ type: "Center", props: { maxWidth: "wideContent" }, children: [{ type: "Stack", id: "fixture", props: { padding: "xl", align: "start" }, children: [node] }] }],
+            children: [{ type: "Center", props: { maxWidth: "wideContent" }, children: [{ type: "Stack", id: "fixture", props: { padding: "insetLg", align: "start" }, children: [node] }] }],
           };
       out[`gallery.${c.type}.${i}`] = { $schema: VIEW_SCHEMA_URL, id: `gallery.${c.type}.${i}`, viewModels: ["vm.app", "vm.gallery"], focus: "fixture", root: wrapped };
     });
@@ -67,11 +67,11 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
     // Each educational matrix is still a surface with just one primary action.
     const specimens = [primary, ...companions];
     const matrix = {
-      type: "Stack", id: "glyph-controls", props: { padding: "m", gap: "s" },
+      type: "Stack", id: "glyph-controls", props: { padding: "insetMd", gap: "stackItem" },
       children: [
         { type: "Heading", props: { level: "2", value: { t: "gallery.glyphs.title" } } },
         ...Array.from({ length: Math.ceil(specimens.length / 3) }, (_, i) => ({
-          type: "Inline", props: { gap: "s", wrap: true }, children: specimens.slice(i * 3, i * 3 + 3),
+          type: "Inline", props: { gap: "inlineItem", wrap: true }, children: specimens.slice(i * 3, i * 3 + 3),
         })),
       ],
     };
@@ -98,7 +98,7 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
       children: [{
         type: "Center", props: { maxWidth: "dialogL" },
         children: [{
-          type: "Stack", id: "gallery", props: { gap: "s", padding: "xl" },
+          type: "Stack", id: "gallery", props: { gap: "stackItem", padding: "insetLg" },
           children: [
             { type: "Heading", props: { level: "1", value: { t: "gallery.title" } } },
             { type: "Heading", props: { level: "2", value: { t: "project.mock.section" } } },
@@ -111,7 +111,7 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
             {
               each: { get: "vm.gallery.mockGroups" }, as: "group", key: "group.id",
               render: {
-                type: "Stack", props: { gap: "s" }, children: [
+                type: "Stack", props: { gap: "stackItem" }, children: [
                   { type: "Heading", props: { level: "2", value: { get: "group.label" } } },
                   {
                     each: { get: "group.entries" }, as: "entry", key: "entry.id",

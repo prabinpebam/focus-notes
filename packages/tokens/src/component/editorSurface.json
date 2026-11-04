@@ -140,7 +140,7 @@
       },
       "pinnedGap": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.inlineGroup}"
       },
       "pinnedDuration": {
         "$type": "duration",
@@ -254,13 +254,13 @@
       "space": {
         "$type": "dimension",
         "s": {
-          "$value": "{space.s}"
+          "$value": "{space.scale.s}"
         },
         "m": {
-          "$value": "{space.m}"
+          "$value": "{space.scale.m}"
         },
         "l": {
-          "$value": "{space.l}"
+          "$value": "{space.scale.l}"
         }
       },
       "h4": {
@@ -315,11 +315,11 @@
         },
         "railInset": {
           "$type": "dimension",
-          "$value": "{space.s}"
+          "$value": "{space.insetSm}"
         },
         "clearance": {
           "$type": "dimension",
-          "$value": "{space.l}"
+          "$value": "{space.scale.l}"
         },
         "railMax": {
           "$type": "number",
@@ -327,11 +327,11 @@
         },
         "pitch": {
           "$type": "dimension",
-          "$value": "{space.l}"
+          "$value": "{space.scale.l}"
         },
         "pitchMin": {
           "$type": "dimension",
-          "$value": "{space.xs}"
+          "$value": "{space.scale.xs}"
         },
         "barThickness": {
           "$type": "dimension",
@@ -339,7 +339,7 @@
         },
         "barInset": {
           "$type": "dimension",
-          "$value": "{space.xs}"
+          "$value": "{space.scale.xs}"
         },
         "bar0": {
           "$type": "dimension",
@@ -351,11 +351,11 @@
         },
         "bar2": {
           "$type": "dimension",
-          "$value": "{space.m}"
+          "$value": "{space.scale.m}"
         },
         "bar3": {
           "$type": "dimension",
-          "$value": "{space.s}"
+          "$value": "{space.scale.s}"
         },
         "barRest": {
           "$type": "color",
@@ -367,7 +367,7 @@
         },
         "barCurrentLength": {
           "$type": "dimension",
-          "$value": "{space.xl}"
+          "$value": "{space.scale.xl}"
         },
         "radius": {
           "$type": "dimension",
@@ -407,7 +407,7 @@
         },
         "cardPadding": {
           "$type": "dimension",
-          "$value": "{space.xs}"
+          "$value": "{space.scale.xs}"
         },
         "pinSize": {
           "$type": "dimension",
@@ -415,7 +415,7 @@
         },
         "cardFade": {
           "$type": "dimension",
-          "$value": "{space.l}"
+          "$value": "{space.scale.l}"
         },
         "cardRadius": {
           "$type": "dimension",
@@ -451,7 +451,7 @@
         },
         "edgeBottom": {
           "$type": "dimension",
-          "$value": "{space.l}"
+          "$value": "{space.scale.l}"
         },
         "itemFont": {
           "$type": "fontFamily",
@@ -491,15 +491,15 @@
         },
         "itemPaddingBlock": {
           "$type": "dimension",
-          "$value": "{space.xs}"
+          "$value": "{space.scale.xs}"
         },
         "itemPaddingInline": {
           "$type": "dimension",
-          "$value": "{space.m}"
+          "$value": "{space.scale.m}"
         },
         "itemGap": {
           "$type": "dimension",
-          "$value": "{space.xxs}"
+          "$value": "{space.scale.xxs}"
         },
         "itemRadius": {
           "$type": "dimension",
@@ -507,7 +507,7 @@
         },
         "indent": {
           "$type": "dimension",
-          "$value": "{space.m}"
+          "$value": "{space.scale.m}"
         },
         "focusRing": {
           "$type": "color",
@@ -561,11 +561,11 @@
           },
           "padding": {
             "$type": "dimension",
-            "$value": "{space.s}"
+            "$value": "{space.insetSm}"
           },
           "handleWidth": {
             "$type": "dimension",
-            "$value": "{space.s}"
+            "$value": "{space.scale.s}"
           },
           "handleLine": {
             "$type": "dimension",
@@ -628,11 +628,11 @@
       },
       "tableCellBlock": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.scale.s}"
       },
       "tableCellInline": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "tableSelection": {
         "$type": "color",
@@ -664,7 +664,7 @@
       },
       "tableBarGap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "scrollFade": {
         "$type": "dimension",

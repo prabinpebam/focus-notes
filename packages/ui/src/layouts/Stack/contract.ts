@@ -1,11 +1,11 @@
 import { defineContract } from "../../contract.ts";
 
-export const SPACE = ["none", "related", "section", "xs", "s", "m", "l", "xl", "xxl", "xxxl"] as const;
+export const SPACE = ["none", "stackPair", "stackItem", "stackGroup", "stackSection", "inlinePair", "inlineItem", "inlineGroup", "insetSm", "insetMd", "insetLg", "gutter", "marginPage"] as const;
 
 export const contract = defineContract({
   type: "Stack",
   tier: "layout",
-  description: "Children in a column, spaced by a space token.",
+  description: "Children in a column, spaced by a spacing role (a relationship, never a size).",
   props: {
     gap: { kind: "token", group: "space", default: "none" },
     padding: { kind: "token", group: "space", default: "none" },
@@ -21,7 +21,7 @@ export const contract = defineContract({
   a11y: { pattern: "none" },
   fixtures: [
     ...SPACE.map((gap) => ({ name: `gap ${gap}`, props: { gap }, children: [1, 2].map(() => ({ type: "Button", props: { label: { t: "gallery.action" } } })) })),
-    ...["start", "center", "end", "stretch"].map((align) => ({ name: `align ${align}`, props: { align, gap: "s" }, children: [{ type: "Button", props: { label: { t: "gallery.action" } } }] })),
-    ...["start", "center", "end", "between"].map((justify) => ({ name: `justify ${justify}`, props: { justify, gap: "s" }, children: [{ type: "Button", props: { label: { t: "gallery.action" } } }] })),
+    ...["start", "center", "end", "stretch"].map((align) => ({ name: `align ${align}`, props: { align, gap: "stackItem" }, children: [{ type: "Button", props: { label: { t: "gallery.action" } } }] })),
+    ...["start", "center", "end", "between"].map((justify) => ({ name: `justify ${justify}`, props: { justify, gap: "stackItem" }, children: [{ type: "Button", props: { label: { t: "gallery.action" } } }] })),
   ],
 });

@@ -13,7 +13,7 @@
   "failed": { "$type": "color", "$value": "{color.danger}", "$description": "The failed icon." },
   "draw": { "$type": "duration", "$value": "{motion.morph}", "$description": "The tick drawing itself in; reduced motion shows it fully drawn at once." },
   "easing": { "$type": "cubicBezier", "$value": "{easing.decelerate}", "$description": "The tick's stroke." },
-  "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between the failure line's words and its Retry and Revert." },
+  "gap": { "$type": "dimension", "$value": "{space.inlineItem}", "$description": "Between the failure line's words and its Retry and Revert." },
   "font": { "$type": "fontFamily", "$value": "{font.ui}", "$description": "The failure line." },
   "fontSize": { "$type": "dimension", "$value": "{font.uiBody}", "$description": "The failure line, the size of a field's error." },
   "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}", "$description": "The failure line's line box." },

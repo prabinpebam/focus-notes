@@ -1,5 +1,5 @@
 import { createVar, fallbackVar, keyframes, style, styleVariants } from "@vanilla-extract/css";
-import { tokens } from "@focus-notes/tokens";
+import { tokens, tokenGroups } from "@focus-notes/tokens";
 
 const t = tokens.cmp.positioner;
 
@@ -47,7 +47,7 @@ export const base = style({
   "@media": { "(prefers-reduced-motion: reduce)": { animationName: "none", transitionDuration: "0s" } },
 });
 
-export const offset = styleVariants(tokens.space, (v) => ({ vars: { [gapVar]: v } }));
+export const offset = styleVariants(Object.fromEntries(tokenGroups.space.map((k) => [k, (tokens.space as unknown as Record<string, string>)[k]])) as Record<(typeof tokenGroups.space)[number], string>, (v) => ({ vars: { [gapVar]: v } }));
 export const promptContent = style({
   width: "100%", opacity: t.visible, visibility: "visible",
   maxHeight: "inherit", overflowY: "auto",

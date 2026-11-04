@@ -19,11 +19,11 @@
       },
       "columnGap": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.stackItem}"
       },
       "rowGap": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "insertSize": {
         "$type": "dimension",
@@ -51,7 +51,7 @@
       },
       "barGap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "radius": {
         "$type": "dimension",

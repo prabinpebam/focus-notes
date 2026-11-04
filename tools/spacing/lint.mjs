@@ -44,11 +44,16 @@ export async function lint() {
   const styles = await compileStyles();
   const errors = [];
   const warnings = [];
-  for (const { file, css } of styles)
+  for (const { file, css } of styles) {
+    // Bare scale step (spacing ST-1): the design system's own form of the kit's --space-<n> rule. Only
+    // component tokens read the scale; styles read a role or a component token.
+    for (const m of css.matchAll(/[^;{}]*var\(--fn-space-scale-[a-z]+\)[^;{}]*/g))
+      errors.push(`${file}: bare scale step: read a spacing role or a component token: ${m[0].trim().replace(/\s+/g, " ")}`);
     for (const f of lintSpacing(css, {})) {
       if (exempt(file, f)) continue;
       (f.level === "error" ? errors : warnings).push(`${file}: ${f.rule}: ${f.text.replace(/\s+/g, " ")}`);
     }
+  }
   return { files: styles.length, errors, warnings };
 }
 

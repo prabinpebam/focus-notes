@@ -11,8 +11,8 @@
   "type": "Stack",
   "id": "page",
   "props": {
-   "gap": "l",
-   "padding": "xl"
+   "gap": "stackGroup",
+   "padding": "insetLg"
   },
   "children": [
    {
@@ -20,13 +20,13 @@
     "props": {
      "variant": "raised",
      "shape": "control",
-     "padding": "l"
+     "padding": "insetMd"
     },
     "children": [
      {
       "type": "Stack",
       "props": {
-       "gap": "l"
+       "gap": "stackGroup"
       },
       "children": [
        {
@@ -34,7 +34,7 @@
         "props": {
          "justify": "between",
          "align": "center",
-         "gap": "m",
+         "gap": "inlineItem",
          "wrap": true
         },
         "children": [
@@ -83,7 +83,7 @@
        {
         "type": "Stack",
         "props": {
-         "gap": "s"
+         "gap": "stackItem"
         },
         "children": [
          {
@@ -201,7 +201,7 @@
      {
       "type": "Stack",
       "props": {
-       "gap": "l"
+       "gap": "stackGroup"
       },
       "children": [
        {
@@ -258,7 +258,7 @@
          }
         },
         "props": {
-         "gap": "s"
+         "gap": "stackItem"
         },
         "children": [
          {
@@ -315,7 +315,7 @@
          }
         },
         "props": {
-         "gap": "s"
+         "gap": "stackItem"
         },
         "children": [
          {
@@ -349,7 +349,7 @@
         "type": "Inline",
         "props": {
          "justify": "between",
-         "gap": "s",
+         "gap": "inlineItem",
          "wrap": true,
          "align": "center"
         },
@@ -368,7 +368,7 @@
          {
           "type": "Inline",
           "props": {
-           "gap": "s"
+           "gap": "inlineItem"
           },
           "children": [
            {

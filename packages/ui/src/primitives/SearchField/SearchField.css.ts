@@ -1,5 +1,6 @@
 import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { hitReach } from "../hit.ts";
 
 const t = tokens.cmp.searchField;
 
@@ -13,17 +14,19 @@ export const root = style({
   minWidth: t.minWidth,
   paddingInline: t.paddingInline,
   borderRadius: t.radius,
-  borderStyle: "solid",
-  borderWidth: t.borderWidth,
-  borderColor: t.border,
+  // The border is an inset outline, so the input fills the whole field as its pointer target (spacing SP-6); outlines stay in forced colours.
+  outlineStyle: "solid",
+  outlineWidth: t.borderWidth,
+  outlineOffset: `calc(-1 * ${t.borderWidth})`,
+  outlineColor: t.border,
   backgroundColor: t.background,
   color: t.text,
   fontFamily: t.font,
   fontSize: t.fontSize,
   boxSizing: "border-box",
   selectors: {
-    "&:focus-within": { borderColor: t.borderFocus, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
-    "&[data-invalid]": { borderColor: t.borderInvalid },
+    "&:focus-within": { outlineColor: t.borderFocus, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
+    "&[data-invalid]": { outlineColor: t.borderInvalid },
   },
 });
 
@@ -61,6 +64,8 @@ globalStyle(`${input}::placeholder`, { color: t.placeholder });
 globalStyle(`${input}::-webkit-search-cancel-button`, { display: "none" });
 
 export const clear = style({
+  position: "relative",
+  "::after": hitReach(t.hit, t.clearSize, t.clearSize),
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

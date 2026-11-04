@@ -18,17 +18,17 @@
       ]
     },
     "children": [
-      { "type": "Stack", "props": { "gap": "s" }, "children": [
+      { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
         { "type": "NoteContent", "props": { "blocks": { "get": "vm.publicIndex.title" } } },
         { "type": "Text", "props": { "value": { "t": "publicIndex.count", "args": { "count": { "get": "vm.publicIndex.count" } } }, "role": "secondary", "tone": "muted" } }
       ] },
-      { "type": "Stack", "props": { "gap": "xl" }, "children": [
+      { "type": "Stack", "props": { "gap": "stackSection" }, "children": [
         {
           "each": { "get": "vm.publicIndex.rows" },
           "as": "row",
           "key": "row.key",
           "empty": { "type": "Text", "props": { "value": { "t": "publicIndex.empty" }, "role": "body", "tone": "muted" } },
-          "render": { "type": "Stack", "props": { "gap": "xs" }, "children": [
+          "render": { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
             { "type": "NoteContent", "props": { "blocks": { "get": "row.title" } } },
             { "type": "Text", "props": { "value": { "t": "reader.updated", "args": { "date": { "get": "row.updated" } } }, "role": "secondary", "tone": "muted" } },
             { "switch": { "get": "row.hasExcerpt" }, "cases": {

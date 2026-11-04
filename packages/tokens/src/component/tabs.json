@@ -9,7 +9,7 @@
       "scrollbarTrack": { "$type": "color", "$value": "{color.none}" },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "height": {
         "$type": "dimension",
@@ -17,7 +17,7 @@
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "radius": {
         "$type": "dimension",
@@ -69,7 +69,7 @@
       },
       "panelGap": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.inlineGroup}"
       },
       "listWidth": {
         "$type": "dimension",
@@ -81,7 +81,7 @@
       },
       "footerGap": {
         "$type": "dimension",
-        "$value": "{space.m}",
+        "$value": "{space.scale.m}",
         "$description": "Between the tab list and its footer (Settings' Send feedback, D-203), each side of the footer's hairline."
       }
     }

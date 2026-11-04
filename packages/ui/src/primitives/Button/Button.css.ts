@@ -1,6 +1,7 @@
 import { createVar, keyframes, style, styleVariants, type StyleRule } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { controlMetrics, floatingControlSurface } from "../control.css.ts";
+import { hitReach } from "../hit.ts";
 
 const t = tokens.cmp.button;
 /** Its rest fill and its state overlay: on the box, or on a bleeding button's hit extension. */
@@ -39,7 +40,8 @@ export const base = style({
 });
 
 export const size = styleVariants({
-  s: { minHeight: t.height.s, paddingInline: t.paddingInline.s },
+  // 28 px to the eye; its target reaches size.hit above and below (spacing SP-6).
+  s: { minHeight: t.height.s, paddingInline: t.paddingInline.s, position: "relative", "::after": hitReach(t.hit, t.height.s) },
   m: { minHeight: t.height.m, paddingInline: t.paddingInline.m },
   // An onboarding step's main action (Get started, D-126).
   l: { minHeight: t.height.l, paddingInline: t.paddingInline.l, fontSize: t.fontSizeL },

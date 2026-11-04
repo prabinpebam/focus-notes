@@ -22,7 +22,7 @@ export const band = style({ position: "fixed", top: 0, left: 0, right: 0, height
 export const popoverEdgeVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 
 export const root = style({
-  vars: { [popoverEdgeVar]: tokens.space.m },
+  vars: { [popoverEdgeVar]: tokens.space.marginPage },
   position: "relative",
   display: "flex",
   flexDirection: "column",

@@ -29,7 +29,8 @@ export const tone = styleVariants({
 });
 export const lines = styleVariants({
   none: {},
-  one: { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" },
+  // One line never wraps into a hidden second one: it ends in an ellipsis (spacing SP-4, the find count).
+  one: { display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 },
   two: { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" },
   three: { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" },
 });

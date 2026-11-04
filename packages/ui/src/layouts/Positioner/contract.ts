@@ -1,6 +1,6 @@
 import { defineContract } from "../../contract.ts";
 
-const sample = [{ type: "Surface", props: { variant: "frost", padding: "s", shape: "popover", elevation: "2" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }];
+const sample = [{ type: "Surface", props: { variant: "frost", padding: "insetSm", shape: "popover", elevation: "2" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }];
 
 export const contract = defineContract({
   type: "Positioner",
@@ -10,7 +10,7 @@ export const contract = defineContract({
     anchor: { kind: "enum", values: ["selection", "link", "caret", "rewrite"], default: "selection", description: "The selection, a link, the slash menu caret, or Rewrite's retained selection fragments and viewport." },
     placement: { kind: "enum", values: ["above", "below"], default: "above", description: "Above flips below near the top band; touch screens always use below." },
     align: { kind: "enum", values: ["center", "start"], default: "center", description: "Centered on the anchor, or lined up with its start." },
-    offset: { kind: "token", group: "space", default: "s" },
+    offset: { kind: "token", group: "space", default: "stackItem" },
     landmark: { kind: "enum", values: ["none", "region"], default: "none" },
     label: { kind: "message", requiredWhen: "landmark" },
     returnAboveLabel: { kind: "message", description: "Return to the selection above the viewport (Rewrite)." },

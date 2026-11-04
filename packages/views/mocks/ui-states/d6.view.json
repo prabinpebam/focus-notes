@@ -29,14 +29,14 @@
       {
         "type": "Stack",
         "props": {
-          "gap": "xl",
-          "padding": "xl"
+          "gap": "stackSection",
+          "padding": "insetLg"
         },
         "children": [
           {
             "type": "Inline",
             "props": {
-              "gap": "s",
+              "gap": "inlineItem",
               "wrap": true,
               "align": "center"
             },
@@ -135,7 +135,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "s"
+              "gap": "stackItem"
             },
             "children": [
               {
@@ -174,13 +174,13 @@
             "props": {
               "variant": "sunken",
               "shape": "control",
-              "padding": "l"
+              "padding": "insetMd"
             },
             "children": [
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "m"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -195,7 +195,7 @@
                   {
                     "type": "Columns",
                     "props": {
-                      "gap": "l"
+                      "gap": "inlineGroup"
                     },
                     "children": [
                       {
@@ -203,7 +203,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c400"
@@ -214,7 +214,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -244,7 +244,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c403"
@@ -255,7 +255,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -285,7 +285,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c406"
@@ -296,7 +296,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -326,7 +326,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c409"
@@ -337,7 +337,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -367,7 +367,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c412"
@@ -378,7 +378,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -424,13 +424,13 @@
             "props": {
               "variant": "raised",
               "shape": "control",
-              "padding": "l"
+              "padding": "insetMd"
             },
             "children": [
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "m"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -445,7 +445,7 @@
                   {
                     "type": "Columns",
                     "props": {
-                      "gap": "l"
+                      "gap": "inlineGroup"
                     },
                     "children": [
                       {
@@ -453,7 +453,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c417"
@@ -464,7 +464,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -498,7 +498,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c419"
@@ -509,7 +509,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackItem"
                             },
                             "children": [
                               {
@@ -537,7 +537,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c422"
@@ -548,7 +548,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -579,7 +579,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c428"
@@ -590,7 +590,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -658,7 +658,7 @@
                   {
                     "type": "Columns",
                     "props": {
-                      "gap": "l"
+                      "gap": "inlineGroup"
                     },
                     "children": [
                       {
@@ -666,7 +666,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c438"
@@ -677,7 +677,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -748,7 +748,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "wrap": true,
                                   "align": "center"
                                 },
@@ -831,7 +831,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c448"
@@ -842,7 +842,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -913,7 +913,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "wrap": true,
                                   "align": "center"
                                 },
@@ -996,7 +996,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c458"
@@ -1007,7 +1007,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -1078,7 +1078,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "wrap": true,
                                   "align": "center"
                                 },
@@ -1161,7 +1161,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c468"
@@ -1172,7 +1172,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -1243,7 +1243,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "wrap": true,
                                   "align": "center"
                                 },
@@ -1326,7 +1326,7 @@
                         "props": {
                           "variant": "sunken",
                           "shape": "control",
-                          "padding": "m",
+                          "padding": "insetMd",
                           "minimum": "section",
                           "label": {
                             "get": "vm.mockUiStates.copy.c478"
@@ -1337,7 +1337,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -1408,7 +1408,7 @@
                               {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "inlineItem",
                                   "wrap": true,
                                   "align": "center"
                                 },
@@ -1601,13 +1601,13 @@
             "props": {
               "variant": "raised",
               "shape": "control",
-              "padding": "l"
+              "padding": "insetMd"
             },
             "children": [
               {
                 "type": "Stack",
                 "props": {
-                  "gap": "m"
+                  "gap": "stackGroup"
                 },
                 "children": [
                   {
@@ -1632,7 +1632,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true,
                       "align": "center"
                     },
@@ -1821,7 +1821,7 @@
           {
             "type": "Inline",
             "props": {
-              "gap": "s",
+              "gap": "inlineItem",
               "wrap": true,
               "align": "center"
             },

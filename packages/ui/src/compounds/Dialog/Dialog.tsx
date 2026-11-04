@@ -29,7 +29,7 @@ export function Dialog({ title, closeLabel, open, size = "l", height = "stable",
       {...(id ? { id } : {})}
       {...(onOpenChange ? { onOpenChange } : {})}
       header={
-        <Inline justify="between" gap="m">
+        <Inline justify="between" gap="inlineItem">
           <Heading level="2" value={title} />
           <IconButton icon="dismiss" label={closeLabel} tone="muted" bleed onPress={() => onOpenChange?.({ open: false })} />
         </Inline>

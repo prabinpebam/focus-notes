@@ -1,12 +1,12 @@
 {
   "type": "Stack",
   "when": { "get": "vm.sharingPreview.showProgress" },
-  "props": { "gap": "s" },
+  "props": { "gap": "stackItem" },
   "children": [
     { "each": { "get": "vm.sharingPreview.parts" }, "as": "part", "key": "part.id", "empty": {
       "type": "Text", "props": { "value": { "t": "sharing.preview.preparing" } }
     }, "render": {
-      "type": "Inline", "props": { "gap": "s", "align": "center" }, "children": [
+      "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
         { "type": "StepMark", "props": { "size": "compact", "icon": { "get": "part.icon" }, "tone": { "get": "part.tone" }, "busy": { "get": "part.busy" } } },
         { "type": "Text", "props": { "value": { "get": "part.label" }, "role": "secondary", "tone": "muted" } }
       ]

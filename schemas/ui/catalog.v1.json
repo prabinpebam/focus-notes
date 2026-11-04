@@ -4225,7 +4225,7 @@
     {
       "type": "Stack",
       "tier": "layout",
-      "description": "Children in a column, spaced by a space token.",
+      "description": "Children in a column, spaced by a spacing role (a relationship, never a size).",
       "props": {
         "gap": {
           "kind": "token",
@@ -4282,15 +4282,18 @@
       },
       "fixtures": [
         "gap none",
-        "gap related",
-        "gap section",
-        "gap xs",
-        "gap s",
-        "gap m",
-        "gap l",
-        "gap xl",
-        "gap xxl",
-        "gap xxxl",
+        "gap stackPair",
+        "gap stackItem",
+        "gap stackGroup",
+        "gap stackSection",
+        "gap inlinePair",
+        "gap inlineItem",
+        "gap inlineGroup",
+        "gap insetSm",
+        "gap insetMd",
+        "gap insetLg",
+        "gap gutter",
+        "gap marginPage",
         "align start",
         "align center",
         "align end",
@@ -4304,7 +4307,7 @@
     {
       "type": "Inline",
       "tier": "layout",
-      "description": "Children in a row, spaced by a space token.",
+      "description": "Children in a row, spaced by a spacing role (a relationship, never a size).",
       "props": {
         "gap": {
           "kind": "token",
@@ -4314,7 +4317,7 @@
         "related": {
           "kind": "boolean",
           "default": false,
-          "description": "One semantic group, using space.related and wrapping by default. Independent groups use space.section."
+          "description": "One semantic group, using space.inlineItem and wrapping by default. Independent groups use space.inlineGroup."
         },
         "label": {
           "kind": "message",
@@ -4371,15 +4374,18 @@
       "fixtures": [
         "related action and explanation",
         "gap none",
-        "gap related",
-        "gap section",
-        "gap xs",
-        "gap s",
-        "gap m",
-        "gap l",
-        "gap xl",
-        "gap xxl",
-        "gap xxxl",
+        "gap stackPair",
+        "gap stackItem",
+        "gap stackGroup",
+        "gap stackSection",
+        "gap inlinePair",
+        "gap inlineItem",
+        "gap inlineGroup",
+        "gap insetSm",
+        "gap insetMd",
+        "gap insetLg",
+        "gap gutter",
+        "gap marginPage",
         "align start",
         "align center",
         "align end",
@@ -4398,7 +4404,7 @@
         "gap": {
           "kind": "token",
           "group": "space",
-          "default": "m"
+          "default": "inlineGroup"
         },
         "cell": {
           "kind": "enum",
@@ -5040,7 +5046,7 @@
         "offset": {
           "kind": "token",
           "group": "space",
-          "default": "s"
+          "default": "stackItem"
         },
         "landmark": {
           "kind": "enum",
@@ -6416,20 +6422,23 @@
   ],
   "tokens": {
     "space": [
-      "related",
-      "section",
       "none",
-      "xxs",
-      "xs",
-      "s",
-      "m",
-      "l",
-      "xl",
-      "xxl",
-      "xxxl"
+      "stackPair",
+      "stackItem",
+      "stackGroup",
+      "stackSection",
+      "inlinePair",
+      "inlineItem",
+      "inlineGroup",
+      "insetSm",
+      "insetMd",
+      "insetLg",
+      "gutter",
+      "marginPage"
     ],
     "size": [
       "hit",
+      "hitMin",
       "iconS",
       "iconM",
       "iconL",

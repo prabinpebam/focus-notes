@@ -3,7 +3,7 @@
     "themeGallery": {
       "gap": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.inlineItem}"
       },
       "tileMinWidth": {
         "$type": "dimension",
@@ -23,11 +23,11 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "swatchPadding": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "border": {
         "$type": "color",

@@ -12,27 +12,27 @@
     "props": { "open": { "get": "vm.projectIntro.open" }, "size": "l", "height": "content", "title": { "t": "migrate.explainer.title" }, "closeLabel": { "t": "dialog.close" } },
     "on": { "openChange": { "run": "projects.introClose" } },
     "children": [{
-      "type": "Stack", "props": { "gap": "m" }, "children": [
+      "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
         { "type": "Text", "props": { "value": { "t": "migrate.help" } } },
-        { "type": "Columns", "props": { "gap": "s" }, "children": [
-          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
-            { "type": "Stack", "props": { "gap": "xs" }, "children": [
+        { "type": "Columns", "props": { "gap": "inlineItem" }, "children": [
+          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "insetMd" }, "children": [
+            { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
               { "type": "Text", "props": { "value": { "t": "migrate.fig.window" }, "role": "label" } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.window1" } } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.window2" } } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.windowFoot" }, "role": "caption", "tone": "muted" } }
             ] }
           ] },
-          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
-            { "type": "Stack", "props": { "gap": "xs" }, "children": [
+          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "insetMd" }, "children": [
+            { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
               { "type": "Text", "props": { "value": { "t": "migrate.fig.private" }, "role": "label" } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.private1" } } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.private2" } } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.privateFoot" }, "role": "caption", "tone": "muted" } }
             ] }
           ] },
-          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
-            { "type": "Stack", "props": { "gap": "xs" }, "children": [
+          { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "insetMd" }, "children": [
+            { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
               { "type": "Text", "props": { "value": { "t": "migrate.fig.site" }, "role": "label" } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.site1" } } },
               { "type": "Text", "props": { "value": { "t": "migrate.fig.site2" } } },
@@ -40,8 +40,8 @@
             ] }
           ] }
         ] },
-        { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "m" }, "children": [
-          { "type": "Inline", "props": { "gap": "s", "align": "center" }, "children": [
+        { "type": "Surface", "props": { "variant": "sunken", "shape": "popover", "padding": "insetMd" }, "children": [
+          { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
             { "type": "Icon", "props": { "name": "quickNote", "size": "m" } },
             { "type": "Text", "props": { "value": { "t": "migrate.fig.local" } } }
           ] }

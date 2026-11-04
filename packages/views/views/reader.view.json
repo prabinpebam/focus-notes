@@ -18,7 +18,7 @@
       ]
     },
     "children": [
-      { "type": "Stack", "props": { "gap": "s" }, "children": [
+      { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
         { "type": "NoteContent", "props": { "blocks": { "get": "vm.reader.title" } } },
         { "type": "Text", "props": { "value": { "t": "reader.updated", "args": { "date": { "get": "vm.reader.updated" } } }, "role": "secondary", "tone": "muted" } }
       ] },

@@ -10389,7 +10389,7 @@
     {
       "type": "Stack",
       "tier": "layout",
-      "description": "Children in a column, spaced by a space token.",
+      "description": "Children in a column, spaced by a spacing role (a relationship, never a size).",
       "props": {
         "gap": {
           "kind": "token",
@@ -10470,9 +10470,9 @@
           ]
         },
         {
-          "name": "gap related",
+          "name": "gap stackPair",
           "props": {
-            "gap": "related"
+            "gap": "stackPair"
           },
           "children": [
             {
@@ -10494,9 +10494,9 @@
           ]
         },
         {
-          "name": "gap section",
+          "name": "gap stackItem",
           "props": {
-            "gap": "section"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10518,9 +10518,9 @@
           ]
         },
         {
-          "name": "gap xs",
+          "name": "gap stackGroup",
           "props": {
-            "gap": "xs"
+            "gap": "stackGroup"
           },
           "children": [
             {
@@ -10542,9 +10542,9 @@
           ]
         },
         {
-          "name": "gap s",
+          "name": "gap stackSection",
           "props": {
-            "gap": "s"
+            "gap": "stackSection"
           },
           "children": [
             {
@@ -10566,9 +10566,9 @@
           ]
         },
         {
-          "name": "gap m",
+          "name": "gap inlinePair",
           "props": {
-            "gap": "m"
+            "gap": "inlinePair"
           },
           "children": [
             {
@@ -10590,9 +10590,9 @@
           ]
         },
         {
-          "name": "gap l",
+          "name": "gap inlineItem",
           "props": {
-            "gap": "l"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -10614,9 +10614,9 @@
           ]
         },
         {
-          "name": "gap xl",
+          "name": "gap inlineGroup",
           "props": {
-            "gap": "xl"
+            "gap": "inlineGroup"
           },
           "children": [
             {
@@ -10638,9 +10638,9 @@
           ]
         },
         {
-          "name": "gap xxl",
+          "name": "gap insetSm",
           "props": {
-            "gap": "xxl"
+            "gap": "insetSm"
           },
           "children": [
             {
@@ -10662,9 +10662,81 @@
           ]
         },
         {
-          "name": "gap xxxl",
+          "name": "gap insetMd",
           "props": {
-            "gap": "xxxl"
+            "gap": "insetMd"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap insetLg",
+          "props": {
+            "gap": "insetLg"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap gutter",
+          "props": {
+            "gap": "gutter"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap marginPage",
+          "props": {
+            "gap": "marginPage"
           },
           "children": [
             {
@@ -10689,7 +10761,7 @@
           "name": "align start",
           "props": {
             "align": "start",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10706,7 +10778,7 @@
           "name": "align center",
           "props": {
             "align": "center",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10723,7 +10795,7 @@
           "name": "align end",
           "props": {
             "align": "end",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10740,7 +10812,7 @@
           "name": "align stretch",
           "props": {
             "align": "stretch",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10757,7 +10829,7 @@
           "name": "justify start",
           "props": {
             "justify": "start",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10774,7 +10846,7 @@
           "name": "justify center",
           "props": {
             "justify": "center",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10791,7 +10863,7 @@
           "name": "justify end",
           "props": {
             "justify": "end",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10808,7 +10880,7 @@
           "name": "justify between",
           "props": {
             "justify": "between",
-            "gap": "s"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10826,7 +10898,7 @@
     {
       "type": "Inline",
       "tier": "layout",
-      "description": "Children in a row, spaced by a space token.",
+      "description": "Children in a row, spaced by a spacing role (a relationship, never a size).",
       "props": {
         "gap": {
           "kind": "token",
@@ -10836,7 +10908,7 @@
         "related": {
           "kind": "boolean",
           "default": false,
-          "description": "One semantic group, using space.related and wrapping by default. Independent groups use space.section."
+          "description": "One semantic group, using space.inlineItem and wrapping by default. Independent groups use space.inlineGroup."
         },
         "label": {
           "kind": "message",
@@ -10944,9 +11016,9 @@
           ]
         },
         {
-          "name": "gap related",
+          "name": "gap stackPair",
           "props": {
-            "gap": "related"
+            "gap": "stackPair"
           },
           "children": [
             {
@@ -10968,9 +11040,9 @@
           ]
         },
         {
-          "name": "gap section",
+          "name": "gap stackItem",
           "props": {
-            "gap": "section"
+            "gap": "stackItem"
           },
           "children": [
             {
@@ -10992,9 +11064,9 @@
           ]
         },
         {
-          "name": "gap xs",
+          "name": "gap stackGroup",
           "props": {
-            "gap": "xs"
+            "gap": "stackGroup"
           },
           "children": [
             {
@@ -11016,9 +11088,9 @@
           ]
         },
         {
-          "name": "gap s",
+          "name": "gap stackSection",
           "props": {
-            "gap": "s"
+            "gap": "stackSection"
           },
           "children": [
             {
@@ -11040,9 +11112,9 @@
           ]
         },
         {
-          "name": "gap m",
+          "name": "gap inlinePair",
           "props": {
-            "gap": "m"
+            "gap": "inlinePair"
           },
           "children": [
             {
@@ -11064,9 +11136,9 @@
           ]
         },
         {
-          "name": "gap l",
+          "name": "gap inlineItem",
           "props": {
-            "gap": "l"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11088,9 +11160,9 @@
           ]
         },
         {
-          "name": "gap xl",
+          "name": "gap inlineGroup",
           "props": {
-            "gap": "xl"
+            "gap": "inlineGroup"
           },
           "children": [
             {
@@ -11112,9 +11184,9 @@
           ]
         },
         {
-          "name": "gap xxl",
+          "name": "gap insetSm",
           "props": {
-            "gap": "xxl"
+            "gap": "insetSm"
           },
           "children": [
             {
@@ -11136,9 +11208,81 @@
           ]
         },
         {
-          "name": "gap xxxl",
+          "name": "gap insetMd",
           "props": {
-            "gap": "xxxl"
+            "gap": "insetMd"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap insetLg",
+          "props": {
+            "gap": "insetLg"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap gutter",
+          "props": {
+            "gap": "gutter"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap marginPage",
+          "props": {
+            "gap": "marginPage"
           },
           "children": [
             {
@@ -11163,7 +11307,7 @@
           "name": "align start",
           "props": {
             "align": "start",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11180,7 +11324,7 @@
           "name": "align center",
           "props": {
             "align": "center",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11197,7 +11341,7 @@
           "name": "align end",
           "props": {
             "align": "end",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11214,7 +11358,7 @@
           "name": "align stretch",
           "props": {
             "align": "stretch",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11231,7 +11375,7 @@
           "name": "justify start",
           "props": {
             "justify": "start",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11256,7 +11400,7 @@
           "name": "justify center",
           "props": {
             "justify": "center",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11281,7 +11425,7 @@
           "name": "justify end",
           "props": {
             "justify": "end",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11306,7 +11450,7 @@
           "name": "justify between",
           "props": {
             "justify": "between",
-            "gap": "s"
+            "gap": "inlineItem"
           },
           "children": [
             {
@@ -11337,7 +11481,7 @@
         "gap": {
           "kind": "token",
           "group": "space",
-          "default": "m"
+          "default": "inlineGroup"
         },
         "cell": {
           "kind": "enum",
@@ -11366,7 +11510,7 @@
         {
           "name": "choice cells",
           "props": {
-            "gap": "xs",
+            "gap": "inlinePair",
             "cell": "choice"
           },
           "children": [
@@ -11407,7 +11551,7 @@
         {
           "name": "two",
           "props": {
-            "gap": "m"
+            "gap": "inlineGroup"
           },
           "children": [
             {
@@ -11541,7 +11685,7 @@
             },
             "busy": true,
             "minimum": "section",
-            "padding": "m"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11603,7 +11747,7 @@
         {
           "name": "scroll",
           "props": {
-            "padding": "xl",
+            "padding": "insetLg",
             "shape": "popover",
             "scroll": true
           },
@@ -11622,7 +11766,7 @@
           "name": "variant canvas",
           "props": {
             "variant": "canvas",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11640,7 +11784,7 @@
           "name": "variant frost",
           "props": {
             "variant": "frost",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11658,7 +11802,7 @@
           "name": "variant raised",
           "props": {
             "variant": "raised",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11676,7 +11820,7 @@
           "name": "variant sunken",
           "props": {
             "variant": "sunken",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11694,7 +11838,7 @@
           "name": "variant inverted",
           "props": {
             "variant": "inverted",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11712,7 +11856,7 @@
           "name": "shape none",
           "props": {
             "shape": "none",
-            "padding": "l"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11729,7 +11873,7 @@
           "name": "shape window",
           "props": {
             "shape": "window",
-            "padding": "l"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11746,7 +11890,7 @@
           "name": "shape sheet",
           "props": {
             "shape": "sheet",
-            "padding": "l"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11763,7 +11907,7 @@
           "name": "shape popover",
           "props": {
             "shape": "popover",
-            "padding": "l"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11780,7 +11924,7 @@
           "name": "shape control",
           "props": {
             "shape": "control",
-            "padding": "l"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11797,7 +11941,7 @@
           "name": "shape round",
           "props": {
             "shape": "round",
-            "padding": "l"
+            "padding": "insetMd"
           },
           "children": [
             {
@@ -11814,7 +11958,7 @@
           "name": "keyScope none",
           "props": {
             "keyScope": "none",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11832,7 +11976,7 @@
           "name": "keyScope findBar",
           "props": {
             "keyScope": "findBar",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11850,7 +11994,7 @@
           "name": "keyScope findField",
           "props": {
             "keyScope": "findField",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11868,7 +12012,7 @@
           "name": "keyScope replaceField",
           "props": {
             "keyScope": "replaceField",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11886,7 +12030,7 @@
           "name": "keyScope pickerField",
           "props": {
             "keyScope": "pickerField",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11904,7 +12048,7 @@
           "name": "keyScope formatToolbar",
           "props": {
             "keyScope": "formatToolbar",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11922,7 +12066,7 @@
           "name": "keyScope linkEditor",
           "props": {
             "keyScope": "linkEditor",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11940,7 +12084,7 @@
           "name": "keyScope firstRun",
           "props": {
             "keyScope": "firstRun",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11958,7 +12102,7 @@
           "name": "keyScope rewritePrompt",
           "props": {
             "keyScope": "rewritePrompt",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11976,7 +12120,7 @@
           "name": "elevation 0",
           "props": {
             "elevation": "0",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -11994,7 +12138,7 @@
           "name": "elevation 1",
           "props": {
             "elevation": "1",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -12012,7 +12156,7 @@
           "name": "elevation 2",
           "props": {
             "elevation": "2",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -12030,7 +12174,7 @@
           "name": "elevation 3",
           "props": {
             "elevation": "3",
-            "padding": "l",
+            "padding": "insetMd",
             "shape": "popover"
           },
           "children": [
@@ -12130,7 +12274,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12157,7 +12301,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12184,7 +12328,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12211,7 +12355,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12238,7 +12382,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12265,7 +12409,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12291,7 +12435,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12317,7 +12461,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12343,7 +12487,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12369,7 +12513,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12395,7 +12539,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12421,7 +12565,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12447,7 +12591,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12473,7 +12617,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -12499,7 +12643,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "m",
+                "padding": "insetMd",
                 "shape": "popover"
               },
               "children": [
@@ -13983,7 +14127,7 @@
         "offset": {
           "kind": "token",
           "group": "space",
-          "default": "s"
+          "default": "stackItem"
         },
         "landmark": {
           "kind": "enum",
@@ -14046,7 +14190,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "s",
+                "padding": "insetSm",
                 "shape": "popover",
                 "elevation": "2"
               },
@@ -14077,7 +14221,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "s",
+                "padding": "insetSm",
                 "shape": "popover",
                 "elevation": "2"
               },
@@ -14106,7 +14250,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "s",
+                "padding": "insetSm",
                 "shape": "popover",
                 "elevation": "2"
               },
@@ -14135,7 +14279,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "s",
+                "padding": "insetSm",
                 "shape": "popover",
                 "elevation": "2"
               },
@@ -14162,7 +14306,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "s",
+                "padding": "insetSm",
                 "shape": "popover",
                 "elevation": "2"
               },
@@ -14192,7 +14336,7 @@
               "type": "Surface",
               "props": {
                 "variant": "frost",
-                "padding": "s",
+                "padding": "insetSm",
                 "shape": "popover",
                 "elevation": "2"
               },
@@ -14437,14 +14581,14 @@
                 "type": "Inline",
                 "props": {
                   "justify": "between",
-                  "gap": "s",
+                  "gap": "inlineItem",
                   "grow": true
                 },
                 "children": [
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "grow": true
                     },
                     "children": [

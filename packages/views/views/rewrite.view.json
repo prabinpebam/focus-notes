@@ -12,15 +12,15 @@
         "props": { "anchor": "rewrite", "placement": "below", "align": "start", "landmark": "region", "label": { "get": "vm.rewrite.title" }, "returnAboveLabel": { "t": "rewrite.returnAbove" }, "returnBelowLabel": { "t": "rewrite.returnBelow" }, "focusRequest": { "get": "vm.rewrite.focusRequest" } },
         "on": { "dismiss": { "run": "rewrite.dismiss" } },
         "children": [{
-          "type": "Surface", "props": { "variant": "frost", "shape": "popover", "elevation": "2", "padding": "m", "keyScope": "rewritePrompt" },
+          "type": "Surface", "props": { "variant": "frost", "shape": "popover", "elevation": "2", "padding": "insetMd", "keyScope": "rewritePrompt" },
           "children": [{
-          "type": "Stack", "props": { "gap": "m" },
+          "type": "Stack", "props": { "gap": "stackItem" },
           "children": [
             { "type": "ItemCard", "when": { "get": "vm.rewrite.hasWriter" }, "props": {
               "title": { "get": "vm.rewrite.writerService" }, "detail": { "get": "vm.rewrite.writerModel" },
               "badge": { "get": "vm.rewrite.writerWhere" }, "icon": { "get": "vm.rewrite.writerIcon" }
             }, "children": [
-              { "type": "Stack", "props": { "gap": "s" }, "children": [
+              { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
                 { "type": "MenuButton", "when": { "get": "vm.rewrite.canChooseWriter" },
                   "props": { "label": { "t": "rewrite.integration" }, "variant": "select", "text": { "get": "vm.rewrite.writerName" }, "sections": { "get": "vm.rewrite.writerMenu" } },
                   "on": { "action": { "run": "rewrite.writer", "args": { "value": { "get": "event.id" } } } } },
@@ -31,17 +31,17 @@
             { "type": "TextField", "id": "rewritePrompt", "props": { "label": { "t": "rewrite.prompt" }, "placeholder": { "t": "rewrite.placeholder" }, "value": { "get": "vm.rewrite.prompt" }, "multiline": true, "compactMultiline": true, "autoFocus": true, "focusRequest": { "get": "vm.rewrite.focusRequest" } },
               "on": { "change": { "run": "rewrite.prompt", "args": { "value": { "get": "event.value" } } } } },
             { "type": "Text", "props": { "value": { "get": "vm.rewrite.sendHint" }, "role": "caption" } },
-            { "type": "Inline", "when": { "get": "vm.rewrite.hasSelection" }, "props": { "gap": "xs" }, "children": [
+            { "type": "Inline", "when": { "get": "vm.rewrite.hasSelection" }, "props": { "gap": "inlinePair" }, "children": [
               { "type": "Button", "props": { "label": { "t": "rewrite.preset.concise" }, "size": "s", "variant": "subtle", "toggle": true, "pressed": { "get": "vm.rewrite.concise" } }, "on": { "press": { "run": "rewrite.preset", "args": { "value": "concise" } } } },
               { "type": "Button", "props": { "label": { "t": "rewrite.preset.warmer" }, "size": "s", "variant": "subtle", "toggle": true, "pressed": { "get": "vm.rewrite.warmer" } }, "on": { "press": { "run": "rewrite.preset", "args": { "value": "warmer" } } } },
               { "type": "Button", "props": { "label": { "t": "rewrite.preset.grammar" }, "size": "s", "variant": "subtle", "toggle": true, "pressed": { "get": "vm.rewrite.grammar" } }, "on": { "press": { "run": "rewrite.preset", "args": { "value": "grammar" } } } }
             ] },
             { "switch": { "get": "vm.rewrite.actions" }, "cases": {
-              "setup": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+              "setup": { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
                 { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
                 { "type": "Button", "props": { "label": { "t": "rewrite.setup" }, "icon": "settings", "variant": "primary" }, "on": { "press": { "run": "ai.openSettings" } } }
               ] },
-              "compose": { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+              "compose": { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
                 { "type": "Button", "props": { "label": { "t": "rewrite.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.dismiss" } } },
                 { "type": "Button", "props": { "label": { "t": "rewrite.generate" }, "variant": "primary", "disabled": { "get": "vm.rewrite.empty" }, "disabledReason": { "t": "rewrite.emptyReason" } }, "on": { "press": { "run": "rewrite.generate" } } }
               ] }
@@ -55,9 +55,9 @@
         "props": { "title": { "t": "rewrite.discardTitle" }, "closeLabel": { "t": "rewrite.keepPrompt" }, "open": { "get": "vm.rewrite.confirmingDiscard" }, "size": "s", "height": "content" },
         "on": { "openChange": { "run": "rewrite.keepPrompt" } },
         "children": [{
-          "type": "Stack", "props": { "gap": "m" }, "children": [
+          "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "Text", "props": { "value": { "t": "rewrite.discardWarning" } } },
-            { "type": "Inline", "props": { "gap": "s", "justify": "end" }, "children": [
+            { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
               { "type": "Button", "props": { "label": { "t": "rewrite.keepPrompt" }, "variant": "primary", "autoFocus": true }, "on": { "press": { "run": "rewrite.keepPrompt" } } },
               { "type": "Button", "props": { "label": { "t": "rewrite.discardPrompt" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.discardPrompt" } } }
             ] }

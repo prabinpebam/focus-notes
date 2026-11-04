@@ -14,19 +14,21 @@ export const control = style({
   height: t.height,
   paddingInline: t.paddingInline,
   borderRadius: t.radius,
-  borderStyle: "solid",
-  borderWidth: t.borderWidth,
-  borderColor: t.border,
+  // The border is an inset outline, so the input fills the control's height as its pointer target (spacing SP-6).
+  outlineStyle: "solid",
+  outlineWidth: t.borderWidth,
+  outlineOffset: `calc(-1 * ${t.borderWidth})`,
+  outlineColor: t.border,
   backgroundColor: t.background,
   boxSizing: "border-box",
   selectors: {
-    "&:focus-within": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.borderFocus },
+    "&:focus-within": { outlineColor: t.borderFocus, boxShadow: `0 0 0 ${t.focusWidth} ${t.borderFocus}` },
     // The commit track (F2): the commit colour while it saves, the error colour when it couldn't.
-    [`${root}[data-commit="pending"] &`]: { borderColor: t.borderCommit, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderCommit}` },
-    [`${root}[data-commit="failed"] &`]: { borderColor: t.borderInvalid },
+    [`${root}[data-commit="pending"] &`]: { outlineColor: t.borderCommit, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderCommit}` },
+    [`${root}[data-commit="failed"] &`]: { outlineColor: t.borderInvalid },
   },
 });
-export const invalid = style({ borderColor: t.borderInvalid });
+export const invalid = style({ outlineColor: t.borderInvalid });
 export const swatch = style({
   flexShrink: 0,
   width: t.swatchSize,
@@ -39,7 +41,9 @@ export const swatch = style({
 });
 export const input = style({
   flexGrow: 1,
+  alignSelf: "stretch",
   minWidth: 0,
+  padding: 0,
   border: "none",
   outline: "none",
   background: "none",

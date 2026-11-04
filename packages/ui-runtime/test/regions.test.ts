@@ -32,7 +32,7 @@ function mount() {
   const view = {
     $schema: "x", id: "v", viewModels: ["vm.left", "vm.right", "vm.heavy"], focus: "f",
     root: {
-      type: "Stack", props: { gap: "s" },
+      type: "Stack", props: { gap: "stackItem" },
       children: [
         { type: "Text", props: { value: { get: "vm.left.label" } } },
         { type: "Text", props: { value: { get: "vm.right.label" } } },

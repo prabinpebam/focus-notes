@@ -208,41 +208,40 @@
   },
   "space": {
     "$type": "dimension",
-    "related": { "$value": "{ref.size.8}", "$description": "Within one semantic group; smaller than section separation." },
-    "section": { "$value": "{ref.size.16}", "$description": "Between independent groups; larger than related content spacing." },
-    "none": {
-      "$value": "{ref.size.0}"
-    },
-    "xxs": {
-      "$value": "{ref.size.2}",
-      "$description": "Between neighboring items' highlight shapes in a list (D-111)."
-    },
-    "xs": {
-      "$value": "{ref.size.4}"
-    },
-    "s": {
-      "$value": "{ref.size.8}"
-    },
-    "m": {
-      "$value": "{ref.size.12}"
-    },
-    "l": {
-      "$value": "{ref.size.16}"
-    },
-    "xl": {
-      "$value": "{ref.size.24}"
-    },
-    "xxl": {
-      "$value": "{ref.size.32}"
-    },
-    "xxxl": {
-      "$value": "{ref.size.48}"
+    "none": { "$value": "{ref.size.0}", "$description": "No space: members that touch (a segmented group, rows whose padding is the gap)." },
+    "stackPair": { "$value": "{ref.size.4}", "$description": "Stacked pair that reads as one thing: label and field, field and hint, title and subtitle." },
+    "stackItem": { "$value": "{ref.size.8}", "$description": "Stacked items in one group: rows of a list, fields in a fieldset, lines of a card." },
+    "stackGroup": { "$value": "{ref.size.16}", "$description": "Stacked groups within a section: at least twice stackItem." },
+    "stackSection": { "$value": "{ref.size.32}", "$description": "Sections of a view, and the space above a heading: at least twice stackGroup." },
+    "inlinePair": { "$value": "{ref.size.4}", "$description": "A pair in a row that reads as one thing: an icon and its label, a value and its unit. Tight, because the controls carry their own padding." },
+    "inlineItem": { "$value": "{ref.size.8}", "$description": "Items in one row group: buttons in a group, chips, fields side by side." },
+    "inlineGroup": { "$value": "{ref.size.16}", "$description": "Groups in a row: at least twice inlineItem (a toolbar's groups, a form's two columns)." },
+    "insetSm": { "$value": "{ref.size.8}", "$description": "Inside a small container's edge: menus, tooltips, chips, list rows, status rows." },
+    "insetMd": { "$value": "{ref.size.16}", "$description": "Inside a card, popover or panel's edge. Never smaller than the gaps inside it." },
+    "insetLg": { "$value": "{ref.size.24}", "$description": "Inside a dialog, sheet or page region's edge, on header, body and footer alike." },
+    "gutter": { "$value": "{ref.size.24}", "$description": "Between columns or regions of a view, and from a floating notice to the window's edge." },
+    "marginPage": { "$value": "{ref.size.16}", "$description": "Between content and the window's edge: corners, anchored panels, a popover's clearance." },
+    "scale": {
+      "$description": "The 4 px scale the roles alias. Only component tokens read it, each naming its own relationship; views and layouts read roles (spacing ST-1).",
+      "xxs": { "$value": "{ref.size.2}", "$description": "A half step: between neighbouring items' highlight shapes in a list (D-111), or a compensation." },
+      "xs": { "$value": "{ref.size.4}" },
+      "s": { "$value": "{ref.size.8}" },
+      "m": { "$value": "{ref.size.12}" },
+      "l": { "$value": "{ref.size.16}" },
+      "xl": { "$value": "{ref.size.24}" },
+      "xxl": { "$value": "{ref.size.32}" },
+      "xxxl": { "$value": "{ref.size.48}" }
     }
   },
   "size": {
     "$type": "dimension",
     "hit": {
-      "$value": "{ref.size.32}"
+      "$value": "{ref.size.32}",
+      "$description": "The project's pointer target (the skill's size.control): every pointer target reaches it, by padding or an invisible extension (spacing SP-6). 44 px with a coarse pointer."
+    },
+    "hitMin": {
+      "$value": "{ref.size.24}",
+      "$description": "The smallest target on a written dense surface (the project pill, the window controls' zones, an inline link under a title): never under 24 px (WCAG 2.5.8)."
     },
     "iconS": {
       "$value": "{ref.size.16}"

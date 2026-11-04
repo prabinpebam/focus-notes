@@ -22,7 +22,7 @@ export const position = styleVariants({
   topBand: { top: 0, left: 0, right: 0, height: tokens.layout.topBand, alignItems: "flex-start", justifyContent: "center", paddingTop: tokens.layout.triggerTop, boxSizing: "border-box" },
   // The top right of the title bar band: the app-drawn window controls on Windows and Linux (D-15).
   topEnd: { top: 0, right: 0, height: tokens.layout.titleBar, alignItems: "center", justifyContent: "flex-end" },
-  belowTopBand: { top: tokens.layout.topBand, insetInline: tokens.space.s, alignItems: "flex-start", justifyContent: "center" },
+  belowTopBand: { top: tokens.layout.topBand, insetInline: tokens.space.insetSm, alignItems: "flex-start", justifyContent: "center" },
   fill: { inset: 0, alignItems: "stretch", justifyContent: "stretch" },
   // The whole window below the title bar band (the full-window setup, D-126): the band stays the
   // window's, so it still drags and shows the window controls; what it holds fills the rest.
@@ -30,16 +30,16 @@ export const position = styleVariants({
   // A dialog in the middle of the window (the first run's card): it keeps the dialog inset from every
   // edge and is held to the room inside it, where what it holds scrolls (D-111, D-123).
   center: { inset: 0, alignItems: "center", justifyContent: "center", padding: tokens.layout.gutterCompact, boxSizing: "border-box" },
-  bottomCenter: { left: 0, right: 0, bottom: tokens.space.xl, alignItems: "flex-end", justifyContent: "center" },
-  bottomStart: { insetInlineStart: tokens.space.l, bottom: tokens.space.l, alignItems: "flex-end", justifyContent: "flex-start" },
-  bottomEnd: { insetInlineEnd: tokens.space.l, bottom: tokens.space.l, alignItems: "flex-end", justifyContent: "flex-end" },
+  bottomCenter: { left: 0, right: 0, bottom: tokens.space.gutter, alignItems: "flex-end", justifyContent: "center" },
+  bottomStart: { insetInlineStart: tokens.space.marginPage, bottom: tokens.space.marginPage, alignItems: "flex-end", justifyContent: "flex-start" },
+  bottomEnd: { insetInlineEnd: tokens.space.marginPage, bottom: tokens.space.marginPage, alignItems: "flex-end", justifyContent: "flex-end" },
 });
 export const cornerLeft = createVar();
 export const cornerGap = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 export const avoidPinned = style({
-  vars: { [cornerGap]: tokens.space.l },
-  left: fallbackVar(cornerLeft, tokens.space.l),
-  selectors: { "&[data-pinned-overflow]": { top: tokens.space.l, bottom: "auto" } },
+  vars: { [cornerGap]: tokens.space.marginPage },
+  left: fallbackVar(cornerLeft, tokens.space.marginPage),
+  selectors: { "&[data-pinned-overflow]": { top: tokens.space.marginPage, bottom: "auto" } },
 });
 // Never wider than its layer: what it holds shrinks or wraps inside the window (D-111). In the
 // middle, never taller either.

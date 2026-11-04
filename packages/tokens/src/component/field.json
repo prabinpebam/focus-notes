@@ -3,7 +3,7 @@
     "field": {
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "label": {
         "$type": "color",

@@ -9429,7 +9429,7 @@
     },
     "c_Stack": {
       "type": "object",
-      "description": "Children in a column, spaced by a space token.",
+      "description": "Children in a column, spaced by a spacing role (a relationship, never a size).",
       "required": [
         "type"
       ],
@@ -9463,17 +9463,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9485,17 +9487,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9507,17 +9511,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9592,7 +9598,7 @@
     },
     "c_Inline": {
       "type": "object",
-      "description": "Children in a row, spaced by a space token.",
+      "description": "Children in a row, spaced by a spacing role (a relationship, never a size).",
       "required": [
         "type"
       ],
@@ -9626,17 +9632,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9674,17 +9682,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9806,17 +9816,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9949,17 +9961,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -9971,17 +9985,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {
@@ -10885,17 +10901,19 @@
               "anyOf": [
                 {
                   "enum": [
-                    "related",
-                    "section",
                     "none",
-                    "xxs",
-                    "xs",
-                    "s",
-                    "m",
-                    "l",
-                    "xl",
-                    "xxl",
-                    "xxxl"
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
                   ]
                 },
                 {

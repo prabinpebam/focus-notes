@@ -106,7 +106,19 @@ export function checkDesignSource(root: string): string[] {
     return typeof value === "string" && /^\{.+\}$/.test(value) ? resolve(values, value.slice(1, -1), seen) : value;
   };
   const number = (key: string) => Number.parseFloat(String(resolve(base, key)));
-  requireRule(number("space.related") > 0 && number("space.related") < number("space.section"), "spacing tokens", "related content must be closer than independent sections");
+  // The spacing roles (spacing ST-1): each grows with its level, groups at least twice their items, and no
+  // gap inside a container larger than its inset.
+  const sv = (r: string) => number(`space.${r}`);
+  const ratio = (ok: boolean, what: string) => requireRule(ok, "spacing roles", what);
+  ratio(sv("stackPair") > 0 && sv("stackPair") <= sv("stackItem") && sv("stackItem") < sv("stackGroup") && sv("stackGroup") < sv("stackSection"), "stack roles grow pair ≤ item < group < section");
+  ratio(sv("stackGroup") >= 2 * sv("stackItem") && sv("stackSection") >= 2 * sv("stackGroup"), "a stack group is at least twice its items, a section at least twice its groups");
+  ratio(sv("inlinePair") <= sv("inlineItem") && sv("inlineGroup") >= 2 * sv("inlineItem"), "inline groups are at least twice their items");
+  ratio(sv("insetSm") < sv("insetMd") && sv("insetMd") < sv("insetLg"), "insets grow sm < md < lg");
+  ratio(sv("stackItem") <= sv("insetSm") && sv("stackGroup") <= sv("insetMd") && sv("inlineGroup") <= sv("insetMd"), "no role's gap is larger than the inset of the container it sits in");
+  for (const [key, value] of base) if (/^space\.[A-Za-z]+$/.test(key) && key !== "space.none") {
+    ratio(typeof value === "string" && /^\{ref\.size\.\d+\}$/.test(value), `${key} aliases a step of the scale`);
+    ratio(Number.parseFloat(String(resolve(base, key))) % 4 === 0, `${key} is a multiple of the 4 px base`);
+  }
   for (const name of ["base", ...readdirSync(join(root, "packages", "tokens", "src", "themes")).filter((n) => n.endsWith(".json"))]) {
     const values = new Map(base);
     if (name !== "base") for (const [key, value] of flatten(JSON.parse(read(`packages/tokens/src/themes/${name}`)))) values.set(key, value);

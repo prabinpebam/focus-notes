@@ -16,7 +16,7 @@
       }]
     },
     "children": [{
-      "type": "Stack", "props": { "gap": "s" },
+      "type": "Stack", "props": { "gap": "stackItem" },
       "children": [
         { "type": "FileTree", "id": "newNoteTree",
           "props": { "label": { "t": "newNote.workspaceFolders" }, "items": { "get": "vm.newNote.items" }, "focusId": { "get": "vm.newNote.focusId" }, "editValue": { "get": "vm.newNote.editValue" }, "editError": { "get": "vm.newNote.editError" }, "editLabel": { "get": "vm.newNote.editLabel" } },
@@ -29,10 +29,10 @@
           }
         },
         { "type": "Text", "props": { "value": { "get": "vm.newNote.error" }, "tone": "danger", "announce": true } },
-        { "type": "Inline", "props": { "gap": "s", "justify": "between", "align": "center" },
+        { "type": "Inline", "props": { "gap": "inlineItem", "justify": "between", "align": "center" },
           "children": [
             { "type": "Button", "props": { "label": { "t": "newNote.newFolder" }, "variant": "subtle", "icon": "newFolder", "disabled": { "get": "vm.newNote.cannotNewFolder" }, "disabledReason": { "t": "newNote.finishFolder" } }, "on": { "press": { "run": "newNote.newFolder" } } },
-            { "type": "Inline", "props": { "gap": "s" }, "children": [
+            { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [
               { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "newNote.dismiss" } } },
               { "type": "Button", "props": { "label": { "get": "vm.newNote.createLabel" }, "variant": "primary", "disabled": { "get": "vm.newNote.cannotCreate" }, "disabledReason": { "t": "newNote.finishFolder" } }, "on": { "press": { "run": "newNote.create" } } }
             ] }

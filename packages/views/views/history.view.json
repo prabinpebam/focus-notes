@@ -34,7 +34,7 @@
               "type": "Inline",
               "props": {
                 "justify": "between",
-                "gap": "s"
+                "gap": "inlineItem"
               },
               "children": [
                 {
@@ -82,7 +82,7 @@
           {
             "type": "Stack",
             "props": {
-              "gap": "l"
+              "gap": "stackGroup"
             },
             "children": [
               {
@@ -91,7 +91,7 @@
                   "get": "vm.history.loading"
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -179,7 +179,7 @@
                 "type": "Stack",
                 "id": "historyVersionLoading",
                 "when": { "get": "vm.history.versionLoading" },
-                "props": { "gap": "s" },
+                "props": { "gap": "stackItem" },
                 "children": [
                   { "type": "Skeleton", "props": { "shape": "row" } },
                   { "type": "Skeleton", "props": { "shape": "row" } }
@@ -192,7 +192,7 @@
                   "get": "vm.history.showing"
                 },
                 "props": {
-                  "gap": "s"
+                  "gap": "stackItem"
                 },
                 "children": [
                   {
@@ -218,7 +218,7 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true
                     },
                     "children": [

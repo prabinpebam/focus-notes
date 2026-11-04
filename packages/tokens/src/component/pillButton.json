@@ -7,7 +7,7 @@
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "radius": {
         "$type": "dimension",

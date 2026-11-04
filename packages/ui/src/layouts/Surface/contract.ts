@@ -22,20 +22,20 @@ export const contract = defineContract({
   tokens: "cmp.surface.*",
   a11y: { pattern: "none" },
   fixtures: [
-    { name: "loading section", props: { label: { t: "gallery.sample" }, busy: true, minimum: "section", padding: "m" }, children: [{ type: "Skeleton", props: { shape: "row" } }] },
+    { name: "loading section", props: { label: { t: "gallery.sample" }, busy: true, minimum: "section", padding: "insetMd" }, children: [{ type: "Skeleton", props: { shape: "row" } }] },
     ...["component", "section", "view"].map((minimum) => ({ name: `minimum ${minimum}`, props: { minimum }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] })),
-    { name: "scroll", props: { padding: "xl", shape: "popover", scroll: true }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "scroll", props: { padding: "insetLg", shape: "popover", scroll: true }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     ...["canvas", "frost", "raised", "sunken", "inverted"].map((variant) => ({
-      name: `variant ${variant}`, props: { variant, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
+      name: `variant ${variant}`, props: { variant, padding: "insetMd", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
     ...["none", "window", "sheet", "popover", "control", "round"].map((shape) => ({
-      name: `shape ${shape}`, props: { shape, padding: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
+      name: `shape ${shape}`, props: { shape, padding: "insetMd" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
     ...["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun", "rewritePrompt"].map((keyScope) => ({
-      name: `keyScope ${keyScope}`, props: { keyScope, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
+      name: `keyScope ${keyScope}`, props: { keyScope, padding: "insetMd", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
     ...["0", "1", "2", "3"].map((elevation) => ({
-      name: `elevation ${elevation}`, props: { elevation, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
+      name: `elevation ${elevation}`, props: { elevation, padding: "insetMd", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
   ],
 });

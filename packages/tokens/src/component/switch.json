@@ -19,7 +19,7 @@
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}", "$description": "The focus ring's width." },
   "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}", "$description": "The focus ring's gap from the track." },
   "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}", "$description": "The name line's line box, the same as every control label." },
-  "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between the track, the name and the state word." },
+  "gap": { "$type": "dimension", "$value": "{space.inlineItem}", "$description": "Between the track, the name and the state word." },
   "font": { "$type": "fontFamily", "$value": "{font.ui}", "$description": "The switch's words." },
   "labelSize": { "$type": "dimension", "$value": "{font.uiBody}", "$description": "The name, at body size like every form label (D-111)." },
   "labelWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}", "$description": "The name's weight." },

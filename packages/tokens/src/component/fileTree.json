@@ -5,21 +5,26 @@
         "$type": "dimension",
         "$value": "{size.hit}"
       },
+      "pinSize": {
+        "$type": "dimension",
+        "$value": "{size.hit}",
+        "$description": "The pin button's box, centred on the row's type icon (cmp.iconButton.size); the row's height holds it."
+      },
       "indent": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.scale.l}"
       },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.inlinePair}"
       },
       "rowGap": {
         "$type": "dimension",
-        "$value": "{space.xxs}"
+        "$value": "{space.scale.xxs}"
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "radius": {
         "$type": "dimension",

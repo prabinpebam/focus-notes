@@ -49,7 +49,7 @@
               "editing": {
                 "type": "Stack",
                 "props": {
-                  "gap": "l"
+                  "gap": "stackGroup"
                 },
                 "children": [
                   {
@@ -167,7 +167,7 @@
                       "get": "vm.sendFeedback.canAttach"
                     },
                     "props": {
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true
                     },
                     "children": [
@@ -247,7 +247,7 @@
                       "get": "vm.sendFeedback.showPreview"
                     },
                     "props": {
-                      "gap": "s"
+                      "gap": "stackItem"
                     },
                     "children": [
                       {
@@ -265,7 +265,7 @@
                       {
                         "type": "Stack",
                         "props": {
-                          "gap": "s"
+                          "gap": "stackItem"
                         },
                         "children": [
                           {
@@ -336,7 +336,7 @@
                     "type": "Inline",
                     "props": {
                       "justify": "end",
-                      "gap": "s",
+                      "gap": "inlineItem",
                       "wrap": true
                     },
                     "children": [
@@ -429,7 +429,7 @@
               "sent": {
                 "type": "Stack",
                 "props": {
-                  "gap": "l"
+                  "gap": "stackGroup"
                 },
                 "children": [
                   {
@@ -448,7 +448,7 @@
                     "type": "Inline",
                     "props": {
                       "justify": "end",
-                      "gap": "s"
+                      "gap": "inlineItem"
                     },
                     "children": [
                       {

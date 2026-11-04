@@ -3,11 +3,11 @@
     "sheet": {
       "inset": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.insetMd}"
       },
       "clearance": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.scale.s}"
       },
       "widthFiles": {
         "$type": "dimension",
@@ -39,15 +39,15 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.insetMd}"
       },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.inlineItem}"
       },
       "groupGap": {
         "$type": "dimension",
-        "$value": "{space.l}",
+        "$value": "{space.stackGroup}",
         "$description": "Between the header and the body, separate groups (Foundations → Visual quality → Grouped and spaced, D-111)."
       },
       "background": {
@@ -92,7 +92,7 @@
       },
       "offset": {
         "$type": "dimension",
-        "$value": "{space.l}"
+        "$value": "{space.scale.l}"
       },
       "footerBorder": {
         "$type": "color",
@@ -124,11 +124,11 @@
       },
       "bodySlack": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "ringRoom": {
         "$type": "dimension",
-        "$value": "{space.xs}"
+        "$value": "{space.scale.xs}"
       },
       "dock": {
         "layer": { "$type": "number", "$value": "{layer.docked}" },
@@ -141,7 +141,7 @@
         "background": { "$type": "color", "$value": "{color.surface}" },
         "border": { "$type": "color", "$value": "{color.border}" },
         "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
-        "handleWidth": { "$type": "dimension", "$value": "{space.s}" },
+        "handleWidth": { "$type": "dimension", "$value": "{space.scale.s}" },
         "handleLine": { "$type": "dimension", "$value": "{border.focus}" },
         "handleIdle": { "$type": "color", "$value": "{color.none}" },
         "handleHover": { "$type": "color", "$value": "{color.borderStrong}" },

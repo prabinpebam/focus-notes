@@ -5,9 +5,9 @@
     "view": { "$value": "{size.emptyView}", "$description": "A whole view or panel." },
     "component": { "$value": "{size.hit}", "$description": "A menu or picker: one row." }
   },
-  "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between the icon, the why and the detail." },
-  "actionGap": { "$type": "dimension", "$value": "{space.m}", "$description": "Above the actions, so they read as the next step." },
-  "padding": { "$type": "dimension", "$value": "{space.l}", "$description": "Room inside the wrapper." },
+  "gap": { "$type": "dimension", "$value": "{space.inlineItem}", "$description": "Between the icon, the why and the detail." },
+  "actionGap": { "$type": "dimension", "$value": "{space.scale.m}", "$description": "Above the actions, so they read as the next step." },
+  "padding": { "$type": "dimension", "$value": "{space.insetMd}", "$description": "Room inside the wrapper." },
   "iconSize": { "$type": "dimension", "$value": "{size.iconL}", "$description": "The icon that says what would be here." },
   "iconTile": { "$type": "dimension", "$value": "{size.statusMark}", "$description": "The quiet round tile behind the icon." },
   "iconBackground": { "$type": "color", "$value": "{color.surfaceSunken}", "$description": "The tile's fill." },

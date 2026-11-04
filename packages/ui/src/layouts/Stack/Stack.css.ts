@@ -1,13 +1,12 @@
 import { style, styleVariants } from "@vanilla-extract/css";
-import { tokens, breakpoints } from "@focus-notes/tokens";
+import { tokens, tokenGroups, breakpoints } from "@focus-notes/tokens";
 
-const sp = tokens.space;
+/** The spacing roles a layout takes (spacing ST-1): a relationship, never a size. */
+export type SpaceRole = (typeof tokenGroups.space)[number];
+const roles = tokenGroups.space;
+const sp = tokens.space as unknown as Record<SpaceRole, string>;
 const spaceMap = <P extends string>(prop: P) =>
-  styleVariants({
-    related: { [prop]: sp.related }, section: { [prop]: sp.section },
-    none: { [prop]: sp.none }, xxs: { [prop]: sp.xxs }, xs: { [prop]: sp.xs }, s: { [prop]: sp.s }, m: { [prop]: sp.m },
-    l: { [prop]: sp.l }, xl: { [prop]: sp.xl }, xxl: { [prop]: sp.xxl }, xxxl: { [prop]: sp.xxxl },
-  } as Record<"related" | "section" | "none" | "xxs" | "xs" | "s" | "m" | "l" | "xl" | "xxl" | "xxxl", Record<P, string>>);
+  styleVariants(Object.fromEntries(roles.map((k) => [k, { [prop]: sp[k] }])) as Record<SpaceRole, Record<P, string>>);
 
 export const base = style({ display: "flex", flexDirection: "column", minWidth: 0 });
 export const gap = spaceMap("gap");
@@ -22,6 +21,6 @@ export const grow = style({ flexGrow: 1, minHeight: 0 });
 // The gap or padding in a short window (below breakpoint.short): the full-window setup tightens up (D-131).
 const short = `(max-height: ${breakpoints.short - 1}px)`;
 const shortMap = <P extends string>(prop: P) =>
-  styleVariants(Object.fromEntries((["related", "section", "none", "xxs", "xs", "s", "m", "l", "xl", "xxl", "xxxl"] as const).map((k) => [k, { "@media": { [short]: { [prop]: sp[k] } } }])) as Record<"related" | "section" | "none" | "xxs" | "xs" | "s" | "m" | "l" | "xl" | "xxl" | "xxxl", { "@media": Record<string, Record<P, string>> }>);
+  styleVariants(Object.fromEntries(roles.map((k) => [k, { "@media": { [short]: { [prop]: sp[k] } } }])) as Record<SpaceRole, { "@media": Record<string, Record<P, string>> }>);
 export const shortGap = shortMap("gap");
 export const shortPadding = shortMap("padding");

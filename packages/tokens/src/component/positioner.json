@@ -12,7 +12,7 @@
       },
       "edge": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "topBand": {
         "$type": "dimension",

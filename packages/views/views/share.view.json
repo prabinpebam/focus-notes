@@ -19,8 +19,8 @@
     },
     "slots": {
       "footer": [
-        { "type": "Stack", "props": { "gap": "m" }, "children": [
-          { "type": "Inline", "when": { "expr": { "in": [{ "get": "vm.share.phase" }, ["list", "note"]] } }, "props": { "gap": "s", "wrap": true }, "children": [
+        { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+          { "type": "Inline", "when": { "expr": { "in": [{ "get": "vm.share.phase" }, ["list", "note"]] } }, "props": { "gap": "inlineItem", "wrap": true }, "children": [
             { "type": "Button", "id": "remember", "props": { "label": { "t": "share.reader.remember" }, "size": "s", "toggle": true, "pressed": { "get": "vm.share.remember" } },
               "on": { "press": { "run": "share.setRemember", "args": { "value": { "expr": { "!": { "get": "vm.share.remember" } } } } } } },
             { "type": "Button", "id": "signOut", "props": { "label": { "t": "share.reader.signOut" }, "size": "s" }, "on": { "press": { "run": "share.signOut" } } }
@@ -32,8 +32,8 @@
     "children": [
       { "switch": { "get": "vm.share.phase" }, "cases": {
         "opening": { "type": "Spinner", "props": { "label": { "t": "share.reader.opening" } } },
-        "gate": { "type": "Stack", "props": { "gap": "l" }, "children": [
-          { "type": "Stack", "props": { "gap": "s" }, "children": [
+        "gate": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+          { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "Heading", "props": { "value": { "t": "share.reader.gate.title" }, "level": "1" } },
             { "type": "Text", "props": { "value": { "t": "share.reader.gate.intro" }, "tone": "muted" } }
           ] },
@@ -46,7 +46,7 @@
             "on": { "submit": [{ "run": "share.submit", "args": { "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }] } },
           { "type": "Text", "when": { "get": "vm.share.error" }, "props": { "value": { "t": "share.reader.error" }, "tone": "danger", "announce": true } },
           { "type": "Text", "when": { "get": "vm.share.empty" }, "props": { "value": { "t": "share.reader.error.empty" }, "tone": "danger", "announce": true } },
-          { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+          { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
             { "type": "Button", "id": "open", "props": { "label": { "t": "share.reader.open" }, "variant": "primary", "busy": { "get": "vm.share.busy" } },
               "on": { "press": [{ "run": "share.submit", "args": { "value": { "get": "local.accessCode" }, "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }, { "set": "local.accessCode", "to": "" }] } },
             { "type": "Button", "id": "openRemember", "props": { "label": { "t": "share.reader.openRemember" }, "busy": { "get": "vm.share.busy" } },
@@ -57,15 +57,15 @@
           { "type": "Button", "when": { "get": "vm.share.legacy" }, "props": { "label": { "t": "share.reader.useCode" }, "variant": "subtle" },
             "on": { "press": [{ "run": "share.setLegacy", "args": { "value": false } }, { "set": "local.passcode", "to": "" }] } }
         ] },
-        "list": { "type": "Stack", "props": { "gap": "s" }, "children": [
+        "list": { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
           { "type": "NoteContent", "props": { "blocks": { "get": "vm.share.list.title" } } },
           { "type": "NoteContent", "props": { "blocks": { "get": "vm.share.list.body" } } }
         ] },
-        "note": { "type": "Stack", "props": { "gap": "l" }, "children": [
+        "note": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
           { "type": "Inline", "when": { "get": "vm.share.multiple" }, "children": [
             { "type": "Button", "id": "backToList", "props": { "label": { "t": "share.reader.backToList" }, "size": "s" }, "on": { "press": { "run": "share.showList" } } }
           ] },
-          { "type": "Stack", "props": { "gap": "s" }, "children": [
+          { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "NoteContent", "props": { "blocks": { "get": "vm.share.note.title" } } },
             { "type": "Text", "props": { "value": { "t": "reader.updated", "args": { "date": { "get": "vm.share.note.updated" } } }, "role": "secondary", "tone": "muted" } }
           ] },

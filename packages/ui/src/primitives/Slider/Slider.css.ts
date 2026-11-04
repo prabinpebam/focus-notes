@@ -1,5 +1,6 @@
 import { createVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { hitReach } from "../hit.ts";
 
 const t = tokens.cmp.slider;
 /** How far along the track the value is, set as it moves. */
@@ -26,6 +27,8 @@ export const fill = style({ ...line, width: fillWidth, backgroundColor: t.fill }
 // Centered on the rail: React Aria moves the thumb back by half its own size on both axes, so its
 // top is the track's center line, as the rail's is, at any UI scale (D-111).
 export const thumb = style({
+  // Its 16 px dot reaches size.hit as a target, by an invisible extension (spacing SP-6).
+  "::after": hitReach(t.thumbHit, t.thumbSize, t.thumbSize),
   top: "50%",
   width: t.thumbSize,
   height: t.thumbSize,

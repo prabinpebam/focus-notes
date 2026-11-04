@@ -35,15 +35,15 @@
       },
       "paddingBlock": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.insetSm}"
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.scale.m}"
       },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.s}"
+        "$value": "{space.inlineItem}"
       },
       "maxWidth": {
         "$type": "dimension",

@@ -13,7 +13,7 @@
       "props": { "position": "window", "layer": "dialog", "landmark": "region", "label": { "t": "feedback.panel.title" } },
       "children": [{
         "type": "Stack",
-        "props": { "gap": "s", "padding": "m" },
+        "props": { "gap": "stackItem", "padding": "insetMd" },
         "children": [
           {
             "type": "StatusRow",

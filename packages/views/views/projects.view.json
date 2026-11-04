@@ -51,7 +51,7 @@
      {
       "type": "Stack",
       "props": {
-       "gap": "xl"
+       "gap": "stackSection"
       },
       "children": [
        {
@@ -111,13 +111,13 @@
      {
       "type": "Stack",
       "props": {
-       "gap": "xl"
+       "gap": "stackSection"
       },
       "children": [
        {
         "type": "Stack",
         "props": {
-         "gap": "s"
+         "gap": "stackItem"
         },
         "children": [
          {
