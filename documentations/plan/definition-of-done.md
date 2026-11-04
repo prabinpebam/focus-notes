@@ -57,7 +57,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ### Phase-2 project increment, fd5252ee
 
-Colour/preset-logo commit feedback is pushed at `78d0a335`. Font/theme trigger feedback (`c766d793`) and watermark refusal/recovery proof (`fd5252ee`) are committed locally; GitHub repeatedly refused the branch update with `Internal Server Error`. No app code is merged to main.
+Colour/preset-logo commit feedback (`78d0a335`), font/theme trigger feedback (`c766d793`) and watermark refusal/recovery proof (`fd5252ee`) are pushed. GitHub repeatedly refused the ordinary branch updates with `Internal Server Error`; one `git push --no-thin origin vq-ui-states` succeeded without changing history. No app code is merged to main.
 
 Project choices retain the attempted selection and error locally while the writing surface keeps its saved identity. Retry uses the latest attempted value, Revert does not write, and the persistent font/theme trigger carries the minimum feedback beat after its popover closes. A refused font/theme write clears its temporary preview, not the retained choice. Theme arrows remain preview-only; Use app default commits explicitly.
 
