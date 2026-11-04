@@ -128,6 +128,16 @@ The Copilot connection always says **Cloud**, has no API key or editable endpoin
 
 **Find on this computer** (IA-CMP-AIDISCOVER, AIS-07) asks each local server's usual port for its models, waiting at most 800 ms each, and never looks beyond this computer. It says "Looking for AI servers on this computer…", then "Found 2 servers on this computer." with a row per server ("3 models · http://127.0.0.1:11434", or "Running, no models yet · …") and **Set up**, or "No AI server is answering on this computer. Start Ollama, LM Studio or another local server, then look again." **Set up** opens the form with the address and the first model that runs locally. A server that asks for a token still counts as found. LocalAI shares llama.cpp's port, so it isn't asked separately.
 
+### The scan while it looks
+
+**Proposed, strict design (owner, 5 November: "We need a visually interesting one."); gallery mock, not wired** (DD-RWR-12, [pending decision](../plan/decisions.md#pending-number-orchestrator-a-visual-toolbar-customizer-and-a-scan-worth-watching)). The scan is a long wait (up to 1.5 s for the ports, 5 s for the Copilot CLI), so it shows its work honestly instead of one spinner:
+
+- **A radar** over this computer's mark: a sweep turns, and a blip lights for each server that answers. It never shows a blip it hasn't found.
+- **One row per place it asks**: Ollama (11434), LM Studio (1234), llama.cpp (8080), vLLM (8000), SGLang (30000), Jan (1337), Docker Model Runner (12434) and the GitHub Copilot CLI, the same list `packages/core/src/ai-providers.ts` probes. Each turns *Checking…*, then *Found · 3 models* (or *Running, no models yet*), or *Not running*.
+- **A live count** ("Found 2 so far"), announced politely once at the end, not on every row.
+- **Its ends:** found (the rows with **Set up**), none (the existing words and **Look again**), error (what failed, keeping what was found, and **Try again**).
+- **Reduced motion** stops the sweep and the blips' pulse; the rows and count still change.
+
 ## Models
 
 **Find models** lists what the service offers, up to 500, within 8 seconds: for a saved connection, or for the form you're filling in, with the key you typed, or the saved key only while the address is still the saved one (AIS-08). "Finding available models…", then "12 models available." or "No models are available. Install or load one, or type a model you have access to." Ollama models that run in the cloud show "· Cloud", so a local server can't quietly send text away. Azure lists none: its deployment is the model.

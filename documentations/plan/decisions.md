@@ -1,5 +1,31 @@
 # Decisions
 
+## Pending number (orchestrator): a visual toolbar customizer and a scan worth watching
+
+**Proposed, strict design (owner, 5 November 00:52); gallery mocks on `vq-toolbar-design`, nothing wired, awaiting the owner's sign-off. The decision number comes from the orchestrator.**
+
+The owner's words, verbatim:
+
+> A) "We don't have an interesting loading state for when you are scanning for AI models in the PC. We need a visually interesting one."
+>
+> B) "We need wider dialog for customizing toolbar. We need completely different and visual approach to toolbar customization.
+> - A mock visual of the toolbar should be show. It should look exactly like the actual toolbar when expanded.
+> - No need to show names of the btns, show the names + shortcut only on hover as how it would be on the real toolbar. Hover and active states all work except the button doesn't do anything.
+> - All the btn that are available to be added to the toolbar are listed below in a compact manner
+>     - It should be the icon-btn exactly as how it would appear on the toolbar when added, with a text label beside it.
+>     - We can go for a 3 or 4 column layout to show all the available btns
+>     - We should also group this list by what categories these btns belong to.
+> - Users can drag and drop btns on the toolbar to customize the toolbar. Order is decided by dragging btn around. An insertion marker is shown to indicate where exactly the btn will get dropped.
+>      - User can drag the new btn-icon over the btn they want to replace and hold for a like 1 sec for the lower btn to animate and move out of the slot slightly indicating dropping there will remove the current btn in that slot. If you hover out, the original btn gets back in position. If you drop, the previous btn moves out and fades and disappears while the new btn gets into the slot in a smooth seamless animation.
+> - There's a max no of btns allowed in the toolbar. When full, you have to remove one before adding a new one.
+>     - This is indicated by showing a red color insertion marker."
+
+The owner's screenshot of the current dialog (rows of *Move up*, *Move down*, *Unpin* and *Pin* text buttons, clipped at the dialog's width) is the problem statement; it isn't kept.
+
+**What the mocks propose.** (B) A wide dialog (the `dialogL` width) whose top is the real expanded toolbar: the same `MorphPanel` frame, `ToolbarRow`, `IconButton`s with their tooltips (name and shortcut on hover), and ⋯, inert but with every hover and press state. Below it, the actions that can be added, grouped by category (Notes, Find, View, Write, App), in a 4-column grid that drops to 3 and fewer as the dialog narrows; each is the real `IconButton` with its name beside it. Dragging (from the catalogue or within the toolbar) shows an insertion marker between slots; resting on a slot for 1 s (`motion.hold`) lifts its button half out of the slot, moving away reverts it, dropping swaps them (the old one slides out and fades while the new one settles in). Dragging a toolbar button out of the toolbar removes it. With six pinned the marker turns red (danger tone) and dropping between slots does nothing, while hold-to-replace still works. The keyboard does all of it: Space or Enter picks up a button, arrows move the marker, Space or Enter drops, Esc cancels, Delete removes, and a catalogue button picked up can replace a slot after the same hold or with Shift+Enter; every step is announced. Reduced motion keeps the marker and the lifted state, without the slides. (A) Find on this computer shows a radar: a sweep turns over the computer's mark while each place it asks (Ollama, LM Studio, llama.cpp, vLLM, SGLang, Jan, Docker Model Runner and the Copilot CLI) is a row with its port that turns *Checking…*, then *Found · 3 models* or *Not running*; the count of found servers rises as they answer. It ends in found (the rows with **Set up**), none (the existing words and **Look again**) or error (what failed and **Try again**). Reduced motion stops the sweep and keeps the per-row states.
+
+**Trace:** CP-REACH-01 → SC-FIND-05 → UC-CANVAS-05 → IA-CMP-TOOLBAR / IA-CMP-OVERFLOW → DD-IA-08 → UI-08 (the toolbar); CP-RWR-01 → SC-RWR-04 → UC-RWR-08 → IA-CMP-AIDISCOVER → DD-RWR-12 → AIS-07 (the scan). Affects [Main UI](../experience/main-ui.html#customize-toolbar-visual), [Settings AI](../experience/ai-settings.md#the-scan-while-it-looks), [Information architecture](../design/information-architecture.html) and [waits](../architecture/perceived-performance.md).
+
 ## D-338: choose a folder in today's workspace
 
 **Decided (implementation coordinator, 3 November 2026).** Ship New note in…
