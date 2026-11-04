@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
@@ -8,6 +8,7 @@ import { test, expect } from "./fixtures.ts";
 import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
 import { picture } from "./fre-fakes.ts";
+import { card, start as startFirstRun, world } from "./github-world.ts";
 
 async function closeTestApp(l: Launched) {
   try {
@@ -21,6 +22,66 @@ async function closeTestApp(l: Launched) {
     }
   }
 }
+
+test("First setup stops after its real clone receipt and resumes through acknowledged private-first push", async () => {
+  test.setTimeout(180_000);
+  const w = await world({ gcm: true });
+  w.fakes.store(w.gh.token);
+  const l = await startFirstRun(w);
+  try {
+    await l.app.evaluate(({ BrowserWindow }) => {
+      Reflect.set(globalThis, "focusNotesSlow", { "setup:clone": 5000, "setup:push": 5000 });
+      const contents = BrowserWindow.getAllWindows()[0]!.webContents;
+      const send = contents.send.bind(contents);
+      let previous = "";
+      const starts: string[] = [];
+      Reflect.set(globalThis, "setupStepStarts", starts);
+      contents.send = (channel, ...args) => {
+        const report: unknown = args[0];
+        if (channel === "setup:report" && typeof report === "object" && report && "steps" in report && Array.isArray(report.steps)) {
+          const current: unknown = report.steps.find((step: unknown) => typeof step === "object" && step && "state" in step && step.state === "running");
+          const id = typeof current === "object" && current && "id" in current && typeof current.id === "string" ? current.id : "";
+          if (id && id !== previous) starts.push(id);
+          previous = id;
+        }
+        send(channel, ...args);
+      };
+    });
+    await card(l.page).getByRole("button", { name: "Get started", exact: true }).click();
+    await card(l.page).getByRole("button", { name: "Continue as Ada", exact: true }).click();
+    await card(l.page).getByRole("button", { name: /^Create my notes(?:$| )/ }).click();
+    const setup = card(l.page);
+    await expect(setup.getByText(/^Downloading to this computer · 5 of 9/)).toBeVisible({ timeout: 60000 });
+    await expect(setup.getByText("4 of 9 steps complete", { exact: true })).toBeVisible();
+    await expect(setup.getByText(/^Downloading to this computer · 5 of 9.* · [3-9]\d* s$/)).toBeVisible();
+    await setup.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(setup.getByRole("button", { name: "Stopping after this step…", exact: true })).toHaveAttribute("aria-disabled", "true");
+    await expect(setup.getByText(/^Setup stopped\. Completed files and settings are kept/)).toBeVisible({ timeout: 15000 });
+    await expect(setup.getByText("5 of 9 steps complete", { exact: true })).toBeVisible();
+    const workspace = join(dirname(w.dirs.docs), "notes");
+    const retained = join(workspace, "notes", "retained.md");
+    writeFileSync(retained, "# Retained\n\nNever overwrite this note.\n");
+    const receipt = JSON.parse(readFileSync(join(w.dirs.userData, DATA_FILES.setup), "utf8"));
+    expect(receipt.steps.clone.state).toBe("done");
+    expect(receipt.steps.link).toBeUndefined();
+    await setup.getByRole("button", { name: "Resume setup", exact: true }).click();
+    await expect(setup.getByText(/^Saving to GitHub · 9 of 9/)).toBeVisible({ timeout: 60000 });
+    await expect(setup.getByText("8 of 9 steps complete", { exact: true })).toBeVisible();
+    await setup.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(setup.getByText("9 of 9 steps complete", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(setup.getByText(/^Setup stopped\./)).toHaveCount(0);
+    await expect(setup.getByRole("button", { name: "Resume setup", exact: true })).toHaveCount(0);
+    const starts = await l.app.evaluate(() => Reflect.get(globalThis, "setupStepStarts"));
+    expect(starts.filter((id: string) => id === "clone")).toHaveLength(1);
+    expect(starts.filter((id: string) => id === "push")).toHaveLength(1);
+    expect(readFileSync(retained, "utf8")).toBe("# Retained\n\nNever overwrite this note.\n");
+    expect(w.git(join(workspace, "private"), "rev-parse", "HEAD")).toBe(w.git(join(w.remotes, "ada", "notes-private.git"), "rev-parse", "main"));
+    expect(w.git(workspace, "rev-parse", "HEAD")).toBe(w.git(join(w.remotes, "ada", "notes.git"), "rev-parse", "main"));
+  } finally {
+    await closeTestApp(l);
+    w.server.close();
+  }
+});
 
 test("Site preview counts actual reads, cancels safely and retains Apply and local Publish recovery", async () => {
   const { dirs } = instance();

@@ -329,6 +329,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   // Set up my instance (WP-3.1, FRE-08): intent-level steps; the passphrase is passed only to run the vault step.
   setup: {
     status: () => ipcRenderer.invoke("setup:status"),
+    cancel: () => ipcRenderer.invoke("setup:cancel"),
     start: (options: unknown, passphrase?: string) => ipcRenderer.invoke("setup:start", options, passphrase),
     retry: (step: string, passphrase?: string) => ipcRenderer.invoke("setup:retry", step, passphrase),
     reset: () => ipcRenderer.invoke("setup:reset"),

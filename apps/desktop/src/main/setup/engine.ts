@@ -91,6 +91,7 @@ export interface SetupDeps {
 interface StepRecord { state: SetupStepState; problem?: SetupProblem }
 interface Progress {
   version: 1;
+  cancelled?: boolean;
   options?: SetupOptions;
   login?: string;
   site?: string;
@@ -146,6 +147,7 @@ function readProgress(raw: unknown): Progress {
     return out;
   }
   if (typeof p.login === "string") out.login = p.login;
+  if (p.cancelled === true) out.cancelled = true;
   if (typeof p.site === "string" && p.site.startsWith("https://")) out.site = p.site;
   for (const id of SETUP_STEPS) {
     const r = (p.steps as Record<string, StepRecord | undefined>)[id];
@@ -160,6 +162,8 @@ export class SetupEngine {
   #p: Progress;
   #api: GitHubApi | undefined;
   #running = false;
+  #stopping = false;
+  #cancelled = false;
   readonly #queue = new Queue();
   /** Only while a call that was given one runs. */
   #passphrase: string | undefined;
@@ -167,6 +171,7 @@ export class SetupEngine {
   private constructor(deps: SetupDeps, progress: Progress) {
     this.#d = deps;
     this.#p = progress;
+    this.#cancelled = progress.cancelled === true;
   }
 
   static async open(deps: SetupDeps): Promise<SetupEngine> {
@@ -182,6 +187,8 @@ export class SetupEngine {
   report(): SetupReport {
     return {
       running: this.#running,
+      stopping: this.#stopping,
+      cancelled: this.#cancelled,
       ...(this.#p.options ? { options: { ...this.#p.options } } : {}),
       ...(this.#p.login ? { login: this.#p.login } : {}),
       ...(this.#p.site ? { site: this.#p.site } : {}),
@@ -202,11 +209,20 @@ export class SetupEngine {
       await this.#save();
       return this.#session(passphrase, async () => {
         for (const id of SETUP_STEPS) {
+          if (this.#stopping) break;
           if (complete(this.#p.steps[id])) continue;
           if (!(await this.#step(id))) break;
         }
       });
     });
+  }
+
+  cancel(): SetupReport {
+    if (this.#running) {
+      this.#stopping = true;
+      this.#emit();
+    }
+    return this.report();
   }
 
   /** Runs one step again. A done step stays done (nothing is called); the steps before it must be complete. */
@@ -249,6 +265,7 @@ export class SetupEngine {
   reset(): Promise<SetupReport> {
     return this.#queue.run(async () => {
       this.#p = { version: 1, steps: {} };
+      this.#cancelled = false;
       this.#api = undefined;
       await rm(this.#d.progressFile, { force: true });
       this.#emit();
@@ -258,11 +275,18 @@ export class SetupEngine {
 
   async #session(passphrase: string | undefined, fn: () => Promise<void>): Promise<SetupReport> {
     this.#passphrase = passphrase;
+    this.#stopping = false;
+    this.#cancelled = false;
+    this.#p.cancelled = false;
     this.#running = true;
     try {
       await fn();
+      this.#cancelled = this.#stopping && SETUP_STEPS.some((id) => !complete(this.#p.steps[id])) && !SETUP_STEPS.some((id) => this.#p.steps[id]?.state === "failed");
+      this.#p.cancelled = this.#cancelled;
+      await this.#save();
     } finally {
       this.#passphrase = undefined;
+      this.#stopping = false;
       this.#running = false;
       this.#emit();
     }

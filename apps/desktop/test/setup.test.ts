@@ -78,6 +78,83 @@ function harness(o: { done?: SetupStepId[]; options?: SetupOptions; gh?: FakeGit
 const state = (r: SetupReport, id: SetupStepId) => r.steps.find((s) => s.id === id)!;
 const before = (id: SetupStepId) => SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(id));
 
+describe("PRF-08: setup cancellation keeps completed receipts", () => {
+  it("finishes the active clone, stops before linking, and resumes without cloning twice", async () => {
+    const options = OPTIONS(join(mkdtempSync(join(tmpdir(), "fn-setup-cancel-")), "notes"));
+    const h = harness({ done: before("clone"), options });
+    let release!: () => void;
+    let entered!: () => void;
+    const started = new Promise<void>((r) => { entered = r; });
+    const held = new Promise<void>((r) => { release = r; });
+    const calls: string[] = [];
+    const e = await h.open({ git: async (call) => {
+      calls.push(call.args[0]!);
+      if (call.args[0] === "clone") {
+        entered();
+        await held;
+        mkdirSync(join(options.folder, "notes"), { recursive: true });
+        writeFileSync(join(options.folder, "notes", "kept.md"), "# Kept\n");
+      }
+      return { code: call.args[0] === "config" ? 1 : 0, stdout: "", stderr: "" };
+    } });
+    // The persisted options are the exact same workspace, never an implicit replacement.
+    const run = e.start(options);
+    await started;
+    expect(e.cancel()).toMatchObject({ running: true, stopping: true, cancelled: false });
+    expect(state(e.report(), "clone").state).toBe("running");
+    release();
+    const stopped = await run;
+    expect(stopped).toMatchObject({ running: false, stopping: false, cancelled: true });
+    expect(state(stopped, "clone").state).toBe("done");
+    expect(state(stopped, "link").state).toBe("pending");
+    expect((await h.open()).report()).toMatchObject({ running: false, cancelled: true });
+    expect(readFileSync(join(options.folder, "notes", "kept.md"), "utf8")).toBe("# Kept\n");
+    const resumed = await e.start(options);
+    expect(resumed.cancelled).toBe(false);
+    expect(calls.filter((x) => x === "clone")).toHaveLength(1);
+    expect(state(resumed, "clone").state).toBe("done");
+    expect(readFileSync(join(options.folder, "notes", "kept.md"), "utf8")).toBe("# Kept\n");
+  });
+
+  it("acknowledges both final push receipts instead of claiming a completed save was cancelled", async () => {
+    const h = harness({ done: before("push") });
+    let release!: () => void;
+    let entered!: () => void;
+    const started = new Promise<void>((r) => { entered = r; });
+    const held = new Promise<void>((r) => { release = r; });
+    let pushes = 0;
+    const e = await h.open({ git: async (call) => {
+      if (call.args[0] === "push" && ++pushes === 1) { entered(); await held; }
+      return { code: 0, stdout: "", stderr: "" };
+    } });
+    const run = e.start(OPTIONS());
+    await started;
+    expect(e.cancel().stopping).toBe(true);
+    release();
+    expect(await run).toMatchObject({ running: false, stopping: false, cancelled: false });
+    expect(state(e.report(), "push").state).toBe("done");
+    expect(pushes).toBe(2);
+    await e.start(OPTIONS());
+    expect(pushes).toBe(2);
+  });
+
+  it("keeps a refused push as a failure even after a stop request", async () => {
+    const h = harness({ done: before("push") });
+    let e: SetupEngine;
+    e = await h.open({ git: async (call) => {
+      if (call.args[0] === "push") {
+        e.cancel();
+        return { code: 128, stdout: "", stderr: "Could not resolve host: github.com" };
+      }
+      return { code: 0, stdout: "", stderr: "" };
+    } });
+    const failed = await e.start(OPTIONS());
+    expect(failed).toMatchObject({ running: false, stopping: false, cancelled: false });
+    expect(state(failed, "push")).toMatchObject({ state: "failed", problem: "offline" });
+    expect((await h.open()).report().steps.filter((x) => x.state === "done")).toHaveLength(8);
+  });
+});
+
 /** The parts of an OpenSSH private key file (PROTOCOL.key). */
 function parseOpenSsh(pem: string) {
   const lines = pem.trim().split("\n");

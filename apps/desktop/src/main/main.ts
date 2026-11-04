@@ -1873,6 +1873,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return g ? g.backupRepo(repo) : NO_GIT;
   });
   handle("setup:status", async () => (await setup()).report());
+  handle("setup:cancel", async () => (await setup()).cancel());
   // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
   handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), ...(await setupWhere((options as { instance?: unknown } | undefined)?.instance as string | undefined)) }), passphraseArg(passphrase)));
   // Download somewhere else (D-154): the system's dialog, or the next free folder beside the default. Undefined: cancelled.

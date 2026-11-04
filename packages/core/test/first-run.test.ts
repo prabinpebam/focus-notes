@@ -197,7 +197,7 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
   const app = createApp(bridge, en, "en", { clock: opts.clock ?? { now: () => Date.parse("2026-10-15T09:00:00Z"), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) } });
   const vm = () => app.viewModels.select("vm.firstRun", app.store.state) as Record<string, unknown>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, vm, run, saved, calls, tokens, passphrases, last: () => saved.at(-1), pushSetup: (r: SetupReport) => setupListener!(r), pushSync: (r: SyncReport) => syncListener!(r), pushProgress: (p: FirstRunProgress) => firstRunProgress!(p) };
+  return { app, bridge, vm, run, saved, calls, tokens, passphrases, last: () => saved.at(-1), pushSetup: (r: SetupReport) => setupListener!(r), pushSync: (r: SyncReport) => syncListener!(r), pushProgress: (p: FirstRunProgress) => firstRunProgress!(p) };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -711,6 +711,31 @@ describe("UI-12: the desktop's account pill", () => {
 });
 
 describe("PRF-13, D-149: no step waits in silence", () => {
+  it("counts actual setup receipts, requests safe cancellation, and resumes only saved options", async () => {
+    const t = shell();
+    await t.app.start();
+    const active = report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true);
+    t.bridge.setup!.cancel = async () => {
+      t.pushSetup({ ...active, stopping: true });
+      return { ...active, stopping: true };
+    };
+    t.pushSetup(active);
+    expect(t.vm()).toMatchObject({ setupCount: "4 of 9 steps complete", setupCanCancel: true, setupCancelled: false });
+    expect(t.vm().setupOverallPercent).toBeCloseTo(400 / 9);
+    await t.run("firstRun.cancelSetup");
+    expect(t.vm()).toMatchObject({ setupStopping: true, setupCancelLabel: "Stopping after this step…" });
+    expect(t.app.commands.describe("firstRun.cancelSetup").enabled).toBe(false);
+    const cancelled = { ...report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done" }), cancelled: true };
+    t.pushSetup(cancelled);
+    expect(t.vm()).toMatchObject({ setupCount: "5 of 9 steps complete", working: false, setupCanCancel: false, setupCancelled: true });
+    expect(t.vm().progressText).toContain("Completed files and settings are kept");
+    const started: unknown[] = [];
+    t.bridge.setup!.start = async (options) => { started.push(options); return report(Object.fromEntries(SETUP_STEPS.map((id) => [id, "done"]))); };
+    await t.run("firstRun.resumeSetup");
+    await t.run("firstRun.resumeSetup");
+    expect(started).toEqual([cancelled.options]);
+    expect(t.vm()).toMatchObject({ setupCount: "9 of 9 steps complete", setupOverallPercent: 100, setupCancelled: false });
+  });
   it("reading the account: nothing for 300 ms, then the profile card's skeleton and its words, then the elapsed time", async () => {
     const clock = manualClock();
     const slow = deferred();

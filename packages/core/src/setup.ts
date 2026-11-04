@@ -45,6 +45,10 @@ export interface SetupStepReport {
 /** Where setup stands. Holds no secret: no token, passphrase, or key (SEC-03). */
 export interface SetupReport {
   running: boolean;
+  /** Stop requested; the active step finishes and records its receipt before the sequence stops. */
+  stopping?: boolean;
+  /** Stopped with unfinished steps. Completed steps and files remain in place. */
+  cancelled?: boolean;
   options?: SetupOptions;
   /** The GitHub account it runs in, once known. */
   login?: string;
@@ -80,6 +84,8 @@ export interface SetupBridge {
   status(): Promise<SetupReport>;
   /** Runs every step not yet done, in order, stopping at the first that fails. */
   start(options: SetupOptions, passphrase?: string): Promise<SetupReport>;
+  /** Stops between steps, never interrupts an atomic Git/API operation or deletes its results. */
+  cancel?(): Promise<SetupReport>;
   /** Runs one step again, if the steps before it are done or skipped. A done step is left as it is. */
   retry(step: SetupStepId, passphrase?: string): Promise<SetupReport>;
   /** Forgets the progress (Run setup again). Nothing on GitHub or on disk is removed. */

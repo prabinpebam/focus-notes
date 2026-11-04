@@ -484,6 +484,20 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     else setWs({ error: "firstRun.workspace.error.failed" });
     bump();
   });
+  reg("firstRun.cancelSetup", async () => {
+    if (store.state.setup.report?.running && bridge.setup?.cancel) {
+      await bridge.setup.cancel();
+    }
+  }, (s) => Boolean(s.setup.report?.running && !s.setup.report.stopping && bridge.setup?.cancel));
+  reg("firstRun.resumeSetup", async () => {
+    const report = store.state.setup.report;
+    if (state().busy || !report?.cancelled || !report.options || !bridge.setup) return;
+    const options = report.options;
+    const resumed = await busy("create", () => bridge.setup!.start(options));
+    if (resumed) store.update((s) => ({ ...s, setup: { available: true, report: resumed } }));
+    else setWs({ error: "firstRun.workspace.error.failed" });
+    bump();
+  });
   reg<{ value: string }>("firstRun.setQuery", (a) => {
     const query = value(a);
     const first = matches(state().workspace.repos, query)[0];
@@ -614,6 +628,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         openParts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, state: { type: "string", enum: ["pending", "running", "done"] }, label: { type: "string" } } } },
         hasOpenParts: { type: "boolean" }, openPercent: { type: "number" }, hasOpenPercent: { type: "boolean" },
         setupPercent: { type: "number" }, hasSetupPercent: { type: "boolean" }, percentLabel: { type: "string" },
+        setupCount: { type: "string" }, setupOverallPercent: { type: "number" }, setupCanCancel: { type: "boolean" }, setupStopping: { type: "boolean" }, setupCancelled: { type: "boolean" }, setupCancelLabel: { type: "string" },
       },
     },
     setters: {
@@ -756,7 +771,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         canOther: connect === "found" || connect === "cli",
         token: f.token, tokenError: f.tokenError,
         panel, more: w.more, details: w.details, canCreate: f.scope !== "workspace",
-        isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: started && !made && !err && !failed,
+        isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: Boolean(s.setup.report?.running),
         found: w.repos.filter((r) => r.instance).slice(0, 5).map((r, n) => ({
           id: `${r.owner}/${r.name}`, first: n === 0, variant: n === 0 ? "primary" : "secondary", label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
           icon: r.private ? "lock" : "folder", detail: updated(r.pushedAt), badge: catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public"),
@@ -764,7 +779,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
         passphrase: w.passphrase, confirm: w.confirm, folder: w.folder, folderText: catalog.format("firstRun.workspace.folder", { folder: w.folder }),
         error: err && catalog.has(err) ? catalog.format(err) : "", hasError: Boolean(err),
-        started, made, progressText: made ? catalog.format("firstRun.workspace.made") : failedStep ? catalog.format(`setup.problem.${failedStep.problem ?? "failed"}`) : catalog.format("firstRun.notes.creating"),
+        started, made, progressText: failedStep ? catalog.format(`setup.problem.${failedStep.problem ?? "failed"}`) : s.setup.report?.cancelled ? catalog.format("firstRun.setup.cancelled") : made ? catalog.format("firstRun.workspace.made") : catalog.format("firstRun.notes.creating"),
         query: w.query, activeId: w.activeId,
         noMatch: w.reposLoaded && !list.length, reposSummary: !w.reposLoaded ? "" : list.length ? catalog.format("firstRun.workspace.repos", { count: list.length }) : catalog.format("firstRun.workspace.noRepos"),
         repos: list.map((r) => ({
@@ -792,6 +807,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         waitText, hasWait, approvalText, partText, hasPart: Boolean(partText), parts,
         openParts, hasOpenParts: openParts.length > 0, openPercent: Math.max(0, openPercent), hasOpenPercent: openPercent >= 0,
         setupPercent: Math.max(0, setupPercent), hasSetupPercent: setupPercent >= 0, percentLabel: catalog.format("firstRun.wait.clone"),
+        setupCount: catalog.format("firstRun.setup.count", { done: parts.filter((x) => x.state === "done" || x.state === "skipped").length, total: parts.length }),
+        setupOverallPercent: parts.length ? 100 * parts.filter((x) => x.state === "done" || x.state === "skipped").length / parts.length : 0,
+        setupCanCancel: Boolean(s.setup.report?.running && bridge.setup?.cancel), setupStopping: Boolean(s.setup.report?.stopping), setupCancelled: Boolean(s.setup.report?.cancelled),
+        setupCancelLabel: catalog.format(s.setup.report?.stopping ? "firstRun.setup.stopping" : "firstRun.setup.cancel"),
         // The skeletons while their content is on its way (PRF-13): the profile card, and three rows of notes.
         accountSkeleton: hasWait && f.wait === "account" && connect === "checking",
         notesSkeleton: hasWait && f.wait === "findNotes" && panel === "checking",

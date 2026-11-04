@@ -1,4 +1,12 @@
 {
+  "command.firstRun.cancelSetup": "Stop setup",
+  "command.firstRun.resumeSetup": "Resume setup",
+  "firstRun.setup.cancel": "Cancel",
+  "firstRun.setup.stopping": "Stopping after this step…",
+  "firstRun.setup.stoppingReason": "Finishing the current step safely. Completed files and settings will be kept.",
+  "firstRun.setup.cancelled": "Setup stopped. Completed files and settings are kept. Resume continues with the remaining steps.",
+  "firstRun.setup.resume": "Resume setup",
+  "firstRun.setup.count": "{done} of {total} steps complete",
   "commit.save": "Save change",
   "toast.queued": "{count, plural, one {1 more waiting} other {# more waiting}}",
   "toast.repeated": "{message} ({count})",

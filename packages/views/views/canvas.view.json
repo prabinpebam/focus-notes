@@ -8357,6 +8357,41 @@
                                       },
                                       {
                                         "type": "ProgressBar",
+                                        "props": {
+                                          "value": { "get": "vm.firstRun.setupOverallPercent" },
+                                          "label": { "get": "vm.firstRun.setupCount" }
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": { "get": "vm.firstRun.setupCount" },
+                                          "tone": "muted"
+                                        }
+                                      },
+                                      {
+                                        "type": "Button",
+                                        "when": { "get": "vm.firstRun.setupCanCancel" },
+                                        "props": {
+                                          "label": { "get": "vm.firstRun.setupCancelLabel" },
+                                          "variant": "subtle",
+                                          "disabled": { "get": "vm.firstRun.setupStopping" },
+                                          "disabledReason": { "t": "firstRun.setup.stoppingReason" }
+                                        },
+                                        "on": { "press": { "run": "firstRun.cancelSetup" } }
+                                      },
+                                      {
+                                        "type": "Button",
+                                        "when": { "get": "vm.firstRun.setupCancelled" },
+                                        "props": {
+                                          "label": { "t": "firstRun.setup.resume" },
+                                          "variant": "primary",
+                                          "busy": { "get": "vm.firstRun.busy" }
+                                        },
+                                        "on": { "press": { "run": "firstRun.resumeSetup" } }
+                                      },
+                                      {
+                                        "type": "ProgressBar",
                                         "when": {
                                           "get": "vm.firstRun.hasSetupPercent"
                                         },
