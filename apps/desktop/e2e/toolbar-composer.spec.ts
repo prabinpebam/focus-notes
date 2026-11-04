@@ -31,6 +31,47 @@ async function endGap(page: Page, toolbar: Locator) {
   await page.mouse.move(r.x + r.width - 1, r.y + r.height / 2, { steps: 10 });
 }
 
+test("UI-08: composer fits normal and minimum windows and reorders across wrapped rows", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Synthetic responsive toolbar review\n");
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs); console.log(`toolbar-scan-owned-pid=${l.pid}`);
+    const { page } = l, c = await composer(page);
+    for (const size of [[1100, 800], [360, 320]]) {
+      await l.app.evaluate(({ BrowserWindow }, [width, height]) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("index.html"))!.setSize(width!, height!), size);
+      await settled(page);
+      await c.toolbar.scrollIntoViewIfNeeded();
+      const geometry = await c.toolbar.evaluate(toolbar => {
+        const stage = toolbar.closest('[role="group"]')!.parentElement!.parentElement!;
+        const panel = toolbar.closest("[data-morph-panel]")!;
+        const s = stage.getBoundingClientRect(), p = panel.getBoundingClientRect(), padding = getComputedStyle(stage);
+        const buttons = [...toolbar.querySelectorAll("button")].map(b => {
+          const r = b.getBoundingClientRect();
+          return { left: r.left, right: r.right, width: r.width, height: r.height, top: r.top };
+        });
+        return { left: s.left + parseFloat(padding.paddingLeft), right: s.right - parseFloat(padding.paddingRight), panelLeft: p.left, panelRight: p.right, overflow: toolbar.scrollWidth - toolbar.clientWidth, buttons };
+      });
+      expect(geometry.panelLeft).toBeGreaterThanOrEqual(geometry.left - 1);
+      expect(geometry.panelRight).toBeLessThanOrEqual(geometry.right + 1);
+      expect(geometry.overflow).toBeLessThanOrEqual(1);
+      for (const button of geometry.buttons) {
+        expect(button.width).toBeGreaterThanOrEqual(32);
+        expect(button.height).toBeGreaterThanOrEqual(32);
+        expect(button.left).toBeGreaterThanOrEqual(geometry.left - 1);
+        expect(button.right).toBeLessThanOrEqual(geometry.right + 1);
+      }
+      if (size[0] === 360) expect(new Set(geometry.buttons.map(b => b.top)).size).toBeGreaterThan(1);
+    }
+    await beginDrag(page, c.toolbar.getByRole("button", { name: "New note", exact: true }));
+    await endGap(page, c.toolbar);
+    await page.mouse.up();
+    await expect.poll(() => names(c.toolbar)).toEqual([...defaults.slice(1), defaults[0]!]);
+  } finally { if (l) await quit(l); }
+});
+
 test("UI-08: drag reorder, remove/add, hold replace and full refusal survive restart in the real toolbar", async () => {
   test.setTimeout(150_000);
   const dirs = tempDirs();
