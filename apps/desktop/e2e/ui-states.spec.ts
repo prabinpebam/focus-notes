@@ -90,6 +90,146 @@ test("Files hover responds to hover capability without losing touch access or ke
   } finally { await closeTestApp(l); }
 });
 
+test("A crashed native panel reloads locally and opens safe Feedback without losing the note", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md"), bytes = readFileSync(note);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("First line.");
+    const original = await editor.elementHandle();
+    const origin = await l.page.evaluate(() => performance.timeOrigin);
+    await l.page.evaluate(() => {
+      const set = Element.prototype.setAttribute;
+      Reflect.set(globalThis, "uiStatesRestorePanel", () => { Element.prototype.setAttribute = set; });
+      Element.prototype.setAttribute = function (name, value) {
+        if (name === "role" && value === "dialog") throw new Error("synthetic-panel-private-path-and-token");
+        return set.call(this, name, value);
+      };
+    });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const failure = l.page.getByRole("region", { name: "A panel couldn't load", exact: true });
+    await expect(failure).toContainText("Your notes are kept.");
+    await failure.getByRole("button", { name: "Reload panel", exact: true }).click();
+    await expect(failure).toBeVisible();
+    expect(await original!.evaluate(el => el.isConnected)).toBe(true);
+    await l.page.evaluate(() => {
+      const restore: unknown = Reflect.get(globalThis, "uiStatesRestorePanel");
+      if (typeof restore !== "function") throw new Error("Missing panel fixture cleanup");
+      restore(); Reflect.deleteProperty(globalThis, "uiStatesRestorePanel");
+    });
+    await failure.getByRole("button", { name: "Report problem", exact: true }).click();
+    const feedback = l.page.getByRole("dialog", { name: "Send feedback", exact: true });
+    await expect(feedback).toBeVisible();
+    await expect(feedback).not.toContainText("synthetic-panel-private-path-and-token");
+    await expect(feedback.getByRole("textbox", { name: "Title", exact: true })).toHaveValue("A panel couldn't load");
+    await expect(feedback.getByRole("button", { name: "Attach diagnostic report", exact: true })).toHaveAttribute("aria-pressed", "false");
+    await feedback.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(failure).toBeVisible();
+    await failure.getByRole("button", { name: "Reload panel", exact: true }).click();
+    await expect(l.page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
+    await expect(failure).toHaveCount(0);
+    expect(await original!.evaluate(el => el.isConnected)).toBe(true);
+    expect(await l.page.evaluate(() => performance.timeOrigin)).toBe(origin);
+    await expect(editor).toContainText("First line.");
+    expect(readFileSync(note)).toEqual(bytes);
+    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+  } finally { await closeTestApp(l); }
+});
+
+test("Open and Recent empty first actions choose a real project and replace their empty columns", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md"), bytes = readFileSync(note);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("First line.");
+    await l.app.evaluate(({ ipcMain, dialog }, folder) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      const list: unknown = handlers instanceof Map ? handlers.get("projects:list") : undefined;
+      if (typeof list !== "function") throw new Error("Project listing unavailable");
+      Reflect.set(globalThis, "uiStatesChosenProject", false);
+      Reflect.set(globalThis, "uiStatesProjectPickers", 0);
+      ipcMain.removeHandler("projects:list");
+      ipcMain.handle("projects:list", (...args) => Reflect.get(globalThis, "uiStatesChosenProject") ? list(...args) : []);
+      dialog.showOpenDialog = async () => {
+        Reflect.set(globalThis, "uiStatesChosenProject", true);
+        Reflect.set(globalThis, "uiStatesProjectPickers", Number(Reflect.get(globalThis, "uiStatesProjectPickers")) + 1);
+        return { canceled: false, filePaths: [folder] };
+      };
+    }, dirs.docs);
+    for (const [index, title] of ["No recent notes", "No projects yet"].entries()) {
+      await l.app.evaluate(() => Reflect.set(globalThis, "uiStatesChosenProject", false));
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+      const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+      await expect(open.getByText("No recent notes", { exact: true })).toBeVisible();
+      await expect(open.getByText("No projects yet", { exact: true })).toBeVisible();
+      const empty = open.locator("[data-tone=neutral]").filter({ hasText: title });
+      expect(await empty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBeGreaterThan(0);
+      await empty.getByRole("button", { name: "Open project", exact: true }).click();
+      await expect(open).toHaveCount(0);
+      expect(await l.app.evaluate(() => Number(Reflect.get(globalThis, "uiStatesProjectPickers")))).toBe(index + 1);
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+      await expect(open.getByRole("button", { name: "Open ws", exact: true })).toBeVisible();
+      await expect(open.getByRole("button", { name: "Open welcome", exact: true })).toBeVisible();
+      await expect(open.getByText("No recent notes", { exact: true })).toHaveCount(0);
+      await expect(open.getByText("No projects yet", { exact: true })).toHaveCount(0);
+      await l.page.keyboard.press("Escape");
+    }
+    expect(readFileSync(note)).toEqual(bytes);
+    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+  } finally { await closeTestApp(l); }
+});
+
+test("Site preview first actions use Files and real content replaces all three empty treatments", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md"), bytes = readFileSync(note);
+  rmSync(join(dirs.docs, "notes", "hello.md"));
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({
+    version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note,
+    sharingDrafts: { [dirs.docs]: { owner: "personal", people: [] } },
+  }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("First line.");
+    await l.app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler("access:load");
+      ipcMain.handle("access:load", () => ({ available: true, localReview: true, site: "https://local.test/", vault: true, grants: [] }));
+    });
+    const preview = l.page.getByRole("region", { name: "Preview site", exact: true });
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    const openPreview = async () => {
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+      const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+      await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+      await settings.getByRole("button", { name: "Preview site…", exact: true }).click();
+      await expect(preview).toBeVisible();
+    };
+    for (const [action, title] of [["Add link", "No navigation links"], ["Add section", "No sections yet"], ["Choose note", "No published notes"]] as const) {
+      await openPreview();
+      for (const title of ["No navigation links", "No sections yet", "No published notes"]) await expect(preview.getByText(title, { exact: true })).toBeVisible();
+      const empty = preview.locator("[data-tone=neutral]").filter({ hasText: title });
+      expect(await empty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBeGreaterThan(0);
+      await preview.getByRole("button", { name: action, exact: true }).click();
+      await expect(preview).toHaveCount(0);
+      await expect(files).toBeVisible();
+      await expect(l.page.getByRole("dialog", { name: "Settings", exact: true })).toHaveCount(0);
+    }
+    write(join(dirs.docs, "notes", "home.md"), "# Home sample\n\nActual public sample content.\n");
+    write(join(dirs.docs, "notes", "Essays", "second.md"), "# Section sample\n\nA real section article.\n");
+    await expect(files.getByRole("treeitem").filter({ hasText: "Home sample" })).toBeVisible();
+    await expect(files.getByRole("treeitem").filter({ hasText: "Essays" })).toBeVisible();
+    await openPreview();
+    for (const title of ["No navigation links", "No sections yet", "No published notes"]) await expect(preview.getByText(title, { exact: true })).toHaveCount(0);
+    await expect(preview.getByText("Home sample", { exact: true })).toBeVisible();
+    await preview.getByRole("button", { name: "Essays", exact: true }).click();
+    await expect(preview.getByText("Section sample", { exact: true })).toBeVisible();
+    expect(readFileSync(note)).toEqual(bytes);
+    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+  } finally { await closeTestApp(l); }
+});
+
 test("Existing project clone stops safely and resumes its retained folder without another clone", async () => {
   test.setTimeout(150_000);
   const w = await world({ gcm: true });
