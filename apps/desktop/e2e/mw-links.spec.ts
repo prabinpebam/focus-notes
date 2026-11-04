@@ -9,6 +9,7 @@ import { test, expect } from "./fixtures.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, fileRow, launch, quit, tempDirs } from "./helpers.ts";
+import { picture } from "./fre-fakes.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const rename = process.platform === "darwin" ? "Enter" : "F2";
@@ -20,7 +21,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   writeFileSync(join(docs, "Welcome.md"), "# Welcome to Focus Notes\n\n![pic](Box/assets/pic.png)\n\nSee [the plan](plan.md#steps) and [inside](Box/inner.md).\n");
   writeFileSync(join(docs, "plan.md"), "# Plan\n\nBack [home](Welcome.md). Not a link: `[home](Welcome.md)`.\n");
   mkdirSync(join(docs, "Box", "assets"), { recursive: true });
-  writeFileSync(join(docs, "Box", "assets", "pic.png"), "");
+  writeFileSync(join(docs, "Box", "assets", "pic.png"), Buffer.from(picture().split(",")[1]!, "base64"));
   writeFileSync(join(docs, "Box", "inner.md"), "# Inner\n\nSee [the plan][p].\n\n[p]: <../plan.md> \"The plan\"\n");
   mkdirSync(join(docs, "Locked"));
   const blocker = join(docs, "Locked", "blocker.md");
@@ -56,6 +57,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   expect(read("Locked", "blocker.md")).toBe("# Blocker\n\n[plan](../plan.md)\n");
   expect(read("Welcome.md")).toBe("# Welcome to Focus Notes\n\n![pic](Box/assets/pic.png)\n\nSee [the plan](plan.md#steps) and [inside](Box/inner.md).\n\nTyped before the move.\n");
   await expect(editor.locator('a[href="plan.md#steps"]')).toHaveCount(1);
+  await page.getByRole("alert").filter({ hasText: "Couldn't move “Plan”" }).getByRole("button", { name: "Dismiss", exact: true }).click();
 
   // Moving a note: links to it, in every form, and its own links follow, in one batch.
   lock(false);
@@ -68,6 +70,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   // The open note shows its new link, and still has what was typed.
   await expect(editor.locator('a[href="Shelf/plan.md#steps"]')).toHaveCount(1);
   await expect(editor).toContainText("Typed before the move.");
+  await page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Moved “Plan” to “Shelf”." }).getByRole("button", { name: "Dismiss", exact: true }).click();
 
   // Renaming a folder: links to anything in it (an image too) follow; links inside it stay.
   await row("Box").click();
@@ -77,6 +80,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   await expect(toast("Renamed to “Crate”. Updated links in 1 note.")).toBeVisible({ timeout: 10_000 });
   expect(read("Welcome.md")).toBe("# Welcome to Focus Notes\n\n![pic](Crate/assets/pic.png)\n\nSee [the plan](Shelf/plan.md#steps) and [inside](Crate/inner.md).\n\nTyped before the move.\n");
   expect(read("Crate", "inner.md")).toBe("# Inner\n\nSee [the plan][p].\n\n[p]: <../Shelf/plan.md> \"The plan\"\n");
+  await page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Renamed to “Crate”." }).getByRole("button", { name: "Dismiss", exact: true }).click();
 
   // Rename file leaves its heading alone, and links to the new path follow.
   await row("Plan").click();

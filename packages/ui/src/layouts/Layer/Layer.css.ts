@@ -9,7 +9,12 @@ export const layer = styleVariants({
   trigger: { zIndex: tokens.layer.trigger },
   panel: { zIndex: tokens.layer.panel },
   dialog: { zIndex: tokens.layer.dialog },
-  toast: { zIndex: tokens.layer.toast },
+  toast: {
+    zIndex: tokens.layer.toast,
+    selectors: {
+      '[data-app-root]:has([data-surface="dialog"]) &:not(:focus-within)': { zIndex: tokens.layer.panel },
+    },
+  },
   tooltip: { zIndex: tokens.layer.tooltip },
 });
 export const position = styleVariants({

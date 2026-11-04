@@ -8,7 +8,7 @@
  * only way, done here by keyboard alone. GitHub is the in-memory fake; pages are recorded, not opened.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { quit } from "./helpers.ts";
@@ -149,6 +149,17 @@ test("QLT-07: from the ⋯ menu, an idea goes without the report, after Try agai
   test.setTimeout(180_000);
   const { w, l, page } = await launchWorld();
   try {
+    const stateFile = join(w.dirs.userData, DATA_FILES.state);
+    const backup = `${stateFile}.before-notification`;
+    renameSync(stateFile, backup);
+    mkdirSync(stateFile);
+    try {
+      await page.keyboard.press(`${mod}+=`);
+      await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    } finally {
+      rmSync(stateFile, { recursive: true });
+      renameSync(backup, stateFile);
+    }
     const menu = await openMore(page);
     await menu.getByRole("menuitem", { name: /^Send feedback…/ }).click();
     const d = dialog(page);
@@ -164,7 +175,18 @@ test("QLT-07: from the ⋯ menu, an idea goes without the report, after Try agai
     await d.getByRole("button", { name: "Send", exact: true }).click();
     await expect(d.getByText("Couldn't reach GitHub. Your feedback is still here.")).toBeVisible({ timeout: 15_000 });
     await expect(d.getByRole("textbox", { name: "Title" })).toHaveValue("Tags in Files");
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
+    await expect.poll(() => page.evaluate(() => innerWidth)).toBeLessThanOrEqual(480);
     await settled(page);
+    const retry = d.getByRole("button", { name: "Try again", exact: true });
+    await retry.scrollIntoViewIfNeeded();
+    expect(await retry.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      return [[0.1, 0.1], [0.9, 0.1], [0.5, 0.5], [0.1, 0.9], [0.9, 0.9]].flatMap(([x, y]) => {
+        const hit = document.elementFromPoint(box.x + box.width * x!, box.y + box.height * y!);
+        return element.contains(hit) ? [] : [hit?.outerHTML.slice(0, 250) ?? "outside viewport"];
+      });
+    }), "Feedback recovery must be painted above unrelated notifications").toEqual([]);
     expect(await axeViolations(page)).toEqual([]);
     await shot(page, "failed-network");
     // Straight away, the shell waits a few seconds after a failure (D-203).

@@ -28,11 +28,11 @@ These are focused results, not permission to move main: the exact pushed candida
 
 The next local pass repaired the separate Files shortcut/tree selectors, Git-backed backup-card fixtures, Settings tab ordering, compact-setting confirmation waits and existing-connection Done action. The hermetic sign-in fixture now includes Windows PowerShell, needed by OS-protected project recents; without it, a genuine persistence-error pill obscured unrelated dialogs. All five feedback journeys now pass. Setup failure copy was shortened without changing its recovery or the visual-score threshold; all four failure states pass. A slider unmounted by a tab change could discard its queued keyboard value: a new regression failed before the fix and all 13 commit-control tests pass afterward. The desktop build and full typecheck pass.
 
-| Quarantined scope | Reason and retained coverage | Owner | Expiry |
-| --- | --- | --- | --- |
-| The three journeys in `apps/desktop/e2e/m5-sharing.spec.ts` | They require the removed named-recipient Settings sharing surface (D-285, D-339), not the approved item-first sharing UI. Assertions remain intact for migration; current item-first sharing and grant tests remain enabled. This does not quarantine runtime failures in those paths. | Merge worker | 12 November 2026, 00:00 UTC; the date guard automatically re-enables them |
+The three obsolete named-recipient Settings sharing journeys in `apps/desktop/e2e/m5-sharing.spec.ts` were deleted, not quarantined: D-285/D-339 removed that surface; current item-first sharing and grant coverage remains enabled.
 
 CI run 41923188572 passed all 2,833 unit tests but is not green: benchmark startup still needs a remembered-note fixture, and the remaining journey drifts are being repaired. Main has not moved and no replacement review build is ready.
+
+The next continuation passed the Files clipboard/menu and byte-for-byte link-rewrite journeys, font-band/wheel and keybinding journeys, and a real slider tab-switch persistence check. Tooltip portals again prefer their control's landmark; the keyboard-tooltip accessibility journey passes. Feedback recovery was genuinely covered by an unrelated notification at 480 × 360: a five-point paint hit-test failed before the layering fix and passed afterward, while the F6 notification recovery journey still passes. No benchmark budgets or baselines have been changed.
 
 ### General fixes: approved 3 November design
 

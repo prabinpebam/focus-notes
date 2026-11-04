@@ -4,7 +4,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs } from "./helpers.ts";
+import { caret, launch, quit, tempDirs, writerSettingSettled } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -86,6 +86,10 @@ async function bandOffParagraph(page: Page) {
   });
 }
 
+async function committed(page: Page, font = false) {
+  await writerSettingSettled(page, font ? "fontSize" : "focusMode");
+}
+
 test("FOC-01, FOC-05: the band follows the text size, from keys, the wheel, and reset", async () => {
   const dirs = tempDirs();
   // A short note: the text growing doesn't change the editor's height (its minimum), as in the owner's report.
@@ -104,21 +108,33 @@ test("FOC-01, FOC-05: the band follows the text size, from keys, the wheel, and 
 
   // Larger twice with the keys, then smaller four times, then reset.
   await page.keyboard.press(`${mod}+Equal`);
+  await committed(page, true);
   await page.keyboard.press(`${mod}+Equal`);
   await settled(18);
-  for (let i = 0; i < 4; i++) await page.keyboard.press(`${mod}+Minus`);
+  for (let i = 0; i < 4; i++) {
+    await committed(page, true);
+    await page.keyboard.press(`${mod}+Minus`);
+  }
   await settled(14);
+  await committed(page, true);
   await page.keyboard.press(`${mod}+Digit0`);
   await settled(16);
+  await committed(page, true);
 
   // The same with Ctrl and the wheel (D-130): up twice, down once.
   const box = (await editor.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.keyboard.down("Control");
   await page.mouse.wheel(0, -100);
+  await page.keyboard.up("Control");
+  await committed(page, true);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.keyboard.down("Control");
   await page.mouse.wheel(0, -100);
   await page.keyboard.up("Control");
   await settled(18);
+  await committed(page, true);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.keyboard.down("Control");
   await page.mouse.wheel(0, 100);
   await page.keyboard.up("Control");
@@ -134,8 +150,10 @@ test("FOC-03: focus mode toggles with the shortcut and survives a restart", asyn
   await expect.poll(() => isOn(l.page)).toBe(true); // on for new installs (D-04)
   await l.page.keyboard.press(`${mod}+Shift+D`);
   await expect.poll(() => isOn(l.page)).toBe(false);
+  await committed(l.page);
   await l.page.keyboard.press("F8");
   await expect.poll(() => isOn(l.page)).toBe(true);
+  await committed(l.page);
   await l.page.keyboard.press("F8");
   await quit(l);
   const again = await launch(dirs);

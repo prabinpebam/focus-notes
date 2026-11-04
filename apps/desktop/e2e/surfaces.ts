@@ -6,7 +6,7 @@
 import { expect, type Locator, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, tempDirs, type Launched } from "./helpers.ts";
+import { caret, fileRow, launch, tempDirs, type Launched } from "./helpers.ts";
 import { settled, type VisualOptions } from "./visual-quality.ts";
 
 export const mac = process.platform === "darwin";
@@ -171,8 +171,10 @@ export const SURFACES: Surface[] = [
   { name: "files", open: files, tooltips: (page) => page.getByRole("complementary", { name: "Files" }).getByRole("button", { name: /^New (note|folder)$/ }) },
   { name: "files selection", open: async (page) => {
     await files(page);
-    await page.keyboard.press("Shift+ArrowUp");
-    await expect(page.getByRole("complementary", { name: "Files" }).getByRole("treeitem", { selected: true })).toHaveCount(2);
+    const tree = page.getByRole("tree", { name: "Notes and folders", exact: true });
+    await fileRow(tree, "Idea 1").click();
+    await fileRow(tree, "Idea 2").click({ modifiers: [mod] });
+    await expect(tree.getByRole("treeitem", { selected: true })).toHaveCount(2);
   }, tooltips: (page) => page.getByRole("complementary", { name: "Files" }).getByRole("button") },
   { name: "move to", open: async (page) => {
     await files(page);

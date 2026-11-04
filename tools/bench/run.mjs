@@ -85,7 +85,7 @@ async function startTimes() {
     const docs = throwawayWorkspace();
     const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
     // An installed app that's been set up: the desktop's first run is once per install (FRE-01) and ends before writing starts.
-    writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+    writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(docs, "Welcome.md") }));
     cold.push(await launchReadyMs(userData, docs));
     warm.push(await launchReadyMs(userData, docs));
   }
@@ -150,7 +150,7 @@ async function noteTimes() {
   writeFileSync(join(docs, "long.md"), tenThousandWords());
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
   // Set up already (FRE-01), and never reaching the network, as in the start times.
-  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(docs, "Welcome.md") }));
   const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_E2E: "1" } });
   try {
     const page = await app.firstWindow();
@@ -173,7 +173,7 @@ async function noteTimes() {
     for (let i = 0; i < 2 * Math.max(runs, 3); i++) {
       const name = i % 2 === 0 ? "Long note" : "Bench fixture";
       await page.keyboard.press(`${mod}+O`);
-      const row = page.getByRole("complementary", { name: "Files" }).getByRole("treeitem").filter({ has: page.locator('span[dir="auto"]').filter({ hasText: new RegExp(`^${name}$`) }) });
+      const row = page.getByRole("tree", { name: "Notes and folders", exact: true }).getByRole("treeitem").filter({ has: page.locator('span[dir="auto"]').filter({ hasText: new RegExp(`^${name}$`) }) });
       await row.click();
       const before = (await opens()).length;
       await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Enter");

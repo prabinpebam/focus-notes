@@ -75,7 +75,7 @@ function PositionedBubble({ placement, children, open, triggerRef, tooltipProps,
       onHidden?.();
       return;
     }
-    setContainer(portal.getContainer?.() ?? landmarkOf(trigger) ?? document.body);
+    setContainer(landmarkOf(trigger) ?? portal.getContainer?.() ?? document.body);
     return () => {
       setContainer(null);
       setPlaced(false);

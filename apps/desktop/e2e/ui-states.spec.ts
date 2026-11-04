@@ -1274,7 +1274,7 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
     expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.ai), "utf8")).connections).toHaveLength(0);
     await settings.getByRole("button", { name: "Close", exact: true }).click();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
-    const open = l.page.getByRole("dialog", { name: "Open", exact: true }).or(l.page.getByRole("region", { name: "Open", exact: true }));
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
     await expect(open).toBeVisible();
     const search = open.getByRole("searchbox", { name: "Find a file or project", exact: true });
     await search.fill("No matching projects");
@@ -1602,7 +1602,6 @@ test("compact focus and docking controls retain stored values on failure and rec
   const saved = () => JSON.parse(readFileSync(stateFile, "utf8"));
   const retry = l.page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Retry", exact: true });
   try {
-    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
     const toolbar = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
     const focus = toolbar.getByRole("button", { name: "Focus mode", exact: true });
@@ -1662,7 +1661,6 @@ test("Reading size retains a failed value, retries exactly that value and leaves
   const saved = () => JSON.parse(readFileSync(stateFile, "utf8"));
   const actualSize = () => l.page.locator("[data-editor]").evaluate((element) => getComputedStyle(element).fontSize);
   try {
-    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
     const open = async () => {
       await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
       const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
@@ -1822,11 +1820,19 @@ test("reading sliders preview keyboard changes, retain failed values, retry and 
     await dim.press("End");
     await dim.press("Tab");
     await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).focusDim).toBe(0.6);
+    await expect(dim.locator("xpath=ancestor::*[@data-commit][1]")).not.toHaveAttribute("data-commit", "pending");
+    await dim.focus();
+    await dim.press("ArrowLeft");
+    await theme.getByRole("tab", { name: "Themes", exact: true }).click();
+    await expect(dim).toHaveCount(0);
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).focusDim).toBe(0.55);
+    await theme.getByRole("tab", { name: "Reading", exact: true }).click();
+    await expect(dim).toHaveValue("0.55");
     await theme.getByRole("button", { name: "Close", exact: true }).click();
     await open();
     await expect(width).toHaveValue("85");
     await expect(line).toHaveValue("2");
-    await expect(dim).toHaveValue("0.6");
+    await expect(dim).toHaveValue("0.55");
   } finally { restore(); await closeTestApp(l); }
 });
 
@@ -1892,7 +1898,6 @@ test("four writing outcomes queue, reveal the next pill and retain a failed Retr
     if (existsSync(backup)) renameSync(backup, stateFile);
   };
   try {
-    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
     const region = l.page.getByRole("region", { name: "Notifications", exact: true });
     while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) {
       await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
@@ -1948,7 +1953,6 @@ test("an actually wrapped writing notice stays for eight visible seconds", async
   writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
   const l = await launch(dirs);
   try {
-    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
     const region = l.page.getByRole("region", { name: "Notifications", exact: true });
     while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
     await l.app.evaluate(({ BrowserWindow }) => {
@@ -1956,6 +1960,8 @@ test("an actually wrapped writing notice stays for eight visible seconds", async
       window.setMinimumSize(360, 640);
       window.setContentSize(360, 640);
     });
+    await expect.poll(() => l.page.evaluate(() => innerWidth)).toBe(360);
+    await l.page.mouse.move(0, 0);
     const time = new Date("2026-11-04T00:00:00Z");
     await l.page.clock.install({ time });
     await l.page.clock.pauseAt(new Date(time.getTime() + 1000));
@@ -1974,6 +1980,7 @@ test("an actually wrapped writing notice stays for eight visible seconds", async
     await l.page.clock.runFor(2000);
     await expect(notice).toBeVisible();
     await l.page.clock.runFor(1);
+    await l.page.clock.runFor(16);
     await expect(notice).toHaveCount(0);
   } finally { await closeTestApp(l); }
 });
@@ -1987,7 +1994,6 @@ for (const endsFirst of ["hover", "focus"] as const) {
     writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
     const l = await launch(dirs);
     try {
-      await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
       const region = l.page.getByRole("region", { name: "Notifications", exact: true });
       while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
       const time = new Date("2026-11-04T00:00:00Z");

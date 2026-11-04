@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit } from "./helpers.ts";
+import { launch, quit, writerSettingSettled } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { instance } from "./instance.ts";
 
@@ -41,6 +41,7 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
   const before = await focusOn(page);
   await page.keyboard.press(`${mod}+j`);
   await expect.poll(() => focusOn(page)).not.toBe(before);
+  await writerSettingSettled(page, "focusMode");
   await page.keyboard.press(`${mod}+Shift+S`);
   await expect.poll(() => focusOn(page)).toBe(before);
 

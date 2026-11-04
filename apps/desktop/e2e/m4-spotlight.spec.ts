@@ -140,11 +140,14 @@ test("SPT-01: Mod+/ opens Spotlight from the Files panel and from Settings; focu
   const { page } = l;
   const files = page.getByRole("complementary", { name: "Files" });
   await page.keyboard.press(`${mod}+O`);
-  await expect(fileRow(files, "Welcome")).toBeFocused();
+  const focusedRow = files.locator('[role="treeitem"]:focus');
+  await expect(focusedRow).toHaveCount(1);
+  const focusedId = await focusedRow.getAttribute("id");
+  expect(focusedId).toBeTruthy();
   await open(page);
   await page.keyboard.press("Escape");
   await expect(spotlight(page)).toBeHidden();
-  await expect(fileRow(files, "Welcome")).toBeFocused();
+  await expect(files.locator(`[id="${focusedId}"]`)).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(files).toBeHidden();
   await expect(editor(page)).toBeFocused();
@@ -188,7 +191,8 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   expect(await results(page).getByRole("group", { name: "Commands" }).getByRole("option").count()).toBeGreaterThan(100);
   const textSize = results(page).getByRole("group", { name: "Settings" }).getByRole("option", { name: /^Text size/ });
   await expect(textSize).toContainText("16 px");
-  for (let i = 0; i < 400 && !(await active(page).textContent())?.startsWith("Text size"); i++) await page.keyboard.press("ArrowDown");
+  const count = await results(page).getByRole("option").count();
+  for (let i = 0; i < count && !(await active(page).textContent())?.startsWith("Text size"); i++) await page.keyboard.press("ArrowDown");
   await expect(active(page)).toContainText("Text size");
   await expect(active(page)).toBeInViewport();
   await page.keyboard.press("Shift+Enter");

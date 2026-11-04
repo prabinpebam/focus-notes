@@ -5,7 +5,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, windowBox } from "./helpers.ts";
+import { launch, quit, tempDirs, windowBox, writerSettingSettled } from "./helpers.ts";
 import { visualProblems, type VisualOptions } from "./visual-quality.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -393,9 +393,13 @@ test("D-130: Ctrl and the wheel change the text size one step a notch, as Mod+= 
   const box = (await editor.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + 20);
   const wheel = async (dy: number, times = 1) => {
-    await page.keyboard.down("Control");
-    for (let i = 0; i < times; i++) await page.mouse.wheel(0, dy);
-    await page.keyboard.up("Control");
+    for (let i = 0; i < times; i++) {
+      await writerSettingSettled(page, "fontSize");
+      await page.mouse.move(box.x + box.width / 2, box.y + 20);
+      await page.keyboard.down("Control");
+      await page.mouse.wheel(0, dy);
+      await page.keyboard.up("Control");
+    }
   };
   expect(await size()).toBe("16px");
   // The reading width follows the text size, as far as the window allows: a line keeps about its characters.
