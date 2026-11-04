@@ -3,8 +3,24 @@
   "local": {
     "phase": "rest",
     "retry": "failed",
+    "matrix": "failed",
+    "phaseValue": false,
+    "retryValue": false,
+    "matrixValue": false,
     "playing": false,
-    "dismissed": false
+    "dismissed": false,
+    "notice": "idle",
+    "outcome": "idle",
+    "load": "idle",
+    "operation": "idle",
+    "empty0": "empty",
+    "empty1": "empty",
+    "empty2": "empty",
+    "empty3": "empty",
+    "empty4": "empty",
+    "empty5": "empty",
+    "empty6": "empty",
+    "empty7": "empty"
   },
   "root": {
     "type": "Center",
@@ -31,7 +47,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c150"
+                    "get": "vm.mockUiStates.copy.c379"
                   },
                   "variant": "subtle"
                 },
@@ -48,7 +64,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c151"
+                    "get": "vm.mockUiStates.copy.c380"
                   },
                   "variant": "subtle"
                 },
@@ -66,7 +82,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c152"
+                    "get": "vm.mockUiStates.copy.c381"
                   },
                   "variant": "subtle"
                 },
@@ -84,7 +100,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c153"
+                    "get": "vm.mockUiStates.copy.c382"
                   },
                   "variant": "subtle"
                 },
@@ -102,7 +118,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c154"
+                    "get": "vm.mockUiStates.copy.c383"
                   },
                   "variant": "subtle"
                 },
@@ -128,7 +144,7 @@
                 "type": "Text",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c155"
+                    "get": "vm.mockUiStates.copy.c384"
                   },
                   "role": "caption",
                   "tone": "muted"
@@ -138,7 +154,7 @@
                 "type": "Heading",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c156"
+                    "get": "vm.mockUiStates.copy.c385"
                   },
                   "level": "1"
                 }
@@ -147,7 +163,7 @@
                 "type": "Text",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c157"
+                    "get": "vm.mockUiStates.copy.c386"
                   },
                   "role": "secondary",
                   "tone": "muted"
@@ -173,20 +189,314 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c158"
+                        "get": "vm.mockUiStates.copy.c387"
                       },
                       "level": "2"
                     }
                   },
                   {
-                    "type": "Text",
+                    "type": "Columns",
                     "props": {
-                      "value": {
-                        "get": "vm.mockUiStates.copy.c146"
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c253"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c251"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c252"
+                                  },
+                                  "role": "secondary",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
                       },
-                      "role": "secondary",
-                      "tone": "muted"
-                    }
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c256"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c254"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c255"
+                                  },
+                                  "role": "secondary",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c259"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c257"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c258"
+                                  },
+                                  "role": "secondary",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c262"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c260"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c261"
+                                  },
+                                  "role": "secondary",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c264"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c263"
+                                  },
+                                  "level": "3"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c266"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c265"
+                                  },
+                                  "level": "3"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c268"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c267"
+                                  },
+                                  "level": "3"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c270"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c269"
+                                  },
+                                  "level": "3"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }
@@ -210,28 +520,1141 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c159"
+                        "get": "vm.mockUiStates.copy.c388"
                       },
                       "level": "2"
                     }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c271"
+                      },
+                      "level": "3"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c275"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c272"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c273"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c274"
+                                  },
+                                  "icon": "folder"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c277"
+                          },
+                          "busy": true
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c276"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "Skeleton",
+                                "props": {
+                                  "shape": "row"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c282"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c278"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "StatusRow",
+                                "props": {
+                                  "message": {
+                                    "get": "vm.mockUiStates.copy.c279"
+                                  },
+                                  "tone": "success"
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c280"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c281"
+                                  },
+                                  "icon": "folder"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c288"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c283"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "StatusRow",
+                                "props": {
+                                  "message": {
+                                    "get": "vm.mockUiStates.copy.c284"
+                                  },
+                                  "tone": "danger",
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c285"
+                                  },
+                                  "detailsLabel": {
+                                    "get": "vm.mockUiStates.copy.c286"
+                                  },
+                                  "details": {
+                                    "get": "vm.mockUiStates.copy.c287"
+                                  }
+                                },
+                                "on": {
+                                  "action": [
+                                    {
+                                      "set": "local.load",
+                                      "to": "pending"
+                                    },
+                                    {
+                                      "run": "gallery.wait",
+                                      "args": {
+                                        "duration": "confirmMinimum"
+                                      }
+                                    },
+                                    {
+                                      "set": "local.load",
+                                      "to": "confirmed"
+                                    },
+                                    {
+                                      "run": "gallery.wait",
+                                      "args": {
+                                        "duration": "doneDuration"
+                                      }
+                                    },
+                                    {
+                                      "set": "local.load",
+                                      "to": "rest"
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c293"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c289"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c290"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c291"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c292"
+                                  },
+                                  "icon": "folder",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.load",
+                                    "to": "content"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c294"
+                      },
+                      "level": "3"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c301"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c295"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c296"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c297"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c298"
+                                  },
+                                  "icon": "newNote",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty0",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty0"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c299"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c300"
+                                  },
+                                  "icon": "newNote"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty0"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c308"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c302"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c303"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c304"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c305"
+                                  },
+                                  "icon": "folder",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty1",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty1"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c306"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c307"
+                                  },
+                                  "icon": "folder"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty1"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c315"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c309"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c310"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c311"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c312"
+                                  },
+                                  "icon": "sparkle",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty2",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty2"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c313"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c314"
+                                  },
+                                  "icon": "sparkle"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty2"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c322"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c316"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c317"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c318"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c319"
+                                  },
+                                  "icon": "share",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty3",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty3"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c320"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c321"
+                                  },
+                                  "icon": "share"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty3"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c329"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c323"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c324"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c325"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c326"
+                                  },
+                                  "icon": "document",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty4",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty4"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c327"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c328"
+                                  },
+                                  "icon": "document"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty4"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c336"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c330"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c331"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c332"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c333"
+                                  },
+                                  "icon": "link",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty5",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty5"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c334"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c335"
+                                  },
+                                  "icon": "link"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty5"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c343"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c337"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c338"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c339"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c340"
+                                  },
+                                  "icon": "folder",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty6",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty6"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c341"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c342"
+                                  },
+                                  "icon": "folder"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty6"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c350"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c344"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c345"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c346"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c347"
+                                  },
+                                  "icon": "share",
+                                  "size": "section",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.empty7",
+                                    "to": "content"
+                                  }
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty7"
+                                      },
+                                      "empty"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "ItemCard",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c348"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c349"
+                                  },
+                                  "icon": "share"
+                                },
+                                "when": {
+                                  "expr": {
+                                    "==": [
+                                      {
+                                        "get": "local.empty7"
+                                      },
+                                      "content"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "section",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c354"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "StatusRow",
+                                "props": {
+                                  "message": {
+                                    "get": "vm.mockUiStates.copy.c351"
+                                  },
+                                  "tone": "success"
+                                }
+                              },
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c352"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c353"
+                                  },
+                                  "icon": "check",
+                                  "size": "section",
+                                  "tone": "good"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "m",
+                          "minimum": "component",
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c358"
+                          },
+                          "busy": false
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "EmptyState",
+                                "props": {
+                                  "title": {
+                                    "get": "vm.mockUiStates.copy.c355"
+                                  },
+                                  "detail": {
+                                    "get": "vm.mockUiStates.copy.c356"
+                                  },
+                                  "actionLabel": {
+                                    "get": "vm.mockUiStates.copy.c357"
+                                  },
+                                  "icon": "search",
+                                  "size": "component",
+                                  "tone": "neutral"
+                                },
+                                "on": {
+                                  "action": {
+                                    "set": "local.outcome",
+                                    "to": "cleared"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
                   },
                   {
                     "type": "StatusRow",
                     "props": {
                       "message": {
-                        "get": "vm.mockUiStates.copy.c147"
+                        "get": "vm.mockUiStates.copy.c359"
                       },
                       "tone": "info"
+                    },
+                    "when": {
+                      "expr": {
+                        "==": [
+                          {
+                            "get": "local.outcome"
+                          },
+                          "cleared"
+                        ]
+                      }
                     }
                   },
                   {
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c148"
+                        "get": "vm.mockUiStates.copy.c360"
                       },
-                      "role": "body",
-                      "tone": "default"
+                      "role": "secondary",
+                      "tone": "muted"
                     }
                   }
                 ]
@@ -256,7 +1679,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c160"
+                        "get": "vm.mockUiStates.copy.c389"
                       },
                       "level": "2"
                     }
@@ -265,21 +1688,281 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c161"
+                        "get": "vm.mockUiStates.copy.c390"
                       },
                       "role": "secondary",
                       "tone": "muted"
                     }
                   },
                   {
-                    "type": "Text",
+                    "type": "Inline",
                     "props": {
-                      "value": {
-                        "get": "vm.mockUiStates.copy.c149"
+                      "gap": "s",
+                      "wrap": true,
+                      "align": "center"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c361"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": [
+                            {
+                              "set": "local.load",
+                              "to": "pending"
+                            },
+                            {
+                              "run": "gallery.wait",
+                              "args": {
+                                "duration": "signMinimum"
+                              }
+                            },
+                            {
+                              "set": "local.load",
+                              "to": "empty"
+                            }
+                          ]
+                        }
                       },
-                      "role": "secondary",
-                      "tone": "muted"
-                    }
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c362"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "set": "local.load",
+                            "to": "content"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "get": "vm.mockUiStates.copy.c363"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "set": "local.load",
+                            "to": "failed"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Surface",
+                    "props": {
+                      "variant": "sunken",
+                      "shape": "control",
+                      "padding": "m",
+                      "minimum": "section",
+                      "label": {
+                        "get": "vm.mockUiStates.copy.c378"
+                      },
+                      "busy": false
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c364"
+                              },
+                              "level": "3"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.mockUiStates.copy.c365"
+                              },
+                              "detail": {
+                                "get": "vm.mockUiStates.copy.c366"
+                              },
+                              "icon": "folder"
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.load"
+                                  },
+                                  "idle"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "shape": "row"
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.load"
+                                  },
+                                  "pending"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "EmptyState",
+                            "props": {
+                              "title": {
+                                "get": "vm.mockUiStates.copy.c367"
+                              },
+                              "detail": {
+                                "get": "vm.mockUiStates.copy.c368"
+                              },
+                              "actionLabel": {
+                                "get": "vm.mockUiStates.copy.c369"
+                              },
+                              "icon": "folder",
+                              "size": "section",
+                              "tone": "neutral"
+                            },
+                            "on": {
+                              "action": {
+                                "set": "local.load",
+                                "to": "content"
+                              }
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.load"
+                                  },
+                                  "empty"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "StatusRow",
+                            "props": {
+                              "message": {
+                                "get": "vm.mockUiStates.copy.c370"
+                              },
+                              "tone": "danger",
+                              "actionLabel": {
+                                "get": "vm.mockUiStates.copy.c371"
+                              },
+                              "detailsLabel": {
+                                "get": "vm.mockUiStates.copy.c372"
+                              },
+                              "details": {
+                                "get": "vm.mockUiStates.copy.c373"
+                              }
+                            },
+                            "on": {
+                              "action": [
+                                {
+                                  "set": "local.load",
+                                  "to": "pending"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "confirmMinimum"
+                                  }
+                                },
+                                {
+                                  "set": "local.load",
+                                  "to": "confirmed"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "doneDuration"
+                                  }
+                                },
+                                {
+                                  "set": "local.load",
+                                  "to": "rest"
+                                }
+                              ]
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.load"
+                                  },
+                                  "failed"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.mockUiStates.copy.c374"
+                              },
+                              "detail": {
+                                "get": "vm.mockUiStates.copy.c375"
+                              },
+                              "icon": "folder"
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.load"
+                                  },
+                                  "content"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.mockUiStates.copy.c376"
+                              },
+                              "detail": {
+                                "get": "vm.mockUiStates.copy.c377"
+                              },
+                              "icon": "folder"
+                            },
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "local.load"
+                                  },
+                                  "confirmed"
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }
@@ -297,7 +1980,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c162"
+                    "get": "vm.mockUiStates.copy.c391"
                   },
                   "variant": "subtle"
                 },
@@ -314,7 +1997,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c163"
+                    "get": "vm.mockUiStates.copy.c392"
                   },
                   "variant": "subtle"
                 },
@@ -331,7 +2014,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c164"
+                    "get": "vm.mockUiStates.copy.c393"
                   },
                   "variant": "subtle"
                 },
@@ -348,7 +2031,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c165"
+                    "get": "vm.mockUiStates.copy.c394"
                   },
                   "variant": "subtle"
                 },
@@ -365,7 +2048,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c166"
+                    "get": "vm.mockUiStates.copy.c395"
                   },
                   "variant": "subtle"
                 },
@@ -382,7 +2065,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c167"
+                    "get": "vm.mockUiStates.copy.c396"
                   },
                   "variant": "subtle"
                 },
@@ -399,7 +2082,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c168"
+                    "get": "vm.mockUiStates.copy.c397"
                   },
                   "variant": "subtle"
                 },

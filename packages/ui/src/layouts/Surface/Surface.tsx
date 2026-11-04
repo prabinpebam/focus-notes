@@ -14,6 +14,10 @@ export interface SurfaceProps {
   shortPadding?: Space;
   /** What it holds scrolls inside its padding when it's held shorter than its content (the first run's card in a short window, D-123). */
   scroll?: boolean;
+  /** Holds the content wrapper's shape across loading, empty and populated results. */
+  minimum?: "none" | "component" | "section" | "view";
+  busy?: boolean;
+  label?: string;
   /** Keys registered for this scope work while focus is inside. */
   keyScope?: KeyScope;
   id?: string;
@@ -21,7 +25,7 @@ export interface SurfaceProps {
 }
 
 /** The only way to get a background, border, radius, or shadow (DD-CMP-02). */
-export function Surface({ variant = "raised", shape = "none", elevation = "0", padding = "none", shortPadding, scroll = false, keyScope = "none", id, children }: SurfaceProps) {
+export function Surface({ variant = "raised", shape = "none", elevation = "0", padding = "none", shortPadding, scroll = false, minimum = "none", busy, label, keyScope = "none", id, children }: SurfaceProps) {
   const floating = useContext(FloatingContext);
   // A shaped surface directly on the dialog layer is a dialog: it keeps the dialog inset (D-111).
   const dialog = useContext(LayerContext) === "dialog";
@@ -51,7 +55,7 @@ export function Surface({ variant = "raised", shape = "none", elevation = "0", p
   const v = variant === "frost" && !floating ? "raised" : variant;
   const kind = (v === "frost" || v === "raised") && shape !== "none" ? (dialog ? "dialog" : "panel") : undefined;
   return (
-    <div id={id} className={[s.base, s.variant[v], s.shape[shape], s.elevation[elevation], scroll ? s.clip : s.padding[padding], ...(shortPadding && !scroll ? [s.shortPadding[shortPadding]] : [])].join(" ")} data-variant={v} data-surface={kind} data-key-scope={keyScope === "none" ? undefined : keyScope}>
+    <div id={id} role={label ? "region" : undefined} aria-label={label} aria-busy={busy} className={[s.base, s.minimum[minimum], s.variant[v], s.shape[shape], s.elevation[elevation], scroll ? s.clip : s.padding[padding], ...(shortPadding && !scroll ? [s.shortPadding[shortPadding]] : [])].join(" ")} data-variant={v} data-surface={kind} data-key-scope={keyScope === "none" ? undefined : keyScope}>
       <LayerContext.Provider value="">
         {/* Its padding is inside the scroller, so focus rings and letters at the edges are never cut. */}
         {scroll ? <div ref={bodyRef} className={`${s.body} ${s.bodyPadding[padding]}${shortPadding ? ` ${s.bodyShortPadding[shortPadding]}` : ""}`}>{children}</div> : children}

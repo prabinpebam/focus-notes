@@ -30,6 +30,8 @@ import { DialogPanel } from "./primitives/DialogPanel/DialogPanel.tsx";
 import { Dialog } from "./compounds/Dialog/Dialog.tsx";
 import { Spinner } from "./primitives/Spinner/Spinner.tsx";
 import { CommitMark } from "./primitives/CommitMark/CommitMark.tsx";
+import { EmptyState } from "./compounds/EmptyState/EmptyState.tsx";
+import { NotificationRegion } from "./layouts/NotificationRegion/NotificationRegion.tsx";
 import { Skeleton } from "./primitives/Skeleton/Skeleton.tsx";
 import { LiveRegion } from "./primitives/LiveRegion/LiveRegion.tsx";
 import { Toast } from "./primitives/Toast/Toast.tsx";
@@ -78,6 +80,7 @@ import { ProjectScope } from "./layouts/ProjectScope/ProjectScope.tsx";
  * and tokens never ship in the app (PRF-14).
  */
 export const registry = defineRegistry({
+  EmptyState, NotificationRegion,
   SecureKeyField,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,

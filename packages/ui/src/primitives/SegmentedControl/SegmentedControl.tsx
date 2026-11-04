@@ -4,6 +4,7 @@ import type { IconName } from "../../icon-names.ts";
 import { controlLabel } from "../control.css.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
+import { CommitMark, CommitFailure, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./SegmentedControl.css.ts";
 
 export interface SegmentedControlProps {
@@ -14,6 +15,12 @@ export interface SegmentedControlProps {
   orientation?: "horizontal" | "vertical";
   /** Shown and focusable, but the choice can't change: while what it chose is being sent (D-203). */
   readOnly?: boolean;
+  commit?: CommitState;
+  error?: string;
+  retryLabel?: string;
+  revertLabel?: string;
+  onRetry?: () => void;
+  onRevert?: () => void;
   /** A group of related actions in one track (Rotate left, Rotate right, Reset): buttons, not a choice. */
   actions?: boolean;
   id?: string;
@@ -27,7 +34,7 @@ export interface SegmentedControlProps {
  * of buttons (arrow keys move, Enter or Space acts), an option with an icon drawn icon-only with its
  * label as accessible name and tooltip; the group's label names the toolbar and isn't shown.
  */
-export function SegmentedControl({ label, options, value, orientation = "horizontal", readOnly, actions = false, id, onChange, onAction }: SegmentedControlProps) {
+export function SegmentedControl({ label, options, value, orientation = "horizontal", readOnly, commit, error, retryLabel, revertLabel, onRetry, onRevert, actions = false, id, onChange, onAction }: SegmentedControlProps) {
   if (actions) {
     return (
       <Toolbar aria-label={label} orientation="horizontal" className={s.track.horizontal} {...(id ? { id } : {})}>
@@ -43,20 +50,22 @@ export function SegmentedControl({ label, options, value, orientation = "horizon
     );
   }
   return (
-    <RadioGroup
+    <><RadioGroup
       className={s.root[orientation]}
       orientation={orientation}
       value={value ?? null}
-      isReadOnly={Boolean(readOnly)}
+      isReadOnly={Boolean(readOnly) || commit === "pending"}
+      aria-disabled={commit === "pending" || undefined}
+      aria-busy={commit === "pending" || undefined}
       onChange={(v) => onChange?.({ value: v })}
       {...(id ? { id } : {})}
     >
       <Label className={s.label}>{label}</Label>
       <span className={s.track[orientation]}>
         {options.map((o) => (
-          <Radio key={o.id} value={o.id} className={s.segment[orientation]}>{o.label}</Radio>
+          <Radio key={o.id} value={o.id} className={s.segment[orientation]}>{o.label}{commit ? <CommitMark state={o.id === value ? commit : "rest"} /> : null}</Radio>
         ))}
       </span>
-    </RadioGroup>
+    </RadioGroup>{commit === "failed" && error ? <CommitFailure message={error} {...(retryLabel ? { retryLabel } : {})} {...(revertLabel ? { revertLabel } : {})} {...(onRetry ? { onRetry } : {})} {...(onRevert ? { onRevert } : {})} /> : null}</>
   );
 }

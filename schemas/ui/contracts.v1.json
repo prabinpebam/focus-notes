@@ -2,6 +2,173 @@
   "version": 1,
   "contracts": [
     {
+      "type": "EmptyState",
+      "tier": "compound",
+      "description": "A known-empty wrapper, not loading or failure. Says why and offers the first action; good news may simply say all done. The same minimum size holds the layout.",
+      "props": {
+        "title": {
+          "kind": "message",
+          "required": true
+        },
+        "detail": {
+          "kind": "message"
+        },
+        "icon": {
+          "kind": "icon",
+          "default": "folder"
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "component",
+            "section",
+            "view"
+          ],
+          "default": "section"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "neutral",
+            "good"
+          ],
+          "default": "neutral"
+        },
+        "actionLabel": {
+          "kind": "message"
+        }
+      },
+      "events": {
+        "action": {}
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.emptyState.*",
+      "a11y": {
+        "pattern": "text and optional button",
+        "name": "title"
+      },
+      "fixtures": [
+        {
+          "name": "size component",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "size": "component",
+            "actionLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "size section",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "size": "section",
+            "actionLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "size view",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "size": "view",
+            "actionLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "all done",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "tone": "good",
+            "icon": "check"
+          }
+        }
+      ]
+    },
+    {
+      "type": "NotificationRegion",
+      "tier": "layout",
+      "description": "The named region for up to 3 notification pills. The host owns queue order, coalescing and visible-only timers; this layout only places them.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "overflowLabel": {
+          "kind": "message",
+          "description": "Queued count, only when more outcomes are waiting."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": [
+            "Toast"
+          ],
+          "max": 3
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.notificationStack.*",
+      "a11y": {
+        "pattern": "region",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "queued",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "overflowLabel": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Toast",
+              "props": {
+                "message": {
+                  "get": "vm.gallery.query"
+                },
+                "dismissLabel": {
+                  "t": "toast.dismiss"
+                },
+                "tone": "error",
+                "sticky": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "type": "SecureKeyField",
       "tier": "compound",
       "description": "One-shot secure credential entry. Never bind secrets to app state.",
@@ -2690,6 +2857,25 @@
           "kind": "boolean",
           "default": false,
           "description": "Shown and focusable, but the choice can't change: while what it chose is being sent (Send feedback's Kind, D-203)."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "State on the chosen segment; only this group locks while pending."
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
+        "revertLabel": {
+          "kind": "message"
         }
       },
       "events": {
@@ -2703,14 +2889,19 @@
           "payload": {
             "id": "text"
           }
-        }
+        },
+        "retry": {},
+        "revert": {}
       },
       "slots": {},
       "states": [
         "rest",
         "hover",
         "selected",
-        "focusVisible"
+        "focusVisible",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.segmentedControl.*",
       "a11y": {
@@ -2722,6 +2913,87 @@
         "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
+        {
+          "name": "commit rest",
+          "covers": [
+            "rest"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "commit pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "commit confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "commit failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "commit": "failed",
+            "error": {
+              "t": "commit.failed"
+            },
+            "retryLabel": {
+              "t": "commit.retry"
+            },
+            "revertLabel": {
+              "t": "commit.revert"
+            }
+          }
+        },
         {
           "name": "first selected",
           "covers": [
@@ -3150,10 +3422,12 @@
           "values": [
             "line",
             "tile",
-            "avatar"
+            "avatar",
+            "row",
+            "card"
           ],
           "default": "line",
-          "description": "What's coming: a line of words, a card's picture, or a person's photo."
+          "description": "What's coming: a line, picture, avatar, an ItemCard row or a picture card."
         },
         "width": {
           "kind": "enum",
@@ -3177,6 +3451,18 @@
         "pattern": "presentation: hidden from assistive technology; its region carries the one status (D-208)"
       },
       "fixtures": [
+        {
+          "name": "row",
+          "props": {
+            "shape": "row"
+          }
+        },
+        {
+          "name": "card",
+          "props": {
+            "shape": "card"
+          }
+        },
         {
           "name": "line",
           "props": {
@@ -3267,9 +3553,17 @@
           "kind": "enum",
           "values": [
             "info",
-            "error"
+            "error",
+            "success",
+            "warning",
+            "progress"
           ],
           "default": "info"
+        },
+        "sticky": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Hard-dismiss outcome: the host must not start an auto-dismiss timer. Errors are always sticky."
         },
         "actionLabel": {
           "kind": "text"
@@ -3308,6 +3602,45 @@
         "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
+        {
+          "name": "tone success",
+          "props": {
+            "message": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "success",
+            "dismissLabel": {
+              "t": "toast.dismiss"
+            },
+            "sticky": false
+          }
+        },
+        {
+          "name": "tone warning",
+          "props": {
+            "message": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "warning",
+            "dismissLabel": {
+              "t": "toast.dismiss"
+            },
+            "sticky": true
+          }
+        },
+        {
+          "name": "tone progress",
+          "props": {
+            "message": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "progress",
+            "dismissLabel": {
+              "t": "toast.dismiss"
+            },
+            "sticky": true
+          }
+        },
         {
           "name": "tone info",
           "props": {
@@ -4624,6 +4957,16 @@
           "default": false,
           "description": "The tile showing is a preview, so Esc goes back to the chosen theme (and doesn't close the sheet)."
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "State on the chosen tile, with only this group locked while pending. Failed recovery belongs under the gallery."
+        },
         "focusRequest": {
           "kind": "number",
           "min": 0,
@@ -4649,7 +4992,10 @@
         "hover",
         "selected",
         "focusVisible",
-        "previewing"
+        "previewing",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.themeGallery.*",
       "a11y": {
@@ -4661,6 +5007,78 @@
         "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
+        {
+          "name": "commit rest",
+          "covers": [
+            "rest"
+          ],
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeFirst"
+            },
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "commit pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeFirst"
+            },
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "commit confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeFirst"
+            },
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "commit failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeFirst"
+            },
+            "commit": "failed"
+          }
+        },
         {
           "name": "first selected",
           "covers": [
@@ -5672,9 +6090,22 @@
         "icon": {
           "kind": "icon",
           "description": "What happened (cloudOff for offline, history for a code that ran out). By default the tone's own icon."
+        },
+        "actionLabel": {
+          "kind": "message"
+        },
+        "detailsLabel": {
+          "kind": "message",
+          "description": "The native disclosure's label, when details are available."
+        },
+        "details": {
+          "kind": "message",
+          "description": "The optional technical cause, hidden until requested."
         }
       },
-      "events": {},
+      "events": {
+        "action": {}
+      },
       "slots": {},
       "states": [
         "rest"
@@ -5685,6 +6116,23 @@
         "name": "message"
       },
       "fixtures": [
+        {
+          "name": "recovery and details",
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "actionLabel": {
+              "t": "commit.retry"
+            },
+            "detailsLabel": {
+              "t": "gallery.sample"
+            },
+            "details": {
+              "t": "gallery.long"
+            }
+          }
+        },
         {
           "name": "tone danger",
           "props": {
@@ -6894,6 +7342,17 @@
           "default": false,
           "description": "Selected on its own or within a text selection: the editor's selection tint over it, never a ring."
         },
+        "broken": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The image failed to load; show its alt text and a scoped recovery action."
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
         "crop": {
           "kind": "boolean",
           "default": false,
@@ -6916,12 +7375,14 @@
             "x": "number",
             "y": "number"
           }
-        }
+        },
+        "retry": {}
       },
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "broken"
       ],
       "tokens": "cmp.imageFrame.*",
       "a11y": {
@@ -6929,6 +7390,27 @@
         "name": "alt"
       },
       "fixtures": [
+        {
+          "name": "broken image",
+          "covers": [
+            "broken"
+          ],
+          "props": {
+            "src": {
+              "get": "vm.gallery.imageSrc"
+            },
+            "broken": true,
+            "alt": {
+              "t": "gallery.sample"
+            },
+            "error": {
+              "t": "commit.failed"
+            },
+            "retryLabel": {
+              "t": "commit.retry"
+            }
+          }
+        },
         {
           "name": "mode column",
           "props": {
@@ -7070,6 +7552,16 @@
         "selected": {
           "kind": "boolean",
           "default": false
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Every tile receives its group's commit state; the chosen tile shows the mark, and the whole group stays focusable but locked while pending. Failed recovery belongs under the group."
         }
       },
       "events": {
@@ -7079,7 +7571,10 @@
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.fontChoice.*",
       "a11y": {
@@ -7087,6 +7582,62 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "commit rest",
+          "covers": [
+            "rest"
+          ],
+          "props": {
+            "font": "serif",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "selected": true,
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "commit pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "font": "serif",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "selected": true,
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "commit confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "font": "serif",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "selected": true,
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "commit failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "font": "serif",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "selected": true,
+            "commit": "failed"
+          }
+        },
         {
           "name": "font mono",
           "props": {
@@ -9446,6 +9997,25 @@
           "default": false,
           "description": "What it holds scrolls inside its padding when the surface is held shorter than its content: a dialog in the middle of a short window (D-123)."
         },
+        "minimum": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "component",
+            "section",
+            "view"
+          ],
+          "default": "none",
+          "description": "The wrapper's minimum block size, shared by populated, empty and loading content."
+        },
+        "busy": {
+          "kind": "boolean",
+          "description": "This region is loading; its placeholders stay decorative."
+        },
+        "label": {
+          "kind": "message",
+          "description": "Names a region when its content changes independently."
+        },
         "keyScope": {
           "kind": "enum",
           "values": [
@@ -9476,6 +10046,73 @@
         "pattern": "none"
       },
       "fixtures": [
+        {
+          "name": "loading section",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "busy": true,
+            "minimum": "section",
+            "padding": "m"
+          },
+          "children": [
+            {
+              "type": "Skeleton",
+              "props": {
+                "shape": "row"
+              }
+            }
+          ]
+        },
+        {
+          "name": "minimum component",
+          "props": {
+            "minimum": "component"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "minimum section",
+          "props": {
+            "minimum": "section"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "minimum view",
+          "props": {
+            "minimum": "view"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "scroll",
           "props": {

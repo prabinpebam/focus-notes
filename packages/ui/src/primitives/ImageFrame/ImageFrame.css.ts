@@ -1,6 +1,13 @@
 import { style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
+export const broken = style({
+  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+  gap: tokens.space.s, padding: tokens.space.l, minHeight: tokens.size.emptySection,
+  color: tokens.color.textMuted, backgroundColor: tokens.color.surfaceSunken,
+  fontFamily: tokens.font.ui, fontSize: tokens.font.uiSecondary, textAlign: "center", boxSizing: "border-box",
+});
+
 const t = tokens.cmp.imageFrame;
 
 export const frame = style({ display: "flex", flexDirection: "column", alignItems: "center", gap: t.gap, minWidth: 0 });

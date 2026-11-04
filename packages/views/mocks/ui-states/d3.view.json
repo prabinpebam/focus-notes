@@ -3,8 +3,16 @@
   "local": {
     "phase": "rest",
     "retry": "failed",
+    "matrix": "failed",
+    "phaseValue": false,
+    "retryValue": false,
+    "matrixValue": false,
     "playing": false,
-    "dismissed": false
+    "dismissed": false,
+    "notice": "idle",
+    "outcome": "idle",
+    "load": "idle",
+    "operation": "idle"
   },
   "root": {
     "type": "Center",
@@ -31,7 +39,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c80"
+                    "get": "vm.mockUiStates.copy.c90"
                   },
                   "variant": "subtle"
                 },
@@ -48,7 +56,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c81"
+                    "get": "vm.mockUiStates.copy.c91"
                   },
                   "variant": "subtle"
                 },
@@ -66,7 +74,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c82"
+                    "get": "vm.mockUiStates.copy.c92"
                   },
                   "variant": "subtle"
                 },
@@ -84,7 +92,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c83"
+                    "get": "vm.mockUiStates.copy.c93"
                   },
                   "variant": "subtle"
                 },
@@ -102,7 +110,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c84"
+                    "get": "vm.mockUiStates.copy.c94"
                   },
                   "variant": "subtle"
                 },
@@ -128,7 +136,7 @@
                 "type": "Text",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c85"
+                    "get": "vm.mockUiStates.copy.c95"
                   },
                   "role": "caption",
                   "tone": "muted"
@@ -138,7 +146,7 @@
                 "type": "Heading",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c86"
+                    "get": "vm.mockUiStates.copy.c96"
                   },
                   "level": "1"
                 }
@@ -147,7 +155,7 @@
                 "type": "Text",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c87"
+                    "get": "vm.mockUiStates.copy.c97"
                   },
                   "role": "secondary",
                   "tone": "muted"
@@ -173,7 +181,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c88"
+                        "get": "vm.mockUiStates.copy.c98"
                       },
                       "level": "2"
                     }
@@ -182,7 +190,7 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c52"
+                        "get": "vm.mockUiStates.copy.c62"
                       },
                       "role": "caption",
                       "tone": "muted"
@@ -192,10 +200,10 @@
                     "type": "Switch",
                     "props": {
                       "label": {
-                        "get": "vm.mockUiStates.copy.c53"
+                        "get": "vm.mockUiStates.copy.c63"
                       },
                       "description": {
-                        "get": "vm.mockUiStates.copy.c54"
+                        "get": "vm.mockUiStates.copy.c64"
                       },
                       "checked": false,
                       "onLabel": {
@@ -210,7 +218,7 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c55"
+                        "get": "vm.mockUiStates.copy.c65"
                       },
                       "role": "secondary",
                       "tone": "muted"
@@ -238,7 +246,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c89"
+                        "get": "vm.mockUiStates.copy.c99"
                       },
                       "level": "2"
                     }
@@ -247,191 +255,207 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c56"
+                        "get": "vm.mockUiStates.copy.c66"
                       },
                       "role": "caption",
                       "tone": "muted"
                     }
                   },
                   {
-                    "type": "Stack",
+                    "type": "Columns",
                     "props": {
-                      "gap": "s"
+                      "gap": "l"
                     },
                     "children": [
                       {
-                        "type": "Text",
+                        "type": "Stack",
                         "props": {
-                          "value": {
-                            "get": "vm.mockUiStates.copy.c57"
-                          },
-                          "role": "caption",
-                          "tone": "muted"
-                        }
-                      },
-                      {
-                        "type": "Switch",
-                        "props": {
-                          "label": {
-                            "get": "vm.mockUiStates.copy.c58"
-                          },
-                          "description": {
-                            "get": "vm.mockUiStates.copy.c59"
-                          },
-                          "checked": false,
-                          "onLabel": {
-                            "t": "switch.on"
-                          },
-                          "offLabel": {
-                            "t": "switch.off"
-                          },
-                          "commit": "rest"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Stack",
-                    "props": {
-                      "gap": "s"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "value": {
-                            "get": "vm.mockUiStates.copy.c60"
-                          },
-                          "role": "caption",
-                          "tone": "muted"
-                        }
-                      },
-                      {
-                        "type": "Switch",
-                        "props": {
-                          "label": {
-                            "get": "vm.mockUiStates.copy.c61"
-                          },
-                          "description": {
-                            "get": "vm.mockUiStates.copy.c62"
-                          },
-                          "checked": false,
-                          "onLabel": {
-                            "t": "switch.on"
-                          },
-                          "offLabel": {
-                            "t": "switch.off"
-                          },
-                          "commit": "pending"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Stack",
-                    "props": {
-                      "gap": "s"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "value": {
-                            "get": "vm.mockUiStates.copy.c63"
-                          },
-                          "role": "caption",
-                          "tone": "muted"
-                        }
-                      },
-                      {
-                        "type": "Switch",
-                        "props": {
-                          "label": {
-                            "get": "vm.mockUiStates.copy.c64"
-                          },
-                          "description": {
-                            "get": "vm.mockUiStates.copy.c65"
-                          },
-                          "checked": true,
-                          "onLabel": {
-                            "t": "switch.on"
-                          },
-                          "offLabel": {
-                            "t": "switch.off"
-                          },
-                          "commit": "confirmed"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Stack",
-                    "props": {
-                      "gap": "s"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "value": {
-                            "get": "vm.mockUiStates.copy.c66"
-                          },
-                          "role": "caption",
-                          "tone": "muted"
-                        }
-                      },
-                      {
-                        "type": "Switch",
-                        "props": {
-                          "label": {
-                            "get": "vm.mockUiStates.copy.c67"
-                          },
-                          "description": {
-                            "get": "vm.mockUiStates.copy.c68"
-                          },
-                          "checked": false,
-                          "onLabel": {
-                            "t": "switch.on"
-                          },
-                          "offLabel": {
-                            "t": "switch.off"
-                          },
-                          "commit": "failed",
-                          "error": {
-                            "get": "vm.mockUiStates.copy.c69"
-                          },
-                          "retryLabel": {
-                            "t": "commit.retry"
-                          }
+                          "gap": "s"
                         },
-                        "on": {
-                          "retry": [
-                            {
-                              "set": "local.retry",
-                              "to": "pending"
-                            },
-                            {
-                              "run": "gallery.wait",
-                              "args": {
-                                "duration": "confirmMinimum"
-                              }
-                            },
-                            {
-                              "set": "local.retry",
-                              "to": "confirmed"
-                            },
-                            {
-                              "run": "gallery.wait",
-                              "args": {
-                                "duration": "doneDuration"
-                              }
-                            },
-                            {
-                              "set": "local.retry",
-                              "to": "rest"
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c67"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
                             }
-                          ]
-                        }
+                          },
+                          {
+                            "type": "Switch",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c68"
+                              },
+                              "description": {
+                                "get": "vm.mockUiStates.copy.c69"
+                              },
+                              "checked": false,
+                              "onLabel": {
+                                "t": "switch.on"
+                              },
+                              "offLabel": {
+                                "t": "switch.off"
+                              },
+                              "commit": "rest"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c70"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Switch",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c71"
+                              },
+                              "description": {
+                                "get": "vm.mockUiStates.copy.c72"
+                              },
+                              "checked": false,
+                              "onLabel": {
+                                "t": "switch.on"
+                              },
+                              "offLabel": {
+                                "t": "switch.off"
+                              },
+                              "commit": "pending"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c73"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Switch",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c74"
+                              },
+                              "description": {
+                                "get": "vm.mockUiStates.copy.c75"
+                              },
+                              "checked": true,
+                              "onLabel": {
+                                "t": "switch.on"
+                              },
+                              "offLabel": {
+                                "t": "switch.off"
+                              },
+                              "commit": "confirmed"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.mockUiStates.copy.c76"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Switch",
+                            "props": {
+                              "label": {
+                                "get": "vm.mockUiStates.copy.c77"
+                              },
+                              "description": {
+                                "get": "vm.mockUiStates.copy.c78"
+                              },
+                              "checked": {
+                                "get": "local.matrixValue"
+                              },
+                              "onLabel": {
+                                "t": "switch.on"
+                              },
+                              "offLabel": {
+                                "t": "switch.off"
+                              },
+                              "commit": {
+                                "get": "local.matrix"
+                              },
+                              "error": {
+                                "get": "vm.mockUiStates.copy.c79"
+                              },
+                              "retryLabel": {
+                                "t": "commit.retry"
+                              }
+                            },
+                            "on": {
+                              "retry": [
+                                {
+                                  "set": "local.matrix",
+                                  "to": "pending"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "confirmMinimum"
+                                  }
+                                },
+                                {
+                                  "set": "local.matrixValue",
+                                  "to": true
+                                },
+                                {
+                                  "set": "local.matrix",
+                                  "to": "confirmed"
+                                },
+                                {
+                                  "run": "gallery.wait",
+                                  "args": {
+                                    "duration": "doneDuration"
+                                  }
+                                },
+                                {
+                                  "set": "local.matrix",
+                                  "to": "rest"
+                                }
+                              ]
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -439,7 +463,7 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c70"
+                        "get": "vm.mockUiStates.copy.c80"
                       },
                       "role": "secondary",
                       "tone": "muted"
@@ -467,7 +491,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c90"
+                        "get": "vm.mockUiStates.copy.c100"
                       },
                       "level": "2"
                     }
@@ -476,7 +500,7 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c91"
+                        "get": "vm.mockUiStates.copy.c101"
                       },
                       "role": "secondary",
                       "tone": "muted"
@@ -494,7 +518,7 @@
                         "type": "Button",
                         "props": {
                           "label": {
-                            "get": "vm.mockUiStates.copy.c71"
+                            "get": "vm.mockUiStates.copy.c81"
                           },
                           "variant": "primary",
                           "busy": {
@@ -503,6 +527,10 @@
                         },
                         "on": {
                           "press": [
+                            {
+                              "set": "local.phaseValue",
+                              "to": false
+                            },
                             {
                               "set": "local.playing",
                               "to": true
@@ -516,6 +544,10 @@
                               "args": {
                                 "duration": "confirmMinimum"
                               }
+                            },
+                            {
+                              "set": "local.phaseValue",
+                              "to": true
                             },
                             {
                               "set": "local.phase",
@@ -542,7 +574,7 @@
                         "type": "Text",
                         "props": {
                           "value": {
-                            "get": "vm.mockUiStates.copy.c72"
+                            "get": "vm.mockUiStates.copy.c82"
                           },
                           "role": "caption",
                           "tone": "muted"
@@ -554,20 +586,13 @@
                     "type": "Switch",
                     "props": {
                       "label": {
-                        "get": "vm.mockUiStates.copy.c73"
+                        "get": "vm.mockUiStates.copy.c83"
                       },
                       "description": {
-                        "get": "vm.mockUiStates.copy.c74"
+                        "get": "vm.mockUiStates.copy.c84"
                       },
                       "checked": {
-                        "expr": {
-                          "==": [
-                            {
-                              "get": "local.phase"
-                            },
-                            "confirmed"
-                          ]
-                        }
+                        "get": "local.phaseValue"
                       },
                       "onLabel": {
                         "t": "switch.on"
@@ -579,7 +604,7 @@
                         "get": "local.phase"
                       },
                       "error": {
-                        "get": "vm.mockUiStates.copy.c75"
+                        "get": "vm.mockUiStates.copy.c85"
                       },
                       "retryLabel": {
                         "t": "commit.retry"
@@ -588,7 +613,7 @@
                     "on": {
                       "retry": [
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "pending"
                         },
                         {
@@ -598,7 +623,11 @@
                           }
                         },
                         {
-                          "set": "local.retry",
+                          "set": "local.phaseValue",
+                          "to": true
+                        },
+                        {
+                          "set": "local.phase",
                           "to": "confirmed"
                         },
                         {
@@ -608,7 +637,7 @@
                           }
                         },
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "rest"
                         }
                       ]
@@ -618,7 +647,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c76"
+                        "get": "vm.mockUiStates.copy.c86"
                       },
                       "level": "3"
                     }
@@ -627,20 +656,13 @@
                     "type": "Switch",
                     "props": {
                       "label": {
-                        "get": "vm.mockUiStates.copy.c77"
+                        "get": "vm.mockUiStates.copy.c87"
                       },
                       "description": {
-                        "get": "vm.mockUiStates.copy.c78"
+                        "get": "vm.mockUiStates.copy.c88"
                       },
                       "checked": {
-                        "expr": {
-                          "==": [
-                            {
-                              "get": "local.retry"
-                            },
-                            "confirmed"
-                          ]
-                        }
+                        "get": "local.retryValue"
                       },
                       "onLabel": {
                         "t": "switch.on"
@@ -652,7 +674,7 @@
                         "get": "local.retry"
                       },
                       "error": {
-                        "get": "vm.mockUiStates.copy.c79"
+                        "get": "vm.mockUiStates.copy.c89"
                       },
                       "retryLabel": {
                         "t": "commit.retry"
@@ -669,6 +691,10 @@
                           "args": {
                             "duration": "confirmMinimum"
                           }
+                        },
+                        {
+                          "set": "local.retryValue",
+                          "to": true
                         },
                         {
                           "set": "local.retry",
@@ -695,7 +721,7 @@
             "type": "Text",
             "props": {
               "value": {
-                "get": "vm.mockUiStates.copy.c92"
+                "get": "vm.mockUiStates.copy.c102"
               },
               "role": "secondary",
               "tone": "muted"
@@ -713,7 +739,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c93"
+                    "get": "vm.mockUiStates.copy.c103"
                   },
                   "variant": "subtle"
                 },
@@ -730,7 +756,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c94"
+                    "get": "vm.mockUiStates.copy.c104"
                   },
                   "variant": "subtle"
                 },
@@ -747,7 +773,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c95"
+                    "get": "vm.mockUiStates.copy.c105"
                   },
                   "variant": "subtle"
                 },
@@ -764,7 +790,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c96"
+                    "get": "vm.mockUiStates.copy.c106"
                   },
                   "variant": "subtle"
                 },
@@ -781,7 +807,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c97"
+                    "get": "vm.mockUiStates.copy.c107"
                   },
                   "variant": "subtle"
                 },
@@ -798,7 +824,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c98"
+                    "get": "vm.mockUiStates.copy.c108"
                   },
                   "variant": "subtle"
                 },
@@ -815,7 +841,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c99"
+                    "get": "vm.mockUiStates.copy.c109"
                   },
                   "variant": "subtle"
                 },

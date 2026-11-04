@@ -22,3 +22,11 @@ export const iconTone = styleVariants({
 // The icon sits on the first line of the sentence: a line is the font's size times its line height.
 export const icon = style({ flexShrink: 0, width: t.icon, height: t.icon, marginBlock: `calc((${t.size} * ${t.lineHeight} - ${t.icon}) / 2)` });
 export const text = style({ minWidth: 0, overflowWrap: "anywhere" });
+export const content = style({ display: "flex", flexDirection: "column", gap: t.actionGap, minWidth: 0, flex: 1 });
+export const actions = style({ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: t.actionGap });
+export const details = style({ fontSize: t.detailSize, color: t.detail, overflowWrap: "anywhere" });
+export const summary = style({
+  cursor: "pointer", borderRadius: tokens.radius.small,
+  selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: tokens.border.focus, outlineColor: tokens.color.focusRing, outlineOffset: tokens.border.focusOffset } },
+});
+export const detailsBody = style({ display: "block", marginBlockStart: t.actionGap });

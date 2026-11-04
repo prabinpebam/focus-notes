@@ -6,7 +6,8 @@ export const contract = defineContract({
   description: "A one-sentence confirmation with an optional action. Pauses while hovered or focused; Esc dismisses it.",
   props: {
     message: { kind: "text", required: true },
-    tone: { kind: "enum", values: ["info", "error"], default: "info" },
+    tone: { kind: "enum", values: ["info", "error", "success", "warning", "progress"], default: "info" },
+    sticky: { kind: "boolean", default: false, description: "Hard-dismiss outcome: the host must not start an auto-dismiss timer. Errors are always sticky." },
     actionLabel: { kind: "text" },
     dismissLabel: { kind: "message", required: true },
     focusRequest: { kind: "number", min: 0 },
@@ -18,6 +19,7 @@ export const contract = defineContract({
   a11y: { pattern: "status (errors: alert)", name: "message" },
   uncovered: { paused: "Pauses while the pointer or focus is on it: a static fixture can't show it, and no journey checks it yet.", focusVisible: GAP.focusVisible },
   fixtures: [
+    ...["success", "warning", "progress"].map((tone) => ({ name: `tone ${tone}`, props: { message: { get: "vm.gallery.query" }, tone, dismissLabel: { t: "toast.dismiss" }, sticky: tone !== "success" } })),
     { name: "tone info", props: { message: { get: "vm.gallery.query" }, tone: "info", dismissLabel: { t: "toast.dismiss" } } },
     { name: "tone error with action", props: { message: { get: "vm.gallery.query" }, tone: "error", actionLabel: { get: "vm.gallery.query" }, dismissLabel: { t: "toast.dismiss" } } },
   ],

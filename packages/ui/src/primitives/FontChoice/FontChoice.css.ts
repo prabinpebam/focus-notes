@@ -21,6 +21,6 @@ export const sample = style({
   fontFamily: t.family, fontSize: t.sampleSize, lineHeight: t.sampleLeading,
 });
 // The full name, never cut: a long one wraps (owner, 3 November 19:05).
-export const name = style({ fontFamily: t.nameFont, fontSize: t.nameSize, fontWeight: t.nameWeight, overflowWrap: "anywhere" });
+export const name = style({ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: t.nameFont, fontSize: t.nameSize, fontWeight: t.nameWeight, overflowWrap: "anywhere" });
 // The popover's grid: equal cells, however long a font's name.
 export const grid = style({});

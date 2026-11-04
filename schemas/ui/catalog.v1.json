@@ -6,6 +6,97 @@
   },
   "components": [
     {
+      "type": "EmptyState",
+      "tier": "compound",
+      "description": "A known-empty wrapper, not loading or failure. Says why and offers the first action; good news may simply say all done. The same minimum size holds the layout.",
+      "props": {
+        "title": {
+          "kind": "message",
+          "required": true
+        },
+        "detail": {
+          "kind": "message"
+        },
+        "icon": {
+          "kind": "icon",
+          "default": "folder"
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "component",
+            "section",
+            "view"
+          ],
+          "default": "section"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "neutral",
+            "good"
+          ],
+          "default": "neutral"
+        },
+        "actionLabel": {
+          "kind": "message"
+        }
+      },
+      "events": {
+        "action": {}
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.emptyState.*",
+      "a11y": {
+        "pattern": "text and optional button",
+        "name": "title"
+      },
+      "fixtures": [
+        "size component",
+        "size section",
+        "size view",
+        "all done"
+      ]
+    },
+    {
+      "type": "NotificationRegion",
+      "tier": "layout",
+      "description": "The named region for up to 3 notification pills. The host owns queue order, coalescing and visible-only timers; this layout only places them.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "overflowLabel": {
+          "kind": "message",
+          "description": "Queued count, only when more outcomes are waiting."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": [
+            "Toast"
+          ],
+          "max": 3
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.notificationStack.*",
+      "a11y": {
+        "pattern": "region",
+        "name": "label"
+      },
+      "fixtures": [
+        "queued"
+      ]
+    },
+    {
       "type": "SecureKeyField",
       "tier": "compound",
       "description": "One-shot secure credential entry. Never bind secrets to app state.",
@@ -992,6 +1083,25 @@
           "kind": "boolean",
           "default": false,
           "description": "Shown and focusable, but the choice can't change: while what it chose is being sent (Send feedback's Kind, D-203)."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "State on the chosen segment; only this group locks while pending."
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
+        "revertLabel": {
+          "kind": "message"
         }
       },
       "events": {
@@ -1005,14 +1115,19 @@
           "payload": {
             "id": "text"
           }
-        }
+        },
+        "retry": {},
+        "revert": {}
       },
       "slots": {},
       "states": [
         "rest",
         "hover",
         "selected",
-        "focusVisible"
+        "focusVisible",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.segmentedControl.*",
       "a11y": {
@@ -1020,6 +1135,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "first selected",
         "last selected",
         "read only",
@@ -1200,10 +1319,12 @@
           "values": [
             "line",
             "tile",
-            "avatar"
+            "avatar",
+            "row",
+            "card"
           ],
           "default": "line",
-          "description": "What's coming: a line of words, a card's picture, or a person's photo."
+          "description": "What's coming: a line, picture, avatar, an ItemCard row or a picture card."
         },
         "width": {
           "kind": "enum",
@@ -1227,6 +1348,8 @@
         "pattern": "presentation: hidden from assistive technology; its region carries the one status (D-208)"
       },
       "fixtures": [
+        "row",
+        "card",
         "line",
         "medium line",
         "short line",
@@ -1276,9 +1399,17 @@
           "kind": "enum",
           "values": [
             "info",
-            "error"
+            "error",
+            "success",
+            "warning",
+            "progress"
           ],
           "default": "info"
+        },
+        "sticky": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Hard-dismiss outcome: the host must not start an auto-dismiss timer. Errors are always sticky."
         },
         "actionLabel": {
           "kind": "text"
@@ -1313,6 +1444,9 @@
         "name": "message"
       },
       "fixtures": [
+        "tone success",
+        "tone warning",
+        "tone progress",
         "tone info",
         "tone error with action"
       ]
@@ -1952,6 +2086,16 @@
           "default": false,
           "description": "The tile showing is a preview, so Esc goes back to the chosen theme (and doesn't close the sheet)."
         },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "State on the chosen tile, with only this group locked while pending. Failed recovery belongs under the gallery."
+        },
         "focusRequest": {
           "kind": "number",
           "min": 0,
@@ -1977,7 +2121,10 @@
         "hover",
         "selected",
         "focusVisible",
-        "previewing"
+        "previewing",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.themeGallery.*",
       "a11y": {
@@ -1985,6 +2132,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "first selected",
         "previewing"
       ]
@@ -2477,9 +2628,22 @@
         "icon": {
           "kind": "icon",
           "description": "What happened (cloudOff for offline, history for a code that ran out). By default the tone's own icon."
+        },
+        "actionLabel": {
+          "kind": "message"
+        },
+        "detailsLabel": {
+          "kind": "message",
+          "description": "The native disclosure's label, when details are available."
+        },
+        "details": {
+          "kind": "message",
+          "description": "The optional technical cause, hidden until requested."
         }
       },
-      "events": {},
+      "events": {
+        "action": {}
+      },
       "slots": {},
       "states": [
         "rest"
@@ -2490,6 +2654,7 @@
         "name": "message"
       },
       "fixtures": [
+        "recovery and details",
         "tone danger",
         "tone warning",
         "tone info",
@@ -3001,6 +3166,17 @@
           "default": false,
           "description": "Selected on its own or within a text selection: the editor's selection tint over it, never a ring."
         },
+        "broken": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The image failed to load; show its alt text and a scoped recovery action."
+        },
+        "error": {
+          "kind": "message"
+        },
+        "retryLabel": {
+          "kind": "message"
+        },
         "crop": {
           "kind": "boolean",
           "default": false,
@@ -3023,12 +3199,14 @@
             "x": "number",
             "y": "number"
           }
-        }
+        },
+        "retry": {}
       },
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "broken"
       ],
       "tokens": "cmp.imageFrame.*",
       "a11y": {
@@ -3036,6 +3214,7 @@
         "name": "alt"
       },
       "fixtures": [
+        "broken image",
         "mode column",
         "mode wide",
         "mode actual",
@@ -3073,6 +3252,16 @@
         "selected": {
           "kind": "boolean",
           "default": false
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Every tile receives its group's commit state; the chosen tile shows the mark, and the whole group stays focusable but locked while pending. Failed recovery belongs under the group."
         }
       },
       "events": {
@@ -3082,7 +3271,10 @@
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.fontChoice.*",
       "a11y": {
@@ -3090,6 +3282,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "font mono",
         "font sans",
         "font serif",
@@ -3828,6 +4024,25 @@
           "default": false,
           "description": "What it holds scrolls inside its padding when the surface is held shorter than its content: a dialog in the middle of a short window (D-123)."
         },
+        "minimum": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "component",
+            "section",
+            "view"
+          ],
+          "default": "none",
+          "description": "The wrapper's minimum block size, shared by populated, empty and loading content."
+        },
+        "busy": {
+          "kind": "boolean",
+          "description": "This region is loading; its placeholders stay decorative."
+        },
+        "label": {
+          "kind": "message",
+          "description": "Names a region when its content changes independently."
+        },
         "keyScope": {
           "kind": "enum",
           "values": [
@@ -3858,6 +4073,10 @@
         "pattern": "none"
       },
       "fixtures": [
+        "loading section",
+        "minimum component",
+        "minimum section",
+        "minimum view",
         "scroll",
         "variant canvas",
         "variant frost",

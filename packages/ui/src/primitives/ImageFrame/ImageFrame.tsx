@@ -1,4 +1,6 @@
 import type { MouseEvent, KeyboardEvent } from "react";
+import { Icon } from "../Icon/Icon.tsx";
+import { Button } from "../Button/Button.tsx";
 import * as s from "./ImageFrame.css.ts";
 
 export interface ImageFrameProps {
@@ -11,6 +13,11 @@ export interface ImageFrameProps {
   fitHeight?: boolean;
   rounded?: boolean;
   selected?: boolean;
+  /** Explicit visual state supplied by the image reader; never inferred as an empty image. */
+  broken?: boolean;
+  error?: string;
+  retryLabel?: string;
+  onRetry?: () => void;
   /** Edit image: the crop frame over the preview. */
   crop?: boolean;
   rotation?: keyof typeof s.rotation;
@@ -19,7 +26,7 @@ export interface ImageFrameProps {
 }
 
 /** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, crop = false, rotation = "0", onContextMenu }: ImageFrameProps) {
+export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, broken = false, error, retryLabel, onRetry, crop = false, rotation = "0", onContextMenu }: ImageFrameProps) {
   const safe = src.startsWith("data:image/") ? src : undefined;
   const menu = onContextMenu ? {
     onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }); },
@@ -35,7 +42,12 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
   return (
     <span className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
       <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
-        {safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} /> : null}
+        {broken ? <span className={s.broken} role="group" aria-label={alt}>
+          <Icon name="image" />
+          {alt ? <span>{alt}</span> : null}
+          {error ? <span role="status">{error}</span> : null}
+          {retryLabel ? <Button label={retryLabel} size="s" {...(onRetry ? { onPress: onRetry } : {})} /> : null}
+        </span> : safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} /> : null}
         {crop ? (
           <span className={s.crop} aria-hidden="true">
             {(["tl", "tr", "bl", "br"] as const).map((c) => <span key={c} className={`${s.handle} ${s.corner[c]}`} />)}

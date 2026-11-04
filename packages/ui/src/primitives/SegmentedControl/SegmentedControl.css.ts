@@ -40,6 +40,7 @@ export const track = {
 const segmentBase = style({
   display: "inline-flex",
   alignItems: "center",
+  gap: t.padding,
   paddingInline: t.paddingInline,
   borderRadius: t.segmentRadius,
   color: t.text,

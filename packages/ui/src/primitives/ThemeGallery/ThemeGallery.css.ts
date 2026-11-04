@@ -44,12 +44,13 @@ export const tile = style({
   transitionDuration: t.duration,
   transitionTimingFunction: t.easing,
   selectors: {
-    "&:hover": { backgroundColor: t.hover },
+    "&:active": { backgroundColor: t.hover },
     // The theme showing: its tile's background, never a border or a side bar (D-111).
     '&[aria-selected="true"]': { backgroundColor: t.selected, color: t.selectedText },
     // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.hover } } } },
 });
 
 // The sample: its own theme's canvas, text, accent, and trigger dot (fixed samples, not the theme showing).
@@ -83,8 +84,9 @@ export const badge = style({
   fontSize: t.captionSize,
   visibility: "hidden",
   selectors: {
-    [`${tile}:hover &, ${tile}:focus-visible &`]: { visibility: "visible" },
+    [`${tile}:active &, ${tile}:focus-visible &`]: { visibility: "visible" },
   },
+  "@media": { "(hover: hover)": { selectors: { [`${tile}:hover &`]: { visibility: "visible" } } } },
 });
 // On the theme showing's background, its caption and badge keep their contrast (D-100, D-111).
 globalStyle(`${tile}[aria-selected="true"] :is(${slot}, ${badge})`, { color: t.selectedMuted });

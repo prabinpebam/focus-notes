@@ -6,6 +6,7 @@ const t = tokens.cmp.surface;
 
 // It can be held shorter than its content (a panel the window has no room for): a list in it scrolls.
 export const base = style({ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, color: t.text.default });
+export const minimum = styleVariants({ none: {}, component: { minHeight: tokens.size.hit }, section: { minHeight: tokens.size.emptySection }, view: { minHeight: tokens.size.emptyView } });
 export const variant = styleVariants({
   canvas: { backgroundColor: t.background.canvas },
   frost: {

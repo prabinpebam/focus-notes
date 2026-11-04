@@ -3,8 +3,16 @@
   "local": {
     "phase": "rest",
     "retry": "failed",
+    "matrix": "failed",
+    "phaseValue": false,
+    "retryValue": false,
+    "matrixValue": false,
     "playing": false,
-    "dismissed": false
+    "dismissed": false,
+    "notice": "idle",
+    "outcome": "idle",
+    "load": "idle",
+    "operation": "idle"
   },
   "root": {
     "type": "Center",
@@ -31,7 +39,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c32"
+                    "get": "vm.mockUiStates.copy.c42"
                   },
                   "variant": "subtle"
                 },
@@ -48,7 +56,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c33"
+                    "get": "vm.mockUiStates.copy.c43"
                   },
                   "variant": "subtle"
                 },
@@ -66,7 +74,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c34"
+                    "get": "vm.mockUiStates.copy.c44"
                   },
                   "variant": "subtle"
                 },
@@ -84,7 +92,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c35"
+                    "get": "vm.mockUiStates.copy.c45"
                   },
                   "variant": "subtle"
                 },
@@ -102,7 +110,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c36"
+                    "get": "vm.mockUiStates.copy.c46"
                   },
                   "variant": "subtle"
                 },
@@ -128,7 +136,7 @@
                 "type": "Text",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c37"
+                    "get": "vm.mockUiStates.copy.c47"
                   },
                   "role": "caption",
                   "tone": "muted"
@@ -138,7 +146,7 @@
                 "type": "Heading",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c38"
+                    "get": "vm.mockUiStates.copy.c48"
                   },
                   "level": "1"
                 }
@@ -147,7 +155,7 @@
                 "type": "Text",
                 "props": {
                   "value": {
-                    "get": "vm.mockUiStates.copy.c39"
+                    "get": "vm.mockUiStates.copy.c49"
                   },
                   "role": "secondary",
                   "tone": "muted"
@@ -173,7 +181,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c40"
+                        "get": "vm.mockUiStates.copy.c50"
                       },
                       "level": "2"
                     }
@@ -245,7 +253,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c41"
+                        "get": "vm.mockUiStates.copy.c51"
                       },
                       "level": "2"
                     }
@@ -426,7 +434,9 @@
                               "value": {
                                 "get": "vm.mockUiStates.name"
                               },
-                              "commit": "failed",
+                              "commit": {
+                                "get": "local.matrix"
+                              },
                               "error": {
                                 "get": "vm.mockUiStates.copy.c17"
                               },
@@ -440,7 +450,7 @@
                             "on": {
                               "retry": [
                                 {
-                                  "set": "local.retry",
+                                  "set": "local.matrix",
                                   "to": "pending"
                                 },
                                 {
@@ -450,7 +460,7 @@
                                   }
                                 },
                                 {
-                                  "set": "local.retry",
+                                  "set": "local.matrix",
                                   "to": "confirmed"
                                 },
                                 {
@@ -460,12 +470,12 @@
                                   }
                                 },
                                 {
-                                  "set": "local.retry",
+                                  "set": "local.matrix",
                                   "to": "rest"
                                 }
                               ],
                               "revert": {
-                                "set": "local.retry",
+                                "set": "local.matrix",
                                 "to": "rest"
                               }
                             }
@@ -482,7 +492,9 @@
                               "swatch": {
                                 "get": "vm.mockUiStates.color"
                               },
-                              "commit": "failed",
+                              "commit": {
+                                "get": "local.matrix"
+                              },
                               "error": {
                                 "get": "vm.mockUiStates.copy.c19"
                               },
@@ -496,7 +508,7 @@
                             "on": {
                               "retry": [
                                 {
-                                  "set": "local.retry",
+                                  "set": "local.matrix",
                                   "to": "pending"
                                 },
                                 {
@@ -506,7 +518,7 @@
                                   }
                                 },
                                 {
-                                  "set": "local.retry",
+                                  "set": "local.matrix",
                                   "to": "confirmed"
                                 },
                                 {
@@ -516,12 +528,12 @@
                                   }
                                 },
                                 {
-                                  "set": "local.retry",
+                                  "set": "local.matrix",
                                   "to": "rest"
                                 }
                               ],
                               "revert": {
-                                "set": "local.retry",
+                                "set": "local.matrix",
                                 "to": "rest"
                               }
                             }
@@ -550,6 +562,158 @@
                         "get": "vm.mockUiStates.copy.c22"
                       }
                     }
+                  },
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "value": {
+                        "get": "vm.mockUiStates.copy.c23"
+                      },
+                      "level": "3"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "l"
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c24"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.mockUiStates.copy.c25"
+                                  },
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c26"
+                                  },
+                                  "commit": "confirmed"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c27"
+                                  },
+                                  "role": "secondary",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Surface",
+                        "props": {
+                          "variant": "sunken",
+                          "shape": "control",
+                          "padding": "l"
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c28"
+                                  },
+                                  "level": "3"
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.mockUiStates.copy.c29"
+                                  },
+                                  "type": "password",
+                                  "placeholder": {
+                                    "get": "vm.mockUiStates.copy.c30"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.mockUiStates.copy.c31"
+                                  },
+                                  "variant": "secondary"
+                                },
+                                "on": {
+                                  "press": [
+                                    {
+                                      "set": "local.phase",
+                                      "to": "pending"
+                                    },
+                                    {
+                                      "run": "gallery.wait",
+                                      "args": {
+                                        "duration": "confirmMinimum"
+                                      }
+                                    },
+                                    {
+                                      "set": "local.phase",
+                                      "to": "confirmed"
+                                    },
+                                    {
+                                      "run": "gallery.wait",
+                                      "args": {
+                                        "duration": "doneDuration"
+                                      }
+                                    },
+                                    {
+                                      "set": "local.phase",
+                                      "to": "rest"
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.mockUiStates.copy.c32"
+                                  },
+                                  "role": "secondary",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               }
@@ -573,7 +737,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c42"
+                        "get": "vm.mockUiStates.copy.c52"
                       },
                       "level": "2"
                     }
@@ -582,7 +746,7 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c43"
+                        "get": "vm.mockUiStates.copy.c53"
                       },
                       "role": "secondary",
                       "tone": "muted"
@@ -600,7 +764,7 @@
                         "type": "Button",
                         "props": {
                           "label": {
-                            "get": "vm.mockUiStates.copy.c23"
+                            "get": "vm.mockUiStates.copy.c33"
                           },
                           "variant": "primary",
                           "busy": {
@@ -648,7 +812,7 @@
                         "type": "Text",
                         "props": {
                           "value": {
-                            "get": "vm.mockUiStates.copy.c24"
+                            "get": "vm.mockUiStates.copy.c34"
                           },
                           "role": "caption",
                           "tone": "muted"
@@ -660,7 +824,7 @@
                     "type": "TextField",
                     "props": {
                       "label": {
-                        "get": "vm.mockUiStates.copy.c25"
+                        "get": "vm.mockUiStates.copy.c35"
                       },
                       "value": {
                         "get": "vm.mockUiStates.name"
@@ -669,7 +833,7 @@
                         "get": "local.phase"
                       },
                       "error": {
-                        "get": "vm.mockUiStates.copy.c26"
+                        "get": "vm.mockUiStates.copy.c36"
                       },
                       "retryLabel": {
                         "t": "commit.retry"
@@ -681,7 +845,7 @@
                     "on": {
                       "retry": [
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "pending"
                         },
                         {
@@ -691,7 +855,7 @@
                           }
                         },
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "confirmed"
                         },
                         {
@@ -701,12 +865,12 @@
                           }
                         },
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "rest"
                         }
                       ],
                       "revert": {
-                        "set": "local.retry",
+                        "set": "local.phase",
                         "to": "rest"
                       }
                     }
@@ -715,7 +879,7 @@
                     "type": "ColorField",
                     "props": {
                       "label": {
-                        "get": "vm.mockUiStates.copy.c27"
+                        "get": "vm.mockUiStates.copy.c37"
                       },
                       "value": {
                         "get": "vm.mockUiStates.color"
@@ -727,7 +891,7 @@
                         "get": "local.phase"
                       },
                       "error": {
-                        "get": "vm.mockUiStates.copy.c28"
+                        "get": "vm.mockUiStates.copy.c38"
                       },
                       "retryLabel": {
                         "t": "commit.retry"
@@ -739,7 +903,7 @@
                     "on": {
                       "retry": [
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "pending"
                         },
                         {
@@ -749,7 +913,7 @@
                           }
                         },
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "confirmed"
                         },
                         {
@@ -759,12 +923,12 @@
                           }
                         },
                         {
-                          "set": "local.retry",
+                          "set": "local.phase",
                           "to": "rest"
                         }
                       ],
                       "revert": {
-                        "set": "local.retry",
+                        "set": "local.phase",
                         "to": "rest"
                       }
                     }
@@ -773,7 +937,7 @@
                     "type": "Heading",
                     "props": {
                       "value": {
-                        "get": "vm.mockUiStates.copy.c29"
+                        "get": "vm.mockUiStates.copy.c39"
                       },
                       "level": "3"
                     }
@@ -782,7 +946,7 @@
                     "type": "TextField",
                     "props": {
                       "label": {
-                        "get": "vm.mockUiStates.copy.c30"
+                        "get": "vm.mockUiStates.copy.c40"
                       },
                       "value": {
                         "get": "vm.mockUiStates.name"
@@ -791,7 +955,7 @@
                         "get": "local.retry"
                       },
                       "error": {
-                        "get": "vm.mockUiStates.copy.c31"
+                        "get": "vm.mockUiStates.copy.c41"
                       },
                       "retryLabel": {
                         "t": "commit.retry"
@@ -841,7 +1005,7 @@
             "type": "Text",
             "props": {
               "value": {
-                "get": "vm.mockUiStates.copy.c44"
+                "get": "vm.mockUiStates.copy.c54"
               },
               "role": "secondary",
               "tone": "muted"
@@ -859,7 +1023,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c45"
+                    "get": "vm.mockUiStates.copy.c55"
                   },
                   "variant": "subtle"
                 },
@@ -876,7 +1040,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c46"
+                    "get": "vm.mockUiStates.copy.c56"
                   },
                   "variant": "subtle"
                 },
@@ -893,7 +1057,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c47"
+                    "get": "vm.mockUiStates.copy.c57"
                   },
                   "variant": "subtle"
                 },
@@ -910,7 +1074,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c48"
+                    "get": "vm.mockUiStates.copy.c58"
                   },
                   "variant": "subtle"
                 },
@@ -927,7 +1091,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c49"
+                    "get": "vm.mockUiStates.copy.c59"
                   },
                   "variant": "subtle"
                 },
@@ -944,7 +1108,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c50"
+                    "get": "vm.mockUiStates.copy.c60"
                   },
                   "variant": "subtle"
                 },
@@ -961,7 +1125,7 @@
                 "type": "Button",
                 "props": {
                   "label": {
-                    "get": "vm.mockUiStates.copy.c51"
+                    "get": "vm.mockUiStates.copy.c61"
                   },
                   "variant": "subtle"
                 },

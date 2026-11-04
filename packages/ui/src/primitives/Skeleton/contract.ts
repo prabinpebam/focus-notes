@@ -5,7 +5,7 @@ export const contract = defineContract({
   tier: "primitive",
   description: "A placeholder in the shape of content that's on its way: a line of words, a tile or an avatar, with a light that passes across it a few times, then stands still. Decorative: the region it sits in says what it's waiting for, once. Not for a wait without a known shape (use Spinner), nor for an empty or failed result (say so instead).",
   props: {
-    shape: { kind: "enum", values: ["line", "tile", "avatar"], default: "line", description: "What's coming: a line of words, a card's picture, or a person's photo." },
+    shape: { kind: "enum", values: ["line", "tile", "avatar", "row", "card"], default: "line", description: "What's coming: a line, picture, avatar, an ItemCard row or a picture card." },
     width: { kind: "enum", values: ["full", "long", "medium", "short"], default: "full", description: "A line's length, so a list of placeholders looks like words, not bars." },
   },
   events: {},
@@ -14,6 +14,7 @@ export const contract = defineContract({
   tokens: "cmp.skeleton.*",
   a11y: { pattern: "presentation: hidden from assistive technology; its region carries the one status (D-208)" },
   fixtures: [
+    ...["row", "card"].map((shape) => ({ name: shape, props: { shape } })),
     { name: "line", props: { shape: "line", width: "long" } },
     { name: "medium line", props: { shape: "line", width: "medium" } },
     { name: "short line", props: { shape: "line", width: "short" } },

@@ -197,6 +197,12 @@
       },
       "oneOf": [
         {
+          "$ref": "#/$defs/c_EmptyState"
+        },
+        {
+          "$ref": "#/$defs/c_NotificationRegion"
+        },
+        {
           "$ref": "#/$defs/c_SecureKeyField"
         },
         {
@@ -549,6 +555,318 @@
             "$ref": "#/$defs/slotOutlet"
           }
         ]
+      }
+    },
+    "c_EmptyState": {
+      "type": "object",
+      "description": "A known-empty wrapper, not loading or failure. Says why and offers the first action; good news may simply say all done. The same minimum size holds the layout.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "EmptyState"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "detail": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "sort",
+                    "inSelection",
+                    "grip",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough",
+                    "text",
+                    "taskList",
+                    "divider",
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "hardDrive",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail",
+                    "pin",
+                    "pinOff",
+                    "feedback",
+                    "sent",
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "component",
+                    "section",
+                    "view"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "neutral",
+                    "good"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "actionLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "title"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_NotificationRegion": {
+      "type": "object",
+      "description": "The named region for up to 3 notification pills. The host owns queue order, coalescing and visible-only timers; this layout only places them.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "NotificationRegion"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "overflowLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
       }
     },
     "c_SecureKeyField": {
@@ -2907,6 +3225,63 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "retryLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "revertLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -2922,6 +3297,12 @@
               "$ref": "#/$defs/actions"
             },
             "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "retry": {
+              "$ref": "#/$defs/actions"
+            },
+            "revert": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -3268,7 +3649,9 @@
                   "enum": [
                     "line",
                     "tile",
-                    "avatar"
+                    "avatar",
+                    "row",
+                    "card"
                   ]
                 },
                 {
@@ -3415,8 +3798,24 @@
                 {
                   "enum": [
                     "info",
-                    "error"
+                    "error",
+                    "success",
+                    "warning",
+                    "progress"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "sticky": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -4687,6 +5086,24 @@
               "anyOf": [
                 {
                   "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -6040,6 +6457,45 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "actionLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "detailsLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "details": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -6049,7 +6505,11 @@
         "on": {
           "type": "object",
           "additionalProperties": false,
-          "properties": {}
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         }
       }
     },
@@ -7029,6 +7489,45 @@
                 }
               ]
             },
+            "broken": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "retryLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "crop": {
               "anyOf": [
                 {
@@ -7070,6 +7569,9 @@
           "additionalProperties": false,
           "properties": {
             "contextMenu": {
+              "$ref": "#/$defs/actions"
+            },
+            "retry": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -7146,6 +7648,24 @@
               "anyOf": [
                 {
                   "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -8552,6 +9072,50 @@
               "anyOf": [
                 {
                   "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "minimum": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "component",
+                    "section",
+                    "view"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "busy": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
                 },
                 {
                   "$ref": "#/$defs/read"

@@ -26,5 +26,8 @@ export const root = style({
   transitionTimingFunction: t.easing,
   selectors: { '&[data-tone="error"]': { borderColor: t.borderError } },
 });
-export const icon = style({ display: "inline-flex", color: t.errorIcon });
-export const message = style({ flexGrow: 1 });
+export const icon = style({
+  display: "inline-flex", flexShrink: 0, width: t.iconSize, height: t.iconSize, color: t.errorIcon,
+  selectors: { '&[data-tone="success"]': { color: t.successIcon }, '&[data-tone="warning"]': { color: t.warningIcon }, '&[data-tone="progress"]': { color: t.text } },
+});
+export const message = style({ flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" });

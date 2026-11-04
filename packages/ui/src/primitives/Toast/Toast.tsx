@@ -2,11 +2,14 @@ import { useEffect, useRef, type FocusEvent, type KeyboardEvent } from "react";
 import { Icon } from "../Icon/Icon.tsx";
 import { Button } from "../Button/Button.tsx";
 import { IconButton } from "../IconButton/IconButton.tsx";
+import { Spinner } from "../Spinner/Spinner.tsx";
 import * as s from "./Toast.css.ts";
 
 export interface ToastProps {
   message: string;
-  tone?: "info" | "error";
+  tone?: "info" | "error" | "success" | "warning" | "progress";
+  /** The host keeps this outcome visible until dismissed or resolved. */
+  sticky?: boolean;
   actionLabel?: string;
   dismissLabel: string;
   /** Each new value moves focus to the toast's action, or its close button (F6). */
@@ -19,7 +22,7 @@ export interface ToastProps {
 }
 
 /** A short confirmation at the bottom (IA-CMP-TOAST). Errors are alerts; everything else is polite. */
-export function Toast({ message, tone = "info", actionLabel, dismissLabel, focusRequest, id, onAction, onDismiss, onPausedChange }: ToastProps) {
+export function Toast({ message, tone = "info", sticky = false, actionLabel, dismissLabel, focusRequest, id, onAction, onDismiss, onPausedChange }: ToastProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   // Only a request made while it shows moves focus: a toast that appears later never takes it.
   const asked = useRef(focusRequest);
@@ -43,6 +46,7 @@ export function Toast({ message, tone = "info", actionLabel, dismissLabel, focus
       id={id}
       role={tone === "error" ? "alert" : "status"}
       data-tone={tone}
+      data-sticky={sticky || tone === "error" ? "" : undefined}
       className={s.root}
       data-surface="toast"
       onMouseEnter={() => pause(true)}
@@ -51,7 +55,7 @@ export function Toast({ message, tone = "info", actionLabel, dismissLabel, focus
       onBlur={onBlur}
       onKeyDown={onKeyDown}
     >
-      {tone === "error" ? <span className={s.icon} aria-hidden="true"><Icon name="error" /></span> : null}
+      {tone !== "info" ? <span className={s.icon} data-tone={tone} aria-hidden="true">{tone === "progress" ? <Spinner size="s" /> : <Icon name={tone === "error" ? "error" : tone === "warning" ? "warning" : "check"} />}</span> : null}
       <span className={s.message} dir="auto">{message}</span>
       {actionLabel ? <Button label={actionLabel} size="s" {...(onAction ? { onPress: onAction } : {})} /> : null}
       <IconButton icon="dismiss" label={dismissLabel} tone="muted" {...(onDismiss ? { onPress: onDismiss } : {})} />

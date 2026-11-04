@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { cssVarName } from "@focus-notes/tokens";
 import type { ThemeTile } from "../../data.ts";
+import { CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./ThemeGallery.css.ts";
 
 export interface ThemeGalleryProps {
@@ -10,6 +11,8 @@ export interface ThemeGalleryProps {
   value?: string;
   /** The theme showing is a keyboard preview: Esc goes back to the chosen one. */
   previewing?: boolean;
+  /** State on the selected tile; the group stays focusable but cannot change while pending. */
+  commit?: CommitState;
   /** Each new value moves focus to the selected tile. */
   focusRequest?: number;
   id?: string;
@@ -42,7 +45,7 @@ function paint(el: HTMLElement | null, t: ThemeTile): void {
   }
 }
 
-export function ThemeGallery({ label, items, value, previewing, focusRequest, id, onPreview, onChoose, onRevert }: ThemeGalleryProps) {
+export function ThemeGallery({ label, items, value, previewing, commit, focusRequest, id, onPreview, onChoose, onRevert }: ThemeGalleryProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const baseId = useId();
   const [active, setActive] = useState(value ?? items[0]?.id ?? "");
@@ -81,6 +84,10 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
     return Math.max(1, els.filter((e) => e.offsetTop === top).length);
   };
   const onKeyDown = (e: KeyboardEvent) => {
+    if (commit === "pending") {
+      if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End", "Enter", " "].includes(e.key)) e.preventDefault();
+      return;
+    }
     const at = Math.max(0, items.findIndex((i) => i.id === active));
     const keys: Record<string, () => void> = {
       ArrowRight: () => move(at + (document.dir === "rtl" ? -1 : 1)),
@@ -125,7 +132,8 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
           tabIndex={t.id === active ? 0 : -1}
           className={s.tile}
           onFocus={() => setActive(t.id)}
-          onClick={() => onChoose?.({ id: t.id })}
+          aria-disabled={commit === "pending" || undefined}
+          onClick={() => { if (commit !== "pending") onChoose?.({ id: t.id }); }}
         >
           <span className={s.swatch} aria-hidden="true">
             <span className={s.glyph} />
@@ -139,13 +147,14 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
             <span className={s.label}>{t.label}</span>
             {t.slot ? <span className={s.slot}>{` ${t.slot}`}</span> : null}
             <span className={s.badge} aria-hidden="true">{t.badge}</span>
+            {commit ? <CommitMark state={t.id === value ? commit : "rest"} /> : null}
           </span>
           {t.description ? <span id={`${baseId}-${t.id}`} hidden>{t.description}</span> : null}
         </div>
   );
 
   return (
-    <div ref={ref} role="listbox" aria-label={label} className={s.grid} onKeyDown={onKeyDown} {...(id ? { id } : {})}>
+    <div ref={ref} role="listbox" aria-label={label} aria-disabled={commit === "pending" || undefined} aria-busy={commit === "pending" || undefined} className={s.grid} onKeyDown={onKeyDown} {...(id ? { id } : {})}>
       {groups.map((g) => (g.label
         ? (
           <div key={g.label} role="group" aria-labelledby={`${baseId}-g-${g.key}`} className={s.group}>
