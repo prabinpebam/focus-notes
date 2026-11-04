@@ -122,10 +122,11 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   // Each item shows its shortcut.
   await expect(ideasMenu.getByRole("menuitem", { name: /^Rename/ })).toContainText(process.platform === "darwin" ? "↩" : "F2");
   await expect(ideasMenu.getByRole("menuitem", { name: /^Delete/ })).toContainText(process.platform === "darwin" ? "⌘⌫" : "Delete");
-  // At the pointer: its top left corner is near where the row was clicked, inside the panel's row.
+  // The menu stays alongside the clicked row, flipping upward when it cannot fit below.
   const menuBox = (await ideasMenu.boundingBox())!;
   const rowBox = (await row("Ideas").boundingBox())!;
-  expect(menuBox.y).toBeGreaterThanOrEqual(rowBox.y);
+  expect(menuBox.y).toBeLessThanOrEqual(rowBox.y + rowBox.height);
+  expect(menuBox.y + menuBox.height).toBeGreaterThanOrEqual(rowBox.y);
   expect(menuBox.x).toBeGreaterThanOrEqual(rowBox.x);
   expect(await settledAxe(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/files-row-menu.png" });

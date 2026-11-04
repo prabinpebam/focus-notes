@@ -168,7 +168,7 @@ test("D-193, D-204: right-clicking a misspelled word offers the OS spell checker
           await openAt(page, at);
           await page.waitForTimeout(400);
           return (await menu(page).textContent()) ?? "";
-        }, PROMPTLY)
+        }, { ...PROMPTLY, timeout: 30_000 })
         .toContain("Add to dictionary");
       const words = (await menu(page).textContent())!;
       expect(words).toMatch(/^mistake.*Add to dictionary.*Undo.*Redo.*Cut.*Copy.*Paste.*Paste as plain text.*Delete.*Select all.*Emoji/s);

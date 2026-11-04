@@ -12,11 +12,11 @@ export const maxWidth = styleVariants({
 });
 // middle: centred in the height too, while there's room; taller than its scroller, it starts at the top and scrolls (D-126).
 // anchored: placed as a block of layout.onboardingBlock would be centred, its content at the top of it, so content
-// shorter than that changes height without moving what's already shown (DSK-09, D-148); held to its scroller's height.
+// grows downward from that anchor instead of re-centring when progress makes it taller (DSK-09, D-148).
 export const block = styleVariants({
   start: {},
   middle: { marginBlock: "auto" },
-  anchored: { marginBlock: "auto", minHeight: `min(${tokens.layout.onboardingBlock}, 100%)` },
+  anchored: { position: "relative", insetBlockStart: `max(0px, calc((100% - ${tokens.layout.onboardingBlock}) / 2))`, minHeight: `min(${tokens.layout.onboardingBlock}, 100%)` },
 });
 export const gutter = styleVariants({
   none: {},

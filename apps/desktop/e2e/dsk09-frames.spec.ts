@@ -105,8 +105,12 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     await heading(page, "We found your notes");
     await settle(page);
     await mark("finishing setup: Open to Ready");
+    await l.app.evaluate(() => {
+      (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow = { "firstRun:clone": 4500 };
+    });
     await card(page).getByRole("button", { name: "Open", exact: true }).click();
     await heading(page, "Ready");
+    await l.app.evaluate(() => { delete (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow; });
     await expect(card(page).getByRole("button", { name: "Start writing" })).toBeFocused({ timeout: 15_000 });
     await settle(page);
     await mark("Ready to Start writing");

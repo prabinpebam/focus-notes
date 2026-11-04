@@ -309,7 +309,7 @@ test("FRE-08, D-135, D-201: a sign-in that can't add workflows: setup says so pl
     const create = card(page).getByRole("button", { name: "Create my notes Private unless you share. Backed up to GitHub.", exact: true });
     await expect(create).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    await expect(card(page).getByText("Your GitHub sign-in can't add workflows. Sign in again and allow them.")).toBeVisible({ timeout: 30_000 });
+    await expect(card(page).getByText("Your sign-in can't add workflows. Sign in again and allow workflows.")).toBeVisible({ timeout: 30_000 });
     expect(await card(page).innerText()).not.toMatch(/permissions|doesn't allow/);
     expect(w.gh.repo("notes"), "nothing is made before the sign-in can finish").toBeUndefined();
     // The status says it in one sentence, with Try again as the step's action and no disabled Continue.

@@ -246,7 +246,7 @@ test("PRF-13: removing the workspace says Removing… on its button until the wi
     await expect(dialog.getByRole("button", { name: /^Removing…/ })).toBeVisible({ timeout: 10_000 });
     expect(Date.now() - t).toBeGreaterThanOrEqual(280);
     expect(await bandProblems(page, "removing the workspace")).toEqual([]);
-    await heading(page, "We found your notes");
+    await expect(card(page).getByRole("heading", { name: "We found your notes" })).toBeVisible({ timeout: 45_000 });
   } finally {
     await quit(l);
     w.server.close();

@@ -75,7 +75,10 @@ function PositionedBubble({ placement, children, open, triggerRef, tooltipProps,
       onHidden?.();
       return;
     }
-    setContainer(landmarkOf(trigger) ?? portal.getContainer?.() ?? document.body);
+    const overlay = portal.getContainer?.();
+    const landmark = landmarkOf(trigger);
+    // Dialog tooltips stay outside the modal's sizing and scrolling box.
+    setContainer(trigger.closest("[data-dialog-modal]") ? overlay ?? landmark ?? document.body : landmark ?? overlay ?? document.body);
     return () => {
       setContainer(null);
       setPlaced(false);

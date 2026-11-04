@@ -71,7 +71,13 @@ async function openRewrite(page: Page, text: string, prompt?: string) {
   await page.keyboard.press(`${mod}+Shift+R`);
   const dialog = page.locator('#rewrite[role="region"]');
   await expect(dialog).toBeVisible();
-  if (prompt !== undefined) await dialog.getByRole("textbox", { name: "Prompt" }).fill(prompt);
+  if (prompt !== undefined) {
+    const field = dialog.getByRole("textbox", { name: "Prompt" });
+    const returnToSelection = dialog.getByRole("button", { name: /Return to selection/ });
+    await expect(field.or(returnToSelection).first()).toBeVisible();
+    if (await returnToSelection.isVisible()) await returnToSelection.click();
+    await field.fill(prompt);
+  }
   return dialog;
 }
 

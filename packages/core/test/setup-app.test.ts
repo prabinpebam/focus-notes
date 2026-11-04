@@ -83,12 +83,12 @@ describe("FRE-08: setup in the app", () => {
     expect(t.vm().steps[1]!.problem).toBe("This copy of Focus Notes is missing its starter notes. Reinstall Focus Notes, then try again.");
     // D-201: the first push adds workflows, which needs the sign-in's workflow scope.
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "workflowScope" } }, { running: false }));
-    expect(t.vm().steps[1]!.problem).toBe("Your GitHub sign-in can't add workflows. Sign in again and allow them.");
+    expect(t.vm().steps[1]!.problem).toBe("Your sign-in can't add workflows. Sign in again and allow workflows.");
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "notFound" } }, { running: false }));
     expect(t.vm().steps[1]!.problem).toMatch(/couldn't find/);
     expect(t.vm().steps[1]!.problem).not.toMatch(/permission/i);
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "permission" } }, { running: false }));
-    expect(t.vm().steps[1]!.problem).toMatch(/Administration, Contents, Pages, Secrets, and Workflows permissions/);
+    expect(t.vm().steps[1]!.problem).toBe("Your sign-in doesn't allow this. Allow Administration, Contents, Pages, Secrets, Workflows.");
   });
 
   it("is finished when every step is done or skipped, and shows the site's address", async () => {

@@ -67,7 +67,10 @@ async function openSettings(page: Page, section: "Account" | "Workspace" = "Acco
   // The categories are a vertical tab list: the arrow keys move between them.
   if ((await tab.getAttribute("aria-selected")) !== "true") {
     await settings(page).getByRole("tab", { selected: true }).focus();
-    await press(page, section === "Workspace" ? "ArrowDown" : "ArrowUp");
+    const count = await settings(page).getByRole("tab").count();
+    for (let i = 0; i < count && await tab.getAttribute("aria-selected") !== "true"; i++) {
+      await press(page, "ArrowDown");
+    }
   }
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
