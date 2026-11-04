@@ -52,6 +52,10 @@ The [local-site operation evidence](../plan/definition-of-done.md#phase-2-local-
 
 The [first-setup evidence](../plan/definition-of-done.md#phase-2-first-setup-cancellation-a9425fee) adds actual completed/total receipts to `firstRun.create` and keeps the existing `firstRun.clone` download/part reports. Setup waits retain their existing tracker elapsed threshold at 3 seconds. Cancel changes to “Stopping after this step…” while the current atomic API/Git step finishes; only then does a persisted stopped receipt offer Resume. Completed files are kept and acknowledged steps are skipped, not blindly replayed. A final push that finishes still reports completion; a refused push reports failure. The separate Open-from-GitHub clone path still needs its own cancellation increment.
 
+## Existing-project download cancellation
+
+The [retained-folder evidence](../plan/definition-of-done.md#phase-2-existing-project-download-025fe72f) extends `firstRun.clone` with actual discovered totals and acknowledged download/private/link receipts. The existing download percentage remains Git's own; elapsed still appears after 3 seconds. Cancel never kills a Git command or removes its files: it stops before the next safe step. Resume checks the same in-process folder receipt instead of cloning again. A late stop on completed work offers Open, and a stop before download says nothing was downloaded. After restart the existing Open-a-folder route checks the retained files; there is no invented durable resume receipt.
+
 ## History recovery
 
 The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.

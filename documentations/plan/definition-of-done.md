@@ -521,6 +521,23 @@ Two engine regressions first failed because Cancel did not exist. The first jour
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a9425fee\Open review build.cmd` retains both review projects. First-run controlled waits and local remotes belong to the separate synthetic journey, not those review projects or owner data. Separate clone cancellation, W9 and remaining phase-2 acceptance stay in progress.
 
+### Phase-2 existing-project download, 025fe72f
+
+Open-from-GitHub now streams actual completed/total receipts, including discovery of private/link work after the public clone. Optional steps are not presumed complete before discovery. Cancel finishes the active Git command, then stops at the public/private/link boundary without deleting files or opening the window into an incomplete workspace. In-process Resume checks the retained folder and continues missing private/link work; it does not call clone again. The original Open action routes to that receipt too, preventing a second download. If work finishes before the stop takes effect, the UI says Download finished and offers Open downloaded notes. A stop before any download says nothing was downloaded.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\first-run.test.ts packages\core\test\first-run.test.ts` | 78 passed, including two new real-Git boundary regressions: cancel after public/private receipts, retain note bytes and resume without another clone |
+| `pnpm exec vitest run packages\core\test\first-run.test.ts -t "clone receipts\|stop arrives after"` | 2 additional UI regressions passed: streamed count/elapsed, Cancel without opening, original Open reuses the receipt, late completion offers Open instead of Resume |
+| `pnpm exec vitest run apps\desktop\test\first-run.test.ts -t "FRE-06"` | Final 8 real-Git tests passed after adding receipt checks for refused linking/configuration |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check`; desktop build | Passed; 779 documents, 82 components, 724 commands |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Existing project clone stops safely"` | Passed in invisible Electron: actual 1/3 receipt and elapsed, safe Cancel before private work, retained public note edited before Resume, same-folder private checkout on main, no second clone folder, Ready and unchanged edited bytes |
+| Exact-head candidate | Both distinct sample projects and loopback repositories inspected invisibly and closed at `025fe72f`; the visible `f2127c67` review was not touched |
+
+Both backend regressions failed first against the old implementation because it ignored the stop boundary. One native journey attempt used the project title rather than the existing Open button; the corrected normal-UI journey passed. Own apps closed; only the test-created tracked PowerShell cache was restored. The retained-folder receipt is deliberately in-process only; reopening uses the existing checked Open-a-folder route. No crash-resumable creation/import, real-account write, full suite, CI wait, main app merge or release is claimed.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\025fe72f\Open review build.cmd`. Both review projects remain available. Controlled existing-project clone delays belong to the separate synthetic local-remote journey. W9 and remaining D5/D7 acceptance are still in progress.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
