@@ -560,6 +560,22 @@ Repository-wide `pnpm typecheck` remains red on the unchanged older `sharing-pre
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\afbd3c3c\Open review build.cmd`. Both distinct synthetic projects remain available. Controlled panel failure belongs to the client regression; native startup/touch behavior belongs to the focused Electron journeys. The owner's visible `f2127c67` remains open. Remaining D5/D7 first-action/content-replacement/all-done acceptance is still in progress; phase 2 is not complete.
 
+### Phase-2 native recovery and empty first actions, 12834be2
+
+The W9 implementation now has actual Electron acceptance for a crashed Settings panel, beyond its client-rendered regression. A test-only DOM fault causes the boundary to fail, repeated Reload stays recoverable, and Report problem opens fixed safe Feedback with diagnostics off and no exception text. After removing the fault, Reload remounts Settings. The same editor node, page time origin, note bytes and single native window remain intact; no production crash hook was added.
+
+Open's two empty columns each invoke their actual Open project action through the real IPC/backend path. Only the native picker and initial empty listing are controlled. Choosing the current synthetic folder closes Open without spawning another app; reopening shows real project/note entries instead of either empty state. All three site-preview first actions use the existing Files route, not invented link/section editors. Adding actual public notes and reopening the preview replaces its navigation, section and published-note empty treatments with real content. Their neutral wrappers have nonzero minimum height. Private sample note bytes stay unchanged.
+
+| Scoped evidence | Result |
+| --- | --- |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "A crashed native panel\|Open and Recent empty\|Site preview first actions"` | Final 3 passed together; panel recovery, both Open first actions and all three site-preview first actions/content replacement |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check` | All passed; only the journey file changed, with no shipping-code change or unnecessary rebuild |
+| Exact pushed candidate `12834be2` | Both Field notes and Garden notes, actual notes, distinct schemes/settings, both Open cards and both loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+Initial fixture failures corrected only control queries: the diagnostic opt-in is a toggle button, and each empty wrapper is selected by its own title rather than an incorrectly ancestor-scoped nested locator. Final combined results above passed. This does not claim complete D5/D7 acceptance, every all-done variant or full frame integrity. No full suite, CI wait, main app merge, release, actual remote publication or real-account application write ran.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\12834be2\Open review build.cmd`. Both distinct synthetic projects remain available. Native panel fault injection is test-only; the recovery controls are the real product. The owner's visible `f2127c67` stays open. Remaining acceptance must still be matched to the D5/D7 rows; phase 2 is not complete.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
