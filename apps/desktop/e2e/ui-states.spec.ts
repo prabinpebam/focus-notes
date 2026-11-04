@@ -5,10 +5,11 @@ import { createServer } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
-import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
 import { picture } from "./fre-fakes.ts";
 import { card, existingInstance, start as startFirstRun, world } from "./github-world.ts";
+import { frameProblems } from "./frames.ts";
 
 async function closeTestApp(l: Launched) {
   try {
@@ -34,12 +35,13 @@ nativeTheme.themeSource = ${JSON.stringify(scheme === "dark" ? "light" : "dark")
 globalThis.uiStatesFirstFrames = [];
 ipcMain.on("window:firstFrame", event => {
   const hidden = !BrowserWindow.fromWebContents(event.sender).isVisible();
+  const pixels = event.sender.capturePage(undefined, { stayHidden: true }).then(image => image.toPNG().toString("base64"));
   event.sender.executeJavaScript(\`(() => {
     const root = document.querySelector("[data-app-root]");
     return { theme: document.documentElement.dataset.theme, scheme: getComputedStyle(document.documentElement).colorScheme,
       background: root && getComputedStyle(root).backgroundColor, width: root && root.getBoundingClientRect().width,
       height: root && root.getBoundingClientRect().height };
-  })()\`).then(frame => globalThis.uiStatesFirstFrames.push({ ...frame, hidden }));
+  })()\`).then(async frame => globalThis.uiStatesFirstFrames.push({ ...frame, hidden, png: await pixels }));
 });
 import(${JSON.stringify(main)});
 `);
@@ -47,12 +49,14 @@ import(${JSON.stringify(main)});
   try {
     await expect(l.page.getByRole("button", { name: "Get started", exact: true })).toBeVisible();
     await expect.poll(() => l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames").length)).toBe(1);
-    const frames = await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames")) as { hidden: boolean; theme: string; scheme: string; background: string; width: number; height: number }[];
+    const frames = await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames")) as { hidden: boolean; theme: string; scheme: string; background: string; width: number; height: number; png: string }[];
     expect(frames[0]).toMatchObject({ hidden: true, theme: scheme === "dark" ? "ink" : "paper", scheme });
     expect(frames[0]!.background).not.toBe("rgba(0, 0, 0, 0)");
     expect(frames[0]!.width).toBeGreaterThan(300);
     expect(frames[0]!.height).toBeGreaterThan(250);
     if (scheme === "dark") expect(frames[0]!.background).not.toBe("rgb(255, 255, 255)");
+    expect(frameProblems([{ label: "first-frame report", at: Date.now(), data: Buffer.from(frames[0]!.png, "base64") }],
+      await windowBox(l.page), await l.page.evaluate(() => innerWidth), () => scheme)).toEqual([]);
     expect(l.log.some(line => line.includes("window-shown on=timeout"))).toBe(false);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:window.firstFrame").length)).toBe(1);
   } finally { await closeTestApp(l); }
@@ -580,6 +584,8 @@ test("Files distinguishes collapsed content from no matches and replaces known-e
     const filter = files.getByRole("searchbox", { name: "Filter by name", exact: true });
     await filter.fill("no-such-note");
     await expect(files.getByText("No matches", { exact: true })).toBeVisible();
+    const filteredEmpty = files.locator("[data-tone=neutral]").filter({ hasText: "No matches" });
+    expect(await filteredEmpty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBe(32);
     await files.getByRole("button", { name: "Clear search", exact: true }).click();
     await expect(filter).toHaveValue("");
     await expect(files.getByText("No matches", { exact: true })).toHaveCount(0);
@@ -589,6 +595,9 @@ test("Files distinguishes collapsed content from no matches and replaces known-e
     await expect(fileRow(tree, "Welcome")).toBeVisible();
     rmSync(note);
     await expect(files.getByText("No notes yet", { exact: true })).toBeVisible();
+    const firstUse = files.locator("[data-tone=neutral]").filter({ hasText: "No notes yet" });
+    expect(await firstUse.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBe(160);
+    expect(await firstUse.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(160);
     await files.getByRole("button", { name: "New note", exact: true }).filter({ hasText: "New note" }).click();
     await expect(files.getByText("No notes yet", { exact: true })).toHaveCount(0);
     await expect(tree.getByRole("treeitem").filter({ hasText: "Untitled" }).first()).toBeVisible();
@@ -1156,6 +1165,9 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
     await settings.getByRole("tab", { name: "AI", exact: true }).click();
     await expect(settings.getByText("No AI connections", { exact: true })).toBeVisible();
     await expect(settings.getByText("Connect an app or API you already use.", { exact: true })).toBeVisible();
+    const settingsBody = await settings.elementHandle();
+    const aiEmpty = settings.locator("[data-tone=neutral]").filter({ hasText: "No AI connections" });
+    expect(await aiEmpty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBe(160);
     await settings.getByRole("button", { name: "Add connection", exact: true }).click();
     await expect(settings.getByText("No AI connections", { exact: true })).not.toBeVisible();
     await settings.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -1168,6 +1180,11 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
     await expect(settings.getByRole("button", { name: "Change", exact: true })).toBeVisible();
     await expect(settings.getByText("No AI connections", { exact: true })).toHaveCount(0);
     expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.ai), "utf8")).connections).toHaveLength(1);
+    await settings.getByRole("button", { name: "Remove", exact: true }).click();
+    await expect(aiEmpty).toBeVisible();
+    await expect(aiEmpty.getByRole("button", { name: "Add connection", exact: true })).toBeVisible();
+    expect(await settingsBody!.evaluate(el => el.isConnected)).toBe(true);
+    expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.ai), "utf8")).connections).toHaveLength(0);
     await settings.getByRole("button", { name: "Close", exact: true }).click();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
     const open = l.page.getByRole("dialog", { name: "Open", exact: true }).or(l.page.getByRole("region", { name: "Open", exact: true }));
