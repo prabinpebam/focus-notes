@@ -1,5 +1,9 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Notification outcome lifetime
+
+The UI-states candidate uses the existing notification host, not a blocking wait: ordinary information/success notices get 6 visible seconds; actual multi-line geometry extends that total to `wait.noticeLong` (8 seconds), without restarting elapsed time. The queue's clock runs only for visible pills and pauses on interaction/window inactivity. Errors, recovery actions and explicit decision warnings require dismissal or resolution; progress stays until replaced by its outcome. Retry keeps its original error mounted and makes only its own action inert while the original operation runs. The [notification evidence](../plan/definition-of-done.md#phase-2-notification-acceptance-increment-0db24cb0) records exact clock and focus checks; overlapping hover/focus causes and withdrawal acceptance remain partial.
+
 ## Image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.

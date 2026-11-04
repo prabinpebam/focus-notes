@@ -198,6 +198,29 @@ The journey waits for failure before repairing its synthetic blocked file; a vis
 
 **Try it after the next candidate refresh:** Settings → Appearance → theme manager → Reading → Smaller/Larger text. AI groups, full notification acceptance, recovery and streamed operations remain in progress.
 
+### Phase-2 notification acceptance increment, 0db24cb0
+
+The host now carries success, warning and progress as well as info/error. A progress outcome stays until replaced; replacing it with success resets the repetition count and starts the success lifetime. Errors, recovery actions and explicit decision warnings remain hard-dismiss outcomes. A notice that actually wraps receives `wait.noticeLong` (8 seconds) rather than the ordinary 6 seconds, preserving elapsed visible time rather than restarting its clock.
+
+Recovery now keeps its original pill until the action succeeds, with only that action inert and own-border pending feedback. Failed Retry preserves the original command, arguments and coalescing subject. Notification dismissal/recovery restores its connected prior field, and F6 captures one notification ID instead of handing an old request to whichever pill happens to become first.
+
+| Check on `0db24cb0` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\notifications.test.ts packages\core\test\settings-failures.test.ts packages\ui\test\notification-layer.test.tsx packages\ui-runtime\test\failures.test.tsx` | 25 passed: priority/limit, coalescing, hard dismiss, visible clocks, 8-second extension, progress-to-success replacement, retained Retry, captured F6 target and focus restoration |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check`, UI schema regeneration and component inventory | Passed, 774 documents, 82 components, 695 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed at final source state |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "four writing outcomes\|actually wrapped\|notification Retry stays"` | Initial run: 2 passed / 1 failed. Four-outcome and modal journeys passed; the wrapped fixture still consumed real time between clock calls. After pausing before triggering it, that case passed separately below |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "actually wrapped"` | Passed: real multi-line geometry, visible after 6 seconds and 7,999 ms, absent at exactly 8,000 ms |
+| Final combined rerun of the three-case selector above on the unchanged pushed head | All 3 passed together (13.7 seconds); own-PID cleanup ran after each case |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed head `0db24cb0`: all worker-6 normal UI paths, Reading size, warning and repeated failed Retry followed by successful recovery and editor focus |
+
+The four-outcome journey uses an actual refused setting, the unsupported-underline warning and two successful Replace all operations. Dismissing a pill reveals the queued outcome; a second refused Retry stays usable; success returns to the note with its expected text intact. These journeys uncovered the retained-Retry and F6-target bugs above, not just fixture issues. Wrapped timing is measured from a paused renderer clock: elapsed real test-run time is not counted as part of the promised 8 seconds.
+
+Candidate and journey apps were invisible, closed and followed by own-PID `-WhatIf` and actual cleanup. No full suite, CI wait or merge ran. **D1 is still partial:** overlapping hover/focus causes need their own combined-state proof/fix; withdrawal still requires same-link restoration evidence or the irreversible confirmation. AI groups, remaining recovery/streamed work, complete empty-state acceptance and delayed history/share journeys remain in progress.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\0db24cb0\Open review build.cmd`. Reading → Smaller/Larger text; while writing, an unsupported underline shows a warning. The separate journey injects the refused writes; the candidate contains only synthetic data.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
