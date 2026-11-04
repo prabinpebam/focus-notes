@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs } from "./helpers.ts";
+import { makeFakes } from "../test/fakes/fakes.ts";
 
 for (const projectTheme of ["app", "sepia"]) test(`Themes applies real tokens and survives reopening with project theme ${projectTheme}`, async () => {
   const dirs = tempDirs();
@@ -75,6 +76,46 @@ for (const projectTheme of ["app", "sepia"]) test(`Themes applies real tokens an
     saved("harbor-light");
     expect(readFileSync(note, "utf8")).toBe(text);
   } finally { await close(); }
+});
+
+test("full-app Connect and modal portals cannot be painted over by docked Files", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Overlay safety\n");
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
+    version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note, filesPinned: true,
+  }));
+  const l = await launch(dirs, makeFakes({ token: "ghp_unused", gcm: true }).env);
+  try {
+    const files = l.page.locator('[data-surface="sheet"][data-docked]');
+    await expect(files).toBeVisible();
+    await l.page.keyboard.press("Control+,");
+    const modal = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await expect(modal).toBeVisible();
+    await expect(modal.locator("xpath=ancestor::*[@data-full-app-overlays]")).toHaveCount(1);
+    await modal.getByRole("tab", { name: "Account", exact: true }).click();
+    await modal.getByRole("button", { name: /^Sign in/ }).click();
+    const connect = l.page.getByRole("main", { name: "Set up Focus Notes" });
+    await expect(connect.getByRole("heading", { name: "Connect your GitHub account" })).toBeVisible();
+    await expect(connect.locator("xpath=ancestor::*[@data-full-app-overlays]")).toHaveCount(1);
+    const host = l.page.locator("[data-full-app-overlays]");
+    await expect(host).toHaveCount(1);
+    expect(await host.evaluate(el => el.parentElement?.hasAttribute("data-app-root"))).toBe(true);
+    expect(await connect.evaluate(el => el.closest('[data-surface="sheet"]'))).toBeNull();
+    const visibleOverHeader = await files.evaluate(el => {
+      const box = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.left + box.width / 2, box.top + 60);
+      return Boolean(hit?.closest("[data-full-app-overlays]"));
+    });
+    expect(visibleOverHeader).toBe(true);
+    await l.page.keyboard.press("Escape");
+    expect(readFileSync(note, "utf8")).toBe("# Overlay safety\n");
+  } finally {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
 });
 
 test("review feedback: project scheme reaches Settings and edge blur excludes both docked panels", async () => {

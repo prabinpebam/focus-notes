@@ -53,6 +53,7 @@ export const sheet = style({
     // side; opaque and without a shadow, so the note's area beside it reads as the page. Its content
     // starts below the title band, which stays the window's drag region.
     "&[data-docked]": {
+      zIndex: t.dock.layer,
       top: 0, bottom: 0, width: dockWidthVar, maxWidth: "none", paddingTop: `calc(${t.dock.top} + ${t.padding})`,
       borderRadius: 0, borderWidth: 0, boxShadow: "none", backdropFilter: "none",
       backgroundColor: t.dock.background, animationName: "none",

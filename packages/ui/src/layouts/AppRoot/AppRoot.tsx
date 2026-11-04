@@ -96,6 +96,7 @@ function tokenDefaults(html: HTMLElement): { size: number; chars: number } | und
  */
 export function AppRoot({ scheme, motion = "system", theme, contentFont, projectAccent = "app", uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const applied = useRef<string[]>([]);
   useEffect(() => {
     // The page around a drawn window is transparent, and fixed layers are placed inside the window (frame.ts).
@@ -103,7 +104,7 @@ export function AppRoot({ scheme, motion = "system", theme, contentFont, project
     if (frame === "native") delete html.dataset.windowFrame;
     else html.dataset.windowFrame = frame;
     // Views hosted beside this one render inside the drawn window too (InWindow).
-    setWindowElement(frame === "native" ? null : rootRef.current, frame);
+    setWindowElement(frame === "native" ? null : rootRef.current, frame, overlayRef.current);
     return () => setWindowElement(null);
   }, [frame]);
 
@@ -204,6 +205,7 @@ export function AppRoot({ scheme, motion = "system", theme, contentFont, project
       {/* Every desktop window drags by its top band, in every state (D-147). */}
       {platform === "web" ? null : <div className={s.band} data-drag-band="" data-title-band="" aria-hidden="true" />}
       {children}
+      <div ref={overlayRef} className={s.overlays} data-full-app-overlays="" />
     </div>
   );
   // In a drawn window, menus, tooltips, and dialogs open inside it: clipped to its corners, never in the shadow margin.

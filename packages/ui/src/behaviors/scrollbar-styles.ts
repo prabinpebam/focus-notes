@@ -1,4 +1,5 @@
 import { globalStyle } from "@vanilla-extract/css";
+import { tokens } from "@focus-notes/tokens";
 
 export interface ScrollbarTokens {
   scrollbarSize: string;
@@ -60,7 +61,7 @@ export function fadingEdges(scroller: string, t: { scrollFade: string }): void {
  * keystroke repaint all of it (PRF-01). None in forced colors.
  */
 export function fadingOverlay(scroller: string, t: { scrollFade: string; background: string; fadeDuration: string }): void {
-  const edge = { content: '""', display: "block", position: "sticky", zIndex: 1, height: t.scrollFade, pointerEvents: "none", opacity: 0, transitionProperty: "opacity", transitionDuration: t.fadeDuration } as const;
+  const edge = { content: '""', display: "block", position: "sticky", zIndex: tokens.layer.mask, height: t.scrollFade, pointerEvents: "none", opacity: 0, transitionProperty: "opacity", transitionDuration: t.fadeDuration } as const;
   globalStyle(`${scroller}::before`, { ...edge, top: 0, marginBlockEnd: `calc(-1 * ${t.scrollFade})`, backgroundImage: `linear-gradient(${t.background}, transparent)` });
   globalStyle(`${scroller}::after`, { ...edge, bottom: 0, marginBlockStart: `calc(-1 * ${t.scrollFade})`, backgroundImage: `linear-gradient(transparent, ${t.background})` });
   globalStyle(`${scroller}[data-fade-top]::before, ${scroller}[data-fade-bottom]::after`, { opacity: 1 });

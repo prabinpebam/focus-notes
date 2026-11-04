@@ -6,6 +6,7 @@ const t = tokens.cmp.dialogPanel;
 
 export const overlay = style({
   position: "fixed",
+  pointerEvents: "auto",
   inset: 0,
   zIndex: t.layer,
   display: "flex",

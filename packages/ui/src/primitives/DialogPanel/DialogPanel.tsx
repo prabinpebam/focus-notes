@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+import { UNSAFE_PortalProvider } from "react-aria";
+import { useOverlayContainers } from "../../layouts/AppRoot/in-window.tsx";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./DialogPanel.css.ts";
 
@@ -32,6 +34,7 @@ const TABBABLE = "a[href], button, input, select, textarea, [tabindex], [content
  * it's open and returns where it was when it closes. Esc and clicking the scrim close it.
  */
 export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", height = "stable", id, children, onOpenChange }: DialogPanelProps) {
+  const containers = useOverlayContainers();
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef, Boolean(open));
   // The tallest it has been since it opened, kept as its least height (D-111). Reset when it closes.
@@ -111,7 +114,9 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
     return () => modal.removeEventListener("focusout", onOut);
   }, [open]);
   return (
+    <UNSAFE_PortalProvider getContainer={() => containers.overlays ?? containers.window ?? document.body}>
     <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
+      <UNSAFE_PortalProvider getContainer={() => containers.window ?? document.body}>
       <Modal className={`${s.modal} ${s.size[size]} ${s.height[height]}`} data-dialog-modal="" data-height={height}>
         <div className={s.band} data-drag-band="" aria-hidden="true" />
         <Dialog data-surface="dialog" data-no-drag="" className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
@@ -122,6 +127,8 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
           {footer ? <div className={s.region}>{footer}</div> : null}
         </Dialog>
       </Modal>
+      </UNSAFE_PortalProvider>
     </ModalOverlay>
+    </UNSAFE_PortalProvider>
   );
 }

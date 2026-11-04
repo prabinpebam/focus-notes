@@ -69,7 +69,7 @@ function Bubble({ placement, children }: { placement: TooltipSide; children: Rea
       state?.close(true);
       return;
     }
-    setContainer(landmarkOf(trigger) ?? portal.getContainer?.() ?? document.body);
+    setContainer(portal.getContainer?.() ?? landmarkOf(trigger) ?? document.body);
     return () => {
       setContainer(null);
       setPlaced(false);

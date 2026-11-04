@@ -6524,12 +6524,13 @@
       "mask",
       "contextual",
       "trigger",
+      "docked",
       "panel",
       "anchored",
       "dialog",
       "popover",
-      "toast",
-      "tooltip"
+      "tooltip",
+      "toast"
     ],
     "motion": [
       "micro",
