@@ -26,7 +26,7 @@ $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $sideProjects = if ($repo -match '^(.*)\\focus-notes-work\\') { $Matches[1] } else { Split-Path $repo -Parent }
 $side = [regex]::Escape($sideProjects)
 $ours = '^' + $side + '\\(focus-notes|focus-notes-work\\worktrees\\[^\\]+)\\.*\\electron\\dist\\electron\.exe$'
-$candidates = '^' + $side + '\\focus-notes-work\\preview\\candidates\\([^\\]+)\\focus-notes\.exe$'
+$candidates = '^' + $side + '\\focus-notes-work\\preview\\candidates\\([^\\]+)\\(?:focus-notes|electron)\.exe$'
 $ownerReview = '--user-data-dir="?[^"]*\\scratch\\owner-review\\'
 
 $all = @(Get-CimInstance Win32_Process)
