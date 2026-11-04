@@ -146,6 +146,20 @@ The touched Agents Undo test still assumed errors were appended after success; c
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\47101d57\Open review build.cmd`. Settings → AI → Add connection/Cancel; Open → unmatched search → Clear search; Settings → Agents. Full desktop journeys through delayed sharing/history are still absent; individual history-version/restore recovery and other D1–D7 gaps remain. No full suite, CI wait, benchmark or app merge ran.
 
+### Phase-2 theme and Reading font, e643bd48
+
+The theme gallery and Reading font menu now use the approved commit track. Failed drafts remain local to Settings; the actual note retains its stored theme/font. Retry remembers the failed theme even after keyboard previewing another tile. Revert writes nothing. Choosing an opposite-scheme theme stores its slot and appearance mode together, avoiding a partially saved theme selection. Unknown theme/font values fail rather than claim success. MenuButton and IconButton support the existing own-border progress, outcome and reduced-motion treatment.
+
+| Check on `e643bd48` | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm exec vitest run packages\core\test\theme-manager.test.ts packages\ui\test\commit-controls.test.tsx` | 26 passed: atomic scheme/slot write, retained draft, one named confirmation, write-free Revert, retry after preview, stable pending focus, inert compact triggers and keyboard preview without saving |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "theme and font choices"` | Passed: real storage refusal, stored note unchanged, theme Retry after another preview, font Revert/Retry and persistence after reopening |
+| `pnpm check` and UI schema regeneration | Passed: no view findings, fixture gaps or stale generated output |
+
+Journey apps were invisible, closed, and followed by own-PID cleanup (`-WhatIf`, then actual). No full suite, CI wait or app merge ran. GitHub rejected two ordinary non-thin pushes with `Internal Server Error`; this verified increment is committed locally, not yet remotely persisted. The candidate remains `47101d57` until the next exact-head refresh. Remaining compact controls, AI save groups, notification acceptance, recovery and streamed long operations are still in progress.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
