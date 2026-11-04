@@ -442,6 +442,19 @@ An intermediate measurement assertion ran under mocked performance; moved it to 
 
 **Try it after the next candidate refresh:** Files → Recently deleted. The currently visible owner review is still `6218b99d`; this increment is pushed, not silently installed into that running app. Complete D5 first actions, independently delayed initial Files, D7 and hover/static acceptance remain in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 independent initial Files scan, b830a17c
+
+A test-only entrypoint wraps the existing IPC registration before importing the unchanged built main entrypoint. It holds the actual first-ever workspace scan, then refuses that read; no renderer reload, replacement application state, production test hook or live account is involved. A second held request delegates to the real scan. The note remains open throughout.
+
+| Check on `b830a17c` | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check`; `git diff --check` | Passed; 779 documents, 82 components, 715 commands |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Files initial scan is independent"` | Passed: real first-scan held/refused before any successful listing; three section shapes, bounded three-cycle shimmer and static reduced motion; no false empty; safe local error, held Retry, editable retained filter and editor; actual notes after Retry/Clear search, same connected Files body, two `fn:workspace.list` measures and exact unchanged note bytes |
+| Build | Reused the final runtime build verified for `71e94423`; this increment changes only journey code and its test launcher helper |
+
+The initial test expected six shapes and different copy; corrected it to the approved three-shape Files section and existing message. The final journey passed in 4.7 seconds. Its invisible app closed and own-PID `-WhatIf`, then actual cleanup found no leftovers. Both expressly requested visible owner instances stayed open. Complete D5 first actions, D7 and hover/static acceptance remain in progress; no full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

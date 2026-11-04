@@ -61,7 +61,7 @@ The [Files known-empty evidence](../plan/definition-of-done.md#phase-2-files-kno
 
 | Operation | Class / pattern | Place and words | Measure / target |
 | --- | --- | --- | --- |
-| Initial/retry Files scan | Responsive → waiting; independent section | Existing Files body; Reading your notes…; failure says notes weren't changed, Retry → Trying again… | `fn:workspace.list`; shared 300/500 ms task units, read/write-queue safety units and real known-empty first-action journey |
+| Initial/retry Files scan | Responsive → waiting; independent section | Existing Files body; Reading your notes…; failure says notes weren't changed, Retry → Trying again… | `fn:workspace.list`; shared 300/500 ms task units, read/write-queue safety units, real known-empty first-action journey and [independent held/refused first-scan journey](../plan/definition-of-done.md#phase-2-independent-initial-files-scan-b830a17c) |
 
 ## Recently deleted history
 
