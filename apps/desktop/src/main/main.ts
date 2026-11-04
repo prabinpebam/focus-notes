@@ -408,6 +408,8 @@ let workspaceIdentity: { name: string; email: string } | undefined;
 let targetFolder: string | undefined;
 /** A workspace cloned or chosen, waiting to be opened. */
 let pendingWorkspace: string | undefined;
+let activeFirstClone: { requested: boolean } | undefined;
+let firstCloneReceipt: string | undefined;
 const saveFirstRun = () => atomicWrite(firstRunFile(), JSON.stringify({ version: 1, ...(workspaceIdentity ? { identity: workspaceIdentity } : {}) }, null, 2));
 function readFirstRun(): void {
   try {
@@ -456,6 +458,7 @@ async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> 
   workspaceIdentity = undefined;
   targetFolder = undefined;
   pendingWorkspace = undefined;
+  firstCloneReceipt = undefined;
   // Crash recovery's drafts of this workspace go too (QLT-06); the window asked first when there were some.
   await drafts?.removeAll().catch(() => {});
   await forgetLocalData(app.getPath("userData"), event);
@@ -565,6 +568,7 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
   folderState = "ok";
   stopFolderWatch();
   pendingWorkspace = undefined;
+  firstCloneReceipt = undefined;
   watcher?.close();
   const old = gitSync;
   armGit();
@@ -1928,11 +1932,31 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("firstRun:clone", async (owner, name, where): Promise<WorkspaceResult> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    if (activeFirstClone) throw new Error("A workspace download is already running");
+    const control = { requested: false };
+    activeFirstClone = control;
+    firstCloneReceipt = undefined;
+    pendingWorkspace = undefined;
     // Use a new folder (D-154): the next free one beside the default, not the chosen one.
     if (where === "new") targetFolder = undefined;
-    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeFor(name)), isTemplateRemote, (p) => firstRunProgress({ op: "clone", ...p }));
-    if (r.ok) pendingWorkspace = r.folder;
-    return r;
+    try {
+      const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeFor(name)), isTemplateRemote, (p) => firstRunProgress({ op: "clone", ...p }), { cancelled: () => control.requested, ...(journey ? { beforePart: (part) => slowSeam(`firstRun.clone:${part}`) } : {}) });
+      if (r.ok) pendingWorkspace = r.folder;
+      else if (r.cancelled) firstCloneReceipt = r.folder;
+      return r;
+    } finally { activeFirstClone = undefined; }
+  });
+  handle("firstRun:cancelClone", () => { if (activeFirstClone) activeFirstClone.requested = true; });
+  handle("firstRun:resumeClone", async (): Promise<WorkspaceResult> => {
+    if (activeFirstClone || !firstCloneReceipt) throw new Error("No stopped workspace download to resume");
+    const folder = firstCloneReceipt;
+    const control = { requested: false };
+    activeFirstClone = control;
+    try {
+      const r = await checkWorkspace(setupRunner, folder, isTemplateRemote, (p) => firstRunProgress({ op: "clone", ...p }), { cancelled: () => control.requested, ...(journey ? { beforePart: (part) => slowSeam(`firstRun.clone:${part}`) } : {}) });
+      if (r.ok) { pendingWorkspace = folder; firstCloneReceipt = undefined; }
+      return r.ok || r.cancelled ? r : { ...r, folder };
+    } finally { activeFirstClone = undefined; }
   });
   handle("firstRun:openFolder", async (): Promise<WorkspaceResult | undefined> => {
     const folder = await chooseFolder("Open a workspace folder");

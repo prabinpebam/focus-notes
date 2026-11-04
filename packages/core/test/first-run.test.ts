@@ -711,6 +711,50 @@ describe("UI-12: the desktop's account pill", () => {
 });
 
 describe("PRF-13, D-149: no step waits in silence", () => {
+  it("counts streamed clone receipts, stops without opening, and resumes without another clone", async () => {
+    const clock = manualClock();
+    const t = shell({ clock, state: { version: 1, firstRun: "notes" } });
+    const held = deferred();
+    let clones = 0, resumes = 0;
+    t.bridge.firstRun!.clone = async () => {
+      clones++;
+      t.pushProgress({ op: "clone", part: "private", done: 1, total: 3 });
+      await held.promise;
+      return { ok: false, cancelled: true, folder: "/kept" };
+    };
+    t.bridge.firstRun!.cancelClone = async () => {};
+    t.bridge.firstRun!.resumeClone = async () => { resumes++; return { ok: true, folder: "/kept" }; };
+    await t.app.start();
+    await settle();
+    const downloading = t.run("firstRun.clone", { id: "ada/notes" });
+    await clock.advance(3000);
+    expect(t.vm()).toMatchObject({ cloneHasProgress: true, cloneCount: "1 of 3 steps complete", cloneCanCancel: true });
+    expect(t.vm().waitText).toContain("3 s");
+    await t.run("firstRun.cancelClone");
+    expect(t.vm()).toMatchObject({ cloneStopping: true, cloneCancelLabel: "Stopping after this step…" });
+    held.resolve();
+    await downloading;
+    expect(t.calls).not.toContain("openWorkspace");
+    expect(t.vm()).toMatchObject({ cloneCanResume: true, cloneResumeLabel: "Resume download" });
+    expect(t.vm().error).toContain("Downloaded files are kept");
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(clones).toBe(1);
+    expect(resumes).toBe(1);
+    expect(t.calls.filter((x) => x === "openWorkspace")).toHaveLength(1);
+  });
+
+  it("offers Open rather than recloning when a stop arrives after the download has completed", async () => {
+    const t = shell({ state: { version: 1, firstRun: "notes" }, clone: () => ({ ok: true, cancelled: true, folder: "/kept" }) });
+    await t.app.start();
+    await settle();
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.vm()).toMatchObject({ cloneCanResume: true, cloneResumeLabel: "Open downloaded notes" });
+    expect(t.vm().error).toContain("Download finished");
+    expect(t.calls).not.toContain("openWorkspace");
+    await t.run("firstRun.resumeClone");
+    expect(t.calls.filter((x) => x === "clone:ada/notes")).toHaveLength(1);
+    expect(t.calls.filter((x) => x === "openWorkspace")).toHaveLength(1);
+  });
   it("counts actual setup receipts, requests safe cancellation, and resumes only saved options", async () => {
     const t = shell();
     await t.app.start();

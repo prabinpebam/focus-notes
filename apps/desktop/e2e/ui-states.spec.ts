@@ -8,7 +8,7 @@ import { test, expect } from "./fixtures.ts";
 import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
 import { picture } from "./fre-fakes.ts";
-import { card, start as startFirstRun, world } from "./github-world.ts";
+import { card, existingInstance, start as startFirstRun, world } from "./github-world.ts";
 
 async function closeTestApp(l: Launched) {
   try {
@@ -22,6 +22,41 @@ async function closeTestApp(l: Launched) {
     }
   }
 }
+
+test("Existing project clone stops safely and resumes its retained folder without another clone", async () => {
+  test.setTimeout(150_000);
+  const w = await world({ gcm: true });
+  w.fakes.store(w.gh.token);
+  existingInstance(w);
+  const l = await startFirstRun(w);
+  try {
+    await l.app.evaluate(() => Reflect.set(globalThis, "focusNotesSlow", { "firstRun.clone:private": 5000 }));
+    await card(l.page).getByRole("button", { name: "Get started", exact: true }).click();
+    await card(l.page).getByRole("button", { name: "Continue as Ada", exact: true }).click();
+    await card(l.page).getByRole("button", { name: "Open", exact: true }).click();
+    const setup = card(l.page);
+    await expect(setup.getByText("1 of 3 steps complete", { exact: true })).toBeVisible({ timeout: 20000 });
+    await expect(setup.getByText(/^Getting the private notes · 2 of 3 · [3-9] s$/)).toBeVisible();
+    await setup.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(setup.getByRole("button", { name: "Stopping after this step…", exact: true })).toHaveAttribute("aria-disabled", "true");
+    await expect(setup.getByText(/^Download stopped\. Downloaded files are kept/)).toBeVisible({ timeout: 10000 });
+    const folder = join(dirname(w.dirs.docs), "notes");
+    const note = join(folder, "notes", "hello.md");
+    expect(existsSync(join(folder, "private", ".git"))).toBe(false);
+    const kept = "# Kept in the original clone\n";
+    writeFileSync(note, kept);
+    await l.app.evaluate(() => Reflect.set(globalThis, "focusNotesSlow", {}));
+    await setup.getByRole("button", { name: "Resume download", exact: true }).click();
+    await expect(setup.getByRole("heading", { name: "Ready", exact: true })).toBeVisible({ timeout: 30000 });
+    expect(readFileSync(note, "utf8")).toBe(kept);
+    expect(existsSync(join(folder, "private", "notes", "secret.md"))).toBe(true);
+    expect(existsSync(join(dirname(w.dirs.docs), "notes 2"))).toBe(false);
+    expect(w.git(join(folder, "private"), "symbolic-ref", "--short", "HEAD")).toBe("main");
+  } finally {
+    await closeTestApp(l);
+    w.server.close();
+  }
+});
 
 test("First setup stops after its real clone receipt and resumes through acknowledged private-first push", async () => {
   test.setTimeout(180_000);

@@ -35,19 +35,26 @@ const same = (a: string, b: string) => real(a) === real(b);
  * Fetches `private/` if the workspace lists it and it's missing, then checks it out on `main`.
  * Resolves to whether the private notes are here: false when this account can't reach them.
  */
-async function privateNotes(git: GitRunner, folder: string, progress?: CloneProgress): Promise<boolean | undefined> {
+async function privateNotes(git: GitRunner, folder: string, progress?: CloneProgress, control?: CloneControl): Promise<boolean | undefined | "cancelled"> {
   const listed = await git({ cwd: folder, args: ["config", "--file", ".gitmodules", "--get", "submodule.private.url"], read: true });
-  if (listed.code !== 0) return undefined;
-  progress?.({ part: "private" });
+  if (listed.code !== 0) { progress?.({ part: "download", done: 1, total: 1 }); return undefined; }
+  progress?.({ part: "private", done: 1, total: 3 });
+  await control?.beforePart?.("private");
+  if (control?.cancelled()) return "cancelled";
   if (!existsSync(join(folder, "private", ".git"))) {
     const r = await git({ cwd: folder, args: ["submodule", "update", "--init", "--", "private"], timeoutMs: NETWORK_MS });
     if (r.code !== 0) return false;
   }
+  progress?.({ part: "private", done: 2, total: 3 });
+  if (control?.cancelled()) return "cancelled";
   // On main, not a detached HEAD, so saving private notes commits to the branch that's pushed.
-  progress?.({ part: "link" });
+  progress?.({ part: "link", done: 2, total: 3 });
+  await control?.beforePart?.("link");
+  if (control?.cancelled()) return "cancelled";
   const head = await git({ cwd: join(folder, "private"), args: ["symbolic-ref", "--quiet", "HEAD"], read: true });
-  if (head.code !== 0) await git({ cwd: join(folder, "private"), args: ["checkout", "--quiet", "main"] });
-  await git({ cwd: folder, args: ["config", "push.recurseSubmodules", "check"] });
+  if (head.code !== 0 && (await git({ cwd: join(folder, "private"), args: ["checkout", "--quiet", "main"] })).code !== 0) return false;
+  if ((await git({ cwd: folder, args: ["config", "push.recurseSubmodules", "check"] })).code !== 0) return false;
+  progress?.({ part: "link", done: 3, total: 3 });
   return true;
 }
 
@@ -58,7 +65,7 @@ export type TemplateRemote = (url: string) => Promise<boolean>;
  * Checks that a folder is the top of a Git clone with a workspace's layout, and fetches a missing
  * `private/`. A clone of a template repository (its `origin`) is never opened (D-157).
  */
-export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?: TemplateRemote): Promise<WorkspaceResult> {
+export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?: TemplateRemote, progress?: CloneProgress, control?: CloneControl): Promise<WorkspaceResult> {
   const top = await git({ cwd: folder, args: ["rev-parse", "--path-format=absolute", "--show-toplevel"], read: true });
   if (top.code !== 0 || !same(top.stdout.trim(), folder)) return { ok: false, problem: "notGit" };
   if (isTemplate) {
@@ -69,12 +76,19 @@ export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?
     if (templates.includes(true)) return { ok: false, problem: "template" };
   }
   if (!existsSync(join(folder, FORMAT))) return { ok: false, problem: "notWorkspace" };
-  const priv = await privateNotes(git, folder);
-  return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
+  progress?.({ part: "download", done: 1, total: 1 });
+  const priv = await privateNotes(git, folder, progress, control);
+  if (priv === "cancelled") return { ok: false, cancelled: true, folder };
+  return { ok: true, folder, ...(control?.cancelled() ? { cancelled: true } : {}), ...(priv !== undefined ? { privateNotes: priv } : {}) };
 }
 
 /** Opening's parts as it goes (PRF-13): download (with Git's percentage), the private notes, linking them. */
-export type CloneProgress = (p: { part: "download" | "private" | "link"; percent?: number }) => void;
+export type CloneProgress = (p: { part: "download" | "private" | "link"; percent?: number; done?: number; total?: number }) => void;
+export interface CloneControl {
+  cancelled(): boolean;
+  /** Journey-only controlled delays, like setup's beforeStep. */
+  beforePart?(part: "download" | "private" | "link"): Promise<void>;
+}
 
 /**
  * Git's own download percentage from `git clone --progress` (LC_ALL=C): receiving the objects is
@@ -109,11 +123,14 @@ export async function mapLimit<T, R>(items: readonly T[], cap: number, work: (it
  * removed again, since the folder was empty before. A template repository is never cloned (D-157).
  * Its parts stream to `progress`, the download with Git's percentage (PRF-13).
  */
-export async function cloneWorkspace(git: GitRunner, url: string, folder: string, isTemplate?: TemplateRemote, progress?: CloneProgress): Promise<WorkspaceResult> {
+export async function cloneWorkspace(git: GitRunner, url: string, folder: string, isTemplate?: TemplateRemote, progress?: CloneProgress, control?: CloneControl): Promise<WorkspaceResult> {
   if (await isTemplate?.(url).catch(() => false)) return { ok: false, problem: "template" };
   if (!(await folderFree(folder))) return { ok: false, problem: "folderTaken" };
+  if (control?.cancelled()) return { ok: false, cancelled: true };
   await mkdir(dirname(folder), { recursive: true });
-  progress?.({ part: "download" });
+  progress?.({ part: "download", done: 0, total: 1 });
+  await control?.beforePart?.("download");
+  if (control?.cancelled()) return { ok: false, cancelled: true };
   let said = -1, seen = "";
   const r = await git({
     cwd: dirname(folder), args: ["clone", "--progress", "--", url, folder], timeoutMs: NETWORK_MS,
@@ -121,7 +138,7 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
       onStderr: (chunk: string) => {
         seen = (seen + chunk).slice(-512);
         const p = clonePercent(seen);
-        if (p !== undefined && p !== said) progress({ part: "download", percent: (said = p) });
+        if (p !== undefined && p !== said) progress({ part: "download", percent: (said = p), done: 0, total: 1 });
       },
     } : {}),
   });
@@ -134,8 +151,10 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
     await rm(folder, { recursive: true, force: true }).catch(() => {});
     return { ok: false, problem: "notWorkspace" };
   }
-  const priv = await privateNotes(git, folder, progress);
-  return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
+  progress?.({ part: "download", done: 1, total: 1 });
+  const priv = await privateNotes(git, folder, progress, control);
+  if (priv === "cancelled") return { ok: false, cancelled: true, folder };
+  return { ok: true, folder, ...(control?.cancelled() ? { cancelled: true } : {}), ...(priv !== undefined ? { privateNotes: priv } : {}) };
 }
 
 /** Windows' device names, which no file or folder can have (before any extension). */

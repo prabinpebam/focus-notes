@@ -55,6 +55,7 @@ export interface FirstRunState {
   step: FirstRunStep;
   /** A check or an action is under way: the step's controls hold. What it is, `wait` names. */
   busy: boolean;
+  cloneStopping?: boolean;
   /**
    * The work the step is waiting for (PRF-13, D-149), named so the screen can say it: "" when none.
    * Its sign and elapsed time come from the task tracker (`firstRun.<op>`); `progress` is what the
@@ -178,7 +179,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const busy = async <T,>(op: Exclude<FirstRunWaitOp, "">, fn: () => Promise<T>): Promise<T | undefined> => {
     // A download starts counting afresh; finding the notes keeps the count the prefetch has.
     const mine = ++waitTurn;
-    set({ busy: true, wait: op, ...(op === "clone" ? { progress: { ...NO_PROGRESS, op } } : {}) });
+    set({ busy: true, wait: op, ...(op === "clone" ? { progress: { ...NO_PROGRESS, op }, cloneStopping: false } : {}) });
     try {
       return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn) : fn());
     } catch {
@@ -514,6 +515,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   commands.register({ id: "firstRun.prevRepo", title: "command.firstRun.prevRepo", shortcut: { default: "Up", handledBy: "repoField" }, layer: "basic", group: "files", run: moveActive(-1) });
   const opened = async (r: WorkspaceResult | undefined) => {
     if (!r) return;
+    if (r.cancelled) return (setWs({ result: r, error: r.ok ? "firstRun.clone.completeKept" : r.folder ? "firstRun.clone.cancelled" : "firstRun.clone.notStarted" }), bump());
     if (!r.ok) return (setWs({ result: r, error: `firstRun.workspace.problem.${r.problem ?? "failed"}` }), bump());
     setWs({ result: r, error: "" });
     await commands.run("firstRun.openWorkspace");
@@ -523,8 +525,20 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const target = typeof id === "string" && id ? id : state().workspace.activeId;
     const repo = state().workspace.repos.find((r) => `${r.owner}/${r.name}` === target);
     if (!repo || state().busy) return;
-    setWs({ cloneId: `${repo.owner}/${repo.name}` });
+    if (state().workspace.cloneId === target && state().workspace.result?.folder) return commands.run("firstRun.resumeClone");
+    setWs({ cloneId: `${repo.owner}/${repo.name}`, result: undefined, error: "" });
     await opened(await busy("clone", () => fr!.clone(repo.owner, repo.name)) ?? { ok: false, problem: "failed" });
+  });
+  reg("firstRun.cancelClone", async () => {
+    if (state().wait !== "clone" || !fr?.cancelClone || state().cloneStopping) return;
+    set({ cloneStopping: true });
+    await fr.cancelClone();
+  });
+  reg("firstRun.resumeClone", async () => {
+    const r = state().workspace.result;
+    if (state().busy || !r?.folder) return;
+    if (r.ok) return commands.run("firstRun.openWorkspace");
+    if (fr?.resumeClone) await opened(await busy("clone", () => fr.resumeClone!()) ?? { ok: false, problem: "failed", folder: r.folder });
   });
   // Open into a folder that's taken (D-154): another folder, a new one beside the default, or Back.
   reg<{ id: string }>("firstRun.errorAction", async ({ id }) => {
@@ -629,6 +643,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         hasOpenParts: { type: "boolean" }, openPercent: { type: "number" }, hasOpenPercent: { type: "boolean" },
         setupPercent: { type: "number" }, hasSetupPercent: { type: "boolean" }, percentLabel: { type: "string" },
         setupCount: { type: "string" }, setupOverallPercent: { type: "number" }, setupCanCancel: { type: "boolean" }, setupStopping: { type: "boolean" }, setupCancelled: { type: "boolean" }, setupCancelLabel: { type: "string" },
+        cloneHasProgress: { type: "boolean" }, cloneCount: { type: "string" }, clonePercent: { type: "number" }, cloneCanCancel: { type: "boolean" }, cloneStopping: { type: "boolean" }, cloneCancelLabel: { type: "string" }, cloneCanResume: { type: "boolean" }, cloneResumeLabel: { type: "string" },
       },
     },
     setters: {
@@ -670,7 +685,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const opening = f.wait === "clone" && hasWait;
       const OPEN_PARTS = ["download", "private", "link"] as const;
       const openAt = Math.max(0, OPEN_PARTS.indexOf((pr.op === "clone" && pr.part ? pr.part : "download") as (typeof OPEN_PARTS)[number]));
-      const openParts = opening ? OPEN_PARTS.map((id, n) => ({ id, state: n < openAt ? "done" : n === openAt ? "running" : "pending", label: catalog.format(`firstRun.openPart.${id}`) })) : [];
+      const cloneHasProgress = pr.op === "clone" && pr.total > 0 && (opening || Boolean(f.workspace.result?.folder));
+      const openParts = opening || cloneHasProgress ? OPEN_PARTS.slice(0, pr.total || 3).map((id, n) => ({ id, state: n < (pr.total ? pr.done : openAt) ? "done" : opening && n === (pr.total ? pr.done : openAt) ? "running" : "pending", label: catalog.format(`firstRun.openPart.${id}`) })) : [];
       const openPercent = opening && openAt === 0 && pr.op === "clone" && pr.percent >= 0 ? pr.percent : -1;
       // The parts, always shown while creating (PRF-13), named in the main path's plain words (D-124).
       const parts = (s.setup.report?.steps ?? []).map((x) => ({ id: x.id, state: x.state, label: catalog.format(`firstRun.part.${x.id}`) }));
@@ -811,6 +827,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         setupOverallPercent: parts.length ? 100 * parts.filter((x) => x.state === "done" || x.state === "skipped").length / parts.length : 0,
         setupCanCancel: Boolean(s.setup.report?.running && bridge.setup?.cancel), setupStopping: Boolean(s.setup.report?.stopping), setupCancelled: Boolean(s.setup.report?.cancelled),
         setupCancelLabel: catalog.format(s.setup.report?.stopping ? "firstRun.setup.stopping" : "firstRun.setup.cancel"),
+        cloneHasProgress, cloneCount: catalog.format("firstRun.setup.count", { done: pr.done, total: pr.total }), clonePercent: pr.total ? 100 * pr.done / pr.total : 0,
+        cloneCanCancel: f.wait === "clone" && f.busy && Boolean(fr?.cancelClone), cloneStopping: Boolean(f.cloneStopping),
+        cloneCancelLabel: catalog.format(f.cloneStopping ? "firstRun.setup.stopping" : "firstRun.setup.cancel"),
+        cloneCanResume: !f.busy && Boolean(w.result?.folder && (w.result.ok || fr?.resumeClone)), cloneResumeLabel: catalog.format(w.result?.ok ? "firstRun.clone.openKept" : "firstRun.clone.resume"),
         // The skeletons while their content is on its way (PRF-13): the profile card, and three rows of notes.
         accountSkeleton: hasWait && f.wait === "account" && connect === "checking",
         notesSkeleton: hasWait && f.wait === "findNotes" && panel === "checking",

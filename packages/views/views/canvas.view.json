@@ -9219,6 +9219,42 @@
                           },
                           {
                             "type": "ProgressBar",
+                            "when": { "get": "vm.firstRun.cloneHasProgress" },
+                            "props": {
+                              "value": { "get": "vm.firstRun.clonePercent" },
+                              "label": { "get": "vm.firstRun.cloneCount" }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "when": { "get": "vm.firstRun.cloneHasProgress" },
+                            "props": {
+                              "value": { "get": "vm.firstRun.cloneCount" },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "when": { "get": "vm.firstRun.cloneCanCancel" },
+                            "props": {
+                              "label": { "get": "vm.firstRun.cloneCancelLabel" },
+                              "variant": "subtle",
+                              "disabled": { "get": "vm.firstRun.cloneStopping" },
+                              "disabledReason": { "t": "firstRun.setup.stoppingReason" }
+                            },
+                            "on": { "press": { "run": "firstRun.cancelClone" } }
+                          },
+                          {
+                            "type": "Button",
+                            "when": { "get": "vm.firstRun.cloneCanResume" },
+                            "props": {
+                              "label": { "get": "vm.firstRun.cloneResumeLabel" },
+                              "variant": "primary"
+                            },
+                            "on": { "press": { "run": "firstRun.resumeClone" } }
+                          },
+                          {
+                            "type": "ProgressBar",
                             "when": {
                               "get": "vm.firstRun.hasOpenPercent"
                             },

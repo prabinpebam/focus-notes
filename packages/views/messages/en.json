@@ -1,4 +1,11 @@
 {
+  "command.firstRun.cancelClone": "Stop download",
+  "command.firstRun.resumeClone": "Resume download",
+  "firstRun.clone.cancelled": "Download stopped. Downloaded files are kept. Resume continues in the same folder.",
+  "firstRun.clone.notStarted": "Download stopped. Nothing was downloaded. Choose a project to try again.",
+  "firstRun.clone.completeKept": "Download finished. Your files are kept here; open them when you're ready.",
+  "firstRun.clone.resume": "Resume download",
+  "firstRun.clone.openKept": "Open downloaded notes",
   "command.firstRun.cancelSetup": "Stop setup",
   "command.firstRun.resumeSetup": "Resume setup",
   "firstRun.setup.cancel": "Cancel",

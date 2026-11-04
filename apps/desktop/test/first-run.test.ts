@@ -9,12 +9,12 @@
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SignInProgress } from "@focus-notes/core/first-run";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { createRunner } from "../src/main/git/run.ts";
+import { createRunner, type GitRunner } from "../src/main/git/run.ts";
 import { Account } from "../src/main/first-run/account.ts";
 import { commandFor, createToolRunner, findProgram, isGcmHelper, isGhHelper } from "../src/main/first-run/tools.ts";
 import { checkWorkspace, cloneWorkspace, applyLocalIdentity, folderName, homesFor, savedToGitHub, setupTarget } from "../src/main/first-run/workspace.ts";
@@ -222,6 +222,36 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     return { root, notes, priv };
   }
   const runner = (w: ReturnType<typeof world>) => createRunner({ env: w.fakes.env, onSpawn: (args) => w.spawned.push(["git", ...args]) });
+
+  it.each(["download", "private"] as const)("stops after the actual %s receipt and resumes the same files without recloning", { timeout: 60_000 }, async (boundary) => {
+    const w = world({});
+    const r = remotes(w);
+    const folder = join(r.root, "cancelled-clone");
+    const base = runner(w);
+    let stop = false, clones = 0;
+    const git: GitRunner = async (call) => {
+      const result = await base(call);
+      if (call.args[0] === "clone") {
+        clones++;
+        if (boundary === "download") stop = true;
+      }
+      if (boundary === "private" && call.args[0] === "submodule") stop = true;
+      return result;
+    };
+    const progress: { done?: number; total?: number }[] = [];
+    expect(await cloneWorkspace(git, r.notes, folder, undefined, (p) => progress.push(p), { cancelled: () => stop }))
+      .toEqual({ ok: false, cancelled: true, folder });
+    expect(existsSync(join(folder, ".focus-notes", "workspace.json"))).toBe(true);
+    expect(existsSync(join(folder, "private", ".git"))).toBe(boundary === "private");
+    const kept = join(folder, "kept.md");
+    writeFileSync(kept, "# Kept\n");
+    stop = false;
+    expect(await checkWorkspace(git, folder, undefined, (p) => progress.push(p), { cancelled: () => stop })).toEqual({ ok: true, folder, privateNotes: true });
+    expect(clones).toBe(1);
+    expect(readFileSync(kept, "utf8")).toBe("# Kept\n");
+    expect(progress).toContainEqual(expect.objectContaining({ done: 3, total: 3 }));
+    expect(w.git(join(folder, "private"), "symbolic-ref", "--short", "HEAD")).toBe("main");
+  });
 
   it("clones with the private notes, on main, with pushes checking the submodule", { timeout: 60_000 }, async () => {
     const w = world({});

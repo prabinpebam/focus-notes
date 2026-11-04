@@ -197,6 +197,7 @@ export const WORKSPACE_PROBLEMS = ["folderTaken", "notGit", "notWorkspace", "tem
 export type WorkspaceProblem = (typeof WORKSPACE_PROBLEMS)[number];
 export interface WorkspaceResult {
   ok: boolean;
+  cancelled?: boolean;
   problem?: WorkspaceProblem;
   folder?: string;
   /** The private notes came too; false when this account can't reach the private repository (FRE-06). */
@@ -260,6 +261,9 @@ export interface FirstRunBridge {
   chooseFolder(): Promise<string | undefined>;
   /** Clones into the chosen folder, or Documents/<name>; `new`: the next free folder for the name, not the chosen one (D-154). */
   clone(owner: string, name: string, where?: "new"): Promise<WorkspaceResult>;
+  cancelClone?(): Promise<void>;
+  /** Continues only the in-process downloaded-folder receipt; never starts another clone. */
+  resumeClone?(): Promise<WorkspaceResult>;
   /** Chooses an existing clone with the system's dialog and checks it. Undefined if cancelled. */
   openFolder(): Promise<WorkspaceResult | undefined>;
   /** Opens the workspace just made, cloned, or chosen: the window starts again in it. */
