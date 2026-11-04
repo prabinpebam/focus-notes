@@ -170,6 +170,13 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     } else record.pinned = !record.pinned;
     await saveRecent(profile, record);
   }
+  /** A folder Open lists, canonical; anything else is refused. */
+  async function knownFolder(folder: string): Promise<string> {
+    await list();
+    const canonical = await realpath(folder);
+    if (!known.has(canonical)) throw new Error("Unknown project");
+    return canonical;
+  }
   async function open(folder: string, note?: string): Promise<void> {
     await list();
     const canonical = await realpath(folder);
@@ -307,5 +314,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }), { flag: "wx" });
     return folder;
   }
-  return { list, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  return { list, known: knownFolder, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }

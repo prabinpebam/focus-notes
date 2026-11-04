@@ -134,6 +134,8 @@ export interface PlatformBridge {
     upload(): Promise<string | undefined>;
     edited(path: string): Promise<void>;
     pin(folder: string, path?: string): Promise<void>;
+    /** Shows a folder Open lists in File Explorer or Finder. */
+    reveal?(folder: string): Promise<void>;
     lastNote(): Promise<string | undefined>;
     position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
     remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;

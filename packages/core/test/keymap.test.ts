@@ -46,6 +46,11 @@ describe("matching keys (KEY-06)", () => {
     // German AltGr+7 types "{": Ctrl+Alt+7 must not fall back to the physical key.
     expect(win.match(key({ key: "{", code: "Digit7", ctrlKey: true, altKey: true }))).toBeUndefined();
   });
+  it("left Ctrl+Alt+O opens Open where the layout types a character for it, not AltGr (owner, 4 November)", () => {
+    expect(win.match(key({ key: "ō", code: "KeyO", ctrlKey: true, altKey: true, altGraph: false }))).toBe("projects.open");
+    expect(win.match(key({ key: "o", code: "KeyO", ctrlKey: true, altKey: true, altGraph: false }))).toBe("projects.open");
+    expect(win.match(key({ key: "ó", code: "KeyO", ctrlKey: true, altKey: true, altGraph: true }))).toBeUndefined();
+  });
   it("German layout: Ctrl+Shift+7 types \"/\", so it opens the cheat sheet, not a numbered list", () => {
     expect(win.match(key({ key: "/", code: "Digit7", ctrlKey: true, shiftKey: true }))).toBe("shortcuts.open");
   });

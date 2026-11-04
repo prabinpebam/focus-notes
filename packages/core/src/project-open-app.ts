@@ -8,15 +8,16 @@ export function registerProjectOpen(ctx: {
   flush: () => Promise<boolean>; toast: (message: string) => void;
 }) {
   const { store, commands, viewModels, bridge } = ctx;
-  const state = { open: false, full: false, query: "", active: "", pending: false, error: "", entries: [] as ProjectEntry[] };
+  const state = { open: false, full: false, query: "", active: "", pending: false, loading: false, error: "", entries: [] as ProjectEntry[] };
   const localImport = { open: false, pending: false, error: "", targets: [] as {id: string; label: string; description: string}[] };
   const changed = () => store.update((s) => ({ ...s }));
   const close = () => { state.open = false; changed(); };
   async function refresh(full = false) {
-    state.open = true; state.full = full; state.pending = true; state.error = ""; changed();
+    // The last list stays on screen while the new one loads (no blank frame); a first load shows placeholders.
+    state.open = true; state.full = full; state.loading = true; state.error = ""; changed();
     try { state.entries = await bridge.projects!.list(); }
-    catch { state.error = ctx.catalog.format("project.open.failed"); }
-    finally { state.pending = false; changed(); }
+    catch { state.error = ctx.catalog.format("project.open.listFailed"); }
+    finally { state.loading = false; changed(); }
   }
   commands.register({ id: "projects.open", title: "project.open.button", icon: "open", group: "app", layer: "basic", shortcut: { default: "Ctrl+Alt+O", macos: "Mod+Alt+O" }, enabled: () => Boolean(bridge.projects), run: () => refresh(!store.state.note.path) });
   commands.register({ id: "projects.close", title: "project.cancel", run: close });
@@ -87,6 +88,14 @@ export function registerProjectOpen(ctx: {
       changed();
     },
   });
+  commands.register<{id: string}>({
+    id: "projects.reveal", title: "project.open.reveal", enabled: () => Boolean(bridge.projects?.reveal),
+    run: async ({id}) => {
+      state.error = ""; changed();
+      try { await bridge.projects!.reveal!(id); }
+      catch { state.error = ctx.catalog.format("project.open.revealFailed"); changed(); }
+    },
+  });
   commands.register({
     id: "projects.choose", title: "project.openProject", run: async () => {
       try {
@@ -109,7 +118,7 @@ export function registerProjectOpen(ctx: {
   viewModels.register({
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
     schema: { type: "object", properties: {
-      open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, error: text, query: text, active: text,
+      open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, loading: { type: "boolean" }, recentWaiting: { type: "boolean" }, entriesWaiting: { type: "boolean" }, error: text, query: text, active: text,
       recent: { type: "array", items: item },
       entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, pinned: { type: "boolean" }, menu } } },
     } },
@@ -126,6 +135,8 @@ export function registerProjectOpen(ctx: {
         .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.rank - a.rank).slice(0, 50);
       return { ...state, dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, menu: pinMenu(e.folder, Boolean(e.pinned)) })),
         recent,
+        recentWaiting: state.loading && recent.length === 0,
+        entriesWaiting: state.loading && entries.length === 0,
       };
     },
   });

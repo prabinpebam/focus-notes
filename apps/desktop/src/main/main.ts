@@ -1294,6 +1294,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (typeof folder !== "string" || (note !== undefined && typeof note !== "string")) throw new Error("Invalid project request");
     return projects.open(folder, note);
   });
+  // A project card's folder path shows that folder in File Explorer or Finder (owner, 4 November). Only a
+  // folder Open lists; journeys log it instead of opening a window over the owner's screen (D-141).
+  handle("projects:reveal", async (folder: unknown) => {
+    if (typeof folder !== "string") throw new Error("Invalid project folder");
+    const canonical = await projects.known(folder);
+    if (journey) return void process.stdout.write(`[focus-notes] reveal-project ${canonical}\n`);
+    const problem = await shell.openPath(canonical);
+    if (problem) throw new Error(problem);
+  });
   handle("note:read", async (p) => {
     try {
       return (await readParsed(notePath(p))).text;

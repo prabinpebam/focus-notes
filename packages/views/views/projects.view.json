@@ -27,7 +27,8 @@
           { "type": "Stack", "props": { "gap": "m" }, "children": [
             { "type": "Text", "props": { "value": { "t": "recent.title" }, "role": "label", "tone": "muted" } },
             { "type": "Stack", "props": { "gap": "xxs" }, "children": [
-              { "each": { "get": "vm.projects.recent" }, "as": "recent", "key": "recent.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" }, "tone": "muted" } }, "render": {
+              { "type": "ItemCard", "when": { "get": "vm.projects.recentWaiting" }, "props": { "title": { "t": "project.open.loading" }, "skeleton": true } },
+              { "each": { "get": "vm.projects.recent" }, "as": "recent", "key": "recent.id", "empty": { "type": "Text", "when": { "expr": { "!": [{ "get": "vm.projects.recentWaiting" }] } }, "props": { "value": { "t": "project.open.recentEmpty" }, "tone": "muted" } }, "render": {
                 "type": "OpenItem",
                 "props": {
                   "kind": "file", "title": { "get": "recent.label" }, "detail": { "get": "recent.description" }, "icon": "documentText", "pinned": { "get": "recent.pinned" },
@@ -45,7 +46,8 @@
           { "type": "Stack", "props": { "gap": "m" }, "children": [
             { "type": "Text", "props": { "value": { "t": "project.list.title" }, "role": "label", "tone": "muted" } },
             { "type": "Stack", "props": { "gap": "s" }, "children": [
-              { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" }, "tone": "muted" } }, "render": {
+              { "type": "ItemCard", "when": { "get": "vm.projects.entriesWaiting" }, "props": { "title": { "t": "project.open.loading" }, "size": "l", "skeleton": true } },
+              { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "when": { "expr": { "!": [{ "get": "vm.projects.entriesWaiting" }] } }, "props": { "value": { "t": "project.open.projectsEmpty" }, "tone": "muted" } }, "render": {
                 "type": "OpenItem",
                 "props": {
                   "kind": "project", "title": { "get": "entry.name" }, "path": { "get": "entry.folder" }, "accent": { "get": "entry.accent" }, "logo": { "get": "entry.logo" }, "src": { "get": "entry.logoSrc" }, "pinned": { "get": "entry.pinned" },
@@ -56,14 +58,15 @@
                 },
                 "on": {
                   "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } },
-                  "pin": { "run": "projects.pin", "args": { "id": { "get": "entry.id" } } }
+                  "pin": { "run": "projects.pin", "args": { "id": { "get": "entry.id" } } },
+                  "reveal": { "run": "projects.reveal", "args": { "id": { "get": "entry.id" } } }
                 }
               } }
             ] }
           ] }
         ] },
-        { "type": "Text", "when": { "get": "vm.projects.pending" }, "props": { "value": { "t": "project.open.preparing" } } },
-        { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projects.error" }, ""] } }, "props": { "value": { "get": "vm.projects.error" } } },
+        { "type": "Text", "when": { "get": "vm.projects.pending" }, "props": { "value": { "t": "project.open.preparing" }, "tone": "muted", "announce": true } },
+        { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.projects.error" }, ""] } }, "props": { "message": { "get": "vm.projects.error" }, "tone": "danger" } },
         { "type": "Inline", "props": { "align": "end" }, "children": [{ "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "projects.close" } } }] }
       ]
     }],
