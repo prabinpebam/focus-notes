@@ -1,7 +1,12 @@
 # UI states audit
 
 > [!NOTE]
-> **TL;DR.** An audit of the design system and every surface of the app against the `ui-states` skill (every change confirmed where it happened, every failure recoverable, every empty space explained), with `design-system`, `perceived-performance` and `ui-copy` alongside. **In progress:** the scope and method are below; the scorecard, the ranked findings, the missing primitives and the order of work are being written section by section.
+> **TL;DR.** This audit checks the design system and every surface of the app against the `ui-states` skill: every change confirmed where it happened, every failure recoverable, every empty space explained. The `design-system`, `perceived-performance` and `ui-copy` skills apply alongside it. The waits the app was built around are strong: the note save, conflicts, the AI rewrite and Spotlight. What's weak is what happens after a person changes something. The three biggest improvements:
+> 1. Stop silent failures. A failed setting or project change today says nothing, or keeps a value that wasn't saved (F1).
+> 2. Confirm every change on the control itself: a tick on a field, a spinner in a switch, a Retry when it fails. Add a commit track to the task tracker to drive it (F2).
+> 3. Make error notifications stay until they're dealt with, and queue three instead of dropping all but two (F3).
+>
+> Fifteen findings are ranked below, with the missing tokens and primitives and an order of work: eight design slices for the gallery first, then nine wiring slices.
 
 ## Scope, sources and method
 
