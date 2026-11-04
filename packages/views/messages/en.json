@@ -288,6 +288,7 @@
   "project.open.listing": "Reading projects…",
   "project.open.pinning": "Saving pin…",
   "project.open.revealing": "Showing project folder…",
+  "project.open.showFolder": "Show project folder",
   "project.open": "Open",
   "project.open.button": "Open…",
   "project.open.newLocal": "New Local note",

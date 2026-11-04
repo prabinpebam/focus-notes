@@ -170,7 +170,7 @@ export function registerProjectOpen(ctx: {
     },
   });
   commands.register<{id: string}>({
-    id: "projects.reveal", title: "project.open.reveal", enabled: () => Boolean(bridge.projects?.reveal),
+    id: "projects.reveal", title: "project.open.showFolder", enabled: () => Boolean(bridge.projects?.reveal),
     run: async ({id}) => {
       const request = begin();
       try { await ctx.tracker.run("project.reveal", "project.open.revealing", () => bridge.projects!.reveal!(id), undefined, "fn:project.reveal"); if (request === action) clearFailure(); }

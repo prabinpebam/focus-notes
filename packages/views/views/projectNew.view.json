@@ -53,11 +53,11 @@
               { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
               { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
             ] },
-            { "type": "Text", "props": { "value": { "t": "project.new.willMake" } } },
-            { "type": "ItemCard", "props": { "title": { "t": "project.new.makesFolder" }, "detail": { "get": "vm.projectNew.folder" }, "icon": "folder", "personal": "all" }, "children": [
+            { "type": "Text", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "value": { "t": "project.new.willMake" } } },
+            { "type": "ItemCard", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "title": { "t": "project.new.makesFolder" }, "detail": { "get": "vm.projectNew.folder" }, "icon": "folder", "personal": "all" }, "children": [
               { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }
             ] },
-            { "type": "ItemCard", "props": { "title": { "t": "project.new.makesNoSite" }, "detail": { "t": "project.new.makesNoSiteDetail" }, "icon": "globe" } }
+            { "type": "ItemCard", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "title": { "t": "project.new.makesNoSite" }, "detail": { "t": "project.new.makesNoSiteDetail" }, "icon": "globe" } }
           ] }
         } },
         { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.projectNew.error" }, ""] } }, "props": { "message": { "get": "vm.projectNew.error" }, "tone": "danger", "actionLabel": { "get": "vm.projectNew.recoveryAction" }, "actionBusy": { "get": "vm.projectNew.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } }, "on": { "action": { "run": "projects.newRecover" } } },

@@ -1,7 +1,7 @@
 /** Open (owner, 4 November): a project's folder path shows the folder, and a first load shows placeholders, not "empty". */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../views/messages/en.json" with { type: "json" };
-import { createApp, type PlatformBridge, type ProjectCreateProgress, type ProjectEntry } from "../src/index.ts";
+import { createApp, MessageCatalog, type PlatformBridge, type ProjectCreateProgress, type ProjectEntry } from "../src/index.ts";
 
 function appWith(projects: Partial<NonNullable<PlatformBridge["projects"]>>, readNote: PlatformBridge["readNote"] = async () => "", overrides: Partial<PlatformBridge> = {}) {
   const bridge = {
@@ -25,6 +25,12 @@ const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", l
 afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it("provides an argument-free command title while keeping platform-specific folder action labels", () => {
+    const app = appWith({ reveal: async () => {} });
+    const catalog = new MessageCatalog("en", en);
+    expect(catalog.format(app.commands.describe("projects.reveal").title)).toBe("Show project folder");
+    expect(catalog.format("project.open.reveal", { platform: "windows" })).toBe("Show in File Explorer");
+  });
   it("accepts a read note when only remembering its next-launch path fails, reporting that separate failure", async () => {
     const target = `${book.folder}\\notes\\target.md`;
     const app = appWith({

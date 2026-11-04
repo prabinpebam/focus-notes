@@ -521,12 +521,14 @@ test("New project streams actual setup steps and Cancel keeps the partial folder
     await expect(progress).toHaveAttribute("aria-label", "2 of 5 steps completed");
     await expect(progress).toHaveAttribute("value", "40");
     await expect(project.locator("[data-step-mark][data-step-mark-size=compact] [data-busy]")).toHaveCount(1);
+    await expect(project.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
     await project.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(project.getByRole("button", { name: "Stopping after this step…", exact: true })).toBeDisabled();
     if (!release) throw new Error("Repository creation was not held");
     release();
     await expect(project.locator("[data-status-row=danger]")).toContainText("Completed files and your choices are kept.");
     await expect(project.getByRole("button", { name: "Create project", exact: true })).toBeDisabled();
+    await expect(project.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
     expect(creates).toBe(1);
     const folder = join(parent, "Streamed project");
     expect(readdirSync(folder)).toEqual(["notes"]);
