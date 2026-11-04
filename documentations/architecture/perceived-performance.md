@@ -72,6 +72,8 @@ The [next D7 increment](../plan/definition-of-done.md#phase-2-single-outcomes-an
 
 The [colour all-done evidence](../plan/definition-of-done.md#phase-2-reachable-colour-all-done-state-a055bbe8) moves the already-approved good-news treatment from an unreachable empty-row fallback to the actual contrast summary. The edit/fix preview remains synchronous and write-free; the same wrapper changes between a failure summary and one polite success row. No asynchronous wait, new timing or latency claim is introduced.
 
+The [retained-outcome follow-up](../plan/definition-of-done.md#phase-2-repeated-retained-outcomes-06d4f939) also checks another refusal while the original recovery row remains mounted. A repeated identical result gets one explicit live announcement; a new local message is not duplicated. Actual operation work, progress, measures and cancellation are unchanged. The D8 section-tracker/local-error overlap remains a named reconciliation item, not covered by this D7-only claim.
+
 ## History recovery
 
 The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.

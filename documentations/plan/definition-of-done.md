@@ -642,6 +642,20 @@ The existing good-news row was attached to the empty fallback of the five editab
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a055bbe8\Open review build.cmd`. The visible `f2127c67` remains open; final phase-2 reconciliation remains in progress. No full suite, CI wait, main app merge, release or real-account application write ran.
 
+### Phase-2 repeated retained outcomes, 06d4f939
+
+The next recovery attempt must also have one outcome. After the generic/local duplicate was removed, a repeated refusal with identical text could leave its already-mounted live error row unchanged. A targeted regression reproduced the missing repeated announcement. These owners now explicitly reannounce only an unchanged retained outcome; a newly rendered or changed local outcome still owns its normal live announcement. The tracker wait, visual row, typed input and successful work remain intact.
+
+| Scoped evidence on `06d4f939` | Result |
+| --- | --- |
+| Repeated local-Publish refusal regression before the correction | Failed as expected: the second refusal supplied no new outcome announcement |
+| `pnpm exec vitest run packages/core/test/tasks.test.ts packages/core/test/sharing-preview.test.ts packages/core/test/project-open.test.ts packages/core/test/first-run.test.ts` | Final 102 passed: two refused local saves followed by one acknowledged success; repeated failed Open of an already-created project with creation called once; repeated stopped download with one clone, retained folder and final accepted Open; default tracker and receipt behavior preserved |
+| `pnpm exec tsc --project E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json --noEmit`; `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm check`; `git diff --check`; `pnpm --filter @focus-notes/desktop run build` | Passed; source/scoped valid-fixture types, desktop, 780 documents/82 components/725 commands and rebuilt runtime |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Site preview counts actual reads\|New project streams actual setup\|Existing project clone stops\|First setup stops"` | Final 4 passed together: all affected native operation owners retain their cancellation/recovery and acknowledged local outcomes. Repeated same-text refusals are unit evidence, not falsely reported as repeated native fault injection |
+| Exact pushed candidate `06d4f939` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup. A first packaging attempt correctly refused the test-created PowerShell cache delta; only that known delta was restored before inspection |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\06d4f939\Open review build.cmd`. The owner's visible `f2127c67` remains open. Phase 2 remains in progress; D8's section-tracker/local-live-outcome overlap still needs a scoped reconciliation rather than an implicit acceptance. No full suite, CI wait, main app merge, release or real-account application write ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
