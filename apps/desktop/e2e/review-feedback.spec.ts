@@ -78,6 +78,51 @@ for (const projectTheme of ["app", "sepia"]) test(`Themes applies real tokens an
   } finally { await close(); }
 });
 
+test("Agents code Copy is an accessible top-right icon overlay without a reserved text column", async () => {
+  const dirs = tempDirs();
+  const text = '{\n  "mcpServers": { "focus-notes": { "command": "focus-notes", "args": ["mcp"] } }\n}';
+  const l = await launch(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
+  try {
+    await l.app.evaluate(({ ipcMain }, code) => {
+      ipcMain.removeHandler("agents:load");
+      ipcMain.handle("agents:load", () => ({
+        permissions: { connect: false, readPublic: true, readPrivate: false, edit: false, createPublic: true, folders: "all" },
+        changedOutside: false, snippets: [{ id: "vscode", text: code }], recent: [],
+        cli: { available: false, installed: false, onPath: false },
+      }));
+    }, text);
+    await l.page.keyboard.press("Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Agents", exact: true }).click();
+    const block = settings.locator("[data-code-block]").first();
+    const copy = block.getByRole("button", { name: "Copy", exact: true });
+    await expect(copy).toBeVisible();
+    expect(await copy.innerText()).toBe("");
+    const layout = await block.evaluate(el => {
+      const code = el.querySelector("code")!;
+      const box = code.parentElement!;
+      const button = el.querySelector("button")!;
+      const style = getComputedStyle(box);
+      const b = box.getBoundingClientRect(), c = code.getBoundingClientRect(), k = button.getBoundingClientRect();
+      return {
+        fullWidth: Math.abs(c.width - (b.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth))) < 1,
+        overlay: getComputedStyle(button.parentElement!).position,
+        topRight: k.right <= b.right && k.right > b.right - 20 && k.top < b.top + 20,
+      };
+    });
+    expect(layout).toEqual({ fullWidth: true, overlay: "absolute", topRight: true });
+    await copy.focus();
+    await expect(l.page.getByRole("tooltip", { name: "Copy", exact: true })).toBeVisible();
+    await copy.click();
+    await expect.poll(() => l.app.evaluate(() => Reflect.get(globalThis, "memoryClipboard")?.text)).toBe(text);
+  } finally {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
+
 test("menu explanations are accessible descriptions and hover or focus tooltips, not secondary rows", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.docs, "Welcome.md"), "# Menu descriptions\n");

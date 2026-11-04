@@ -4,6 +4,8 @@
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "radius": { "$type": "dimension", "$value": "{radius.popover}" },
   "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "copyInset": { "$type": "dimension", "$value": "{space.xs}" },
+  "copySpace": { "$type": "dimension", "$value": "{size.hit}" },
   "padding": { "$type": "dimension", "m": { "$value": "{space.s}" }, "l": { "$value": "{space.l}" } },
   "paddingInlineStart": { "$type": "dimension", "m": { "$value": "{space.m}" }, "l": { "$value": "{space.l}" } },
   "font": { "$type": "fontFamily", "$value": "{font.mono}" },
