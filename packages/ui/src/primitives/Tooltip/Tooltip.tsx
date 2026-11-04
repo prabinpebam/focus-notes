@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactElement, type ReactNode, type RefObject } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactElement, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { TooltipContext, TooltipTrigger, TooltipTriggerStateContext } from "react-aria-components";
 import { useTooltip, useUNSAFE_PortalContext } from "react-aria";
@@ -54,19 +54,25 @@ const read = (el: Element, v: string) => parseFloat(getComputedStyle(el).getProp
 function Bubble({ placement, children }: { placement: TooltipSide; children: ReactNode }) {
   const state = useContext(TooltipTriggerStateContext);
   const { triggerRef, ...props } = (useContext(TooltipContext) ?? {}) as HTMLAttributes<HTMLElement> & { triggerRef?: RefObject<HTMLElement | null> };
+  const { tooltipProps } = useTooltip(props, state!);
+  return <PositionedBubble placement={placement} open={Boolean(state?.isOpen)} triggerRef={triggerRef} tooltipProps={tooltipProps} onHidden={() => state?.close(true)}>{children}</PositionedBubble>;
+}
+
+function PositionedBubble({ placement, children, open, triggerRef, tooltipProps, onHidden }: {
+  placement: TooltipSide; children: ReactNode; open: boolean; triggerRef?: RefObject<HTMLElement | null>;
+  tooltipProps: HTMLAttributes<HTMLElement>; onHidden?: () => void;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const portal = useUNSAFE_PortalContext();
   const [container, setContainer] = useState<Element | null>(null);
   const [placed, setPlaced] = useState(false);
-  const open = Boolean(state?.isOpen);
-  const { tooltipProps } = useTooltip(props, state!);
 
   // Opening: only for a control that shows, and inside its landmark.
   useLayoutEffect(() => {
     if (!open) return;
     const trigger = triggerRef?.current ?? null;
     if (!showing(trigger)) {
-      state?.close(true);
+      onHidden?.();
       return;
     }
     setContainer(portal.getContainer?.() ?? landmarkOf(trigger) ?? document.body);
@@ -84,7 +90,7 @@ function Bubble({ placement, children }: { placement: TooltipSide; children: Rea
     let frame = 0;
     const follow = () => {
       if (!showing(trigger)) {
-        state?.close(true);
+        onHidden?.();
         return;
       }
       const win = fixedBox(trigger);
@@ -116,6 +122,19 @@ function Bubble({ placement, children }: { placement: TooltipSide; children: Rea
     </div>,
     container,
   );
+}
+
+/** A menu item owns its focus/hover state rather than a TooltipTrigger pressable. */
+export function DescriptionTooltip({ label, anchor, focused, hovered }: {
+  label: string; anchor: RefObject<HTMLElement | null>; focused: boolean; hovered: boolean;
+}) {
+  const [delayed, setDelayed] = useState(false);
+  useEffect(() => {
+    if (!hovered) { setDelayed(false); return; }
+    const timer = setTimeout(() => setDelayed(true), 500);
+    return () => clearTimeout(timer);
+  }, [hovered]);
+  return <PositionedBubble placement="bottom" open={focused || hovered && delayed} triggerRef={anchor} tooltipProps={{ role: "tooltip" }}>{label}</PositionedBubble>;
 }
 
 /** Name and shortcut after 500 ms of hovering, or at once on keyboard focus (Foundations → Words). */

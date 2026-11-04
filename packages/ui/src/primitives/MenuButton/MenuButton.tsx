@@ -1,5 +1,7 @@
 import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { FloatingContext } from "../../layouts/Layer/floating.ts";
+import { VisuallyHidden } from "react-aria";
+import { DescriptionTooltip } from "../Tooltip/Tooltip.tsx";
 import { controlLabel } from "../control.css.ts";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
@@ -34,6 +36,14 @@ export interface MenuButtonProps {
   onAction?: (payload: { id: string }) => void;
 }
 
+function MenuDescription({ reason, focused, hovered }: { reason: string; focused: boolean; hovered: boolean }) {
+  const anchor = useRef<HTMLElement | null>(null);
+  return <>
+    <VisuallyHidden><Text slot="description"><span ref={el => { anchor.current = el?.closest<HTMLElement>('[role^="menuitem"]') ?? null; }}>{reason}</span></Text></VisuallyHidden>
+    <DescriptionTooltip label={reason} anchor={anchor} focused={focused} hovered={hovered} />
+  </>;
+}
+
 /** A submenu of mutually exclusive choices (a theme, a font): its items are radio items. */
 function Submenu({ item, checkable, onAction }: { item: CommandItem; checkable: boolean; onAction?: ((payload: { id: string }) => void) | undefined }) {
   const children = item.items ?? [];
@@ -48,10 +58,13 @@ function Submenu({ item, checkable, onAction }: { item: CommandItem; checkable: 
   return (
     <SubmenuTrigger>
       <MenuItem id={item.id} className={s.item} textValue={item.label} onFocus={(e) => measure(e.target)} onHoverStart={(e) => measure(e.target)}>
+        {({ isFocused, isHovered }) => <>
         {/* Lined up with the other items: a check column only when the menu has one. */}
         {checkable ? <span className={s.check} aria-hidden="true" /> : null}
         <span className={s.label}>{item.label}</span>
         <span className={s.shortcut} aria-hidden="true"><Icon name="chevronRight" /></span>
+        {item.reason ? <MenuDescription reason={item.reason} focused={isFocused} hovered={isHovered} /> : null}
+        </>}
       </MenuItem>
       <Popover className={s.popover} placement={placement} offset={4} {...boundary} data-floating-child="" data-surface="popover">
         <ChoiceMenu label={item.label} items={children} onAction={onAction} />
@@ -79,10 +92,11 @@ function ChoiceMenu({ label, items, onAction }: { label: string; items: CommandI
     >
       {items.map((c) => (
         <MenuItem key={c.id} id={c.id} className={s.item} textValue={c.label}>
-          {({ isSelected }) => (
+          {({ isSelected, isFocused, isHovered }) => (
             <>
               <span className={s.check} aria-hidden="true">{isSelected ? "✓" : ""}</span>
               <span className={s.label}>{c.label}</span>
+              {c.reason ? <MenuDescription reason={c.reason} focused={isFocused} hovered={isHovered} /> : null}
             </>
           )}
         </MenuItem>
@@ -174,7 +188,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                       {...(item.disabled || item.commit === "pending" ? { shouldCloseOnSelect: false } : {})}
                       aria-busy={item.commit === "pending" || undefined}
                     >
-                      {({ isSelected }) => (
+                      {({ isSelected, isFocused, isHovered }) => (
                         <>
                           {checkable ? <span className={s.check} aria-hidden="true">{isSelected ? "✓" : item.mixed ? "–" : ""}</span> : null}
                           {/* The name is everything the item shows, its shortcut and an unavailable item's reason included (WCAG 2.5.3).
@@ -186,8 +200,8 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                               <span className={s.labelText}>{item.label}</span>
                               {item.shortcut ? <>{" "}<Keyboard className={s.shortcut}>{item.shortcut}</Keyboard></> : null}
                             </span>
-                            {item.disabled && item.reason ? <>{" "}<span className={s.reason}>{item.reason}</span></> : null}
                           </Text>
+                          {item.reason ? <MenuDescription reason={item.reason} focused={isFocused} hovered={isHovered} /> : null}
                           {item.commit ? <CommitMark state={item.commit} /> : null}
                         </>
                       )}

@@ -78,6 +78,38 @@ for (const projectTheme of ["app", "sepia"]) test(`Themes applies real tokens an
   } finally { await close(); }
 });
 
+test("menu explanations are accessible descriptions and hover or focus tooltips, not secondary rows", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Menu descriptions\n");
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(dirs.docs, "Welcome.md") }));
+  const l = await launch(dirs);
+  try {
+    await l.page.keyboard.press("Control+.");
+    await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    const item = l.page.getByRole("menuitem", { name: "Publish…", exact: true });
+    const reason = "Publishing is local only in this preview.";
+    await expect(item).toHaveAccessibleDescription(reason);
+    const description = item.getByText(reason, { exact: true });
+    expect(await description.evaluate(el => {
+      const wrapper = el.closest<HTMLElement>('[style*="clip"]');
+      return Boolean(wrapper && wrapper.offsetWidth <= 1 && wrapper.offsetHeight <= 1);
+    })).toBe(true);
+    await item.focus();
+    await expect(l.page.getByRole("tooltip", { name: reason, exact: true })).toBeVisible();
+    await l.page.keyboard.press("ArrowDown");
+    await expect(l.page.getByRole("tooltip", { name: reason, exact: true })).toHaveCount(0);
+    await item.hover();
+    await expect(l.page.getByRole("tooltip", { name: reason, exact: true })).toBeVisible();
+    await expect(item).toHaveAttribute("aria-disabled", "true");
+    await l.page.keyboard.press("Escape");
+  } finally {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
+
 test("full-app Connect and modal portals cannot be painted over by docked Files", async () => {
   const dirs = tempDirs();
   const note = join(dirs.docs, "Welcome.md");
