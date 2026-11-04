@@ -45,7 +45,7 @@ export function Layer({ layer = "panel", position = "center", dragBand, avoidPin
   return (
     <FloatingContext.Provider value={true}>
       <LayerContext.Provider value={layer}>
-      <div ref={ref} id={id} className={`${s.base} ${s.layer[layer]} ${s.position[position]}${avoidPinned ? ` ${s.avoidPinned}` : ""}`} role={ROLE[landmark]} aria-label={label}>
+      <div ref={ref} id={id} data-react-aria-top-layer={layer === "toast" ? "" : undefined} className={`${s.base} ${s.layer[layer]} ${s.position[position]}${avoidPinned ? ` ${s.avoidPinned}` : ""}`} role={ROLE[landmark]} aria-label={label}>
         {/* The band is the window's top 44 px, whatever the layer's height; the content above it is never dragged. */}
         {dragBand ? <div className={s.band} data-drag-band="" /> : null}
         <div className={s.content} data-no-drag="">{children}</div>

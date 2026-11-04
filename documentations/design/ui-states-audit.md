@@ -8,6 +8,12 @@
 >
 > Fifteen findings are ranked below, with the missing tokens and primitives and an order of work: eight design slices for the gallery first, then nine wiring slices.
 
+## Phase-2 wiring evidence
+
+The owner approved all eight designs on 4 November at 14:06. The project/Open implementation from `vq-open-cards` is merged into `vq-ui-states`, not rebased. Combined monorepo typecheck passes.
+
+The notification layer uses the existing `layer.toast` token and React Aria's top-layer marker, so modal hiding and focus containment do not suppress Retry. The focused invisible settings journey reaches Retry with F6, clicks it while Settings stays open, and reopens the persisted value. UI/desktop typechecks and the related layer/runtime tests pass (2 files, 3 tests). The merged sharing/site-preview views retain pre-existing `ui:check` findings; their acceptance remains outstanding.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.
