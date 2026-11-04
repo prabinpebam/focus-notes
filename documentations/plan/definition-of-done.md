@@ -252,6 +252,25 @@ The initial sharing fixture opened the new Open surface without a selected note;
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\46c0cb31\Open review build.cmd`. Notification overlap and the prior settings/Reading paths are inspected; withdrawal's proof is the separate synthetic sharing journey, not a real account. D1's requested irreversible alternative is verified. AI groups, remaining recovery/empty/streamed work and complete delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 independent AI details and checked key, 42e06fc0
+
+The approved Connection details and Access key groups are now wired independently. Detail fields save on blur/Enter through the existing commit track, including its 200 ms pending/confirmed floors, retained attempted values and scoped Retry/Revert. Only the committing field locks. Provider choice persists its defaults, including ready Copilot defaults; discovery persists its actual endpoint/model and reuses a partial connection on Retry instead of requiring a removed full-form Save.
+
+The separate **Save key** sends only a synthetic connection test, then stores the sealed key after the provider accepts it and storage succeeds. A name can still save during that check. Refusal preserves the previous key and the same-destination entry in the local password component; Retry resends that local entry, while Revert writes nothing. Raw keys never enter view models, commit values, generic retained retries or logs. A changed destination clears its local entry; a check begun for older details cannot attach its result to the changed configuration. An incomplete saved connection cannot send note text or silently become the Writer.
+
+| Check on `42e06fc0` | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\ai-commits.test.ts apps\desktop\test\ai-rewrite.test.ts apps\desktop\test\ai-own-key.test.ts packages\core\test\ai-app.test.ts packages\ui\test\secure-key-field.test.tsx` | 75 passed: independent/ordered detail writes, first-connection identity, retained failures, provider/default/discovery paths, synthetic checking before storage, sealed-only results, wrong-key/storage refusal, changed-destination rejection, local entry clearing, existing Writer semantics and OpenAI/Anthropic Rewrite through protocol fakes |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 777 documents, 82 components, 706 commands; related schemas and component inventory regenerated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed at final runtime source state |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "AI details commit independently\|known-empty wrappers"` | Both passed together: actual failed detail/independent neighbour/Retry, held synthetic key check with independent name save, provider 401, real storage refusal, retained key/Retry/Revert, successful sealed replacement, no note text in probes, exact note bytes, destination clearing, AI Add-to-content replacement and Open/Clear search |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head: previous project/Reading/compact/notification paths plus separate AI groups, persisted compatible-service choice and unavailable key Save; no provider request in candidate inspection |
+
+The first-action fixture initially queried an uncheckable menu role; it now uses the real checkable service item. The key journey checks the button's existing border-progress child, not a nonexistent button attribute. Final scoped tests and journeys pass. Candidate and journey apps were invisible, closed and followed by own-PID cleanup, first `-WhatIf`, then actual.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\42e06fc0\Open review build.cmd`. Settings → AI → Change shows the separate groups. Enter details and leave a field to save it; a key requires its own Save. The candidate contains no real key or usable provider. Remaining recovery, complete empty-state acceptance, streamed work and independent delayed/failed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

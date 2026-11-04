@@ -4,6 +4,17 @@
 
 The UI-states candidate uses the existing notification host, not a blocking wait: ordinary information/success notices get 6 visible seconds; actual multi-line geometry extends that total to `wait.noticeLong` (8 seconds), without restarting elapsed time. The queue's clock runs only for visible pills and pauses on interaction/window inactivity. Errors, recovery actions and explicit decision warnings require dismissal or resolution; progress stays until replaced by its outcome. Retry keeps its original error mounted and makes only its own action inert while the original operation runs. The [notification evidence](../plan/definition-of-done.md#phase-2-notification-acceptance-increment-0db24cb0) records exact clock and focus checks. [Overlapping hover/focus evidence](../plan/definition-of-done.md#phase-2-overlapping-notification-pauses-b68775f8) proves that ending one cause cannot resume the timer while the other remains. [Withdrawal evidence](../plan/definition-of-done.md#phase-2-irreversible-withdrawal-46c0cb31) verifies the existing irreversible confirmation instead of offering a misleading Undo.
 
+## Independent AI connection commits
+
+The [AI group evidence](../plan/definition-of-done.md#phase-2-independent-ai-details-and-checked-key-42e06fc0) covers actual storage and synthetic-provider refusals. These are feedback targets, not a provider-latency improvement claim.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Save one connection detail or provider choice | Responsive; existing commit track, no provider request | Committing field/trigger; retained attempted value with Retry/Revert | `fn:ai.saveDetail`; immediate pending, pending/confirmed each at least 200 ms; independent fields remain usable |
+| Check and save an access key | Responsive → waiting; explicit Save, synthetic provider check before sealed storage | Access-key group: Checking key… → Access key saved; local failure and Retry/Revert | `fn:ai.saveKey`; immediate local pending, same 200 ms floors, no Saved before both provider and storage accept |
+
+The key stays only in its password component and the in-flight check closure, never a generic retained command value. A failed same-destination check keeps the entry and old saved key; a changed destination clears the entry and requires it again. A configuration changed during the check rejects the old result instead of attaching it to the new destination. A name can persist independently during checking. The old note and all other settings remain mounted.
+
 ## Image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
