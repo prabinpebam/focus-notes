@@ -2286,7 +2286,7 @@
           "open": {
             "get": "vm.toolbarCustomize.open"
           },
-          "size": "s",
+          "size": "l",
           "height": "content"
         },
         "on": {
@@ -2307,232 +2307,108 @@
             },
             "children": [
               {
-                "type": "Stack",
+                "type": "Text",
                 "props": {
-                  "gap": "s"
-                },
-                "children": [
-                  {
-                    "type": "Heading",
-                    "props": {
-                      "level": "3",
-                      "value": {
-                        "t": "toolbar.customize.pinnedHeading"
-                      }
-                    }
+                  "value": {
+                    "t": "toolbar.composer.description"
                   },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "value": {
-                        "get": "vm.toolbarCustomize.count"
-                      },
-                      "tone": "muted",
-                      "announce": true
-                    }
-                  },
-                  {
-                    "each": {
-                      "get": "vm.toolbarCustomize.pinned"
-                    },
-                    "as": "item",
-                    "key": "item.id",
-                    "empty": {
-                      "type": "Text",
-                      "props": {
-                        "value": {
-                          "t": "toolbar.customize.nonePinned"
-                        },
-                        "tone": "muted"
-                      }
-                    },
-                    "render": {
-                      "type": "Inline",
-                      "props": {
-                        "gap": "xs",
-                        "justify": "between"
-                      },
-                      "children": [
-                        {
-                          "type": "Text",
-                          "props": {
-                            "value": {
-                              "get": "item.label"
-                            }
-                          }
-                        },
-                        {
-                          "type": "Inline",
-                          "props": {
-                            "gap": "xs"
-                          },
-                          "children": [
-                            {
-                              "type": "Button",
-                              "props": {
-                                "label": {
-                                  "get": "item.up"
-                                },
-                                "size": "s",
-                                "variant": "subtle",
-                                "disabled": {
-                                  "get": "item.first"
-                                },
-                                "disabledReason": {
-                                  "get": "item.up"
-                                }
-                              },
-                              "on": {
-                                "press": {
-                                  "run": "toolbar.move",
-                                  "args": {
-                                    "id": {
-                                      "get": "item.id"
-                                    },
-                                    "by": -1
-                                  }
-                                }
-                              }
-                            },
-                            {
-                              "type": "Button",
-                              "props": {
-                                "label": {
-                                  "get": "item.down"
-                                },
-                                "size": "s",
-                                "variant": "subtle",
-                                "disabled": {
-                                  "get": "item.last"
-                                },
-                                "disabledReason": {
-                                  "get": "item.down"
-                                }
-                              },
-                              "on": {
-                                "press": {
-                                  "run": "toolbar.move",
-                                  "args": {
-                                    "id": {
-                                      "get": "item.id"
-                                    },
-                                    "by": 1
-                                  }
-                                }
-                              }
-                            },
-                            {
-                              "type": "Button",
-                              "props": {
-                                "label": {
-                                  "get": "item.unpin"
-                                },
-                                "size": "s"
-                              },
-                              "on": {
-                                "press": {
-                                  "run": "toolbar.unpin",
-                                  "args": {
-                                    "id": {
-                                      "get": "item.id"
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                ]
+                  "tone": "muted"
+                }
               },
               {
-                "type": "Stack",
+                "type": "ToolbarComposer",
                 "props": {
-                  "gap": "s"
+                  "label": {
+                    "t": "toolbar.label"
+                  },
+                  "moreLabel": {
+                    "t": "toolbar.more"
+                  },
+                  "items": {
+                    "get": "vm.toolbarCustomize.items"
+                  },
+                  "groups": {
+                    "get": "vm.toolbarCustomize.groups"
+                  },
+                  "max": 6,
+                  "catalogueLabel": {
+                    "t": "toolbar.composer.catalogueLabel"
+                  },
+                  "countLabel": {
+                    "t": "toolbar.composer.countLabel",
+                    "args": {
+                      "count": "{count}",
+                      "max": "{max}"
+                    }
+                  },
+                  "instructions": {
+                    "t": "toolbar.composer.instructions"
+                  },
+                  "pickedLabel": {
+                    "t": "toolbar.composer.pickedLabel",
+                    "args": {
+                      "name": "{name}"
+                    }
+                  },
+                  "placeLabel": {
+                    "t": "toolbar.composer.placeLabel",
+                    "args": {
+                      "position": "{position}",
+                      "count": "{count}"
+                    }
+                  },
+                  "overLabel": {
+                    "t": "toolbar.composer.overLabel",
+                    "args": {
+                      "name": "{name}"
+                    }
+                  },
+                  "fullLabel": {
+                    "t": "toolbar.composer.fullLabel"
+                  },
+                  "addedLabel": {
+                    "t": "toolbar.composer.addedLabel",
+                    "args": {
+                      "name": "{name}",
+                      "position": "{position}",
+                      "count": "{count}"
+                    }
+                  },
+                  "movedLabel": {
+                    "t": "toolbar.composer.movedLabel",
+                    "args": {
+                      "name": "{name}",
+                      "position": "{position}",
+                      "count": "{count}"
+                    }
+                  },
+                  "replacedLabel": {
+                    "t": "toolbar.composer.replacedLabel",
+                    "args": {
+                      "other": "{other}",
+                      "name": "{name}"
+                    }
+                  },
+                  "removedLabel": {
+                    "t": "toolbar.composer.removedLabel",
+                    "args": {
+                      "name": "{name}"
+                    }
+                  },
+                  "cancelledLabel": {
+                    "t": "toolbar.composer.cancelledLabel"
+                  }
                 },
-                "children": [
-                  {
-                    "type": "Heading",
-                    "props": {
-                      "level": "3",
-                      "value": {
-                        "t": "toolbar.customize.availableHeading"
+                "on": {
+                  "change": {
+                    "run": "toolbar.setPinned",
+                    "args": {
+                      "ids": {
+                        "get": "event.ids"
                       }
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "when": {
-                      "get": "vm.toolbarCustomize.full"
-                    },
-                    "props": {
-                      "value": {
-                        "t": "toolbar.customize.full"
-                      },
-                      "tone": "muted"
-                    }
-                  },
-                  {
-                    "each": {
-                      "get": "vm.toolbarCustomize.available"
-                    },
-                    "as": "item",
-                    "key": "item.id",
-                    "empty": {
-                      "type": "Text",
-                      "props": {
-                        "value": {
-                          "t": "toolbar.customize.empty"
-                        },
-                        "tone": "muted"
-                      }
-                    },
-                    "render": {
-                      "type": "Inline",
-                      "props": {
-                        "gap": "xs",
-                        "justify": "between"
-                      },
-                      "children": [
-                        {
-                          "type": "Text",
-                          "props": {
-                            "value": {
-                              "get": "item.label"
-                            }
-                          }
-                        },
-                        {
-                          "type": "Button",
-                          "props": {
-                            "label": {
-                              "get": "item.pin"
-                            },
-                            "size": "s",
-                            "disabled": {
-                              "get": "vm.toolbarCustomize.full"
-                            },
-                            "disabledReason": {
-                              "t": "toolbar.customize.full"
-                            }
-                          },
-                          "on": {
-                            "press": {
-                              "run": "toolbar.pin",
-                              "args": {
-                                "id": {
-                                  "get": "item.id"
-                                }
-                              }
-                            }
-                          }
-                        }
-                      ]
                     }
                   }
-                ]
+                }
               },
               {
                 "type": "Inline",

@@ -130,13 +130,16 @@ The Copilot connection always says **Cloud**, has no API key or editable endpoin
 
 ### The scan while it looks
 
-**Proposed, strict design (owner, 5 November: "We need a visually interesting one."); gallery mock, not wired** (DD-RWR-12, [pending decision](../plan/decisions.md#pending-number-orchestrator-a-visual-toolbar-customizer-and-a-scan-worth-watching)). The scan is a long wait (up to 1.5 s for the ports, 5 s for the Copilot CLI), so it shows its work honestly instead of one spinner:
+**Approved and implemented on the toolbar candidate branch (owner, 5 November 02:43)** (DD-RWR-12, [pending decision](../plan/decisions.md#pending-number-orchestrator-a-visual-toolbar-customizer-and-a-scan-worth-watching)). The scan is a long wait (up to 1.5 s for the ports, 5 s for the Copilot CLI), so Settings now shows its work honestly instead of one spinner:
 
 - **A radar** over this computer's mark: a sweep turns, and a blip lights for each server that answers. It never shows a blip it hasn't found.
-- **One row per place it asks**: Ollama (11434), LM Studio (1234), llama.cpp (8080), vLLM (8000), SGLang (30000), Jan (1337), Docker Model Runner (12434) and the GitHub Copilot CLI, the same list `packages/core/src/ai-providers.ts` probes. Each turns *Checking…*, then *Found · 3 models* (or *Running, no models yet*), or *Not running*.
+- **One row per place it asks**: Ollama (11434), LM Studio (1234), llama.cpp (8080), vLLM (8000), SGLang (30000), Jan (1337), Docker Model Runner (12434) and the GitHub Copilot CLI, the same list `packages/core/src/ai-providers.ts` probes. Each turns *Checking…*, then a model count, *Available*, *Not running* or *Could not check*. A row settles immediately on its real answer, with no staged delay.
 - **A live count** ("Found 2 so far"), announced politely once at the end, not on every row.
-- **Its ends:** found (the rows with **Set up**), none (the existing words and **Look again**), error (what failed, keeping what was found, and **Try again**).
+- **Its ends:** found (the existing rows with **Set up**, or the existing automatic signed-in Copilot connection), none (no running service), or error (failed rows and a recovery reason, keeping completed results). **Find on this PC** runs another scan. Prior results remain while a replacement scan starts.
+- **Cancel scan** is available throughout the wait. It aborts this window's HTTP and CLI probes, retains completed results, marks pending rows *Not checked*, and prevents late answers from overwriting the stopped or next scan. Closing or navigating the window also aborts its scan.
 - **Reduced motion** stops the sweep and the blips' pulse; the rows and count still change.
+
+The built-app `ai-discovery.spec.ts` journey drives Settings normally and observes checking, partial found counts, found, none, scoped errors and cancellation. Protocol fakes run inside the test process; the installed Copilot CLI is not found on its isolated PATH. No account login, cloud request, generation or real GitHub action is tested or implied.
 
 ## Models
 

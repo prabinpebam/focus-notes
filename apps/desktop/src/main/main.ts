@@ -1388,7 +1388,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     available: () => safeStorage.isEncryptionAvailable(),
     encrypt: (text) => safeStorage.encryptString(text),
     decrypt: (data) => safeStorage.decryptString(data),
-  }, (path, content) => atomicWrite(path, content));
+  }, (path, content) => atomicWrite(path, content), (...args) => fetch(...args));
   handle("ai:settings", () => ai.settings());
   handle("ai:save", (input: unknown) => ai.save(input));
   handle("ai:saveDetail", (input: unknown) => ai.saveDetail(input));
@@ -1396,7 +1396,34 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("ai:remove", (id: unknown) => ai.remove(id));
   handle("ai:writer", (id: unknown) => ai.writer(id));
   handle("ai:test", (id: unknown) => ai.test(id));
-  handle("ai:discover", () => ai.discover());
+  const discoveries = new Map<number, { id: string; abort: AbortController }>();
+  handleFrom("ai:discover", async (e, input: unknown) => {
+    const id = input && typeof input === "object" && "id" in input ? input.id : "legacy";
+    if (typeof id !== "string" || !/^[\w-]{1,64}$/.test(id)) throw new Error("invalid-request");
+    const sender = e.sender, owner = sender.id;
+    discoveries.get(owner)?.abort.abort();
+    const abort = new AbortController();
+    discoveries.set(owner, { id, abort });
+    const gone = () => abort.abort();
+    sender.once("destroyed", gone);
+    sender.once("did-start-loading", gone);
+    try {
+      return await ai.discover({
+        signal: abort.signal,
+        progress: event => { if (!sender.isDestroyed() && !abort.signal.aborted) sender.send("ai:discoverEvent", { id, ...event }); },
+      });
+    } finally {
+      if (discoveries.get(owner)?.abort === abort) discoveries.delete(owner);
+      if (!sender.isDestroyed()) {
+        sender.removeListener("destroyed", gone);
+        sender.removeListener("did-start-loading", gone);
+      }
+    }
+  });
+  handleFrom("ai:discoverCancel", (e, id: unknown) => {
+    const scan = discoveries.get(e.sender.id);
+    if (scan && scan.id === id) scan.abort.abort();
+  });
   handle("ai:models", (input: unknown) => ai.models(input));
   // Rewrite streams: one per window at a time, each chunk sent to the window that asked, tagged with its id.
   // A Stop, a new rewrite, or the window closing or reloading aborts the request here, not just in the window.

@@ -72,6 +72,8 @@ export function ToolbarComposer(props: ToolbarComposerProps) {
   const [entering, setEntering] = useState<{ id: string; kind: "insert" | "replace" } | null>(null);
   const [say, setSay] = useState({ text: "", key: 0 });
   const [focusId, setFocusId] = useState<string | null>(null);
+  const itemIds = items.map(i => i.id).join(",");
+  useEffect(() => { setOrder(itemIds ? itemIds.split(",") : []); }, [itemIds]);
 
   const root = useRef<HTMLDivElement | null>(null);
   const stage = useRef<HTMLDivElement | null>(null);

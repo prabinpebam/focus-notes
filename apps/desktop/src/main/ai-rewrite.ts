@@ -12,7 +12,7 @@
  */
 import { readFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
-import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiProvider } from "@focus-notes/core/ai-providers";
+import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiProvider, type AiDiscoveryProgress } from "@focus-notes/core/ai-providers";
 import { CopilotIntegration } from "./ai-copilot.ts";
 
 export interface AiCrypt {
@@ -530,8 +530,8 @@ export class AiService {
   }
 
   /** One JSON answer (Test, model lists, discovery) under its limits, read at most `max` bytes. */
-  async #json(call: Call, limits: AiLimits, local: boolean, max: number): Promise<unknown> {
-    const x = exchange(this.#fetch, call, limits, local);
+  async #json(call: Call, limits: AiLimits, local: boolean, max: number, signal?: AbortSignal): Promise<unknown> {
+    const x = exchange(this.#fetch, call, limits, local, signal);
     try {
       const r = await x.response;
       try {
@@ -632,35 +632,58 @@ export class AiService {
   }
 
   /** Loopback model lists and a bounded CLI auth-status probe, never generation or login. */
-  async discover(): Promise<AiFound[]> {
+  async discover(options: { signal?: AbortSignal; progress?: (event: AiDiscoveryProgress) => void } = {}): Promise<AiFound[]> {
     const started = performance.now();
+    const { signal, progress } = options;
+    signal?.throwIfAborted();
     const servers = Promise.all(AI_PROVIDERS.filter((p) => p.discover).map(async (p): Promise<AiFound | undefined> => {
       const endpoint = p.discover!.url;
       try {
         // Only a server that answers in its provider's own list shape counts: any other program on the port doesn't.
-        const models = modelList(p, await this.#json({ url: `${endpoint}${p.discover!.models}`, headers: {} }, this.#limit("probe", true), true, MAX_JSON.list));
-        if (models) await this.#learn(p, endpoint, models).catch(() => {});
-        return models ? { provider: p.id, endpoint, models } : undefined;
+        const models = modelList(p, await this.#json({ url: `${endpoint}${p.discover!.models}`, headers: {} }, this.#limit("probe", true), true, MAX_JSON.list, signal));
+        signal?.throwIfAborted();
+        if (!models) {
+          progress?.({ provider: p.id, status: "error", error: "provider-format" });
+          return undefined;
+        }
+        await this.#learn(p, endpoint, models);
+        signal?.throwIfAborted();
+        const found = { provider: p.id, endpoint, models };
+        progress?.({ provider: p.id, status: "found", found });
+        return found;
       } catch (e) {
+        signal?.throwIfAborted();
         // A server that asks for a token is still there.
-        return (e as AiError).code === "unauthorized" ? { provider: p.id, endpoint, models: [] } : undefined;
+        const code = e instanceof AiError ? e.code : "provider-error";
+        const found = code === "unauthorized" ? { provider: p.id, endpoint, models: [] } : undefined;
+        progress?.({ provider: p.id, status: found ? "found" : code === "refused" || code === "timeout" ? "none" : "error", ...(found ? { found } : { error: code }) });
+        return found;
       }
     }));
-    const [found, cli] = await Promise.all([servers, this.#copilot.discover()]);
-    if (cli) found.push(cli);
-    if (cli?.status === "signed-in") {
-      await this.#change((s) => {
-        let c = s.connections.find((x) => x.provider === "copilot-cli");
-        if (!c) {
-          if (s.connections.length >= MAX_CONNECTIONS) throw new Error("too-many");
-          c = this.#fromInput({ provider: "copilot-cli", model: "auto" });
-          s.connections.push(c);
-        }
-        s.writer ||= c.id;
-      });
+    const cliProbe = this.#copilot.discover(signal).then(cli => {
+      signal?.throwIfAborted();
+      progress?.({ provider: "copilot-cli", status: !cli ? "none" : cli.status === "signed-in" ? "found" : "error", ...(cli ? { found: cli, error: cli.error } : {}) });
+      return cli;
+    });
+    try {
+      const [found, cli] = await Promise.all([servers, cliProbe]);
+      signal?.throwIfAborted();
+      if (cli) found.push(cli);
+      if (cli?.status === "signed-in") {
+        await this.#change((s) => {
+          let c = s.connections.find((x) => x.provider === "copilot-cli");
+          if (!c) {
+            if (s.connections.length >= MAX_CONNECTIONS) throw new Error("too-many");
+            c = this.#fromInput({ provider: "copilot-cli", model: "auto" });
+            s.connections.push(c);
+          }
+          s.writer ||= c.id;
+        });
+      }
+      return found.filter((f): f is AiFound => Boolean(f));
+    } finally {
+      measure("fn:ai.discover", started);
     }
-    measure("fn:ai.discover", started);
-    return found.filter((f): f is AiFound => Boolean(f));
   }
 
   /**

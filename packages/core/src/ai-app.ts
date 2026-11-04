@@ -15,6 +15,7 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import type { CommitTracker, CommitView, TaskTracker, TaskView } from "./tasks.ts";
 import type { WorkspaceTree } from "./workspace.ts";
+import type { ScanTarget } from "../../ui/src/data.ts";
 
 interface S {
   note: { status: string; key: string; path?: string };
@@ -85,7 +86,17 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let models: { id: string; cloud: boolean }[] = [];
   let modelsStatus = "";
   let found: AiFound[] = [];
+  let scanFound: AiFound[] = [];
   let discovering = false, discoverStatus = "";
+  let discoverPhase: "scanning" | "found" | "none" | "error" = "none";
+  let discoverStarted = false;
+  let discoverRequest: { id: string; off: () => void } | undefined;
+  const discoveryProviders = AI_PROVIDERS.filter(p => p.discover || p.id === "copilot-cli");
+  let scanTargets: ScanTarget[] = [];
+  const foundCount = () => scanTargets.filter(target => target.status === "found").length;
+  const scanResult = (f: AiFound) => f.provider === "copilot-cli" ? t(f.status === "signed-in" ? "ai.scan.available" : "ai.scan.unavailable")
+    : t("ai.scan.models", { n: f.models.length });
+  const setFound = (f: AiFound) => { scanFound = [...scanFound.filter(x => x.provider !== f.provider), f]; found = scanFound; };
   let status = "";
   let busy = false;
   let choosingWriter = false;
@@ -158,10 +169,10 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     schema: { type: "object", properties: {
       ...Object.fromEntries([
         "writerName", "status", "formTitle", "providerName", "keyLabel", "keyState", "destination", "testInfo", "modelsStatus", "discoverStatus",
-        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup", "keyCommit", "keyError", "keyScope", "formCloseLabel", "modelCommit", "providerCommit",
+        "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup", "keyCommit", "keyError", "keyScope", "formCloseLabel", "modelCommit", "providerCommit", "discoverPhase", "scanCount",
       ].map((k) => [k, { type: "string" as const }])),
       ...Object.fromEntries([
-        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter", "empty", "formPending", "cannotSaveKey", "providerFailed",
+        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter", "empty", "formPending", "cannotSaveKey", "providerFailed", "discoverStarted",
       ].map((k) => [k, { type: "boolean" as const }])),
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
@@ -171,6 +182,9 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         testText: { type: "string" }, testing: { type: "boolean" }, writer: { type: "boolean" }, notWriter: { type: "boolean" },
       } } },
       found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, detail: { type: "string" } } } },
+      scanTargets: { type: "array", items: { type: "object", properties: {
+        id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, icon: { type: "string" }, status: { type: "string" }, result: { type: "string" },
+      } } },
     } },
     select: () => {
       const p = aiProvider(draft.provider)!;
@@ -192,7 +206,8 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
           const n = f.models.length;
           return [{ id: String(i), name: fp.label, detail: n ? t("ai.found.models", { n, endpoint: f.endpoint }) : t("ai.found.noModels", { endpoint: f.endpoint }) }];
         }),
-        discovering, discoverStatus,
+        discovering, discoverStatus, discoverStarted, discoverPhase, scanTargets,
+        scanCount: t(discovering ? "ai.scan.counting" : discoverPhase === "found" ? "ai.scan.found" : discoverPhase === "error" ? "ai.scan.failedCount" : "ai.scan.stoppedCount", { n: foundCount() }),
         formOpen, addVisible: !formOpen && connections.length > 0, noKeyField: p.key === "none",
         empty: connectionsLoaded && !connectionsLoading && !connections.length && !formOpen,
         formTitle: draft.id ? t("ai.form.change", { name: draft.name }) : t("ai.form.add"),
@@ -376,22 +391,86 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   });
   reg("ai.discover", async () => {
     if (!ai || discovering) return;
+    const id = `scan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    scanFound = [];
     discovering = true;
+    discoverStarted = true;
+    discoverPhase = "scanning";
     discoverStatus = t("ai.found.looking");
+    scanTargets = discoveryProviders.map(p => ({
+      id: p.id, label: p.label, icon: aiConnectionIcon(p.id),
+      detail: p.discover ? new URL(p.discover.url).host : t("ai.scan.installed"),
+      status: "checking", result: "",
+    }));
+    const off = ai.onDiscoverEvent?.(raw => {
+      if (!discovering || discoverRequest?.id !== id || !raw || typeof raw !== "object" || !("id" in raw) || raw.id !== id
+        || !("provider" in raw) || typeof raw.provider !== "string" || !("status" in raw) || !["found", "none", "error"].includes(String(raw.status))) return;
+      const target = scanTargets.find(x => x.id === raw.provider);
+      if (!target) return;
+      const f = "found" in raw ? raw.found : undefined;
+      let validFound = false;
+      if (f && typeof f === "object" && "provider" in f && f.provider === raw.provider && "endpoint" in f && typeof f.endpoint === "string"
+        && "models" in f && Array.isArray(f.models) && f.models.every(m => m && typeof m.id === "string" && typeof m.cloud === "boolean")) {
+        validFound = true;
+        const foundItem: AiFound = { provider: f.provider, endpoint: f.endpoint, models: f.models,
+          ...("status" in f && f.status === "signed-in" ? { status: "signed-in" as const } : {}) };
+        if (raw.status === "found") setFound(foundItem);
+        target.result = raw.status === "found" ? scanResult(foundItem) : t("ai.scan.unavailable");
+      } else target.result = t(raw.status === "none" ? "ai.scan.notRunning" : "ai.scan.couldNotCheck");
+      target.status = raw.status === "found" ? validFound ? "found" : "error" : raw.status === "none" ? "none" : "error";
+      scanTargets = [...scanTargets];
+      changed();
+    }) ?? (() => {});
+    discoverRequest = { id, off };
     changed();
     try {
-      found = await ai.discover();
+      const result = await tracker.run("ai.discover", "ai.found.looking", () => ai.discover({ id }), undefined, "fn:ai.discover.window", "none");
+      if (discoverRequest?.id !== id) return;
+      found = result;
+      scanTargets = scanTargets.map(target => {
+        const f = found.find(x => x.provider === target.id);
+        if (f) return { ...target, status: f.provider === "copilot-cli" && f.status !== "signed-in" ? "error" : "found", result: scanResult(f) };
+        return target.status === "checking" ? { ...target, status: "none", result: t("ai.scan.notRunning") } : target;
+      });
       apply(await ai.settings());
+      if (discoverRequest?.id !== id) return;
       const cli = found.find((f) => f.provider === "copilot-cli");
       if (cli?.status === "signed-in") discoverStatus = found.some((f) => f.provider !== "copilot-cli") ? t("ai.found.some", { n: found.filter((f) => f.provider !== "copilot-cli").length }) : "";
       else if (cli) discoverStatus = reason(new Error(cli.error ?? "provider-error"), "ai.error.provider");
       else discoverStatus = t(found.length ? "ai.found.some" : "ai.found.none", { n: found.length });
+      discoverPhase = scanTargets.some(x => x.status === "error") ? "error" : foundCount() ? "found" : "none";
+      if (scanTargets.some(x => x.id !== "copilot-cli" && x.status === "error")) discoverStatus = `${t("ai.scan.partialError")} ${discoverStatus}`;
     } catch (e) {
-      discoverStatus = reason(e, "ai.error.provider");
+      if (discoverRequest?.id !== id) return;
+      discoverPhase = "error";
+      discoverStatus = `${reason(e, "ai.error.provider")} ${t("ai.scan.retryHint")}`;
+      scanTargets = scanTargets.map(target => target.status === "checking" ? { ...target, status: "error", result: t("ai.scan.couldNotCheck") } : target);
+      console.error("AI discovery failed", reasonCode(String((e as Error)?.message ?? "")).code || "provider-error");
     } finally {
-      discovering = false;
-      changed();
-      announce(discoverStatus || (found.some((f) => f.provider === "copilot-cli" && f.status === "signed-in") ? t("ai.found.copilot") : ""));
+      off();
+      if (discoverRequest?.id === id) {
+        discoverRequest = undefined;
+        discovering = false;
+        changed();
+        announce(discoverStatus || (found.some((f) => f.provider === "copilot-cli" && f.status === "signed-in") ? t("ai.found.copilot") : ""));
+      }
+    }
+  });
+  reg("ai.discoverCancel", async () => {
+    const request = discoverRequest;
+    if (!request || !ai) return;
+    request.off();
+    discoverRequest = undefined;
+    discovering = false;
+    discoverPhase = foundCount() ? "found" : "none";
+    discoverStatus = t("ai.scan.cancelled");
+    scanTargets = scanTargets.map(target => target.status === "checking" ? { ...target, status: "none", result: t("ai.scan.notChecked") } : target);
+    changed();
+    announce(discoverStatus);
+    try { await ai.discoverCancel?.(request.id); }
+    catch (error) {
+      toast(t("ai.scan.cancelFailed"), { tone: "error" });
+      throw error;
     }
   });
   reg("ai.useFound", async (a) => {

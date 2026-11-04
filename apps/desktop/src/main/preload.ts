@@ -265,7 +265,13 @@ contextBridge.exposeInMainWorld("focusNotes", {
     remove: (id: string) => ipcRenderer.invoke("ai:remove", id),
     writer: (id: string) => ipcRenderer.invoke("ai:writer", id),
     test: (id: string) => ipcRenderer.invoke("ai:test", id),
-    discover: () => ipcRenderer.invoke("ai:discover"),
+    discover: (input?: { id: string }) => ipcRenderer.invoke("ai:discover", input),
+    discoverCancel: (id: string) => ipcRenderer.invoke("ai:discoverCancel", id),
+    onDiscoverEvent: (listener: (event: unknown) => void) => {
+      const on = (_e: unknown, event: unknown) => listener(event);
+      ipcRenderer.on("ai:discoverEvent", on);
+      return () => { ipcRenderer.removeListener("ai:discoverEvent", on); };
+    },
     models: (input: unknown) => ipcRenderer.invoke("ai:models", input),
     rewriteStart: (id: string, input: unknown) => ipcRenderer.invoke("ai:rewriteStart", id, input),
     rewriteCancel: (id: string) => ipcRenderer.invoke("ai:rewriteCancel", id),
