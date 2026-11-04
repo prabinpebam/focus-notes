@@ -20,6 +20,11 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     commands.register<A>({ id, title: "share.settings.title", run });
   reg<{ value: string }>("sharing.filter", ({ value }) => set({ filter: value }));
   reg<{ value: string }>("sharing.query", ({ value }) => set({ query: value }));
+  reg<Record<string, never>>("sharing.emptyAction", async () => {
+    if (store.state.ui.share.loading || store.state.ui.share.failed || !store.state.ui.share.listing) return;
+    if (state().query.trim() || state().filter !== "all") set({ query: "", filter: "all" });
+    else await commands.run("sharing.previewFiles");
+  });
   const settingsOpen = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
   reg<{ id?: string; kind: string }>("sharing.confirmOpen", ({ id = "", kind }) => { set({ dialog: kind, id, problem: "" }); settingsOpen(false); });
   reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); settingsOpen(true); } });
@@ -94,6 +99,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     id: "vm.sharingSettings",
     schema: { type: "object", properties: {
       project: str, site: str, on: bool, off: bool, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str,
+      empty: bool, waiting: bool, failed: bool, retrying: bool, emptyTitle: str, emptyDetail: str, emptyAction: str, loadProblem: str,
       filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
       firstOpen: bool, more: bool, repo: str,
       filters: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
@@ -105,6 +111,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     reads: "*",
     select: s => {
       const m = s.ui.share.settings, listing = s.ui.share.listing;
+      const filtered = Boolean(m.query.trim()) || m.filter !== "all";
       const root = s.workspace.tree.roots.find(r => r.id === "private");
       const filters = ["all", "active", "soon", "expired", "withdrawn"];
       const menu = (ids: string[], prefix: string) => [{ id: "actions", items: ids.map(id => ({ id, label: catalog.format(`${prefix}.${id}`) })) }];
@@ -133,6 +140,13 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
+        empty: Boolean(listing) && !s.ui.share.loading && !s.ui.share.failed && !rows.length,
+        waiting: s.ui.share.loading && !s.ui.share.failed && !listing && s.tasks.findLast(t => t.target === "sharing.list")?.phase === "on",
+        failed: s.ui.share.failed, retrying: s.ui.share.loading && s.ui.share.failed,
+        emptyTitle: catalog.format(filtered ? "uiStates.empty.matches" : "uiStates.empty.shares"),
+        emptyDetail: catalog.format(filtered ? "uiStates.empty.sharesFilteredDetail" : "uiStates.empty.sharesDetail"),
+        emptyAction: catalog.format(filtered ? "uiStates.empty.clearFilters" : "uiStates.empty.openFiles"),
+        loadProblem: catalog.format("sharing.listFailed"),
         firstOpen: m.dialog === "first", more: m.more, repo: s.workspace.repo ?? listing?.site ?? "",
         confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(`share.${kind}.confirm`),

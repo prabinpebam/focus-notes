@@ -94,6 +94,105 @@ it("opens Files from a sharing empty state without toggling an already-open pane
   }
 });
 
+describe("known-empty sharing settings", () => {
+  it("never treats an unknown or failed list as empty and retains failure through read-only Retry", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: false });
+    t.bridge.access!.load = async () => { throw new Error("private-path-and-token"); };
+    await t.run("share.manage.load");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: false, failed: true, retrying: false });
+    let done!: (value: AccessListing) => void;
+    t.bridge.access!.load = () => new Promise(resolve => { done = resolve; });
+    const retry = t.run("share.manage.load");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: false, failed: true, retrying: true });
+    await t.run("sharing.query", { value: "kept" });
+    done({ available: true, vault: true, site: SITE, grants: [] });
+    await retry;
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: true, failed: false, query: "kept", emptyTitle: "No matches" });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    expect(t.app.store.state.note.markdown).toBe("# A\n");
+  });
+  it("distinguishes known first use and filtered emptiness and clears only the filter before returning real rows", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.manage.load");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: true, emptyTitle: "Nothing shared yet", emptyAction: "Open Files" });
+    const listing = await t.bridge.access!.load();
+    t.bridge.access!.load = async () => ({ ...listing, grants: [{
+      id: "gdiary001", name: "Diary", createdAt: "2026-10-01T00:00:00.000Z",
+      scope: { all: false, notes: ["diary.md"], folders: [] }, link: true, passcode: false, generated: false,
+      item: { path: "diary.md", label: "Diary", folder: false, includeLater: false },
+    }] });
+    await t.run("share.manage.load");
+    expect(t.vm("vm.sharingSettings").rows).toHaveLength(1);
+    await t.run("sharing.query", { value: "missing" });
+    await t.run("sharing.filter", { value: "withdrawn" });
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: true, emptyTitle: "No matches", emptyAction: "Clear filters" });
+    const load = vi.spyOn(t.bridge.access!, "load");
+    const apply = vi.spyOn(t.bridge.access!, "apply");
+    await t.run("sharing.emptyAction");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: false, query: "", filter: "all" });
+    expect(t.vm("vm.sharingSettings").rows).toHaveLength(1);
+    expect(load).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+    expect(t.app.store.state.ui.files.open).toBe(false);
+    load.mockRestore();
+    apply.mockRestore();
+  });
+  it("uses the named delayed section only for a first read and holds failure for the full minimum", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    vi.useFakeTimers();
+    const measure = vi.spyOn(performance, "measure");
+    let reject!: (error: Error) => void;
+    t.bridge.access!.load = () => new Promise((_resolve, fail) => { reject = fail; });
+    const loading = t.run("share.manage.load");
+    await vi.advanceTimersByTimeAsync(299);
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ waiting: false, empty: false });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ waiting: true });
+    reject(new Error("refused"));
+    await vi.advanceTimersByTimeAsync(499);
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ waiting: true, failed: false });
+    await vi.advanceTimersByTimeAsync(1);
+    await loading;
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ waiting: false, failed: true, empty: false });
+    expect(measure).toHaveBeenCalledWith("fn:sharing.list", { start: expect.any(Number), end: expect.any(Number) });
+    measure.mockRestore();
+  });
+  it("keeps acknowledged rows through refused refresh and never replaces a newer successful change with an old read", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    const listing = await t.bridge.access!.load();
+    const saved: AccessListing = { ...listing, grants: [{
+      id: "gdiary001", name: "Diary", createdAt: "2026-10-01T00:00:00.000Z",
+      scope: { all: false, notes: ["diary.md"], folders: [] }, link: true, passcode: false, generated: false,
+      item: { path: "diary.md", label: "Diary", folder: false, includeLater: false },
+    }] };
+    t.bridge.access!.load = async () => saved;
+    await t.run("share.manage.load");
+    t.bridge.access!.load = async () => { throw new Error("refused"); };
+    await t.run("share.manage.load");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ failed: true, empty: false, rows: [expect.objectContaining({ item: "Diary" })] });
+    let done!: (value: AccessListing) => void;
+    const load = vi.fn(() => new Promise<AccessListing>(resolve => { done = resolve; }));
+    t.bridge.access!.load = load;
+    const retry = t.run("share.manage.load");
+    await t.run("share.manage.load");
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ failed: true, retrying: true, waiting: false, rows: [expect.objectContaining({ item: "Diary" })] });
+    t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: { ...saved, grants: [] } } } }));
+    done(saved);
+    await retry;
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ failed: false, empty: true, rows: [] });
+  });
+});
+
 describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
   it("holds the share section's shape on a failed load and Retry preserves the editable draft", async () => {
     const t = shell();

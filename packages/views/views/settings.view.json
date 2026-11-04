@@ -2227,6 +2227,25 @@
                       },
                       {
                         "type": "Stack",
+                        "when": { "get": "vm.sharingSettings.waiting" },
+                        "props": { "gap": "s" },
+                        "children": [
+                          { "type": "ItemCard", "props": { "title": { "t": "share.manage.loading" }, "skeleton": true } },
+                          { "type": "ItemCard", "props": { "title": { "t": "share.manage.loading" }, "skeleton": true } },
+                          { "type": "ItemCard", "props": { "title": { "t": "share.manage.loading" }, "skeleton": true } }
+                        ]
+                      },
+                      {
+                        "type": "StatusRow",
+                        "when": { "get": "vm.sharingSettings.failed" },
+                        "props": {
+                          "message": { "get": "vm.sharingSettings.loadProblem" }, "tone": "danger", "icon": "warning",
+                          "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.sharingSettings.retrying" }
+                        },
+                        "on": { "action": { "run": "share.manage.load" } }
+                      },
+                      {
+                        "type": "Stack",
                         "props": {
                           "gap": "s"
                         },
@@ -2385,11 +2404,12 @@
                             },
                             "empty": {
                               "type": "EmptyState",
+                              "when": { "get": "vm.sharingSettings.empty" },
                               "props": {
-                                "title": { "t": "uiStates.empty.shares" }, "detail": { "t": "uiStates.empty.sharesDetail" },
-                                "actionLabel": { "t": "uiStates.empty.openFiles" }, "icon": "share", "size": "section"
+                                "title": { "get": "vm.sharingSettings.emptyTitle" }, "detail": { "get": "vm.sharingSettings.emptyDetail" },
+                                "actionLabel": { "get": "vm.sharingSettings.emptyAction" }, "icon": "share", "size": "section"
                               },
-                              "on": { "action": { "run": "sharing.previewFiles" } }
+                              "on": { "action": { "run": "sharing.emptyAction" } }
                             }
                           }
                         ]

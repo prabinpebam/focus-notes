@@ -189,6 +189,88 @@ test("Files distinguishes collapsed content from no matches and replaces known-e
   } finally { await closeTestApp(l); }
 });
 
+test("Sharing settings distinguish failed and filtered lists, retain rows and route the known-empty first action without writes", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md"), before = readFileSync(note, "utf8");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    await l.app.evaluate(({ ipcMain }) => {
+      let reads = 0;
+      Reflect.set(globalThis, "uiStatesSharingWrites", 0);
+      ipcMain.removeHandler("access:apply");
+      ipcMain.handle("access:apply", () => {
+        Reflect.set(globalThis, "uiStatesSharingWrites", Number(Reflect.get(globalThis, "uiStatesSharingWrites")) + 1);
+        throw new Error("Listing must not change grants");
+      });
+      ipcMain.removeHandler("access:load");
+      ipcMain.handle("access:load", async () => {
+        const request = ++reads;
+        await new Promise(resolve => setTimeout(resolve, 900));
+        if (request === 1 || request === 4) throw new Error("private-path-and-token");
+        return { available: true, localReview: false, site: "https://sharing.test/", vault: true, grants: request === 2 ? [] : [{
+          id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
+          createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
+          item: { path: "welcome.md", label: "Welcome", folder: false, includeLater: false },
+        }] };
+      });
+    });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    const body = await settings.elementHandle();
+    if (!body) throw new Error("Settings content wrapper is unavailable");
+    const shapes = settings.locator("[data-shimmer]");
+    await expect(settings.locator("[data-item-card][data-skeleton]")).toHaveCount(3);
+    await expect(shapes).toHaveCount(9);
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationIterationCount)).toBe("3");
+    await l.page.emulateMedia({ reducedMotion: "reduce" });
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationName)).toBe("none");
+    const empty = settings.getByText("Nothing shared yet", { exact: true });
+    await expect(empty).toHaveCount(0);
+    const error = settings.locator("[data-status-row=danger]");
+    await expect(error).toContainText("Your notes and shares weren't changed.");
+    await expect(error).not.toContainText("private-path-and-token");
+    await expect(empty).toHaveCount(0);
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(error).toBeVisible();
+    await expect(empty).toBeVisible();
+    expect(await body.evaluate(el => el.isConnected)).toBe(true);
+    await settings.getByRole("button", { name: "Open Files", exact: true }).click();
+    await expect(settings).toHaveCount(0);
+    await expect(l.page.getByRole("complementary", { name: "Files", exact: true })).toBeVisible();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    const row = settings.locator("[data-item-card]").filter({ hasText: "Welcome" });
+    await expect(row).toHaveCount(1);
+    const filter = settings.getByRole("searchbox", { name: "Find by item", exact: true });
+    await filter.fill("unmatched share");
+    await settings.getByRole("radiogroup", { name: "Show", exact: true }).getByText("Withdrawn", { exact: true }).click();
+    await expect(settings.getByText("No matches", { exact: true })).toBeVisible();
+    await expect(empty).toHaveCount(0);
+    await settings.getByRole("button", { name: "Clear filters", exact: true }).click();
+    await expect(filter).toHaveValue("");
+    await expect(settings.getByRole("radio", { name: "All", exact: true })).toBeChecked();
+    await expect(row).toHaveCount(1);
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    await expect(row).toHaveCount(1);
+    await expect(shapes).toHaveCount(0);
+    await expect(error).toBeVisible();
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await filter.fill("Welcome");
+    await expect(row).toHaveCount(1);
+    await expect(error).toHaveCount(0);
+    await expect(filter).toHaveValue("Welcome");
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:sharing.list").length)).toBe(5);
+    expect(await l.app.evaluate(() => Number(Reflect.get(globalThis, "uiStatesSharingWrites")))).toBe(0);
+    expect(readFileSync(note, "utf8")).toBe(before);
+  } finally { await closeTestApp(l); }
+});
+
 test("Share item delays its own section, retains choices and history through failed reads and scoped Retry", async () => {
   const { dirs } = instance();
   const note = join(dirs.docs, "private", "notes", "welcome.md");

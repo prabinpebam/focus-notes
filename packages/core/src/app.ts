@@ -479,7 +479,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load: (path, keepCurrent = false) => openNote(path, { keepOnFailure: keepCurrent }), flush, toast, tracker });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
-  registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
+  registerShareManage({ store, access: bridge.access, catalog, commands, viewModels, tracker });
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState });

@@ -12,8 +12,10 @@ import {
 
 export { inviteText, templateProblem, type Audience, type InviteValues } from "@focus-notes/seal/access";
 import type { CommandRegistry } from "./commands.ts";
+import { opErrorCode } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
+import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 import { inScope, noteId } from "@focus-notes/seal/grants";
@@ -150,6 +152,7 @@ interface Ctx<St extends S> {
   catalog: MessageCatalog;
   commands: CommandRegistry<St>;
   viewModels: ViewModelRegistry<St>;
+  tracker: Pick<TaskTracker, "section">;
   now?: () => Date;
 }
 
@@ -158,7 +161,7 @@ const dayOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
 const problemOf = (e: unknown): AccessProblem | "failed" => (/access:([a-zA-Z.]+)/.exec(String((e as Error)?.message ?? e))?.[1] as AccessProblem | undefined) ?? "failed";
 const DAY = 86_400_000;
 
-export function registerShareManage<St extends S>({ store, access, catalog, commands, viewModels, now = () => new Date() }: Ctx<St>) {
+export function registerShareManage<St extends S>({ store, access, catalog, commands, viewModels, tracker, now = () => new Date() }: Ctx<St>) {
   const st = () => store.state.ui.share;
   const set = (patch: Partial<ShareManageState>) => store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, ...patch } } }));
   const setEditor = (patch: Partial<ShareEditor>) => set({ editor: { ...st().editor, ...patch } });
@@ -179,10 +182,16 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
   };
 
   reg("share.manage.load", async () => {
-    if (!access) return;
-    set({ loading: !st().listing, failed: false });
-    const listing = await access.load().catch(() => undefined);
-    set({ loading: false, failed: !listing, ...(listing ? { listing } : {}) });
+    if (!access || st().loading) return;
+    const previous = st().listing;
+    set({ loading: true });
+    try {
+      const listing = await tracker.section("sharing.list", "share.manage.loading", () => access.load(), "fn:sharing.list");
+      set({ failed: false, ...(st().listing === previous ? { listing } : {}) });
+    } catch (error) {
+      console.warn("sharing.list", opErrorCode(error));
+      set({ failed: true });
+    } finally { set({ loading: false }); }
   });
 
   // ---- the editor ----
