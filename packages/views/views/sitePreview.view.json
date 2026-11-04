@@ -94,6 +94,12 @@
                                     "props": {
                                       "label": {
                                         "t": "site.preview.close"
+                                      },
+                                      "disabled": {
+                                        "get": "vm.sharingPreview.busy"
+                                      },
+                                      "disabledReason": {
+                                        "get": "vm.sharingPreview.cancelReason"
                                       }
                                     },
                                     "on": {
@@ -142,6 +148,9 @@
                                   },
                                   "value": {
                                     "bind": "vm.sharingPreview.theme"
+                                  },
+                                  "readOnly": {
+                                    "get": "vm.sharingPreview.appearanceLocked"
                                   }
                                 }
                               },
@@ -156,6 +165,9 @@
                                   },
                                   "value": {
                                     "bind": "vm.sharingPreview.font"
+                                  },
+                                  "readOnly": {
+                                    "get": "vm.sharingPreview.appearanceLocked"
                                   }
                                 }
                               },
@@ -170,6 +182,9 @@
                                   },
                                   "value": {
                                     "bind": "vm.sharingPreview.size"
+                                  },
+                                  "readOnly": {
+                                    "get": "vm.sharingPreview.appearanceLocked"
                                   }
                                 }
                               }
@@ -185,19 +200,7 @@
                               "role": "secondary"
                             }
                           },
-                          {
-                            "type": "Text",
-                            "when": {
-                              "expr": { "!=": [{ "get": "vm.sharingPreview.problem" }, ""] }
-                            },
-                            "props": {
-                              "value": {
-                                "get": "vm.sharingPreview.problem"
-                              },
-                              "tone": "danger",
-                              "announce": true
-                            }
-                          }
+                          { "use": "sharing.progress" }
                         ]
                       },
                       {
@@ -738,19 +741,7 @@
                   "icon": "info"
                 }
               },
-              {
-                "type": "Text",
-                "when": {
-                  "expr": { "!=": [{ "get": "vm.sharingPreview.problem" }, ""] }
-                },
-                "props": {
-                  "value": {
-                    "get": "vm.sharingPreview.problem"
-                  },
-                  "tone": "danger",
-                  "announce": true
-                }
-              },
+              { "use": "sharing.progress" },
               {
                 "type": "Inline",
                 "props": {
@@ -764,7 +755,9 @@
                       "label": {
                         "t": "share.cancel"
                       },
-                      "autoFocus": true
+                      "autoFocus": true,
+                      "disabled": { "get": "vm.sharingPreview.busy" },
+                      "disabledReason": { "get": "vm.sharingPreview.cancelReason" }
                     },
                     "on": {
                       "press": {

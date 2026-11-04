@@ -4,8 +4,9 @@
  * (owner, 4 November: a built screen must match its approved mock).
  */
 import openBody from "../views/open-body.json" with { type: "json" };
+import sharingProgress from "../views/sharing-progress.json" with { type: "json" };
 
-const PARTS: Record<string, unknown> = { "open.body": openBody };
+const PARTS: Record<string, unknown> = { "open.body": openBody, "sharing.progress": sharingProgress };
 
 export function compose<T>(node: T): T {
   if (Array.isArray(node)) return node.map(compose) as T;

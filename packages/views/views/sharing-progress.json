@@ -1,0 +1,30 @@
+{
+  "type": "Stack",
+  "when": { "get": "vm.sharingPreview.showProgress" },
+  "props": { "gap": "s" },
+  "children": [
+    { "each": { "get": "vm.sharingPreview.parts" }, "as": "part", "key": "part.id", "empty": {
+      "type": "Text", "props": { "value": { "t": "sharing.preview.preparing" } }
+    }, "render": {
+      "type": "Inline", "props": { "gap": "s", "align": "center" }, "children": [
+        { "type": "StepMark", "props": { "size": "compact", "icon": { "get": "part.icon" }, "tone": { "get": "part.tone" }, "busy": { "get": "part.busy" } } },
+        { "type": "Text", "props": { "value": { "get": "part.label" }, "role": "secondary", "tone": "muted" } }
+      ]
+    } },
+    { "type": "ProgressBar", "props": { "value": { "get": "vm.sharingPreview.progress" }, "label": { "get": "vm.sharingPreview.progressLabel" } } },
+    { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.sharingPreview.elapsed" }, ""] } }, "props": {
+      "value": { "get": "vm.sharingPreview.elapsed" }, "role": "caption", "tone": "muted"
+    } },
+    { "type": "StatusRow", "when": { "get": "vm.sharingPreview.failed" }, "props": {
+      "message": { "get": "vm.sharingPreview.problem" }, "tone": "danger",
+      "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.sharingPreview.busy" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" }
+    }, "on": { "action": { "run": "sharing.operationRetry" } } },
+    { "type": "StatusRow", "when": { "get": "vm.sharingPreview.cancelled" }, "props": {
+      "message": { "t": "sharing.operation.stopped" }, "tone": "info", "actionLabel": { "t": "commit.retry" }
+    }, "on": { "action": { "run": "sharing.operationRetry" } } },
+    { "type": "Button", "when": { "get": "vm.sharingPreview.busy" }, "props": {
+      "label": { "get": "vm.sharingPreview.cancelLabel" }, "variant": "secondary",
+      "disabled": { "expr": { "!": { "get": "vm.sharingPreview.canCancel" } } }, "disabledReason": { "get": "vm.sharingPreview.cancelReason" }
+    }, "on": { "press": { "run": "sharing.operationCancel" } } }
+  ]
+}

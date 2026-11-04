@@ -22,6 +22,94 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+test("Site preview counts actual reads, cancels safely and retains Apply and local Publish recovery", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md"), before = readFileSync(note, "utf8");
+  write(join(dirs.docs, "notes", "second.md"), "# Second\n\nAnother synthetic article.\n");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({
+    version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note,
+    sharingDrafts: { [dirs.docs]: { owner: "personal", people: [] } },
+  }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("First line.");
+    await l.app.evaluate(({ ipcMain }) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      if (!(handlers instanceof Map)) throw new Error("Invoke handlers unavailable");
+      const read: unknown = handlers.get("note:read"), save: unknown = handlers.get("state:save");
+      if (typeof read !== "function" || typeof save !== "function") throw new Error("Note/state handlers unavailable");
+      let reads = 0, writes = 0;
+      ipcMain.removeHandler("access:load");
+      ipcMain.handle("access:load", () => ({ available: true, localReview: true, site: "https://local.test/", vault: true, grants: [] }));
+      ipcMain.removeHandler("note:read");
+      ipcMain.handle("note:read", async (...args) => {
+        const path: unknown = args[1];
+        if (typeof path === "string" && path.endsWith("hello.md")) {
+          if (++reads === 2) throw new Error("private-path-and-token");
+          await new Promise<void>(resolve => Reflect.set(globalThis, "releaseSiteRead", resolve));
+        }
+        return read(...args);
+      });
+      ipcMain.removeHandler("state:save");
+      ipcMain.handle("state:save", async (...args) => {
+        if (++writes === 1) throw new Error("EACCES private-path-and-token");
+        await new Promise<void>(resolve => Reflect.set(globalThis, "releaseSiteSave", resolve));
+        return save(...args);
+      });
+    });
+    const release = (name: string) => l.app.evaluate((_electron, key) => {
+      const fn: unknown = Reflect.get(globalThis, key);
+      if (typeof fn !== "function") throw new Error(`Missing held operation ${key}`);
+      Reflect.deleteProperty(globalThis, key); fn();
+    }, name);
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    await settings.getByRole("button", { name: "Preview site…", exact: true }).click();
+    await expect(settings.getByRole("progressbar")).toHaveAttribute("value", "0");
+    await expect(settings.getByText(/^Preparing site preview… [3-9] s$/)).toBeVisible({ timeout: 6000 });
+    await settings.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Stopping after this step…", exact: true })).toHaveAttribute("aria-disabled", "true");
+    await release("releaseSiteRead");
+    await expect(settings.getByText("Preview stopped.", { exact: false })).toBeVisible();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    const failed = settings.locator("[data-status-row=danger]").filter({ hasText: "Couldn’t prepare this preview." });
+    await expect(failed).toBeVisible();
+    await expect(failed).not.toContainText("private-path-and-token");
+    await failed.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(failed.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await release("releaseSiteRead");
+    const preview = l.page.getByRole("region", { name: "Preview site", exact: true });
+    await expect(preview).toBeVisible();
+    await expect(preview.getByText("Second", { exact: true }).first()).toBeVisible();
+    await preview.getByRole("radiogroup", { name: "Site theme", exact: true }).getByText("Sepia", { exact: true }).click();
+    await preview.getByRole("button", { name: "Apply", exact: true }).click();
+    const saveError = preview.locator("[data-status-row=danger]");
+    await expect(saveError).toContainText("Your notes and choices are kept.");
+    await saveError.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(preview.getByRole("progressbar")).toHaveAttribute("value", "50");
+    await expect(preview.getByRole("button", { name: "Cancel", exact: true })).toHaveAttribute("aria-disabled", "true");
+    await release("releaseSiteSave");
+    await expect(settings).toBeVisible();
+    expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.state), "utf8")).sharingDrafts[dirs.docs].theme).toBe("sepia");
+    await l.page.keyboard.press("Escape");
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    await l.page.getByRole("menuitem", { name: "Publish…", exact: true }).click();
+    const publish = l.page.getByRole("dialog", { name: /Publish/ });
+    await publish.getByRole("button", { name: "Publish", exact: true }).click();
+    await expect(publish.getByRole("progressbar")).toHaveAttribute("value", "50");
+    await expect(publish).toContainText("Save local publication draft");
+    await release("releaseSiteSave");
+    await expect(publish).toHaveCount(0);
+    expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.state), "utf8")).sharingDrafts[dirs.docs].published).toEqual([note]);
+    expect(readFileSync(note, "utf8")).toBe(before);
+    for (const measure of ["fn:site.preview", "fn:site.settings", "fn:sharing.publishDraft"]) {
+      expect(await l.page.evaluate(name => performance.getEntriesByName(name).length, measure)).toBeGreaterThan(0);
+    }
+  } finally { await closeTestApp(l); }
+});
+
 test("Files initial scan is independent, never reports unknown or refused content empty and retries only the read", async () => {
   const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md"), before = "# Welcome\n\nInitial listing stays independent.\n";
   writeFileSync(note, before);

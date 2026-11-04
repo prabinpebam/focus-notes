@@ -18,7 +18,8 @@
     "vm.ai",
     "vm.project",
     "vm.sharingSettings",
-    "vm.sharingPeople"
+    "vm.sharingPeople",
+    "vm.sharingPreview"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -2067,6 +2068,9 @@
                                 "props": {
                                   "label": {
                                     "t": "site.preview.open"
+                                  },
+                                  "busy": {
+                                    "get": "vm.sharingPreview.busy"
                                   }
                                 },
                                 "on": {
@@ -2098,6 +2102,7 @@
                           }
                         ]
                       },
+                      { "use": "sharing.progress" },
                       {
                         "type": "ItemCard",
                         "when": {

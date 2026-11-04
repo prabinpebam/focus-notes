@@ -6786,7 +6786,8 @@
         "vm.ai",
         "vm.project",
         "vm.sharingSettings",
-        "vm.sharingPeople"
+        "vm.sharingPeople",
+        "vm.sharingPreview"
       ]
     },
     {
