@@ -271,6 +271,23 @@ The first-action fixture initially queried an uncheckable menu role; it now uses
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\42e06fc0\Open review build.cmd`. Settings → AI → Change shows the separate groups. Enter details and leave a field to save it; a key requires its own Save. The candidate contains no real key or usable provider. Remaining recovery, complete empty-state acceptance, streamed work and independent delayed/failed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 scoped Open recovery, cf5859a2
+
+Open now keeps its error, expanded safe Details, query and old entries while only Retry is inert. List, open, pin and reveal failures retain the original command and arguments. Safe Details and diagnostics use only the existing whitelisted operation code, never the raw exception or path. Successful recovery returns focus to search. Closing/reopening invalidates old list replies. A successful pin followed by failed list refresh retries the list, not the completed toggle; cancelled pickers clear obsolete recovery.
+
+| Check on `cf5859a2` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\ui\test\status-row.test.tsx` | 11 passed: retained list/query, exact original targets, pin partial-success safety, stale-list guard, cancelled picker, mounted recovery/Details/focus and correct idle/pending button names |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 708 commands; Open gallery data and related generated files updated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Open retries the failed action"` | Passed: controlled list/open/pin IPC failures, held Retry with retained query/content/expanded Details, search focus after success, one pin despite a failed post-write list, exact note bytes and unchanged writing content |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at exact pushed head; earlier settings/Reading/compact/notification paths plus separate AI groups, actual Agents and filtered Open |
+
+The journey caught the shared busy helper's persistent outcome-label semantics: passing pending words at rest incorrectly named the button “Trying again…”. StatusRow now passes them only while pending, with a unit assertion for the restored Retry name. Journey and candidate apps were invisible, closed and followed by own-PID `-WhatIf` and actual cleanup.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cf5859a2\Open review build.cmd`; Ctrl+Alt+O opens the retained-content surface. Controlled failures are in the scoped journey, not permanently injected into this candidate. This is not complete D6 acceptance: New project and Local import need partial-success-safe recovery; same-project note-read failure propagation, history/broken-image recovery, complete task timing, empty/streamed work and independent delayed history/share journeys remain in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

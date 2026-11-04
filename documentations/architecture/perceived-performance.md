@@ -15,6 +15,14 @@ The [AI group evidence](../plan/definition-of-done.md#phase-2-independent-ai-det
 
 The key stays only in its password component and the in-flight check closure, never a generic retained command value. A failed same-destination check keeps the entry and old saved key; a changed destination clears the entry and requires it again. A configuration changed during the check rejects the old result instead of attaching it to the new destination. A name can persist independently during checking. The old note and all other settings remain mounted.
 
+## Open action recovery
+
+The [Open recovery evidence](../plan/definition-of-done.md#phase-2-scoped-open-recovery-cf5859a2) covers retained content and exact recovery targets, not a latency improvement. Retry keeps the existing error and expanded Details mounted, shows “Trying again…” on its own inert action and returns focus to search only after successful recovery. The query remains editable; a list refresh does not clear old entries. A completed pin is never replayed just because the next list read failed.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Retry a failed Open action | Responsive → waiting; local recovery action, retained error/content | Error row: Retry → Trying again…; other input stays available | Planned `fn:project.open` / `fn:project.list` coverage; held-list journey verifies the state, but complete tracker/timing instrumentation remains unaccepted |
+
 ## Image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
