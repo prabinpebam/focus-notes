@@ -84,9 +84,20 @@ In the approved mock the missing-note recovery reads **“⟨Chapter 1⟩ isn't 
 | --- | --- |
 | Top | A search field over both columns (titles, file names, project names), then **New Local note**, **Open file…**, **Open from GitHub…** and **New project…** (the deliberate flow below). |
 | Column 1: **Recent** | Files from other projects, Local notes, and files opened on their own, never folders. **Pinned files** first, then the rest ranked by frecency. A row reads **Plan** with **Book · Drafts** below, or **Local notes** / **Downloads · On its own**. The current window's project is left out; its files are in its own Files. |
-| Column 2: **Projects** | **Pinned projects**, then **Other projects** ranked by the same frecency, each an ItemCard row with its mark, name and place, Pin/Unpin and **Open**. |
+| Column 2: **Projects** | **Pinned projects**, then **Other projects** ranked by the same frecency, each a card (below). |
 
-The owner keeps the word **Recent** even though it's ranked by more than recency: it's simple, and "Recommended" sounds pretentious. Each column is a listbox: arrows move within it, <kbd>Tab</kbd> moves between the search field and the columns, <kbd>Enter</kbd> opens, type-ahead works, and Pin/Unpin is each row's own menu button, never nested in the row. Below 640 px the columns stack, Recent first. The jobs it answers: open a file in another project, open a project, find a file or project, make a Local note, open a file, and New project.
+The owner keeps the word **Recent** even though it's ranked by more than recency: it's simple, and "Recommended" sounds pretentious. Each column is a listbox: arrows move within it, <kbd>Tab</kbd> moves between the search field and the columns, <kbd>Enter</kbd> opens, type-ahead works, and Pin/Unpin is each item's own icon button, never nested in the item's open button. Below 640 px the columns stack, Recent first. The jobs it answers: open a file in another project, open a project, find a file or project, make a Local note, open a file, and New project.
+
+**How it looks (owner, 4 November).** The owner rejected the first build: Open buttons on every row, flat spacing, a wrapped path and Pin hidden in a ⋯ menu. The redesign, built as one view document shared by the gallery mock (**Mocks: Open (4 November)**) and the app:
+
+- **No Open buttons.** The whole card or row is the button that opens it.
+- **Project cards.** Each is washed in its project's accent at a subtle strength (the full tint on hover), with its logo large (48 px) and its name on the title step of the type ramp (20 px semibold).
+- **The folder path** sits on one line under the name, ellipsized in the middle so the folder's own name stays whole, with the full path as its tooltip. Pressing it shows the folder in File Explorer (**Show in Finder** on macOS).
+- **Recent file rows** have a file-type icon on a quiet tile, the file's name (14 px semibold) and its project and folder (13 px, muted). A row takes the hover fill.
+- **Pin** is an icon at the top right of every card and row, shown on hover or focus and always while pinned (a filled pin in the accent). There's no ⋯ menu.
+- **Spacing is hierarchical**, from the space tokens: 24 px between the major regions (search, the actions row, the two columns, 32 px between the columns), 12 px from a section label to its list, 8 px between project cards and 2 px between file rows, and the least inside an item (2 px from a name to the line under it).
+- **Type ramp:** the dialog title is 24 px bold, a project's name 20 px semibold, the section labels (**Recent**, **Projects**) 16 px semibold and muted, a file's name 14 px semibold, and details 13 px muted.
+- **Ctrl+Alt+O** opens Open even on keyboard layouts where left Ctrl+Alt+O types a character (ō); only the AltGr key's characters win over the shortcut.
 
 ### How Recent and Projects are ranked
 
