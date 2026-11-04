@@ -55,6 +55,44 @@ const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.agen
 afterEach(() => vi.useRealTimers());
 
 describe("AGT-02: Settings → Agents", () => {
+  it.each([0, 1100])("owns initial and repeated section refusals once after %i ms", async delay => {
+    const f = setup();
+    const page = await f.bridge.agents!.load();
+    let refused = true;
+    f.bridge.agents!.load = async () => {
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+      if (refused) throw new Error("private-path-and-token");
+      return page;
+    };
+    const app = createApp(f.bridge, messages);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
+    const said: string[] = [];
+    let n = app.store.state.announcement.n;
+    const stop = app.store.subscribe(() => {
+      if (app.store.state.announcement.n !== n) {
+        n = app.store.state.announcement.n;
+        said.push(app.store.state.announcement.text);
+      }
+    });
+    const attempt = async () => {
+      const read = app.commands.run("agents.load");
+      await vi.advanceTimersByTimeAsync(delay);
+      await read;
+    };
+    await attempt();
+    expect(app.store.state.ui.agents.failed).toBe(true);
+    expect(said).toEqual(delay ? [messages["agents.loading"]] : []);
+    said.length = 0;
+    const retry = app.commands.run("agents.load");
+    expect(app.store.state.ui.agents).toMatchObject({ loading: true, failed: true });
+    await vi.advanceTimersByTimeAsync(delay);
+    await retry;
+    expect(said).toEqual([...(delay ? [messages["agents.loading"]] : []), messages["agents.loadFailed"]]);
+    refused = false;
+    await attempt();
+    expect(app.store.state.ui.agents).toMatchObject({ failed: false, page });
+    stop();
+  });
   it("delays its first skeleton by 300 ms, holds it for 500 ms and keeps old content on a failed refresh", async () => {
     const f = setup();
     const page = await f.bridge.agents!.load();

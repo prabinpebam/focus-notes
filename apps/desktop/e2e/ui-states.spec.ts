@@ -24,6 +24,36 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+async function sectionOutcomes(l: Launched) {
+  await l.page.evaluate(() => {
+    const said: string[] = [];
+    Reflect.set(globalThis, "uiStatesLiveOutcomes", said);
+    const previous = new WeakMap<Element, string>();
+    const selector = '[role="status"][aria-live="polite"]';
+    for (const element of document.querySelectorAll(selector)) previous.set(element, element.textContent?.trim() ?? "");
+    new MutationObserver(records => {
+      const affected = new Set<Element>();
+      for (const record of records) {
+        const target = record.target instanceof Element ? record.target : record.target.parentElement;
+        const live = target?.closest(selector);
+        if (live) affected.add(live);
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          if (node.matches(selector)) affected.add(node);
+          for (const child of node.querySelectorAll(selector)) affected.add(child);
+        }
+      }
+      for (const element of affected) {
+        if (!element.isConnected) continue;
+        const text = element.textContent?.trim() ?? "";
+        if (text && previous.get(element) !== text) said.push(text);
+        previous.set(element, text);
+      }
+    }).observe(document.body, { childList: true, characterData: true, subtree: true });
+  });
+  return () => l.page.evaluate(() => Reflect.get(globalThis, "uiStatesLiveOutcomes") as string[]);
+}
+
 for (const scheme of ["light", "dark"] as const) test(`First-run ${scheme} shows a themed native frame before interaction`, async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, appearance: scheme }));
@@ -719,6 +749,7 @@ test("Share item delays its own section, retains choices and history through fai
   try {
     const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
     await expect(editor).toContainText("First line.");
+    const outcomes = await sectionOutcomes(l);
     await l.app.evaluate(({ ipcMain }) => {
       const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
       if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
@@ -734,8 +765,8 @@ test("Share item delays its own section, retains choices and history through fai
       ipcMain.removeHandler("access:load");
       ipcMain.handle("access:load", async (event, ...args: unknown[]) => {
         const request = ++reads;
-        await new Promise(resolve => setTimeout(resolve, 900));
-        if (request === 1 || request === 3) throw new Error("private-path-and-token");
+        await new Promise(resolve => setTimeout(resolve, 1100));
+        if ([1, 2, 4, 5].includes(request)) throw new Error("private-path-and-token");
         const listing = await original(event, ...args);
         return { ...listing, available: true, localReview: false, site: "https://sharing.test/", grants: [{
           id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
@@ -762,11 +793,19 @@ test("Share item delays its own section, retains choices and history through fai
     await expect(error).toContainText("Sharing couldn't be loaded.");
     await expect(shapes).toHaveCount(0);
     await expect(error).not.toContainText("private-path-and-token");
+    const failure = "Sharing couldn't be loaded. Check the project in Settings and try again.";
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(1);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.evaluate(el => Reflect.set(globalThis, "uiStatesRetainedShareError", el));
     await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
     await expiry.getByText("90 days", { exact: true }).click();
     await expect(error).toBeVisible();
     await expect(share.getByRole("radio", { name: "90 days", exact: true })).toBeChecked();
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(2);
+    expect(await error.evaluate(el => el === Reflect.get(globalThis, "uiStatesRetainedShareError"))).toBe(true);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
     const history = share.getByRole("button", { name: "Shared before · 1", exact: true });
     await expect(history).toBeVisible();
     await expect(error).toHaveCount(0);
@@ -775,14 +814,18 @@ test("Share item delays its own section, retains choices and history through fai
     await expect(history).toBeVisible();
     await expect(shapes).toHaveCount(0);
     await expect(error).toContainText("Sharing couldn't be loaded.");
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(3);
     await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
     await expect(history).toBeVisible();
     await expect(shapes).toHaveCount(0);
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(4);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error).toHaveCount(0);
     await expect(history).toBeVisible();
     expect(await l.app.evaluate(() => Number(Reflect.get(globalThis, "uiStatesShareWrites")))).toBe(0);
-    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:share.item.prepare").length)).toBe(4);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:share.item.prepare").length)).toBe(6);
     await l.page.keyboard.press("Escape");
     await expect(editor).toContainText("First line.");
     expect(readFileSync(note, "utf8")).toBe(before);
@@ -801,6 +844,7 @@ test("History delays its own section, retries exact reads and acknowledges resto
     await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
     const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
     await expect(editor).toContainText("Later paragraph.");
+    const outcomes = await sectionOutcomes(l);
     await l.app.evaluate(({ ipcMain }) => {
       const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
       if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
@@ -811,8 +855,8 @@ test("History delays its own section, retries exact reads and acknowledges resto
         ipcMain.removeHandler(channel);
         ipcMain.handle(channel, async (event, ...args: unknown[]) => {
           const attempt = ++attempts;
-          await new Promise(resolve => setTimeout(resolve, 600));
-          if (attempt === 1 || channel === "note:write" && attempt === 3) throw new Error("private-path-and-token");
+          await new Promise(resolve => setTimeout(resolve, channel === "note:write" ? 600 : 1100));
+          if (attempt === 1 || channel !== "note:write" && attempt === 2 || channel === "note:write" && attempt === 3) throw new Error("private-path-and-token");
           return original(event, ...args);
         });
       }
@@ -825,8 +869,14 @@ test("History delays its own section, retries exact reads and acknowledges resto
     await expect(editor).toContainText("Later paragraph.");
     const error = sheet.locator("[data-status-row=danger]");
     await expect(error).toContainText("Couldn't read this note's history.");
+    const listFailure = "Couldn't read this note's history.", versionFailure = "Couldn't read that version.";
+    await expect.poll(async () => (await outcomes()).filter(text => text === listFailure)).toHaveLength(1);
+    expect(await outcomes()).not.toContain("Didn't finish");
     await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect.poll(async () => (await outcomes()).filter(text => text === listFailure)).toHaveLength(2);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(sheet.getByRole("option")).toHaveCount(2);
     await expect(error).not.toBeVisible();
     await sheet.getByRole("option").last().click();
@@ -834,8 +884,13 @@ test("History delays its own section, retries exact reads and acknowledges resto
     await expect(error).toContainText("Couldn't read that version.");
     await error.getByText("Details", { exact: true }).click();
     await expect(error).not.toContainText("private-path-and-token");
+    await expect.poll(async () => (await outcomes()).filter(text => text === versionFailure)).toHaveLength(1);
+    expect(await outcomes()).not.toContain("Didn't finish");
     await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect.poll(async () => (await outcomes()).filter(text => text === versionFailure)).toHaveLength(2);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
     const preview = sheet.getByRole("region", { name: /^Viewing the version from / });
     await expect(preview).toContainText("First line.");
     await expect(preview).not.toContainText("Later paragraph.");
@@ -856,8 +911,8 @@ test("History delays its own section, retries exact reads and acknowledges resto
     await toasts.getByRole("button", { name: "Retry", exact: true }).click();
     await expect.poll(() => readFileSync(note, "utf8")).toBe(before);
     await expect(editor).toContainText("Later paragraph.");
-    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.list").length)).toBe(2);
-    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.version").length)).toBe(2);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.list").length)).toBe(3);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.version").length)).toBe(3);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.restore").length)).toBe(2);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.undo").length)).toBe(2);
   } finally { await closeTestApp(l); }
@@ -1362,13 +1417,14 @@ test("section loading uses the approved row shapes and keeps old content through
   const dirs = tempDirs();
   const l = await launch(dirs);
   try {
+    const outcomes = await sectionOutcomes(l);
     await l.app.evaluate(({ ipcMain }) => {
       let reads = 0;
       ipcMain.removeHandler("agents:load");
       ipcMain.handle("agents:load", async () => {
         const request = ++reads;
-        await new Promise(resolve => setTimeout(resolve, 350));
-        if (request === 2) throw new Error("section read refused");
+        await new Promise(resolve => setTimeout(resolve, 1100));
+        if ([1, 2, 4, 5].includes(request)) throw new Error("section read refused");
         return {
           permissions: { connect: false, readPublic: true, readPrivate: false, edit: false, createPublic: true, folders: "all" },
           changedOutside: false, snippets: [], recent: [], cli: { available: false, installed: false, onPath: false },
@@ -1384,6 +1440,19 @@ test("section loading uses the approved row shapes and keeps old content through
     await l.page.emulateMedia({ reducedMotion: "reduce" });
     expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationName)).toBe("none");
     await expect(shapes).toHaveCount(0);
+    const error = settings.locator("[data-status-row=danger]");
+    const failure = "Couldn't read agent settings. Try again.";
+    await expect(error).toContainText(failure);
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(1);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.evaluate(el => Reflect.set(globalThis, "uiStatesRetainedAgentsError", el));
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(shapes).toHaveCount(0);
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(2);
+    expect(await error.evaluate(el => el === Reflect.get(globalThis, "uiStatesRetainedAgentsError"))).toBe(true);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
     const retained = settings.getByText("Agents can use all folders.", { exact: true });
     await expect(retained).toBeVisible();
     await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
@@ -1391,9 +1460,13 @@ test("section loading uses the approved row shapes and keeps old content through
     await expect(retained).toBeVisible();
     await expect(shapes).toHaveCount(0);
     await expect(settings.getByText("Couldn't read agent settings. Try again.", { exact: true })).toBeVisible();
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(3);
     await settings.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(retained).toBeVisible();
     await expect(shapes).toHaveCount(0);
+    await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(4);
+    expect(await outcomes()).not.toContain("Didn't finish");
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(settings.getByText("Couldn't read agent settings. Try again.", { exact: true })).toHaveCount(0);
   } finally { await closeTestApp(l); }
 });

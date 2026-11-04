@@ -194,6 +194,45 @@ describe("known-empty sharing settings", () => {
 });
 
 describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
+  it.each([0, 1100])("owns initial and repeated sharing section refusals once after %i ms", async delay => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    const load = t.bridge.access!.load;
+    let refused = true;
+    t.bridge.access!.load = async () => {
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+      if (refused) throw new Error("private-path-and-token");
+      return load();
+    };
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
+    const said: string[] = [];
+    let n = t.app.store.state.announcement.n;
+    const stop = t.app.store.subscribe(() => {
+      if (t.app.store.state.announcement.n !== n) {
+        n = t.app.store.state.announcement.n;
+        said.push(t.app.store.state.announcement.text);
+      }
+    });
+    const opening = t.run("share.item.open", { path: "/w/private/notes/diary.md" });
+    await vi.advanceTimersByTimeAsync(delay);
+    await opening;
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: true });
+    expect(said).toEqual(delay ? [en["share.item.preparing"]] : []);
+    said.length = 0;
+    const retry = t.run("share.item.reload");
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: true, retrying: true });
+    await vi.advanceTimersByTimeAsync(delay);
+    await retry;
+    expect(said).toEqual([...(delay ? [en["share.item.preparing"]] : []), en["share.item.unavailable"]]);
+    refused = false;
+    const recovered = t.run("share.item.reload");
+    await vi.advanceTimersByTimeAsync(delay);
+    await recovered;
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: false, retrying: false });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    stop();
+  });
   it("holds the share section's shape on a failed load and Retry preserves the editable draft", async () => {
     const t = shell();
     await t.app.start();

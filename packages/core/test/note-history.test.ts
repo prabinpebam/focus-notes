@@ -96,6 +96,55 @@ const TEXTS = { c0ffee3: "# Welcome\n\nNow.\n", c0ffee2: "# Welcome\n\nEarlier.\
 afterEach(() => vi.useRealTimers());
 
 describe("Note history in the app (FIL-13)", () => {
+  it.each(["list", "more", "version"] as const)("owns initial and repeated %s section refusals once", async kind => {
+    const many = Array.from({ length: NOTE_HISTORY_PAGE + 3 }, (_, i) => ({ ...VERSIONS[0]!, commit: `aa${String(i).padStart(5, "0")}` }));
+    const f = setup({ versions: many, texts: { aa00000: "# Retained\n" } });
+    const app = await started(f);
+    if (kind !== "list") await app.commands.run("history.open");
+    const readList = f.bridge.workspace!.versions!;
+    const readVersion = f.bridge.workspace!.version!;
+    let refused = true;
+    f.bridge.workspace!.versions = async (path, page) => {
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      if (refused) throw new Error("private-path-and-token");
+      return readList(path, page);
+    };
+    f.bridge.workspace!.version = async (path, commit, file) => {
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      if (refused) throw new Error("private-path-and-token");
+      return readVersion(path, commit, file);
+    };
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
+    const said: string[] = [];
+    let n = app.store.state.announcement.n;
+    const stop = app.store.subscribe(() => {
+      if (app.store.state.announcement.n !== n) {
+        n = app.store.state.announcement.n;
+        said.push(app.store.state.announcement.text);
+      }
+    });
+    const operation = kind === "list" ? "history.open" : kind === "more" ? "history.more" : "history.choose";
+    const opening = app.commands.run(operation, { id: "aa00000" });
+    await vi.advanceTimersByTimeAsync(1100);
+    await opening;
+    const message = messages[kind === "version" ? "history.versionFailed" : "history.failed"];
+    const wait = messages[kind === "version" ? "history.reading" : kind === "more" ? "history.loadingMore" : "history.loading"];
+    expect(app.store.state.ui.history).toMatchObject({ failed: true, error: message });
+    expect(said).toEqual([wait]);
+    said.length = 0;
+    const retry = app.commands.run("history.retry");
+    expect(app.store.state.ui.history).toMatchObject({ failed: true, retrying: true, error: message });
+    await vi.advanceTimersByTimeAsync(1100);
+    await retry;
+    expect(said).toEqual([wait, message]);
+    refused = false;
+    const recovered = app.commands.run("history.retry");
+    await vi.advanceTimersByTimeAsync(1100);
+    await recovered;
+    expect(app.store.state.ui.history).toMatchObject({ failed: false, retrying: false });
+    expect(f.writes).toEqual([]);
+    stop();
+  });
   it("retries the failed older page without replacing loaded versions or their preview", async () => {
     const many = Array.from({ length: NOTE_HISTORY_PAGE + 3 }, (_, i) => ({ ...VERSIONS[0]!, commit: `aa${String(i).padStart(5, "0")}` }));
     const f = setup({ versions: many, texts: { aa00000: "# Retained\n" } });

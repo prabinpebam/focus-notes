@@ -108,7 +108,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     if (!access) return;
     set({ preparing: true });
     try {
-      const listing = await tracker.section("share.item.prepare", "share.item.preparing", () => access.load(), "fn:share.item.prepare");
+      const listing = await tracker.section("share.item.prepare", "share.item.preparing", () => access.load(), "fn:share.item.prepare", "success");
       if (current !== generation) return;
       store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
       set({ loadFailed: false, problem: "" });
@@ -116,7 +116,10 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     } catch (error) {
       if (current === generation) {
         console.error("Sharing preparation failed", opErrorCode(error));
-        set({ problem: catalog.format("share.item.unavailable"), loadFailed: true });
+        const problem = catalog.format("share.item.unavailable");
+        const retained = state().loadFailed && state().problem === problem;
+        set({ problem, loadFailed: true });
+        if (retained) tracker.announceOutcome(problem);
       }
     } finally {
       if (current === generation) set({ preparing: false });

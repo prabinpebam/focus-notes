@@ -132,8 +132,8 @@ export class TaskTracker {
   }
 
   /** A section replaces its shape only after the visible minimum, on success or failure. */
-  section<T>(target: string, message: string, work: () => Promise<T>, measure?: string): Promise<T> {
-    return this.#run(target, message, work, undefined, true, measure, "all");
+  section<T>(target: string, message: string, work: () => Promise<T>, measure?: string, outcomes: OutcomeAnnouncements = "all"): Promise<T> {
+    return this.#run(target, message, work, undefined, true, measure, outcomes);
   }
 
   async #run<T>(target: string, message: string, work: () => Promise<T>, doneMessage: string | undefined, section: boolean, measure: string | undefined, outcomes: OutcomeAnnouncements): Promise<T> {

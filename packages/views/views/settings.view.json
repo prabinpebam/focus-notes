@@ -2465,7 +2465,7 @@
                       {
                         "type": "StatusRow",
                         "when": { "get": "vm.agents.failed" },
-                        "props": { "message": { "t": "agents.loadFailed" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
+                        "props": { "message": { "t": "agents.loadFailed" }, "tone": "danger", "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.agents.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } },
                         "on": { "action": { "run": "agents.load" } }
                       },
                       {

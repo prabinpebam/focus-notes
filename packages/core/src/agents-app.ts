@@ -6,7 +6,7 @@
  * a file or a command line itself: the shell builds them.
  */
 import type { AppState } from "./app.ts";
-import type { PlatformBridge } from "./bridge.ts";
+import { opErrorCode, type PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
@@ -78,14 +78,19 @@ export function registerAgents(ctx: Ctx) {
   commands.register({
     id: "agents.load", title: "command.agents.load", enabled: () => Boolean(agents),
     run: async () => {
-      if (!agents) return;
+      if (!agents || st().loading && st().failed) return;
       const current = ++generation;
-      set({ loading: true, failed: false });
+      set({ loading: true });
       try {
-        const page = await tracker.section("agents.load", "agents.loading", () => agents.load());
-        if (current === generation) set({ loading: false, page });
-      } catch {
-        if (current === generation) set({ loading: false, failed: true });
+        const page = await tracker.section("agents.load", "agents.loading", () => agents.load(), undefined, "success");
+        if (current === generation) set({ loading: false, failed: false, page });
+      } catch (error) {
+        if (current === generation) {
+          console.error("Agent settings read failed", opErrorCode(error));
+          const retained = st().failed;
+          set({ loading: false, failed: true });
+          if (retained) tracker.announceOutcome(catalog.format("agents.loadFailed"));
+        }
       }
     },
   });
@@ -149,7 +154,7 @@ export function registerAgents(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        loading: { type: "boolean" }, waiting: { type: "boolean" }, failed: { type: "boolean" }, ready: { type: "boolean" }, busy: { type: "boolean" }, changedOutside: { type: "boolean" },
+        loading: { type: "boolean" }, waiting: { type: "boolean" }, failed: { type: "boolean" }, retrying: { type: "boolean" }, ready: { type: "boolean" }, busy: { type: "boolean" }, changedOutside: { type: "boolean" },
         switches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, pressed: { type: "boolean" }, disabled: { type: "boolean" }, reason: { type: "string" } } } },
         folders: { type: "string" },
         snippets: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, value: { type: "string" }, copyLabel: { type: "string" } } } },
@@ -162,7 +167,7 @@ export function registerAgents(ctx: Ctx) {
     select: (s) => {
       const a = s.ui.agents;
       const p = a.page;
-      const loading = { loading: a.loading, failed: a.failed === true, waiting: a.loading && !p && s.tasks.findLast(t => t.target === "agents.load")?.phase === "on" };
+      const loading = { loading: a.loading, failed: a.failed === true, retrying: a.loading && a.failed === true, waiting: a.loading && !a.failed && !p && s.tasks.findLast(t => t.target === "agents.load")?.phase === "on" };
       if (!p) return { ...loading, ready: false, busy: false, changedOutside: false, switches: [], folders: "", snippets: [], recent: [], recentEmpty: false, cli: { status: "", canInstall: false } };
       return {
         ...loading, ready: true, busy: a.busy, changedOutside: p.changedOutside,

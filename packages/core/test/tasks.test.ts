@@ -44,6 +44,27 @@ function setup() {
 }
 
 describe("the task tracker (PRF-08)", () => {
+  it.each(["all", "success", "none"] as const)("keeps section timing and explicit outcome ownership in %s mode", async mode => {
+    const t = setup(), d = t.deferred();
+    const run = t.tracker.section("agents.load", "agents.loading", () => d.p, undefined, mode);
+    await t.advance(300);
+    expect(t.tasks()[0]?.phase).toBe("on");
+    const rejected = expect(run).rejects.toThrow("refused");
+    d.reject(new Error("refused"));
+    await t.advance(499);
+    expect(t.tasks()).toHaveLength(1);
+    await t.advance(1);
+    await rejected;
+    expect(t.tasks()).toEqual([]);
+    expect(t.said).toEqual([]);
+    const next = t.deferred();
+    const retry = t.tracker.section("agents.load", "agents.loading", () => next.p, undefined, mode);
+    await t.advance(1000);
+    const refused = expect(retry).rejects.toThrow("refused");
+    next.reject(new Error("refused"));
+    await refused;
+    expect(t.said).toEqual(mode === "all" ? ["agents.loading", "task.failed"] : ["agents.loading"]);
+  });
   for (const outcome of ["done", "failed", "cancelled"] as const) it.each(["all", "success", "none"] as const)(
     `leaves ${outcome} announcements with the owning surface in %s mode`, async mode => {
       const t = setup(), d = t.deferred();

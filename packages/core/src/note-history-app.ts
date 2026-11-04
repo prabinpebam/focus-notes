@@ -82,9 +82,11 @@ export function registerNoteHistory(ctx: Ctx) {
       command: kind === "list" ? "history.open" : kind === "more" ? "history.more" : kind === "version" ? "history.choose" : "history.restore",
       args: commit ? { id: commit } : {},
     };
-    set({ failed: true, listFailed: kind === "list" || kind === "more",
-      error: catalog.format(kind === "list" || kind === "more" ? "history.failed" : kind === "version" ? "history.versionFailed" : "history.restoreFailed"),
+    const message = catalog.format(kind === "list" || kind === "more" ? "history.failed" : kind === "version" ? "history.versionFailed" : "history.restoreFailed");
+    const retained = history().failed && history().error === message;
+    set({ failed: true, listFailed: kind === "list" || kind === "more", error: message,
       details: catalog.format("history.failureDetails", { operation: kind, code }) });
+    if (kind !== "restore" && retained) tracker.announceOutcome(message);
   };
 
   async function choose(commit: string): Promise<void> {
@@ -100,7 +102,7 @@ export function registerNoteHistory(ctx: Ctx) {
         const result = await bridge.workspace?.version?.(h.path!, commit, v.file);
         if (result === undefined) throw new Error("History version unavailable");
         return result;
-      }, "fn:history.version");
+      }, "fn:history.version", "success");
       if (request !== selection || history().path !== h.path || !history().open) return;
       clearFailure();
       set({ chosen: commit, text });
@@ -119,7 +121,7 @@ export function registerNoteHistory(ctx: Ctx) {
     const read = await tracker.section("history.load", from ? "history.loadingMore" : "history.loading", async () => {
       if (!bridge.workspace?.versions) throw new Error("History unavailable");
       return bridge.workspace.versions(path, { limit: NOTE_HISTORY_PAGE + 1 + (from ? 1 : 0), ...(from ? { from: { commit: from.commit, file: from.file } } : {}) });
-    }, "fn:history.list");
+    }, "fn:history.list", "success");
     return from ? read.filter((v) => v.commit !== from.commit) : read;
   };
 
