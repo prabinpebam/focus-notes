@@ -111,6 +111,23 @@ Every journey and candidate closed its app and ran PID-scoped cleanup, `-WhatIf`
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\6a217238\Open review build.cmd`. Settings → Project → Upload SVG; Settings → Appearance → Open theme manager → Reading. This remains partial D2–D4 acceptance; the other controls, AI save groups and D1/D5–D8 gaps remain.
 
+### Phase-2 known-empty wrappers, 7d8f98fd
+
+**Partial D5 plus inherited static gates, pushed on `vq-ui-states`.** Open/recent, Files, AI, Sharing and site-preview lists use the approved sealed wrapper in their own content. Filtered results say No matches and Clear search restores the list; first-use Open selects a folder; AI's Add connection opens its existing form. Delayed/failed AI reads never become known-empty. Sharing/preview first actions close their transient surface and open Files without toggling an already-open panel shut. Site navigation/section actions lead to Files' existing publish flow, not a new configuration UI.
+
+| Check | Result |
+| --- | --- |
+| `pnpm check` | Passed, including boundaries, token ownership, generated component inventory and `ui:check`; no inherited static findings remain |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm exec vitest run packages\core\test\project-open.test.ts packages\core\test\ai-app.test.ts packages\core\test\share-manage.test.ts packages\ui\test\commit-controls.test.tsx packages\ui-runtime\test\check.test.ts` | Passed: 118 tests; filtered clearing, known-empty/load-failure gating, sharing Files preservation, busy-menu focus/inertness and full-window overlay validation |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "known-empty wrappers"` | Passed: AI's first action opens/cancels its form in place; Open's filtered empty wrapper clears its search without navigating |
+| Slate `runtime-host.mjs check --repo . --host documentations` from the worker folder | Passed for the updated component guidance/inventory |
+
+EmptyState's unchanged sealed markup/styles now live in the primitive tier; NotificationRegion owns its matching token group. Other inherited styles use component aliases of their previous values; no visual redesign. Generated schemas/catalog are committed. The initial focused journey assumed Open was always a dialog; corrected to accept its existing full-window region. The touched Sharing unit's category list was stale after the inherited Project integration; corrected its expectation. Every app was invisible and closed with PID-scoped cleanup, `-WhatIf` first.
+
+**Try it:** the next candidate refresh will include these wrappers; the current `6a217238` candidate still covers sliders/upload only. All-done/good-news cases and complete first-action/content-replacement journeys remain unaccepted; no full suite, CI wait, benchmark or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
