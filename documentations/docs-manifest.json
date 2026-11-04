@@ -336,6 +336,16 @@
       "searchText": "design system audit tokens reusable components contracts enforcement fixtures visual baselines accessibility library maturity"
     },
     {
+      "path": "design/ui-states-audit.md",
+      "title": "UI states audit",
+      "order": 306.5,
+      "icon": "rule",
+      "status": "draft",
+      "updated": "2026-11-04",
+      "group": "Design/System",
+      "searchText": "ui states audit loading saving confirmed pending failed error recovery empty state shimmer skeleton notification pill toast spinner switch tick scope improvements"
+    },
+    {
       "path": "design/views/files.html",
       "title": "Files panel",
       "order": 320,
