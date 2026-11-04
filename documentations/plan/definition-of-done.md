@@ -34,7 +34,26 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 | `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Passed: 695 documents, 81 components, 549 commands; generated files unchanged |
 | `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1 -g "a rejected settings write"` | Passed: a real isolated state-file write fails, Retry persists 110% scale, and reopening Settings shows that value. Cleanup ran with only the journey's PID, first with `-WhatIf`, then without. |
 
-**Remaining:** commit timing and retained failed drafts belong to W3/W4. The focused journey exposed the existing notification host beneath the modal scrim: Retry currently requires closing Settings first; W1 must make recovery reachable while the dialog remains open, not bypass the scrim in a test. Project settings are absent from this branch, so the project-specific D2/D3 journeys and W5 need that implementation integrated first. No candidate build, full suite, CI wait or benchmark has run for this increment.
+**Follow-up:** the modal host and project prerequisite gaps above are resolved in the following increment. W2's evidence remains historical; it does not by itself accept D2–D4.
+
+### Phase-2 functional increment, bf1c5afd
+
+`vq-ui-states` now includes the approved project/Open implementation through a normal merge (`36e93da4`), modal notification recovery (`5251ef0d`), the notification queue (`414b9341`) and the first commit-track controls (`bf1c5afd`). App code remains off main.
+
+| Check | Result |
+| --- | --- |
+| `pnpm typecheck` after the project merge | Passed for all workspace packages |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on the commit-track increment |
+| `pnpm exec vitest run packages/core/test/commits.test.ts packages/core/test/project-settings.test.ts packages/core/test/tasks.test.ts packages/core/test/settings-failures.test.ts packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx` | 6 files, 22 tests passed: separate 200 ms beats, stale confirmation timers, failed draft/Revert, 500 ms keyboard pause, stable focus, ordered project patches, rejected settings and local/global recovery |
+| `pnpm exec vitest run packages/core/test/notifications.test.ts packages/core/test/app.test.ts packages/core/test/settings-failures.test.ts packages/ui/test/notification-layer.test.tsx packages/ui-runtime/test/failures.test.tsx` on the notification increment | 5 files, 27 tests passed: priority/queue, visible-only clocks, hard-dismiss actions/errors, coalescing, pause/resume and modal top-layer marker |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1` | 3 journeys passed: rejected scale/Retry/reopening; F6 and pointer Retry above the open Settings modal; project-name blur/failure/retained draft/Retry/reopening |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Generated schemas current; still fails on 54 inherited sharing/site-preview view findings. No new canvas finding remains. |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed: copied exact-commit output into the candidate, opened it invisibly, used normal Project settings, saved name/watermark, rejected a real state-file write, retained the draft and recovered with Retry. Candidate and journey apps closed; PID-scoped cleanup ran first with `-WhatIf`, then without. |
+
+**Try it:** open `E:\Projects\side-projects\focus-notes-work\preview\candidates\bf1c5afd\Open review build.cmd`, then Project → Name/Watermark and Appearance → Interface size. The candidate uses sample notes and its own profile.
+
+**Acceptance remains partial.** W3's separate commit lane and the first W4/W5 controls are functional. Action-driven project colour/logo/font/theme pickers, other app settings, AI's separate save groups, watermark failure, the full notification queue/withdrawal journey, scoped recovery, empty wrappers, long-operation steps and section shimmer still need their own evidence. The 54 inherited `ui:check` findings are recorded, not silently waived. No full suite, CI wait or benchmark ran.
 
 ## Projects and simpler sharing
 

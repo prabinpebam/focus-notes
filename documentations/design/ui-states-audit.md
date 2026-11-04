@@ -31,6 +31,19 @@ Approval values are **Awaiting review**, **Approved** and **Changes requested**.
 
 **Phase-2 authorization (owner, 4 November 14:06):** “These look good, implement it and make it functional.” Approval covers all eight slices and the compact border-spinner rule. Wiring proceeds with silent failures first, then commit states, on `vq-ui-states`; implementation and exact-head evidence remain outstanding until recorded in the DoD.
 
+### Functional review increment, 4 November
+
+| Work | Pushed implementation | Verified scope |
+| --- | --- | --- |
+| Integrated project prerequisite | `36e93da4`, merge from `vq-open-cards` | Combined monorepo typecheck passes; project settings are present |
+| Modal notification recovery | `5251ef0d` | Existing `layer.toast` plus React Aria's top-layer marker; F6 and pointer Retry work while Settings remains open |
+| Notification host | `414b9341` | Three visible, retained error-first queue, repeated subjects coalesced with latest Retry arguments; hard-dismiss errors/actions; visible-only clocks pause on hover/focus/window inactivity |
+| Commit infrastructure and first controls | `bf1c5afd` | `vm.commits`; immediate pending and separate 200 ms pending/confirmed minimums; field-local lock, failed drafts and Retry/Revert; project name blur/Enter and scale; segmented keyboard changes wait 500 ms or blur; project writes compose independent fields in order |
+
+**Candidate:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\bf1c5afd\Open review build.cmd`. Built from the pushed commit and inspected invisibly through normal Settings: project name, watermark, rejected name draft and Retry. It contains synthetic notes and a separate profile; no owner's app was touched. The gallery remains on [5231](http://127.0.0.1:5231/?f=mock.uistates.hub).
+
+**Still partial:** action-driven project colour/logo/font/theme pickers, remaining app settings and AI save groups, watermark-specific failure coverage, four-outcome notification acceptance/withdrawal restoration, recovery, empty wrappers, streamed operations and section loading. The integrated sharing/site-preview views retain 54 `ui:check` findings; generated schemas are current. None is claimed accepted, and no app code is merged to main. See [the exact checks](../plan/definition-of-done.md#phase-2-functional-increment-bf1c5afd).
+
 **Owner's compact-feedback rule (4 November, 13:58):** when there is room, keep the inline spinner, tick or error icon; when there is no room, the element's own border becomes the spinner. Compact segments, buttons, pills, tiles and switch tracks use a travelling arc following their shape, a success-coloured border for the confirmation minimum (with a brief draw-in), and a danger-coloured border on error; Retry stays in the nearest helper row. Reduced motion holds a dashed pending border, never a sweep. The hub shows both cases side by side with Play. This supersedes the earlier thumb-spinner proposal, not the requirement for visual approval of each slice.
 
 ### What phase 1 shows, and what it does not
