@@ -55,6 +55,26 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Acceptance remains partial.** W3's separate commit lane and the first W4/W5 controls are functional. Action-driven project colour/logo/font/theme pickers, other app settings, AI's separate save groups, watermark failure, the full notification queue/withdrawal journey, scoped recovery, empty wrappers, long-operation steps and section shimmer still need their own evidence. The 54 inherited `ui:check` findings are recorded, not silently waived. No full suite, CI wait or benchmark ran.
 
+### Phase-2 project increment, fd5252ee
+
+Colour/preset-logo commit feedback is pushed at `78d0a335`. Font/theme trigger feedback (`c766d793`) and watermark refusal/recovery proof (`fd5252ee`) are committed locally; GitHub repeatedly refused the branch update with `Internal Server Error`. No app code is merged to main.
+
+Project choices retain the attempted selection and error locally while the writing surface keeps its saved identity. Retry uses the latest attempted value, Revert does not write, and the persistent font/theme trigger carries the minimum feedback beat after its popover closes. A refused font/theme write clears its temporary preview, not the retained choice. Theme arrows remain preview-only; Use app default commits explicitly.
+
+| Check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on the font/theme increment; core/desktop repeated after watermark test edits |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/commits.test.ts packages/ui/test/commit-controls.test.tsx packages/ui-runtime/test/failures.test.tsx` | 4 files, 17 tests passed on the combined increment: retained choices, unchanged saved identity, write-free Revert, focusable pending groups/triggers, repeated local Retry failures, preview cleanup, minimum beats and ordered project patches |
+| `pnpm --filter @focus-notes/desktop run build` | Passed again at exact candidate head `fd5252ee` |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1` | 5 passed on the combined app build. Watermark's first attempt checked busy state on the RadioGroup rather than its wrapper and tried changing during its 200 ms pending hold; corrected to wait on the real wrapper. |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "a refused watermark"` | Passed after that selector correction, including failed On/Retry and failed Off/Revert; the actual writing-surface mark and write-free Revert are asserted |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | Generated contracts/current schemas: 0 fixture gaps, 0 stale files; still fails on the same 54 inherited sharing/site-preview findings |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Passed at `fd5252ee`: normal Settings saved name/watermark/colour/logo/font/theme; real name/font write failures retained input and recovered via Retry. Candidate and every journey were invisible, closed, and followed by PID-scoped `-WhatIf` then actual cleanup. |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\fd5252ee\Open review build.cmd`, then Project → Name/Colour/Logo/Watermark/Font/Theme. Synthetic notes and a separate profile only. The [approved gallery](http://127.0.0.1:5231/?f=mock.uistates.hub) remains running.
+
+**Still partial:** SVG logo upload, other app settings, AI's details/key save groups, notification/withdrawal acceptance, scoped recovery, empty wrappers, streamed operations and section shimmer. Project settings evidence does not certify the other D2–D4 surfaces. No full suite, CI wait or benchmark ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

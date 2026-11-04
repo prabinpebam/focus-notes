@@ -33,16 +33,21 @@ Approval values are **Awaiting review**, **Approved** and **Changes requested**.
 
 ### Functional review increment, 4 November
 
-| Work | Pushed implementation | Verified scope |
+| Work | Implementation | Verified scope |
 | --- | --- | --- |
 | Integrated project prerequisite | `36e93da4`, merge from `vq-open-cards` | Combined monorepo typecheck passes; project settings are present |
 | Modal notification recovery | `5251ef0d` | Existing `layer.toast` plus React Aria's top-layer marker; F6 and pointer Retry work while Settings remains open |
 | Notification host | `414b9341` | Three visible, retained error-first queue, repeated subjects coalesced with latest Retry arguments; hard-dismiss errors/actions; visible-only clocks pause on hover/focus/window inactivity |
 | Commit infrastructure and first controls | `bf1c5afd` | `vm.commits`; immediate pending and separate 200 ms pending/confirmed minimums; field-local lock, failed drafts and Retry/Revert; project name blur/Enter and scale; segmented keyboard changes wait 500 ms or blur; project writes compose independent fields in order |
+| Project colour and preset logo | `78d0a335`, pushed | Attempted mark's own border; focusable pending group; retained failed choice without changing saved identity; latest-choice Retry and write-free Revert |
+| Project font/theme triggers | `c766d793`, local; push blocked | Persistent trigger feedback after the popover closes, retained attempted name, cleared failed preview, Retry/Revert and Use app default; keyboard theme browsing does not save |
+| Watermark refusal proof | `fd5252ee`, local; push blocked | Failed On does not add a writing-surface mark; Retry persists before the mark appears; failed Off/Revert leaves the stored mark intact without writing |
 
-**Candidate:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\bf1c5afd\Open review build.cmd`. Built from the pushed commit and inspected invisibly through normal Settings: project name, watermark, rejected name draft and Retry. It contains synthetic notes and a separate profile; no owner's app was touched. The gallery remains on [5231](http://127.0.0.1:5231/?f=mock.uistates.hub).
+**Latest candidate:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\fd5252ee\Open review build.cmd`. Built from the committed head and inspected invisibly through normal Settings: name, colour, preset logo, watermark, font and theme, including real name/font write failures and Retry. It contains synthetic notes and a separate profile; no owner's app was touched. The earlier candidate at `bf1c5afd` remains available. The gallery remains on [5231](http://127.0.0.1:5231/?f=mock.uistates.hub).
 
-**Still partial:** action-driven project colour/logo/font/theme pickers, remaining app settings and AI save groups, watermark-specific failure coverage, four-outcome notification acceptance/withdrawal restoration, recovery, empty wrappers, streamed operations and section loading. The integrated sharing/site-preview views retain 54 `ui:check` findings; generated schemas are current. None is claimed accepted, and no app code is merged to main. See [the exact checks](../plan/definition-of-done.md#phase-2-functional-increment-bf1c5afd).
+**Push blocker:** GitHub rejected the font/theme and watermark branch update with `Internal Server Error`, including a retry after the next candidate was verified. Both commits and the candidate are durable locally; they are not described as pushed.
+
+**Still partial:** remaining app settings and AI save groups, SVG logo upload, four-outcome notification acceptance/withdrawal restoration, recovery, empty wrappers, streamed operations and section loading. The integrated sharing/site-preview views retain 54 `ui:check` findings; generated schemas are current. No complete D2–D4 acceptance is claimed, and no app code is merged to main. See [the initial checks](../plan/definition-of-done.md#phase-2-functional-increment-bf1c5afd) and [the project increment](../plan/definition-of-done.md#phase-2-project-increment-fd5252ee).
 
 **Owner's compact-feedback rule (4 November, 13:58):** when there is room, keep the inline spinner, tick or error icon; when there is no room, the element's own border becomes the spinner. Compact segments, buttons, pills, tiles and switch tracks use a travelling arc following their shape, a success-coloured border for the confirmation minimum (with a brief draw-in), and a danger-coloured border on error; Retry stays in the nearest helper row. Reduced motion holds a dashed pending border, never a sweep. The hub shows both cases side by side with Play. This supersedes the earlier thumb-spinner proposal, not the requirement for visual approval of each slice.
 
