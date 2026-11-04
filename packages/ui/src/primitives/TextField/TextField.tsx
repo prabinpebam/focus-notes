@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { FieldError, Input, Label, Text, TextArea, TextField as AriaTextField } from "react-aria-components";
+import { CommitFailure, CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./TextField.css.ts";
 
 export interface TextFieldProps {
@@ -29,14 +30,24 @@ export interface TextFieldProps {
   scrolls?: boolean;
   /** Needed before its form can go: announced as required; the form says what's missing (D-203). */
   required?: boolean;
+  /**
+   * The commit track (F2), for a field that saves on its own: pending (the commit border, locked, a spinner
+   * in the trailing slot), confirmed (the tick), failed (the error icon, the value kept, `error` below with
+   * Retry and Revert). Any value reserves the trailing slot, so nothing shifts when it changes.
+   */
+  commit?: CommitState;
+  retryLabel?: string;
+  revertLabel?: string;
   id?: string;
+  onRetry?: () => void;
+  onRevert?: () => void;
   onChange?: (payload: { value: string }) => void;
   /** Enter in the field, outside an IME composition. */
   onSubmit?: () => void;
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, commit, retryLabel, revertLabel, id, onRetry, onRevert, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const area = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -49,7 +60,8 @@ export function TextField({ label, value, placeholder, description, type = "text
       onChange={(v) => onChange?.({ value: v })}
       type={type}
       isInvalid={Boolean(invalid)}
-      isReadOnly={Boolean(readOnly)}
+      isReadOnly={Boolean(readOnly) || commit === "pending"}
+      {...(commit ? { "data-commit": commit } : {})}
       isRequired={Boolean(required)}
       validationBehavior="aria"
       {...(autoFocus ? { autoFocus } : {})}
@@ -58,7 +70,7 @@ export function TextField({ label, value, placeholder, description, type = "text
       <Label className={labelHidden ? s.hidden : s.label}>{label}</Label>
       {multiline ? (
         <TextArea ref={area} rows={compactMultiline ? 2 : undefined} className={`${s.input} ${s.area}${scrolls ? ` ${s.scrolls}` : ""}${compactMultiline ? ` ${s.compactArea}` : ""}`} spellCheck={!scrolls} autoCorrect="off" {...(placeholder ? { placeholder } : {})} />
-      ) : <Input
+      ) : <div className={s.box}><Input
         ref={input}
         className={`${s.input} ${s.size[size]}`}
         spellCheck={false}
@@ -72,9 +84,11 @@ export function TextField({ label, value, placeholder, description, type = "text
           }
         }}
         {...(placeholder ? { placeholder } : {})}
-      />}
+        {...(commit === "pending" ? { "aria-disabled": true, "aria-busy": true } : {})}
+      />{commit ? <span className={s.slot}><CommitMark state={commit} /></span> : null}</div>}
       {description ? <Text slot="description" className={s.description}>{description}</Text> : null}
-      {invalid && error ? <FieldError className={s.error}>{error}</FieldError> : null}
+      {invalid && error && commit !== "failed" ? <FieldError className={s.error}>{error}</FieldError> : null}
+      {commit === "failed" && error ? <CommitFailure message={error} retryLabel={retryLabel} revertLabel={revertLabel} onRetry={onRetry} onRevert={onRevert} /> : null}
     </AriaTextField>
   );
 }

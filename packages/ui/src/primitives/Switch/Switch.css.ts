@@ -1,7 +1,8 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, keyframes, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.switch;
+const spin = keyframes({ to: { transform: "rotate(1turn)" } });
 
 export const root = style({
   display: "inline-flex",
@@ -55,7 +56,24 @@ export const thumb = style({
   selectors: {
     [`${root}[data-selected] &`]: { insetInlineStart: `calc(100% - ${t.thumbSize} - ${t.inset})`, backgroundColor: t.thumbOn },
     [`${root}[data-disabled] &`]: { backgroundColor: t.disabledText },
+    [`${root}[data-commit="pending"] &`]: { backgroundColor: t.busyThumb },
   },
+});
+// Pending (F2): a spinner drawn in the thumb, so the focused switch stays where it is. Reduced motion stands it still.
+globalStyle(`${root}[data-commit="pending"] ${thumb}::after`, {
+  content: '""',
+  position: "absolute",
+  inset: 0,
+  borderRadius: t.radius,
+  borderStyle: "solid",
+  borderWidth: t.busyWidth,
+  borderColor: t.busyTrack,
+  borderTopColor: t.busyRing,
+  boxSizing: "border-box",
+  animationName: spin,
+  animationDuration: t.spin,
+  animationTimingFunction: "linear",
+  animationIterationCount: "infinite",
 });
 
 export const text = style({ display: "flex", flexDirection: "column", minWidth: 0 });

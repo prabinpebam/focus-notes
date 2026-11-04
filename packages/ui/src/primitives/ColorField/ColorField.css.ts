@@ -21,6 +21,9 @@ export const control = style({
   boxSizing: "border-box",
   selectors: {
     "&:focus-within": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.borderFocus },
+    // The commit track (F2): the commit colour while it saves, the error colour when it couldn't.
+    [`${root}[data-commit="pending"] &`]: { borderColor: t.borderCommit, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderCommit}` },
+    [`${root}[data-commit="failed"] &`]: { borderColor: t.borderInvalid },
   },
 });
 export const invalid = style({ borderColor: t.borderInvalid });

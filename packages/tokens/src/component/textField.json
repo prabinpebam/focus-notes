@@ -59,6 +59,21 @@
         "$type": "color",
         "$value": "{color.danger}"
       },
+      "borderCommit": {
+        "$type": "color",
+        "$value": "{color.success}",
+        "$description": "The commit colour: the border while a changed value is being saved (F2)."
+      },
+      "slot": {
+        "$type": "dimension",
+        "$value": "{size.iconM}",
+        "$description": "The trailing slot's box, at the inline end inside the field."
+      },
+      "slotRoom": {
+        "$type": "dimension",
+        "$value": "{space.xl}",
+        "$description": "The input's end padding while a commit mark can show, so the words never run under it."
+      },
       "background": {
         "$type": "color",
         "$value": "{color.surface}"

@@ -1,0 +1,14 @@
+{ "cmp": { "commitMark": {
+  "size": { "$type": "dimension", "$value": "{size.iconM}", "$description": "The trailing slot: one fixed box that holds the spinner, the tick or the error icon in turn, so nothing shifts (F2)." },
+  "stroke": { "$type": "dimension", "$value": "{border.focus}", "$description": "The tick's and the circle's line." },
+  "tick": { "$type": "color", "$value": "{color.success}", "$description": "The commit colour: the confirmed tick and circle, at least 3:1 against the field." },
+  "tickFill": { "$type": "color", "$value": "{color.successMuted}", "$description": "The quiet fill inside the confirmed circle." },
+  "failed": { "$type": "color", "$value": "{color.danger}", "$description": "The failed icon." },
+  "draw": { "$type": "duration", "$value": "{motion.morph}", "$description": "The tick drawing itself in; reduced motion shows it fully drawn at once." },
+  "easing": { "$type": "cubicBezier", "$value": "{easing.decelerate}", "$description": "The tick's stroke." },
+  "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between the failure line's words and its Retry and Revert." },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}", "$description": "The failure line." },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiBody}", "$description": "The failure line, the size of a field's error." },
+  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}", "$description": "The failure line's line box." },
+  "failText": { "$type": "color", "$value": "{color.danger}", "$description": "The failure line's words." }
+} } }

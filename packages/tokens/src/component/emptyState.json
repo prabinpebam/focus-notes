@@ -1,0 +1,26 @@
+{ "cmp": { "emptyState": {
+  "minHeight": {
+    "$type": "dimension",
+    "section": { "$value": "{size.emptySection}", "$description": "A list, card or section: never one line tall (F6)." },
+    "view": { "$value": "{size.emptyView}", "$description": "A whole view or panel." },
+    "component": { "$value": "{size.hit}", "$description": "A menu or picker: one row." }
+  },
+  "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between the icon, the why and the detail." },
+  "actionGap": { "$type": "dimension", "$value": "{space.m}", "$description": "Above the actions, so they read as the next step." },
+  "padding": { "$type": "dimension", "$value": "{space.l}", "$description": "Room inside the wrapper." },
+  "iconSize": { "$type": "dimension", "$value": "{size.iconL}", "$description": "The icon that says what would be here." },
+  "iconTile": { "$type": "dimension", "$value": "{size.statusMark}", "$description": "The quiet round tile behind the icon." },
+  "iconBackground": { "$type": "color", "$value": "{color.surfaceSunken}", "$description": "The tile's fill." },
+  "icon": { "$type": "color", "$value": "{color.textMuted}", "$description": "The icon." },
+  "goodBackground": { "$type": "color", "$value": "{color.successMuted}", "$description": "Good news (all done, nothing to fix): the tile's fill." },
+  "goodIcon": { "$type": "color", "$value": "{color.success}", "$description": "Good news: the icon." },
+  "radius": { "$type": "dimension", "$value": "{radius.round}", "$description": "The tile is round." },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}", "$description": "The words." },
+  "title": { "$type": "color", "$value": "{color.text}", "$description": "Why it's empty." },
+  "titleSize": { "$type": "dimension", "$value": "{font.uiBody}", "$description": "Why it's empty, at body size." },
+  "titleWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}", "$description": "Why it's empty." },
+  "detail": { "$type": "color", "$value": "{color.textMuted}", "$description": "What to do, or what will appear." },
+  "detailSize": { "$type": "dimension", "$value": "{font.uiSecondary}", "$description": "The detail." },
+  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}", "$description": "The words' line box." },
+  "maxWidth": { "$type": "dimension", "$value": "{layout.dialogS}", "$description": "The words' measure." }
+} } }

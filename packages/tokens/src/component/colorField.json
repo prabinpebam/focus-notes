@@ -53,6 +53,11 @@
         "$type": "color",
         "$value": "{color.danger}"
       },
+      "borderCommit": {
+        "$type": "color",
+        "$value": "{color.success}",
+        "$description": "The commit colour: the border while a changed colour is being saved (F2)."
+      },
       "focusWidth": {
         "$type": "dimension",
         "$value": "{border.focus}"

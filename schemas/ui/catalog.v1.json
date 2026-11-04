@@ -1155,6 +1155,42 @@
       ]
     },
     {
+      "type": "CommitMark",
+      "tier": "primitive",
+      "description": "The commit track's trailing mark (ui-states, F2): nothing at rest, a spinner while a changed value is saved, a green tick in a circle that draws itself in once it's kept, an error icon if it failed. One fixed box, so nothing shifts. Decorative; the live region says it.",
+      "props": {
+        "state": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "default": "rest"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "pending",
+        "confirmed",
+        "failed"
+      ],
+      "tokens": "cmp.commitMark.*",
+      "a11y": {
+        "pattern": "decorative (aria-hidden); announced by the live region",
+        "name": "none"
+      },
+      "fixtures": [
+        "state rest",
+        "state pending",
+        "state confirmed",
+        "state failed"
+      ]
+    },
+    {
       "type": "Skeleton",
       "tier": "primitive",
       "description": "A placeholder in the shape of content that's on its way: a line of words, a tile or an avatar, with a light that passes across it a few times, then stands still. Decorative: the region it sits in says what it's waiting for, once. Not for a wait without a known shape (use Spinner), nor for an empty or failed result (say so instead).",
@@ -1565,6 +1601,24 @@
           "kind": "boolean",
           "default": false,
           "description": "Needed before its form can go: announced as required (aria), while the form says what's missing (Send feedback's Title, D-203)."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "The commit track, for a field that saves on its own (F2): pending puts the commit colour on the border, locks the field and spins in the trailing slot; confirmed draws the tick; failed keeps the value, shows the error icon and `error` below with Retry and Revert. Any value reserves the trailing slot."
+        },
+        "retryLabel": {
+          "kind": "message",
+          "description": "Failed: the button that saves the same value again."
+        },
+        "revertLabel": {
+          "kind": "message",
+          "description": "Failed: the button that puts back the last value that was kept."
         }
       },
       "events": {
@@ -1574,13 +1628,18 @@
           },
           "binds": "value"
         },
-        "submit": {}
+        "submit": {},
+        "retry": {},
+        "revert": {}
       },
       "slots": {},
       "states": [
         "rest",
         "focused",
-        "invalid"
+        "invalid",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.textField.*",
       "a11y": {
@@ -1600,7 +1659,11 @@
         "compact multiline",
         "read only",
         "read only scrolls",
-        "required"
+        "required",
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed"
       ]
     },
     {
@@ -2024,6 +2087,24 @@
           "kind": "number",
           "min": 0,
           "description": "Each new value moves focus into the field (after Fix, whose button goes away)."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "The commit track (F2), as on TextField: pending (commit border, locked, spinner), confirmed (tick), failed (error icon, `error` below with Retry and Revert, the value kept)."
+        },
+        "retryLabel": {
+          "kind": "message",
+          "description": "Failed: saves the same colour again."
+        },
+        "revertLabel": {
+          "kind": "message",
+          "description": "Failed: puts back the last colour that was kept."
         }
       },
       "events": {
@@ -2031,13 +2112,18 @@
           "payload": {
             "value": "text"
           }
-        }
+        },
+        "retry": {},
+        "revert": {}
       },
       "slots": {},
       "states": [
         "rest",
         "focused",
-        "invalid"
+        "invalid",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.colorField.*",
       "a11y": {
@@ -2046,6 +2132,10 @@
       },
       "fixtures": [
         "with a swatch",
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "invalid"
       ]
     },
@@ -2572,6 +2662,24 @@
           "kind": "message",
           "requiredWhen": "disabled",
           "description": "Why it can't change now, shown in place of the description."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "The commit track (F2): pending spins in the thumb and locks the switch, still focused and still the stored value; confirmed shows the tick beside the state word; failed shows the stored value, the error icon and `error` below with Retry."
+        },
+        "error": {
+          "kind": "message",
+          "description": "Failed: what happened and what's safe."
+        },
+        "retryLabel": {
+          "kind": "message",
+          "description": "Failed: the button that saves the change again."
         }
       },
       "events": {
@@ -2580,7 +2688,8 @@
             "value": "boolean"
           },
           "binds": "checked"
-        }
+        },
+        "retry": {}
       },
       "slots": {},
       "states": [
@@ -2588,7 +2697,10 @@
         "checked",
         "disabled",
         "hover",
-        "focusVisible"
+        "focusVisible",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.switch.*",
       "a11y": {
@@ -2599,6 +2711,10 @@
         "off",
         "on",
         "with description",
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "disabled with reason"
       ]
     },
@@ -5488,6 +5604,8 @@
       "iconM",
       "iconL",
       "statusMark",
+      "emptySection",
+      "emptyView",
       "controlS",
       "controlM",
       "controlL",

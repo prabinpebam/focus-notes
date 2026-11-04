@@ -1,4 +1,4 @@
-import { createVar, fallbackVar, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, fallbackVar, globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.textField;
@@ -24,8 +24,16 @@ export const input = style({
     // One error treatment (D-135): red, focused or not; focus thickens the red edge instead of adding a blue one.
     "&[data-invalid]": { borderColor: t.borderInvalid },
     "&[data-invalid][data-focused]": { borderColor: t.borderInvalid, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderInvalid}` },
+    // The commit track (F2): the commit colour while it saves, the error colour when it couldn't.
+    [`${root}[data-commit] &`]: { width: "100%", paddingInlineEnd: t.slotRoom },
+    [`${root}[data-commit="pending"] &`]: { borderColor: t.borderCommit, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderCommit}` },
+    [`${root}[data-commit="failed"] &`]: { borderColor: t.borderInvalid },
   },
 });
+/** Holds the input and its trailing slot, so the slot sits inside the field at the inline end. */
+export const box = style({ position: "relative", display: "flex", minWidth: 0 });
+globalStyle(`${box} > input`, { flexGrow: 1, minWidth: 0 });
+export const slot = style({ position: "absolute", insetBlock: 0, insetInlineEnd: t.paddingInline, display: "flex", alignItems: "center", width: t.slot, pointerEvents: "none" });
 /** As tall as the 32 px buttons beside it in a bar (the link editor), or the 40 px field of a dialog or panel (D-111). */
 export const size = styleVariants({ m: { height: t.heightCompact }, l: {} });
 /** fill: as wide as what holds it. number: a short number (four or five digits), so several sit in one row. */

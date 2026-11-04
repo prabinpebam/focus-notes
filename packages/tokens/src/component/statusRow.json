@@ -11,5 +11,8 @@
   "danger": { "$type": "color", "background": { "$value": "{color.dangerMuted}" }, "icon": { "$value": "{color.danger}" } },
   "warning": { "$type": "color", "background": { "$value": "{color.warningMuted}" }, "icon": { "$value": "{color.warning}" } },
   "info": { "$type": "color", "background": { "$value": "{color.infoMuted}" }, "icon": { "$value": "{color.info}" } },
-  "success": { "$type": "color", "background": { "$value": "{color.successMuted}" }, "icon": { "$value": "{color.success}" } }
+  "success": { "$type": "color", "background": { "$value": "{color.successMuted}" }, "icon": { "$value": "{color.success}" } },
+  "actionGap": { "$type": "dimension", "$value": "{space.xs}", "$description": "Between the sentence and its action, and between the action and Details (F5)." },
+  "detail": { "$type": "color", "$value": "{color.textMuted}", "$description": "The text behind Details: the technical cause." },
+  "detailSize": { "$type": "dimension", "$value": "{font.uiSecondary}", "$description": "The Details text." }
 } } }

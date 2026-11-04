@@ -244,6 +244,14 @@
       "$value": "{ref.size.36}",
       "$description": "A compact status tile in a details card."
     },
+    "emptySection": {
+      "$value": "{ref.size.160}",
+      "$description": "An empty section, list or card keeps at least this height, so it never collapses to one line (F6)."
+    },
+    "emptyView": {
+      "$value": "{ref.size.320}",
+      "$description": "An empty view or panel keeps at least this height (F6)."
+    },
     "controlS": {
       "$value": "{ref.size.28}"
     },
@@ -822,6 +830,18 @@
     },
     "toastUndoDuration": {
       "$value": "{ref.duration.10000}"
+    },
+    "confirmMinimum": {
+      "$description": "The commit track's beat: pending and confirmed each show at least this long, so an instant save is still seen (ui-states, F2).",
+      "$value": "{ref.duration.200}"
+    },
+    "commitPause": {
+      "$description": "A segmented choice, radio or slider commits this long after the hand stops, not on each step.",
+      "$value": "{ref.duration.500}"
+    },
+    "noticeLong": {
+      "$description": "A notice of two or three lines, or with an action, stays this long once visible (F3).",
+      "$value": "{ref.duration.8000}"
     },
     "hoverOpen": {
       "$description": "Hover intent before content shown on hover opens (WCAG 1.4.13): not motion, so reduced motion keeps it.",

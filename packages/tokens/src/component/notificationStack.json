@@ -1,0 +1,11 @@
+{ "cmp": { "notificationStack": {
+  "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between stacked pills; the newest sits nearest the bottom edge (F3)." },
+  "maxWidth": { "$type": "dimension", "$value": "{layout.dialogS}", "$description": "The stack is as wide as its widest pill, up to a toast's width." },
+  "moreText": { "$type": "color", "$value": "{color.textMuted}", "$description": "The waiting count, +2 more." },
+  "moreBackground": { "$type": "color", "$value": "{color.surfaceSunken}", "$description": "The count's quiet pill." },
+  "morePaddingBlock": { "$type": "dimension", "$value": "{space.xs}", "$description": "The count pill's height room." },
+  "morePaddingInline": { "$type": "dimension", "$value": "{space.s}", "$description": "The count pill's side room." },
+  "moreRadius": { "$type": "dimension", "$value": "{radius.round}", "$description": "The count is a small round pill." },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}", "$description": "The count." },
+  "moreSize": { "$type": "dimension", "$value": "{font.uiCaption}", "$description": "The count, small and secondary." }
+} } }

@@ -65,6 +65,21 @@
         "$type": "color",
         "$value": "{color.danger}"
       },
+      "successIcon": {
+        "$type": "color",
+        "$value": "{color.success}",
+        "$description": "A done outcome's tick (F3)."
+      },
+      "warningIcon": {
+        "$type": "color",
+        "$value": "{color.warning}",
+        "$description": "A warning: nothing lost yet, something to know."
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": "{size.iconM}",
+        "$description": "The tone's icon, and the progress pill's spinner."
+      },
       "duration": {
         "$type": "duration",
         "$value": "{motion.enter}"
