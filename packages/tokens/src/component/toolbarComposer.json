@@ -2,7 +2,7 @@
   "$description": "The visual toolbar customizer (DD-IA-08): the real toolbar, a catalogue of the actions that can join it, and the drag between them.",
   "gap": { "$type": "dimension",
     "stage": { "$value": "{space.l}", "$description": "Between the toolbar's stage and the catalogue." },
-    "groups": { "$value": "{space.l}" },
+    "groups": { "$value": "{space.xxl}", "$description": "Between catalogue groups: at least twice the spacing within a group." },
     "group": { "$value": "{space.s}", "$description": "A group's heading to its cells." },
     "cells": { "$value": "{space.xs}" },
     "cell": { "$value": "{space.s}", "$description": "A cell's button to its label." },
