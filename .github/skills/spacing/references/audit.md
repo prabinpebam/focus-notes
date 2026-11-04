@@ -46,7 +46,7 @@ writeFileSync('audit/settings-1280.json', JSON.stringify(base));
 findings.push(...where(analyze(base, { base: 4, allow: [1], target: 44 }), 'settings, 1280 px'));
 ```
 
-`collect` returns, for every visible element: its box, padding, margin, border, gap, line height, font size, whether it's interactive, enclosed (a fill, border or shadow), a heading, out of flow, or clipping, and its children. It stamps each element with `data-spacing-id` so later snapshots line up. Wait for fonts and for motion to settle (reduced motion helps) before collecting.
+`collect` returns, for every visible element: its box, padding, margin, border, gap, line height, font size, whether it's interactive, enclosed (a fill, border or shadow), a heading, out of flow, or clipping, and its children. An interactive element's target includes any absolutely positioned `::before` or `::after` that takes the pointer (an invisible hit extension). A visually hidden wrapper (clipped, 1 px or less) is skipped with everything in it, and anything inside `ignore` is exempt from every rule, in `analyze` and `compare` alike. It stamps each element with `data-spacing-id` so later snapshots line up. Wait for fonts and for motion to settle (reduced motion helps) before collecting.
 
 `analyze` checks one snapshot:
 
@@ -59,7 +59,7 @@ findings.push(...where(analyze(base, { base: 4, allow: [1], target: 44 }), 'sett
 | `target-size` | S1 or S2 | A target under 24 × 24 px: S1 when another target is within its 24 px circle, S2 otherwise |
 | `inner-exceeds-inset` | S2 | In an enclosed container, a measured gap between children larger than the measured inset |
 | `heading-space` | S2 or S4 | A heading no further from the content above than from its own (S2), or less than twice as far (S4) |
-| `group-separation` | S2 or S4 | Unenclosed groups less than 1.5 × (S2) or 2 × (S4) apart than their members |
+| `group-separation` | S2 or S4 | Unenclosed groups less than 1.5 × (S2) or 2 × (S4) apart than their members, measured to what the eye sees: the box gap plus each group's empty inset on the facing sides |
 | `off-scale` | S3 | A padding or gap that isn't a multiple of the base unit |
 | `outer-margin`, `negative-margin` | S3 | A block-level element with a margin (centring `auto` margins excepted) |
 | `uneven-insets` | S4 | An enclosed container with different top and bottom padding |
