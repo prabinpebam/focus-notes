@@ -318,8 +318,10 @@ export function chordMatches(chord: string, e: KeyEventLike, platform: Platform,
   if (want.has("shift") !== e.shiftKey) return false;
   if (want.has("alt") !== e.altKey) return false;
   if (!byCode) return e.key.toLowerCase() === key;
-  // Ctrl+Alt is AltGr on many Windows and Linux layouts: if it typed a character, the character wins.
-  if (platform !== "macos" && e.ctrlKey && e.altKey) return false;
+  // Ctrl+Alt is AltGr on many Windows and Linux layouts: if the AltGr key typed a character, the character
+  // wins. Where the page says AltGr wasn't held (left Ctrl+Alt on Windows types "ō" on some layouts), the
+  // chord's key wins: Ctrl+Alt+O opens Open (owner, 4 November).
+  if (platform !== "macos" && e.ctrlKey && e.altKey && e.altGraph !== false) return false;
   if (!e.code) return false;
   if (/^[a-z]$/.test(key)) return !/^[a-z]$/i.test(e.key) && e.code === `Key${key.toUpperCase()}`;
   return CODES[key] !== undefined && e.code === CODES[key];
