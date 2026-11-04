@@ -971,6 +971,7 @@
   "commit.retry": "Retry",
   "commit.revert": "Revert",
   "commit.failed": "Couldn't save this change. What you typed is still here.",
+  "commit.choiceFailed": "Couldn't save this choice. Try again or revert.",
   "sync.problem.offline": "Couldn't sync: you're offline. Your changes are safe on this computer and will sync later.",
   "sync.problem.auth": "Couldn't sync: GitHub didn't accept your sign-in.",
   "sync.problem.conflict": "Couldn't sync: GitHub has changes that don't fit with yours. Both versions are kept.",

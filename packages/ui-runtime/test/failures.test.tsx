@@ -24,6 +24,18 @@ function setup() {
 }
 
 describe("view command failures (F1)", () => {
+  it("keeps repeated inline commit recovery failures local and reports malformed commit actions", async () => {
+    const { app, resolver } = setup();
+    app.commands.register({ id: "fixture.persist", title: "gallery.action", run: async () => { throw new Error("disk full"); } });
+    const args = { target: "vm.project.accent", command: "fixture.persist", value: "blue" };
+    expect(await resolver.runCommand("commit.run", args)).toBe(false);
+    expect(await resolver.runCommand("commit.run", args)).toBe(false);
+    expect(app.store.state.ui.toasts).toEqual([]);
+    expect(console.error).toHaveBeenCalled();
+    expect(await resolver.runCommand("commit.run", { target: "", command: "missing", value: "blue" })).toBe(false);
+    expect(app.store.state.ui.toasts).toHaveLength(1);
+  });
+
   it("uses the commit track only for declared persisted fields, retains a failed draft and reverts without writing", async () => {
     const { app, deps } = setup();
     const set = vi.fn().mockRejectedValue(new Error("disk full"));

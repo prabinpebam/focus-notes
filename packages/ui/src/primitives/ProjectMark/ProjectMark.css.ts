@@ -34,6 +34,6 @@ export const watermark = style({
 });
 // A choice in a picker: a native toggle button, its ring the app's focus ring.
 export const choice = style({
-  cursor: "pointer", padding: 0, font: "inherit",
+  position: "relative", cursor: "pointer", padding: 0, font: "inherit",
   selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusOffset } },
 });

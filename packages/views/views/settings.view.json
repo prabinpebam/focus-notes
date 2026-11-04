@@ -153,17 +153,9 @@
                                 "key": "a.id",
                                 "render": {
                                   "type": "ProjectMark",
-                                  "on": {
-                                    "press": {
-                                      "run": "project.accent",
-                                      "args": {
-                                        "value": {
-                                          "get": "a.id"
-                                        }
-                                      }
-                                    }
-                                  },
                                   "props": {
+                                    "value": { "bind": "vm.project.accent" },
+                                    "choice": { "get": "a.id" },
                                     "accent": {
                                       "get": "a.id"
                                     },
@@ -176,7 +168,7 @@
                                       "expr": {
                                         "==": [
                                           {
-                                            "get": "vm.project.accent"
+                                            "get": "vm.project.accentChoice"
                                           },
                                           {
                                             "get": "a.id"
@@ -197,6 +189,15 @@
                               }
                             ]
                           }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "when": { "get": "vm.project.accentFailed" },
+                        "props": { "gap": "s", "align": "center", "wrap": true },
+                        "children": [
+                          { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.accent", "command": "project.accent", "value": { "get": "vm.project.accentChoice" } } } } },
+                          { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.accent" } } } }
                         ]
                       },
                       {
@@ -228,17 +229,9 @@
                                     "key": "l.id",
                                     "render": {
                                       "type": "ProjectMark",
-                                      "on": {
-                                        "press": {
-                                          "run": "project.logo",
-                                          "args": {
-                                            "value": {
-                                              "get": "l.id"
-                                            }
-                                          }
-                                        }
-                                      },
                                       "props": {
+                                        "value": { "bind": "vm.project.logo" },
+                                        "choice": { "get": "l.id" },
                                         "logo": {
                                           "get": "l.id"
                                         },
@@ -253,7 +246,7 @@
                                           "expr": {
                                             "==": [
                                               {
-                                                "get": "vm.project.logo"
+                                                "get": "vm.project.logoChoice"
                                               },
                                               {
                                                 "get": "l.id"
@@ -282,12 +275,21 @@
                                 },
                                 "children": [
                                   { "type": "ProjectMark", "when": { "expr": { "==": [{ "get": "vm.project.logo" }, "upload"] } }, "props": { "logo": "upload", "src": { "get": "vm.project.logoSrc" }, "accent": { "get": "vm.project.accent" }, "size": "m", "selected": true } },
-                                  { "type": "Button", "props": { "label": { "t": "project.settings.upload" }, "variant": "secondary" }, "on": { "press": { "run": "project.upload" } } },
+                                  { "type": "Button", "props": { "label": { "t": "project.settings.upload" }, "variant": "secondary", "disabled": { "expr": { "==": [{ "get": "vm.project.logoCommit" }, "pending"] } } }, "on": { "press": { "run": "project.upload" } } },
                                   { "type": "Text", "props": { "value": { "get": "vm.project.uploadError" }, "tone": "danger" } }
                                 ]
                               }
                             ]
                           }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "when": { "get": "vm.project.logoFailed" },
+                        "props": { "gap": "s", "align": "center", "wrap": true },
+                        "children": [
+                          { "type": "StatusRow", "props": { "message": { "t": "commit.choiceFailed" }, "actionLabel": { "t": "commit.retry" } }, "on": { "action": { "run": "commit.run", "args": { "target": "vm.project.logo", "command": "project.logo", "value": { "get": "vm.project.logoChoice" } } } } },
+                          { "type": "Button", "props": { "label": { "t": "commit.revert" }, "variant": "secondary" }, "on": { "press": { "run": "commit.revert", "args": { "target": "vm.project.logo" } } } }
                         ]
                       },
                       {

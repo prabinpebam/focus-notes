@@ -115,6 +115,10 @@ export function createResolver(deps: RuntimeDeps) {
       await app.commands.run(command, args);
       return true;
     } catch (error) {
+      if (command === "commit.run" && app.store.state.commits.some((item) => item.target === args.target && item.phase === "failed")) {
+        console.error("Setting commit failed", error);
+        return false;
+      }
       await reportFailure(error, retry?.command ?? command, retry ? retry.args ?? {} : args);
       return false;
     }

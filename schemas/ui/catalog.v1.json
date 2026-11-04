@@ -3293,17 +3293,45 @@
           "default": false,
           "description": "The chosen preset in the logo picker: a full outline, never a one-sided stripe."
         },
+        "value": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The bound choice for a persisted picker; overrides selected when choice is provided."
+        },
+        "choice": {
+          "kind": "text",
+          "description": "The value this mark chooses."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "The selected compact mark uses its own border; recovery lives in the picker row."
+        },
         "label": {
           "kind": "message"
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "change": {
+          "binds": "value",
+          "payload": {
+            "value": "text"
+          }
+        }
       },
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.projectMark.*",
       "a11y": {
@@ -3311,6 +3339,10 @@
         "name": "label"
       },
       "fixtures": [
+        "commit rest",
+        "commit pending",
+        "commit confirmed",
+        "commit failed",
         "size inline",
         "size s",
         "size m",

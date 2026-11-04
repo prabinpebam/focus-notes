@@ -7847,6 +7847,41 @@
                 }
               ]
             },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "choice": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "commit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "label": {
               "anyOf": [
                 {
@@ -7868,6 +7903,9 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "change": {
               "$ref": "#/$defs/actions"
             }
           }

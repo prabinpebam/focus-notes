@@ -116,3 +116,49 @@ test("project name saves on blur, keeps a rejected draft and retries without los
     await closeTestApp(l);
   }
 });
+
+test("project colour and logo keep failed choices, retry the latest value and revert without writing", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  try {
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    const blue = settings.getByRole("button", { name: "Blue", exact: true });
+    const red = settings.getByRole("button", { name: "Red", exact: true });
+    block();
+    await blue.click();
+    await expect(blue).toHaveAttribute("data-commit", "failed");
+    await expect(blue).toHaveAttribute("aria-pressed", "true");
+    await red.click();
+    await expect(red).toHaveAttribute("data-commit", "failed");
+    await expect(blue).toHaveAttribute("aria-pressed", "false");
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(red).toHaveAttribute("data-commit", "failed");
+    restore();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).projectSettings?.[dirs.docs]?.accent).toBe("red");
+    const rocket = settings.getByRole("button", { name: "Rocket", exact: true });
+    await rocket.click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).projectSettings?.[dirs.docs]?.logo).toBe("rocket");
+    block();
+    const star = settings.getByRole("button", { name: "Star", exact: true });
+    await star.click();
+    await expect(star).toHaveAttribute("data-commit", "failed");
+    await settings.getByRole("button", { name: "Revert", exact: true }).click();
+    await expect(rocket).toHaveAttribute("aria-pressed", "true");
+    await expect(settings.getByRole("button", { name: "Retry", exact: true })).toHaveCount(0);
+    expect(statSync(stateFile).isDirectory()).toBe(true);
+    restore();
+  } finally {
+    restore();
+    await closeTestApp(l);
+  }
+});

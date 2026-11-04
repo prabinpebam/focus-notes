@@ -7635,17 +7635,45 @@
           "default": false,
           "description": "The chosen preset in the logo picker: a full outline, never a one-sided stripe."
         },
+        "value": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The bound choice for a persisted picker; overrides selected when choice is provided."
+        },
+        "choice": {
+          "kind": "text",
+          "description": "The value this mark chooses."
+        },
+        "commit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "The selected compact mark uses its own border; recovery lives in the picker row."
+        },
         "label": {
           "kind": "message"
         }
       },
       "events": {
-        "press": {}
+        "press": {},
+        "change": {
+          "binds": "value",
+          "payload": {
+            "value": "text"
+          }
+        }
       },
       "slots": {},
       "states": [
         "rest",
-        "selected"
+        "selected",
+        "pending",
+        "confirmed",
+        "failed"
       ],
       "tokens": "cmp.projectMark.*",
       "a11y": {
@@ -7653,6 +7681,86 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "commit rest",
+          "covers": [
+            "rest"
+          ],
+          "props": {
+            "logo": "book",
+            "accent": "teal",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "choice": {
+              "get": "vm.gallery.query"
+            },
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "commit pending",
+          "covers": [
+            "pending"
+          ],
+          "props": {
+            "logo": "book",
+            "accent": "teal",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "choice": {
+              "get": "vm.gallery.query"
+            },
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "commit confirmed",
+          "covers": [
+            "confirmed"
+          ],
+          "props": {
+            "logo": "book",
+            "accent": "teal",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "choice": {
+              "get": "vm.gallery.query"
+            },
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "commit failed",
+          "covers": [
+            "failed"
+          ],
+          "props": {
+            "logo": "book",
+            "accent": "teal",
+            "label": {
+              "t": "gallery.sample"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "choice": {
+              "get": "vm.gallery.query"
+            },
+            "commit": "failed"
+          }
+        },
         {
           "name": "size inline",
           "props": {

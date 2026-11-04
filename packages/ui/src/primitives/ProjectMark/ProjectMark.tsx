@@ -6,6 +6,7 @@ import {
 } from "@fluentui/react-icons";
 import type { ComponentType, SVGProps } from "react";
 import type { ProjectAccent, ProjectLogo } from "./presets.ts";
+import { CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./ProjectMark.css.ts";
 
 /** Licensed catalogue geometry (Fluent UI System Icons, MIT), never hand-drawn familiar marks (D-313). */
@@ -28,30 +29,42 @@ export interface ProjectMarkProps {
   size?: keyof typeof s.size;
   /** The chosen preset in the logo picker. */
   selected?: boolean;
+  value?: string;
+  choice?: string;
+  commit?: CommitState;
   /** Only where the mark stands for the project on its own; required when it can be pressed. */
   label?: string;
   /** A choice in the logo or colour picker: the mark is a toggle button, pressed when selected. */
   onPress?: () => void;
+  onChange?: (event: { value: string }) => void;
 }
 
 /** A project's mark: its logo on its accent's plate, or its initial (D-313). */
-export function ProjectMark({ logo = "none", src, initials, accent = "app", plate = "tint", size = "m", selected = false, label, onPress }: ProjectMarkProps) {
+export function ProjectMark({ logo = "none", src, initials, accent = "app", plate = "tint", size = "m", selected: explicitSelected = false, value, choice, commit, label, onPress, onChange }: ProjectMarkProps) {
+  const selected = choice !== undefined && value !== undefined ? choice === value : explicitSelected;
   const Glyph = logo !== "none" && logo !== "upload" ? LOGOS[logo] : undefined;
   const upload = logo === "upload" && src?.startsWith("data:image/svg+xml") ? src : undefined;
   const inner = Glyph ? <Glyph className={`${s.glyph} ${s.glyphSize[size]}`} aria-hidden="true" />
     : upload ? <img className={`${s.glyph} ${s.glyphSize[size]}`} src={upload} alt="" draggable={false} />
     : <span className={s.initials}>{initials?.slice(0, 1)}</span>;
-  if (onPress) return (
+  if (onPress || onChange || choice !== undefined) return (
     <button
       type="button"
-      className={`${s.base} ${s.size[size]} ${s.plate[plate]} ${s.choice}${selected ? ` ${s.selected}` : ""}`}
+      className={`${s.base} ${s.size[size]} ${s.plate[plate]} ${s.choice}${selected && (!commit || commit === "rest") ? ` ${s.selected}` : ""}`}
       data-project-accent={accent === "app" ? undefined : accent}
       data-project-mark={size}
       aria-pressed={selected}
       aria-label={label}
+      aria-disabled={commit === "pending" || undefined}
+      aria-busy={selected && commit === "pending" || undefined}
+      data-commit={selected ? commit : undefined}
       title={label}
-      onClick={onPress}
-    >{inner}</button>
+      onClick={() => {
+        if (commit === "pending") return;
+        if (choice !== undefined) onChange?.({ value: choice });
+        onPress?.();
+      }}
+    >{inner}{selected && commit ? <CommitMark variant="border" state={commit} /> : null}</button>
   );
   return (
     <span

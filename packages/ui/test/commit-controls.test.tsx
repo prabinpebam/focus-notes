@@ -4,9 +4,37 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { SegmentedControl } from "../src/primitives/SegmentedControl/SegmentedControl.tsx";
 import { TextField } from "../src/primitives/TextField/TextField.tsx";
+import { ProjectMark } from "../src/primitives/ProjectMark/ProjectMark.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.useRealTimers());
+
+it("keeps compact project choices focusable, blocks the pending group and draws feedback only on its chosen mark", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const press = vi.fn();
+  const render = (commit: "rest" | "pending" | "failed") => act(() => root.render(createElement("div", {},
+    ...["blue", "teal"].map((choice) => createElement(ProjectMark, { key: choice, label: choice, choice, value: "blue", commit, onChange: press })),
+  )));
+  try {
+    render("rest");
+    const buttons = host.querySelectorAll("button");
+    buttons[0]!.focus();
+    render("pending");
+    expect(document.activeElement).toBe(buttons[0]);
+    expect(buttons[0]!.getAttribute("aria-busy")).toBe("true");
+    expect(buttons[1]!.getAttribute("data-commit")).toBeNull();
+    act(() => { buttons[0]!.click(); buttons[1]!.click(); });
+    expect(press).not.toHaveBeenCalled();
+    expect(host.querySelector("button:disabled")).toBeNull();
+    render("failed");
+    expect(buttons[0]!.getAttribute("aria-pressed")).toBe("true");
+    expect(buttons[0]!.getAttribute("data-commit")).toBe("failed");
+    act(() => buttons[1]!.click());
+    expect(press).toHaveBeenCalledWith({ value: "teal" });
+  } finally { act(() => root.unmount()); host.remove(); }
+});
 
 it("debounces keyboard selection for 500 ms and keeps the selected radio focusable during pending", async () => {
   vi.useFakeTimers();

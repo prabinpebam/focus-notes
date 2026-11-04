@@ -93,11 +93,24 @@ export function registerProject(ctx: {
         id: text, label: text, kind: text, slot: text, badge: text, description: text, group: text, sample: text,
         colors: { type: "array", items: { type: "object", properties: { id: text, value: text } } },
       } } },
+      ...Object.fromEntries(["accent", "logo"].flatMap((field) => [
+        [`${field}Commit`, { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] }],
+        [`${field}Choice`, text], [`${field}Failed`, { type: "boolean" as const }],
+      ])),
     } },
     select: (state: AppState) => {
       const current = settings();
+      const choices = Object.fromEntries(["accent", "logo"].flatMap((field) => {
+        const commit = state.commits.find((item) => item.target === `vm.project.${field}`);
+        const stored = field === "accent" ? current.accent : current.logo;
+        return [
+          [`${field}Commit`, commit?.phase ?? "rest"],
+          [`${field}Choice`, commit && commit.phase !== "confirmed" && typeof commit.value === "string" ? commit.value : stored],
+          [`${field}Failed`, commit?.phase === "failed"],
+        ];
+      }));
       return {
-        ...current, ...transient, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
+        ...current, ...transient, ...choices, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
         accent: ctx.bridge.projects?.local ? "app" : current.accent,
         filesHeading: catalog.format(ctx.bridge.projects?.local ? "quick.title" : "files.heading"),
         scopeFont: transient.fontHover || current.font, scopeTheme: transient.themeHover || current.theme,

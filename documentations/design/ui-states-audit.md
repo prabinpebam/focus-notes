@@ -20,6 +20,8 @@ The separate commit track exposes `vm.commits`, starts pending immediately and h
 
 Focused invisible journeys verify scale failure/Retry/reopening, notification F6 and pointer recovery with Settings open, and project-name failure with the draft retained and persisted on Retry. Remaining W4/W5 surfaces include custom action-driven accent/logo/font/theme pickers, the other app settings, AI's separate save groups, and the watermark-specific failure journey; these are not claimed as accepted.
 
+The project colour and preset-logo pickers now use the same declared, bound commit lane. Only the attempted mark draws the compact border feedback; pending keeps keyboard focus and blocks the choice group. Failed choices remain selected without changing the saved project identity. The nearby row offers Retry of the latest choice or Revert without a write, and repeated recovery failures remain local. The four affected package typechecks, 13 focused unit tests and the invisible project colour/logo failure/Retry/Revert journey pass. Generated schemas are current; the same 54 inherited sharing/site-preview findings remain. Font/theme pickers and logo upload remain separate, unfinished W5 work.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.
