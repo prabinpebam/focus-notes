@@ -1649,6 +1649,11 @@
         "actionLabel": {
           "kind": "text"
         },
+        "actionPending": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Only this recovery action is inert while it runs; its error stays until recovery succeeds."
+        },
         "dismissLabel": {
           "kind": "message",
           "required": true
@@ -1665,7 +1670,8 @@
           "payload": {
             "paused": "boolean"
           }
-        }
+        },
+        "wrapped": {}
       },
       "slots": {},
       "states": [
@@ -1683,7 +1689,8 @@
         "tone warning",
         "tone progress",
         "tone info",
-        "tone error with action"
+        "tone error with action",
+        "pending recovery"
       ]
     },
     {

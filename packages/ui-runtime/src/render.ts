@@ -110,7 +110,6 @@ export function createResolver(deps: RuntimeDeps) {
     }
   };
   const runCommand = async (command: string, args: Record<string, unknown> = {}) => {
-    const retry = command === "toast.action" ? app.store.state.ui.toasts.find((toast) => toast.id === Number(args.id))?.action : undefined;
     try {
       await app.commands.run(command, args);
       return true;
@@ -119,7 +118,7 @@ export function createResolver(deps: RuntimeDeps) {
         console.error("Setting commit failed", error);
         return false;
       }
-      await reportFailure(error, retry?.command ?? command, retry ? retry.args ?? {} : args);
+      await reportFailure(error, command, args);
       return false;
     }
   };

@@ -469,6 +469,105 @@ test("SVG logo upload keeps its source on failure, retries without a picker and 
   } finally { restore(); await closeTestApp(l); }
 });
 
+test("four writing outcomes queue, reveal the next pill and retain a failed Retry without losing editor focus", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Notifications\n\nalpha alpha beta\n");
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note, fontSize: 16 }));
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  try {
+    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
+    const region = l.page.getByRole("region", { name: "Notifications", exact: true });
+    while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) {
+      await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
+    }
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await editor.click();
+    renameSync(stateFile, backup); mkdirSync(stateFile);
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+=" : "Control+=");
+    const retry = region.getByRole("button", { name: "Retry", exact: true });
+    await expect(retry).toBeVisible();
+    await expect(editor).toBeFocused();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+u" : "Control+u");
+    const replaceAll = async (find: string, replace: string, count: number) => {
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+f" : "Control+h");
+      const bar = l.page.getByRole("region", { name: "Find in note", exact: true });
+      await bar.getByRole("searchbox", { name: "Find", exact: true }).fill(find);
+      await expect(bar.getByRole("status").first()).toHaveText(new RegExp(`of ${count}$`));
+      await bar.getByRole("searchbox", { name: "Replace with", exact: true }).fill(replace);
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Enter" : "Control+Alt+Enter");
+      await expect(editor).toContainText(replace);
+      await l.page.keyboard.press("Escape");
+      await expect(editor).toBeFocused();
+    };
+    await replaceAll("alpha", "gamma", 2);
+    await replaceAll("beta", "delta", 1);
+    await expect(region.locator("[data-surface=toast]")).toHaveCount(3);
+    await expect(region).toContainText("1 more waiting");
+    await expect(region.locator("[data-surface=toast]").first()).toHaveAttribute("data-tone", "error");
+    await expect(region.locator("[data-surface=toast][data-tone=success]")).toHaveCount(1);
+    await region.locator("[data-surface=toast][data-tone=warning]").getByRole("button", { name: "Dismiss", exact: true }).click();
+    await expect(region.locator("[data-surface=toast][data-tone=success]")).toHaveCount(2);
+    await expect(region).not.toContainText("1 more waiting");
+    await expect(editor).toBeFocused();
+    await l.page.keyboard.press("F6");
+    await expect(retry).toBeFocused();
+    await retry.click();
+    await expect(retry).not.toHaveAttribute("aria-disabled", "true");
+    await expect(region.locator("[data-surface=toast][data-tone=error]")).toHaveCount(1);
+    await expect(retry).toBeVisible();
+    restore();
+    await retry.click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).fontSize).toBe(17);
+    await expect(region.locator("[data-surface=toast][data-tone=error]")).toHaveCount(0);
+    await expect(editor).toBeFocused();
+    await expect(editor).toContainText("gamma gamma delta");
+  } finally { restore(); await closeTestApp(l); }
+});
+
+test("an actually wrapped writing notice stays for eight visible seconds", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Wrapped notice\n\nKept text.\n");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
+    const region = l.page.getByRole("region", { name: "Notifications", exact: true });
+    while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
+    await l.app.evaluate(({ BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows()[0]!;
+      window.setMinimumSize(360, 640);
+      window.setContentSize(360, 640);
+    });
+    const time = new Date("2026-11-04T00:00:00Z");
+    await l.page.clock.install({ time });
+    await l.page.clock.pauseAt(new Date(time.getTime() + 1000));
+    await l.page.getByRole("textbox", { name: "Note", exact: true }).click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+u" : "Control+u");
+    const notice = region.locator("[data-surface=toast][data-tone=warning]");
+    await expect(notice).toBeVisible();
+    const lines = await notice.locator("span[dir=auto]").evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return new Set([...range.getClientRects()].map((rect) => rect.top)).size;
+    });
+    expect(lines).toBeGreaterThan(1);
+    await l.page.clock.runFor(5999);
+    await expect(notice).toBeVisible();
+    await l.page.clock.runFor(2000);
+    await expect(notice).toBeVisible();
+    await l.page.clock.runFor(1);
+    await expect(notice).toHaveCount(0);
+  } finally { await closeTestApp(l); }
+});
+
 test("notification Retry stays above Settings and reachable with F6 while the modal stays open", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

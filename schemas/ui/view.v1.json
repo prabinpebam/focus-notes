@@ -4313,6 +4313,19 @@
                 }
               ]
             },
+            "actionPending": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "dismissLabel": {
               "anyOf": [
                 {
@@ -4354,6 +4367,9 @@
               "$ref": "#/$defs/actions"
             },
             "pausedChange": {
+              "$ref": "#/$defs/actions"
+            },
+            "wrapped": {
               "$ref": "#/$defs/actions"
             }
           }

@@ -3,7 +3,7 @@
  * and keys, the view model the panel shows, and what each result and quick action does. It asks the
  * search index (D-107) once the shell has started it, and keeps frecency in memory (D-109).
  */
-import type { AppState } from "./app.ts";
+import type { AppState, ToastState } from "./app.ts";
 import type { PlatformBridge } from "./bridge.ts";
 import { formatChord, type CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
@@ -74,7 +74,7 @@ interface Ctx {
   catalog: MessageCatalog;
   bridge: PlatformBridge;
   load(path: string): Promise<void>;
-  toast(message: string, opts?: { tone?: "info" | "error" }): number;
+  toast(message: string, opts?: { tone?: ToastState["tone"] }): number;
   editorAction(id: string, args?: Record<string, unknown>): void;
   now(): number;
 }

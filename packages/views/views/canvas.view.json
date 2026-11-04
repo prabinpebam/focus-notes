@@ -9316,6 +9316,8 @@
                     "actionLabel": {
                       "get": "toast.actionLabel"
                     },
+                    "actionPending": { "get": "toast.actionPending" },
+                    "sticky": { "get": "toast.sticky" },
                     "dismissLabel": {
                       "t": "toast.dismiss"
                     },
@@ -9324,6 +9326,7 @@
                     }
                   },
                   "on": {
+                    "wrapped": { "run": "toast.wrapped", "args": { "id": { "get": "toast.id" } } },
                     "action": {
                       "run": "toast.action",
                       "args": {

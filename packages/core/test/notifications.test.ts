@@ -10,7 +10,7 @@ function setup() {
   const queue = new NotificationQueue({
     now: () => Date.now(), setTimeout: (fn, ms) => setTimeout(fn, ms),
     clearTimeout: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
-  }, 6000, (next) => { items = next; });
+  }, 6000, (next) => { items = next; }, 8000);
   return { queue, items: () => items };
 }
 
@@ -39,6 +39,30 @@ it("hard-dismisses errors and unique recovery actions instead of expiring them",
   queue.show("recover", { action: { command: "retry", label: "Retry" } });
   await vi.advanceTimersByTimeAsync(60_000);
   expect(items()).toHaveLength(2);
+});
+
+it("keeps decision warnings and progress until resolved, then times the replacement outcome", async () => {
+  const { queue, items } = setup();
+  queue.show("decide", { tone: "warning", action: { command: "review", label: "Review" } });
+  queue.show("working", { tone: "progress", subject: "publish" });
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(items().map((item) => item.message)).toEqual(["decide", "working"]);
+  const id = queue.show("published", { tone: "success", subject: "publish" });
+  expect(items().find((item) => item.id === id)).toMatchObject({ tone: "success", sticky: false, count: 1 });
+  await vi.advanceTimersByTimeAsync(6000);
+  expect(items()).toMatchObject([{ message: "decide", sticky: true }]);
+});
+
+it("extends an actually wrapped notice to eight visible seconds without restarting its clock", async () => {
+  const { queue, items } = setup();
+  const id = queue.show("wrapped");
+  await vi.advanceTimersByTimeAsync(1000);
+  queue.wrapped(id);
+  queue.wrapped(id);
+  await vi.advanceTimersByTimeAsync(6999);
+  expect(items()).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(items()).toEqual([]);
 });
 
 it("coalesces repeated subjects in place and retries the newest attempted value", () => {

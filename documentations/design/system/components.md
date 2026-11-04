@@ -68,7 +68,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | CommitMark | primitive | `rest`, `pending`, `confirmed`, `failed` | 5 | None |
 | Skeleton | primitive | `rest` | 8 | None |
 | LiveRegion | primitive | `rest` | 1 | None |
-| Toast | primitive | `rest`, `paused`, `focusVisible` | 5 | `paused`, `focusVisible` |
+| Toast | primitive | `rest`, `paused`, `focusVisible` | 6 | `paused`, `focusVisible` |
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |

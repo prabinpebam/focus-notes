@@ -4,7 +4,7 @@
  * account corner; Copy to my notes; export and import; and Use this app for yourself. The browser
  * never signs in to GitHub and never writes to a repository.
  */
-import type { AppState } from "./app.ts";
+import type { AppState, ToastState } from "./app.ts";
 import type { AppStateFile, NoteSummary, PlatformBridge } from "./bridge.ts";
 import { UnlockError } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
@@ -58,7 +58,7 @@ export interface BrowserContext {
   bridge: PlatformBridge;
   load(path: string): Promise<void>;
   flush(): Promise<boolean>;
-  toast(message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }): number;
+  toast(message: string, opts?: { tone?: ToastState["tone"]; action?: { command: string; label: string } }): number;
   tracker: TaskTracker;
   menu: { id: string; label: string; items: (string | { submenu: string; label: string; items: string[] })[] }[];
   appState(): AppStateFile;

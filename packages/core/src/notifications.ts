@@ -5,15 +5,17 @@ export class NotificationQueue {
   #items: ToastState[] = [];
   #next = 1;
   #active = true;
-  #timers = new Map<number, { remaining: number; started?: number; handle?: unknown }>();
+  #timers = new Map<number, { remaining: number; duration: number; started?: number; handle?: unknown }>();
 
   readonly clock: Clock;
   readonly duration: number;
+  readonly longDuration: number;
   readonly change: (items: ToastState[]) => void;
 
-  constructor(clock: Clock, duration: number, change: (items: ToastState[]) => void) {
+  constructor(clock: Clock, duration: number, change: (items: ToastState[]) => void, longDuration = duration) {
     this.clock = clock;
     this.duration = duration;
+    this.longDuration = longDuration;
     this.change = change;
   }
 
@@ -24,14 +26,15 @@ export class NotificationQueue {
     const id = same?.id ?? this.#next++;
     const item: ToastState = {
       id, message, tone: opts.tone ?? "info", paused: same?.paused ?? false,
-      count: (same?.count ?? 0) + 1, sticky: opts.sticky ?? (opts.tone === "error" || Boolean(opts.action)),
+      count: same?.tone === (opts.tone ?? "info") ? (same.count ?? 1) + 1 : 1,
+      sticky: opts.tone === "error" || opts.tone === "progress" || Boolean(opts.action) || Boolean(opts.sticky),
       ...(opts.action ? { action: opts.action } : {}), ...(opts.subject ? { subject: opts.subject } : {}),
     };
     if (same) this.#items = this.#items.map((t) => t.id === id ? item : t);
     else this.#items.push(item);
     this.#stop(id);
     this.#timers.delete(id);
-    if (!item.sticky) this.#timers.set(id, { remaining: this.duration });
+    if (!item.sticky) this.#timers.set(id, { remaining: this.duration, duration: this.duration });
     this.#refresh();
     return id;
   }
@@ -45,6 +48,20 @@ export class NotificationQueue {
 
   pause(id: number, paused: boolean): void {
     this.#items = this.#items.map((t) => t.id === id ? { ...t, paused } : t);
+    this.#refresh();
+  }
+
+  pending(id: number, pending: boolean): void {
+    this.#items = this.#items.map((item) => item.id === id ? { ...item, pending } : item);
+    this.#refresh();
+  }
+
+  wrapped(id: number): void {
+    const timer = this.#timers.get(id);
+    if (!timer || timer.duration >= this.longDuration) return;
+    this.#stop(id);
+    timer.remaining += this.longDuration - timer.duration;
+    timer.duration = this.longDuration;
     this.#refresh();
   }
 

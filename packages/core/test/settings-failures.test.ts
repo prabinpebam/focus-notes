@@ -80,6 +80,39 @@ describe("rejected settings writes (F1)", () => {
     expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: "vm.app.focusMode", phase: "confirmed" }));
   });
 
+  it("keeps a failed notification Retry usable instead of replacing it with a dead toast.action retry", async () => {
+    let reject = true;
+    const app = setup(async () => { if (reject) throw new Error("disk full"); });
+    await expect(app.commands.run("font.larger")).rejects.toThrow("disk full");
+    await app.commands.run("app.reportFailure", { command: "font.larger" });
+    const first = app.store.state.ui.toasts[0]!;
+    await expect(app.commands.run("toast.action", { id: first.id })).rejects.toThrow("disk full");
+    expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ id: first.id, pending: false }));
+    await app.commands.run("app.reportFailure", { command: "toast.action", args: { id: first.id } });
+    const current = app.store.state.ui.toasts.find((item) => item.action?.command === "font.reset")!;
+    expect(current.action?.args).toEqual({ value: 17 });
+    expect(current.action?.command).not.toBe("toast.action");
+    reject = false;
+    await app.commands.run("toast.action", { id: current.id });
+    expect(app.store.state.appearance.fontSize).toBe(17);
+    expect(app.store.state.ui.toasts.find((item) => item.id === current.id)).toBeUndefined();
+  });
+
+  it("does not pass an old F6 focus request to the next queued notification", async () => {
+    const app = setup(async () => {});
+    await app.commands.run("app.reportFailure", { command: "font.larger" });
+    await app.commands.run("app.reportFailure", { command: "appearance.dark" });
+    await app.commands.run("toast.focus");
+    const first = app.store.state.ui.toasts[0]!;
+    const feedback = () => app.viewModels.select("vm.feedback", app.store.state) as { toasts: { id: number; focusRequest: number }[] };
+    expect(feedback().toasts[0]?.focusRequest).toBe(1);
+    await app.commands.run("toast.dismiss", { id: first.id });
+    expect(feedback().toasts).toHaveLength(1);
+    expect(feedback().toasts[0]?.focusRequest).toBe(0);
+    await app.commands.run("toast.focus");
+    expect(feedback().toasts[0]?.focusRequest).toBe(2);
+  });
+
   it("serializes writes so the newest requested value is the final stored value", async () => {
     const pending: { state: AppStateFile; resolve: () => void }[] = [];
     const app = setup(state => new Promise<void>(resolve => pending.push({ state, resolve })));

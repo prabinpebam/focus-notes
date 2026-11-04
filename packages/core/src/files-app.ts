@@ -2,7 +2,7 @@
  * The Files panel in the app (WP-2.4, IA-VIEW-FILES): opening and revealing, the selection, inline
  * names, and every operation shown at once, written after, and put back if refused (PRF-09).
  */
-import type { AppState } from "./app.ts";
+import type { AppState, ToastState } from "./app.ts";
 import type { PlatformBridge, AppStateFile, WorkspaceOp, OpErrorCode, RecoveredDraft } from "./bridge.ts";
 import { opErrorCode } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
@@ -82,7 +82,7 @@ interface Ctx {
   viewModels: ViewModelRegistry<AppState>;
   catalog: MessageCatalog;
   bridge: PlatformBridge;
-  toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string; args?: Record<string, unknown> } }) => number;
+  toast: (message: string, opts?: { tone?: ToastState["tone"]; action?: { command: string; label: string; args?: Record<string, unknown> } }) => number;
   announce: (text: string) => void;
   load: (path: string) => Promise<void>;
   /** Runs after pending edits are written, with saves held until it finishes, so none lands in the old place. */

@@ -95,6 +95,7 @@ export interface AppState {
     findAll: FindAllState;
     /** Outcomes ordered by priority; the first three are visible and the rest wait. */
     toasts: ToastState[];
+    toastFocusId?: number;
     /** Bumped to move focus to the newest toast's action (F6). */
     toastFocus: number;
     /** Open… for notes the shell keeps itself (the web app). */
@@ -190,11 +191,12 @@ const FIND_CLOSED: FindState = {
 export interface ToastState {
   id: number;
   message: string;
-  tone: "info" | "error";
+  tone: "info" | "error" | "success" | "warning" | "progress";
   /** A command the toast offers ([Undo], [Retry], [Resolve]), its label, and its arguments. */
   action?: { command: string; label: string; args?: Record<string, unknown> };
   paused: boolean;
   sticky?: boolean;
+  pending?: boolean;
   count?: number;
   subject?: string;
 }
@@ -387,7 +389,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
 
   // ---- toasts (IA-CMP-TOAST) ----
-  const notifications = new NotificationQueue(clock, waits.toastDuration, (toasts) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts } })));
+  const notifications = new NotificationQueue(clock, waits.toastDuration, (toasts) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts } })), waits.noticeLong);
   const dismissToast = (id: number) => notifications.dismiss(id);
   const toast = (message: string, opts: { tone?: ToastState["tone"]; action?: ToastState["action"]; subject?: string; sticky?: boolean } = {}) => notifications.show(message, opts);
   store.subscribe(() => notifications.setActive(store.state.window.active));
@@ -949,7 +951,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: () => {
       if (underlineHinted) return;
       underlineHinted = true;
-      toast(catalog.format("toast.noUnderline"));
+      toast(catalog.format("toast.noUnderline"), { tone: "warning" });
     },
   });
 
@@ -1105,7 +1107,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "find.setResult", title: "command.find.setResult",
     run: ({ count, current, invalid, wrapped, replaced }) => {
       // Replace all is confirmed by a toast; wrapping is a short notice in the bar.
-      if (replaced > 0) toast(catalog.format("find.replaced", { count: replaced }));
+      if (replaced > 0) toast(catalog.format("find.replaced", { count: replaced }), { tone: "success" });
       const notice = wrapped ? catalog.format("find.wrapped") : replaced > 0 ? "" : store.state.ui.find.notice;
       setFind({ count: Number(count) || 0, current: Number(current) || 0, invalid: Boolean(invalid), notice });
     },
@@ -1115,14 +1117,18 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   commands.register<{ command?: string; args?: Record<string, unknown> }>({
     id: "app.reportFailure", title: "command.app.reportFailure",
     run: ({ command, args }) => {
-      const original = command === "command.run" && typeof args?.id === "string" ? args.id : command;
+      const retried = command === "toast.action" ? store.state.ui.toasts.find((item) => item.id === args?.id) : undefined;
+      const action = retried?.action;
+      const attempted = action?.command ?? command;
+      const attemptedArgs = action?.args ?? args;
+      const original = attempted === "command.run" && typeof attemptedArgs?.id === "string" ? attemptedArgs.id : attempted;
       const target = original ? commandCommitTargets[original] : undefined;
       const failed = target ? store.state.commits.find((item) => item.target === target && item.phase === "failed") : undefined;
-      const retryCommand = failed ? target === "vm.app.fontSize" ? "font.reset" : original : command;
-      const retryArgs = failed ? { value: failed.value } : args;
+      const retryCommand = failed ? target === "vm.app.fontSize" ? "font.reset" : original : attempted;
+      const retryArgs = failed ? { value: failed.value } : attemptedArgs;
       toast(catalog.format("toast.actionFailed"), {
         tone: "error",
-        ...(original ? { subject: original } : {}),
+        ...(original ? { subject: retried?.subject ?? original } : {}),
         ...(retryCommand && commands.has(retryCommand) ? { action: { command: retryCommand, ...(retryArgs ? { args: retryArgs } : {}), label: catalog.format("toast.retry") } } : {}),
       });
     },
@@ -1132,9 +1138,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "toast.action", title: "command.toast.action",
     run: async ({ id }, ctx) => {
       const t = store.state.ui.toasts.find((x) => x.id === Number(id));
-      if (!t?.action) return;
-      dismissToast(t.id);
-      await ctx.run(t.action.command, t.action.args);
+      if (!t?.action || t.pending) return;
+      notifications.pending(t.id, true);
+      try {
+        await ctx.run(t.action.command, t.action.args);
+        dismissToast(t.id);
+      } finally {
+        notifications.pending(t.id, false);
+      }
     },
   });
   commands.register<{ id: number; paused: boolean }>({
@@ -1143,10 +1154,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       notifications.pause(Number(id), Boolean(paused));
     },
   });
+  commands.register<{ id: number }>({ id: "toast.wrapped", title: "command.toast.setPaused", run: ({ id }) => notifications.wrapped(Number(id)) });
   commands.register({
     id: "toast.focus", title: "command.toast.focus", shortcut: { default: "F6" }, layer: "power", group: "app",
     enabled: (s) => s.ui.toasts.length > 0,
-    run: () => store.update((s) => ({ ...s, ui: { ...s.ui, toastFocus: s.ui.toastFocus + 1 } })),
+    run: () => store.update((s) => ({ ...s, ui: {
+      ...s.ui, toastFocus: s.ui.toastFocus + 1,
+      toastFocusId: s.ui.toasts.slice(0, 3).find((item) => item.action)?.id ?? s.ui.toasts[0]?.id,
+    } })),
   });
 
   const setShortcuts = (patch: Partial<AppState["ui"]["shortcuts"]>) =>
@@ -1350,7 +1365,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           await bridge.settings.remove();
         }
         store.update((s) => ({ ...s, settingsSync: on ? "on" : "off" }));
-        toast(catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal"));
+        toast(catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal"), { tone: "success" });
       } catch {
         settingsFile = before;
         toast(catalog.format("toast.settingsFailed"), { tone: "error" });
@@ -1365,7 +1380,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         announcement: { type: "string" },
         announcementKey: { type: "number" },
         toasts: { type: "array", items: { type: "object", properties: {
-          id: { type: "number" }, message: { type: "string" }, tone: { type: "string", enum: ["info", "error"] },
+          id: { type: "number" }, message: { type: "string" }, tone: { type: "string", enum: ["info", "error", "success", "warning", "progress"] }, sticky: { type: "boolean" }, actionPending: { type: "boolean" },
           actionLabel: { type: "string" }, hasAction: { type: "boolean" }, paused: { type: "boolean" }, focusRequest: { type: "number" },
         } } },
         toastFocus: { type: "number" },
@@ -1373,11 +1388,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         dismissLabel: { type: "string" },
       },
     },
-    reads: ["announcement", "ui.toasts", "ui.toastFocus"],
+    reads: ["announcement", "ui.toasts", "ui.toastFocus", "ui.toastFocusId"],
     select: (s) => ({
       announcement: s.announcement.text,
       announcementKey: s.announcement.n,
-      toasts: s.ui.toasts.slice(0, 3).map((t) => ({ id: t.id, message: (t.count ?? 1) > 1 ? catalog.format("toast.repeated", { message: t.message, count: t.count ?? 1 }) : t.message, tone: t.tone, actionLabel: t.action?.label ?? "", hasAction: Boolean(t.action), paused: t.paused, focusRequest: t.id === (s.ui.toasts.slice(0, 3).find((x) => x.action)?.id ?? s.ui.toasts[0]?.id) ? s.ui.toastFocus : 0 })),
+      toasts: s.ui.toasts.slice(0, 3).map((t) => ({ id: t.id, message: (t.count ?? 1) > 1 ? catalog.format("toast.repeated", { message: t.message, count: t.count ?? 1 }) : t.message, tone: t.tone, sticky: Boolean(t.sticky), actionPending: Boolean(t.pending), actionLabel: t.action?.label ?? "", hasAction: Boolean(t.action), paused: t.paused, focusRequest: t.id === s.ui.toastFocusId ? s.ui.toastFocus : 0 })),
       toastFocus: s.ui.toastFocus,
       overflowLabel: s.ui.toasts.length > 3 ? catalog.format("toast.queued", { count: s.ui.toasts.length - 3 }) : "",
       dismissLabel: catalog.has("toast.dismiss") ? catalog.format("toast.dismiss") : "",
