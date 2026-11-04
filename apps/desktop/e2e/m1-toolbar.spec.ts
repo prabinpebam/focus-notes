@@ -65,8 +65,8 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "true");
   await toolbar.getByRole("button", { name: "Focus mode" }).click();
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
-  await expect(toolbar).toBeHidden();
-  await page.keyboard.press(`${mod}+.`);
+  // Persisted compact settings stay visible for their own commit feedback.
+  await expect(toolbar).toBeVisible();
   await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "false");
   // Escape reaches the toolbar only once it has taken focus; before that the keypress goes to the note.
   await expect(toolbar.locator(":focus")).toHaveCount(1);

@@ -357,6 +357,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   }, options.clock);
   const clock = options.clock ?? { now: () => Date.now(), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
   const commits = new CommitTracker(waits.confirmMinimum, (items) => store.update((s) => ({ ...s, commits: items })), clock);
+  const commandCommitTargets: Readonly<Record<string, string>> = {
+    "focus.toggle": "vm.app.focusMode",
+    "outline.togglePin": "vm.app.outlinePinned",
+    "files.togglePin": "vm.files.pinned",
+  };
   commands.register<{ target: string; command: string; value: unknown; label?: string }>({
     id: "commit.run", title: "commit.save",
     run: async ({ target, command, value, label }) => {
@@ -810,15 +815,23 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   commands.register({ id: "ui.scaleDown", title: "command.ui.scaleDown", enabled: (s) => s.appearance.uiScale > UI_SCALES[0], run: () => setAppearance({ uiScale: scaleStep(-1) }) });
   commands.register({ id: "ui.scaleReset", title: "command.ui.scaleReset", run: () => setAppearance({ uiScale: 1 }) });
   commands.register({ id: "font.reset", title: "command.font.reset", shortcut: { default: "Mod+0" }, layer: "writer", group: "app", run: () => setFontSize(DEFAULT_FONT_SIZE) });
-  commands.register({
+  commands.register<{ value: boolean }>({
+    id: "focus.setMode", title: "command.focus.toggle",
+    run: async ({ value }, ctx) => {
+      if (typeof value !== "boolean") throw new Error("Invalid focus mode");
+      await persistAppState({ focusMode: value });
+      ctx.update((s) => ({ ...s, focusMode: value }));
+    },
+  });
+  commands.register<{ value?: boolean }>({
     id: "focus.toggle", title: "command.focus.toggle", icon: "focus",
     shortcut: { default: "Mod+Shift+D", alternates: { default: ["F8"] } }, layer: "writer", group: "app",
     checked: (s) => s.focusMode,
-    run: async (_a, ctx) => {
-      const on = !ctx.state.focusMode;
-      await persistAppState({ focusMode: on });
-      ctx.update((s) => ({ ...s, focusMode: on }));
-    },
+    enabled: (s) => !s.commits.some((item) => item.target === "vm.app.focusMode" && item.phase === "pending"),
+    run: ({ value }, ctx) => ctx.run("commit.run", {
+      target: "vm.app.focusMode", command: "focus.setMode",
+      value: typeof value === "boolean" ? value : !ctx.state.focusMode, label: catalog.format("command.focus.toggle"),
+    }),
   });
   // A note in a window of its own, side by side with this one (DSK-06, D-179): this window keeps its
   // note. Saved first, so the new window reads what's on screen here.
@@ -908,7 +921,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The command runs first, so one that opens a panel (find, the cheat sheet) owns focus
       // before the toolbar closes and would hand the caret back to the note.
       const done = ctx.run(id);
-      store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
+      if (!commandCommitTargets[id]) store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
       await done;
     },
   });
@@ -995,14 +1008,22 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: () => editorAction("outline.show"),
   });
   // Pinned open beside the text (D-186): the card stays wherever it fits; kept on this device.
-  commands.register({
+  commands.register<{ value: boolean }>({
+    id: "outline.setPinned", title: "command.outline.togglePin",
+    run: async ({ value }, ctx) => {
+      if (typeof value !== "boolean") throw new Error("Invalid contents docking");
+      await persistAppState({ outlinePinned: value ? true : undefined });
+      ctx.update((s) => ({ ...s, outlinePinned: value }));
+    },
+  });
+  commands.register<{ value?: boolean }>({
     id: "outline.togglePin", title: "command.outline.togglePin", icon: "pin", group: "app",
     checked: (s) => s.outlinePinned,
-    run: async (_a, ctx) => {
-      const on = !ctx.state.outlinePinned;
-      await persistAppState({ outlinePinned: on ? true : undefined });
-      ctx.update((s) => ({ ...s, outlinePinned: on }));
-    },
+    enabled: (s) => !s.commits.some((item) => item.target === "vm.app.outlinePinned" && item.phase === "pending"),
+    run: ({ value }, ctx) => ctx.run("commit.run", {
+      target: "vm.app.outlinePinned", command: "outline.setPinned",
+      value: typeof value === "boolean" ? value : !ctx.state.outlinePinned, label: catalog.format("command.outline.togglePin"),
+    }),
   });
   // Resized by dragging its edge or with the arrow keys on it (D-187): kept on this device.
   commands.register<{ width: number }>({
@@ -1087,10 +1108,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   commands.register<{ command?: string; args?: Record<string, unknown> }>({
     id: "app.reportFailure", title: "command.app.reportFailure",
     run: ({ command, args }) => {
+      const original = command === "command.run" && typeof args?.id === "string" ? args.id : command;
+      const target = original ? commandCommitTargets[original] : undefined;
+      const failed = target ? store.state.commits.find((item) => item.target === target && item.phase === "failed") : undefined;
+      const retryCommand = failed ? original : command;
+      const retryArgs = failed ? { value: failed.value } : args;
       toast(catalog.format("toast.actionFailed"), {
         tone: "error",
-        ...(command ? { subject: command } : {}),
-        ...(command && commands.has(command) ? { action: { command, ...(args ? { args } : {}), label: catalog.format("toast.retry") } } : {}),
+        ...(original ? { subject: original } : {}),
+        ...(retryCommand && commands.has(retryCommand) ? { action: { command: retryCommand, ...(retryArgs ? { args: retryArgs } : {}), label: catalog.format("toast.retry") } } : {}),
       });
     },
   });
@@ -1191,14 +1217,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const busyOf = (id: string) => busyProps(store.state.tasks, id, (key, args) => catalog.format(key, args));
   const describeItem = (id: string) => {
     const d = commands.describe(id);
+    const target = commandCommitTargets[id];
+    const commit = target ? store.state.commits.find((item) => item.target === target)?.phase : undefined;
     return {
       ...busyOf(id),
+      ...(commit ? { commit } : {}),
       id,
       label: catalog.format(d.title),
       ...(d.icon ? { icon: d.icon } : {}),
       ...(d.shortcut ? { shortcut: formatChord(d.shortcut, bridge.platform) } : {}),
       ...(d.checked !== undefined ? { checked: d.checked } : {}),
-      ...(!d.enabled ? { disabled: true, ...(d.disabledReason ? { reason: catalog.format(d.disabledReason) } : {}) } : {}),
+      ...(!d.enabled && commit !== "pending" ? { disabled: true, ...(d.disabledReason ? { reason: catalog.format(d.disabledReason) } : {}) } : {}),
     };
   };
   const ITEM_SCHEMA = {
@@ -1207,6 +1236,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const },
       shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const },
       busy: { type: "boolean" as const }, busyLabel: { type: "string" as const },
+      commit: { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] },
     },
   };
   registerFormatting({
@@ -1434,6 +1464,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         platform: { type: "string", enum: ["macos", "windows", "linux", "web"] },
         fontSize: { type: "number" },
         focusMode: { type: "boolean" },
+        outlineCommit: { type: "string" },
         /** The document minimap's card docked (D-186, D-187), its width, and Files' docking as the canvas arbitrates it (D-187). */
         outlinePinned: { type: "boolean" },
         outlineWidth: { type: "number" },
@@ -1454,7 +1485,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode", "outlinePinned", "outlineWidth", "ui.files.pinned", "ui.files.width", "compositing", "ui.theme.preview", "ui.theme.draft", "ui.theme.readingPreview", "keybindings.version"],
+    reads: ["appearance", "focusMode", "outlinePinned", "outlineWidth", "ui.files.pinned", "ui.files.width", "compositing", "ui.theme.preview", "ui.theme.draft", "ui.theme.readingPreview", "keybindings.version", "commits"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       // A custom theme shows through its base's styles with its own colors over them (D-173).
@@ -1462,7 +1493,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const theme = root.theme;
       const a = { ...s.appearance, ...s.ui.theme.readingPreview };
       return {
-        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode, outlinePinned: s.outlinePinned, outlineWidth: s.outlineWidth ?? 0, filesDock: s.ui.files.pinned, filesWidth: s.ui.files.width ?? 0,
+        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode, outlinePinned: s.outlinePinned,
+        outlineCommit: s.commits.find((item) => item.target === "vm.app.outlinePinned")?.phase ?? "rest",
+        outlineWidth: s.outlineWidth ?? 0, filesDock: s.ui.files.pinned, filesWidth: s.ui.files.width ?? 0,
         contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap: editorKeymapOf(s.keybindings.version), compositing: s.compositing,
         lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
         measure: a.measure === MEASURE.default ? undefined : a.measure,

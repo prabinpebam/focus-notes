@@ -177,6 +177,67 @@ test("theme-manager appearance and paragraph choices retain failures and retry w
   }
 });
 
+test("compact focus and docking controls retain stored values on failure and recover without changing the note", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  const text = "# A note\n\nKept text.\n\n## Another heading\n\nMore kept text.\n";
+  writeFileSync(note, text);
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note, focusMode: false }));
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  const saved = () => JSON.parse(readFileSync(stateFile, "utf8"));
+  const retry = l.page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Retry", exact: true });
+  try {
+    await l.page.getByRole("button", { name: "Dismiss", exact: true }).filter({ hasText: "Dismiss" }).click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    const toolbar = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
+    const focus = toolbar.getByRole("button", { name: "Focus mode", exact: true });
+    block();
+    await focus.click();
+    await expect(focus).toHaveAttribute("data-commit", "failed");
+    await expect(focus).toHaveAttribute("aria-pressed", "false");
+    await expect(toolbar).toBeVisible();
+    restore();
+    await retry.click();
+    await expect.poll(() => saved().focusMode).toBe(true);
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    await expect(focus).toHaveAttribute("aria-pressed", "true");
+    await l.page.keyboard.press("Escape");
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+o" : "Control+o");
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    const pin = files.getByRole("button", { name: "Dock Files", exact: true });
+    block();
+    await pin.click();
+    await expect(pin).toHaveAttribute("data-commit", "failed");
+    await expect(pin).toHaveAttribute("aria-pressed", "false");
+    restore();
+    await retry.click();
+    await expect.poll(() => saved().filesPinned).toBe(true);
+    await expect(files.getByRole("button", { name: "Undock Files", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    await toolbar.getByRole("button", { name: "More", exact: true }).click();
+    await l.page.getByRole("menuitemcheckbox", { name: "Dock contents", exact: true }).click();
+    await expect.poll(() => saved().outlinePinned).toBe(true);
+    const outline = l.page.getByRole("button", { name: "Undock contents", exact: true });
+    await expect(outline).toBeVisible();
+    await expect(outline).not.toHaveAttribute("data-commit", "pending");
+    block();
+    await outline.click();
+    await expect(outline).toHaveAttribute("data-commit", "failed");
+    await expect(outline).toHaveAttribute("aria-pressed", "true");
+    restore();
+    await retry.click();
+    await expect.poll(() => saved().outlinePinned).toBeUndefined();
+    expect(readFileSync(note, "utf8")).toBe(text);
+  } finally { restore(); await closeTestApp(l); }
+});
+
 test("theme and font choices keep failed drafts, retry their own choice and reopen stored settings", async () => {
   const dirs = tempDirs();
   const stateFile = join(dirs.userData, DATA_FILES.state);

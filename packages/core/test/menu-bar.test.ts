@@ -194,7 +194,8 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     // A change that doesn't show in the menu bar sends nothing.
     await app.commands.run("toolbar.setOpen", { open: false });
     await vi.advanceTimersByTimeAsync(MENU_UPDATE_MS);
-    expect(f.menus).toHaveLength(2);
+    // The pending commit unlocks here, which changes the menu item's availability.
+    expect(f.menus).toHaveLength(3);
     // Chosen by its key just after the page saw that key: the page already decided, so it doesn't run twice.
     app.keySeen();
     f.choose("focus.toggle", true);

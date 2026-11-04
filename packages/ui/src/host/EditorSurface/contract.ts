@@ -31,6 +31,7 @@ export const contract = defineContract({
     outlineLabel: { kind: "message", description: "The document minimap's name, Contents (UI-13, D-185). The minimap shows only when it's given." },
     outlineUntitled: { kind: "message", description: "What an empty heading reads as in the minimap's contents card." },
     outlinePinned: { kind: "boolean", default: false, description: "The minimap's contents card is kept open beside the text, where it fits (D-186)." },
+    outlineCommit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "Stored docking feedback on the existing contents pin." },
     outlinePinLabel: { kind: "message", description: "The contents card's pin button, unpinned: Keep contents open." },
     outlineUnpinLabel: { kind: "message", description: "The contents card's pin button, pinned: Unpin contents." },
     outlineWidth: { kind: "number", default: 0, description: "The docked contents' width in px, as resized; 0: the token's default (D-187)." },

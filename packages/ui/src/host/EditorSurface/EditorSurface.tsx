@@ -69,6 +69,7 @@ export interface EditorSurfaceProps {
   outlineUntitled?: string;
   /** The minimap's card kept open beside the text, where it fits (D-186). */
   outlinePinned?: boolean;
+  outlineCommit?: import("../../primitives/CommitMark/CommitMark.tsx").CommitState;
   outlinePinLabel?: string;
   outlineUnpinLabel?: string;
   onOutlinePin?: () => void;
@@ -171,7 +172,7 @@ export function EditorSurface({
   imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", onImageRead, onImageSelect, onImageAction, onImageEdited, onImageEditError,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
-  slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
+  slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
   id, onChange, onReady, onPosition, onFindResult, onFindPrefill, onFindScope, onRewriteCapture, onRewriteBegan, onRewriteCancel, onRewriteDeselect, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
@@ -879,7 +880,7 @@ export function EditorSurface({
       {editor && outlineLabel ? (
         <DocMinimap
           ref={minimapRef} editor={editor} scroller={scrollerRef} label={outlineLabel} untitled={outlineUntitled ?? ""}
-          pinned={outlinePinned} pinLabel={outlinePinLabel} unpinLabel={outlineUnpinLabel} onPin={onOutlinePin}
+          pinned={outlinePinned} commit={outlineCommit} pinLabel={outlinePinLabel} unpinLabel={outlineUnpinLabel} onPin={onOutlinePin}
           dockWidth={outlineWidth} resizeLabel={outlineResizeLabel} onResize={(width) => onOutlineResize?.({ width })}
           filesDock={filesDock} filesWidth={filesWidth} onFilesFit={(fits) => onFilesFit?.({ fits })}
         />

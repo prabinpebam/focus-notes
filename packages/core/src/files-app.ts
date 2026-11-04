@@ -219,19 +219,25 @@ export function registerFiles(ctx: Ctx) {
     run: () => (docked() ? ctx.editorAction("edit.focus") : close()),
   });
   // ---- docking (D-161, D-187): kept on this device ----
-  const setPinned = (pinned: boolean) => {
+  const setPinned = async (pinned: boolean) => {
+    await ctx.persistAppState({ filesPinned: pinned ? true : undefined });
     setFiles(() => ({ pinned }));
-    void ctx.persistAppState({ filesPinned: pinned ? true : undefined });
   };
-  commands.register({
-    id: "files.togglePin", title: "command.files.togglePin", icon: "pin", shortcut: { default: "Mod+Alt+P" }, layer: "power", group: "files",
-    enabled: () => Boolean(ws), checked: () => files().pinned,
-    run: () => {
-      const on = !files().pinned;
-      if (on && !files().open) reveal();
-      setPinned(on);
-      announce(catalog.format(on ? "files.pinnedNow" : "files.unpinnedNow"));
+  commands.register<{ value: boolean }>({
+    id: "files.setPinned", title: "command.files.togglePin",
+    run: async ({ value }) => {
+      if (typeof value !== "boolean") throw new Error("Invalid Files docking");
+      await setPinned(value);
+      if (value && !files().open) reveal();
     },
+  });
+  commands.register<{ value?: boolean }>({
+    id: "files.togglePin", title: "command.files.togglePin", icon: "pin", shortcut: { default: "Mod+Alt+P" }, layer: "power", group: "files",
+    enabled: (s) => Boolean(ws) && !s.commits.some((item) => item.target === "vm.files.pinned" && item.phase === "pending"), checked: () => files().pinned,
+    run: ({ value }) => commands.run("commit.run", {
+      target: "vm.files.pinned", command: "files.setPinned", value: typeof value === "boolean" ? value : !files().pinned,
+      label: catalog.format("command.files.togglePin"),
+    }),
   });
   // The repository and the account on GitHub, in the browser (D-189): only through the shell, as every web link.
   const github = (path: string) => `https://github.com/${path.split("/").map(encodeURIComponent).join("/")}`;
@@ -1401,7 +1407,7 @@ export function registerFiles(ctx: Ctx) {
       type: "object",
       properties: {
         source: { type: "object", properties: { visible: { type: "boolean" }, icon: { type: "string", enum: ["github", "folder"] }, title: { type: "string" }, login: { type: "string" }, hasLogin: { type: "boolean" }, repoLink: { type: "boolean" }, repoLabel: { type: "string" }, profileLink: { type: "boolean" }, profileLabel: { type: "string" }, titlePlain: { type: "boolean" }, loginPlain: { type: "boolean" }, label: { type: "string" }, revealable: { type: "boolean" } } },
-        open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
+        open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" }, pinCommit: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
         shortcuts: { type: "array", items: TREE_ITEM },
@@ -1415,7 +1421,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -1470,6 +1476,7 @@ export function registerFiles(ctx: Ctx) {
       return {
         source: whereFrom(s), shortcuts,
         open: true, pinned: f.pinned, docked: f.pinned && f.fits, width: f.width ?? 0, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
+        pinCommit: s.commits.find((item) => item.target === "vm.files.pinned")?.phase ?? "rest",
         ...menuOf(s, rows),
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
         editValue: f.edit?.value ?? "", editError: f.edit?.error ?? "",

@@ -68,6 +68,7 @@ interface DocMinimapProps {
   pinLabel?: string;
   unpinLabel?: string;
   onPin?: () => void;
+  commit?: import("../../primitives/CommitMark/CommitMark.tsx").CommitState;
   /** Its docked width in px, as resized; 0: the token's default. */
   dockWidth?: number;
   /** The resize handle's name ("Resize contents"). */
@@ -89,7 +90,7 @@ const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.to
  * The document minimap (UI-13, D-185): a rail of heading bars on the note's right edge, the current
  * section bright, that expands on hover (or *Show contents*) into a card of the note's headings.
  */
-export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function DocMinimap({ editor, scroller, label, untitled, pinned = false, pinLabel = "", unpinLabel = "", onPin, dockWidth = 0, resizeLabel, onResize, filesDock = false, filesWidth = 0, onFilesFit }, ref) {
+export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function DocMinimap({ editor, scroller, label, untitled, pinned = false, commit, pinLabel = "", unpinLabel = "", onPin, dockWidth = 0, resizeLabel, onResize, filesDock = false, filesWidth = 0, onFilesFit }, ref) {
   const [headings, setHeadings] = useState<OutlineHeading[]>(() => outlineOf(editor.state.doc));
   const [current, setCurrent] = useState(-1);
   const [layout, setLayout] = useState<Layout>(NO_LAYOUT);
@@ -673,7 +674,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
         >
           {onPin ? (
             <div className={s.head} onPointerDownCapture={pinDown}>
-              <IconButton icon={pinned ? "pinOff" : "pin"} label={pinned ? unpinLabel : pinLabel} toggle pressed={pinned} tone="muted" onPress={togglePin} />
+              <IconButton icon={pinned ? "pinOff" : "pin"} label={pinned ? unpinLabel : pinLabel} toggle pressed={pinned} commit={commit} tone="muted" onPress={togglePin} />
             </div>
           ) : null}
           <ul ref={listRef} className={s.list} data-pin={onPin ? "" : undefined} onKeyDown={onListKey}>

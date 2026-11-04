@@ -33,6 +33,7 @@ export function Toolbar({ label, items, more, moreLabel, onAction }: ToolbarProp
           {...(item.disabled ? { disabled: true, ...(item.reason ? { disabledReason: item.reason } : {}) } : {})}
           {...(item.busy ? { busy: true } : {})}
           {...(item.busyLabel ? { busyLabel: item.busyLabel } : {})}
+          {...(item.commit ? { commit: item.commit } : {})}
           onPress={() => onAction?.({ id: item.id })}
         />
       ))}

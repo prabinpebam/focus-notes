@@ -71,6 +71,26 @@ async function started(f: ReturnType<typeof setup>) {
 }
 
 describe("opening the panel (IA-VIEW-FILES)", () => {
+  it("only docks after persistence, retains failed docking for Retry and never repeats a toggle", async () => {
+    const f = setup();
+    const app = await started(f);
+    await app.commands.run("files.open");
+    let reject = true;
+    f.bridge.saveAppState = async () => { if (reject) throw new Error("disk full"); };
+    await expect(app.commands.run("files.togglePin")).rejects.toThrow("disk full");
+    expect(app.store.state.ui.files.pinned).toBe(false);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "failed" });
+    await app.commands.run("app.reportFailure", { command: "files.togglePin" });
+    const failed = app.store.state.ui.toasts[0]!;
+    expect(failed.action).toMatchObject({ command: "files.togglePin", args: { value: true } });
+    reject = false;
+    await app.commands.run("files.togglePin");
+    expect(app.store.state.ui.files.pinned).toBe(true);
+    await app.commands.run("toast.action", { id: failed.id });
+    expect(app.store.state.ui.files.pinned).toBe(true);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "confirmed" });
+  });
+
   it("Open… opens it with the current note revealed and focused, and again closes it", async () => {
     const f = setup({ notes: { "journal/day.md": "# Day one\n" }, open: "journal/day.md" });
     const app = await started(f);

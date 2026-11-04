@@ -39,7 +39,7 @@ export const STRING_ITEMS = "string" as const;
 export const ITEM_SHAPES: Readonly<Record<ListOf, ItemShape | typeof STRING_ITEMS>> = {
   commandItems: shape<CommandItem>({
     id: "string", label: "string", icon: "string?", shortcut: "string?", checked: "boolean?", mixed: "boolean?", disabled: "boolean?", reason: "string?",
-    items: "array?", busy: "boolean?", busyLabel: "string?", loading: "boolean?",
+    items: "array?", busy: "boolean?", busyLabel: "string?", loading: "boolean?", commit: "string?",
   }, { items: "commandItems" }),
   menuSections: shape<MenuSection>({ id: "string", label: "string?", items: "array" }, { items: "commandItems" }),
   options: shape<Option>({ id: "string", label: "string", icon: "string?" }),

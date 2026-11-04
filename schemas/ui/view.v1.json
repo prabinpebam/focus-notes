@@ -11796,6 +11796,24 @@
                 }
               ]
             },
+            "outlineCommit": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "pending",
+                    "confirmed",
+                    "failed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "outlinePinLabel": {
               "anyOf": [
                 {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createApp, type AppStateFile, type PlatformBridge } from "../src/index.ts";
+import en from "../../views/messages/en.json" with { type: "json" };
 
 function setup(save: PlatformBridge["saveAppState"]) {
   const bridge: PlatformBridge = {
@@ -8,7 +9,7 @@ function setup(save: PlatformBridge["saveAppState"]) {
     loadAppState: async () => ({ version: 1 }), saveAppState: save,
     systemScheme: () => "light", onSystemSchemeChange: () => () => {},
   };
-  return createApp(bridge, {});
+  return createApp(bridge, en);
 }
 
 describe("rejected settings writes (F1)", () => {
@@ -37,6 +38,46 @@ describe("rejected settings writes (F1)", () => {
     const before = app.store.state.appearance;
     await expect(app.commands.run("reading.setLineHeight", { value: 2 })).rejects.toThrow("disk full");
     expect(app.store.state.appearance).toEqual(before);
+  });
+
+  it.each([
+    ["focus.toggle", "vm.app.focusMode", "focusMode"],
+    ["outline.togglePin", "vm.app.outlinePinned", "outlinePinned"],
+  ] as const)("retains %s's stored value and retries an exact value, not a second toggle", async (command, target, key) => {
+    let reject = true;
+    const writes: AppStateFile[] = [];
+    const app = setup(async (state) => { if (reject) throw new Error("disk full"); writes.push(state); });
+    const before = app.store.state[key];
+    await expect(app.commands.run(command)).rejects.toThrow("disk full");
+    expect(app.store.state[key]).toBe(before);
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target, value: !before, phase: "failed" }));
+    await app.commands.run("app.reportFailure", { command: "command.run", args: { id: command } });
+    const toast = app.store.state.ui.toasts[0]!;
+    expect(toast.action).toMatchObject({ command, args: { value: !before } });
+    reject = false;
+    await app.commands.run(command);
+    expect(app.store.state[key]).toBe(!before);
+    await app.commands.run("toast.action", { id: toast.id });
+    expect(app.store.state[key]).toBe(!before);
+    expect(writes.at(-1)?.[key]).toBe(!before);
+  });
+
+  it("holds the same focus control and prevents duplicate writes while its group is pending", async () => {
+    let release!: () => void;
+    let writes = 0;
+    const app = setup(async () => { writes++; await new Promise<void>((resolve) => { release = resolve; }); });
+    await app.commands.run("toolbar.toggle");
+    const saving = app.commands.run("command.run", { id: "focus.toggle" });
+    await Promise.resolve();
+    expect(app.store.state.ui.toolbarOpen).toBe(true);
+    const vm = app.viewModels.select("vm.toolbar", app.store.state) as { items: { id: string; commit?: string; disabled?: boolean }[] };
+    expect(vm.items.find((item) => item.id === "focus.toggle")).toMatchObject({ commit: "pending" });
+    expect(vm.items.find((item) => item.id === "focus.toggle")?.disabled).toBeUndefined();
+    await app.commands.run("focus.toggle");
+    expect(writes).toBe(1);
+    release();
+    await saving;
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: "vm.app.focusMode", phase: "confirmed" }));
   });
 
   it("serializes writes so the newest requested value is the final stored value", async () => {

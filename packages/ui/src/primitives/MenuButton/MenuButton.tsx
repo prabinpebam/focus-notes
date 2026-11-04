@@ -11,7 +11,7 @@ import type { CommandItem, MenuSection as Section } from "../../data.ts";
 import { ownHomeEnd } from "../../behaviors/menu-keys.ts";
 import { useBusy } from "../../behaviors/busy.ts";
 import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
-import type { CommitState } from "../CommitMark/CommitMark.tsx";
+import { CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./MenuButton.css.ts";
 
 export interface MenuButtonProps {
@@ -129,7 +129,7 @@ function runsOf(items: CommandItem[]): { checkable: boolean; items: CommandItem[
  */
 export function CommandMenu({ label, sections, onAction, autoFocus }: { label: string; sections: Section[]; onAction?: ((payload: { id: string }) => void) | undefined; autoFocus?: boolean }) {
   const checkable = sections.some((sec) => sec.items.some((i) => i.checked !== undefined));
-  const unavailable = new Set(sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id)));
+  const unavailable = new Set(sections.flatMap((sec) => sec.items.filter((i) => (i.disabled || i.commit === "pending") && !i.items).map((i) => i.id)));
   // Opened from the keyboard, it starts on its first item that does something (the system menu's
   // Move while Restore is unavailable): unavailable items stay reachable, but aren't where it starts.
   const all = sections.flatMap((sec) => sec.items);
@@ -167,11 +167,12 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                       className={s.item}
                       textValue={item.label}
                       ref={(el: HTMLDivElement | null) => {
-                        markUnavailable(Boolean(item.disabled))(el);
+                        markUnavailable(Boolean(item.disabled || item.commit === "pending"))(el);
                         markMixed(Boolean(item.mixed && !item.checked))(el);
                         startHere(item.id)(el);
                       }}
-                      {...(item.disabled ? { shouldCloseOnSelect: false } : {})}
+                      {...(item.disabled || item.commit === "pending" ? { shouldCloseOnSelect: false } : {})}
+                      aria-busy={item.commit === "pending" || undefined}
                     >
                       {({ isSelected }) => (
                         <>
@@ -187,6 +188,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                             </span>
                             {item.disabled && item.reason ? <>{" "}<span className={s.reason}>{item.reason}</span></> : null}
                           </Text>
+                          {item.commit ? <CommitMark state={item.commit} /> : null}
                         </>
                       )}
                     </MenuItem>

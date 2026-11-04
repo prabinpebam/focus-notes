@@ -842,6 +842,7 @@
           "outlinePinned": {
             "get": "vm.app.outlinePinned"
           },
+          "outlineCommit": { "get": "vm.app.outlineCommit" },
           "outlinePinLabel": {
             "t": "outline.pin"
           },
@@ -4285,6 +4286,7 @@
                     "pressed": {
                       "get": "vm.files.pinned"
                     },
+                    "commit": { "get": "vm.files.pinCommit" },
                     "tone": "muted",
                     "bleed": true
                   },
@@ -4495,6 +4497,7 @@
                             "pressed": {
                               "get": "vm.files.pinned"
                             },
+                            "commit": { "get": "vm.files.pinCommit" },
                             "tone": "muted",
                             "bleed": true
                           },

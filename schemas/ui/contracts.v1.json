@@ -15621,6 +15621,16 @@
           "default": false,
           "description": "The minimap's contents card is kept open beside the text, where it fits (D-186)."
         },
+        "outlineCommit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "description": "Stored docking feedback on the existing contents pin."
+        },
         "outlinePinLabel": {
           "kind": "message",
           "description": "The contents card's pin button, unpinned: Keep contents open."
