@@ -152,8 +152,8 @@ export const body = style({
   minHeight: 0,
   overflowY: "auto",
   scrollbarGutter: "stable",
-  // What the view puts in the body (a tree, then its status) are groups: the body owns the space between them (spacing SP-8).
-  gap: t.groupGap,
+  // What the view puts in the body (a tree, then its status) are its items: the body owns the space between them (spacing SP-8).
+  gap: t.bodyGap,
   // Room inside its clip for the focus ring of a control at its edge (a button's ring is outside it),
   // and the letters of what's at its very top or bottom, without moving anything (D-111).
   paddingInlineStart: t.ringRoom,

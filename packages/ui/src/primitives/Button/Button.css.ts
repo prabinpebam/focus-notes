@@ -90,7 +90,7 @@ const bleedSize = (pad: string): StyleRule => ({
   backgroundColor: "transparent",
   backgroundImage: "none",
   "::before": {
-    content: '""', position: "absolute", zIndex: tokens.layer.underlay, insetBlock: 0, insetInlineEnd: 0, insetInlineStart: `calc(-1 * ${pad})`,
+    content: '""', position: "absolute", zIndex: t.extensionLayer, insetBlock: 0, insetInlineEnd: 0, insetInlineStart: `calc(-1 * ${pad})`,
     borderRadius: t.radius, backgroundColor: rest, backgroundImage: overlay,
   },
   selectors: { "&[data-focus-visible]": { outlineStyle: "none" }, "&[data-focus-visible]::before": { outlineStyle: "solid", outlineColor: t.focus.ring, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset } },

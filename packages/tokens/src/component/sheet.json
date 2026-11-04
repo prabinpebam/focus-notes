@@ -50,6 +50,11 @@
         "$value": "{space.stackGroup}",
         "$description": "Between the header and the body, separate groups (Foundations → Visual quality → Grouped and spaced, D-111)."
       },
+      "bodyGap": {
+        "$type": "dimension",
+        "$value": "{space.stackItem}",
+        "$description": "Between what the view puts in the body (a tree, then its status): items of one group, closer than the header is to the body (spacing SP-8)."
+      },
       "background": {
         "$type": "color",
         "$value": "{color.surface}"

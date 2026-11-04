@@ -131,7 +131,7 @@ export const textBleed = style({
   paddingInline: 0,
   backgroundColor: "transparent",
   "::before": {
-    content: '""', position: "absolute", zIndex: tokens.layer.underlay, borderRadius: t.textRadius, backgroundColor: textFill,
+    content: '""', position: "absolute", zIndex: t.extensionLayer, borderRadius: t.textRadius, backgroundColor: textFill,
     insetInline: `calc(-1 * ${t.textPaddingInline})`, insetBlock: `calc((${t.fontSize} * ${t.lineHeight} - ${t.textHeight}) / 2)`,
   },
   selectors: {

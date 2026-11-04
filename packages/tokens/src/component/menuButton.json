@@ -1,6 +1,7 @@
 {
   "cmp": {
     "menuButton": {
+      "extensionLayer": { "$type": "number", "$value": "{layer.underlay}", "$description": "Under the box: the invisible extension that carries its hit area, fill and ring (spacing SP-2)." },
       "background": {
         "$type": "color",
         "$value": "{color.surface}"

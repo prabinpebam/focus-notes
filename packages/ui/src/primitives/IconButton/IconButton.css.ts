@@ -44,7 +44,7 @@ export const bleed = style({
   height: t.iconSize,
   isolation: "isolate",
   backgroundColor: t.color.transparent,
-  "::before": { content: '""', position: "absolute", zIndex: tokens.layer.underlay, inset: `calc(-1 * ${reach})`, borderRadius: t.radius, backgroundColor: fill },
+  "::before": { content: '""', position: "absolute", zIndex: t.extensionLayer, inset: `calc(-1 * ${reach})`, borderRadius: t.radius, backgroundColor: fill },
   selectors: { "&[data-focus-visible]": { outlineOffset: `calc(${t.focusOffset} + ${reach})` } },
 });
 export const tone = styleVariants({ default: { color: t.color.icon }, muted: { color: t.color.iconMuted } });

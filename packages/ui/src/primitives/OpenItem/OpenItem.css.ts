@@ -68,7 +68,7 @@ export const path = style({
   minWidth: 0, maxWidth: "100%", paddingInlineStart: 0, paddingInlineEnd: t.pathPadding,
   border: "none", borderRadius: t.rowRadius, background: "none", font: "inherit", fontSize: t.detail, color: t.detailColor, cursor: "pointer", whiteSpace: "nowrap",
   vars: { [pathFill]: "transparent" },
-  "::before": { content: '""', position: "absolute", zIndex: tokens.layer.underlay, insetBlock: 0, insetInlineEnd: 0, insetInlineStart: `calc(-1 * ${t.pathPadding})`, borderRadius: t.rowRadius, backgroundColor: pathFill },
+  "::before": { content: '""', position: "absolute", zIndex: t.extensionLayer, insetBlock: 0, insetInlineEnd: 0, insetInlineStart: `calc(-1 * ${t.pathPadding})`, borderRadius: t.rowRadius, backgroundColor: pathFill },
   // Its line is 18 px; its target reaches the dense-surface minimum, never the title (spacing SP-6).
   "::after": { ...hitReach(t.pathHit, "1lh"), insetInlineStart: `calc(-1 * ${t.pathPadding})` },
   selectors: {

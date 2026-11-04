@@ -1,4 +1,5 @@
 { "cmp": { "openItem": {
+  "extensionLayer": { "$type": "number", "$value": "{layer.underlay}", "$description": "Under the box: the invisible extension that carries its hit area, fill and ring (spacing SP-2)." },
   "pathHit": { "$type": "dimension", "$value": "{size.hitMin}", "$description": "The folder path link's target under the title: the dense-surface minimum, so it never reaches the title (spacing SP-6)." },
   "hitLayer": { "$type": "number", "$value": "{layer.mask}" },
   "controlLayer": { "$type": "number", "$value": "{layer.contextual}" },

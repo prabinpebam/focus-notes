@@ -3,7 +3,8 @@
  * probe's `analyze` on each, `perturb` + `compare` (a child appended at run time moves nothing), and
  * forced :hover, :focus-visible and :active on one control of each kind (states move nothing), in
  * light and dark, at the default and the minimum window. Writes the findings to
- * `SPACING_AUDIT_OUT` (JSON); it never fails, it measures. Opt in with `SPACING_AUDIT=1`.
+ * `SPACING_AUDIT_OUT` (JSON) and fails on any S1 or S2 outside the named exclusions. The full audit
+ * is opt-in (`SPACING_AUDIT=1`); without it, the main surfaces run light at the default size (CORE).
  */
 import { test, expect, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -32,11 +33,33 @@ async function start(size?: { width: number; height: number }): Promise<Launched
 }
 
 const ON = process.env.SPACING_AUDIT === "1";
+/**
+ * Without SPACING_AUDIT, one fast pass still runs and fails on any S1 or S2: the main surfaces, light,
+ * at the default size (spacing-audit.md, "Tests to add"). The full audit enforces the same on every surface.
+ */
+const CORE = ["canvas", "trigger toolbar", "more menu", "find and replace", "cheat sheet", "files", "spotlight", "spotlight commands", "settings appearance", "slash menu"];
 const OUT = process.env.SPACING_AUDIT_OUT ?? resolve("../../test-results/spacing-audit");
 const PROBE = process.env.SPACING_PROBE ?? resolve("../../agentic-craft/tools/spacing-probe.mjs");
 const ROOT = "body";
 // Markup the system didn't write follows the prose rules, not the component rules.
 const IGNORE = '[data-editor], [class*="prose"]';
+
+/**
+ * What the probe measures but the rules don't mean, each by name with its reason (spacing-audit.md,
+ * "Not fixed, and why"). Anything else at S1 or S2 fails the journey.
+ */
+const EXCLUDED: { rule: RegExp; path?: RegExp; where?: RegExp; why: string }[] = [
+  { rule: /^below-target$/, path: /ProjectPill_|WindowControls_zone|OpenItem_path/, why: "the written dense-surface list: at least 24 px (size.hitMin)" },
+  { rule: /^(moved|spacing-changed)$/, path: /EditorSurface_column|^document$/, why: "the note re-renders or scrolls under a forced state: prose, and the count of what an origin pushed" },
+  { rule: /./, where: /Customize toolbar/, why: "OPEN for vq-toolbar-design: ToolbarComposer is redesigned there" },
+  { rule: /^group-separation$/, path: /MenuButton_menu/, why: "a section's runs (checkable and plain items) are one group, split only for selection" },
+];
+const blocking = (out: (Finding & { where: string })[]) =>
+  out.filter((x) => (x.severity === "S1" || x.severity === "S2") && !EXCLUDED.some((e) => e.rule.test(x.rule) && (!e.path || e.path.test(x.path)) && (!e.where || e.where.test(x.where))));
+const enforce = (out: (Finding & { where: string })[]) => {
+  const b = blocking(out);
+  expect(b.map((x) => `${x.severity} ${x.rule} | ${x.where} | ${x.measured} | ${x.path.split(" > ").slice(-2).join(" > ")}`), "no S1 or S2 spacing findings (documentations/design/spacing-audit.md)").toEqual([]);
+};
 
 type Finding = { severity: string; rule: string; path: string; measured: string; expected: string; fix: string };
 type Probe = {
@@ -53,8 +76,7 @@ async function audit(page: Page, p: Probe, where: string, out: (Finding & { wher
   await settled(page);
   await page.evaluate(() => document.fonts.ready);
   const base = await page.evaluate(p.collect, { root: ROOT, ignore: IGNORE });
-  // The probe's `ignore` only exempts some rules, and reports visually hidden (1 px) boxes as clipped:
-  // drop every finding on prose or on a visually hidden box.
+  // The probe exempts prose (`ignore`) and skips visually hidden wrappers; this also drops any finding on a 1 px box.
   type Box = { path: string; ignored: boolean; rect: { w: number; h: number } };
   const skip = new Set((base as { elements: Box[] }).elements.filter((e) => e.ignored || (e.rect.w <= 1 && e.rect.h <= 1)).map((e) => e.path));
   const from = out.length;
@@ -112,8 +134,8 @@ async function moreItems(page: Page): Promise<string[]> {
 for (const { name: sizeName, size } of SIZES) {
   for (const want of ["light", "dark"] as const) {
     test(`spacing audit: every surface, ${want}, ${sizeName} window`, async () => {
-      test.skip(!ON, "Opt in with SPACING_AUDIT=1");
-      test.setTimeout(1_800_000);
+      test.skip(!ON && !(want === "light" && sizeName === "default"), "Opt in with SPACING_AUDIT=1");
+      test.setTimeout(ON ? 1_800_000 : 300_000);
       const p = (await import(pathToFileURL(PROBE).href)) as Probe;
       const out: (Finding & { where: string; check: string })[] = [];
       const done: string[] = [];
@@ -122,7 +144,7 @@ for (const { name: sizeName, size } of SIZES) {
       await scheme(page, want);
       await reset(page);
       const ctx = `${want}, ${sizeName}`;
-      for (const s of SURFACES.filter((x) => !process.env.VQ_ONLY || process.env.VQ_ONLY.split(",").includes(x.name))) {
+      for (const s of SURFACES.filter((x) => (ON || CORE.includes(x.name)) && (!process.env.VQ_ONLY || process.env.VQ_ONLY.split(",").includes(x.name)))) {
         try {
           await s.open(page);
           await audit(page, p, `${s.name} (${ctx})`, out, sizeName === "default");
@@ -133,7 +155,7 @@ for (const { name: sizeName, size } of SIZES) {
         await reset(page).catch(() => {});
       }
       // Everything the More menu opens (Share, Theme, Customize toolbar, New project, Help…).
-      for (const item of await moreItems(page).catch(() => [] as string[])) {
+      for (const item of ON ? await moreItems(page).catch(() => [] as string[]) : []) {
         console.log(`[spacing] more item: ${item}`);
         // Items that open the system's own dialogs (a file picker, printing) are outside the app's design system.
         if (/quit|exit|close window|check for updates|open file|open project|import|export|print|save as|reveal|show in/i.test(item)) continue;
@@ -163,6 +185,8 @@ for (const { name: sizeName, size } of SIZES) {
       mkdirSync(OUT, { recursive: true });
       writeFileSync(join(OUT, `surfaces-${want}-${sizeName}.json`), JSON.stringify({ done, findings: out }, null, 1));
       await quit(l);
+      if (!ON) expect(out.filter((x) => x.rule === "not-reached").map((x) => x.where), "every core surface opened").toEqual([]);
+      enforce(out);
     });
   }
 }
@@ -208,6 +232,7 @@ test("spacing audit: Open view, New project and its location choice", async () =
   }
   mkdirSync(OUT, { recursive: true });
   writeFileSync(join(OUT, "open-view.json"), JSON.stringify({ done, findings: out }, null, 1));
+  enforce(out);
 });
 
 test("spacing audit: first run", async () => {
@@ -235,4 +260,5 @@ test("spacing audit: first run", async () => {
   }
   mkdirSync(OUT, { recursive: true });
   writeFileSync(join(OUT, "first-run.json"), JSON.stringify({ done, findings: out }, null, 1));
+  enforce(out);
 });

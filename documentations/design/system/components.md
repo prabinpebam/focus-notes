@@ -107,8 +107,8 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | WindowFrame | host component | `rest`, `bandHover`, `fullScreenHidden`, `moving`, `resizing`, `menuOpen` | 0 | `bandHover`, `fullScreenHidden` |
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
 | NotificationRegion | layout | `rest` | 1 | None |
-| Stack | layout | `rest` | 18 | None |
-| Inline | layout | `rest` | 19 | None |
+| Stack | layout | `rest` | 21 | None |
+| Inline | layout | `rest` | 22 | None |
 | Columns | layout | `rest` | 2 | None |
 | Surface | layout | `rest` | 29 | None |
 | Layer | layout | `rest` | 20 | None |
