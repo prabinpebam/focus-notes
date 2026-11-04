@@ -9,6 +9,16 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ### Phase-2 Close-hover and Files pin
 
+**Exact-brief acceptance, `26c3bd1f829d43a9a10021e2649b65531f19e728`:** the late full brief is reconciled. The same 68 focused units and all 12 combined native journeys pass; the exact clean pushed head was built before packaging. Native Close cases now exercise New note location, Settings, Share, Customize toolbar and Delete confirmation, plus New project and Idea feedback, at 1132 × 812 and 480 × 360 in light/dark. Every sampled frame and the post-hover state must have identical bounds and computed padding on semantic header/body/footer edges; every tooltip must be outside the modal. Toolbar/AI-design views were not edited.
+
+Named pin proofs additionally assert the `Pin <name>` tooltip, `Unpin <name>` keyboard name, immediate appearance in Pinned, visible resting pin/pressed state, stable hover geometry, unchanged selection and note bytes, failure/Retry after selection changes, actual restart and touch access. New rows in Pinned intentionally move content below them; the resting icon's alignment is therefore measured relative to its row, not against the row's old absolute screen position.
+
+The location fixture waits for the loaded/focused Hello note and actual new public-note state before typing/saving; its second opening uses the explicit status-pill action because automatic backup prompts once per session. The inherited Settings bounds fixture now waits for its real entry animation to settle. These are explicit prerequisites, not tolerance increases or waived assertions.
+
+One corrected candidate at `focus-notes-work/preview/candidates/26c3bd1f` passed both Field notes/Garden notes inspection, then replaced only the newly authorized 62832/65092 review (scoped WhatIf first). Normal Shell receipt has no E2E variables. Per-PID proof verifies new Electron 4388 / launcher 14240 / HWND 2752998 after 22.0 s, 10/45 actually exposed points, bounds 1970,314–3102,1126. Both prior candidates were preserved, never regenerated.
+
+The 07c2e31a rows below are the historical first delivery; the corrected combined proof uses the same documented commands and exact final head above.
+
 Worker17 implemented owner item 7 before item 6. The existing five fixes are preserved. App local/origin are clean at `07c2e31a71fe4ae056fdf87c2a5742898f872de0`; its exact-head build passed all 12 combined native checks before packaging.
 
 | Scoped check in worker17 | Result |
@@ -28,7 +38,7 @@ Worker17 implemented owner item 7 before item 6. The existing five fixes are pre
 
 All test apps use scoped finally cleanup. No full suite, CI wait, main app merge, release, real-account write, toolbar-customizer or AI-scan change is claimed. Phase 2 is not complete.
 
-**Current owner review:** leave Electron 62832 and launcher 65092 open. Start future reviews only through the public normal Shell entry and require a new per-PID exposure receipt; do not drive, activate, move or blindly relaunch this review. Both Field notes and Garden notes are preserved. The old 9c512e40 candidate was not regenerated; protected Preview, galleries and docs were not stopped.
+**Current owner review:** leave Electron 4388 and launcher 14240 open. Start future reviews only through the public normal Shell entry and require a new per-PID exposure receipt; do not drive, activate, move or blindly relaunch this review. Both Field notes and Garden notes are preserved. The old 9c512e40 candidate was not regenerated; protected Preview, galleries and docs were not stopped.
 
 ### Phase-2 fixed Settings navigation and combined checks, b83c1e0c
 

@@ -2,6 +2,8 @@
 
 ## Files item pin acknowledgement
 
+The exact-brief candidate at `26c3bd1f` preserves these timings and adds row-named tooltips plus a visible resting pin. Native proof covers actual persistence/Retry and unchanged row-relative icon alignment, not an asserted latency improvement.
+
 The existing Files pin write now uses a per-row commit target. The acknowledged pin and selection remain unchanged until storage succeeds; independent rows remain usable and writes serialize without dropping another pin. Retry retains the original row and intended value, including from the existing menu. No performance improvement is claimed.
 
 | Operation | Class / pattern | Place and words | Measure / target |

@@ -12,7 +12,11 @@
 
 ### Owner feedback queue, 5 November
 
-**All seven fixes available for owner review, `07c2e31a`:** worker17 fixed the repeat Close-hover height report first, then Files pin-on-hover. The exact clean, pushed head passes 68 focused units and all 12 combined native journeys. One fresh candidate passed separate Field notes and Garden notes inspection, then replaced only the authorized old review. Its normal Windows Shell launch has no E2E variables and was verified exposed after 21.6 seconds (20/45 sampled points; Electron 62832, launcher 65092, HWND 2621926). The new review is left open without driving, activating or moving it. This is review availability, not phase completion, a main app merge or release.
+**Exact brief reconciled, `26c3bd1f`:** all seven fixes are available in the corrected two-project review. Pin/Unpin names and tooltips include the row name; resting pinned rows show a pin, and focused controls expose their pressed state. Native Close checks now cover New note location (the owner's screenshot), Settings, Share, Customize toolbar and Delete confirmation, plus New project and short Idea feedback: identical per-frame bounds and computed edge padding before/during/after repeated hover and keyboard focus, at both sizes in both themes. All 68 focused units and 12 combined native journeys pass on the final implementation.
+
+The corrected candidate passed both project inspections before main's authorized replacement of Electron 62832 / launcher 65092. The normal Shell launch of `26c3bd1f` is verified exposed at 22.0 seconds (10/45 points; Electron 4388, launcher 14240, HWND 2752998), without E2E variables, input, activation or movement. Field notes and Garden notes are preserved. The new review is left open; phase 2 awaits owner review, not a merge or release.
+
+**Historical first review checkpoint, `07c2e31a`:** worker17 fixed the repeat Close-hover height report first, then Files pin-on-hover. The exact clean, pushed head passes 68 focused units and all 12 combined native journeys. One fresh candidate passed separate Field notes and Garden notes inspection, then replaced only the authorized old review. Its normal Windows Shell launch has no E2E variables and was verified exposed after 21.6 seconds (20/45 sampled points; Electron 62832, launcher 65092, HWND 2621926). The new review is left open without driving, activating or moving it. This is review availability, not phase completion, a main app merge or release.
 
 | Added item | Cause and correction | Evidence |
 | --- | --- | --- |
