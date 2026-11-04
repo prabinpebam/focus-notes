@@ -74,3 +74,185 @@ The waits the app was designed around are handled well: the note save, conflicts
 | Empty states | Main, Branch | <span class="slate-badge slate-badge--warning">Partial</span> | 44 lists declare an empty branch | Every one is a muted sentence in no wrapper, with no action and no minimum size |
 | Loading (shimmer) | Main, Branch | <span class="slate-badge slate-badge--warning">Partial</span> | A Skeleton primitive (line, tile, avatar) with finite passes; used in the canvas and Open | Settings sections, the share item and history load with words ("Loading…", "Preparing…") instead of shimmer |
 | Accessibility of states | Main, Branch | <span class="slate-badge slate-badge--warning">Partial</span> | `aria-busy`, `aria-disabled` instead of `disabled`, a polite live region, `role="alert"` for error toasts | No Notifications landmark; 9 bare `:hover` rules outside `(hover: hover)`; confirmations aren't announced because none exist |
+
+## Findings, ranked by impact
+
+Ranked by what the owner feels while writing (see [Method and limits](#method-and-limits)). Paths are under `packages/` unless they start with `apps/`; line numbers are at the commit named in the Code column.
+
+| # | Finding | Scope | Code | Effort |
+| --- | --- | --- | --- | --- |
+| [1](#f1-failures-from-controls-are-silent) | Failures from controls are silent | App | Main, Branch | M |
+| [2](#f2-a-changed-value-is-never-confirmed) | A changed value is never confirmed | Field, component | Main, Branch | L |
+| [3](#f3-error-notifications-disappear-and-are-dropped) | Error notifications disappear and are dropped | App | Main | M |
+| [4](#f4-a-broken-image-cant-be-retried) | A broken image can't be retried | Component | Branch | S |
+| [5](#f5-errors-in-open-new-project-and-local-notes-have-no-retry) | Errors in Open, New project and Local notes have no Retry | Section | Branch | S |
+| [6](#f6-empty-states-are-passive-sentences) | Empty states are passive sentences | Section, view | Main, Branch | M |
+| [7](#f7-long-operations-have-no-steps-progress-or-cancel) | Long operations have no steps, progress or Cancel | View | Main, Branch | M |
+| [8](#f8-a-crashed-panel-is-a-dead-end) | A crashed panel is a dead end | View | Main | S |
+| [9](#f9-sections-load-with-words-not-shimmer) | Sections load with words, not shimmer | Section | Main, Branch | S |
+| [10](#f10-withdraw-asks-first-instead-of-offering-undo) | Withdraw asks first instead of offering Undo | Component | Branch | S |
+| [11](#f11-history-and-sync-failures-have-no-retry-in-place) | History and sync failures have no Retry in place | Section | Main | S |
+| [12](#f12-two-save-models-in-one-settings-section) | Two save models in one Settings section | Section | Main | S |
+| [13](#f13-the-first-run-white-frame) | The first-run white frame | App | Main | S |
+| [14](#f14-hover-sticks-on-touch-in-nine-components) | Hover sticks on touch in nine components | Component | Main, Branch | S |
+| [15](#f15-failure-copy-doesnt-always-say-whats-safe) | Failure copy doesn't always say what's safe | Field, section | Main, Branch | S |
+
+### F1. Failures from controls are silent
+
+- **Today.** A view's bound control runs its setter as `void deps.app.commands.run(setter, …)` and its actions as `void r.runActions(…)` (`ui-runtime/src/render.ts:173`, `:183`). Nothing catches the rejection, the renderer has no `unhandledrejection` reporter, and the view boundary only logs (`ui-runtime/src/mount.ts:39`). So:
+  - App settings change the store first and then `await persistAppState` (`core/src/app.ts:719-737`, `:757-759`, `:789-791`): if the write fails, the screen keeps a value that was never kept, and it's gone at the next launch.
+  - Project settings write first and change the view after (`core/src/project-app.ts:46-49`, Branch): if the write fails, the field snaps back with no word.
+  - Only *Where appearance is kept* catches its failure (`core/src/app.ts:1283-1286`).
+- **Rule broken.** `ui-states` errors: never silent, keep the person's input, say what happened where it happened, offer a recovery. The commit track's *failed* state.
+- **Fix.** One mechanism in the runtime, not one per setting: `render.ts` catches a setter's or action's rejection and (a) puts the control into its failed state when its contract has one (F2), otherwise (b) raises one error notification with **Retry**, which reruns the same command with the same arguments. Add a renderer `unhandledrejection` reporter that raises the same notification and logs the cause. Store updates that run before a write roll back on failure.
+- **Files.** `ui-runtime/src/render.ts`, `core/src/app.ts`, `core/src/project-app.ts`, `apps/desktop/src/renderer/`.
+
+### F2. A changed value is never confirmed
+
+- **Today.** Everything in Settings saves on change, and nothing says it took:
+  - the AI fields, Scale, Settings sync and the other switches (`views/views/settings.view.json`, Main);
+  - project name, colour, logo, watermark, font and theme (Branch).
+  - The task tracker runs only the load track: the first 300 ms is an `ack` phase, and a task that ends inside it "leaves no trace" (`core/src/tasks.ts`, about line 101). The shared busy policy has only `on` and `done` (`ui/src/behaviors/busy.ts`), and Button's spinner appears only after `wait.signDelay` (`ui/src/primitives/Button/Button.css.ts:82-88`). So an instant commit shows nothing, and a failed one leaves no mark on the control.
+  - Switch, SegmentedControl, ThemeGallery, TextField, ColorField, Slider, PickerButton and FontChoice declare no pending, confirmed or failed state in their contracts.
+- **Rule broken.** `ui-states` commit track: pending at once, held at least 200 ms, then confirmed for at least 200 ms where the change happened. A field shows a success border and a tick in its trailing slot; a switch shows a spinner in its thumb, then settles; a failed commit keeps the value and offers Retry on the control.
+- **Fix.**
+  - Add a commit track to the tracker: `tracker.commit(key, fn)` with pending at once, a 200 ms minimum, confirmed for `wait.doneDuration`, and failed (the value kept, Retry). A per-control `commitState` read (`vm.commits.<key>`) drives the view.
+  - Give the primitives the states: TextField and ColorField a trailing Spinner, then a tick, with a success border; Switch a Spinner in the thumb; SegmentedControl and ThemeGallery a tick on the chosen option; all with `failed` plus a Retry. Reuse `Spinner`, `Icon` (`checkmark`) and `color.success`.
+  - Announce "Saved" politely through the existing LiveRegion.
+- **Files.** `core/src/tasks.ts`, `ui/src/behaviors/busy.ts`, the primitives above and their contracts, `views/views/settings.view.json`.
+
+### F3. Error notifications disappear and are dropped
+
+- **Today.** The toast host (`core/src/app.ts:357-372`) shows at most two and dismisses older ones early, so the third toast removes the first. Every toast is armed with a timer: 6 s, or 10 s with an action. That includes errors, such as *Couldn't save your latest changes. Your text is still here.* with Retry. Toast has only the info and error tones (`ui/src/primitives/Toast/Toast.tsx`). The toast layer has no Notifications landmark (`views/views/canvas.view.json`, about line 9277). The good parts:
+  - one host and one action per toast;
+  - Close, a pause on hover and focus, and F6 to reach it;
+  - `role="alert"` for errors.
+- **Rule broken.** The notification pill: an error that needs a choice is hard-dismissed; at most three show at once, and the rest queue with errors first; notices about the same subject coalesce; timers pause while the window is in the background; the stack is a labelled region.
+- **Fix.**
+  - Errors are sticky until Close or their action.
+  - The host keeps a queue with three visible, errors first, and coalesces by a `subject` key ("3 images couldn't load").
+  - Pause the timers on window blur.
+  - Wrap the stack in a region named "Notifications".
+  - Add the success, warning and progress tones to Toast.
+  - Add the long-notice token (8 s) for notices that have an action.
+- **Files.** `core/src/app.ts`, `ui/src/primitives/Toast/`, `views/views/canvas.view.json`, `tokens/src/semantic/structure.json`.
+
+### F4. A broken image can't be retried
+
+- **Today.** When reading an image fails, its source is stored as empty and a toast is shown for each image (`core/src/images-app.ts:40-52`, Branch). The guard at the top of `image.read` then sees an entry for that source and never reads it again until the note changes. A note with several missing images raises several toasts, and F3 drops all but two.
+- **Rule broken.** A component-scope error is shown on the component and recovers there. It isn't a stream of app-scope toasts.
+- **Fix.**
+  - ImageFrame gets a broken state: an icon, the image's alt text, and **Retry**, which clears the entry and reads the image again.
+  - One coalesced notification for the note.
+  - Add a row for image reads to the wait inventory.
+- **Files.** `core/src/images-app.ts`, `ui/src/primitives/ImageFrame/`, `documentations/architecture/perceived-performance.md`.
+
+### F5. Errors in Open, New project and Local notes have no Retry
+
+- **Today.** Open shows a danger StatusRow (`views/views/projects.view.json:69`, Branch).
+  - A failed list says *Your projects couldn't be listed. Close Open and try again.* (`core/src/project-open-app.ts:19`).
+  - Opening, pinning and choosing a project all fail with the same *The project couldn't be opened…*, pinning included.
+  - StatusRow has no action (`ui/src/primitives/StatusRow/contract.ts`).
+  - New project and Local import show their error the same way, with no way to try again.
+- **Rule broken.** Every error offers a recovery where it's shown, and names its cause.
+- **Fix.**
+  - Give StatusRow an optional action: one tertiary Button, reused.
+  - Retry reruns the failed command: `projects.open`, `projects.launch` with the same id, `local.copyTo` or the New project step.
+  - Give pinning its own message, and say what's safe: *Your notes weren't changed.*
+- **Files.** `ui/src/primitives/StatusRow/`, `core/src/project-open-app.ts`, `core/src/project-new-app.ts`, `views/views/projects.view.json`, `projectNew.view.json`, `localImport.view.json`, `views/messages/en.json`.
+
+### F6. Empty states are passive sentences
+
+- **Today.** 44 lists in the views declare an empty branch, and every one is a muted Text with no wrapper, no minimum size and no action. Examples:
+  - Files: *Your notes will appear here.*
+  - Open: *No projects yet. Choose Open project… or New project… above.* It points at a button instead of being one.
+  - AI connections, the share list and recently deleted.
+  - The site preview's four lists have no empty branch at all (`views/views/sitePreview.view.json`, Branch).
+  - Some "empty" lists are good news, such as *No conflicts* and *All colours pass*, but they're styled like a missing state.
+- **Rule broken.** `ui-states` empty states: in the content's own wrapper, at the content's minimum size, saying why it's empty and what to do, with the action right there. VVS ≥ 80 for empty states.
+- **Fix.**
+  - An `EmptyState` compound: an icon, one line of why, an optional detail and one primary Button, inside a wrapper with min-size tokens.
+  - Adopt it in Files (*New note*), Open (*Open project…*, *New project…*), AI connections (*Add a connection*), the share list and the site preview.
+  - Good-news lists use a success StatusRow instead.
+- **Files.** `ui/src/compounds/` (new), `tokens/src/component/` (new), the views named.
+
+### F7. Long operations have no steps, progress or Cancel
+
+- **Today.** These show one pending line, or a busy button:
+  - New project's repository creation (`core/src/project-new-app.ts:9-75`, Branch);
+  - Publish and Apply in the site preview (Branch);
+  - the first clone, first push and pull (Main).
+  None names its steps, shows progress, shows the elapsed time after `wait.elapsedDelay`, or offers Cancel. First-run setup already does all of this with its parts list (`vm.firstRun.parts`).
+- **Rule broken.** The long track and steps and progress: name the steps, show where it is, offer Cancel when it's safe, never a single unnamed busy (AGENTS.md rule 6).
+- **Fix.** Reuse first run's pattern: a StepMark list with ProgressBar, driven by tracker steps, with Cancel where the bridge can stop. Add each operation to the wait inventory.
+- **Files.** `core/src/project-new-app.ts`, `core/src/sharing-*.ts`, `core/src/sync-app.ts`, `views/views/projectNew.view.json`, `sitePreview.view.json`.
+
+### F8. A crashed panel is a dead end
+
+- **Today.** When a view throws, its boundary renders a single Text, *This panel couldn't load.*, and logs to the console (`ui-runtime/src/mount.ts:38-39`). It offers no Reload, no Report and no detail.
+- **Rule broken.** A view-scope error says what's safe and offers a recovery.
+- **Fix.** The fallback becomes a danger StatusRow, *This panel couldn't load. Your notes are safe.*, with **Reload panel** (remount by key) and **Report problem**, which opens Feedback with the error filled in. Feedback already keeps its draft and retries (`core/src/feedback-app.ts:180-217`).
+- **Files.** `ui-runtime/src/mount.ts`, `ui-runtime/src/render.ts` (ViewBoundary).
+
+### F9. Sections load with words, not shimmer
+
+- **Today.**
+  - Agents' switches and snippets show *Loading…* in their empty branch (`views/views/settings.view.json`).
+  - The share item shows *Preparing…* (`views/views/shareItem.view.json`, Branch).
+  - History shows a status line while versions load.
+  Open (Branch) and the canvas already use Skeleton.
+- **Rule broken.** Views and sections that load show shimmer in the shape of what's coming, with the container marked `aria-busy`. Words are for the long track.
+- **Fix.** Skeleton rows in each section's shape, behind `wait.signDelay`, as Open does with `ItemCard skeleton`.
+- **Files.** `views/views/settings.view.json`, `shareItem.view.json`, `history.view.json`.
+
+### F10. Withdraw asks first instead of offering Undo
+
+- **Today.** Withdrawing a share opens a confirmation (`core/src/share-item.ts:360-386`, `views/views/shareItem.view.json:244-302`, Branch).
+- **Rule broken.** A reversible action acts at once and offers Undo. Confirmation is for what can't be undone.
+- **Fix.** If sharing again restores the same link, withdraw at once and show a notification with **Undo**, reusing the pattern of history's restore and Undo (`core/src/note-history-app.ts:115-128`). If the link can't come back, keep the confirmation and say so in it.
+- **Files.** `core/src/share-item.ts`, `views/views/shareItem.view.json`.
+
+### F11. History and sync failures have no Retry in place
+
+- **Today.**
+  - History says *couldn't load* in its status line, with no Retry (`core/src/note-history-app.ts:178-179`). Restoring a version does offer Undo, which is good.
+  - Every sync problem has its words and action (sign in, resolve, retry), but they appear only in a toast, which then disappears (F3).
+- **Rule broken.** An error is shown where it happened and stays until it's resolved.
+- **Fix.** Give history's status line a Retry, using the StatusRow action from F5. Have the save pill's menu keep the last sync problem and its action until the next success.
+- **Files.** `core/src/note-history-app.ts`, `views/views/history.view.json`, `core/src/sync-app.ts`.
+
+### F12. Two save models in one Settings section
+
+- **Today.** The AI section saves its fields on change but its key with an explicit **Save** (`views/views/settings.view.json`, about lines 620-646, Main).
+- **Rule broken.** One commit model per section, so a person knows whether to look for a button.
+- **Fix.** Keep the explicit Save for the key, because it's checked against the provider, but put it in its own group with its own heading, and give Save a confirmed beat (F2). The rest of the section confirms on each field.
+- **Files.** `views/views/settings.view.json`.
+
+### F13. The first-run white frame
+
+- **Today.** The wait inventory already lists a white frame before the first view on first run (`documentations/architecture/perceived-performance.md`, about line 332).
+- **Rule broken.** No blank, white or unstyled frame (DSK-09).
+- **Fix.** Give the window the resolved scheme's background token before the first paint, and show it on ready-to-show.
+- **Files.** `apps/desktop/src/main/`.
+
+### F14. Hover sticks on touch in nine components
+
+- **Today.** These style `&:hover` outside `(hover: hover)`:
+  - `ui/src/host/BlockHandle/BlockHandle.css.ts:42` and `ui/src/host/TableControls/TableControls.css.ts:143`;
+  - `Heading.css.ts:26`, `FileTree.css.ts:40` and `:94`, `ThemeGallery.css.ts:47` and `Text.css.ts:48`;
+  - `OpenItem.css.ts:41` and `:66` (Branch).
+  ProjectPill does it right.
+- **Rule broken.** States in every context: on touch, hover sticks after a tap.
+- **Fix.** Wrap each one in the media query, or use React Aria's `data-hovered` as Button does, and add a `pnpm check` rule that rejects a bare `&:hover` in `*.css.ts`.
+- **Files.** The nine files above and `tools/`.
+
+### F15. Failure copy doesn't always say what's safe
+
+- **Today.** The best messages say what's safe: *Your text is still here.*, *Your note is still saved.* Others don't:
+  - *Couldn't change where appearance is kept.*
+  - *The project couldn't be opened. Check its folder and try again.*
+  - *Couldn't copy this local note. Try again.*
+  - the AI rewrite's provider failures.
+- **Rule broken.** `ui-copy` errors: what happened, what's safe, what to do.
+- **Fix.** Add the safe clause to each one, such as *Your notes weren't changed.* or *Your original text is kept.*, and name the action the Retry button runs.
+- **Files.** `views/messages/en.json`.
