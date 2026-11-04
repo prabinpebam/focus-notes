@@ -123,6 +123,20 @@ export interface ImageSource {
   failed: boolean;
 }
 
+/** One place the scan for AI models asks (DD-RWR-12): an app on its local port, or a command-line tool. */
+export interface ScanTarget {
+  id: string;
+  /** The app's name: Ollama, LM Studio. */
+  label: string;
+  /** Where it was asked: localhost:11434. */
+  detail?: string;
+  icon?: string;
+  /** checking, found, none (not running), or error. */
+  status: string;
+  /** What it answered: 2 models, Not running. */
+  result?: string;
+}
+
 /** One choice in a segmented control or filter. */
 export interface Option {
   id: string;
