@@ -149,7 +149,7 @@ export function registerProjectNew(ctx: {
     id: "vm.projectNew", reads: "*", setters: { name: "projects.newname", accent: "projects.newaccent", logo: "projects.newlogo" },
     schema: { type: "object", properties: {
       open: { type: "boolean" }, pending: { type: "boolean" }, retrying: { type: "boolean" }, cannotNext: { type: "boolean" }, cannotBack: { type: "boolean" }, confirm: { type: "boolean" },
-      operation: { type: "boolean" }, cannotCancel: { type: "boolean" }, cancelled: { type: "boolean" }, progress: { type: "number" }, progressLabel: text, elapsed: text, cancelLabel: text,
+      operation: { type: "boolean" }, cannotCancel: { type: "boolean" }, cancelled: { type: "boolean" }, progress: { type: "number" }, progressLabel: text, elapsed: text, cancelLabel: text, cancelReason: text, nextReason: text,
       parts: { type: "array", items: { type: "object", properties: { id: text, label: text, icon: text, tone: text, busy: { type: "boolean" } } } },
       step: { type: "number" }, stepName: text, stepLabel: text, nextLabel: text, name: text, parent: text, folder: text, accent: text, logo: text, error: text, recoveryAction: text,
     } },
@@ -157,6 +157,8 @@ export function registerProjectNew(ctx: {
       ...state, cannotNext: state.pending || !state.name.trim() || Boolean(state.problem), cannotBack: state.pending || state.step <= 1, confirm: state.step === 4,
       cannotCancel: state.operation && state.pending && (!request || state.cancelRequested || !bridge.projects?.cancelCreate),
       cancelLabel: catalog.format(state.cancelRequested && state.pending ? "project.new.stopping" : "project.cancel"),
+      cancelReason: catalog.format(state.cancelRequested ? "project.new.stopping" : request ? "project.new.finishingStep" : "project.new.finishingOpen"),
+      nextReason: catalog.format(state.pending ? state.operation ? "project.new.creating" : "project.new.checking" : "project.new.fixName"),
       progress: steps.length ? steps.filter(step => step.status === "done").length / steps.length * 100 : 0,
       progressLabel: catalog.format("project.new.progress", { done: steps.filter(step => step.status === "done").length, total: steps.length }),
       elapsed: state.pending && tracker.snapshot().findLast(task => task.target === "project.create")?.elapsed

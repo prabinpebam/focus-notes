@@ -312,10 +312,10 @@ const RegionHost = memo(function RegionHost({ node, top, viewKey, deps, resolver
 });
 
 /** Hosts one view: its local state, and its regions, each subscribed to what it shows (PRF-11). */
-export function ViewHost({ viewId, deps }: { viewId: string; deps: RuntimeDeps }): ReactNode {
+export function ViewHost({ viewId, deps, initialLocal }: { viewId: string; deps: RuntimeDeps; initialLocal?: Record<string, unknown> }): ReactNode {
   const doc = deps.views[viewId] as ViewDocument | undefined;
   if (!doc) throw new Error(`Unknown view ${viewId}`);
-  const [local, setLocalState] = useState<Record<string, unknown>>(() => ({ ...(doc.local ?? {}) }));
+  const [local, setLocalState] = useState<Record<string, unknown>>(() => ({ ...(doc.local ?? {}), ...initialLocal }));
   const resolver = useMemo(() => createResolver(deps), [deps]);
   const setLocal = useCallback((k: string, v: unknown) => setLocalState((prev) => ({ ...prev, [k]: v })), []);
   return createElement(RegionHost, { node: doc.root, top: true, viewKey: viewId, deps, resolver, local, setLocal });

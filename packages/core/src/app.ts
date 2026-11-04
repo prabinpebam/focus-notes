@@ -965,6 +965,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // ---- find and replace (FND-01, FND-02) ----
   const setFind = (patch: Partial<FindState>) => store.update((s) => ({ ...s, ui: { ...s.ui, find: { ...s.ui.find, ...patch } } }));
   const editorAction = (id: string, args?: Record<string, unknown>) => { for (const l of editorListeners) l(id, args); };
+  commands.register({
+    id: "app.reloadPanel", title: "app.reloadPanel",
+    run: ({ view }) => {
+      if (typeof view !== "string" || !view) throw new Error("Missing panel identifier");
+      editorAction("panel.reload", { view });
+    },
+  });
   // AI Rewrite and Settings → AI: on every note, with no switch to turn them on.
   registerAi({ store, bridge, catalog, commands, viewModels, tracker, commits, editorAction, announce, toast });
   const findHistory: string[] = [];

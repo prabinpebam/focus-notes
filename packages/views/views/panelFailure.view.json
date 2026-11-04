@@ -1,0 +1,37 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "panelFailure",
+  "overlay": true,
+  "focus": "reportPanel",
+  "local": { "view": "" },
+  "viewModels": ["vm.sendFeedback"],
+  "root": {
+    "type": "Stack",
+    "children": [{
+      "type": "Layer",
+      "when": { "expr": { "or": [{ "==": [{ "get": "local.view" }, "feedback"] }, { "!": { "get": "vm.sendFeedback.open" } }] } },
+      "props": { "position": "window", "layer": "dialog", "landmark": "region", "label": { "t": "feedback.panel.title" } },
+      "children": [{
+        "type": "Stack",
+        "props": { "gap": "s", "padding": "m" },
+        "children": [
+          {
+            "type": "StatusRow",
+            "props": {
+              "tone": "danger",
+              "message": { "t": "app.viewFailed" },
+              "actionLabel": { "t": "app.reloadPanel" }
+            },
+            "on": { "action": { "run": "app.reloadPanel", "args": { "view": { "get": "local.view" } } } }
+          },
+          {
+            "type": "Button",
+            "id": "reportPanel",
+            "props": { "label": { "t": "app.reportPanel" }, "variant": "secondary", "autoFocus": true },
+            "on": { "press": { "run": "feedback.open", "args": { "kind": "problem", "source": "panel" } } }
+          }
+        ]
+      }]
+    }]
+  }
+}

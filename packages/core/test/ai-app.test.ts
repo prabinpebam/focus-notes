@@ -422,7 +422,7 @@ describe("Rewrite in the window", () => {
     t.emit({ type: "delta", text: "Half" });
     t.emit({ type: "error", code, ...(retryAfter ? { retryAfter } : {}) });
     expect(t.editor.at(-1)).toBe("rewrite.abort");
-    expect(t.toasts.at(-1)).toBe(words);
+    expect(t.toasts.at(-1)).toBe(`${words} Your original text is kept.`);
     // Later events for it are ignored.
     t.emit({ type: "delta", text: "late" });
     expect(t.editor.at(-1)).toBe("rewrite.abort");
@@ -434,7 +434,7 @@ describe("Rewrite in the window", () => {
     t.emit({ type: "delta", text: "  " });
     t.emit({ type: "done" });
     expect(t.editor.at(-1)).toBe("rewrite.abort");
-    expect(t.toasts.at(-1)).toBe(en["ai.error.provider-empty"]);
+    expect(t.toasts.at(-1)).toBe(`${en["ai.error.provider-empty"]} Your original text is kept.`);
   });
 
   it("a refused start (the shell's IPC error) puts the original back too", async () => {

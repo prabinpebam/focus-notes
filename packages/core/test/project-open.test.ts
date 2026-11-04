@@ -169,7 +169,7 @@ describe("Open", () => {
       await app.commands.run("projects.newCreate");
       await app.commands.run("projects.newCancel");
       expect(cancelCreate).toHaveBeenCalledExactlyOnceWith(active);
-      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", pending: true, cancelLabel: en["project.new.stopping"], cannotCancel: true });
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", pending: true, cancelLabel: en["project.new.stopping"], cancelReason: en["project.new.stopping"], nextReason: en["project.new.creating"], cannotCancel: true });
       finish(book.folder); await operation;
       expect(open).not.toHaveBeenCalled();
       expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ pending: false, created: book.folder, cancelled: true, error: en["project.new.cancelledReady"], recoveryAction: "Retry" });
@@ -179,6 +179,29 @@ describe("Open", () => {
       expect(open).toHaveBeenCalledExactlyOnceWith(book.folder);
       expect(measure).toHaveBeenCalledWith("fn:project.create", expect.objectContaining({ start: expect.any(Number), end: expect.any(Number) }));
       measure.mockRestore();
+    });
+
+    it("explains pending validation, atomic creation and final Open without asking for another name", async () => {
+      let checked!: () => void, created!: (folder: string) => void, opened!: () => void, holdCheck = true;
+      const app = appWith({
+        parent: async () => "C:\\Projects",
+        check: async () => { if (holdCheck) await new Promise<void>(resolve => { checked = resolve; }); return { folder: book.folder, problem: "" }; },
+        create: async () => new Promise<string>(resolve => { created = resolve; }),
+        open: async () => new Promise<void>(resolve => { opened = resolve; }),
+      });
+      await app.commands.run("projects.new");
+      const next = app.commands.run("projects.newname", { value: "Book" });
+      await expect.poll(() => checked).toBeTypeOf("function");
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ pending: true, nextReason: en["project.new.checking"] });
+      holdCheck = false; checked(); await next;
+      for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+      const create = app.commands.run("projects.newCreate");
+      await expect.poll(() => created).toBeTypeOf("function");
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ cannotCancel: true, cancelReason: en["project.new.finishingStep"], nextReason: en["project.new.creating"] });
+      created(book.folder);
+      await expect.poll(() => opened).toBeTypeOf("function");
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ cannotCancel: true, cancelReason: en["project.new.finishingOpen"] });
+      opened(); await create;
     });
 
     it("keeps a cancelled partial creation and offers a different location, never replaying Create", async () => {

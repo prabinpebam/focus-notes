@@ -89,9 +89,24 @@ export const a = style({
   width: "100%", minWidth: "0px", fontSize: "1em", transitionDuration: "0ms",
   color: t.text, borderRadius: tokens.cmp.button.radius, paddingInline: t.padding,
   height: \`calc(\${t.height} - 2 * \${t.borderWidth})\`, transform: "translate(-50%, -50%)", clipPath: "inset(50%)",
-  selectors: { "&:hover": { background: t.backgroundHover } },
+  selectors: { "&:active": { background: t.backgroundHover } },
   "@media": { "(prefers-reduced-motion: reduce)": { transition: "none" } },
 });`);
+  });
+
+  describe("F14: hover requires hover capability", () => {
+    it("rejects bare, mixed, computed and negated hover selectors", () => {
+      for (const selector of ['"&:hover"', '"&:hover, &:focus-visible"', '`&:hover ${child}`']) {
+        rejects(BUTTON, `${IMPORT}const t = tokens.cmp.button; const child = "child"; export const a = style({selectors: { [${selector}]: { color: t.text } }});`, /hover.*outside/);
+      }
+      rejects(BUTTON, `${IMPORT}export const a = style({"@media": {"not (hover: hover)": {selectors: {"&:hover": {color: tokens.cmp.button.text}}}}});`, /hover.*outside/);
+      rejects(BUTTON, `${IMPORT}export const a = style({"@media": {"(hover: hover), (pointer: coarse)": {selectors: {"&:hover": {color: tokens.cmp.button.text}}}}});`, /hover.*outside/);
+      rejects(BUTTON, `globalStyle(\`\${row}:hover \${child}\`, { color: tokens.cmp.button.text });`, /global.*hover/);
+    });
+    it("accepts hover-gated selectors while keeping active and focus independent", () => {
+      accepts(BUTTON, `${IMPORT}export const a = style({selectors: {"&:active, &:focus-visible": {color: tokens.cmp.button.text}}, "@media": {"(hover: hover) and (pointer: fine)": {selectors: {"&:hover": {color: tokens.cmp.button.text}}}}});`);
+      accepts(BUTTON, `globalStyle(\`\${row}:hover \${child}\`, {"@media": {"(hover: hover)": {visibility: "visible"}}});`);
+    });
   });
 
   it("accepts aliased and destructured reads of the component's own tokens", () => {

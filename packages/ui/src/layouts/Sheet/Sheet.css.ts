@@ -83,9 +83,9 @@ export const handle = style({
     "[data-side=start] > &": { right: `calc(-1 * ${t.dock.handleWidth} / 2)` },
     "[data-side=end] > &": { left: `calc(-1 * ${t.dock.handleWidth} / 2)` },
     "&::after": { content: '""', position: "absolute", top: 0, bottom: 0, left: `calc(50% - ${t.dock.handleLine} / 2)`, width: t.dock.handleLine, backgroundColor: t.dock.handleIdle },
-    "&:hover::after": { backgroundColor: t.dock.handleHover },
     "&:focus-visible::after, &:active::after": { backgroundColor: t.dock.handleActive },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover:not(:active):not(:focus-visible)::after": { backgroundColor: t.dock.handleHover } } } },
 });export const side = styleVariants({
   start: { left: insetVar, animationName: slideStart },
   end: { right: insetVar, animationName: slideEnd },

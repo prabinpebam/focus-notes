@@ -72,9 +72,9 @@
           { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projectNew.elapsed" }, ""] } }, "props": { "value": { "get": "vm.projectNew.elapsed" }, "role": "caption", "tone": "muted" } }
         ] },
         { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
-          { "type": "Button", "props": { "label": { "get": "vm.projectNew.cancelLabel" }, "variant": "secondary", "disabled": { "get": "vm.projectNew.cannotCancel" }, "disabledReason": { "t": "project.new.stopping" } }, "on": { "press": { "run": "projects.newDismiss" } } },
+          { "type": "Button", "props": { "label": { "get": "vm.projectNew.cancelLabel" }, "variant": "secondary", "disabled": { "get": "vm.projectNew.cannotCancel" }, "disabledReason": { "get": "vm.projectNew.cancelReason" } }, "on": { "press": { "run": "projects.newDismiss" } } },
           { "type": "Button", "props": { "label": { "t": "project.back" }, "variant": "subtle", "disabled": { "get": "vm.projectNew.cannotBack" }, "disabledReason": { "t": "project.new.stepOf", "args": { "n": { "get": "vm.projectNew.step" } } } }, "on": { "press": { "run": "projects.newBack" } } },
-          { "type": "Button", "props": { "label": { "get": "vm.projectNew.nextLabel" }, "variant": "primary", "disabled": { "get": "vm.projectNew.cannotNext" }, "disabledReason": { "t": "project.new.fixName" } }, "on": { "press": { "run": "projects.newContinue" } } }
+          { "type": "Button", "props": { "label": { "get": "vm.projectNew.nextLabel" }, "variant": "primary", "disabled": { "get": "vm.projectNew.cannotNext" }, "disabledReason": { "get": "vm.projectNew.nextReason" } }, "on": { "press": { "run": "projects.newContinue" } } }
         ] }
       ]
     }]

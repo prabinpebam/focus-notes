@@ -23,7 +23,8 @@ export const press = style({
   borderRadius: t.press.radius,
   outline: "none",
   selectors: {
-    "&:hover": { color: t.press.hoverColor },
+    "&:active": { color: t.press.hoverColor },
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.press.focusWidth, outlineOffset: t.press.focusOffset, outlineColor: t.press.focusRing },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { color: t.press.hoverColor } } } },
 });

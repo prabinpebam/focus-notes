@@ -84,6 +84,27 @@ function rawValues(sf) {
   return [...found];
 }
 
+function bareHoverRules(sf) {
+  const found = [];
+  const hoverMedia = (name) => typeof name === "string" && name.split(",").every(part => /\(\s*hover\s*:\s*hover\s*\)/.test(part) && !/\bnot\b/.test(part));
+  const gated = (node) => {
+    for (let at = node.parent; at; at = at.parent) {
+      if (ts.isPropertyAssignment(at) && hoverMedia(propName(at.name)) && ts.isPropertyAssignment(at.parent.parent) && propName(at.parent.parent.name) === "@media") return true;
+    }
+    return false;
+  };
+  forEachNode(sf, node => {
+    if (ts.isPropertyAssignment(node) && node.name.getText(sf).includes(":hover") && !gated(node)) found.push("a :hover selector outside (hover: hover)");
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "globalStyle" && node.arguments[0]?.getText(sf).includes(":hover")) {
+      const style = unwrap(node.arguments[1]);
+      const media = style && ts.isObjectLiteralExpression(style) && style.properties.length === 1 && style.properties[0];
+      const rules = media && ts.isPropertyAssignment(media) && propName(media.name) === "@media" && unwrap(media.initializer);
+      if (!rules || !ts.isObjectLiteralExpression(rules) || !rules.properties.length || !rules.properties.every(rule => ts.isPropertyAssignment(rule) && hoverMedia(propName(rule.name)))) found.push("a global :hover selector outside (hover: hover)");
+    }
+  });
+  return found;
+}
+
 /**
  * Every read of the token tree imported from @focus-notes/tokens, whatever the binding is called:
  * named imports with aliases, namespace imports, variables, and destructuring all resolve to a path
@@ -176,6 +197,7 @@ export function checkSource(f, src) {
   }
   // 5. Style values are tokens only.
   if (f.endsWith(".css.ts")) for (const what of rawValues(sf)) errs.push(`${f}: contains ${what}; use a token`);
+  if (f.endsWith(".css.ts")) for (const what of bareHoverRules(sf)) errs.push(`${f}: contains ${what}`);
   // 5b. Token ownership: a component reads only its own component tokens; layouts read layout groups too.
   const comp = f.match(/^packages\/ui\/src\/(primitives|host|blocks|layouts)\/([A-Za-z]+)\//);
   if (comp && isCode) {

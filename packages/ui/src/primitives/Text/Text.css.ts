@@ -45,7 +45,8 @@ export const link = style({
   borderRadius: t.link.radius,
   outline: "none",
   selectors: {
-    "&:hover": { textDecorationLine: "underline" },
+    "&:active": { textDecorationLine: "underline" },
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.link.focusWidth, outlineOffset: t.link.focusOffset, outlineColor: t.link.focusRing },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { textDecorationLine: "underline" } } } },
 });

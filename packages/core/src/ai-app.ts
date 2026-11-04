@@ -494,7 +494,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     editorAction("rewrite.abort");
     end();
     if (code === "cancelled") announce(t("rewrite.stopped"));
-    else toast(reason(new Error(code), "ai.error.provider", retryAfter), { tone: "error" });
+    else toast(t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter) }), { tone: "error" });
   };
   const onEvent = (raw: unknown) => {
     const e = raw as { id?: unknown; type?: unknown; text?: unknown; code?: unknown; retryAfter?: unknown } | null;

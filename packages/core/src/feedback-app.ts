@@ -110,14 +110,17 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
     id: "feedback.open", title: "command.feedback.open", icon: "feedback", group: "app",
     run: async (a) => {
       const f = state();
-      const kind = a.kind === "problem" || a.kind === "idea" ? a.kind : undefined;
+      const keepDraft = a.source === "panel" && f.phase !== "sent" && Boolean(f.title || f.details);
+      const kind = !keepDraft && (a.kind === "problem" || a.kind === "idea") ? a.kind : undefined;
       const fromSettings = store.state.ui.settings.open || (f.open && f.fromSettings);
       // A sent dialog opened again starts a new draft; a draft being sent shows its send.
       const base = f.phase === "sent" ? { phase: "editing" as const, issue: undefined } : {};
+      const panelDraft = a.source === "panel" && !sending() && (f.phase === "sent" || (!f.title && !f.details))
+        ? { title: catalog.format("feedback.panel.title"), details: catalog.format("feedback.panel.details"), attach: false, attachChosen: true } : {};
       const kindPatch = kind && !sending() ? { kind, ...(state().attachChosen ? {} : { attach: kind === "problem" }) } : {};
       store.update((s) => ({
         ...s,
-        ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: false }, feedback: { ...s.ui.feedback, ...base, ...kindPatch, open: true, fromSettings } },
+        ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: false }, feedback: { ...s.ui.feedback, ...base, ...kindPatch, ...panelDraft, open: true, fromSettings } },
       }));
       if (kind === "problem" && !sending() && !state().attachChosen) set({ attach: true });
       // Opening builds the report afresh, so it's what's posted; a send under way keeps its own.

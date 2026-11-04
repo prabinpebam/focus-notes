@@ -37,7 +37,7 @@ export const row = style({
   transitionProperty: "background-color",
   transitionDuration: t.duration,
   selectors: {
-    "&:hover": { backgroundColor: t.hover },
+    "&:active": { backgroundColor: t.hover },
     // Text on the selection's color: the same as elsewhere, except in forced colors (HighlightText).
     '&[aria-selected="true"]': { backgroundColor: t.selection, color: t.selectionText, forcedColorAdjust: "none" },
     // The open note: a quiet fill and semibold, never an outline or a side bar (D-111). Selected wins.
@@ -47,6 +47,7 @@ export const row = style({
     // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&:focus-visible": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
+  "@media": { "(hover: hover)": { selectors: { '&:hover:not([aria-selected="true"]):not([data-current])': { backgroundColor: t.hover } } } },
 });
 /** A root's section label: uppercase, small, muted. */
 export const section = style({
@@ -91,9 +92,13 @@ export const input = style({
 export const more = style({
   display: "inline-flex", flexShrink: 0, alignItems: "center", justifyContent: "center",
   width: t.moreSize, height: t.moreSize, borderRadius: t.radius, color: t.textMuted, visibility: "hidden",
-  selectors: { "&:hover": { backgroundColor: t.moreHover } },
+  selectors: { "&:active": { backgroundColor: t.moreHover } },
+  "@media": {
+    "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.moreHover }, [`${row}:hover &`]: { visibility: "visible" } } },
+    "(hover: none)": { visibility: "visible" },
+  },
 });
-globalStyle(`${row}:hover ${more}, ${row}:focus-visible ${more}, ${row}[aria-selected="true"] ${more}, ${row}[data-menu-open] ${more}`, { visibility: "visible" });
+globalStyle(`${row}:focus-visible ${more}, ${row}[aria-selected="true"] ${more}, ${row}[data-menu-open] ${more}`, { visibility: "visible" });
 globalStyle(`${row}[aria-selected="true"] ${more}`, { color: t.selectionTextMuted });
 /** Where a right-click's menu opens: the pointer's place in the row, set as it opens. */
 export const anchorX = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });

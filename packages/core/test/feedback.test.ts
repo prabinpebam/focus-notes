@@ -197,6 +197,19 @@ async function started(o?: Parameters<typeof shell>[0]) {
 }
 
 describe("the dialog (D-203)", () => {
+  it("opens a safe panel draft without diagnostics, external navigation or sending anything", async () => {
+    const t = await started();
+    const note = t.app.store.state.note;
+    await t.run("feedback.open", { kind: "problem", source: "panel" });
+    await settle();
+    expect(t.vm()).toMatchObject({ open: true, title: en["feedback.panel.title"], details: en["feedback.panel.details"], attach: false, preview: false, reportReady: false });
+    expect(t.previews).toEqual([]);
+    expect(t.sent).toEqual([]);
+    expect(t.continued).toEqual([]);
+    expect(t.opened).toEqual([]);
+    expect(t.copied).toEqual([]);
+    expect(t.app.store.state.note).toBe(note);
+  });
   it("opens on Problem with the report attached; Idea leaves it off, unless the person chose", async () => {
     const t = await started();
     await t.run("feedback.open");

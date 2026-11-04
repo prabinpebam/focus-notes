@@ -23,6 +23,73 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+for (const scheme of ["light", "dark"] as const) test(`First-run ${scheme} shows a themed native frame before interaction`, async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, appearance: scheme }));
+  const entrypoint = join(dirs.userData, "inspect-first-frame.cjs");
+  const main = pathToFileURL(fileURLToPath(new URL("../out/main/main.mjs", import.meta.url))).href;
+  writeFileSync(entrypoint, `
+const { ipcMain, nativeTheme, BrowserWindow } = require("electron");
+nativeTheme.themeSource = ${JSON.stringify(scheme === "dark" ? "light" : "dark")};
+globalThis.uiStatesFirstFrames = [];
+ipcMain.on("window:firstFrame", event => {
+  const hidden = !BrowserWindow.fromWebContents(event.sender).isVisible();
+  event.sender.executeJavaScript(\`(() => {
+    const root = document.querySelector("[data-app-root]");
+    return { theme: document.documentElement.dataset.theme, scheme: getComputedStyle(document.documentElement).colorScheme,
+      background: root && getComputedStyle(root).backgroundColor, width: root && root.getBoundingClientRect().width,
+      height: root && root.getBoundingClientRect().height };
+  })()\`).then(frame => globalThis.uiStatesFirstFrames.push({ ...frame, hidden }));
+});
+import(${JSON.stringify(main)});
+`);
+  const l = await launch(dirs, {}, { firstRun: true, entrypoint });
+  try {
+    await expect(l.page.getByRole("button", { name: "Get started", exact: true })).toBeVisible();
+    await expect.poll(() => l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames").length)).toBe(1);
+    const frames = await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames")) as { hidden: boolean; theme: string; scheme: string; background: string; width: number; height: number }[];
+    expect(frames[0]).toMatchObject({ hidden: true, theme: scheme === "dark" ? "ink" : "paper", scheme });
+    expect(frames[0]!.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(frames[0]!.width).toBeGreaterThan(300);
+    expect(frames[0]!.height).toBeGreaterThan(250);
+    if (scheme === "dark") expect(frames[0]!.background).not.toBe("rgb(255, 255, 255)");
+    expect(l.log.some(line => line.includes("window-shown on=timeout"))).toBe(false);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:window.firstFrame").length)).toBe(1);
+  } finally { await closeTestApp(l); }
+});
+
+test("Files hover responds to hover capability without losing touch access or keyboard focus", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md"), bytes = readFileSync(note);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+p" : "Control+Alt+p");
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    const row = files.getByRole("treeitem").filter({ hasText: "Hello" }).first();
+    await expect(row).toBeVisible();
+    await l.page.mouse.move(0, 0);
+    const rest = await row.evaluate(el => getComputedStyle(el).backgroundColor);
+    await row.hover();
+    await expect.poll(() => row.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(rest);
+    const cdp = await l.page.context().newCDPSession(l.page);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+    expect(await l.page.evaluate(() => matchMedia("(hover: hover)").matches)).toBe(false);
+    await expect.poll(() => row.evaluate(el => getComputedStyle(el).backgroundColor)).toBe(rest);
+    const more = row.locator("[data-row-more]");
+    await expect(more).toBeVisible();
+    await more.click();
+    await expect(l.page.getByRole("menu")).toBeVisible();
+    await l.page.keyboard.press("Escape");
+    await row.focus();
+    await l.page.keyboard.press("Shift+F10");
+    await expect(l.page.getByRole("menu")).toBeVisible();
+    await l.page.keyboard.press("Escape");
+    expect(readFileSync(note)).toEqual(bytes);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  } finally { await closeTestApp(l); }
+});
+
 test("Existing project clone stops safely and resumes its retained folder without another clone", async () => {
   test.setTimeout(150_000);
   const w = await world({ gcm: true });

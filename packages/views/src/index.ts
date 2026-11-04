@@ -3,6 +3,7 @@ import settings from "../views/settings.view.json" with { type: "json" };
 import theme from "../views/theme.view.json" with { type: "json" };
 import history from "../views/history.view.json" with { type: "json" };
 import feedback from "../views/feedback.view.json" with { type: "json" };
+import panelFailure from "../views/panelFailure.view.json" with { type: "json" };
 import rewrite from "../views/rewrite.view.json" with { type: "json" };
 import newNote from "../views/newNote.view.json" with { type: "json" };
 import projects from "../views/projects.view.json" with { type: "json" };
@@ -24,7 +25,7 @@ import { openMocks } from "../mocks/open/index.ts";
 import { compose } from "./compose.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
-export const views: Record<string, unknown> = { canvas: compose(canvas), settings: compose(settings), theme, history, feedback, rewrite, newNote, shareItem, sitePreview: compose(sitePreview), projects: compose(projects), projectNew, projectIntro, localImport };
+export const views: Record<string, unknown> = { canvas: compose(canvas), settings: compose(settings), theme, history, feedback, panelFailure, rewrite, newNote, shareItem, sitePreview: compose(sitePreview), projects: compose(projects), projectNew, projectIntro, localImport };
 /**
  * Published pages' view documents (IA-VIEW-PUBLIC): the reader and the index of public notes (D-139),
  * rendered by the publisher at build time, and the share reader, rendered in the browser at s/ (WP-5.4).

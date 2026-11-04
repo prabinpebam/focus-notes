@@ -39,11 +39,11 @@ export const grip = style([placed, {
   selectors: {
     // A 32 px hit area around the grip.
     "&::before": { content: '""', position: "absolute", inset: `calc((${t.width} - ${t.hit}) / 2)` },
-    "&:hover": { backgroundColor: t.color.hover },
     // Pressed answers on pointer-down, in the next frame; open and dragging keep it.
     '&[data-pressed], &[aria-expanded="true"], &[data-dragging]': { backgroundColor: t.color.pressed, color: t.color.onPressed },
     "&:focus-visible": { outlineStyle: "solid", outlineColor: t.color.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
   },
+  "@media": { "(hover: hover)": { selectors: { '&:hover:not([data-pressed]):not([aria-expanded="true"]):not([data-dragging])': { backgroundColor: t.color.hover } } } },
 }]);
 
 /** A box over the block: the one the open menu or a drag acts on. Never in the way. */

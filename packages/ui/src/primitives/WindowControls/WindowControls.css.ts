@@ -15,8 +15,9 @@ export const root = style({
   transitionDuration: t.revealDuration,
   selectors: {
     // Shown at the top of the docked contents too, which they sit on (D-187).
-    "&[data-reveal], &:hover, &:focus-within, :root[data-window-band] &, :root[data-dock-right] &": { opacity: t.shown },
+    "&[data-reveal], &:focus-within, :root[data-window-band] &, :root[data-dock-right] &": { opacity: t.shown },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { opacity: t.shown } } } },
 });
 
 export const button = style({
@@ -88,7 +89,8 @@ export const zone = style({
   transitionProperty: "background-color",
   transitionDuration: t.duration,
   selectors: {
-    "&:hover, &:focus-visible": { backgroundColor: t.zoneHover },
-    "&:focus-visible": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
+    "&:active": { backgroundColor: t.zoneHover },
+    "&:focus-visible": { backgroundColor: t.zoneHover, outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.zoneHover } } } },
 });

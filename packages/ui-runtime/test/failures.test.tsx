@@ -4,8 +4,9 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, type PlatformBridge } from "@focus-notes/core";
 import { registry, contractByType } from "@focus-notes/ui";
-import { messages } from "@focus-notes/views";
+import { messages, views } from "@focus-notes/views";
 import { createResolver, ViewHost, type RuntimeDeps } from "../src/render.ts";
+import { RecoverableView } from "../src/mount.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.restoreAllMocks());
@@ -24,6 +25,56 @@ function setup() {
 }
 
 describe("view command failures (F1)", () => {
+  it("recovers a client-rendered failed panel without remounting its sibling or changing the note, and reports only safe canned details", async () => {
+    const { app, deps } = setup();
+    let crashes = true, mounts = 0;
+    deps.registry = { ...registry, Heading: () => {
+      if (crashes) throw new Error("secret note text C:\\private\\notes\\secret.md");
+      return createElement(registry.Text!, { value: "Recovered panel" });
+    }, Text: (props: Record<string, unknown>) => {
+      mounts++;
+      return createElement(registry.Text!, props);
+    } };
+    deps.views = { panel: { root: { type: "Heading", props: { value: "Panel" } } }, sibling: { root: { type: "Text", props: { value: "Kept editor" } } }, panelFailure: views.panelFailure };
+    app.store.update(state => ({ ...state, note: { ...state.note, markdown: "# Kept\n\nUnsent text.", path: "C:\\private\\notes\\kept.md" } }));
+    const note = app.store.state.note;
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    try {
+      await act(async () => root.render(createElement("div", null,
+        createElement(RecoverableView, { app, viewId: "panel", deps }),
+        createElement(RecoverableView, { app, viewId: "sibling", deps }))));
+      expect(host.textContent).toContain("Your notes are kept.");
+      const sibling = [...host.querySelectorAll("span")].find(el => el.textContent === "Kept editor");
+      const count = mounts;
+      const report = [...host.querySelectorAll("button")].find(el => el.textContent === "Report problem");
+      await act(async () => report!.click());
+      expect(app.store.state.ui.feedback).toMatchObject({ open: true, attach: false, title: messages.en!["feedback.panel.title"], details: messages.en!["feedback.panel.details"] });
+      expect(JSON.stringify(app.store.state.ui.feedback)).not.toContain("secret.md");
+      expect(host.textContent).not.toContain("Reload panel");
+      await act(async () => app.commands.run("feedback.close"));
+      await act(async () => [...host.querySelectorAll("button")].find(el => el.textContent === "Reload panel")!.click());
+      expect(host.textContent).toContain("Your notes are kept.");
+      crashes = false;
+      const reload = [...host.querySelectorAll("button")].find(el => el.textContent === "Reload panel");
+      await act(async () => reload!.click());
+      expect(host.textContent).toContain("Recovered panel");
+      expect(host.textContent).not.toContain("Reload panel");
+      expect(host.contains(sibling!)).toBe(true);
+      expect(mounts).toBe(count);
+      expect(app.store.state.note).toBe(note);
+    } finally { act(() => root.unmount()); }
+  });
+
+  it("never overwrites an existing Feedback draft when a panel report is requested", async () => {
+    const { app } = setup();
+    await app.commands.run("feedback.open");
+    await app.commands.run("feedback.setKind", { value: "idea" });
+    await app.commands.run("feedback.setTitle", { value: "My existing draft" });
+    await app.commands.run("feedback.setDetails", { value: "Keep these words" });
+    await app.commands.run("feedback.open", { kind: "problem", source: "panel" });
+    expect(app.store.state.ui.feedback).toMatchObject({ kind: "idea", title: "My existing draft", details: "Keep these words" });
+  });
   it("keeps repeated inline commit recovery failures local and reports malformed commit actions", async () => {
     const { app, resolver } = setup();
     app.commands.register({ id: "fixture.persist", title: "gallery.action", run: async () => { throw new Error("disk full"); } });

@@ -6732,6 +6732,12 @@
       ]
     },
     {
+      "id": "panelFailure",
+      "viewModels": [
+        "vm.sendFeedback"
+      ]
+    },
+    {
       "id": "projectIntro",
       "ia": "IA-VIEW-PROJECTS",
       "viewModels": [

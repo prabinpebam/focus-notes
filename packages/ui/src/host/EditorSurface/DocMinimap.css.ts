@@ -118,9 +118,9 @@ export const handle = style({
   outline: "none",
   selectors: {
     "&::after": { content: '""', position: "absolute", top: 0, bottom: 0, left: `calc(50% - ${t.dock.handleLine} / 2)`, width: t.dock.handleLine, backgroundColor: t.transparent },
-    "&:hover::after": { backgroundColor: t.dock.handleHover },
     "&:focus-visible::after, &:active::after": { backgroundColor: t.dock.handleActive },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover:not(:active):not(:focus-visible)::after": { backgroundColor: t.dock.handleHover } } } },
 });
 
 /** The first row's height: where the pin sits, beside the note's first heading. */
@@ -178,13 +178,13 @@ export const item = style({
   cursor: "pointer",
   outline: "none",
   selectors: {
-    "&:hover, &:focus-visible": { backgroundColor: t.itemHover },
+    "&:focus-visible": { backgroundColor: t.itemHover, outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing },
     "&:active": { backgroundColor: t.itemPressed },
-    "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing },
     // Not by colour alone (1.4.1): the current heading is also heavier.
     '&[aria-current="location"]': { color: t.itemCurrent, fontWeight: t.itemCurrentWeight },
     "&[data-untitled]": { color: t.itemUntitled },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover:not(:active)": { backgroundColor: t.itemHover } } } },
 });
 export const indent = styleVariants({
   0: {},

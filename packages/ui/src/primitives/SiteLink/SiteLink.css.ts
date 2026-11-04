@@ -35,9 +35,10 @@ export const variant = styleVariants({
     color: t.nav,
     textDecoration: "none",
     selectors: {
-      "&:hover": { textDecorationLine: "underline" },
+      "&:active": { textDecorationLine: "underline" },
       '&[aria-current="page"]': { color: t.navCurrent, textDecorationLine: "underline", textDecorationThickness: t.currentBar },
     },
+    "@media": { "(hover: hover)": { selectors: { "&:hover": { textDecorationLine: "underline" } } } },
   },
   brand: { display: "inline-flex", alignItems: "center", minHeight: t.hit, marginInlineEnd: "auto", color: t.nav, fontSize: t.brandSize, fontWeight: t.weight, textDecoration: "none" },
   primary: { ...action, backgroundColor: t.primary.background, borderColor: t.primary.background, color: t.primary.text },
@@ -46,6 +47,7 @@ export const variant = styleVariants({
     backgroundColor: t.secondary.background,
     borderColor: t.secondary.border,
     color: t.secondary.text,
-    selectors: { "&:hover": { backgroundColor: t.secondary.hover } },
+    selectors: { "&:active": { backgroundColor: t.secondary.hover } },
+    "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.secondary.hover } } } },
   },
 });

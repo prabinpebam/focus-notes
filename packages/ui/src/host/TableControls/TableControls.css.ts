@@ -53,8 +53,9 @@ const handle = style([control, {
   borderColor: t.color.handleBorder,
   borderRadius: t.radius,
   selectors: {
-    '&:hover, &[aria-expanded="true"], &[data-dragging]': { backgroundColor: t.color.accent, borderColor: t.color.accent, color: t.color.onAccent },
+    '&:active, &[aria-expanded="true"], &[data-dragging]': { backgroundColor: t.color.accent, borderColor: t.color.accent, color: t.color.onAccent },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.color.accent, borderColor: t.color.accent, color: t.color.onAccent } } } },
 }]);
 
 /** A 40 × 18 pill centered 8 px above the hovered column. Its hit area is 32 px tall. */
@@ -140,7 +141,8 @@ const bar = style([control, {
   borderWidth: t.borderWidth,
   borderColor: t.color.barBorder,
   borderRadius: t.barRadius,
-  selectors: { "&:hover": { backgroundColor: t.color.barHover } },
+  selectors: { "&:active": { backgroundColor: t.color.barHover } },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.color.barHover } } } },
 }]);
 export const newRow = style([bar, { width: wVar, height: t.newRowHeight, marginTop: t.barGap }]);
 export const newColumn = style([bar, { width: t.newColumnWidth, height: hVar, marginLeft: t.barGap }]);

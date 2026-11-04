@@ -30,17 +30,17 @@ export const kind = styleVariants({
         content: '""', position: "absolute", inset: 0, zIndex: t.tintLayer, borderRadius: "inherit", backgroundColor: t.tint, opacity: t.tintOpacity, pointerEvents: "none",
         transitionProperty: "opacity", transitionDuration: t.duration, transitionTimingFunction: t.easing,
       },
-      "&:hover::before": { opacity: t.visible },
       [`&:has(${hit}:active)`]: { backgroundColor: t.pressed },
     },
+    "@media": { "(hover: hover)": { selectors: { "&:hover::before": { opacity: t.visible } } } },
   },
   // A file: a quiet row; hovered, the hover fill.
   file: {
     paddingBlock: t.padding.rowBlock, paddingInline: t.padding.rowInline, borderRadius: t.rowRadius,
     selectors: {
-      "&:hover": { backgroundColor: t.hover },
       [`&:has(${hit}:active)`]: { backgroundColor: t.pressed },
     },
+    "@media": { "(hover: hover)": { selectors: { "&:hover": { backgroundColor: t.hover } } } },
   },
 });
 
@@ -63,9 +63,10 @@ export const path = style({
   minWidth: 0, maxWidth: "100%", paddingInline: t.pathPadding, marginInlineStart: `calc(${t.pathPadding} * -1)`,
   border: "none", borderRadius: t.rowRadius, background: "none", font: "inherit", fontSize: t.detail, color: t.detailColor, cursor: "pointer", whiteSpace: "nowrap",
   selectors: {
-    "&:hover": { color: t.pathHover, backgroundColor: t.hover },
+    "&:active": { color: t.pathHover, backgroundColor: t.pressed },
     "&:focus-visible": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
   },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { color: t.pathHover, backgroundColor: t.hover } } } },
 });
 export const pathIcon = style({ flexShrink: 0, width: t.pathIcon, height: t.pathIcon });
 export const pathWrap = style({ display: "inline-flex", minWidth: 0 });
@@ -77,7 +78,11 @@ export const pin = style({
   position: "absolute", zIndex: t.controlLayer, top: t.pinInset, insetInlineEnd: t.pinInset, display: "flex", opacity: 0,
   transitionProperty: "opacity", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
-    [`${base}:hover &, ${base}:focus-within &, &[data-pinned]`]: { opacity: t.visible },
+    [`${base}:focus-within &, &[data-pinned]`]: { opacity: t.visible },
+  },
+  "@media": {
+    "(hover: hover)": { selectors: { [`${base}:hover &`]: { opacity: t.visible } } },
+    "(hover: none)": { opacity: t.visible },
   },
 });
 globalStyle(`${pin}[data-pinned] button`, { color: t.pinned });

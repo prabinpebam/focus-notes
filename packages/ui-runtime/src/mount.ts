@@ -1,5 +1,5 @@
 /** Mounting the app and the global keyboard handler. The only entry point shells call. */
-import { createElement, Fragment, StrictMode } from "react";
+import { createElement, Fragment, StrictMode, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
@@ -26,6 +26,20 @@ const WHEEL_STEP_PX = 50;
 /** A wheel that counts in lines, as about this many pixels each. */
 const WHEEL_LINE_PX = 40;
 
+/** Reloads only the failed view; siblings, the editor and app state keep their identity. */
+export function RecoverableView({ app, viewId, deps }: { app: Pick<App, "onEditorAction">; viewId: string; deps: RuntimeDeps }) {
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => app.onEditorAction((id, args) => {
+    if (id === "panel.reload" && args?.view === viewId) setAttempt(value => value + 1);
+  }), [app, viewId]);
+  const fallback = createElement(ViewHost, { viewId: "panelFailure", deps, initialLocal: { view: viewId } });
+  return createElement(ViewBoundary, {
+    key: attempt, fallback,
+    onError: () => console.error("Panel rendering failed"),
+    children: createElement(ViewHost, { viewId, deps }),
+  });
+}
+
 export function mountApp(el: Element, { app, views, view = "canvas", overlays = [], signal }: MountOptions): Root {
   // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
   installTrustedTypes();
@@ -40,9 +54,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   // The warm-up after start loads the code of the views opened first, at idle priority (PRF-10).
   app.warmUp.add({ id: "views", run: async () => void (await preloadViews()) });
   const root = createRoot(el);
-  const Text = registry.Text!;
-  const fallback = createElement(Text, { value: app.messages.has("app.viewFailed") ? app.messages.format("app.viewFailed") : "This panel couldn't load." });
-  const host = (viewId: string) => createElement(ViewBoundary, { key: viewId, fallback, onError: (e: unknown) => console.error(e), children: createElement(ViewHost, { viewId, deps }) });
+  const host = (viewId: string) => createElement(RecoverableView, { key: viewId, app, viewId, deps });
   // Overlays render inside the window as drawn (D-14, D-111): their scrims and sheets never reach its shadow margin.
   root.render(createElement(StrictMode, null, createElement(Fragment, null, host(view), ...overlays.map((id) => createElement(InWindow, { key: id }, host(id))))));
 
