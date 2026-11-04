@@ -20,7 +20,7 @@ import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { spawn } from "node:child_process";
-import { projectWindows, resumeProjectProfile } from "./projects.ts";
+import { candidateGitHubApi, projectWindows, resumeProjectProfile } from "./projects.ts";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -1302,6 +1302,30 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (journey) return void process.stdout.write(`[focus-notes] reveal-project ${canonical}\n`);
     const problem = await shell.openPath(canonical);
     if (problem) throw new Error(problem);
+  });
+  // Open file… (owner, 4 November): the platform picker; a file in a known project opens in its window, else on its own.
+  handle("projects:openFile", () => projects.openFile());
+  // Open from GitHub… (owner, 4 November): the account's own repositories, then the first run's clone into
+  // a new project window. A review build reads only its local stand-in and clones from its local remotes.
+  const reviewGitHub = process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API;
+  const reviewRemotes = reviewGitHub ? process.env.FOCUS_NOTES_CANDIDATE_GIT_REMOTES : undefined;
+  const projectGitHub = async () => (reviewGitHub ? candidateGitHubApi(reviewGitHub) : (journey && !fakeApi ? undefined : (await account.api())?.api));
+  handle("projects:githubRepos", async () => {
+    const api = await projectGitHub();
+    if (!api) throw new Error("signedOut");
+    return (await api.ownRepos()).filter((r) => !r.template).map((r) => ({ owner: r.owner, name: r.name, private: r.private }));
+  });
+  handle("projects:openGitHub", async (owner: unknown, name: unknown) => {
+    if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    if (reviewGitHub && !reviewRemotes) throw new Error("This review build has no local remotes.");
+    const url = reviewRemotes ? `${reviewRemotes.replace(/\\/g, "/")}/${owner}/${name}.git` : remoteUrl(owner, name);
+    let folder = reviewGitHub ? join(dirname(notesHome()), name) : await freeFor(name);
+    for (let i = 2; reviewGitHub && existsSync(folder); i++) folder = join(dirname(notesHome()), `${name} ${i}`);
+    const r = await cloneWorkspace(setupRunner, url, folder, reviewGitHub ? undefined : isTemplateRemote);
+    if (!r.ok) throw new Error(r.problem);
+    const canonical = await realpath(r.folder ?? folder);
+    await projects.adopt(canonical, { name, accent: "teal", logo: "book" });
+    await projects.open(canonical);
   });
   handle("note:read", async (p) => {
     try {

@@ -9,9 +9,10 @@ export function registerProjectOpen(ctx: {
 }) {
   const { store, commands, viewModels, bridge } = ctx;
   const state = { open: false, full: false, query: "", active: "", pending: false, loading: false, error: "", entries: [] as ProjectEntry[] };
+  const github = { open: false, loading: false, pending: "", error: "", repos: [] as { owner: string; name: string; private: boolean }[] };
   const localImport = { open: false, pending: false, error: "", targets: [] as {id: string; label: string; description: string}[] };
   const changed = () => store.update((s) => ({ ...s }));
-  const close = () => { state.open = false; changed(); };
+  const close = () => { state.open = false; github.open = false; changed(); };
   async function refresh(full = false) {
     // The last list stays on screen while the new one loads (no blank frame); a first load shows placeholders.
     state.open = true; state.full = full; state.loading = true; state.error = ""; changed();
@@ -97,6 +98,39 @@ export function registerProjectOpen(ctx: {
     },
   });
   commands.register({
+    id: "projects.openFile", title: "project.openFile", enabled: () => Boolean(bridge.projects?.openFile),
+    run: async () => {
+      state.error = ""; changed();
+      try {
+        const r = await bridge.projects!.openFile!();
+        if (!r) return;
+        if (r.here) await ctx.load(r.file);
+        close();
+      } catch { state.error = ctx.catalog.format("project.open.fileFailed"); changed(); }
+    },
+  });
+  commands.register({
+    id: "projects.github", title: "project.openFromGitHub", enabled: () => Boolean(bridge.projects?.githubRepos),
+    run: async () => {
+      github.open = true; github.loading = true; github.error = ""; github.pending = ""; changed();
+      try { github.repos = await bridge.projects!.githubRepos!(); }
+      catch (e) { github.error = ctx.catalog.format(String(e).includes("signedOut") ? "project.github.signedOut" : "project.github.failed"); }
+      finally { github.loading = false; changed(); }
+    },
+  });
+  commands.register({ id: "projects.githubBack", title: "project.github.back", enabled: () => !github.pending, run: () => { github.open = false; changed(); } });
+  commands.register<{id: string}>({
+    id: "projects.githubOpen", title: "project.openFromGitHub", enabled: () => github.open && !github.pending,
+    run: async ({id}) => {
+      const repo = github.repos.find((r) => `${r.owner}/${r.name}` === id);
+      if (!repo) throw new Error("Unknown repository");
+      github.pending = repo.name; github.error = ""; changed();
+      try { await bridge.projects!.openGitHub!(repo.owner, repo.name); close(); }
+      catch (e) { github.error = ctx.catalog.format(String(e).includes("notWorkspace") ? "project.github.notWorkspace" : "project.github.cloneFailed", { name: repo.name }); }
+      finally { github.pending = ""; changed(); }
+    },
+  });
+  commands.register({
     id: "projects.choose", title: "project.openProject", run: async () => {
       try {
         const folder = await bridge.projects!.choose();
@@ -118,7 +152,9 @@ export function registerProjectOpen(ctx: {
   viewModels.register({
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
     schema: { type: "object", properties: {
-      open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, loading: { type: "boolean" }, recentWaiting: { type: "boolean" }, entriesWaiting: { type: "boolean" }, error: text, query: text, active: text,
+      open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, loading: { type: "boolean" }, recentWaiting: { type: "boolean" }, entriesWaiting: { type: "boolean" }, error: text,
+      githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
+      repos: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
       recent: { type: "array", items: item },
       entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, pinned: { type: "boolean" }, menu } } },
     } },
@@ -137,6 +173,9 @@ export function registerProjectOpen(ctx: {
         recent,
         recentWaiting: state.loading && recent.length === 0,
         entriesWaiting: state.loading && entries.length === 0,
+        githubOpen: github.open, githubLoading: github.loading, githubWaiting: github.loading && github.repos.length === 0, githubPending: Boolean(github.pending),
+        githubStatus: github.pending ? ctx.catalog.format("project.github.cloning", { name: github.pending }) : "", githubError: github.error,
+        repos: github.repos.map((r) => ({ id: `${r.owner}/${r.name}`, label: r.name, description: ctx.catalog.format("project.github.repo", { owner: r.owner, private: String(r.private) }), busy: github.pending === r.name })),
       };
     },
   });

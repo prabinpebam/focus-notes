@@ -136,6 +136,12 @@ export interface PlatformBridge {
     pin(folder: string, path?: string): Promise<void>;
     /** Shows a folder Open lists in File Explorer or Finder. */
     reveal?(folder: string): Promise<void>;
+    /** Open file…: the platform picker; a file in this window's project comes back to open here. */
+    openFile?(): Promise<{ file: string; here: boolean } | undefined>;
+    /** Open from GitHub…: the account's own repositories (never templates). */
+    githubRepos?(): Promise<{ owner: string; name: string; private: boolean }[]>;
+    /** Clones a repository into a new project and opens its window. */
+    openGitHub?(owner: string, name: string): Promise<void>;
     lastNote(): Promise<string | undefined>;
     position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
     remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;

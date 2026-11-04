@@ -51,6 +51,16 @@ export function resumeProjectProfile(root: string): { profile: string; folder: s
   }
 }
 
+/** A review build's local GitHub stand-in: loopback only, never the account vault, never a redirect out of it. */
+export function candidateGitHubApi(origin: string): GitHubApi {
+  if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) throw new Error("Review builds use a loopback GitHub endpoint only.");
+  return new GitHubApi("focus-notes-local-candidate", (url, init) => {
+    const source = new URL(url);
+    if (source.origin !== "https://api.github.com") throw new Error("Unexpected GitHub request destination.");
+    return fetch(origin + source.pathname + source.search, { ...init, redirect: "error", signal: AbortSignal.timeout(5000) });
+  });
+}
+
 export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string) {
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
@@ -292,12 +302,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await mkdir(result.folder);
     await mkdir(join(result.folder, "notes"));
     if (candidateApi) {
-      // This preview never reads the account vault or follows a redirect out of the local fake.
-      const api = new GitHubApi("focus-notes-local-candidate", (url, init) => {
-        const source = new URL(url);
-        if (source.origin !== "https://api.github.com") throw new Error("Unexpected GitHub request destination.");
-        return fetch(candidateApi + source.pathname + source.search, { ...init, redirect: "error", signal: AbortSignal.timeout(5000) });
-      });
+      const api = candidateGitHubApi(candidateApi);
       const owner = (await api.user()).login;
       const name = input.name.replace(/[^A-Za-z0-9._-]/g, "-");
       await api.createRepo(name, "Private notes for Focus Notes", true, false);
@@ -305,14 +310,39 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (!repository.private || repository.owner !== owner || repository.name !== name) throw new Error("The local GitHub endpoint did not confirm a private repository.");
     }
     const folder = await realpath(result.folder);
-    const profile = join(profiles, key(folder));
-    await mkdir(profile);
-    await writeFile(join(profile, DATA_FILES.projectFolder), folder, { flag: "wx" });
-    await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { flag: "wx" });
-    await writeFile(join(profile, DATA_FILES.state), JSON.stringify({
-      version: 1, firstRun: "done", projectSettings: { [folder]: { name: input.name, accent: input.accent, logo: input.logo, watermark: "off", font: "app", theme: "app" } },
-    }), { flag: "wx" });
+    await adopt(folder, { name: input.name, accent: input.accent, logo: input.logo });
     return folder;
   }
-  return { list, known: knownFolder, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  /** Makes a folder a known project with its own profile (a clone from GitHub, a new project); an already known one is left as it is. */
+  async function adopt(folder: string, look?: { name: string; accent: string; logo: string }, local = false): Promise<void> {
+    await list();
+    if (known.has(folder)) return;
+    const profile = join(profiles, key(folder));
+    await mkdir(profile, { recursive: true });
+    await writeFile(join(profile, DATA_FILES.projectFolder), folder, { flag: "wx" });
+    await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { flag: "wx" });
+    await writeFile(join(profile, DATA_FILES.state), JSON.stringify(local
+      ? { version: 1, firstRun: "done", localNotes: true, projectIntroSeen: true }
+      : { version: 1, firstRun: "done", ...(look ? { projectSettings: { [folder]: { ...look, watermark: "off", font: "app", theme: "app" } } } : {}) }), { flag: "wx" });
+  }
+  /**
+   * Open file… (owner, 4 November): a Markdown file opens in its own project's window when it's inside a
+   * known project; otherwise on its own, in a window over its folder kept on this computer only, like Local
+   * notes (D-333): no backup, sharing or publishing.
+   */
+  async function openFile(): Promise<{ file: string; here: boolean } | undefined> {
+    const result = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Markdown", extensions: ["md", "markdown"] }] });
+    if (result.canceled || !result.filePaths[0]) return undefined;
+    const file = await realpath(result.filePaths[0]);
+    if (![".md", ".markdown"].includes(extname(file).toLowerCase())) throw new Error("Choose a Markdown file");
+    await list();
+    const owner = [...known.keys()].filter((f) => { const r = relative(f, file); return r && !r.startsWith("..") && !isAbsolute(r); }).sort((a, b) => b.length - a.length)[0];
+    const folder = owner ?? dirname(file);
+    // A file in this window's own project opens here (the window asks for it).
+    if (owner && owner === await realpath(home())) return { file, here: true };
+    if (!owner) await adopt(folder, undefined, true);
+    await open(folder, file);
+    return { file, here: false };
+  }
+  return { list, known: knownFolder, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }

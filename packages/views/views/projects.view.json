@@ -1,76 +1,264 @@
 {
-  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
-  "id": "projects",
-  "ia": "IA-VIEW-PROJECTS",
-  "overlay": true,
-  "viewModels": ["vm.app", "vm.projects"],
-  "focus": "projectSearch",
-  "root": {
-    "type": "Stack",
-    "children": [{
+ "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+ "id": "projects",
+ "ia": "IA-VIEW-PROJECTS",
+ "overlay": true,
+ "viewModels": [
+  "vm.app",
+  "vm.projects"
+ ],
+ "focus": "projectSearch",
+ "root": {
+  "type": "Stack",
+  "children": [
+   {
     "type": "Dialog",
-    "when": { "get": "vm.projects.dialog" },
-    "props": { "title": { "t": "project.open.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.projects.open" }, "size": "xl", "height": "content" },
-    "on": { "openChange": { "run": "projects.close" } },
-    "children": [{
-      "type": "Stack", "props": { "gap": "xl" },
-      "children": [
-        { "type": "SearchField", "id": "projectSearch", "props": { "label": { "t": "project.open.search" }, "placeholder": { "t": "project.open.search" }, "clearLabel": { "t": "newNote.clear" }, "value": { "bind": "vm.projects.query" }, "autoFocus": true } },
-        { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
-          { "type": "Button", "props": { "label": { "t": "project.open.newLocal" }, "variant": "secondary", "icon": "quickNote" }, "on": { "press": { "run": "projects.newLocal" } } },
-          { "type": "Button", "props": { "label": { "t": "project.openFile" }, "variant": "subtle", "icon": "open", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
-          { "type": "Button", "props": { "label": { "t": "project.openFromGitHub" }, "variant": "subtle", "icon": "github", "disabled": true, "disabledReason": { "t": "spotlight.unavailable" } } },
-          { "type": "Button", "props": { "label": { "t": "project.new" }, "variant": "subtle", "icon": "add" }, "on": { "press": { "run": "projects.new" } } },
-          { "type": "Button", "props": { "label": { "t": "project.openProject" }, "variant": "subtle", "icon": "folder" }, "on": { "press": { "run": "projects.choose" } } }
-        ] },
-        { "type": "Columns", "props": { "gap": "xxl" }, "children": [
-          { "type": "Stack", "props": { "gap": "m" }, "children": [
-            { "type": "Text", "props": { "value": { "t": "recent.title" }, "role": "label", "tone": "muted" } },
-            { "type": "Stack", "props": { "gap": "xxs" }, "children": [
-              { "type": "ItemCard", "when": { "get": "vm.projects.recentWaiting" }, "props": { "title": { "t": "project.open.loading" }, "skeleton": true } },
-              { "each": { "get": "vm.projects.recent" }, "as": "recent", "key": "recent.id", "empty": { "type": "Text", "when": { "expr": { "!": [{ "get": "vm.projects.recentWaiting" }] } }, "props": { "value": { "t": "project.open.recentEmpty" }, "tone": "muted" } }, "render": {
-                "type": "OpenItem",
-                "props": {
-                  "kind": "file", "title": { "get": "recent.label" }, "detail": { "get": "recent.description" }, "icon": "documentText", "pinned": { "get": "recent.pinned" },
-                  "label": { "t": "project.open.openItem", "args": { "name": { "get": "recent.label" } } },
-                  "pinLabel": { "t": "project.open.pinItem", "args": { "name": { "get": "recent.label" } } },
-                  "unpinLabel": { "t": "project.open.unpinItem", "args": { "name": { "get": "recent.label" } } }
-                },
-                "on": {
-                  "press": { "run": "projects.launch", "args": { "id": { "get": "recent.id" } } },
-                  "pin": { "run": "projects.pin", "args": { "id": { "get": "recent.id" } } }
-                }
-              } }
-            ] }
-          ] },
-          { "type": "Stack", "props": { "gap": "m" }, "children": [
-            { "type": "Text", "props": { "value": { "t": "project.list.title" }, "role": "label", "tone": "muted" } },
-            { "type": "Stack", "props": { "gap": "s" }, "children": [
-              { "type": "ItemCard", "when": { "get": "vm.projects.entriesWaiting" }, "props": { "title": { "t": "project.open.loading" }, "size": "l", "skeleton": true } },
-              { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "when": { "expr": { "!": [{ "get": "vm.projects.entriesWaiting" }] } }, "props": { "value": { "t": "project.open.projectsEmpty" }, "tone": "muted" } }, "render": {
-                "type": "OpenItem",
-                "props": {
-                  "kind": "project", "title": { "get": "entry.name" }, "path": { "get": "entry.folder" }, "accent": { "get": "entry.accent" }, "logo": { "get": "entry.logo" }, "src": { "get": "entry.logoSrc" }, "pinned": { "get": "entry.pinned" },
-                  "pathLabel": { "t": "project.open.reveal", "args": { "platform": { "get": "vm.app.platform" } } },
-                  "label": { "t": "project.open.openItem", "args": { "name": { "get": "entry.name" } } },
-                  "pinLabel": { "t": "project.open.pinItem", "args": { "name": { "get": "entry.name" } } },
-                  "unpinLabel": { "t": "project.open.unpinItem", "args": { "name": { "get": "entry.name" } } }
-                },
-                "on": {
-                  "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } },
-                  "pin": { "run": "projects.pin", "args": { "id": { "get": "entry.id" } } },
-                  "reveal": { "run": "projects.reveal", "args": { "id": { "get": "entry.id" } } }
-                }
-              } }
-            ] }
-          ] }
-        ] },
-        { "type": "Text", "when": { "get": "vm.projects.pending" }, "props": { "value": { "t": "project.open.preparing" }, "tone": "muted", "announce": true } },
-        { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.projects.error" }, ""] } }, "props": { "message": { "get": "vm.projects.error" }, "tone": "danger" } },
-        { "type": "Inline", "props": { "align": "end" }, "children": [{ "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "projects.close" } } }] }
+    "when": {
+     "expr": {
+      "and": [
+       {
+        "get": "vm.projects.dialog"
+       },
+       {
+        "!": [
+         {
+          "get": "vm.projects.githubOpen"
+         }
+        ]
+       }
       ]
-    }],
+     }
+    },
+    "props": {
+     "title": {
+      "t": "project.open.title"
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "get": "vm.projects.open"
+     },
+     "size": "xl",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "run": "projects.close"
+     }
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "xl"
+      },
+      "children": [
+       {
+        "use": "open.body"
+       },
+       {
+        "type": "Inline",
+        "props": {
+         "align": "end"
+        },
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "project.cancel"
+           },
+           "variant": "secondary"
+          },
+          "on": {
+           "press": {
+            "run": "projects.close"
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ],
     "slots": {}
-    }]
-  }
+   },
+   {
+    "type": "Dialog",
+    "when": {
+     "get": "vm.projects.githubOpen"
+    },
+    "props": {
+     "title": {
+      "t": "project.github.title"
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "get": "vm.projects.githubOpen"
+     },
+     "size": "m",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "run": "projects.githubBack"
+     }
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "xl"
+      },
+      "children": [
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "s"
+        },
+        "children": [
+         {
+          "type": "ItemCard",
+          "when": {
+           "get": "vm.projects.githubWaiting"
+          },
+          "props": {
+           "title": {
+            "t": "project.open.loading"
+           },
+           "skeleton": true
+          }
+         },
+         {
+          "each": {
+           "get": "vm.projects.repos"
+          },
+          "as": "repo",
+          "key": "repo.id",
+          "empty": {
+           "type": "Text",
+           "when": {
+            "expr": {
+             "and": [
+              {
+               "!": [
+                {
+                 "get": "vm.projects.githubLoading"
+                }
+               ]
+              },
+              {
+               "==": [
+                {
+                 "get": "vm.projects.githubError"
+                },
+                ""
+               ]
+              }
+             ]
+            }
+           },
+           "props": {
+            "value": {
+             "t": "project.github.empty"
+            },
+            "tone": "muted"
+           }
+          },
+          "render": {
+           "type": "ItemCard",
+           "props": {
+            "title": {
+             "get": "repo.label"
+            },
+            "detail": {
+             "get": "repo.description"
+            },
+            "icon": "github",
+            "personal": "title",
+            "busy": {
+             "get": "repo.busy"
+            },
+            "disabled": {
+             "get": "vm.projects.githubPending"
+            }
+           },
+           "on": {
+            "press": {
+             "run": "projects.githubOpen",
+             "args": {
+              "id": {
+               "get": "repo.id"
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       {
+        "type": "Text",
+        "when": {
+         "get": "vm.projects.githubPending"
+        },
+        "props": {
+         "value": {
+          "get": "vm.projects.githubStatus"
+         },
+         "tone": "muted",
+         "announce": true
+        }
+       },
+       {
+        "type": "StatusRow",
+        "when": {
+         "expr": {
+          "!=": [
+           {
+            "get": "vm.projects.githubError"
+           },
+           ""
+          ]
+         }
+        },
+        "props": {
+         "message": {
+          "get": "vm.projects.githubError"
+         },
+         "tone": "danger"
+        }
+       },
+       {
+        "type": "Inline",
+        "props": {
+         "align": "end"
+        },
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "project.github.back"
+           },
+           "variant": "secondary"
+          },
+          "on": {
+           "press": {
+            "run": "projects.githubBack"
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "slots": {}
+   }
+  ]
+ }
 }

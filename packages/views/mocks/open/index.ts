@@ -5,6 +5,7 @@
  */
 import projects from "../../views/projects.view.json" with { type: "json" };
 import data from "./data.json" with { type: "json" };
+import { compose } from "../../src/compose.ts";
 
 type Entry = { id: string; label: string; view: string; local?: Record<string, string | number | boolean> };
 
@@ -13,7 +14,7 @@ const mockOf = (node: unknown): unknown => {
   if (!node || typeof node !== "object") return typeof node === "string" ? node.replace(/^vm\.projects\b/, "vm.openMock") : node;
   return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "on").map(([k, v]) => [k === "bind" ? "get" : k, mockOf(v)]));
 };
-const open = mockOf(projects) as Record<string, unknown>;
+const open = mockOf(compose(projects)) as Record<string, unknown>;
 
 export const openMocks = {
   id: "open",
