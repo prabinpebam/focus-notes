@@ -1,0 +1,51 @@
+{
+  "focus": "scan",
+  "local": { "stage": "checking", "playing": false, "setup": false },
+  "root": {
+    "type": "Center", "props": { "maxWidth": "dialogL" }, "children": [
+      { "type": "Stack", "id": "scan", "props": { "padding": "xl", "gap": "l" }, "children": [
+        { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+          { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.light" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.toolbar.scan", "scheme": "light" } } } },
+          { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.dark" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.toolbar.scan", "scheme": "dark" } } } },
+          { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.reduced" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.toolbar.scan", "motion": "reduced" } } } },
+          { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.system" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.toolbar.scan", "motion": "system" } } } }
+        ] },
+        { "type": "Heading", "props": { "level": "1", "value": { "get": "vm.toolbarMock.copy.scanTitle" } } },
+        { "type": "Text", "props": { "value": { "get": "vm.toolbarMock.copy.scanDescription" }, "tone": "muted" } },
+        { "type": "SegmentedControl", "props": { "label": { "get": "vm.toolbarMock.copy.stageLabel" }, "options": { "get": "vm.toolbarMock.stages" }, "value": { "bind": "local.stage" }, "readOnly": { "get": "local.playing" } } },
+        { "type": "Surface", "props": { "variant": "raised", "padding": "l", "shape": "control" }, "children": [
+          { "switch": { "get": "local.stage" }, "cases": {
+            "checking": { "type": "ScanRadar", "props": { "label": { "get": "vm.toolbarMock.copy.scanLabel" }, "checkingLabel": { "get": "vm.toolbarMock.copy.checkingLabel" }, "phase": "scanning", "targets": { "get": "vm.toolbarMock.checking" }, "count": { "get": "vm.toolbarMock.counts.checking" } } },
+            "partial": { "type": "ScanRadar", "props": { "label": { "get": "vm.toolbarMock.copy.scanLabel" }, "checkingLabel": { "get": "vm.toolbarMock.copy.checkingLabel" }, "phase": "scanning", "targets": { "get": "vm.toolbarMock.partial" }, "count": { "get": "vm.toolbarMock.counts.partial" } } },
+            "found": { "type": "ScanRadar", "props": { "label": { "get": "vm.toolbarMock.copy.scanLabel" }, "checkingLabel": { "get": "vm.toolbarMock.copy.checkingLabel" }, "phase": "found", "targets": { "get": "vm.toolbarMock.found" }, "count": { "get": "vm.toolbarMock.counts.found" } } },
+            "none": { "type": "ScanRadar", "props": { "label": { "get": "vm.toolbarMock.copy.scanLabel" }, "checkingLabel": { "get": "vm.toolbarMock.copy.checkingLabel" }, "phase": "none", "targets": { "get": "vm.toolbarMock.none" }, "count": { "get": "vm.toolbarMock.counts.none" } } },
+            "error": { "type": "ScanRadar", "props": { "label": { "get": "vm.toolbarMock.copy.scanLabel" }, "checkingLabel": { "get": "vm.toolbarMock.copy.checkingLabel" }, "phase": "error", "targets": { "get": "vm.toolbarMock.error" }, "count": { "get": "vm.toolbarMock.counts.error" } } }
+          } }
+        ] },
+        { "switch": { "get": "local.stage" }, "cases": {
+          "found": { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.setUp" } }, "on": { "press": { "set": "local.setup", "to": true } } },
+            { "type": "Text", "when": { "get": "local.setup" }, "props": { "value": { "get": "vm.toolbarMock.copy.setupPreview" }, "tone": "muted" } }
+          ] },
+          "none": { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "Text", "props": { "value": { "get": "vm.toolbarMock.copy.none" } } },
+            { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.lookAgain" } }, "on": { "press": { "set": "local.stage", "to": "checking" } } }
+          ] },
+          "error": { "type": "Stack", "props": { "gap": "s" }, "children": [
+            { "type": "Text", "props": { "value": { "get": "vm.toolbarMock.copy.error" } } },
+            { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.tryAgain" } }, "on": { "press": { "set": "local.stage", "to": "checking" } } }
+          ] }
+        } },
+        { "type": "Inline", "props": { "gap": "m", "align": "center", "wrap": true }, "children": [
+          { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.play" }, "variant": "subtle", "icon": "chevronRight", "disabled": { "get": "local.playing" }, "disabledReason": { "get": "vm.toolbarMock.copy.playing" } }, "on": { "press": [
+            { "set": "local.playing", "to": true }, { "set": "local.setup", "to": false }, { "set": "local.stage", "to": "checking" },
+            { "run": "gallery.wait", "args": { "duration": "doneDuration" } }, { "set": "local.stage", "to": "partial" },
+            { "run": "gallery.wait", "args": { "duration": "doneDuration" } }, { "set": "local.stage", "to": "found" },
+            { "set": "local.playing", "to": false }
+          ] } },
+          { "type": "Text", "props": { "value": { "get": "vm.toolbarMock.copy.playHint" }, "tone": "muted", "role": "secondary" } }
+        ] }
+      ] }
+    ]
+  }
+}

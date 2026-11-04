@@ -1,0 +1,104 @@
+{
+  "copy": {
+    "title": "Customize toolbar",
+    "description": "Drag buttons onto the toolbar. Hold over a button for 1 s to replace it; drag it back below to remove it.",
+    "toolbar": "Writing toolbar",
+    "more": "More actions",
+    "catalogueLabel": "Available buttons",
+    "countLabel": "{count} of {max} on the toolbar",
+    "instructions": "Space or Enter picks up a button. Arrows, Home and End choose a gap or button. Enter drops: insert at a gap, replace on a button. Esc cancels. Delete removes a toolbar button.",
+    "pickedLabel": "Picked up {name}. Choose a gap to insert or a button to replace.",
+    "placeLabel": "Insert at position {position} of {count}.",
+    "overLabel": "Replace {name}.",
+    "fullLabel": "Toolbar is full. Remove a button or hold over one to replace it.",
+    "addedLabel": "Added {name} at position {position} of {count}.",
+    "movedLabel": "Moved {name} to position {position} of {count}.",
+    "replacedLabel": "Replaced {other} with {name}.",
+    "removedLabel": "Removed {name} from the toolbar.",
+    "cancelledLabel": "Cancelled. Toolbar unchanged.",
+    "light": "View light",
+    "dark": "View dark",
+    "reduced": "Reduce motion",
+    "system": "Restore motion",
+    "full": "Fill toolbar",
+    "room": "Leave room",
+    "close": "Close",
+    "scanTitle": "Find on this computer",
+    "scanDescription": "Look for running AI apps. Focus Notes connects to them; it never runs a model itself.",
+    "scanLabel": "Looking for AI models on this computer",
+    "checkingLabel": "Checking…",
+    "stageLabel": "Scan stage",
+    "play": "Play scan",
+    "playing": "The sample scan is playing.",
+    "playHint": "Design preview: sample results, slowed for viewing.",
+    "setUp": "Set up",
+    "setupPreview": "Setup is not connected in this design preview.",
+    "lookAgain": "Look again",
+    "tryAgain": "Try again",
+    "none": "No AI apps are running. Start an app, then look again.",
+    "error": "Some apps could not be checked. Nothing was changed. Try again."
+  },
+  "pinned": [
+    { "id": "new", "label": "New note", "icon": "newNote", "shortcut": "Ctrl+N" },
+    { "id": "open", "label": "Open", "icon": "open", "shortcut": "Ctrl+Alt+O" },
+    { "id": "search", "label": "Search", "icon": "search", "shortcut": "Ctrl+P" },
+    { "id": "save", "label": "Save", "icon": "save", "shortcut": "Ctrl+S" },
+    { "id": "focus", "label": "Focus mode", "icon": "focus", "shortcut": "Ctrl+Shift+D", "checked": true },
+    { "id": "theme", "label": "Switch light and dark", "icon": "darkTheme" }
+  ],
+  "groups": [
+    { "id": "notes", "label": "Notes", "items": [
+      { "id": "new", "label": "New note", "icon": "newNote", "shortcut": "Ctrl+N" },
+      { "id": "open", "label": "Open", "icon": "open", "shortcut": "Ctrl+Alt+O" },
+      { "id": "save", "label": "Save", "icon": "save", "shortcut": "Ctrl+S" },
+      { "id": "history", "label": "History", "icon": "history" },
+      { "id": "share", "label": "Share", "icon": "share" },
+      { "id": "export", "label": "Export", "icon": "export" },
+      { "id": "print", "label": "Print", "icon": "print" }
+    ] },
+    { "id": "find", "label": "Find", "items": [
+      { "id": "search", "label": "Search", "icon": "search", "shortcut": "Ctrl+P" },
+      { "id": "find", "label": "Find in note", "icon": "text", "shortcut": "Ctrl+F" },
+      { "id": "replace", "label": "Replace", "icon": "rename", "shortcut": "Ctrl+H" },
+      { "id": "all", "label": "Find in all notes", "icon": "folder", "shortcut": "Ctrl+Shift+F" }
+    ] },
+    { "id": "view", "label": "View", "items": [
+      { "id": "focus", "label": "Focus mode", "icon": "focus", "shortcut": "Ctrl+Shift+D", "checked": true },
+      { "id": "theme", "label": "Switch light and dark", "icon": "darkTheme" },
+      { "id": "fullscreen", "label": "Full screen", "icon": "fullScreen", "shortcut": "F11" },
+      { "id": "font", "label": "Text size", "icon": "font" }
+    ] },
+    { "id": "write", "label": "Write", "items": [
+      { "id": "bold", "label": "Bold", "icon": "bold", "shortcut": "Ctrl+B" },
+      { "id": "italic", "label": "Italic", "icon": "italic", "shortcut": "Ctrl+I" },
+      { "id": "link", "label": "Insert link", "icon": "link", "shortcut": "Ctrl+K" },
+      { "id": "image", "label": "Insert image", "icon": "imageAdd" },
+      { "id": "table", "label": "Insert table", "icon": "table" },
+      { "id": "rewrite", "label": "Rewrite with AI", "icon": "sparkle" }
+    ] },
+    { "id": "app", "label": "App", "items": [
+      { "id": "settings", "label": "Settings", "icon": "settings", "shortcut": "Ctrl+," },
+      { "id": "sync", "label": "Sync", "icon": "sync" },
+      { "id": "keyboard", "label": "Keyboard shortcuts", "icon": "keyboard" },
+      { "id": "feedback", "label": "Send feedback", "icon": "feedback" }
+    ] }
+  ],
+  "stages": [
+    { "id": "checking", "label": "Checking" },
+    { "id": "partial", "label": "Finding apps" },
+    { "id": "found", "label": "Found" },
+    { "id": "none", "label": "None running" },
+    { "id": "error", "label": "Error" }
+  ],
+  "targets": [
+    { "id": "ollama", "label": "Ollama", "detail": "localhost:11434", "icon": "aiOllama", "result": "3 models" },
+    { "id": "lmstudio", "label": "LM Studio", "detail": "localhost:1234", "icon": "aiLmStudio", "result": "1 model" },
+    { "id": "llamacpp", "label": "llama.cpp", "detail": "localhost:8080", "icon": "code", "result": "Not running" },
+    { "id": "vllm", "label": "vLLM", "detail": "localhost:8000", "icon": "aiVllm", "result": "Not running" },
+    { "id": "sglang", "label": "SGLang", "detail": "localhost:30000", "icon": "code", "result": "Not running" },
+    { "id": "jan", "label": "Jan", "detail": "localhost:1337", "icon": "hardDrive", "result": "Not running" },
+    { "id": "docker", "label": "Docker Model Runner", "detail": "localhost:12434", "icon": "hardDrive", "result": "Not running" },
+    { "id": "copilot", "label": "GitHub Copilot CLI", "detail": "Installed app", "icon": "aiCopilot", "result": "Available" }
+  ],
+  "counts": { "checking": "Checking 8 places…", "partial": "Found 1 app so far", "found": "Found 3 apps", "none": "No apps running", "error": "Could not finish checking" }
+}

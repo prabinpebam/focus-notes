@@ -97,7 +97,7 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
     properties: {
       // The UI schema's version, checked and migrated before validation (DSY-10).
       $schema: { const: VIEW_SCHEMA_URL, description: `UI schema v${UI_SCHEMA_MAJOR}: views written for an older major are migrated, newer ones refused.` },
-      id: { type: "string", pattern: "^[a-z][A-Za-z0-9.]*$" },
+      id: { type: "string", pattern: "^[a-z][A-Za-z0-9.-]*$" },
       ia: { type: "string", pattern: "^IA-(VIEW|CMP)-[A-Z]+$" },
       viewModels: { type: "array", items: { type: "string", pattern: "^vm\\.[a-z][A-Za-z0-9]*$" } },
       focus: { type: "string" },

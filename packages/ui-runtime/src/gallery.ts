@@ -40,7 +40,7 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
       local: { ...doc.local, ...entry.local },
       // AppRoot clips the document; long review boards need their own viewport-bounded scroller.
       root: { type: "AppRoot", props: { scheme, motion, platform: { get: "vm.app.platform" } }, children: [
-        group.id === "uistates" ? { type: "Surface", props: { variant: "canvas", scroll: true }, children: [doc.root] } : doc.root,
+        ["uistates", "toolbar"].includes(group.id) ? { type: "Surface", props: { variant: "canvas", scroll: true }, children: [doc.root] } : doc.root,
       ] },
     };
   }

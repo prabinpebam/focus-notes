@@ -1,0 +1,41 @@
+{
+  "focus": "customizer",
+  "root": {
+    "type": "Dialog",
+    "id": "customizer",
+    "props": { "title": { "get": "vm.toolbarMock.copy.title" }, "closeLabel": { "get": "vm.toolbarMock.copy.close" }, "open": true, "size": "l" },
+    "slots": { "toolbar": [
+      { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+        { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.light" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": { "get": "local.entry" }, "scheme": "light" } } } },
+        { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.dark" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": { "get": "local.entry" }, "scheme": "dark" } } } },
+        { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.reduced" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": { "get": "local.entry" }, "motion": "reduced" } } } },
+        { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.system" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": { "get": "local.entry" }, "motion": "system" } } } },
+        { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.full" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.toolbar.customize-full" } } } },
+        { "type": "Button", "props": { "label": { "get": "vm.toolbarMock.copy.room" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.toolbar.customize" } } } }
+      ] }
+    ] },
+    "children": [
+      { "type": "Stack", "props": { "gap": "l" }, "children": [
+        { "type": "Text", "props": { "value": { "get": "vm.toolbarMock.copy.description" }, "tone": "muted" } },
+        { "type": "ToolbarComposer", "props": {
+          "label": { "get": "vm.toolbarMock.copy.toolbar" },
+          "moreLabel": { "get": "vm.toolbarMock.copy.more" },
+          "items": { "get": "vm.toolbarMock.room" },
+          "groups": { "get": "vm.toolbarMock.groups" }, "max": 6,
+          "catalogueLabel": { "get": "vm.toolbarMock.copy.catalogueLabel" },
+          "countLabel": { "get": "vm.toolbarMock.copy.countLabel" },
+          "instructions": { "get": "vm.toolbarMock.copy.instructions" },
+          "pickedLabel": { "get": "vm.toolbarMock.copy.pickedLabel" },
+          "placeLabel": { "get": "vm.toolbarMock.copy.placeLabel" },
+          "overLabel": { "get": "vm.toolbarMock.copy.overLabel" },
+          "fullLabel": { "get": "vm.toolbarMock.copy.fullLabel" },
+          "addedLabel": { "get": "vm.toolbarMock.copy.addedLabel" },
+          "movedLabel": { "get": "vm.toolbarMock.copy.movedLabel" },
+          "replacedLabel": { "get": "vm.toolbarMock.copy.replacedLabel" },
+          "removedLabel": { "get": "vm.toolbarMock.copy.removedLabel" },
+          "cancelledLabel": { "get": "vm.toolbarMock.copy.cancelledLabel" }
+        } }
+      ] }
+    ]
+  }
+}

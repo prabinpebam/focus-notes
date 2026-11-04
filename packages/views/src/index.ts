@@ -22,6 +22,7 @@ import { mocks, mockData } from "../mocks/index.ts";
 import { shareMocks } from "../mocks/share/index.ts";
 import { uiStatesMocks } from "../mocks/ui-states/index.ts";
 import { openMocks } from "../mocks/open/index.ts";
+import { toolbarMocks } from "../mocks/toolbar/index.ts";
 import { compose } from "./compose.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
@@ -41,4 +42,4 @@ export const messages: Record<string, Record<string, string>> = { en };/**
 export { mocks, mockData };
 
 /** Design mocks shown in the gallery before anything is wired (strict design mode): one group per area, each with its views, fake data and entries. */
-export const mockGroups = [openMocks, shareMocks, uiStatesMocks];
+export const mockGroups = [openMocks, shareMocks, uiStatesMocks, toolbarMocks];
