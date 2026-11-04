@@ -71,6 +71,14 @@ The [honest-history evidence](../plan/definition-of-done.md#phase-2-recently-del
 | --- | --- | --- | --- |
 | Read/retry Recently deleted | Responsive → waiting; independent named section task | Existing Files history wrapper; Looking through history…; local Retry → Trying again… | `fn:history.deleted`; exact 300/500 ms units and held/refused real-history journey; good news only after successful empty read |
 
+## Sharing settings list
+
+The [honest-list evidence](../plan/definition-of-done.md#phase-2-honest-sharing-settings-list-e1ce6940) covers this separate listing, not only the Share item. Unknown and failed lists are not empty. Refresh keeps acknowledged rows, Retry keeps its error, and an older read cannot replace a newer acknowledged change. Filter clearing reads and writes nothing. This is feedback correctness, not a speed improvement.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Initial/retry Sharing settings list | Responsive → waiting; independent section | Existing Settings content; Loading who has access…; safe local failure, Retry → Trying again… | `fn:sharing.list`; exact 300/500 ms units, three approved ItemCard shapes, finite/reduced-motion shimmer and independent delayed/refused desktop journey |
+
 ## Image read recovery
 
 The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-recovery-cd0cede9) covers actual missing-file and native decode refusal, retained layout/alt/Retry and unchanged note bytes. It makes no speed claim. The read task includes the shared 300 ms sign delay and 500 ms minimum once shown; an existing broken frame stays mounted throughout Retry. Distinct failures coalesce per note, never one interrupting notice per Retry.

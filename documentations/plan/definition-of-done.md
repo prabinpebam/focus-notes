@@ -455,6 +455,24 @@ A test-only entrypoint wraps the existing IPC registration before importing the 
 
 The initial test expected six shapes and different copy; corrected it to the approved three-shape Files section and existing message. The final journey passed in 4.7 seconds. Its invisible app closed and own-PID `-WhatIf`, then actual cleanup found no leftovers. Both expressly requested visible owner instances stayed open. Complete D5 first actions, D7 and hover/static acceptance remain in progress; no full suite, CI wait or app merge ran.
 
+### Phase-2 honest Sharing settings list, e1ce6940
+
+Settings' sharing list now has its own known-empty guard: an unknown or refused list cannot claim Nothing shared yet. A named section task supplies delayed/held shapes and read-only Retry. Failure and acknowledged rows remain while retrying. Repeated in-flight loads are excluded; an old read cannot overwrite a newer successful listing change. Filtered emptiness says No matches and Clear filters restores All plus an empty query without reading, writing or changing the open note. Known first use retains the existing Open Files route.
+
+| Check on `e1ce6940` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts -t "known-empty sharing settings"` before implementation | All 3 initial regressions failed: no known-empty/failure distinctions, wrong filtered cause/action and no named section timing |
+| `pnpm exec vitest run packages\core\test\share-manage.test.ts packages\core\test\tasks.test.ts` | 44 passed: existing sharing behavior, unknown/refused/known empty, exact 299/300 and 499/500 ms, retained rows/error, duplicate Retry exclusion, read-free filter clear, unchanged note and newer successful listing protection |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed; desktop repeated after final journey edits |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `node tools\component-inventory.mjs --write`; `pnpm check`; `git diff --check` | Passed: 779 documents, 82 components, 716 commands; committed generated output unchanged |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime/view edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Sharing settings distinguish\|Files initial scan is independent\|Recently deleted never calls failed history empty"` | All 3 passed together: initial Files scan, real deleted history/restoration and independent Settings listing. Sharing proves three ItemCard shapes/nine shimmer parts, bounded/reduced-motion treatment, safe local refusal, held Retry, known-empty Open Files route, filtered Clear filters, retained acknowledged rows through failed refresh, editable query, five `fn:sharing.list` measures, zero grant writes and exact unchanged note bytes |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs --retry-inspection` | Passed at exact pushed head: previous project/Reading/compact/notification/AI/Agents/Open paths plus truthful Files, Recently deleted good news and Sharing first-action/filter treatment through normal UI |
+
+Static validation caught empty literal titles in skeleton ItemCards; they now use the existing localized loading message. The journey initially looked for Files' body marker inside Settings and counted three shimmer parts rather than three cards/nine parts; final selectors match the actual approved components. Candidate inspection initially used a non-Git sample without deleted-history support; a valid-format, local-only synthetic Git workspace enabled the real normal-UI path. No production-only test hook or live account was added.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\e1ce6940\Open review build.cmd`. This exact candidate includes all worker-10 slices, was inspected invisibly and closed with own-PID `-WhatIf`, then actual cleanup. It was not silently launched in place of the owner's visible `6218b99d` review. This proves safe empty causes and the existing Open Files route, not every site-preview first-action content replacement. Remaining D5 variants, D7 and hover/static acceptance stay in progress; no full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
