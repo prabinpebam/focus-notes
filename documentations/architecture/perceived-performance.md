@@ -70,6 +70,8 @@ The [startup-pixel and sizing evidence](../plan/definition-of-done.md#phase-2-cl
 
 The [next D7 increment](../plan/definition-of-done.md#phase-2-single-outcomes-and-startup-frame-stream-a7363402) adds a native frame subscription before page loading and checks every delivered shown-window frame through the ready screen plus 300 ms: 7 light and 7 dark frames in the final run. Hidden frames remain excluded from visible-window failures. It also makes outcome ownership explicit without changing wait timing: local recovery rows/notifications and interpreted setup/download receipts no longer compete with generic task endings. Other tracker callers retain the default announcements. These are scoped integrity/announcement checks, not a latency or broad-corpus claim.
 
+The [colour all-done evidence](../plan/definition-of-done.md#phase-2-reachable-colour-all-done-state-a055bbe8) moves the already-approved good-news treatment from an unreachable empty-row fallback to the actual contrast summary. The edit/fix preview remains synchronous and write-free; the same wrapper changes between a failure summary and one polite success row. No asynchronous wait, new timing or latency claim is introduced.
+
 ## History recovery
 
 The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.

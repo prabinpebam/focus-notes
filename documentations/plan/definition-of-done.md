@@ -625,6 +625,23 @@ The two startup tests now subscribe to native compositor frames before page load
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a7363402\Open review build.cmd`. The owner's visible `f2127c67`, gallery 5231 and docs 8787 remain available. Existing-clone receipts remain in-process only; stopped first-setup receipts persist; uncertain creation/import replay is not crash-resumable. Phase 2 remains in progress pending the final row-by-row evidence reconciliation. No full suite, CI wait, main app merge, release or real-account application write ran.
 
+### Phase-2 reachable colour all-done state, a055bbe8
+
+The existing good-news row was attached to the empty fallback of the five editable colour rows. Those rows remain present even when every contrast pair passes, so the intended success row was unreachable. The real summary now uses the approved success StatusRow when all pairs pass and keeps the existing announced failure summary otherwise. It reuses the same words and tokens, adds no action and does not hide the colour editor. Only one live all-pass message is rendered.
+
+| Scoped evidence on `a055bbe8` | Result |
+| --- | --- |
+| New client-rendered all-done regression before the view fix | Failed as expected: no rendered success row despite all pairs passing |
+| `pnpm exec vitest run packages/ui-runtime/test/empty-states.test.tsx packages/core/test/theme-manager.test.ts -t "fourth site\|colour failures\|THM-13"` | Final 6 passed, 14 unrelated cases not selected: real site fallback, actual colour failure-to-success view replacement in the same wrapper, one polite good-news row with no action, contrast guard/fix and unchanged note/save calls |
+| `pnpm --filter @focus-notes/desktop --filter @focus-notes/ui-runtime run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm check`; `git diff --check` | Passed; generated schemas unchanged, 780 documents/82 components/725 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Colour contrast all-done"` | 1 passed: actual Settings-to-colour-editor route, typed failing colour, real Fix Text action, exactly one returned success status without an unnecessary action, same editor node, unchanged note bytes and one native window |
+| Exact pushed candidate `a055bbe8` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Separate check finding:** initially selecting the whole theme-manager unit file exposed one unrelated size-retry fixture failure: its first toast was the refused opened-note persistence outcome, not the expected font Retry. That fixture and font behavior were not changed; the D5 run above selects only the colour cases. This is recorded for consolidation, not silently counted as a green full file or repaired inside the colour increment.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\a055bbe8\Open review build.cmd`. The visible `f2127c67` remains open; final phase-2 reconciliation remains in progress. No full suite, CI wait, main app merge, release or real-account application write ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
