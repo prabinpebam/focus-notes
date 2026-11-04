@@ -390,7 +390,7 @@
    },
    "props": {
     "value": {
-     "t": "project.open.preparing"
+     "get": "vm.projects.pendingLabel"
     },
     "tone": "muted",
     "announce": true

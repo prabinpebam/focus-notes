@@ -120,16 +120,16 @@ export class TaskTracker {
     this.#clock = clock;
   }
 
-  run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> {
-    return this.#run(target, message, work, doneMessage, false);
+  run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string, measure?: string): Promise<T> {
+    return this.#run(target, message, work, doneMessage, false, measure);
   }
 
   /** A section replaces its shape only after the visible minimum, on success or failure. */
-  section<T>(target: string, message: string, work: () => Promise<T>): Promise<T> {
-    return this.#run(target, message, work, undefined, true);
+  section<T>(target: string, message: string, work: () => Promise<T>, measure?: string): Promise<T> {
+    return this.#run(target, message, work, undefined, true, measure);
   }
 
-  async #run<T>(target: string, message: string, work: () => Promise<T>, doneMessage: string | undefined, section: boolean): Promise<T> {
+  async #run<T>(target: string, message: string, work: () => Promise<T>, doneMessage: string | undefined, section: boolean, measure?: string): Promise<T> {
     const c = this.#clock;
     const task: Running = { id: this.#next++, target, message, ...(doneMessage ? { doneMessage } : {}), phase: "ack", elapsed: 0, started: c.now(), announced: false, timers: [] };
     this.#tasks.set(task.id, task);
@@ -144,7 +144,7 @@ export class TaskTracker {
     };
     task.timers.push(c.setTimeout(tick, this.#t.elapsedDelay));
     this.#emit();
-    const mark = `focus-notes:${target}`;
+    const mark = measure ?? `focus-notes:${target}`;
     const hold = async () => {
       if (!section || task.shownAt === undefined) return;
       const remaining = this.#t.signMinimum - (c.now() - task.shownAt);

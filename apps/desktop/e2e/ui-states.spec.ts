@@ -251,6 +251,50 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
   } finally { await closeTestApp(l); }
 });
 
+test("same-project Open retains the current note after a rejected read and closes only after accepted Retry", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "current.md"), target = join(dirs.docs, "target.md");
+  writeFileSync(note, "# Current\n\nKept while opening.\n");
+  writeFileSync(target, "# Target\n\nAccepted only after Retry.\n");
+  const before = readFileSync(note), targetBefore = readFileSync(target);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await l.app.evaluate(({ ipcMain }, input) => {
+      let reads = 0;
+      ipcMain.removeHandler("projects:list");
+      ipcMain.handle("projects:list", () => [{ folder: input.folder, name: "Current project", accent: "teal", logo: "book", lastNote: input.target }]);
+      ipcMain.removeHandler("note:read");
+      ipcMain.handle("note:read", async (_event, path) => {
+        if (path !== input.target) return "# Current\n\nKept while opening.\n";
+        if (++reads === 1) throw new Error("readOnly");
+        await new Promise(resolve => setTimeout(resolve, 600));
+        return "# Target\n\nAccepted only after Retry.\n";
+      });
+    }, { folder: dirs.docs, target });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+    const search = open.getByRole("searchbox", { name: "Find a file or project", exact: true });
+    await search.fill("target");
+    await open.getByRole("button", { name: "Open target", exact: true }).click();
+    const row = open.locator("[data-status-row=danger]");
+    await expect(row).toContainText("The project couldn’t be opened.");
+    await expect(search).toHaveValue("target");
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("Kept while opening.");
+    await row.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(row.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(editor).toContainText("Kept while opening.");
+    await expect(open).not.toBeVisible();
+    await expect(editor).toContainText("Accepted only after Retry.");
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:project.open").length)).toBe(2);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:project.list").length)).toBeGreaterThan(0);
+    expect(readFileSync(note)).toEqual(before);
+    expect(readFileSync(target)).toEqual(targetBefore);
+  } finally { await closeTestApp(l); }
+});
+
 test("Open retries the failed action in place, keeps input and never repeats a completed pin", async () => {
   const dirs = tempDirs();
   const note = join(dirs.docs, "open-recovery.md");

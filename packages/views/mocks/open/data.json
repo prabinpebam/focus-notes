@@ -3,6 +3,7 @@
   "full": false,
   "dialog": true,
   "pending": false,
+  "pendingLabel": "Opening project…",
   "loading": false,
   "recentWaiting": false,
   "entriesWaiting": false,

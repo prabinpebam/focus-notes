@@ -44,6 +44,15 @@ function setup() {
 }
 
 describe("the task tracker (PRF-08)", () => {
+  it("records an explicitly named measure for successful and failed operations without changing the target", async () => {
+    const t = setup();
+    const name = "fn:project.list.unit";
+    performance.clearMeasures(name);
+    await t.tracker.section("project.list", "project.open.listing", async () => {}, name);
+    await expect(t.tracker.run("project.open", "project.open.preparing", async () => { throw new Error("refused"); }, undefined, name)).rejects.toThrow("refused");
+    expect(performance.getEntriesByName(name)).toHaveLength(2);
+    performance.clearMeasures(name);
+  });
   it("holds a section result until its visible shape has had 500 ms, without delaying a fast result", async () => {
     const t = setup();
     await t.tracker.section("agents.load", "agents.loading", async () => {});

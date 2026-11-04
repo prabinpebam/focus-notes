@@ -476,7 +476,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
   const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
-  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load, flush, toast });
+  const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load: (path, keepCurrent = false) => openNote(path, { keepOnFailure: keepCurrent }), flush, toast, tracker });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
@@ -611,7 +611,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   async function load(path: string): Promise<void> {
     await openNote(path);
   }
-  async function openNote(path: string, opts: { accept?: (markdown: string) => boolean } = {}): Promise<boolean> {
+  async function openNote(path: string, opts: { accept?: (markdown: string) => boolean; keepOnFailure?: boolean } = {}): Promise<boolean> {
     opening = timing.mark("fn:note.open.start");
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
     editorAction(FLUSH_EDITOR);
@@ -623,7 +623,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       void heldNotes.backingUp(leaving);
       sync.switched();
     }
-    setNote({ status: "loading" });
+    const previousStatus = store.state.note.status;
+    if (!opts.keepOnFailure || previousStatus !== "ready") setNote({ status: "loading" });
     // The toolbar and link editor belong to the note that was open.
     store.update((s) => ({ ...s, ui: { ...s.ui, format: FORMAT_CLOSED } }));
     try {
@@ -650,14 +651,20 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // A new draft from its first edit; text a crash left for it comes back now (QLT-06).
       drafts.opened(path, md);
       // A private note's name is private: it's never written to this browser's storage (D-90).
-      if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
+      if (sourceOf(path) !== "private") {
+        try { await persistAppState({ lastNotePath: path }); }
+        catch {
+          console.error("Could not remember the opened note.");
+          toast(catalog.format("project.launch.rememberFailed"), { tone: "error" });
+        }
+      }
       if (bridge.projects) {
         try { await bridge.projects.remember(path); }
         catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
       }
       return true;
     } catch {
-      setNote({ status: "error" });
+      setNote({ status: opts.keepOnFailure ? previousStatus : "error" });
       return false;
     }
   }

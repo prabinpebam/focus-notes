@@ -1,10 +1,11 @@
 import type { App, AppState } from "./app.ts";
 import { opErrorCode, type OpErrorCode, type PlatformBridge, type ProjectEntry } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
+import { busyProps, type TaskTracker } from "./tasks.ts";
 
 export function registerProjectOpen(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"];
-  bridge: PlatformBridge; catalog: MessageCatalog; load: (path: string) => Promise<void>;
+  bridge: PlatformBridge; catalog: MessageCatalog; load: (path: string, keepCurrent?: boolean) => Promise<boolean>; tracker: TaskTracker;
   flush: () => Promise<boolean>; toast: (message: string) => void;
 }) {
   const { store, commands, viewModels, bridge } = ctx;
@@ -16,8 +17,9 @@ export function registerProjectOpen(ctx: {
   const changed = () => store.update((s) => ({ ...s }));
   let recovery: { command: string; args: Record<string, unknown> } | undefined;
   let listing = 0;
+  let action = 0;
   const clearFailure = () => { state.error = ""; state.details = ""; recovery = undefined; };
-  const begin = () => { if (!state.retrying) clearFailure(); changed(); };
+  const begin = () => { const request = ++action; state.pending = false; if (!state.retrying) clearFailure(); changed(); return request; };
   const fail = (message: string, command: string, error: unknown, args: Record<string, unknown> = {}) => {
     const code = opErrorCode(error);
     const details: Partial<Record<OpErrorCode, string>> = {
@@ -29,17 +31,17 @@ export function registerProjectOpen(ctx: {
     recovery = { command, args };
     console.error("Project action failed", command, code);
   };
-  const close = () => { listing++; clearFailure(); state.open = false; state.loading = false; github.open = false; changed(); };
+  const close = () => { listing++; action++; clearFailure(); state.open = false; state.loading = false; state.pending = false; github.open = false; changed(); };
   async function refresh(full = false) {
     // The last list stays on screen while the new one loads (no blank frame); a first load shows placeholders.
     const request = ++listing;
-    state.open = true; state.full = full; state.loading = true; begin();
+    state.open = true; state.full = full; state.loading = true; const operation = begin();
     try {
-      const entries = await bridge.projects!.list();
-      if (request !== listing || !state.open) return;
+      const entries = await ctx.tracker.section("project.list", "project.open.listing", () => bridge.projects!.list(), "fn:project.list");
+      if (request !== listing || operation !== action || !state.open) return;
       state.entries = entries; clearFailure();
     }
-    catch (error) { if (request === listing && state.open) fail("project.open.listFailed", "projects.refresh", error); }
+    catch (error) { if (request === listing && operation === action && state.open) fail("project.open.listFailed", "projects.refresh", error); }
     finally { if (request === listing) { state.loading = false; changed(); } }
   }
   commands.register({ id: "projects.refresh", title: "commit.retry", run: () => refresh(state.full) });
@@ -48,11 +50,12 @@ export function registerProjectOpen(ctx: {
     run: async () => {
       const failed = recovery;
       if (!failed) throw new Error("No project action to retry");
+      const before = action;
       state.retrying = true; changed();
       try { await commands.run(failed.command, failed.args); }
       finally {
         state.retrying = false;
-        if (!state.error && state.open) state.searchFocus++;
+        if (action === before + 1 && !state.error && state.open) state.searchFocus++;
         changed();
       }
     },
@@ -62,9 +65,9 @@ export function registerProjectOpen(ctx: {
   commands.register({
     id: "projects.newLocal", title: "project.open.newLocal", icon: "quickNote", group: "app", enabled: () => Boolean(bridge.projects),
     run: async () => {
-      begin();
-      try { await bridge.projects!.localNote(); close(); }
-      catch { clearFailure(); state.error = ctx.catalog.format("quick.saveFailed"); changed(); }
+      const request = begin();
+      try { await bridge.projects!.localNote(); if (request === action) close(); }
+      catch { if (request === action) { clearFailure(); state.error = ctx.catalog.format("quick.saveFailed"); changed(); } }
     },
   });
   commands.register({
@@ -126,20 +129,22 @@ export function registerProjectOpen(ctx: {
   bridge.projects?.onNote?.((path) => { void ctx.load(path); });
   store.subscribe(() => { if (state.open && state.full && store.state.note.path && store.state.note.status === "ready") close(); });
   commands.register<{id: string}>({
-    id: "projects.launch", title: "project.open", run: async ({ id }) => {
+    id: "projects.launch", title: "project.open", enabled: () => !state.pending, run: async ({ id }) => {
       const [entryId, kind] = id.split("|");
       const entry = state.entries.find((e) => e.folder === entryId);
       if (!entry) throw new Error("Unknown project");
       const note = kind === "note" ? entry.lastNote : kind;
       if (note && note !== entry.lastNote && !entry.recent?.some(n => n.path === note)) throw new Error("Unknown recent note");
-      state.pending = true; begin();
+      const request = begin(); state.pending = true; changed();
       try {
-        if (entry.folder === store.state.workspace.folder) {
-          if (note) await ctx.load(note);
-        } else await bridge.projects!.open(entry.folder, note);
-        close();
-      } catch (error) { fail("project.open.failed", "projects.launch", error, { id }); }
-      finally { state.pending = false; changed(); }
+        await ctx.tracker.run("project.open", "project.open.preparing", async () => {
+          if (entry.folder === store.state.workspace.folder) {
+            if (note && !await ctx.load(note, true)) throw new Error("Project note was not accepted");
+          } else await bridge.projects!.open(entry.folder, note);
+        }, undefined, "fn:project.open");
+        if (request === action) close();
+      } catch (error) { if (request === action) fail("project.open.failed", "projects.launch", error, { id }); }
+      finally { if (request === action) { state.pending = false; changed(); } }
     },
   });
   commands.register<{id: string}>({
@@ -147,36 +152,46 @@ export function registerProjectOpen(ctx: {
     run: async ({id}) => {
       const [folder, path] = id.split("|");
       if (!folder) throw new Error("Unknown project");
-      begin();
+      const request = begin();
       try {
-        await bridge.projects!.pin(folder, path);
+        await ctx.tracker.run("project.pin", "project.open.pinning", () => bridge.projects!.pin(folder, path), undefined, "fn:project.pin");
       } catch (error) {
-        fail("project.open.pinFailed", "projects.pin", error, { id }); changed(); return;
+        if (request === action) { fail("project.open.pinFailed", "projects.pin", error, { id }); changed(); }
+        return;
       }
-      try { state.entries = await bridge.projects!.list(); clearFailure(); }
-      catch (error) { fail("project.open.pinRefreshFailed", "projects.refresh", error); }
+      if (request !== action) return;
+      try {
+        const entries = await ctx.tracker.section("project.list", "project.open.listing", () => bridge.projects!.list(), "fn:project.list");
+        if (request !== action) return;
+        state.entries = entries; clearFailure();
+      }
+      catch (error) { if (request === action) fail("project.open.pinRefreshFailed", "projects.refresh", error); }
       changed();
     },
   });
   commands.register<{id: string}>({
     id: "projects.reveal", title: "project.open.reveal", enabled: () => Boolean(bridge.projects?.reveal),
     run: async ({id}) => {
-      begin();
-      try { await bridge.projects!.reveal!(id); clearFailure(); }
-      catch (error) { fail("project.open.revealFailed", "projects.reveal", error, { id }); }
+      const request = begin();
+      try { await ctx.tracker.run("project.reveal", "project.open.revealing", () => bridge.projects!.reveal!(id), undefined, "fn:project.reveal"); if (request === action) clearFailure(); }
+      catch (error) { if (request === action) fail("project.open.revealFailed", "projects.reveal", error, { id }); }
       changed();
     },
   });
   commands.register({
     id: "projects.openFile", title: "project.openFile", enabled: () => Boolean(bridge.projects?.openFile),
     run: async () => {
-      begin();
+      const request = begin();
       try {
-        const r = await bridge.projects!.openFile!();
+        const r = await ctx.tracker.run("project.open", "project.open.preparing", async () => {
+          const result = await bridge.projects!.openFile!();
+          if (result?.here && !await ctx.load(result.file, true)) throw new Error("Project note was not accepted");
+          return result;
+        }, undefined, "fn:project.open");
+        if (request !== action) return;
         if (!r) { clearFailure(); changed(); return; }
-        if (r.here) await ctx.load(r.file);
         close();
-      } catch (error) { fail("project.open.fileFailed", "projects.openFile", error); changed(); }
+      } catch (error) { if (request === action) { fail("project.open.fileFailed", "projects.openFile", error); changed(); } }
     },
   });
   commands.register({
@@ -202,13 +217,17 @@ export function registerProjectOpen(ctx: {
   });
   commands.register({
     id: "projects.choose", title: "project.openProject", run: async () => {
-      begin();
+      const request = begin();
       try {
-        const folder = await bridge.projects!.choose();
+        const folder = await ctx.tracker.run("project.open", "project.open.preparing", async () => {
+          const chosen = await bridge.projects!.choose();
+          if (chosen) await bridge.projects!.open(chosen);
+          return chosen;
+        }, undefined, "fn:project.open");
+        if (request !== action) return;
         if (!folder) { clearFailure(); changed(); return; }
-        await bridge.projects!.open(folder);
         close();
-      } catch (error) { fail("project.open.failed", "projects.choose", error); changed(); }
+      } catch (error) { if (request === action) { fail("project.open.failed", "projects.choose", error); changed(); } }
     },
   });
   const text = { type: "string" as const };
@@ -224,7 +243,7 @@ export function registerProjectOpen(ctx: {
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
     schema: { type: "object", properties: {
       open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, loading: { type: "boolean" }, recentWaiting: { type: "boolean" }, entriesWaiting: { type: "boolean" }, error: text,
-      retrying: { type: "boolean" }, searchFocus: { type: "number" }, details: text, recoveryAction: text,
+      retrying: { type: "boolean" }, searchFocus: { type: "number" }, details: text, recoveryAction: text, pendingLabel: text,
       emptyTitle: text, emptyDetail: text, emptyAction: text, emptyRecentTitle: text, emptyRecentDetail: text, emptyRecentAction: text,
       githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
       repos: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
@@ -242,10 +261,10 @@ export function registerProjectOpen(ctx: {
         return {...n, id, label, description: `${e.name}${e.localNotes ? " · " + ctx.catalog.format("project.localOnly") : ""} · ${parts.join(" / ") || ctx.catalog.format("project.root")}`, icon: "newNote", menu: pinMenu(id, n.pinned)};
       })).filter(n => `${n.label} ${n.description}`.toLowerCase().includes(query))
         .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.rank - a.rank).slice(0, 50);
-      return { ...state, recoveryAction: recovery ? ctx.catalog.format("commit.retry") : "", dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, menu: pinMenu(e.folder, Boolean(e.pinned)) })),
+      return { ...state, recoveryAction: recovery ? ctx.catalog.format("commit.retry") : "", pendingLabel: busyProps(_s.tasks, "project.open", (key, args) => ctx.catalog.format(key, args)).busyLabel ?? ctx.catalog.format("project.open.preparing"), dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, menu: pinMenu(e.folder, Boolean(e.pinned)) })),
         recent,
-        recentWaiting: state.loading && recent.length === 0,
-        entriesWaiting: state.loading && entries.length === 0,
+        recentWaiting: state.loading && _s.tasks.findLast(t => t.target === "project.list")?.phase === "on" && recent.length === 0,
+        entriesWaiting: state.loading && _s.tasks.findLast(t => t.target === "project.list")?.phase === "on" && entries.length === 0,
         emptyTitle: ctx.catalog.format(query ? "uiStates.empty.matches" : "uiStates.empty.projects"),
         emptyDetail: ctx.catalog.format(query ? "uiStates.empty.matchesDetail" : "uiStates.empty.projectsDetail"),
         emptyAction: ctx.catalog.format(query ? "uiStates.empty.clearSearch" : "uiStates.empty.openProject"),

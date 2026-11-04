@@ -1,12 +1,12 @@
 /** Open (owner, 4 November): a project's folder path shows the folder, and a first load shows placeholders, not "empty". */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../views/messages/en.json" with { type: "json" };
 import { createApp, type PlatformBridge, type ProjectEntry } from "../src/index.ts";
 
-function appWith(projects: Partial<NonNullable<PlatformBridge["projects"]>>) {
+function appWith(projects: Partial<NonNullable<PlatformBridge["projects"]>>, readNote: PlatformBridge["readNote"] = async () => "", overrides: Partial<PlatformBridge> = {}) {
   const bridge = {
     platform: "windows",
-    readNote: async () => "",
+    readNote,
     writeNote: async () => {},
     chooseNote: async () => undefined,
     newNotePath: async () => "/n/Untitled.md",
@@ -16,13 +16,46 @@ function appWith(projects: Partial<NonNullable<PlatformBridge["projects"]>>) {
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
     projects,
+    ...overrides,
   } as unknown as PlatformBridge;
   return createApp(bridge, en);
 }
 const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.projects", app.store.state) as { error: string; details: string; query: string; open: boolean; retrying: boolean; recoveryAction: string; searchFocus: number; recentWaiting: boolean; entriesWaiting: boolean; entries: unknown[] };
 const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", logo: "book" } as ProjectEntry;
+afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it("accepts a read note when only remembering its next-launch path fails, reporting that separate failure", async () => {
+    const target = `${book.folder}\\notes\\target.md`;
+    const app = appWith({
+      list: async () => [{ ...book, lastNote: target }], position: async () => undefined, remember: async () => {},
+    }, async () => "# Accepted note", { saveAppState: async () => { throw new Error("storage refused"); } });
+    app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: book.folder }, note: { ...s.note, path: `${book.folder}\\notes\\current.md`, status: "ready", saveState: "saved" } }));
+    await app.commands.run("projects.open");
+    await app.commands.run("projects.launch", { id: `${book.folder}|note` });
+    expect(vm(app).open).toBe(false);
+    expect(app.store.state.note).toMatchObject({ path: target, markdown: "# Accepted note", status: "ready" });
+    expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ tone: "error", message: en["project.launch.rememberFailed"] }));
+  });
+  it("keeps Open and the current note when a same-project read fails, then accepts only a successful Retry", async () => {
+    let refused = true;
+    const target = `${book.folder}\\notes\\target.md`;
+    const app = appWith({
+      list: async () => [{ ...book, lastNote: target }], position: async () => undefined, remember: async () => {},
+      open: async () => { throw new Error("Same-project notes must open here"); },
+    }, async () => { if (refused) throw new Error("readOnly"); return "# Accepted target\n"; });
+    app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: book.folder }, note: { ...s.note, path: `${book.folder}\\notes\\current.md`, key: "original", markdown: "# Kept current", initialMarkdown: "# Kept current", status: "ready", saveState: "saved" } }));
+    await app.commands.run("projects.open");
+    await app.commands.run("projects.launch", { id: `${book.folder}|note` });
+    expect(vm(app)).toMatchObject({ open: true, error: en["project.open.failed"], recoveryAction: "Retry" });
+    expect(app.store.state.note).toMatchObject({ key: "original", markdown: "# Kept current", status: "ready" });
+    expect(performance.getEntriesByName("fn:project.open").length).toBeGreaterThan(0);
+    refused = false;
+    await app.commands.run("projects.retry");
+    expect(vm(app).open).toBe(false);
+    expect(app.store.state.note).toMatchObject({ path: target, markdown: "# Accepted target\n", status: "ready" });
+  });
+
   it("retries the original Local copy with one request receipt after a lost acknowledgement", async () => {
     const calls: [string, string, string | undefined][] = [];
     const app = appWith({
@@ -176,6 +209,33 @@ describe("Open", () => {
     expect(vm(app).entries).toEqual([expect.objectContaining({ name: "Book" })]);
   });
 
+  it("does not let an old launch close a newly reopened Open surface", async () => {
+    let finish!: () => void;
+    const app = appWith({ list: async () => [book], open: () => new Promise<void>(resolve => { finish = resolve; }) });
+    await app.commands.run("projects.open");
+    const old = app.commands.run("projects.launch", { id: book.folder });
+    await expect.poll(() => Boolean(finish)).toBe(true);
+    await app.commands.run("projects.close");
+    await app.commands.run("projects.open");
+    finish(); await old;
+    expect(vm(app)).toMatchObject({ open: true, entries: [expect.objectContaining({ name: "Book" })] });
+    expect(app.commands.describe("projects.launch").enabled).toBe(true);
+  });
+
+  it("does not let a late post-pin list replace a newer read or its recovery", async () => {
+    let reads = 0, reject!: (error: Error) => void;
+    const app = appWith({
+      pin: async () => {},
+      list: async () => ++reads === 2 ? new Promise<ProjectEntry[]>((_resolve, fail) => { reject = fail; }) : [{ ...book, name: reads === 1 ? "Book" : "Latest" }],
+    });
+    await app.commands.run("projects.open");
+    const old = app.commands.run("projects.pin", { id: book.folder });
+    await expect.poll(() => Boolean(reject)).toBe(true);
+    await app.commands.run("projects.refresh");
+    reject(new Error("obsolete failure")); await old;
+    expect(vm(app)).toMatchObject({ open: true, error: "", entries: [expect.objectContaining({ name: "Latest" })] });
+  });
+
   it("clears the old recovery when a different picker is cancelled, without opening or changing notes", async () => {
     const app = appWith({
       list: async () => { throw new Error("readOnly"); },
@@ -212,15 +272,34 @@ describe("Open", () => {
     expect(vm(app).error).toBe(en["project.open.revealFailed"]);
     expect(vm(app).entries).toHaveLength(1);
   });
-  it("waits with placeholders on a first load, then shows the list", async () => {
+  it("reveals first-load shapes at exactly 300 ms, holds 500 ms and records the actual list wait", async () => {
+    vi.useFakeTimers();
+    const measure = vi.spyOn(performance, "measure");
     let done!: (e: ProjectEntry[]) => void;
     const app = appWith({ list: () => new Promise<ProjectEntry[]>((r) => { done = r; }) });
     const opening = app.commands.run("projects.open");
     await Promise.resolve();
+    expect(vm(app).entriesWaiting).toBe(false);
+    await vi.advanceTimersByTimeAsync(299);
+    expect(vm(app).entriesWaiting).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
     expect(vm(app).entriesWaiting).toBe(true);
     done([book]);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(vm(app).entries).toHaveLength(0);
+    expect(vm(app).entriesWaiting).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
     await opening;
     expect(vm(app).entriesWaiting).toBe(false);
+    expect(vm(app).entries).toHaveLength(1);
+    expect(measure).toHaveBeenCalledWith("fn:project.list", { start: 0, end: 800 });
+    measure.mockRestore();
+  });
+  it("does not flash first-use content while a fast list loads", async () => {
+    const app = appWith({ list: async () => [book] });
+    const opening = app.commands.run("projects.open");
+    expect(vm(app)).toMatchObject({ entriesWaiting: false, recentWaiting: false });
+    await opening;
     expect(vm(app).entries).toHaveLength(1);
   });
 });
