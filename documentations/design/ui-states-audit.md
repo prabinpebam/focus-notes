@@ -256,3 +256,42 @@ Ranked by what the owner feels while writing (see [Method and limits](#method-an
 - **Rule broken.** `ui-copy` errors: what happened, what's safe, what to do.
 - **Fix.** Add the safe clause to each one, such as *Your notes weren't changed.* or *Your original text is kept.*, and name the action the Retry button runs.
 - **Files.** `views/messages/en.json`.
+
+## Missing primitives and tokens
+
+Most of what's needed already exists: Spinner, Icon, StatusRow, Skeleton, StepMark, ProgressBar, LiveRegion, Toast and the `wait.*` timings. The gaps are **states on existing primitives** and three new pieces.
+
+### Tokens
+
+| Token | Value | For | Today |
+| --- | --- | --- | --- |
+| `wait.confirmMinimum` | 200 ms | The least time pending and confirmed each show on a commit (F2) | Missing; `wait.signMinimum` (500 ms) is the load track's |
+| `wait.commitPause` | 500 ms | A segmented choice, a radio or a slider commits after the hand stops, not on each step | Missing |
+| `wait.noticeLong` | 8 s | A notice with an action, read and acted on (F3) | `wait.toastUndoDuration` 10 s does this for Undo only |
+| `color.commit` and `color.commitBorder` | The success hue, quiet | A field's confirmed border and tick, in light, dark, contrast and forced colours | Reuse `color.success` and `successMuted`; one alias keeps the meaning clear |
+| `size.empty.section`, `size.empty.view` | Per layout | The minimum block size of an empty wrapper, so a list doesn't collapse to one line (F6) | Missing |
+| `cmp.toast.*` tones | success, warning, progress | The new Toast tones (F3) | Only info and error |
+| `cmp.statusRow.action*` | Gap and alignment | The StatusRow action (F5) | Missing |
+
+### States on existing primitives
+
+| Primitive | Add | Reuses |
+| --- | --- | --- |
+| `useBusy` (behaviour) | `ack`, `failed` and a 200 ms confirm floor | `wait.signDelay`, `wait.confirmMinimum` |
+| TextField, ColorField | `pending`, `confirmed`, `failed` in the trailing slot; a confirmed border | Spinner, Icon `checkmark`, `color.commit` |
+| Switch | `pending` (a Spinner in the thumb), `confirmed`, `failed` with Retry; still `aria-disabled` while pending, never native `disabled` | Spinner, the Switch's own on and off words |
+| SegmentedControl, ThemeGallery, FontChoice, PickerButton | `pending` and `confirmed` on the chosen option; the group locked while pending; `wait.commitPause` | Spinner, Icon |
+| Slider | Commit on release, with `confirmed` | `wait.commitPause` |
+| ImageFrame | `broken` with alt text and Retry | Icon, Button |
+| StatusRow | An optional action (one Button) and an optional **Details** disclosure | Button, the disclosure in Settings |
+| Toast | `success`, `warning`, `progress` tones; `sticky` | Spinner, ProgressBar |
+| Skeleton | A row and a card shape matching ItemCard and OpenItem, so sections shimmer in their own shape | Skeleton's existing shapes |
+
+### New pieces
+
+| Piece | Layer | What it is |
+| --- | --- | --- |
+| `EmptyState` | Compound | An icon, one line of why, an optional detail and one primary Button, in a wrapper with the empty min-size tokens; `tone` for good news (F6) |
+| `NotificationRegion` | Layout | The labelled "Notifications" region around the toast stack, with the queue's visible limit of three (F3) |
+| A commit track in the task tracker | Core (not UI) | `tracker.commit(key, fn)` and `vm.commits`, the source of every control's pending, confirmed and failed state (F2) |
+| A gallery fixture for every state | Gallery | Each new state as a contract fixture, so the gallery shows it in light, dark and contrast before any wiring |
