@@ -46,6 +46,8 @@ The new presentation pieces are `EmptyState` (compound) and `NotificationRegion`
 
 **Phase-1 evidence only:** the UI, views, runtime and desktop typechecks, `pnpm ui:check`, and the gallery-only Vite build passed. The hub and slices were opened for inspection without captures. No unit tests, journeys, benchmarks or CI waits were run; phase-2 evidence remains outstanding.
 
+The hub and all eight slices scroll vertically inside the existing token-based `Surface` wrapper, without changing the writing window. After the owner's scrolling feedback (4 November, 13:56), headless inspection at 1280 × 720 and 360 × 640 confirmed that every page's scroll height exceeds its viewport height and its final section can be reached.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.
