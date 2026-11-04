@@ -6359,6 +6359,7 @@
         },
         "value": {
           "kind": "text",
+          "bindable": true,
           "description": "The color, or what was typed if it isn't one."
         },
         "swatch": {
@@ -6405,7 +6406,8 @@
         "commit": {
           "payload": {
             "value": "text"
-          }
+          },
+          "binds": "value"
         },
         "retry": {},
         "revert": {}

@@ -425,7 +425,8 @@ test("Site preview counts actual reads, cancels safely and retains Apply and loc
       });
       ipcMain.removeHandler("state:save");
       ipcMain.handle("state:save", async (...args) => {
-        if (++writes === 1) throw new Error("EACCES private-path-and-token");
+        Reflect.set(globalThis, "uiStatesSiteWrites", ++writes);
+        if (writes === 1) throw new Error("EACCES private-path-and-token");
         await new Promise<void>(resolve => Reflect.set(globalThis, "releaseSiteSave", resolve));
         return save(...args);
       });
@@ -455,6 +456,15 @@ test("Site preview counts actual reads, cancels safely and retains Apply and loc
     const preview = l.page.getByRole("region", { name: "Preview site", exact: true });
     await expect(preview).toBeVisible();
     await expect(preview.getByText("Second", { exact: true }).first()).toBeVisible();
+    const readerFocus = preview.getByRole("switch", { name: "Focus", exact: true });
+    const focusNode = await readerFocus.elementHandle();
+    await readerFocus.focus(); await readerFocus.press("Space");
+    await expect(readerFocus).toBeChecked();
+    await expect(readerFocus).toBeFocused();
+    expect(await focusNode!.evaluate(el => el.isConnected)).toBe(true);
+    await readerFocus.press("Space");
+    await expect(readerFocus).not.toBeChecked();
+    expect(await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesSiteWrites") ?? 0)).toBe(0);
     await preview.getByRole("radiogroup", { name: "Site theme", exact: true }).getByText("Sepia", { exact: true }).click();
     await preview.getByRole("button", { name: "Apply", exact: true }).click();
     const saveError = preview.locator("[data-status-row=danger]");
@@ -1295,6 +1305,18 @@ test("Colour contrast all-done replaces failures with one success row and keeps 
     await expect(good).toBeVisible();
     await expect(good.getByRole("button")).toHaveCount(0);
     const text = theme.getByRole("textbox", { name: "Text", exact: true });
+    await l.app.evaluate(({ ipcMain }) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      if (!(handlers instanceof Map)) throw new Error("Invoke handlers unavailable");
+      const save: unknown = handlers.get("state:save");
+      if (typeof save !== "function") throw new Error("State handler unavailable");
+      Reflect.set(globalThis, "uiStatesColourWrites", 0);
+      ipcMain.removeHandler("state:save");
+      ipcMain.handle("state:save", (...args) => {
+        Reflect.set(globalThis, "uiStatesColourWrites", Number(Reflect.get(globalThis, "uiStatesColourWrites")) + 1);
+        return save(...args);
+      });
+    });
     await text.fill("#b5b0a8"); await text.press("Enter");
     await expect(good).toHaveCount(0);
     await theme.getByRole("button", { name: "Fix Text", exact: true }).click();
@@ -1303,6 +1325,7 @@ test("Colour contrast all-done replaces failures with one success row and keeps 
     await expect(good.getByRole("button")).toHaveCount(0);
     expect(await editorNode!.evaluate(el => el.isConnected)).toBe(true);
     expect(readFileSync(note, "utf8")).toBe(before);
+    expect(await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesColourWrites"))).toBe(0);
     expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
   } finally { await closeTestApp(l); }
 });

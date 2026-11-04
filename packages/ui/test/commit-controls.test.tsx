@@ -10,9 +10,79 @@ import { Slider } from "../src/primitives/Slider/Slider.tsx";
 import { MenuButton } from "../src/primitives/MenuButton/MenuButton.tsx";
 import { IconButton } from "../src/primitives/IconButton/IconButton.tsx";
 import { ThemeGallery } from "../src/primitives/ThemeGallery/ThemeGallery.tsx";
+import { ColorField } from "../src/primitives/ColorField/ColorField.tsx";
+import { Switch } from "../src/primitives/Switch/Switch.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.useRealTimers());
+
+it("keeps a colour field focused and editable after refusal, with scoped Retry and Revert", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const retry = vi.fn(), revert = vi.fn();
+  const render = (commit: "rest" | "pending" | "confirmed" | "failed") => act(() => root.render(createElement("div", {},
+    createElement(ColorField, { label: "Colour", value: "#123456", commit, error: "Not saved", retryLabel: "Retry", revertLabel: "Revert", onRetry: retry, onRevert: revert }),
+    createElement(TextField, { label: "Neighbour", value: "Still editable" }),
+  )));
+  try {
+    render("rest");
+    const [input, neighbour] = host.querySelectorAll<HTMLInputElement>("input");
+    input!.focus();
+    render("pending");
+    expect(document.activeElement).toBe(input);
+    expect(input!.readOnly).toBe(true);
+    expect(input!.disabled).toBe(false);
+    expect(neighbour!.readOnly).toBe(false);
+    render("failed");
+    expect(host.querySelector("input")).toBe(input);
+    expect(input!.value).toBe("#123456");
+    expect(input!.readOnly).toBe(false);
+    expect(input!.getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(input);
+    act(() => [...host.querySelectorAll("button")].find(button => button.textContent === "Retry")!.click());
+    act(() => [...host.querySelectorAll("button")].find(button => button.textContent === "Revert")!.click());
+    expect(retry).toHaveBeenCalledOnce();
+    expect(revert).toHaveBeenCalledOnce();
+    render("confirmed");
+    expect(host.querySelector("input")).toBe(input);
+    expect(host.querySelector("[data-commit=confirmed]")).not.toBeNull();
+    expect(host.querySelector("button")).toBeNull();
+  } finally { act(() => root.unmount()); host.remove(); }
+});
+
+it("keeps the same switch focusable and at its stored value through pending and failed recovery", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const change = vi.fn(), retry = vi.fn();
+  const render = (commit: "rest" | "pending" | "confirmed" | "failed", checked = false) => act(() => root.render(createElement("div", {},
+    createElement(Switch, { label: "Link", checked, onLabel: "On", offLabel: "Off", commit, error: "Not saved", retryLabel: "Retry", onChange: change, onRetry: retry }),
+    createElement(TextField, { label: "Neighbour", value: "Still editable" }),
+  )));
+  try {
+    render("rest");
+    const input = host.querySelector<HTMLInputElement>("input[type=checkbox]")!;
+    act(() => input.focus());
+    render("pending");
+    expect(document.activeElement).toBe(input);
+    expect(input.disabled).toBe(false);
+    expect(input.checked).toBe(false);
+    act(() => input.click());
+    expect(change).not.toHaveBeenCalled();
+    expect(host.querySelector<HTMLInputElement>('input:not([type=checkbox])')!.readOnly).toBe(false);
+    render("failed");
+    expect(host.querySelector("input[type=checkbox]")).toBe(input);
+    expect(input.checked).toBe(false);
+    expect(document.activeElement).toBe(input);
+    act(() => host.querySelector<HTMLButtonElement>("button")!.click());
+    expect(retry).toHaveBeenCalledOnce();
+    render("confirmed", true);
+    expect(host.querySelector("input[type=checkbox]")).toBe(input);
+    expect(input.checked).toBe(true);
+    expect(host.querySelector("button")).toBeNull();
+  } finally { act(() => root.unmount()); host.remove(); }
+});
 
 it.each(["select", "icon"] as const)("keeps a committing %s menu trigger focused and inert, then shows its outcome after the menu closes", (variant) => {
   const host = document.createElement("div");

@@ -25,6 +25,54 @@ function setup() {
 }
 
 describe("view command failures (F1)", () => {
+  it.each(["ColorField", "Switch"] as const)("tracks a declared persisted %s through refusal, exact Retry, success and write-free Revert", async type => {
+    const { app, deps } = setup();
+    let stored: string | boolean = type === "Switch" ? false : "#ffffff";
+    let refused = true;
+    const set = vi.fn(async ({ value }: { value: string | boolean }) => {
+      if (refused) throw new Error("disk full");
+      stored = value;
+      app.store.update(state => ({ ...state }));
+    });
+    app.commands.register({ id: "fixture.persist", title: "gallery.action", run: set });
+    app.viewModels.register({
+      id: "vm.persisted", schema: { type: "object", properties: { value: { type: type === "Switch" ? "boolean" : "string" } } },
+      setters: { value: "fixture.persist" }, commits: ["value"], select: () => ({ value: stored }),
+    });
+    let props: Record<string, unknown> = {};
+    deps.registry = { ...registry, [type]: (next: Record<string, unknown>) => { props = next; return null; } };
+    const property = type === "Switch" ? "checked" : "value";
+    const event = type === "Switch" ? "onChange" : "onCommit";
+    const attempted = type === "Switch" ? true : "#123456";
+    deps.views.v = { id: "v", root: { type, props: { label: "Setting", [property]: { bind: "vm.persisted.value" }, ...(type === "Switch" ? { onLabel: "On", offLabel: "Off" } : {}) } } };
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    const invoke = async (name: string, value?: string | boolean) => {
+      const callback = props[name];
+      if (typeof callback !== "function") throw new Error(`Missing ${type} ${name} handler`);
+      await callback(value === undefined ? undefined : { value });
+    };
+    try {
+      await act(async () => root.render(createElement(ViewHost, { viewId: "v", deps })));
+      await act(async () => invoke(event, attempted));
+      expect(props).toMatchObject({ [property]: type === "Switch" ? false : attempted, commit: "failed" });
+      expect(app.store.state.ui.toasts).toEqual([]);
+      await act(async () => invoke("onRetry"));
+      expect(set.mock.calls.at(-1)?.[0]).toEqual({ value: attempted });
+      expect(props.commit).toBe("failed");
+      refused = false;
+      await act(async () => invoke("onRetry"));
+      expect(stored).toBe(attempted);
+      expect(props).toMatchObject({ [property]: attempted, commit: "confirmed" });
+      refused = true;
+      await act(async () => invoke(event, type === "Switch" ? false : "#654321"));
+      const writes = set.mock.calls.length;
+      await act(async () => invoke("onRevert"));
+      expect(props).toMatchObject({ [property]: attempted, commit: "rest" });
+      expect(set).toHaveBeenCalledTimes(writes);
+    } finally { act(() => root.unmount()); }
+  });
+
   it("recovers a client-rendered failed panel without remounting its sibling or changing the note, and reports only safe canned details", async () => {
     const { app, deps } = setup();
     let crashes = true, mounts = 0;

@@ -6,7 +6,7 @@ export const contract = defineContract({
   description: "A labelled hex color field with a swatch (Theme manager → Edit colors). The value is committed on Enter or on leaving the field, so typing never applies half a color.",
   props: {
     label: { kind: "message", required: true },
-    value: { kind: "text", description: "The color, or what was typed if it isn't one." },
+    value: { kind: "text", bindable: true, description: "The color, or what was typed if it isn't one." },
     swatch: { kind: "text", description: "The color the swatch shows: #rgb or #rrggbb, anything else shows none." },
     description: { kind: "text", description: "Said with the field: the contrast it's checked against." },
     invalid: { kind: "boolean", default: false },
@@ -16,7 +16,7 @@ export const contract = defineContract({
     retryLabel: { kind: "message", description: "Failed: saves the same colour again." },
     revertLabel: { kind: "message", description: "Failed: puts back the last colour that was kept." },
   },
-  events: { commit: { payload: { value: "text" } }, retry: {}, revert: {} },
+  events: { commit: { payload: { value: "text" }, binds: "value" }, retry: {}, revert: {} },
   slots: {},
   states: ["rest", "focused", "invalid", "pending", "confirmed", "failed"],
   tokens: "cmp.colorField.*",
