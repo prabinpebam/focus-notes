@@ -909,6 +909,8 @@
   "toast.recovery.recovered": "{count, plural, one {Kept # draft that couldn't go back in its note.} other {Kept # drafts that couldn't go back in their notes.}}",
   "toast.recovery.review": "Review",
   "toast.retry": "Retry",
+  "toast.actionFailed": "Couldn’t complete this action. Review the result, then try again.",
+  "command.app.reportFailure": "Report an action failure",
   "commit.retry": "Retry",
   "commit.revert": "Revert",
   "commit.failed": "Couldn't save this change. What you typed is still here.",

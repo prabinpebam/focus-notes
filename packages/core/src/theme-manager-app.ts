@@ -171,8 +171,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
 
   /** Reading settings: kept in the store and persisted like the rest of appearance (synced when Sync appearance is on). */
   const setReading = async (patch: Partial<Pick<Appearance, "lineHeight" | "measure" | "paragraphSpacing" | "focusDim">>) => {
-    store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
     await persistAppState(patch);
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
   };
 
   /**
@@ -194,8 +194,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     if (isCustomId(a.lightTheme) && !customOf(a, a.lightTheme)) patch.lightTheme = DEFAULT_THEMES.light;
     if (isCustomId(a.darkTheme) && !customOf(a, a.darkTheme)) patch.darkTheme = DEFAULT_THEMES.dark;
     if (Object.keys(patch).length) {
-      store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
       await persistAppState(patch);
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
     }
   };
   reg("theme.reload", reloadThemes);
@@ -235,15 +235,15 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     const { draft, ...appearance } = o;
     const { preview, draft: _d, ...rest } = state();
     void preview; void _d;
+    await persistAppState({
+      appearance: o.mode, lightTheme: o.lightTheme, darkTheme: o.darkTheme, contentFont: o.contentFont, fontSize: o.fontSize,
+      lineHeight: o.lineHeight, measure: o.measure, paragraphSpacing: o.paragraphSpacing, focusDim: o.focusDim,
+    });
     store.update((s) => ({
       ...s,
       appearance: { ...s.appearance, ...appearance, ...(o.focusDim === undefined ? { focusDim: undefined } : {}) },
       ui: { ...s.ui, theme: { ...rest, typing: {}, ...(draft ? { draft } : {}) } },
     }));
-    await persistAppState({
-      appearance: o.mode, lightTheme: o.lightTheme, darkTheme: o.darkTheme, contentFont: o.contentFont, fontSize: o.fontSize,
-      lineHeight: o.lineHeight, measure: o.measure, paragraphSpacing: o.paragraphSpacing, focusDim: o.focusDim,
-    });
     announce(catalog.format("theme.reverted"));
   });
 
@@ -274,8 +274,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     if (isCustomId(t.id)) {
       // A custom theme fills its slot as the ⋯ menu's theme commands do, and is remembered the same way.
       const key = kind === "light" ? "lightTheme" : "darkTheme";
-      store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id } }));
       await persistAppState({ [key]: t.id });
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id } }));
     } else await commands.run(`theme.${t.kind}.${t.id}`);
     if (schemeOf(store.state.appearance) !== t.kind) await commands.run(`appearance.${t.kind}`);
     // A copy of another theme goes once neither slot holds its base.

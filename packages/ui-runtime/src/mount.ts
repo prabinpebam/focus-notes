@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
 import { registry, contractByType, FLUSH_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews, InWindow } from "@focus-notes/ui";
-import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
+import { createResolver, ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 import { refocusNote } from "./refocus.ts";
 
 export interface MountOptions {
@@ -30,8 +30,13 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
   installTrustedTypes();
   // The slash menu offers the editor's registered blocks (EDT-06, EXT-01).
-  void app.commands.run("slash.register", { entries: slashCatalog() });
   const deps: RuntimeDeps = { app, registry, contracts: contractByType, views };
+  const resolver = createResolver(deps);
+  void resolver.runCommand("slash.register", { entries: slashCatalog() });
+  window.addEventListener("unhandledrejection", (event) => {
+    event.preventDefault();
+    void resolver.reportFailure(event.reason);
+  }, signal ? { signal } : {});
   // The warm-up after start loads the code of the views opened first, at idle priority (PRF-10).
   app.warmUp.add({ id: "views", run: async () => void (await preloadViews()) });
   const root = createRoot(el);
@@ -70,7 +75,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     e.stopPropagation();
     // Focus a key moves shows its ring, whatever the pointer did before (UI-05).
     keyRanCommand();
-    void app.commands.run(id);
+    void resolver.runCommand(id);
   }, { capture: true, ...(signal ? { signal } : {}) });
   // Ctrl and the wheel change the text size as Mod+= and Mod+- do (D-130), and so does a trackpad's
   // pinch, which arrives as a wheel with Ctrl. The page itself never zooms. Small deltas (a pinch, a
@@ -85,7 +90,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     wheeled += dy;
     if (Math.abs(wheeled) < WHEEL_STEP_PX) return;
     wheeled = 0;
-    void app.commands.run(dy < 0 ? "font.larger" : "font.smaller");
+    void resolver.runCommand(dy < 0 ? "font.larger" : "font.smaller");
   }, { capture: true, passive: false, ...(signal ? { signal } : {}) });
   // Editor commands run from menus and Spotlight reach the editor surface through a window event.
   // Saving and switching notes first collect text the editor hasn't sent yet (QLT-03, D-23).

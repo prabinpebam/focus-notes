@@ -103,18 +103,35 @@ export function createResolver(deps: RuntimeDeps) {
     return v;
   };
 
+  const reportFailure = async (error: unknown, command?: string, args?: Record<string, unknown>) => {
+    console.error("View action failed", error);
+    if (app.commands.has("app.reportFailure")) {
+      await app.commands.run("app.reportFailure", { command, args });
+    }
+  };
+  const runCommand = async (command: string, args: Record<string, unknown> = {}) => {
+    const retry = command === "toast.action" ? app.store.state.ui.toasts.find((toast) => toast.id === Number(args.id))?.action : undefined;
+    try {
+      await app.commands.run(command, args);
+      return true;
+    } catch (error) {
+      await reportFailure(error, retry?.command ?? command, retry ? retry.args ?? {} : args);
+      return false;
+    }
+  };
   const runActions = async (actions: Action | Action[], scope: Scope) => {
     for (const a of Array.isArray(actions) ? actions : [actions]) {
       if ("run" in a) {
         const args = Object.fromEntries(Object.entries(a.args ?? {}).map(([k, v]) => [k, value(v, scope)]));
-        await app.commands.run(a.run, args);
+        if (!(await runCommand(a.run, args))) return false;
       } else {
         scope.setLocal(a.set.slice("local.".length), value(a.to, scope));
       }
     }
+    return true;
   };
 
-  return { read, value, runActions };
+  return { read, value, runActions, runCommand, reportFailure };
 }
 
 type Resolver = ReturnType<typeof createResolver>;
@@ -161,19 +178,24 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
     const actions = node.on?.[event];
     const bound = binds ? node.props?.[binds] : undefined;
     if (!actions && !(bound && isBind(bound))) continue;
-    props[prop] = (payload?: Record<string, unknown>) => {
-      const eventScope = { ...scope, event: payload ?? {} };
-      if (bound && isBind(bound)) {
-        const target = bound.bind;
-        const newValue = payload?.value;
-        if (target.startsWith("local.")) scope.setLocal(target.slice(6), newValue);
-        else {
-          const [, vmId, ...field] = target.split(".");
-          const setter = deps.app.viewModels.get(`vm.${vmId}`)?.setters?.[field.join(".")];
-          if (setter) void deps.app.commands.run(setter, { value: newValue });
+    props[prop] = async (payload?: Record<string, unknown>) => {
+      try {
+        const eventScope = { ...scope, event: payload ?? {} };
+        if (bound && isBind(bound)) {
+          const target = bound.bind;
+          const newValue = payload?.value;
+          if (target.startsWith("local.")) scope.setLocal(target.slice(6), newValue);
+          else {
+            const [, vmId, ...field] = target.split(".");
+            const setter = deps.app.viewModels.get(`vm.${vmId}`)?.setters?.[field.join(".")];
+            if (!setter) throw new Error(`No setter registered for ${target}`);
+            if (!(await r.runCommand(setter, { value: newValue }))) return;
+          }
         }
+        if (actions) await r.runActions(actions, eventScope);
+      } catch (error) {
+        await r.reportFailure(error);
       }
-      if (actions) void r.runActions(actions, eventScope);
     };
   }
   // Command-driven controls get their name, icon, shortcut, and state from the registry (DSY-12).

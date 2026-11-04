@@ -372,24 +372,41 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   /** A patch's undefined values remove those keys (the recent note, forgotten on sign out, PRV-02). */
   const merge = (base: AppStateFile, patch: Partial<AppStateFile>) =>
     Object.fromEntries(Object.entries({ ...base, ...patch }).filter(([, v]) => v !== undefined)) as unknown as AppStateFile;
-  const saveDevice = (patch: Partial<AppStateFile>) => {
-    deviceState = merge(deviceState, patch);
-    return bridge.saveAppState(deviceState);
+  const saveDevice = async (patch: Partial<AppStateFile>) => {
+    const next = merge(deviceState, patch);
+    await bridge.saveAppState(next);
+    deviceState = next;
   };
   const saveSettings = () => bridge.settings!.save(`${JSON.stringify(settingsFile, null, 2)}\n`);
-  const persistAppState = async (patch: Partial<AppStateFile>) => {
-    // A window opened for a note never changes which note the app reopens at launch (DSK-06, D-179).
-    if (bridge.windows?.secondary && "lastNotePath" in patch) {
-      const { lastNotePath: _, ...rest } = patch;
-      if (!Object.keys(rest).length) return;
-      patch = rest;
-    }
-    appState = merge(appState, patch);
-    const { device, synced } = splitAppState(patch);
-    // While syncing, the synced settings go to the private repository and the rest stays here (D-46).
-    if (!settingsFile || !Object.keys(synced).length) return saveDevice(patch);
-    settingsFile = settingsFileOf(synced, settingsFile);
-    await Promise.all([saveSettings(), Object.keys(device).length ? saveDevice(device) : undefined]);
+  let persisting: Promise<void> = Promise.resolve();
+  const persistAppState = (patch: Partial<AppStateFile>) => {
+    const write = async () => {
+      // A window opened for a note never changes which note the app reopens at launch (DSK-06, D-179).
+      if (bridge.windows?.secondary && "lastNotePath" in patch) {
+        const { lastNotePath: _, ...rest } = patch;
+        if (!Object.keys(rest).length) return;
+        patch = rest;
+      }
+      const { device, synced } = splitAppState(patch);
+      // While syncing, the synced settings go to the private repository and the rest stays here (D-46).
+      if (!settingsFile || !Object.keys(synced).length) {
+        await saveDevice(patch);
+        appState = merge(appState, patch);
+        return;
+      }
+      if (Object.keys(device).length) {
+        await saveDevice(device);
+        appState = merge(appState, device);
+      }
+      const next = settingsFileOf(synced, settingsFile);
+      await bridge.settings!.save(`${JSON.stringify(next, null, 2)}\n`);
+      settingsFile = next;
+      appState = merge(appState, synced);
+    };
+    const result = persisting.then(write, write);
+    // Keep the write lane usable after a rejection; the caller still receives that rejection.
+    persisting = result.then(() => {}, () => {});
+    return result;
   };
 
   const setNote = (patch: Partial<AppState["note"]>) =>
@@ -659,8 +676,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     checked: (s) => resolvedScheme(s) === "dark",
     run: async ({}, ctx) => {
       const mode = resolvedScheme(ctx.state) === "dark" ? "light" : "dark";
-      ctx.update((s) => ({ ...s, appearance: { ...s.appearance, mode } }));
       await persistAppState({ appearance: mode });
+      ctx.update((s) => ({ ...s, appearance: { ...s.appearance, mode } }));
     },
   });
   for (const mode of ["system", "light", "dark"] as const) {
@@ -669,14 +686,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       title: `command.appearance.${mode}`,
       checked: (s) => s.appearance.mode === mode,
       run: async (_a, ctx) => {
-        ctx.update((s) => ({ ...s, appearance: { ...s.appearance, mode } }));
         await persistAppState({ appearance: mode });
+        ctx.update((s) => ({ ...s, appearance: { ...s.appearance, mode } }));
       },
     });
   }
   const setFontSize = async (size: number) => {
-    store.update((s) => ({ ...s, appearance: { ...s.appearance, fontSize: size } }));
     await persistAppState({ fontSize: size });
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, fontSize: size } }));
   };
   const step = (dir: 1 | -1) => {
     const i = FONT_STEPS.indexOf(store.state.appearance.fontSize as (typeof FONT_STEPS)[number]);
@@ -695,10 +712,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: () => setFontSize(step(-1)),
   });
   // Theme choices (THM-08) and content fonts (THM-03): one command each, so menus, Spotlight, and agents can run them.
-  const setAppearance = async (patch: Partial<AppState["appearance"]>) => {
+  const setAppearance = async (patch: Partial<Pick<AppState["appearance"], "lightTheme" | "darkTheme" | "contentFont" | "uiScale">>) => {
+    await persistAppState(patch);
     store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
-    const { lightTheme, darkTheme, contentFont, uiScale } = store.state.appearance;
-    await persistAppState({ lightTheme, darkTheme, contentFont, uiScale });
   };
   for (const t of BUILT_IN_THEMES) {
     const key = t.kind === "light" ? "lightTheme" : "darkTheme";
@@ -729,8 +745,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     checked: (s) => s.focusMode,
     run: async (_a, ctx) => {
       const on = !ctx.state.focusMode;
-      ctx.update((s) => ({ ...s, focusMode: on }));
       await persistAppState({ focusMode: on });
+      ctx.update((s) => ({ ...s, focusMode: on }));
     },
   });
   // A note in a window of its own, side by side with this one (DSK-06, D-179): this window keeps its
@@ -904,8 +920,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     checked: (s) => s.outlinePinned,
     run: async (_a, ctx) => {
       const on = !ctx.state.outlinePinned;
-      ctx.update((s) => ({ ...s, outlinePinned: on }));
       await persistAppState({ outlinePinned: on ? true : undefined });
+      ctx.update((s) => ({ ...s, outlinePinned: on }));
     },
   });
   // Resized by dragging its edge or with the arrow keys on it (D-187): kept on this device.
@@ -914,8 +930,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: async ({ width }, ctx) => {
       if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) return;
       const w = Math.round(width);
-      ctx.update((s) => ({ ...s, outlineWidth: w }));
       await persistAppState({ outlineWidth: w });
+      ctx.update((s) => ({ ...s, outlineWidth: w }));
     },
   });
   // Find in selection (FND-03, D-160): opens the bar scoped to the selection, or toggles the scope.
@@ -988,6 +1004,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
 
   // Toast commands: dismiss, the toast's action, pausing while hovered or focused, and F6 to reach it.
+  commands.register<{ command?: string; args?: Record<string, unknown> }>({
+    id: "app.reportFailure", title: "command.app.reportFailure",
+    run: ({ command, args }) => {
+      toast(catalog.format("toast.actionFailed"), {
+        tone: "error",
+        ...(command && commands.has(command) ? { action: { command, ...(args ? { args } : {}), label: catalog.format("toast.retry") } } : {}),
+      });
+    },
+  });
   commands.register<{ id: number }>({ id: "toast.dismiss", title: "command.toast.dismiss", run: ({ id }) => dismissToast(Number(id)) });
   commands.register<{ id: number }>({
     id: "toast.action", title: "command.toast.action",
