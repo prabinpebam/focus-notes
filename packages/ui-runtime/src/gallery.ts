@@ -38,7 +38,10 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
       viewModels: ["vm.app", "vm.gallery", ...Object.keys(group.models).map((m) => `vm.${m}`)],
       ...(doc.focus ? { focus: doc.focus } : {}),
       local: { ...doc.local, ...entry.local },
-      root: { type: "AppRoot", props: { scheme, motion, platform: { get: "vm.app.platform" } }, children: [doc.root] },
+      // AppRoot clips the document; long review boards need their own viewport-bounded scroller.
+      root: { type: "AppRoot", props: { scheme, motion, platform: { get: "vm.app.platform" } }, children: [
+        group.id === "uistates" ? { type: "Surface", props: { variant: "canvas", scroll: true }, children: [doc.root] } : doc.root,
+      ] },
     };
   }
   for (const c of contracts) {
