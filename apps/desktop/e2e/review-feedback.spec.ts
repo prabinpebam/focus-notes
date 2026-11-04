@@ -332,6 +332,7 @@ test("Settings keeps navigation fixed and scrolls only content, with a short-win
       const list = settings.getByRole("tablist");
       await expect(list).toHaveAttribute("aria-orientation", height! >= 720 ? "vertical" : "horizontal");
       const panel = settings.getByRole("tabpanel");
+      await settled(l.page);
       const before = await nav.boundingBox();
       await panel.evaluate(el => { el.scrollTop = 500; });
       await expect.poll(() => panel.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
