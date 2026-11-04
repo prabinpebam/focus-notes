@@ -53,8 +53,8 @@ export const border = style({
   },
 });
 
-const draw = keyframes({ from: { strokeDashoffset: 1 }, to: { strokeDashoffset: 0 } });
-const grow = keyframes({ from: { transform: "scale(0.6)", opacity: 0 }, to: { transform: "scale(1)", opacity: 1 } });
+const draw = keyframes({ from: { strokeDashoffset: t.complete }, to: { strokeDashoffset: 0 } });
+const grow = keyframes({ from: { transform: "scale(0.6)", opacity: 0 }, to: { transform: "scale(1)", opacity: t.visible } });
 
 /** One fixed box: the spinner, the tick and the error icon take turns in it, so nothing beside it moves. */
 export const slot = style({
@@ -83,7 +83,7 @@ export const check = style({
   strokeWidth: t.stroke,
   strokeLinecap: "round",
   strokeLinejoin: "round",
-  strokeDasharray: 1,
+  strokeDasharray: t.complete,
   animationName: draw,
   animationDuration: t.draw,
   animationDelay: `calc(${t.draw} / 2)`,

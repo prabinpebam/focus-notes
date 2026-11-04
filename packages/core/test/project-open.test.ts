@@ -23,6 +23,15 @@ const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.proj
 const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", logo: "book" } as ProjectEntry;
 
 describe("Open", () => {
+  it("distinguishes first use from a filtered result and clears the query without opening another project", async () => {
+    const app = appWith({ list: async () => [book] });
+    await app.commands.run("projects.open");
+    expect(app.viewModels.select("vm.projects", app.store.state)).toMatchObject({ emptyTitle: "No projects yet", emptyAction: "Open project" });
+    await app.commands.run("projects.query", { value: "No matching project" });
+    expect(app.viewModels.select("vm.projects", app.store.state)).toMatchObject({ entries: [], emptyTitle: "No matches", emptyAction: "Clear search" });
+    await app.commands.run("projects.emptyAction");
+    expect(app.viewModels.select("vm.projects", app.store.state)).toMatchObject({ query: "", entries: [expect.objectContaining({ name: "Book" })] });
+  });
   it("shows a project's folder through the bridge", async () => {
     const shown: string[] = [];
     const app = appWith({ list: async () => [book], reveal: async (folder: string) => { shown.push(folder); } });

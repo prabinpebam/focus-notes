@@ -7,7 +7,7 @@
   "components": [
     {
       "type": "EmptyState",
-      "tier": "compound",
+      "tier": "primitive",
       "description": "A known-empty wrapper, not loading or failure. Says why and offers the first action; good news may simply say all done. The same minimum size holds the layout.",
       "props": {
         "title": {
@@ -88,7 +88,7 @@
       "states": [
         "rest"
       ],
-      "tokens": "cmp.notificationStack.*",
+      "tokens": "cmp.notificationRegion.*",
       "a11y": {
         "pattern": "region",
         "name": "label"
@@ -1045,6 +1045,11 @@
         "shortcut": {
           "kind": "text"
         },
+        "busy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Locks only this menu, keeps its trigger focusable and shows a pending border on compact text variants."
+        },
         "bleed": {
           "kind": "boolean",
           "default": false,
@@ -1064,7 +1069,8 @@
         "open",
         "itemFocused",
         "itemDisabled",
-        "itemChecked"
+        "itemChecked",
+        "busy"
       ],
       "tokens": "cmp.menuButton.*",
       "a11y": {
@@ -1072,6 +1078,7 @@
         "name": "label"
       },
       "fixtures": [
+        "busy",
         "glyph bounds pill",
         "glyph bounds text",
         "glyph bounds select",
@@ -6375,6 +6382,7 @@
       "siteGlow"
     ],
     "layer": [
+      "underlay",
       "canvas",
       "mask",
       "contextual",

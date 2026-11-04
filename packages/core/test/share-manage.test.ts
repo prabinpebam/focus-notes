@@ -81,6 +81,18 @@ describe("helpers", () => {
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
+it("opens Files from a sharing empty state without toggling an already-open panel shut", async () => {
+  const t = shell();
+  await t.app.start();
+  await settle();
+  for (const alreadyOpen of [false, true]) {
+    t.app.store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open: true }, files: { ...s.ui.files, open: alreadyOpen } } }));
+    await t.run("sharing.previewFiles");
+    expect(t.app.store.state.ui.files.open).toBe(true);
+    expect(t.app.store.state.ui.settings.open).toBe(false);
+  }
+});
+
 describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
   it("waits for word preparation before any action or draft mutation", async () => {
     const t = shell();
@@ -421,7 +433,7 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     await t.app.start();
     await settle();
     await t.run("settings.open");
-    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "sharing", "ai", "appearance"]);
+    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "project", "workspace", "sharing", "ai", "appearance"]);
     await t.run("settings.setSection", { value: "sharing" });
     expect(t.vm("vm.shareManage")).toMatchObject({ available: true, empty: true, hasAudiences: false, vault: true, rows: [] });
   });

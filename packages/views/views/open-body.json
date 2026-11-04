@@ -154,22 +154,22 @@
          "as": "recent",
          "key": "recent.id",
          "empty": {
-          "type": "Text",
+          "type": "EmptyState",
           "when": {
            "expr": {
-            "!": [
-             {
-              "get": "vm.projects.recentWaiting"
-             }
+            "and": [
+             { "!": [{ "get": "vm.projects.loading" }] },
+             { "==": [{ "get": "vm.projects.error" }, ""] }
             ]
            }
           },
           "props": {
-           "value": {
-            "t": "project.open.recentEmpty"
-           },
-           "tone": "muted"
-          }
+           "title": { "get": "vm.projects.emptyRecentTitle" },
+           "detail": { "get": "vm.projects.emptyRecentDetail" },
+           "actionLabel": { "get": "vm.projects.emptyRecentAction" },
+           "icon": "document", "size": "section"
+          },
+          "on": { "action": { "run": "projects.emptyAction" } }
          },
          "render": {
           "type": "OpenItem",
@@ -276,22 +276,22 @@
          "as": "entry",
          "key": "entry.id",
          "empty": {
-          "type": "Text",
+          "type": "EmptyState",
           "when": {
            "expr": {
-            "!": [
-             {
-              "get": "vm.projects.entriesWaiting"
-             }
+            "and": [
+             { "!": [{ "get": "vm.projects.loading" }] },
+             { "==": [{ "get": "vm.projects.error" }, ""] }
             ]
            }
           },
           "props": {
-           "value": {
-            "t": "project.open.projectsEmpty"
-           },
-           "tone": "muted"
-          }
+           "title": { "get": "vm.projects.emptyTitle" },
+           "detail": { "get": "vm.projects.emptyDetail" },
+           "actionLabel": { "get": "vm.projects.emptyAction" },
+           "icon": "folder", "size": "section"
+          },
+          "on": { "action": { "run": "projects.emptyAction" } }
          },
          "render": {
           "type": "OpenItem",

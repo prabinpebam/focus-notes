@@ -9,7 +9,7 @@ const t = tokens.cmp.openItem;
 export const hit = style({
   ...controlMetrics, display: "block", minWidth: 0, maxWidth: "100%", padding: 0, border: "none", background: "none",
   color: "inherit", font: "inherit", textAlign: "start", cursor: "default", outline: "none",
-  selectors: { "&::after": { content: '""', position: "absolute", inset: 0, zIndex: 1, borderRadius: "inherit" } },
+  selectors: { "&::after": { content: '""', position: "absolute", inset: 0, zIndex: t.hitLayer, borderRadius: "inherit" } },
 });
 
 export const base = style({
@@ -27,10 +27,10 @@ export const kind = styleVariants({
     padding: t.padding.card, borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, backgroundColor: t.background,
     selectors: {
       "&::before": {
-        content: '""', position: "absolute", inset: 0, zIndex: -1, borderRadius: "inherit", backgroundColor: t.tint, opacity: t.tintOpacity, pointerEvents: "none",
+        content: '""', position: "absolute", inset: 0, zIndex: t.tintLayer, borderRadius: "inherit", backgroundColor: t.tint, opacity: t.tintOpacity, pointerEvents: "none",
         transitionProperty: "opacity", transitionDuration: t.duration, transitionTimingFunction: t.easing,
       },
-      "&:hover::before": { opacity: 1 },
+      "&:hover::before": { opacity: t.visible },
       [`&:has(${hit}:active)`]: { backgroundColor: t.pressed },
     },
   },
@@ -59,7 +59,7 @@ export const fileIcon = style({ width: t.fileTileIcon, height: t.fileTileIcon })
 // The folder path: one line, ellipsized in the middle (its start gives way, the folder's own name stays),
 // above the item's hit area; pressing it shows the folder in File Explorer or Finder.
 export const path = style({
-  ...controlMetrics, position: "relative", zIndex: 2, display: "inline-flex", alignItems: "center", gap: t.pathGap, alignSelf: "flex-start",
+  ...controlMetrics, position: "relative", zIndex: t.controlLayer, display: "inline-flex", alignItems: "center", gap: t.pathGap, alignSelf: "flex-start",
   minWidth: 0, maxWidth: "100%", paddingInline: t.pathPadding, marginInlineStart: `calc(${t.pathPadding} * -1)`,
   border: "none", borderRadius: t.rowRadius, background: "none", font: "inherit", fontSize: t.detail, color: t.detailColor, cursor: "pointer", whiteSpace: "nowrap",
   selectors: {
@@ -74,10 +74,10 @@ export const pathTail = style({ flexShrink: 0 });
 
 // Pin: top right, shown on hover or focus, and always while pinned.
 export const pin = style({
-  position: "absolute", zIndex: 2, top: t.pinInset, insetInlineEnd: t.pinInset, display: "flex", opacity: 0,
+  position: "absolute", zIndex: t.controlLayer, top: t.pinInset, insetInlineEnd: t.pinInset, display: "flex", opacity: 0,
   transitionProperty: "opacity", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
-    [`${base}:hover &, ${base}:focus-within &, &[data-pinned]`]: { opacity: 1 },
+    [`${base}:hover &, ${base}:focus-within &, &[data-pinned]`]: { opacity: t.visible },
   },
 });
 globalStyle(`${pin}[data-pinned] button`, { color: t.pinned });

@@ -73,6 +73,8 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   // ---- Settings → AI ----
   let writer = "";
   let connections: AiConnectionView[] = [];
+  let connectionsLoaded = false;
+  let connectionsLoading = false;
   let formOpen = false;
   let draft: Draft = blankDraft();
   let draftHasKey = false;
@@ -115,13 +117,16 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const apply = (v: { writer: string; connections: AiConnectionView[] }) => { writer = v.writer; connections = v.connections; };
   const load = async () => {
     if (!ai) return;
+    connectionsLoading = true; changed();
     try {
       apply(await ai.settings());
+      connectionsLoaded = true;
     } catch (e) {
+      connectionsLoaded = false;
       status = reason(e, "ai.error.save");
       toast(status, { tone: "error" });
     }
-    changed();
+    connectionsLoading = false; changed();
   };
   const writerConnection = () => connections.find((c) => c.id === writer);
   const trimBase = (v: string) => v.trim().replace(/\/+$/, "");
@@ -145,7 +150,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
         "name", "endpoint", "model", "deployment", "apiVersion", "account", "providerNote", "writerSaveText", "choiceGroup",
       ].map((k) => [k, { type: "string" as const }])),
       ...Object.fromEntries([
-        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter",
+        "formOpen", "cannotSave", "discovering", "showEndpoint", "showModel", "showDeployment", "showApiVersion", "showAccount", "showKey", "hasModels", "hasWriter", "addVisible", "noKeyField", "choosingWriter", "empty",
       ].map((k) => [k, { type: "boolean" as const }])),
       writerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
       providerMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, checked: { type: "boolean" } } } } } } },
@@ -177,7 +182,8 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
           return [{ id: String(i), name: fp.label, detail: n ? t("ai.found.models", { n, endpoint: f.endpoint }) : t("ai.found.noModels", { endpoint: f.endpoint }) }];
         }),
         discovering, discoverStatus,
-        formOpen, addVisible: !formOpen, noKeyField: p.key === "none",
+        formOpen, addVisible: !formOpen && connections.length > 0, noKeyField: p.key === "none",
+        empty: connectionsLoaded && !connectionsLoading && !connections.length && !formOpen,
         formTitle: draft.id ? t("ai.form.change", { name: draft.name }) : t("ai.form.add"),
         providerName: p.label,
         providerNote: t(p.shape === "copilot-cli" ? "ai.note.copilot" : `ai.note.${p.group}`),

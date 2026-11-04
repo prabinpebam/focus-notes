@@ -1,4 +1,4 @@
-import { Fragment, useContext, useRef, useState } from "react";
+import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { FloatingContext } from "../../layouts/Layer/floating.ts";
 import { controlLabel } from "../control.css.ts";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
@@ -9,6 +9,8 @@ import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { CommandItem, MenuSection as Section } from "../../data.ts";
 import { ownHomeEnd } from "../../behaviors/menu-keys.ts";
+import { useBusy } from "../../behaviors/busy.ts";
+import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
 import * as s from "./MenuButton.css.ts";
 
 export interface MenuButtonProps {
@@ -25,6 +27,7 @@ export interface MenuButtonProps {
   shortcut?: string;
   /** The text variant at the edge of a panel's content (the Files sheet's New): its text lines up with the edge (D-111). */
   bleed?: boolean;
+  busy?: boolean;
   onAction?: (payload: { id: string }) => void;
 }
 
@@ -194,20 +197,24 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
 }
 
 /** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
-export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, bleed, onAction }: MenuButtonProps) {
+export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, bleed, busy, onAction }: MenuButtonProps) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (busy) setOpen(false); }, [busy]);
+  const { attrs, ref } = useBusy({ busy, label });
   const boundary = useWindowBoundary();
   const floating = useContext(FloatingContext);
   const surface = floating ? ` ${s.floating}` : "";
-  const words = <span className={controlLabel}>{text ?? label}</span>;
+  const words = <><span className={controlLabel}>{text ?? label}</span>{busy ? <BorderProgress state="pending" /> : null}</>;
+  const trigger = { ...attrs, ref, "aria-label": label };
   return (
-    <MenuTrigger>
+    <MenuTrigger isOpen={open && !busy} onOpenChange={(next) => { if (!next || !busy) setOpen(next); }}>
       {variant === "pill"
-        ? <Button className={`${s.pill}${surface}`} data-floating-control={floating ? "" : undefined} aria-label={label}>{words}</Button>
+        ? <Button {...trigger} className={`${s.pill} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}</Button>
         : variant === "select"
-          ? <Button className={`${s.select}${surface}`} data-floating-control={floating ? "" : undefined} aria-label={label}>{words}<Icon name="chevronDown" size="s" /></Button>
+          ? <Button {...trigger} className={`${s.select} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : variant === "text"
-          ? <Button className={`${s.text}${surface}${bleed ? ` ${s.textBleed}` : ""}`} data-floating-control={floating ? "" : undefined} aria-label={label} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
-          : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
+          ? <Button {...trigger} className={`${s.text} ${s.busyAnchor}${surface}${bleed ? ` ${s.textBleed}` : ""}`} data-floating-control={floating ? "" : undefined} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
+          : <IconButton icon={icon} label={label} busy={busy} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">
         <CommandMenu label={label} sections={sections} onAction={onAction} />
       </Popover>

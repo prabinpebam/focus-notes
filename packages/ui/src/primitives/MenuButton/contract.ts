@@ -12,15 +12,17 @@ export const contract = defineContract({
     placement: { kind: "enum", values: ["bottom end", "bottom start", "top start"], default: "bottom end" },
     sections: { kind: "list", of: "menuSections", required: true },
     shortcut: { kind: "text" },
+    busy: { kind: "boolean", default: false, description: "Locks only this menu, keeps its trigger focusable and shows a pending border on compact text variants." },
     bleed: { kind: "boolean", default: false, description: "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)." },
   },
   events: { action: { payload: { id: "text" } } },
   slots: {},
-  states: ["closed", "open", "itemFocused", "itemDisabled", "itemChecked"],
+  states: ["closed", "open", "itemFocused", "itemDisabled", "itemChecked", "busy"],
   tokens: "cmp.menuButton.*",
   a11y: { pattern: "menu button", name: "label" },
   journeys: [{ spec: "apps/desktop/e2e/m1-toolbar.spec.ts", covers: ["open", "itemFocused", "itemDisabled", "itemChecked"] }],
   fixtures: [
+    { name: "busy", covers: ["busy"], props: { variant: "text", label: { t: "gallery.action" }, sections: { get: "vm.gallery.menu" }, busy: true } },
     ...(["pill", "text", "select"] as const).map((variant) => ({
       name: `glyph bounds ${variant}`,
       props: { variant, label: { t: "gallery.glyphs" }, sections: { get: "vm.gallery.menu" } },

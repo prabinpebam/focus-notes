@@ -1,4 +1,5 @@
 { "cmp": { "noteContent": {
+  "focusDim": { "$type": "number", "$value": "{focus.dimOpacity}" },
   "$description": "The block components (WP-5.1): note content on published pages, aliasing the same semantic tokens as the editor surface so a note reads the same in both (DD-CMP-04).",
   "text": { "$type": "color", "$value": "{color.text}" },
   "font": { "$type": "fontFamily", "$value": "{font.content}" },

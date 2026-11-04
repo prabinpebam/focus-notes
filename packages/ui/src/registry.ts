@@ -30,7 +30,7 @@ import { DialogPanel } from "./primitives/DialogPanel/DialogPanel.tsx";
 import { Dialog } from "./compounds/Dialog/Dialog.tsx";
 import { Spinner } from "./primitives/Spinner/Spinner.tsx";
 import { CommitMark } from "./primitives/CommitMark/CommitMark.tsx";
-import { EmptyState } from "./compounds/EmptyState/EmptyState.tsx";
+import { EmptyState } from "./primitives/EmptyState/EmptyState.tsx";
 import { NotificationRegion } from "./layouts/NotificationRegion/NotificationRegion.tsx";
 import { Skeleton } from "./primitives/Skeleton/Skeleton.tsx";
 import { LiveRegion } from "./primitives/LiveRegion/LiveRegion.tsx";

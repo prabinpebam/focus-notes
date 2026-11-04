@@ -1,7 +1,7 @@
 import { defineContract } from "../../contract.ts";
 
 export const contract = defineContract({
-  type: "EmptyState", tier: "compound",
+  type: "EmptyState", tier: "primitive",
   description: "A known-empty wrapper, not loading or failure. Says why and offers the first action; good news may simply say all done. The same minimum size holds the layout.",
   props: {
     title: { kind: "message", required: true }, detail: { kind: "message" }, icon: { kind: "icon", default: "folder" },

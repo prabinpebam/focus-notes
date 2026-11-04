@@ -1,4 +1,11 @@
 { "cmp": { "imageFrame": {
+  "brokenGap": { "$type": "dimension", "$value": "{space.s}" },
+  "brokenPadding": { "$type": "dimension", "$value": "{space.l}" },
+  "brokenHeight": { "$type": "dimension", "$value": "{size.emptySection}" },
+  "brokenText": { "$type": "color", "$value": "{color.textMuted}" },
+  "brokenBackground": { "$type": "color", "$value": "{color.surfaceSunken}" },
+  "brokenFont": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "brokenSize": { "$type": "dimension", "$value": "{font.uiSecondary}" },
   "fitMax": { "$type": "dimension", "$value": "{size.imageFitMax}" },
   "fitViewport": { "$type": "dimension", "$value": "{size.imageFitViewport}" },
   "wideExtra": { "$type": "dimension", "$value": "{size.imageWideExtra}" },

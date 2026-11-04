@@ -32,7 +32,7 @@ import { contract as DialogPanel } from "./primitives/DialogPanel/contract.ts";
 import { contract as Dialog } from "./compounds/Dialog/contract.ts";
 import { contract as Spinner } from "./primitives/Spinner/contract.ts";
 import { contract as CommitMark } from "./primitives/CommitMark/contract.ts";
-import { contract as EmptyState } from "./compounds/EmptyState/contract.ts";
+import { contract as EmptyState } from "./primitives/EmptyState/contract.ts";
 import { contract as NotificationRegion } from "./layouts/NotificationRegion/contract.ts";
 import { contract as Skeleton } from "./primitives/Skeleton/contract.ts";
 import { contract as LiveRegion } from "./primitives/LiveRegion/contract.ts";

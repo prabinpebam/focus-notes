@@ -17,6 +17,30 @@ import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
+it("shows AI's known-empty state only after its list loads and replaces its first action with the connection form", async () => {
+  const t = setup({ connections: [] });
+  expect(t.settingsVm()).toMatchObject({ empty: false, addVisible: false });
+  await t.commands.run("ai.load");
+  expect(t.settingsVm()).toMatchObject({ empty: true, addVisible: false });
+  await t.commands.run("ai.add");
+  expect(t.settingsVm()).toMatchObject({ empty: false, formOpen: true });
+  await t.commands.run("ai.cancel");
+  expect(t.settingsVm()).toMatchObject({ empty: true, formOpen: false });
+});
+
+it("never labels an unfinished or failed AI load as an empty connection list", async () => {
+  const t = setup({ connections: [] });
+  let reject!: (error: Error) => void;
+  t.ai.settings = () => new Promise((_resolve, fail) => { reject = fail; });
+  const loading = t.commands.run("ai.load");
+  await Promise.resolve();
+  expect(t.settingsVm()).toMatchObject({ empty: false });
+  reject(new Error("load rejected"));
+  await loading;
+  expect(t.settingsVm()).toMatchObject({ empty: false });
+  expect(t.toasts.at(-1)).toBeTruthy();
+});
+
 describe("RWR-91 / RWR-92: decisive prompt keys and write at caret", () => {
   it("only Mod+Enter in the prompt generates; Enter and IME pass through", async () => {
     const t = setup();

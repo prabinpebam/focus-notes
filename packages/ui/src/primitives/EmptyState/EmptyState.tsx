@@ -1,5 +1,5 @@
-import { Icon } from "../../primitives/Icon/Icon.tsx";
-import { Button } from "../../primitives/Button/Button.tsx";
+import { Icon } from "../Icon/Icon.tsx";
+import { Button } from "../Button/Button.tsx";
 import type { IconName } from "../../icon-names.ts";
 import * as s from "./EmptyState.css.ts";
 
@@ -13,7 +13,7 @@ export interface EmptyStateProps {
   onAction?: () => void;
 }
 
-/** A known-empty result, in the content's own wrapper; never a loading or error fallback. @tier compound */
+/** A known-empty result, in the content's own wrapper; never a loading or error fallback. @tier primitive */
 export function EmptyState({ title, detail, icon = "folder", size = "section", tone = "neutral", actionLabel, onAction }: EmptyStateProps) {
   return <div className={`${s.root} ${s.size[size]}`} data-tone={tone}>
     <span className={s.tile} aria-hidden="true"><Icon name={icon} size="l" /></span>

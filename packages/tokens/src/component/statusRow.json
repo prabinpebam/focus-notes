@@ -1,4 +1,8 @@
 { "cmp": { "statusRow": {
+  "summaryRadius": { "$type": "dimension", "$value": "{radius.small}" },
+  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
   "gap": { "$type": "dimension", "$value": "{space.s}" },
   "paddingBlock": { "$type": "dimension", "$value": "{space.s}" },
   "paddingInline": { "$type": "dimension", "$value": "{space.m}" },

@@ -1,4 +1,4 @@
-{ "cmp": { "notificationStack": {
+{ "cmp": { "notificationRegion": {
   "gap": { "$type": "dimension", "$value": "{space.s}", "$description": "Between stacked pills; the newest sits nearest the bottom edge (F3)." },
   "maxWidth": { "$type": "dimension", "$value": "{layout.dialogS}", "$description": "The stack is as wide as its widest pill, up to a toast's width." },
   "moreText": { "$type": "color", "$value": "{color.textMuted}", "$description": "The waiting count, +2 more." },

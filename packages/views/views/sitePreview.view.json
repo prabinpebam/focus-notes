@@ -8,6 +8,7 @@
     "vm.sharingPreview"
   ],
   "overlay": true,
+  "focus": "sitePreviewClose",
   "root": {
     "type": "Stack",
     "children": [
@@ -89,6 +90,7 @@
                                 "children": [
                                   {
                                     "type": "Button",
+                                    "id": "sitePreviewClose",
                                     "props": {
                                       "label": {
                                         "t": "site.preview.close"
@@ -186,7 +188,7 @@
                           {
                             "type": "Text",
                             "when": {
-                              "get": "vm.sharingPreview.problem"
+                              "expr": { "!=": [{ "get": "vm.sharingPreview.problem" }, ""] }
                             },
                             "props": {
                               "value": {
@@ -252,6 +254,11 @@
                                         },
                                         "as": "nav",
                                         "key": "nav.id",
+                                        "empty": {
+                                          "type": "EmptyState",
+                                          "props": { "title": { "t": "uiStates.empty.navigation" }, "detail": { "t": "uiStates.empty.navigationDetail" }, "actionLabel": { "t": "uiStates.empty.addLink" }, "icon": "link", "size": "section" },
+                                          "on": { "action": { "run": "sharing.previewFiles" } }
+                                        },
                                         "render": {
                                           "type": "Button",
                                           "props": {
@@ -361,6 +368,11 @@
                                             },
                                             "as": "s",
                                             "key": "s.id",
+                                            "empty": {
+                                              "type": "EmptyState",
+                                              "props": { "title": { "t": "uiStates.empty.sections" }, "detail": { "t": "uiStates.empty.sectionsDetail" }, "actionLabel": { "t": "uiStates.empty.addSection" }, "icon": "folder", "size": "section" },
+                                              "on": { "action": { "run": "sharing.previewFiles" } }
+                                            },
                                             "render": {
                                               "type": "ItemCard",
                                               "props": {
@@ -400,6 +412,11 @@
                                             },
                                             "as": "a",
                                             "key": "a.id",
+                                            "empty": {
+                                              "type": "EmptyState",
+                                              "props": { "title": { "t": "uiStates.empty.published" }, "detail": { "t": "uiStates.empty.publishedDetail" }, "actionLabel": { "t": "uiStates.empty.chooseNote" }, "icon": "document", "size": "section" },
+                                              "on": { "action": { "run": "sharing.previewFiles" } }
+                                            },
                                             "render": {
                                               "type": "ItemCard",
                                               "props": {
@@ -505,6 +522,11 @@
                                             },
                                             "as": "a",
                                             "key": "a.id",
+                                            "empty": {
+                                              "type": "EmptyState",
+                                              "props": { "title": { "t": "uiStates.empty.published" }, "detail": { "t": "uiStates.empty.publishedDetail" }, "actionLabel": { "t": "uiStates.empty.chooseNote" }, "icon": "document", "size": "section" },
+                                              "on": { "action": { "run": "sharing.previewFiles" } }
+                                            },
                                             "render": {
                                               "type": "ItemCard",
                                               "props": {
@@ -719,7 +741,7 @@
               {
                 "type": "Text",
                 "when": {
-                  "get": "vm.sharingPreview.problem"
+                  "expr": { "!=": [{ "get": "vm.sharingPreview.problem" }, ""] }
                 },
                 "props": {
                   "value": {

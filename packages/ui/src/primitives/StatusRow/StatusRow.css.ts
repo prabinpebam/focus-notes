@@ -26,7 +26,7 @@ export const content = style({ display: "flex", flexDirection: "column", gap: t.
 export const actions = style({ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: t.actionGap });
 export const details = style({ fontSize: t.detailSize, color: t.detail, overflowWrap: "anywhere" });
 export const summary = style({
-  cursor: "pointer", borderRadius: tokens.radius.small,
-  selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: tokens.border.focus, outlineColor: tokens.color.focusRing, outlineOffset: tokens.border.focusOffset } },
+  cursor: "pointer", borderRadius: t.summaryRadius,
+  selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusOffset } },
 });
 export const detailsBody = style({ display: "block", marginBlockStart: t.actionGap });

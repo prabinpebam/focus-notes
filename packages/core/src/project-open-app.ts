@@ -153,6 +153,7 @@ export function registerProjectOpen(ctx: {
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
     schema: { type: "object", properties: {
       open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, loading: { type: "boolean" }, recentWaiting: { type: "boolean" }, entriesWaiting: { type: "boolean" }, error: text,
+      emptyTitle: text, emptyDetail: text, emptyAction: text, emptyRecentTitle: text, emptyRecentDetail: text, emptyRecentAction: text,
       githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
       repos: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
       recent: { type: "array", items: item },
@@ -173,10 +174,23 @@ export function registerProjectOpen(ctx: {
         recent,
         recentWaiting: state.loading && recent.length === 0,
         entriesWaiting: state.loading && entries.length === 0,
+        emptyTitle: ctx.catalog.format(query ? "uiStates.empty.matches" : "uiStates.empty.projects"),
+        emptyDetail: ctx.catalog.format(query ? "uiStates.empty.matchesDetail" : "uiStates.empty.projectsDetail"),
+        emptyAction: ctx.catalog.format(query ? "uiStates.empty.clearSearch" : "uiStates.empty.openProject"),
+        emptyRecentTitle: ctx.catalog.format(query ? "uiStates.empty.matches" : "uiStates.empty.recent"),
+        emptyRecentDetail: ctx.catalog.format(query ? "uiStates.empty.matchesDetail" : "uiStates.empty.recentDetail"),
+        emptyRecentAction: ctx.catalog.format(query ? "uiStates.empty.clearSearch" : "uiStates.empty.openProject"),
         githubOpen: github.open, githubLoading: github.loading, githubWaiting: github.loading && github.repos.length === 0, githubPending: Boolean(github.pending),
         githubStatus: github.pending ? ctx.catalog.format("project.github.cloning", { name: github.pending }) : "", githubError: github.error,
         repos: github.repos.map((r) => ({ id: `${r.owner}/${r.name}`, label: r.name, description: ctx.catalog.format("project.github.repo", { owner: r.owner, private: String(r.private) }), busy: github.pending === r.name })),
       };
+    },
+  });
+  commands.register({
+    id: "projects.emptyAction", title: "project.openProject",
+    run: async () => {
+      if (state.query) { state.query = ""; changed(); }
+      else await commands.run("projects.choose");
     },
   });
   return { start: () => refresh(true) };

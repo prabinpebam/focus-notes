@@ -5080,7 +5080,7 @@
             }
           },
           {
-            "type": "Text",
+            "type": "Stack",
             "when": {
               "expr": {
                 "and": [
@@ -5093,14 +5093,20 @@
                 ]
               }
             },
-            "props": {
-              "value": {
-                "get": "vm.files.emptyText"
+            "children": [
+              {
+                "type": "EmptyState",
+                "when": { "expr": { "==": [{ "get": "vm.files.filter" }, ""] } },
+                "props": { "title": { "t": "uiStates.empty.notes" }, "detail": { "t": "uiStates.empty.notesDetail" }, "actionLabel": { "t": "command.note.new" }, "icon": "newNote", "size": "section" },
+                "on": { "action": { "run": "files.newNote" } }
               },
-              "role": "caption",
-              "tone": "muted",
-              "announce": true
-            }
+              {
+                "type": "EmptyState",
+                "when": { "expr": { "!=": [{ "get": "vm.files.filter" }, ""] } },
+                "props": { "title": { "t": "uiStates.empty.matches" }, "detail": { "t": "uiStates.empty.matchesDetail" }, "actionLabel": { "t": "uiStates.empty.clearSearch" }, "icon": "search", "size": "component" },
+                "on": { "action": { "run": "files.setFilter", "args": { "value": "" } } }
+              }
+            ]
           },
           {
             "type": "Stack",

@@ -1,4 +1,6 @@
 { "cmp": { "commitMark": {
+  "complete": { "$type": "number", "$value": "{progress.complete}" },
+  "visible": { "$type": "number", "$value": "{opacity.full}" },
   "size": { "$type": "dimension", "$value": "{size.iconM}", "$description": "The trailing slot: one fixed box that holds the spinner, the tick or the error icon in turn, so nothing shifts (F2)." },
   "stroke": { "$type": "dimension", "$value": "{border.focus}", "$description": "The tick's and the circle's line." },
   "borderStroke": { "$type": "dimension", "$value": "{border.focus}", "$description": "The inset progress border on a compact control; never takes room from its label." },

@@ -19,6 +19,33 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+test("known-empty wrappers keep their first actions local and filtered Open can clear its search", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  try {
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "AI", exact: true }).click();
+    await expect(settings.getByText("No AI connections", { exact: true })).toBeVisible();
+    await expect(settings.getByText("Connect an app or API you already use.", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Add connection", exact: true }).click();
+    await expect(settings.getByText("No AI connections", { exact: true })).not.toBeVisible();
+    await settings.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(settings.getByText("No AI connections", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Close", exact: true }).click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true }).or(l.page.getByRole("region", { name: "Open", exact: true }));
+    await expect(open).toBeVisible();
+    const search = open.getByRole("searchbox", { name: "Find a file or project", exact: true });
+    await search.fill("No matching projects");
+    await expect(open.getByText("No matches", { exact: true }).first()).toBeVisible();
+    await open.getByRole("button", { name: "Clear search", exact: true }).first().click();
+    await expect(search).toHaveValue("");
+    await expect(open.getByText("No matches", { exact: true })).toHaveCount(0);
+    await expect(open).toBeVisible();
+  } finally { await closeTestApp(l); }
+});
+
 test("a rejected settings write is reported and Retry persists the requested value", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

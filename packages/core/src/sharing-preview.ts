@@ -110,6 +110,12 @@ export function registerSharingPreview(ctx: {
     });
   });
   reg<Record<string, never>>("sharing.previewClose", () => { if (!state.busy) { set({ open: false }); settings(true); } });
+  reg<Record<string, never>>("sharing.previewFiles", async () => {
+    if (state.busy) return;
+    set({ open: false });
+    settings(false);
+    if (!store.state.ui.files.open) await commands.run("files.open");
+  });
   reg<Record<string, never>>("sharing.previewApply", async () => {
     requireLocal();
     await busy("sharing.previewSave", "sharing.preview.saving", async () => {

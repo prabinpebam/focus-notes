@@ -1,4 +1,8 @@
 { "cmp": { "openItem": {
+  "hitLayer": { "$type": "number", "$value": "{layer.mask}" },
+  "controlLayer": { "$type": "number", "$value": "{layer.contextual}" },
+  "tintLayer": { "$type": "number", "$value": "{layer.underlay}" },
+  "visible": { "$type": "number", "$value": "{opacity.full}" },
   "$description": "A project card or a recent file row in Open (owner, 4 November): the whole item opens it, pin sits top right on hover, a project's folder path shows in File Explorer or Finder.",
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
   "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },

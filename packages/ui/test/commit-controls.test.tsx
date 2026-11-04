@@ -7,9 +7,32 @@ import { TextField } from "../src/primitives/TextField/TextField.tsx";
 import { ProjectMark } from "../src/primitives/ProjectMark/ProjectMark.tsx";
 import { PickerButton } from "../src/primitives/PickerButton/PickerButton.tsx";
 import { Slider } from "../src/primitives/Slider/Slider.tsx";
+import { MenuButton } from "../src/primitives/MenuButton/MenuButton.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => vi.useRealTimers());
+
+it("keeps a compact busy menu focusable and inert without reopening it when the operation ends", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const render = (busy: boolean) => act(() => root.render(createElement(MenuButton, {
+    label: "Copy again", variant: "text", busy, sections: [{ id: "copy", items: [{ id: "link", label: "Copy link" }] }],
+  })));
+  try {
+    render(false);
+    const button = host.querySelector("button")!;
+    button.focus();
+    render(true);
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    expect(button.disabled).toBe(false);
+    act(() => button.click());
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    render(false);
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+  } finally { act(() => root.unmount()); host.remove(); }
+});
 
 it("previews slider keys immediately, saves once after a 500 ms pause or blur, and retains the focusable thumb while pending", async () => {
   vi.useFakeTimers();

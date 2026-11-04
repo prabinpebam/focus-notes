@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **78 registered contracts**: **51 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **17 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **82 registered contracts**: **54 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **18 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch</h2>
 
@@ -43,57 +43,60 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**78 registered contracts:** 51 primitives, 5 host components, 17 layouts, 1 block component, 4 compound components.
+**82 registered contracts:** 54 primitives, 5 host components, 18 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
+| EmptyState | primitive | `rest` | 4 | None |
+| OpenItem | primitive | `rest`, `selected` | 30 | None |
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 51 | `hover`, `pressed`, `focusVisible` |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 56 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
 | Divider | primitive | `rest` | 2 | None |
 | PopoverPanel | primitive | `closed`, `open` | 8 | `open` |
-| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 9 | None |
+| MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked`, `busy` | 10 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
-| SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 5 | `hover`, `focusVisible` |
+| SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible`, `pending`, `confirmed`, `failed` | 9 | `hover`, `focusVisible` |
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
-| Skeleton | primitive | `rest` | 6 | None |
+| CommitMark | primitive | `rest`, `pending`, `confirmed`, `failed` | 5 | None |
+| Skeleton | primitive | `rest` | 8 | None |
 | LiveRegion | primitive | `rest` | 1 | None |
-| Toast | primitive | `rest`, `paused`, `focusVisible` | 2 | `paused`, `focusVisible` |
+| Toast | primitive | `rest`, `paused`, `focusVisible` | 5 | `paused`, `focusVisible` |
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
-| TextField | primitive | `rest`, `focused`, `invalid` | 13 | `focused` |
-| PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 2 | `hover`, `pressed`, `focusVisible` |
+| TextField | primitive | `rest`, `focused`, `invalid`, `pending`, `confirmed`, `failed` | 17 | `focused` |
+| PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 6 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen` | 2 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
 | WindowControls | primitive | `hidden`, `shown`, `buttonHover`, `closeHover`, `focusVisible`, `layoutsOpen`, `zoneHover` | 3 | `buttonHover`, `focusVisible`, `zoneHover` |
-| ThemeGallery | primitive | `rest`, `hover`, `selected`, `focusVisible`, `previewing` | 2 | `hover`, `focusVisible` |
-| Slider | primitive | `rest`, `hover`, `dragging`, `focusVisible` | 3 | `hover`, `dragging`, `focusVisible` |
-| ColorField | primitive | `rest`, `focused`, `invalid` | 2 | `focused` |
+| ThemeGallery | primitive | `rest`, `hover`, `selected`, `focusVisible`, `previewing`, `pending`, `confirmed`, `failed` | 6 | `hover`, `focusVisible` |
+| Slider | primitive | `rest`, `hover`, `dragging`, `focusVisible`, `pending`, `confirmed`, `failed` | 6 | `hover`, `dragging`, `focusVisible` |
+| ColorField | primitive | `rest`, `focused`, `invalid`, `pending`, `confirmed`, `failed` | 6 | `focused` |
 | AppMark | primitive | `rest` | 3 | None |
 | StepMark | primitive | `rest` | 9 | None |
 | ItemCard | primitive | `rest`, `selected`, `disabled` | 10 | None |
 | SaveState | primitive | `rest`, `hover`, `pressed`, `focusVisible`, `savedLocal`, `pending`, `syncing`, `synced`, `offline`, `error` | 6 | `hover`, `pressed`, `focusVisible` |
 | StepDots | primitive | `rest` | 3 | None |
-| StatusRow | primitive | `rest` | 5 | None |
+| StatusRow | primitive | `rest` | 6 | None |
 | CodeBlock | primitive | `rest` | 2 | None |
 | VersionCompare | primitive | `rest` | 1 | None |
 | StrengthMeter | primitive | `rest` | 5 | None |
-| Switch | primitive | `rest`, `checked`, `disabled`, `hover`, `focusVisible` | 4 | `hover`, `focusVisible` |
+| Switch | primitive | `rest`, `checked`, `disabled`, `hover`, `focusVisible`, `pending`, `confirmed`, `failed` | 8 | `hover`, `focusVisible` |
 | ProgressBar | primitive | `rest` | 3 | None |
 | DatePicker | primitive | `rest`, `focused`, `open`, `invalid`, `readOnly` | 4 | `focused`, `open` |
-| ProjectMark | primitive | `rest`, `selected` | 39 | None |
-| ImageFrame | primitive | `rest`, `selected` | 10 | None |
-| FontChoice | primitive | `rest`, `selected` | 7 | None |
+| ProjectMark | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 43 | None |
+| ImageFrame | primitive | `rest`, `selected`, `broken` | 11 | None |
+| FontChoice | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 11 | None |
 | ProjectPill | primitive | `rest` | 27 | None |
-| PickerButton | primitive | `rest`, `selected` | 22 | None |
+| PickerButton | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 26 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -103,13 +106,14 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | BlockHandle | host component | `hidden`, `shown`, `pressed`, `menuOpen`, `dragging` | 0 | `hidden` |
 | WindowFrame | host component | `rest`, `bandHover`, `fullScreenHidden`, `moving`, `resizing`, `menuOpen` | 0 | `bandHover`, `fullScreenHidden` |
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
+| NotificationRegion | layout | `rest` | 1 | None |
 | Stack | layout | `rest` | 18 | None |
 | Inline | layout | `rest` | 19 | None |
 | Columns | layout | `rest` | 2 | None |
-| Surface | layout | `rest` | 25 | None |
-| Layer | layout | `rest` | 19 | None |
+| Surface | layout | `rest` | 29 | None |
+| Layer | layout | `rest` | 20 | None |
 | Center | layout | `rest` | 11 | None |
-| AppRoot | layout | `rest` | 29 | None |
+| AppRoot | layout | `rest` | 43 | None |
 | ToolbarRow | layout | `rest` | 1 | None |
 | Field | layout | `rest`, `error` | 2 | None |
 | Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
@@ -223,6 +227,9 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **MorphPanel** | Implemented | `label` (required), `open`; slots `trigger` and `content`; event `openChange`. Closed it's the trigger's circle; open, the circle grows into the content's frosted shape (sizes measured from the content, `motion.morph`) while the trigger shrinks away and the content fades in after `motion.enter`. Esc and clicking outside close it, and it reverses (UI-10) | Dialog (non-modal) | The trigger's toolbar |
 | **MenuButton** | Implemented | `icon`, `label` (required), `variant` icon, pill, or text (pill and text show `text`; text adds a chevron, as in Turn into), `placement` bottom end, bottom start, or top start, `sections` (command items from a view model), event `action`. Checkable items use `menuitemcheckbox`; each item shows its shortcut. An unavailable item stays reachable by the arrow keys, says why under its label (part of its name), and does nothing when chosen, and a menu opened from the keyboard starts on its first available item; in a narrow window a submenu opens below its item (D-100, D-104). Its menu (`CommandMenu`) is also what FileTree, BlockHandle, TableControls, WindowFrame, and TextMenu open | Menu button | ⋯ menu, block menu, account pill (UI-12), Turn into |
 | **PillButton** | Implemented | `label` (required), event `press`. Muted caption text in a pill with no fill or border until pointed at or focused; full opacity, so it keeps AA contrast | Button | *Unlock* and the owner's name in the account pill (UI-12), *Use this app for yourself*, and *Read only · Copy to my notes* |
+| **EmptyState** | Implemented | `title`, `detail`, `icon`, `size` component/section/view, neutral/good `tone`, optional `actionLabel` and `action`. A sealed styled wrapper, therefore a primitive; only for known-empty results, never loading or failure | Text and optional button | Open, Files, AI, Sharing and site preview |
+| **CommitMark** | Implemented | Pending, confirmed and failed in one fixed trailing slot; compact controls reuse its own-border progress treatment. Failure actions retain Retry and Revert | Status, no colour-only meaning | Committed controls |
+| **OpenItem** | Implemented | Project card or recent-file row; open, reveal-folder and pin targets remain independent; token-only isolated hit layers | Button group | Open |
 | **ItemCard** | Implemented | `title` (required), `detail`, `badge`, `icon`, `avatar`, `initials`, `mark`, `size` m or l, `personal`, `label`, `busy`, `disabled`, `skeleton`, `autoFocus`; event `press`; a default slot for its actions. One thing shown rather than described: an account, a workspace, or an option (D-126, D-127); `cmp.itemCard.*` | Group, named by its label | The first run's account and workspace choices |
 | **AppMark** | Implemented | `size` m or l, `label`. The app icon drawn from the brand tokens, a dark tile in a dark theme (D-126, D-135); decorative unless labelled | Image | The full-window setup's hero |
 | **FontChoice** | Implemented | `font` mono, sans, serif, hyperlegible, dyslexic or system; `label`; `selected`; a toggle button drawing a large Aa and the font's name in that font, so a writing font is chosen by eye (D-316) | Toggle button | Settings → Project (mocks, awaiting approval) |
@@ -262,6 +269,10 @@ Primitives that wrap a library needing direct DOM access. They have contracts li
 | **VirtualList** | Planned | A virtualized scroller for long lists and trees | `items` (binding), `itemHeight` (token), with an item template from the view |
 
 <h2 id="layouts" data-reader-personas="design engineering">Layouts</h2>
+
+| Component | Status | Variants and key props | Pattern | Used by |
+| --- | --- | --- | --- | --- |
+| **NotificationRegion** | Implemented | Named region for three pills and a queued count; host owns queue, pausing and timers; `cmp.notificationRegion.*` | Region | Canvas notification layer above dialogs |
 
 Layout props accept only token names: `gap`, `padding`, and `inset` take `space.*` steps, `width` takes `layout.*` sizes, and alignment takes enums. Layout props may vary by size class (`{ "compact": "s", "default": "m" }`) where the contract allows it.
 

@@ -1,5 +1,6 @@
 {
   "progress": {
+    "complete": { "$type": "number", "$value": 1, "$description": "A complete normalized progress path." },
     "borderArc": {
       "$type": "number",
       "$value": 0.22,
@@ -691,6 +692,7 @@
   },
   "layer": {
     "$type": "number",
+    "underlay": { "$value": -1, "$description": "A local isolated surface's background, below its hit area." },
     "$description": "The stacking order (D-207). A surface takes its layer from its role, never from what it happens to overlap: what's drawn on the note, the window's chrome, persistent panels, transient surfaces pinned to the note, modal dialogs, menus and popovers opened from a control, toasts, tooltips.",
     "canvas": {
       "$value": 0,

@@ -3,6 +3,7 @@ import { tokens } from "@focus-notes/tokens";
 import { controlMetrics, floatingControlSurface } from "../control.css.ts";
 
 const t = tokens.cmp.menuButton;
+export const busyAnchor = style({ position: "relative" });
 
 export const popover = style({
   backgroundColor: `color-mix(in srgb, ${t.background} calc(${t.opacity} * 100%), transparent)`,

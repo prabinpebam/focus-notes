@@ -497,7 +497,8 @@
                                                 ]
                                               },
                                               "props": {
-                                                "disabled": { "expr": { "==": [{ "get": "vm.project.fontCommit" }, "pending"] } },
+                                                "busy": { "expr": { "==": [{ "get": "vm.project.fontCommit" }, "pending"] } },
+                                                "feedback": "border",
                                                 "label": {
                                                   "t": "project.settings.reset"
                                                 },
@@ -691,7 +692,8 @@
                                                 "label": {
                                                   "t": "project.settings.reset"
                                                 },
-                                                "disabled": { "expr": { "==": [{ "get": "vm.project.themeCommit" }, "pending"] } },
+                                                "busy": { "expr": { "==": [{ "get": "vm.project.themeCommit" }, "pending"] } },
+                                                "feedback": "border",
                                                 "variant": "subtle",
                                                 "size": "s",
                                                 "icon": "undo"
@@ -1180,12 +1182,13 @@
                           ]
                         },
                         "empty": {
-                          "type": "Text",
+                          "type": "EmptyState",
+                          "when": { "get": "vm.ai.empty" },
                           "props": {
-                            "value": {
-                              "t": "ai.empty"
-                            }
-                          }
+                            "title": { "t": "uiStates.empty.ai" }, "detail": { "t": "uiStates.empty.aiDetail" },
+                            "actionLabel": { "t": "ai.add" }, "icon": "sparkle", "size": "section"
+                          },
+                          "on": { "action": { "run": "ai.add" } }
                         }
                       },
                       {
@@ -2147,7 +2150,7 @@
                       {
                         "type": "StatusRow",
                         "when": {
-                          "get": "vm.sharingSettings.status"
+                          "expr": { "!=": [{ "get": "vm.sharingSettings.status" }, ""] }
                         },
                         "props": {
                           "message": {
@@ -2172,7 +2175,7 @@
                       {
                         "type": "Text",
                         "when": {
-                          "get": "vm.sharingSettings.problem"
+                          "expr": { "!=": [{ "get": "vm.sharingSettings.problem" }, ""] }
                         },
                         "props": {
                           "value": {
@@ -2235,7 +2238,7 @@
                                           "get": "row.copyMenu"
                                         },
                                         "placement": "bottom end",
-                                        "disabled": {
+                                        "busy": {
                                           "get": "vm.sharingSettings.busy"
                                         }
                                       },
@@ -2267,7 +2270,7 @@
                                           "get": "row.extendMenu"
                                         },
                                         "placement": "bottom end",
-                                        "disabled": {
+                                        "busy": {
                                           "get": "vm.sharingSettings.busy"
                                         }
                                       },
@@ -2292,9 +2295,10 @@
                                           "t": "share.row.withdraw"
                                         },
                                         "size": "s",
-                                        "disabled": {
+                                        "busy": {
                                           "get": "vm.sharingSettings.busy"
-                                        }
+                                        },
+                                        "feedback": "border"
                                       },
                                       "on": {
                                         "press": {
@@ -2340,13 +2344,12 @@
                               ]
                             },
                             "empty": {
-                              "type": "Text",
+                              "type": "EmptyState",
                               "props": {
-                                "value": {
-                                  "t": "share.list.empty"
-                                },
-                                "tone": "muted"
-                              }
+                                "title": { "t": "uiStates.empty.shares" }, "detail": { "t": "uiStates.empty.sharesDetail" },
+                                "actionLabel": { "t": "uiStates.empty.openFiles" }, "icon": "share", "size": "section"
+                              },
+                              "on": { "action": { "run": "sharing.previewFiles" } }
                             }
                           }
                         ]
@@ -4968,7 +4971,7 @@
               {
                 "type": "Text",
                 "when": {
-                  "get": "vm.sharingSettings.problem"
+                  "expr": { "!=": [{ "get": "vm.sharingSettings.problem" }, ""] }
                 },
                 "props": {
                   "value": {
@@ -5441,7 +5444,7 @@
               {
                 "type": "Text",
                 "when": {
-                  "get": "vm.sharingPeople.problem"
+                  "expr": { "!=": [{ "get": "vm.sharingPeople.problem" }, ""] }
                 },
                 "props": {
                   "value": {

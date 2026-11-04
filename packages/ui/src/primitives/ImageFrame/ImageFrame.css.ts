@@ -1,14 +1,14 @@
 import { createVar, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
+const t = tokens.cmp.imageFrame;
+
 export const broken = style({
   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-  gap: tokens.space.s, padding: tokens.space.l, minHeight: tokens.size.emptySection,
-  color: tokens.color.textMuted, backgroundColor: tokens.color.surfaceSunken,
-  fontFamily: tokens.font.ui, fontSize: tokens.font.uiSecondary, textAlign: "center", boxSizing: "border-box",
+  gap: t.brokenGap, padding: t.brokenPadding, minHeight: t.brokenHeight,
+  color: t.brokenText, backgroundColor: t.brokenBackground,
+  fontFamily: t.brokenFont, fontSize: t.brokenSize, textAlign: "center", boxSizing: "border-box",
 });
-
-const t = tokens.cmp.imageFrame;
 
 export const frame = style({ display: "flex", flexDirection: "column", alignItems: "center", gap: t.gap, minWidth: 0 });
 export const mode = styleVariants({
