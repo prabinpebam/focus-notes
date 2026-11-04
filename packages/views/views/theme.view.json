@@ -633,17 +633,18 @@
                           ]
                         },
                         "empty": {
-                          "type": "StatusRow",
-                          "props": {
-                            "message": {
-                              "t": "colors.allPass"
-                            },
-                            "tone": "success"
-                          }
+                          "type": "Inline",
+                          "children": []
                         }
                       },
                       {
+                        "type": "StatusRow",
+                        "when": { "expr": { "!": { "get": "vm.themeManager.colors.failing" } } },
+                        "props": { "message": { "get": "vm.themeManager.colors.summary" }, "tone": "success" }
+                      },
+                      {
                         "type": "Text",
+                        "when": { "get": "vm.themeManager.colors.failing" },
                         "props": {
                           "value": {
                             "get": "vm.themeManager.colors.summary"

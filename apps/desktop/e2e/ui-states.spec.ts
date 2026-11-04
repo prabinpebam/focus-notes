@@ -1221,6 +1221,37 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
   } finally { await closeTestApp(l); }
 });
 
+test("Colour contrast all-done replaces failures with one success row and keeps the editor intact", async () => {
+  const dirs = tempDirs(), note = join(dirs.docs, "colours.md"), before = "# Colour review\n\nKeep these exact note bytes.\n";
+  writeFileSync(note, before);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", appearance: "light", lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("Keep these exact note bytes.");
+    const editorNode = await editor.elementHandle();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+    await settings.getByRole("button", { name: "Open theme manager", exact: true }).click();
+    const theme = l.page.getByRole("complementary", { name: "Theme", exact: true });
+    await theme.getByRole("tab", { name: "Edit colors", exact: true }).click();
+    const good = theme.locator("[data-status-row=success]").filter({ hasText: "Every pair is easy to read" });
+    await expect(good).toBeVisible();
+    await expect(good.getByRole("button")).toHaveCount(0);
+    const text = theme.getByRole("textbox", { name: "Text", exact: true });
+    await text.fill("#b5b0a8"); await text.press("Enter");
+    await expect(good).toHaveCount(0);
+    await theme.getByRole("button", { name: "Fix Text", exact: true }).click();
+    await expect(good).toBeVisible();
+    await expect(theme.getByRole("status").filter({ hasText: /^Every pair is easy to read$/ })).toHaveCount(1);
+    await expect(good.getByRole("button")).toHaveCount(0);
+    expect(await editorNode!.evaluate(el => el.isConnected)).toBe(true);
+    expect(readFileSync(note, "utf8")).toBe(before);
+    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+  } finally { await closeTestApp(l); }
+});
+
 test("same-project Open retains the current note after a rejected read and closes only after accepted Retry", async () => {
   const dirs = tempDirs();
   const note = join(dirs.docs, "current.md"), target = join(dirs.docs, "target.md");

@@ -50,3 +50,41 @@ it("renders the fourth site list's empty fallback and existing Files action with
     expect(vi.mocked(bridge.saveAppState).mock.calls).toHaveLength(saved);
   } finally { act(() => root.unmount()); host.remove(); }
 });
+
+it("replaces colour failures with the real all-done success row without an unnecessary action", async () => {
+  const bridge: PlatformBridge = {
+    platform: "windows", readNote: async () => "", writeNote: async () => {},
+    chooseNote: async () => undefined, newNotePath: async () => "", defaultNotePath: async () => "",
+    loadAppState: async () => ({ version: 1, firstRun: "done" }), saveAppState: vi.fn(),
+    systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+  };
+  const app = createApp(bridge, messages.en!);
+  await app.start();
+  await app.commands.run("theme.manager.open");
+  await app.commands.run("theme.manager.setTab", { value: "colors" });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const deps: RuntimeDeps = { app, registry, contracts: contractByType, views };
+  try {
+    await act(async () => root.render(createElement(ViewHost, { viewId: "theme", deps })));
+    const success = () => [...host.querySelectorAll("[data-status-row=success]")].filter(el => el.textContent === messages.en!["colors.allPass"]);
+    expect(success()).toHaveLength(1);
+    expect(success()[0]!.querySelectorAll("button")).toHaveLength(0);
+    const wrapper = success()[0]!.parentElement!;
+    const note = app.store.state.note;
+    const saved = vi.mocked(bridge.saveAppState).mock.calls.length;
+    await act(async () => app.commands.run("theme.color.set", { key: "text", value: "#b5b0a8" }));
+    expect(success()).toHaveLength(0);
+    expect(app.viewModels.select("vm.themeManager", app.store.state)).toMatchObject({ colors: { failing: true } });
+    expect(wrapper.isConnected).toBe(true);
+    await act(async () => app.commands.run("theme.color.fix", { key: "text" }));
+    expect(success()).toHaveLength(1);
+    expect(success()[0]!.parentElement).toBe(wrapper);
+    expect(success()[0]!.querySelector("[role=status]")?.textContent).toBe(messages.en!["colors.allPass"]);
+    expect([...host.querySelectorAll("[role=status]")].filter(el => el.textContent === messages.en!["colors.allPass"])).toHaveLength(1);
+    expect(success()[0]!.querySelectorAll("button")).toHaveLength(0);
+    expect(app.store.state.note).toBe(note);
+    expect(vi.mocked(bridge.saveAppState).mock.calls).toHaveLength(saved);
+  } finally { act(() => root.unmount()); host.remove(); }
+});
