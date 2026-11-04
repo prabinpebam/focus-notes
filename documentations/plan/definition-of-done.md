@@ -576,6 +576,22 @@ Initial fixture failures corrected only control queries: the diagnostic opt-in i
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\12834be2\Open review build.cmd`. Both distinct synthetic projects remain available. Native panel fault injection is test-only; the recovery controls are the real product. The owner's visible `f2127c67` stays open. Remaining acceptance must still be matched to the D5/D7 rows; phase 2 is not complete.
 
+### Phase-2 site empty variants, 20406d26
+
+The site has four list fallbacks, not four normally reachable empty lists. Navigation and section cards derive from the same article snapshot; the fourth fallback belongs to the selected section's article list. An empty section cannot be selected through normal navigation. A client-rendered regression explicitly selects that defensive state through the existing core command, renders the real site view and checks its cause and Choose note action. That action closes preview/Settings, opens Files and writes no appearance or draft state; no section editor or new product path was added.
+
+The native journey now checks every reachable empty cause/action against the actual 160 px section minimum and rendered height. Real public notes replace all three first-use lists; after removing only those two synthetic public files and waiting for the real watcher, a fresh preview returns to all three known-empty states without stale article content. Private sample note bytes remain unchanged.
+
+| Scoped evidence on `20406d26` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\ui-runtime\test\empty-states.test.tsx` | 1 passed: actual fourth-list client fallback, cause/action, existing Files route and no persistence |
+| `pnpm --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck`; final desktop typecheck; `pnpm check`; `git diff --check` | Passed; 780 documents, 82 components, 725 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed in the fresh worker checkout; shipping source is unchanged |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Site preview first actions"` | Final 1 passed: exact sizing/copy, three first actions, real content replacement and subsequent cleared state, unchanged private note and one native window |
+| Exact pushed candidate `20406d26` | Both Field notes and Garden notes, their distinct Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\20406d26\Open review build.cmd`. The visible `f2127c67` owner review remains open. This is bounded D5 acceptance; remaining rows are still being matched to their evidence, not silently accepted. No full suite, CI wait, main app merge, release, remote publication or real-account application write ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

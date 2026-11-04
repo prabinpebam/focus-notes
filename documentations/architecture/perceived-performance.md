@@ -64,6 +64,8 @@ The existing `fn:window.firstFrame` handshake was checked at native first run in
 
 The [native acceptance increment](../plan/definition-of-done.md#phase-2-native-recovery-and-empty-first-actions-12834be2) additionally injects an actual Settings-panel render failure in Electron, repeats local Reload, opens safe Feedback and then recovers the panel. The existing editor node, page time origin, note bytes and one-window count remain unchanged. The fault is test-only; recovery adds no reload, process restart or new network destination.
 
+The [site empty-variant evidence](../plan/definition-of-done.md#phase-2-site-empty-variants-20406d26) verifies known-empty results after actual public content is cleared and the real watcher acknowledges removal. Each reachable section keeps the 160 px token minimum. The fourth list's defensive empty-section route is client-tested separately because normal section navigation is derived from nonempty articles. These checks add no wait, network destination or latency claim.
+
 ## History recovery
 
 The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.
