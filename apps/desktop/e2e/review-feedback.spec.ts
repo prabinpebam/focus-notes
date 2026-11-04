@@ -395,7 +395,31 @@ test("Agents code Copy is an accessible top-right icon overlay without a reserve
   }
 });
 
-test("menu explanations are accessible descriptions and hover or focus tooltips, not secondary rows", async () => {
+/**
+ * The tooltip as a person sees it: fully faded in, and the topmost thing painted at its centre and
+ * at each corner, so nothing (its own menu) covers it. Hit-tested with its pointer-events briefly on
+ * and, as the open menu makes everything outside it inert (React Aria), its inertness briefly off.
+ */
+async function paintedOnTop(tooltip: Locator): Promise<{ opacity: string; covered: string[] }> {
+  return tooltip.evaluate(async (el: HTMLElement) => {
+    await new Promise((r) => setTimeout(r, 250));
+    const r = el.getBoundingClientRect();
+    const prior = { pointer: el.style.pointerEvents, inert: el.inert };
+    el.style.pointerEvents = "auto";
+    el.inert = false;
+    const inset = 3;
+    const points: [number, number][] = [[r.left + r.width / 2, r.top + r.height / 2], [r.left + inset, r.top + inset], [r.right - inset, r.top + inset], [r.left + inset, r.bottom - inset], [r.right - inset, r.bottom - inset]];
+    const covered = points.flatMap(([x, y]) => {
+      const hit = document.elementFromPoint(x, y);
+      return hit && (hit === el || el.contains(hit)) ? [] : [`${Math.round(x)},${Math.round(y)}: ${hit?.getAttribute("role") ?? hit?.tagName}`];
+    });
+    el.style.pointerEvents = prior.pointer;
+    el.inert = prior.inert;
+    return { opacity: getComputedStyle(el).opacity, covered };
+  });
+}
+
+test("menu explanations are accessible descriptions and hover or focus tooltips painted above their menu", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.docs, "Welcome.md"), "# Menu descriptions\n");
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(dirs.docs, "Welcome.md") }));
@@ -403,22 +427,55 @@ test("menu explanations are accessible descriptions and hover or focus tooltips,
   try {
     await l.page.keyboard.press("Control+.");
     await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    const menu = l.page.getByRole("menu", { name: "More", exact: true });
+    // The menu sits on its layer token, not React Aria's inline 100000 (which hid every item's tooltip).
+    expect(await menu.evaluate((m) => {
+      const popover = m.closest<HTMLElement>('[data-surface="popover"]')!;
+      return { inline: popover.style.zIndex, computed: getComputedStyle(popover).zIndex, token: getComputedStyle(document.documentElement).getPropertyValue("--fn-layer-popover").trim() };
+    })).toEqual({ inline: "", computed: "8", token: "8" });
     const item = l.page.getByRole("menuitem", { name: "Publish…", exact: true });
     const reason = "Publishing is local only in this preview.";
+    const tip = l.page.getByRole("tooltip", { name: reason, exact: true });
     await expect(item).toHaveAccessibleDescription(reason);
+    await expect(item).toHaveAttribute("aria-disabled", "true");
     const description = item.getByText(reason, { exact: true });
     expect(await description.evaluate(el => {
       const wrapper = el.closest<HTMLElement>('[style*="clip"]');
       return Boolean(wrapper && wrapper.offsetWidth <= 1 && wrapper.offsetHeight <= 1);
     })).toBe(true);
+
+    // Keyboard focus shows it at once, painted over the menu, and moving on hides it.
     await item.focus();
-    await expect(l.page.getByRole("tooltip", { name: reason, exact: true })).toBeVisible();
+    await expect(tip).toBeVisible();
+    expect(await paintedOnTop(tip)).toEqual({ opacity: "1", covered: [] });
     await l.page.keyboard.press("ArrowDown");
-    await expect(l.page.getByRole("tooltip", { name: reason, exact: true })).toHaveCount(0);
-    await item.hover();
-    await expect(l.page.getByRole("tooltip", { name: reason, exact: true })).toBeVisible();
-    await expect(item).toHaveAttribute("aria-disabled", "true");
+    await expect(tip).toHaveCount(0);
+
+    // A real pointer resting on a disabled item shows it too; it stays disabled for activation.
+    const rest = async (target: Locator) => {
+      await target.scrollIntoViewIfNeeded();
+      const b = (await target.boundingBox())!;
+      await l.page.mouse.move(b.x + 12, b.y + b.height / 2, { steps: 4 });
+    };
+    await rest(item);
+    await expect(tip).toBeVisible();
+    expect(await paintedOnTop(tip)).toEqual({ opacity: "1", covered: [] });
+    await l.page.mouse.down();
+    await l.page.mouse.up();
+    await expect(menu).toBeVisible();
+
+    // The menu's last disabled item, where the tooltip has the least room, and an enabled item with no reason.
+    const help = l.page.getByRole("menuitem", { name: "Help and docs", exact: true });
+    const helpTip = l.page.getByRole("tooltip", { name: "Help and docs arrive in a later preview", exact: true });
+    await rest(help);
+    await expect(helpTip).toBeVisible();
+    expect(await paintedOnTop(helpTip)).toEqual({ opacity: "1", covered: [] });
+    await expect(tip).toHaveCount(0);
+    await rest(l.page.getByRole("menuitem", { name: /^Settings…/ }));
+    await l.page.waitForTimeout(700);
+    await expect(l.page.getByRole("tooltip")).toHaveCount(0);
     await l.page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
   } finally {
     try { await quit(l); }
     finally {

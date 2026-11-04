@@ -45,16 +45,22 @@ export function InWindow({ children }: { children?: ReactNode }) {
   return createPortal(<UNSAFE_PortalProvider getContainer={() => el}>{children}</UNSAFE_PortalProvider>, el);
 }
 
+const POPOVER_LAYER = { zIndex: undefined } as const;
+
 /**
  * Where React Aria keeps a popover (a menu, Snap Layouts): its edge padding, measured from the page,
  * grown by the drawn window's shadow margin, so the popover stays that far inside the window
  * itself, never in the margin (D-111). (Its `boundaryElement` would mix the window's page and
  * container coordinates.) Natively, the page is the window: React Aria's own padding.
+ *
+ * It also keeps the popover on its layer token: React Aria writes `z-index: 100000` inline on every
+ * popover, which outranks the layer order (a menu would cover its own items' tooltips). Every
+ * popover spreads this, so clearing it here hands the stacking back to its class's `layer` token.
  */
-export function useWindowBoundary(): { containerPadding?: number } {
+export function useWindowBoundary(): { containerPadding?: number; style: { zIndex: undefined } } {
   const el = useSyncExternalStore(subscribe, () => windowElement, () => null);
   useSyncExternalStore(subscribe, () => windowFrame, () => "");
-  if (!el) return {};
+  if (!el) return { style: POPOVER_LAYER };
   const edge = parseFloat(getComputedStyle(el).getPropertyValue(popoverEdgeVar.replace(/^var\(|\)$/g, ""))) || 0;
-  return { containerPadding: edge + Math.max(0, el.getBoundingClientRect().top) };
+  return { containerPadding: edge + Math.max(0, el.getBoundingClientRect().top), style: POPOVER_LAYER };
 }
