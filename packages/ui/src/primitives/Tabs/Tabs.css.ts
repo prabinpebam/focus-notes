@@ -39,8 +39,16 @@ export const sideList = {
   horizontal: list.horizontal,
   vertical: style([listBase, { flexDirection: "column" }]),
 };
-/** Under the tabs, after a hairline, the footer's action at the list's own inset, as wide as its words. */
-const footerBase = style({ display: "flex", flexDirection: "column", alignItems: "flex-start", paddingBlockStart: t.footerGap, borderStyle: "solid", borderWidth: 0, borderColor: t.border, borderBlockStartWidth: t.borderWidth });
+/**
+ * Under the tabs, after a hairline, the footer's action at the list's own inset, as wide as its words.
+ * The hairline is a separator, not an enclosure: drawn on the footer's top edge, the column's gap above
+ * it and the footer's padding below it are the same space (spacing SP-11).
+ */
+const footerBase = style({
+  display: "flex", flexDirection: "column", alignItems: "flex-start", paddingBlockStart: t.footerGap,
+  backgroundImage: `linear-gradient(${t.border}, ${t.border})`, backgroundSize: `100% ${t.borderWidth}`, backgroundRepeat: "no-repeat", backgroundPosition: "top",
+  "@media": { "(forced-colors: active)": { backgroundImage: "none", paddingBlockStart: t.footerGap, borderBlockStartStyle: "solid", borderBlockStartWidth: t.borderWidth, borderColor: t.border } },
+});
 export const footer = { horizontal: footerBase, vertical: footerBase };
 const tabBase = style({
   display: "inline-flex",

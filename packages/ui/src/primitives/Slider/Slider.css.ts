@@ -28,7 +28,7 @@ export const fill = style({ ...line, width: fillWidth, backgroundColor: t.fill }
 // top is the track's center line, as the rail's is, at any UI scale (D-111).
 export const thumb = style({
   // Its 16 px dot reaches size.hit as a target, by an invisible extension (spacing SP-6).
-  "::after": hitReach(t.thumbHit, t.thumbSize, t.thumbSize),
+  "::after": hitReach(t.thumbHit, t.thumbSize, t.thumbSize, t.thumbBorderWidth),
   top: "50%",
   width: t.thumbSize,
   height: t.thumbSize,

@@ -51,7 +51,8 @@
       },
       "gap": {
         "$type": "dimension",
-        "$value": "{space.scale.m}"
+        "$value": "{space.inlineItem}",
+        "$description": "Between an item's check, label and shortcut: smaller than the space that sets its row apart from the next (spacing SP-8)."
       },
       "minWidth": {
         "$type": "dimension",
@@ -127,6 +128,11 @@
       "separator": {
         "$type": "color",
         "$value": "{color.border}"
+      },
+      "separatorSpace": {
+        "$type": "dimension",
+        "$value": "{space.stackItem}",
+        "$description": "Either side of a separator's line, inside its own box: the menu's groups sit further apart than its items (spacing SP-8)."
       },
       "separatorWidth": {
         "$type": "dimension",

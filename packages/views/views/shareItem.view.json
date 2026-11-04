@@ -75,6 +75,7 @@
                 },
                 "on": { "change": { "run": "share.item.toggleLater" } }
               },
+              { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
               { "type": "Heading", "props": { "value": { "t": "share.dialog.how" }, "level": "3" } },
               {
                 "type": "SegmentedControl",
@@ -190,7 +191,8 @@
                     ]
                   }
                 ]
-              },
+              }
+              ] },
               {
                 "type": "Text",
                 "when": { "get": "vm.shareItem.deleted" },

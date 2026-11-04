@@ -76,7 +76,7 @@ export const shortcut = style({
   "@media": { "(forced-colors: active)": { selectors: { [`${item}[data-focused] &`]: { color: t.forcedFocusedText }, [unavailable]: { color: t.textDisabled } } } },
 });
 // Its space is its own padding, the line on its content box (spacing SP-9).
-export const separator = style({ height: t.separatorWidth, boxSizing: "content-box", paddingBlock: t.padding, backgroundColor: t.separator, backgroundClip: "content-box" });
+export const separator = style({ height: t.separatorWidth, boxSizing: "content-box", paddingBlock: t.separatorSpace, backgroundColor: t.separator, backgroundClip: "content-box" });
 
 // The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).
 /** The text variant's fill: on its box, or on a bleeding text button's hit extension. */

@@ -3,7 +3,7 @@
     "resultList": {
       "gap": {
         "$type": "dimension",
-        "$value": "{space.inlinePair}"
+        "$value": "{space.stackPair}"
       },
       "padding": {
         "$type": "dimension",
@@ -23,7 +23,8 @@
       },
       "itemGap": {
         "$type": "dimension",
-        "$value": "{space.scale.m}"
+        "$value": "{space.inlinePair}",
+        "$description": "Between a result's icon and its title: a pair, so the rows read apart from each other (spacing SP-8)."
       },
       "text": {
         "$type": "color",

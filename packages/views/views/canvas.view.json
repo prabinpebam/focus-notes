@@ -450,20 +450,20 @@
                   {
                     "type": "Stack",
                     "props": {
-                      "gap": "stackItem",
+                      "gap": "stackGroup",
                       "grow": true
                     },
                     "children": [
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "inlineGroup"
+                          "gap": "inlineItem"
                         },
                         "children": [
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "inlineItem",
+                              "gap": "inlinePair",
                               "grow": true
                             },
                             "children": [
@@ -2192,7 +2192,7 @@
                                 "render": {
                                   "type": "Inline",
                                   "props": {
-                                    "gap": "inlineItem"
+                                    "gap": "inlinePair"
                                   },
                                   "children": [
                                     {

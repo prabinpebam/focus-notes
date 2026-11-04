@@ -23,11 +23,12 @@ export const ring = style({
   zIndex: t.layer,
   transitionProperty: "transform",
   transitionDuration: t.duration,
-  // The hit area grows to size.hit (32 px, 44 px with touch) without changing the visual size.
+  // The hit area grows to size.hit (32 px, 44 px with touch) without changing the visual size. It is
+  // placed from the padding box, inside the border, so the border is part of the reach (spacing SP-6).
   "::before": {
     content: '""',
     position: "absolute",
-    inset: `calc((${t.size} - ${t.hit}) / 2)`,
+    inset: `calc((${t.size} - ${t.hit}) / 2 - ${t.borderWidth})`,
     borderRadius: t.radius,
   },
   selectors: {
