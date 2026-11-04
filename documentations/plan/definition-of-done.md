@@ -656,6 +656,25 @@ The next recovery attempt must also have one outcome. After the generic/local du
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\06d4f939\Open review build.cmd`. The owner's visible `f2127c67` remains open. Phase 2 remains in progress; D8's section-tracker/local-live-outcome overlap still needs a scoped reconciliation rather than an implicit acceptance. No full suite, CI wait, main app merge, release or real-account application write ran.
 
+### Phase-2 section outcome ownership, 1d3deccf
+
+The D8 reconciliation reproduced two distinct defects: a slow section refusal could announce generic Didn't finish as well as its local live error, while a repeated refusal could leave the retained error unchanged and announce no new outcome. `section(...)` now accepts the same explicit outcome policy as other tracker operations, retaining the default for unrelated callers. Agents, item sharing and history reads request success-only tracker outcomes: their wait and legitimate Done remain, and their live error owns failure. Only an unchanged retained error gets one explicit reannouncement. Existing generation, selected-version, open-sheet and project guards remain in place.
+
+Agents also keeps its failed row mounted during Retry, using the existing StatusRow busy action and words; it no longer clears the row or replaces it with first-load skeletons. Item-sharing choices/history and history entries/previews retain their existing behavior. Read retries do not create a share or write note bytes. History restore/Undo outcome ownership is deliberately unchanged by this D8 fix.
+
+| Scoped evidence on `1d3deccf` | Result |
+| --- | --- |
+| New focused regressions before the correction | 9 failed, 1 passed, 82 not selected: reproduced generic failure overlap and missing/cleared retained outcomes |
+| `pnpm exec vitest run packages/core/test/tasks.test.ts packages/core/test/agents-app.test.ts packages/core/test/note-history.test.ts packages/core/test/share-manage.test.ts` | Final 92 passed: explicit/default modes, exact 300/500 ms failure hold, instant/slow Agents and item-sharing refusals, repeated list/older-page/version refusals, retained drafts/content, read-only Retry and successful recovery |
+| `pnpm exec tsc --project E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json --noEmit`; `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `pnpm check`; `git diff --check` | Passed; source and 4 scoped valid-fixture files, desktop and 780 documents/82 components/725 commands. Generated schemas unchanged. The unrelated older sharing-preview missing-`defaultNotePath` fixture is not repaired or counted as a green repository-wide typecheck |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "section loading uses\|Share item delays its own section\|History delays its own section"` | Final 3 passed together: native 1,100 ms read refusals cross the tracker's 1-second announcement threshold; initial and repeated outcomes appear once in observed live-region mutations, with no generic Didn't finish. Agents and sharing also repeat a retained-content refresh refusal. Same recovery nodes, busy Retry, editable choices, finite/static shimmer, usable navigation, local Git restore/Undo and exact measures are retained |
+| Exact pushed candidate `1d3deccf` | Both distinct sample projects, actual Settings schemes, Open cards and loopback repositories inspected invisibly, then closed with own-PID cleanup |
+
+**Evidence boundary:** the native observer records connected polite status text changes, including the main live region's clear/next-frame repeated-message cycle. It proves rendered announcement ownership and repetition, not a named screen-reader's spoken timing. Repeated older-page refusal is unit evidence; the native history journey repeats list and version refusals. These results close the concrete D8 overlap, not by themselves every D1–D8 acceptance clause.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\1d3deccf\Open review build.cmd`. The owner's visible `f2127c67`, gallery 5231 and docs 8787 remain unchanged. Phase 2 is in progress pending final clause-by-clause reconciliation. No full suite, CI wait, main app merge, release or real-account application write ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
