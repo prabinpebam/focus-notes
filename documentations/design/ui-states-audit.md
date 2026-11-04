@@ -8,6 +8,27 @@
 >
 > Fifteen findings are ranked below, with the missing tokens and primitives and an order of work: eight design slices for the gallery first, then nine wiring slices.
 
+## Visual review and approval
+
+**Owner direction, 4 November 13:01:** implement this audit in two phases. First show every proposed state in the gallery for visual approval; only then implement the approved slices against their Definition of Done. No tests, journeys, captures, benchmarks, CI waits or app wiring before approval. Phase 1 permits only typecheck, `ui:check` and gallery builds.
+
+**[Open the review hub](http://127.0.0.1:5231/?f=mock.uistates.hub).** Compare Before and After, then Play. Each slice offers light, dark and reduced motion. All data and timing demos are local simulations; none changes notes, settings or accounts. Reply, for example, “approve 2, 3; change 1: …”. Approval is explicit, per slice; the table below is the record.
+
+| Slice | Findings | Review link | Availability | Approval |
+| --- | --- | --- | --- | --- |
+| D1 · Notifications | F3, F4 | [Open slice 1](http://127.0.0.1:5231/?f=mock.uistates.d1) | In design | Awaiting review |
+| D2 · Fields | F1, F2 | [Open slice 2](http://127.0.0.1:5231/?f=mock.uistates.d2) | Shown in the gallery | Awaiting review |
+| D3 · Switches | F2 | [Open slice 3](http://127.0.0.1:5231/?f=mock.uistates.d3) | Shown in the gallery | Awaiting review |
+| D4 · Choices | F2 | [Open slice 4](http://127.0.0.1:5231/?f=mock.uistates.d4) | In design | Awaiting review |
+| D5 · Empty spaces | F6 | [Open slice 5](http://127.0.0.1:5231/?f=mock.uistates.d5) | In design | Awaiting review |
+| D6 · Recovery | F4, F5, F11 | [Open slice 6](http://127.0.0.1:5231/?f=mock.uistates.d6) | In design | Awaiting review |
+| D7 · Long operations | F7, F8 | [Open slice 7](http://127.0.0.1:5231/?f=mock.uistates.d7) | In design | Awaiting review |
+| D8 · Section loading | F9 | [Open slice 8](http://127.0.0.1:5231/?f=mock.uistates.d8) | In design | Awaiting review |
+
+Approval values are **Awaiting review**, **Approved** and **Changes requested**. The gallery index distinguishes an unfinished design from one available to review. The [phase-2 DoD](../plan/definition-of-done.md#ui-states-after-visual-approval) records future wiring, unit and journey evidence only; none is run in phase 1.
+
+**Two visual choices remain explicit in the first increment:** the proposed field border uses the commit colour while pending and returns to rest with the confirmed circle tick (the skill), rather than retaining a confirmed border (the audit's shorthand). The pending switch keeps its track visible with a spinner in the thumb (the audit); the skill describes replacing the control within its box. These are proposals for the owner's eye, not accepted decisions.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.
@@ -307,7 +328,7 @@ UI first, in the owner's strict-design mode: each state is drawn as a contract f
 
 <div class="slate-callout slate-callout--tip">
   <p class="slate-callout__title">Where to look</p>
-  <p>Design slices land in the gallery (<code>pnpm gallery</code>) under a <em>States</em> group in <code>packages/views/mocks/states/</code>, shown in light, dark and contrast. Each slice names the findings it answers.</p>
+  <p>Design slices land in the <a href="http://127.0.0.1:5231/?f=mock.uistates.hub">UI states review hub</a>, under <code>packages/views/mocks/ui-states/</code>, with light, dark and reduced-motion review controls. Each slice names the findings it answers.</p>
 </div>
 
 ### Design (gallery only, no wiring)
