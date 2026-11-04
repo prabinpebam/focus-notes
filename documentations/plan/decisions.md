@@ -34,7 +34,11 @@ Affects [project appearance](../experience/projects.md), [Theme manager](../desi
 
 ## Pending number (orchestrator): a visual toolbar customizer and a scan worth watching
 
-**Proposed, strict design (owner, 5 November 00:52); gallery mocks on `vq-toolbar-design`, nothing wired, awaiting the owner's sign-off. The decision number comes from the orchestrator.**
+**Design approved (owner, 5 November 02:43); gallery mocks on `vq-toolbar-design`, app integration in progress. The decision number comes from the orchestrator.**
+
+Owner feedback, verbatim: "The toolbar customization looks good. Replacing btn from toolbar, the current btn should move out much more for it to be visible and not occluded by the dragged-btn. Also, show a border for the slot to indicate that's a slot."
+
+The owner also reported "No loading state for scan pc for local AI model." and said "Rest you do as you see fit". Both approved designs now proceed to real-app integration. Slots keep a visible semantic-colour outline; the held button moves a full large-control height out of the slot, clear of the pointer ghost. Reduced motion keeps the one-second hold and switches to that displaced position without sliding.
 
 The owner's words, verbatim:
 

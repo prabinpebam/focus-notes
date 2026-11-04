@@ -37,6 +37,7 @@ export const root = style({
       // would otherwise scroll it, shifting the buttons and closing their tooltip.
       overflow: "clip",
     },
+    "&[data-open][data-preview]": { overflow: "visible" },
     // One floating thing at a time in the title bar: while the Snap Layouts picker is open (reached
     // by Tab from the toolbar), the open toolbar steps back rather than sit under it (D-119). Never
     // while it holds focus: the picker opened by the pointer resting on maximize would hide the
