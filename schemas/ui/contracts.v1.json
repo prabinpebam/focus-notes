@@ -4889,6 +4889,11 @@
           ],
           "description": "The commit track, for a field that saves on its own (F2): pending puts the commit colour on the border, locks the field and spins in the trailing slot; confirmed draws the tick; failed keeps the value, shows the error icon and `error` below with Retry and Revert. Any value reserves the trailing slot."
         },
+        "commitOnBlur": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A standalone persisted field saves on blur or Enter, not on every keystroke."
+        },
         "retryLabel": {
           "kind": "message",
           "description": "Failed: the button that saves the same value again."

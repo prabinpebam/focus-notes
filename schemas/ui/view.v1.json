@@ -4936,6 +4936,19 @@
                 }
               ]
             },
+            "commitOnBlur": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "retryLabel": {
               "anyOf": [
                 {

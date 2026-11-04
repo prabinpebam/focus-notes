@@ -29,6 +29,16 @@ export function registerProject(ctx: {
     accent: "teal", logo: "book", watermark: "off", font: "app", theme: "app",
   };
   const changed = () => store.update((state) => ({ ...state }));
+  let writing = Promise.resolve();
+  const save = (patch: Partial<ProjectSettings>) => {
+    const key = folder();
+    const fallback = settings();
+    const write = writing.then(() => ctx.persistAppState({
+      projectSettings: { ...ctx.appState().projectSettings, [key]: { ...(ctx.appState().projectSettings?.[key] ?? fallback), ...patch } },
+    }));
+    writing = write.then(() => {}, () => {});
+    return write;
+  };
   const reg = (field: string) => commands.register<{ value: unknown }>({
     id: `project.${field}`, title: "project.settings.title",
     run: async ({ value }) => {
@@ -44,8 +54,7 @@ export function registerProject(ctx: {
         accent: PROJECT_ACCENTS, logo: PROJECT_LOGOS, watermark: ["off", "on"], font: ["app", ...CONTENT_FONTS], theme: ["app", ...BUILT_IN_THEMES.map((theme) => theme.id)],
       };
       if (field !== "name" && !allowed[field]?.includes(value)) throw new Error("Invalid project setting");
-      const next = { ...settings(), [field]: value };
-      await ctx.persistAppState({ projectSettings: { ...ctx.appState().projectSettings, [folder()]: next } });
+      await save({ [field]: value });
       if (field === "font" || field === "theme") Object.assign(transient, { [`${field}Open`]: "no", [`${field}Hover`]: "" });
       changed();
     },
@@ -58,7 +67,7 @@ export function registerProject(ctx: {
       try {
         const logoSrc = await ctx.bridge.projects!.upload();
         if (logoSrc === undefined) return;
-        await ctx.persistAppState({ projectSettings: { ...ctx.appState().projectSettings, [folder()]: { ...settings(), logo: "upload", logoSrc } } });
+        await save({ logo: "upload", logoSrc });
       } catch {
         transient.uploadError = catalog.format("project.settings.uploadFailed");
       }
@@ -74,6 +83,7 @@ export function registerProject(ctx: {
   viewModels.register({
     id: "vm.project", reads: "*",
     setters: Object.fromEntries(["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)].map((field) => [field, `project.${field}`])),
+    commits: ["name", "accent", "logo", "watermark", "font", "theme"],
     schema: { type: "object", properties: {
       available: { type: "boolean" }, local: { type: "boolean" }, watermarkOn: { type: "boolean" },
       ...Object.fromEntries(["name", "accent", "logo", "logoSrc", "watermark", "font", "theme", "fontValue", "themeValue", "scopeFont", "scopeTheme", "filesHeading", ...Object.keys(transient)].map((field) => [field, text])),

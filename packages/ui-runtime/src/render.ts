@@ -173,6 +173,32 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
   const props: Record<string, unknown> = { key: node.id ?? key };
   if (node.id) props.id = node.id;
   for (const [name, v] of Object.entries(node.props ?? {})) props[name] = r.value(v, scope);
+  const committed = Object.entries(node.props ?? {}).find(([, v]) => {
+    if (!isBind(v) || !v.bind.startsWith("vm.") || !contract.props.commit) return false;
+    const [, id, ...field] = v.bind.split(".");
+    return deps.app.viewModels.get(`vm.${id}`)?.commits?.includes(field.join("."));
+  });
+  const target = committed && isBind(committed[1]) ? committed[1].bind : undefined;
+  const commit = target ? scope.state.commits.find((item) => item.target === target) : undefined;
+  const runCommit = async (command: string, value: unknown) => {
+    try {
+      await deps.app.commands.run("commit.run", { target, command, value });
+      return true;
+    } catch (error) {
+      console.error("Setting commit failed", error);
+      return false;
+    }
+  };
+  if (target && committed) {
+    props.commit = commit?.phase ?? "rest";
+    if (commit && commit.phase !== "confirmed" && node.type !== "Switch") props[committed[0]] = commit.value;
+    if (node.type === "TextField") props.commitOnBlur = true;
+    if (commit?.phase === "failed") {
+      props.error = deps.app.messages.format("commit.failed");
+      props.retryLabel = deps.app.messages.format("commit.retry");
+      props.revertLabel = deps.app.messages.format("commit.revert");
+    }
+  }
 
   for (const { event, prop, binds } of eventsOf(contract)) {
     const actions = node.on?.[event];
@@ -182,14 +208,17 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
       try {
         const eventScope = { ...scope, event: payload ?? {} };
         if (bound && isBind(bound)) {
-          const target = bound.bind;
+          const binding = bound.bind;
           const newValue = payload?.value;
-          if (target.startsWith("local.")) scope.setLocal(target.slice(6), newValue);
+          if (binding.startsWith("local.")) scope.setLocal(binding.slice(6), newValue);
           else {
-            const [, vmId, ...field] = target.split(".");
+            const [, vmId, ...field] = binding.split(".");
             const setter = deps.app.viewModels.get(`vm.${vmId}`)?.setters?.[field.join(".")];
-            if (!setter) throw new Error(`No setter registered for ${target}`);
-            if (!(await r.runCommand(setter, { value: newValue }))) return;
+            if (!setter) throw new Error(`No setter registered for ${binding}`);
+            if (target) {
+              if (deps.app.store.state.commits.some((item) => item.target === target && item.phase === "pending")) return;
+              if (!(await runCommit(setter, newValue))) return;
+            } else if (!(await r.runCommand(setter, { value: newValue }))) return;
           }
         }
         if (actions) await r.runActions(actions, eventScope);
@@ -197,6 +226,10 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
         await r.reportFailure(error);
       }
     };
+  }
+  if (target) {
+    props.onRetry = () => commit ? runCommit(commit.command, commit.value) : undefined;
+    props.onRevert = () => r.runCommand("commit.revert", { target });
   }
   // Command-driven controls get their name, icon, shortcut, and state from the registry (DSY-12).
   if (typeof props.command === "string" && deps.app.commands.has(props.command)) {
@@ -229,6 +262,7 @@ function needsOf(node: unknown, skipChildren = false): Needs {
         const [head, id] = x.split(".");
         if (head === "vm" && id) vms.add(`vm.${id}`);
         else if (head === "env") all = true;
+        if (k === "bind" && head === "vm") vms.add("vm.commits");
       } else if (k === "command") all = true;
       visit(x, false);
     }

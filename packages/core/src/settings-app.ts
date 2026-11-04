@@ -265,6 +265,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       },
     },
     setters: { section: "settings.setSection", "appearance.scale": "ui.setScale" },
+    commits: ["appearance.scale"],
     reads: ["ui.settings", "account", "sync.git", "workspace.folder", "appearance", "settingsSync"],
     select: (s) => {
       const st = s.ui.settings;

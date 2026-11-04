@@ -23,6 +23,7 @@ export const contract = defineContract({
     scrolls: { kind: "boolean", default: false, description: "With multiline: scrolls past a set height instead of growing, for read-only text to check before it's sent (the report Send feedback posts, D-203)." },
     required: { kind: "boolean", default: false, description: "Needed before its form can go: announced as required (aria), while the form says what's missing (Send feedback's Title, D-203)." },
     commit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "The commit track, for a field that saves on its own (F2): pending puts the commit colour on the border, locks the field and spins in the trailing slot; confirmed draws the tick; failed keeps the value, shows the error icon and `error` below with Retry and Revert. Any value reserves the trailing slot." },
+    commitOnBlur: { kind: "boolean", default: false, description: "A standalone persisted field saves on blur or Enter, not on every keystroke." },
     retryLabel: { kind: "message", description: "Failed: the button that saves the same value again." },
     revertLabel: { kind: "message", description: "Failed: the button that puts back the last value that was kept." },
   },

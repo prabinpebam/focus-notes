@@ -20,6 +20,8 @@ export interface ViewModelDef<S, T extends Record<string, unknown> = Record<stri
   select: (state: S) => T;
   /** Bindable fields and the command that sets each one. */
   setters?: Record<string, string>;
+  /** Standalone persisted fields that use control-local commit feedback, never transient form drafts. */
+  commits?: readonly string[];
   /**
    * The state it reads, as dotted paths ("note.key", "ui.find"), so a change anywhere else keeps
    * its value and re-renders nothing (PRF-11). "*" for one that reads command states, which can

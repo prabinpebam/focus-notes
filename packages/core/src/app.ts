@@ -11,7 +11,7 @@ import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceSt
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
 import { NotificationQueue } from "./notifications.ts";
-import { TaskTracker, busyProps, type Clock, type TaskView } from "./tasks.ts";
+import { CommitTracker, TaskTracker, busyProps, type Clock, type TaskView, type CommitView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { dirOf, joinPath, newNoteFolder } from "./workspace.ts";
@@ -156,6 +156,7 @@ export interface AppState {
   textMenu: TextMenuState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
+  commits: CommitView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
   announcement: { text: string; n: number };
 }
@@ -343,6 +344,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     window: initialWindow(bridge),
     textMenu: TEXT_MENU_CLOSED,
     tasks: [],
+    commits: [],
     announcement: { text: "", n: 0 },
   });
   const commands = new CommandRegistry<AppState>(() => store.state, (r) => store.update(r), bridge.platform);
@@ -354,6 +356,25 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
   }, options.clock);
   const clock = options.clock ?? { now: () => Date.now(), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
+  const commits = new CommitTracker(waits.confirmMinimum, (items) => store.update((s) => ({ ...s, commits: items })), clock);
+  commands.register<{ target: string; command: string; value: unknown }>({
+    id: "commit.run", title: "commit.save",
+    run: async ({ target, command, value }) => {
+      if (!commands.describe(command).enabled) throw new Error(`Setting unavailable: ${command}`);
+      await commits.run(target, command, value, () => commands.run(command, { value }));
+    },
+  });
+  commands.register<{ target: string }>({
+    id: "commit.revert", title: "commit.revert", run: ({ target }) => commits.clear(target),
+  });
+  viewModels.register({
+    id: "vm.commits", reads: ["commits"],
+    schema: { type: "object", properties: { items: { type: "array", items: { type: "object", properties: {
+      id: { type: "number" }, target: { type: "string" }, command: { type: "string" },
+      phase: { type: "string", enum: ["pending", "confirmed", "failed"] },
+    } } } } },
+    select: (s) => ({ items: s.commits.map(({ value: _value, ...item }) => item) }),
+  });
 
   // ---- toasts (IA-CMP-TOAST) ----
   const notifications = new NotificationQueue(clock, waits.toastDuration, (toasts) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts } })));

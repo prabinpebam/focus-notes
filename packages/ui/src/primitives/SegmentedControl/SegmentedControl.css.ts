@@ -3,6 +3,7 @@ import { tokens, breakpoints } from "@focus-notes/tokens";
 import { controlMetrics } from "../control.css.ts";
 
 const t = tokens.cmp.segmentedControl;
+export const wrapper = style({ display: "contents" });
 
 // Wraps the segments under the label where they don't fit beside it (the theme manager's 380 px sheet).
 // Never wider than its container (D-111): in the narrowest, its segments share the room and their

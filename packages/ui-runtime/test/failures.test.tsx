@@ -24,6 +24,39 @@ function setup() {
 }
 
 describe("view command failures (F1)", () => {
+  it("uses the commit track only for declared persisted fields, retains a failed draft and reverts without writing", async () => {
+    const { app, deps } = setup();
+    const set = vi.fn().mockRejectedValue(new Error("disk full"));
+    app.commands.register({ id: "fixture.persist", title: "gallery.action", run: set });
+    app.viewModels.register({
+      id: "vm.persisted", schema: { type: "object", properties: { value: { type: "string" } } },
+      setters: { value: "fixture.persist" }, commits: ["value"], select: () => ({ value: "confirmed" }),
+    });
+    let props: Record<string, unknown> = {};
+    deps.registry = { ...registry, TextField: (next: Record<string, unknown>) => { props = next; return null; } };
+    deps.views.v = { id: "v", root: { type: "TextField", props: { label: "Name", value: { bind: "vm.persisted.value" } } } };
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    try {
+      await act(async () => root.render(createElement(ViewHost, { viewId: "v", deps })));
+      expect(props.commitOnBlur).toBe(true);
+      await act(async () => {
+        const change = props.onChange;
+        if (typeof change !== "function") throw new Error("Missing field handler");
+        await change({ value: "my draft" });
+      });
+      expect(props).toMatchObject({ value: "my draft", commit: "failed", error: expect.any(String) });
+      expect(app.store.state.ui.toasts).toEqual([]);
+      await act(async () => {
+        const revert = props.onRevert;
+        if (typeof revert !== "function") throw new Error("Missing Revert handler");
+        await revert();
+      });
+      expect(props).toMatchObject({ value: "confirmed", commit: "rest" });
+      expect(set).toHaveBeenCalledTimes(1);
+    } finally { act(() => root.unmount()); }
+  });
+
   it("reports a rejected bound setter, keeps its exact Retry arguments, and stops follow-up actions", async () => {
     const { app, deps } = setup();
     const set = vi.fn().mockRejectedValue(new Error("disk full"));

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+import { waits } from "@focus-notes/tokens";
 import { Button, Label, Radio, RadioGroup, Toolbar } from "react-aria-components";
 import type { Option } from "../../data.ts";
 import type { IconName } from "../../icon-names.ts";
@@ -35,6 +37,27 @@ export interface SegmentedControlProps {
  * label as accessible name and tooltip; the group's label names the toolbar and isn't shown.
  */
 export function SegmentedControl({ label, options, value, orientation = "horizontal", readOnly, commit, error, retryLabel, revertLabel, onRetry, onRevert, actions = false, id, onChange, onAction }: SegmentedControlProps) {
+  const [draft, setDraft] = useState(value);
+  const keyboard = useRef(false);
+  const queued = useRef<string | undefined>(undefined);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => setDraft(value), [value]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const flush = () => {
+    clearTimeout(timer.current);
+    const next = queued.current;
+    queued.current = undefined;
+    if (next !== undefined && next !== value && commit !== "pending" && !readOnly) onChange?.({ value: next });
+  };
+  const change = (next: string) => {
+    if (!commit) return onChange?.({ value: next });
+    setDraft(next);
+    queued.current = next;
+    clearTimeout(timer.current);
+    if (keyboard.current) timer.current = setTimeout(flush, waits.commitPause);
+    else flush();
+  };
+  const chosen = commit ? draft : value;
   if (actions) {
     return (
       <Toolbar aria-label={label} orientation="horizontal" className={s.track.horizontal} {...(id ? { id } : {})}>
@@ -50,22 +73,25 @@ export function SegmentedControl({ label, options, value, orientation = "horizon
     );
   }
   return (
-    <><RadioGroup
+    <div className={s.wrapper} aria-busy={commit === "pending" || undefined} data-commit={commit}
+      onKeyDownCapture={(e) => { keyboard.current = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key); }}
+      onPointerDownCapture={() => { keyboard.current = false; }}
+      onBlurCapture={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) flush(); }}
+    ><RadioGroup
       className={s.root[orientation]}
       orientation={orientation}
-      value={value ?? null}
+      value={chosen ?? null}
       isReadOnly={Boolean(readOnly) || commit === "pending"}
       aria-disabled={commit === "pending" || undefined}
-      aria-busy={commit === "pending" || undefined}
-      onChange={(v) => onChange?.({ value: v })}
+      onChange={change}
       {...(id ? { id } : {})}
     >
       <Label className={s.label}>{label}</Label>
       <span className={s.track[orientation]}>
         {options.map((o) => (
-          <Radio key={o.id} value={o.id} className={s.segment[orientation]}>{o.label}{commit && o.id === value ? <CommitMark variant="border" state={commit} /> : null}</Radio>
+          <Radio key={o.id} value={o.id} className={s.segment[orientation]}>{o.label}{commit && o.id === chosen ? <CommitMark variant="border" state={commit} /> : null}</Radio>
         ))}
       </span>
-    </RadioGroup>{commit === "failed" && error ? <CommitFailure message={error} {...(retryLabel ? { retryLabel } : {})} {...(revertLabel ? { revertLabel } : {})} {...(onRetry ? { onRetry } : {})} {...(onRevert ? { onRevert } : {})} /> : null}</>
+    </RadioGroup>{commit === "failed" && error ? <CommitFailure message={error} {...(retryLabel ? { retryLabel } : {})} {...(revertLabel ? { revertLabel } : {})} {...(onRetry ? { onRetry } : {})} {...(onRevert ? { onRevert } : {})} /> : null}</div>
   );
 }

@@ -16,6 +16,10 @@ The notification layer uses the existing `layer.toast` token and React Aria's to
 
 The host now retains its queue, shows the first three with errors first, and coalesces repeated command failures with the latest Retry arguments. Errors and unique recovery actions require dismissal; queued pills consume no display time. Hover/focus and window inactivity pause the remaining display time without resetting it. The named notification region shows the queued count. Queue timing/priority/coalescing tests pass alongside setting-failure and runtime coverage (4 files, 15 tests); the invisible modal Retry journey also passes. Withdrawal restoration and the full four-outcome writing journey remain outstanding.
 
+The separate commit track exposes `vm.commits`, starts pending immediately and holds pending and confirmed for at least 200 ms each, without altering the delayed wait track. Only view-model fields explicitly declared as independently persisted opt in; search fields and explicit-save form drafts do not. Settings scale and bound project fields now use local recovery: failed input stays in place, Retry repeats its value, and Revert returns to the last stored value. A standalone text field saves on blur or Enter, not per keystroke. Keyboard selection in committed segmented controls waits 500 ms or blur. Project settings construct each queued patch after the preceding write, so independent changes cannot overwrite each other.
+
+Focused invisible journeys verify scale failure/Retry/reopening, notification F6 and pointer recovery with Settings open, and project-name failure with the draft retained and persisted on Retry. Remaining W4/W5 surfaces include custom action-driven accent/logo/font/theme pickers, the other app settings, AI's separate save groups, and the watermark-specific failure journey; these are not claimed as accepted.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.

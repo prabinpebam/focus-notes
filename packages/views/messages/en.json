@@ -1,4 +1,5 @@
 {
+  "commit.save": "Save change",
   "toast.queued": "{count, plural, one {1 more waiting} other {# more waiting}}",
   "toast.repeated": "{message} ({count})",
   "toast.region": "Notifications",

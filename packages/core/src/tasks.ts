@@ -30,6 +30,62 @@ export interface Clock {
   setTimeout(fn: () => void, ms: number): unknown;
   clearTimeout(handle: unknown): void;
 }
+
+export interface CommitView {
+  id: number;
+  target: string;
+  command: string;
+  value: unknown;
+  phase: "pending" | "confirmed" | "failed";
+}
+
+/** Separate from delayed wait indicators: commits show immediately and keep both visible beats. */
+export class CommitTracker {
+  #items = new Map<string, CommitView>();
+  #next = 1;
+  readonly #minimum: number;
+  readonly #change: (items: CommitView[]) => void;
+  readonly #clock: Clock;
+
+  constructor(minimum: number, change: (items: CommitView[]) => void, clock: Clock = realClock) {
+    this.#minimum = minimum;
+    this.#change = change;
+    this.#clock = clock;
+  }
+
+  async run(target: string, command: string, value: unknown, work: () => Promise<void>): Promise<void> {
+    if (this.#items.get(target)?.phase === "pending") throw new Error(`Commit already pending: ${target}`);
+    const item: CommitView = { id: this.#next++, target, command, value, phase: "pending" };
+    this.#items.set(target, item);
+    this.#emit();
+    const started = this.#clock.now();
+    const hold = () => new Promise<void>((resolve) => this.#clock.setTimeout(resolve, Math.max(0, this.#minimum - (this.#clock.now() - started))));
+    try {
+      await work();
+      await hold();
+      item.phase = "confirmed";
+      this.#emit();
+      this.#clock.setTimeout(() => {
+        if (this.#items.get(target) !== item) return;
+        this.#items.delete(target);
+        this.#emit();
+      }, this.#minimum);
+    } catch (error) {
+      await hold();
+      item.phase = "failed";
+      this.#emit();
+      throw error;
+    }
+  }
+
+  clear(target: string): void {
+    if (this.#items.get(target)?.phase === "pending") throw new Error(`Commit still pending: ${target}`);
+    this.#items.delete(target);
+    this.#emit();
+  }
+
+  #emit(): void { this.#change([...this.#items.values()].map((item) => ({ ...item }))); }
+}
 const realClock: Clock = {
   now: () => (typeof performance !== "undefined" ? performance.now() : Date.now()),
   setTimeout: (fn, ms) => setTimeout(fn, ms),

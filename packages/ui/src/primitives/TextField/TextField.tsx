@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FieldError, Input, Label, Text, TextArea, TextField as AriaTextField } from "react-aria-components";
 import { CommitFailure, CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
 import * as s from "./TextField.css.ts";
@@ -36,6 +36,8 @@ export interface TextFieldProps {
    * Retry and Revert). Any value reserves the trailing slot, so nothing shifts when it changes.
    */
   commit?: CommitState;
+  /** Standalone persisted values save on blur or Enter; typing remains an editable local draft. */
+  commitOnBlur?: boolean;
   retryLabel?: string;
   revertLabel?: string;
   id?: string;
@@ -47,19 +49,25 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, commit, retryLabel, revertLabel, id, onRetry, onRevert, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, commit, commitOnBlur = false, retryLabel, revertLabel, id, onRetry, onRevert, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const area = useRef<HTMLTextAreaElement | null>(null);
+  const [draft, setDraft] = useState(value ?? "");
+  useEffect(() => setDraft(value ?? ""), [value]);
+  const save = () => {
+    if (commitOnBlur && commit !== "pending" && !readOnly && draft !== (value ?? "")) onChange?.({ value: draft });
+  };
   useEffect(() => {
     if (focusRequest) (input.current ?? area.current)?.focus();
   }, [focusRequest]);
   return (
     <AriaTextField
       className={`${s.root} ${s.width[width]}`}
-      value={value ?? ""}
-      onChange={(v) => onChange?.({ value: v })}
+      value={commitOnBlur ? draft : value ?? ""}
+      onChange={(v) => commitOnBlur ? setDraft(v) : onChange?.({ value: v })}
+      onBlur={save}
       type={type}
-      isInvalid={Boolean(invalid)}
+      isInvalid={Boolean(invalid) || commit === "failed"}
       isReadOnly={Boolean(readOnly) || commit === "pending"}
       {...(commit ? { "data-commit": commit } : {})}
       isRequired={Boolean(required)}
@@ -78,6 +86,16 @@ export function TextField({ label, value, placeholder, description, type = "text
         autoCorrect="off"
         autoComplete={type === "password" ? "off" : "on"}
         onKeyDown={(e) => {
+          if (e.key === "Escape" && commitOnBlur && draft !== (value ?? "")) {
+            e.preventDefault();
+            e.stopPropagation();
+            setDraft(value ?? "");
+          }
+          if (e.key === "Enter" && !e.nativeEvent.isComposing && commitOnBlur) {
+            e.preventDefault();
+            save();
+            return;
+          }
           if (e.key === "Enter" && !e.nativeEvent.isComposing && onSubmit && !readOnly) {
             e.preventDefault();
             onSubmit();
