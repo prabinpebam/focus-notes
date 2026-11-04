@@ -61,9 +61,18 @@
           ] }
         } },
         { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.projectNew.error" }, ""] } }, "props": { "message": { "get": "vm.projectNew.error" }, "tone": "danger", "actionLabel": { "get": "vm.projectNew.recoveryAction" }, "actionBusy": { "get": "vm.projectNew.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } }, "on": { "action": { "run": "projects.newRecover" } } },
-        { "type": "Text", "when": { "expr": { "and": [{ "get": "vm.projectNew.pending" }, { "get": "vm.projectNew.confirm" }] } }, "props": { "value": { "t": "project.new.creating" } } },
+        { "type": "Stack", "when": { "expr": { "and": [{ "get": "vm.projectNew.operation" }, { "get": "vm.projectNew.confirm" }] } }, "props": { "gap": "s" }, "children": [
+          { "each": { "get": "vm.projectNew.parts" }, "as": "part", "key": "part.id", "empty": { "type": "Text", "props": { "value": { "t": "project.new.creating" } } }, "render": {
+            "type": "Inline", "props": { "gap": "s", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "size": "compact", "icon": { "get": "part.icon" }, "tone": { "get": "part.tone" }, "busy": { "get": "part.busy" } } },
+              { "type": "Text", "props": { "value": { "get": "part.label" }, "role": "secondary", "tone": "muted" } }
+            ]
+          } },
+          { "type": "ProgressBar", "props": { "value": { "get": "vm.projectNew.progress" }, "label": { "get": "vm.projectNew.progressLabel" } } },
+          { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projectNew.elapsed" }, ""] } }, "props": { "value": { "get": "vm.projectNew.elapsed" }, "role": "caption", "tone": "muted" } }
+        ] },
         { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
-          { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "projects.newClose" } } },
+          { "type": "Button", "props": { "label": { "get": "vm.projectNew.cancelLabel" }, "variant": "secondary", "disabled": { "get": "vm.projectNew.cannotCancel" }, "disabledReason": { "t": "project.new.stopping" } }, "on": { "press": { "run": "projects.newDismiss" } } },
           { "type": "Button", "props": { "label": { "t": "project.back" }, "variant": "subtle", "disabled": { "get": "vm.projectNew.cannotBack" }, "disabledReason": { "t": "project.new.stepOf", "args": { "n": { "get": "vm.projectNew.step" } } } }, "on": { "press": { "run": "projects.newBack" } } },
           { "type": "Button", "props": { "label": { "get": "vm.projectNew.nextLabel" }, "variant": "primary", "disabled": { "get": "vm.projectNew.cannotNext" }, "disabledReason": { "t": "project.new.fixName" } }, "on": { "press": { "run": "projects.newContinue" } } }
         ] }

@@ -14,6 +14,14 @@ import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
 
+export type ProjectCreateStep = "check" | "folder" | "repository" | "profile";
+export interface ProjectCreateProgress {
+  request: string;
+  steps: ProjectCreateStep[];
+  step: ProjectCreateStep;
+  done: boolean;
+}
+
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
  * tests implement it in memory. The app never talks to Node or the network directly.
@@ -153,7 +161,9 @@ export interface PlatformBridge {
     parent(): Promise<string>;
     chooseParent(parent: string): Promise<string | undefined>;
     check(parent: string, name: string): Promise<{ folder: string; problem: string }>;
-    create(input: { parent: string; name: string; accent: string; logo: string }): Promise<string>;
+    create(input: { parent: string; name: string; accent: string; logo: string; request?: string }): Promise<string>;
+    onCreateProgress?(listener: (progress: ProjectCreateProgress) => void): () => void;
+    cancelCreate?(request: string): Promise<void>;
   };
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;

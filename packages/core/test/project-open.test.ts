@@ -1,7 +1,7 @@
 /** Open (owner, 4 November): a project's folder path shows the folder, and a first load shows placeholders, not "empty". */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../views/messages/en.json" with { type: "json" };
-import { createApp, type PlatformBridge, type ProjectEntry } from "../src/index.ts";
+import { createApp, type PlatformBridge, type ProjectCreateProgress, type ProjectEntry } from "../src/index.ts";
 
 function appWith(projects: Partial<NonNullable<PlatformBridge["projects"]>>, readNote: PlatformBridge["readNote"] = async () => "", overrides: Partial<PlatformBridge> = {}) {
   const bridge = {
@@ -126,6 +126,77 @@ describe("Open", () => {
     await app.commands.run("projects.newRecover");
     expect(creates).toBe(1); expect(picks).toBe(1);
   });
+
+    it("streams only the active creation's actual steps and keeps a completed receipt when Cancel arrives before Open", async () => {
+      let progress!: (value: ProjectCreateProgress) => void, finish!: (folder: string) => void, active = "";
+      const create = vi.fn(async (input: { request?: string }) => {
+        active = input.request!;
+        return new Promise<string>(resolve => { finish = resolve; });
+      });
+      const open = vi.fn(async () => {});
+      const cancelCreate = vi.fn(async () => {});
+      const app = appWith({
+        parent: async () => "C:\\Projects", check: async () => ({ folder: book.folder, problem: "" }),
+        create, open, cancelCreate, onCreateProgress: listener => { progress = listener; return () => {}; },
+      });
+      await app.commands.run("projects.new");
+      await app.commands.run("projects.newname", { value: "Book" });
+      for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+      vi.useFakeTimers();
+      const measure = vi.spyOn(performance, "measure");
+      const operation = app.commands.run("projects.newCreate");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(active).not.toBe("");
+      const steps = ["check", "folder", "profile"] as const;
+      progress({ request: active, steps: [...steps], step: "check", done: true });
+      progress({ request: active, steps: [...steps], step: "folder", done: false });
+      progress({ request: "obsolete", steps: ["check"], step: "check", done: true });
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({
+        progress: 25, progressLabel: "1 of 4 steps completed",
+        parts: [{ id: "check", tone: "success" }, { id: "folder", busy: true }, { id: "profile", busy: false }, { id: "open", busy: false }],
+      });
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ elapsed: "" });
+      await vi.advanceTimersByTimeAsync(1);
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ elapsed: expect.stringContaining("3") });
+      await app.commands.run("projects.newname", { value: "Changed while creating" });
+      await app.commands.run("projects.newCreate");
+      await app.commands.run("projects.newCancel");
+      expect(cancelCreate).toHaveBeenCalledExactlyOnceWith(active);
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", pending: true, cancelLabel: en["project.new.stopping"], cannotCancel: true });
+      finish(book.folder); await operation;
+      expect(open).not.toHaveBeenCalled();
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ pending: false, created: book.folder, cancelled: true, error: en["project.new.cancelledReady"], recoveryAction: "Retry" });
+      progress({ request: active, steps: ["check"], step: "check", done: false });
+      await app.commands.run("projects.newRecover");
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(open).toHaveBeenCalledExactlyOnceWith(book.folder);
+      expect(measure).toHaveBeenCalledWith("fn:project.create", expect.objectContaining({ start: expect.any(Number), end: expect.any(Number) }));
+      measure.mockRestore();
+    });
+
+    it("keeps a cancelled partial creation and offers a different location, never replaying Create", async () => {
+      let refuse!: (error: Error) => void;
+      const create = vi.fn(async () => new Promise<string>((_resolve, reject) => { refuse = reject; }));
+      const chooseParent = vi.fn(async () => undefined);
+      const app = appWith({
+        parent: async () => "C:\\Projects", check: async () => ({ folder: book.folder, problem: "" }),
+        create, chooseParent, cancelCreate: async () => {},
+      });
+      await app.commands.run("projects.new");
+      await app.commands.run("projects.newname", { value: "Book" });
+      for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+      const operation = app.commands.run("projects.newCreate");
+      await expect.poll(() => refuse).toBeTypeOf("function");
+      await app.commands.run("projects.newCancel");
+      refuse(new Error("sensitive partial path")); await operation;
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", pending: false, cancelled: true, error: en["project.new.cancelledPartial"], recoveryAction: en["project.new.change"] });
+      await app.commands.run("projects.newCreate");
+      await app.commands.run("projects.newRecover");
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(chooseParent).toHaveBeenCalledTimes(1);
+      expect(JSON.stringify(app.viewModels.select("vm.projectNew", app.store.state))).not.toContain("sensitive");
+    });
   it("retries a failed list in place, keeping the query, previous entries and error while only Retry is pending", async () => {
     let reads = 0, release!: (entries: ProjectEntry[]) => void;
     const app = appWith({ list: async () => {

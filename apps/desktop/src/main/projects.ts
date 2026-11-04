@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { access, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import type { AppStateFile, ProjectEntry } from "@focus-notes/core";
+import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateStep } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi } from "@focus-notes/github";
@@ -289,24 +289,39 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     catch { return { folder, problem: "access" }; }
     return { folder: join(canonical, name), problem: "" };
   }
-  async function create(input: { parent: string; name: string; accent: string; logo: string }): Promise<string> {
+  async function create(input: { parent: string; name: string; accent: string; logo: string }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
     if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
-    const result = await check(input.parent, input.name);
-    if (result.problem) throw new Error(`Project folder refused: ${result.problem}`);
-    // Exclusive creation is intentional: never adopt or overwrite an existing folder, even an empty one.
-    await mkdir(result.folder);
-    await mkdir(join(result.folder, "notes"));
+    const steps: ProjectCreateStep[] = ["check", "folder", ...(candidateApi ? ["repository" as const] : []), "profile"];
+    const step = async <T>(id: ProjectCreateStep, work: () => Promise<T>): Promise<T> => {
+      operation?.signal.throwIfAborted();
+      operation?.progress({ steps, step: id, done: false });
+      const result = await work();
+      operation?.progress({ steps, step: id, done: true });
+      return result;
+    };
+    const result = await step("check", async () => {
+      const result = await check(input.parent, input.name);
+      if (result.problem) throw new Error(`Project folder refused: ${result.problem}`);
+      return result;
+    });
+    await step("folder", async () => {
+      // Exclusive creation is intentional: never adopt or overwrite an existing folder, even an empty one.
+      await mkdir(result.folder);
+      await mkdir(join(result.folder, "notes"));
+    });
     if (candidateApi) {
-      const api = candidateGitHubApi(candidateApi);
-      const owner = (await api.user()).login;
-      const name = input.name.replace(/[^A-Za-z0-9._-]/g, "-");
-      await api.createRepo(name, "Private notes for Focus Notes", true, false);
-      const repository = await api.repo(owner, name);
-      if (!repository.private || repository.owner !== owner || repository.name !== name) throw new Error("The local GitHub endpoint did not confirm a private repository.");
+      await step("repository", async () => {
+        const api = candidateGitHubApi(candidateApi);
+        const owner = (await api.user()).login;
+        const name = input.name.replace(/[^A-Za-z0-9._-]/g, "-");
+        await api.createRepo(name, "Private notes for Focus Notes", true, false);
+        const repository = await api.repo(owner, name);
+        if (!repository.private || repository.owner !== owner || repository.name !== name) throw new Error("The local GitHub endpoint did not confirm a private repository.");
+      });
     }
     const folder = await realpath(result.folder);
-    await adopt(folder, { name: input.name, accent: input.accent, logo: input.logo });
+    await step("profile", () => adopt(folder, { name: input.name, accent: input.accent, logo: input.logo }));
     return folder;
   }
   /** Makes a folder a known project with its own profile (a clone from GitHub, a new project); an already known one is left as it is. */

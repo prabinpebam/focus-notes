@@ -480,6 +480,67 @@ test("Broken images keep their alt and scoped Retry, coalesce notices and recove
   } finally { await closeTestApp(l); }
 });
 
+test("New project streams actual setup steps and Cancel keeps the partial folder without opening or replaying it", async () => {
+  const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md");
+  const parent = join(dirs.userData, "creation-parent");
+  mkdirSync(parent);
+  const bytes = "# Exact original\n\nCancel must keep this note.\n";
+  writeFileSync(note, bytes);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  let release: (() => void) | undefined, creates = 0;
+  const server = createServer((req, res) => {
+    const send = (body: unknown) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/user") return send({ login: "local", id: 1, name: "Local" });
+    if (req.url === "/user/repos" && req.method === "POST") {
+      creates++;
+      req.resume();
+      release = () => { release = undefined; send({}); };
+      return;
+    }
+    if (req.url === "/repos/local/Streamed-project") return send({ owner: { login: "local" }, name: "Streamed-project", private: true, default_branch: "main" });
+    res.writeHead(404); res.end();
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Local project server did not bind");
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs, { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}` });
+    await l.app.evaluate(({ ipcMain }, folder) => {
+      ipcMain.removeHandler("projects:parent");
+      ipcMain.handle("projects:parent", () => folder);
+    }, parent);
+    await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+    await l.page.getByRole("dialog", { name: "Open", exact: true }).getByRole("button", { name: "New project…", exact: true }).click();
+    const project = l.page.getByRole("dialog", { name: "New project", exact: true });
+    await project.getByRole("textbox", { name: "Project name", exact: true }).fill("Streamed project");
+    for (let i = 0; i < 3; i++) await project.getByRole("button", { name: "Next", exact: true }).click();
+    await project.getByRole("button", { name: "Create project", exact: true }).click();
+    const progress = project.getByRole("progressbar");
+    await expect(progress).toHaveAttribute("aria-label", "2 of 5 steps completed");
+    await expect(progress).toHaveAttribute("value", "40");
+    await expect(project.locator("[data-step-mark][data-step-mark-size=compact] [data-busy]")).toHaveCount(1);
+    await project.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(project.getByRole("button", { name: "Stopping after this step…", exact: true })).toBeDisabled();
+    if (!release) throw new Error("Repository creation was not held");
+    release();
+    await expect(project.locator("[data-status-row=danger]")).toContainText("Completed files and your choices are kept.");
+    await expect(project.getByRole("button", { name: "Create project", exact: true })).toBeDisabled();
+    expect(creates).toBe(1);
+    const folder = join(parent, "Streamed project");
+    expect(readdirSync(folder)).toEqual(["notes"]);
+    expect(readFileSync(note, "utf8")).toBe(bytes);
+    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+  } finally {
+    release?.();
+    if (l) await closeTestApp(l);
+    rmSync(parent, { recursive: true, force: true });
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
+
 test("New project and Local import recover without repeating completed creation or copying a partial note", async () => {
   const dirs = tempDirs();
   const note = join(dirs.docs, "local-draft.md");

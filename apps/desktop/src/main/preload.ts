@@ -5,6 +5,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { parsePointerZone, pointerMove } from "./window/pointer-report.ts";
 import { wordAround } from "./spelling/word.ts";
+import type { ProjectCreateProgress } from "@focus-notes/core";
 
 const params = new URLSearchParams(globalThis.location?.search ?? "");
 const platform = (params.get("platform") ?? "windows") as "macos" | "windows" | "linux";
@@ -139,7 +140,13 @@ contextBridge.exposeInMainWorld("focusNotes", {
     parent: () => ipcRenderer.invoke("projects:parent"),
     chooseParent: (parent: string) => ipcRenderer.invoke("projects:chooseParent", parent),
     check: (parent: string, name: string) => ipcRenderer.invoke("projects:check", parent, name),
-    create: (input: { parent: string; name: string; accent: string; logo: string }) => ipcRenderer.invoke("projects:create", input),
+    create: (input: { parent: string; name: string; accent: string; logo: string; request?: string }) => ipcRenderer.invoke("projects:create", input),
+    cancelCreate: (request: string) => ipcRenderer.invoke("projects:cancelCreate", request),
+    onCreateProgress: (listener: (progress: ProjectCreateProgress) => void) => {
+      const handler = (_event: unknown, progress: ProjectCreateProgress) => listener(progress);
+      ipcRenderer.on("projects:createProgress", handler);
+      return () => ipcRenderer.removeListener("projects:createProgress", handler);
+    },
     open: (folder: string, note?: string) => ipcRenderer.invoke("projects:open", folder, note),
     onNote: (listener: (path: string) => void) => {
       const handler = (_event: unknown, path: string) => listener(path);

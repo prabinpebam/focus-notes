@@ -157,7 +157,7 @@ export class TaskTracker {
       return result;
     } catch (error) {
       await hold();
-      this.#finish(task, false);
+      this.#finish(task, false, error instanceof DOMException && error.name === "AbortError" ? "task.cancelled" : undefined);
       throw error;
     } finally {
       try {
@@ -168,11 +168,11 @@ export class TaskTracker {
     }
   }
 
-  #finish(task: Running, ok: boolean): void {
+  #finish(task: Running, ok: boolean, endMessage?: string): void {
     const c = this.#clock;
     for (const h of task.timers) c.clearTimeout(h);
     task.timers = [];
-    if (task.announced) this.#events.announce(ok ? (task.doneMessage ?? "task.done") : "task.failed");
+    if (task.announced) this.#events.announce(endMessage ?? (ok ? (task.doneMessage ?? "task.done") : "task.failed"));
     // A wait that ended before its sign showed leaves no trace; a failure ends the sign at once.
     if (task.phase === "ack" || !ok) return this.#remove(task);
     const remaining = Math.max(0, this.#t.signMinimum - (c.now() - (task.shownAt ?? c.now())));

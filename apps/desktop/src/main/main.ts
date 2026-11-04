@@ -1286,9 +1286,32 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (typeof parent !== "string" || typeof name !== "string") throw new Error("Invalid project folder");
     return projects.check(parent, name);
   });
-  handle("projects:create", (input: unknown) => {
+  const projectCreates = new Map<string, AbortController>();
+  handleFrom("projects:cancelCreate", (event, request: unknown) => {
+    if (typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request)) throw new Error("Invalid project operation");
+    projectCreates.get(`${event.sender.id}:${request}`)?.abort();
+  });
+  handleFrom("projects:create", async (event, input: unknown) => {
     if (!input || typeof input !== "object" || !("parent" in input) || typeof input.parent !== "string" || !("name" in input) || typeof input.name !== "string" || !("accent" in input) || typeof input.accent !== "string" || !("logo" in input) || typeof input.logo !== "string") throw new Error("Invalid new project");
-    return projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo });
+    const request = "request" in input ? input.request : undefined;
+    if (request !== undefined && (typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request))) throw new Error("Invalid project operation");
+    const key = `${event.sender.id}:${request}`;
+    if (projectCreates.has(key)) throw new Error("Project operation already running");
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    event.sender.once("destroyed", abort);
+    projectCreates.set(key, controller);
+    try {
+      return await projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo }, {
+        signal: controller.signal,
+        progress: progress => {
+          if (request && !event.sender.isDestroyed()) event.sender.send("projects:createProgress", { ...progress, request });
+        },
+      });
+    } finally {
+      projectCreates.delete(key);
+      event.sender.removeListener("destroyed", abort);
+    }
   });
   handle("projects:open", (folder: unknown, note: unknown) => {
     if (typeof folder !== "string" || (note !== undefined && typeof note !== "string")) throw new Error("Invalid project request");

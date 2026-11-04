@@ -44,6 +44,16 @@ function setup() {
 }
 
 describe("the task tracker (PRF-08)", () => {
+  it("announces a deliberately stopped operation as stopped, not failed", async () => {
+    const t = setup(), d = t.deferred();
+    const run = t.tracker.run("project.create", "project.new.creating", () => d.p);
+    await t.advance(1000);
+    const rejection = expect(run).rejects.toMatchObject({ name: "AbortError" });
+    d.reject(new DOMException("Stopped", "AbortError"));
+    await rejection;
+    expect(t.said).toEqual(["project.new.creating", "task.cancelled"]);
+    expect(t.tasks()).toEqual([]);
+  });
   it("records an explicitly named measure for successful and failed operations without changing the target", async () => {
     const t = setup();
     const name = "fn:project.list.unit";
