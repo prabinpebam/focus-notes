@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
@@ -35,7 +35,7 @@ test("a rejected settings write is reported and Retry persists the requested val
     if (existsSync(stateFile)) renameSync(stateFile, backup);
     mkdirSync(stateFile);
     await scale.getByText("110%", { exact: true }).click();
-    await expect(settings.getByText("Couldn't save this change. What you typed is still here.", { exact: true })).toBeVisible();
+    await expect(settings.getByText("Couldn't save this choice. Try again or revert.", { exact: true })).toBeVisible();
     await expect(larger).toBeChecked();
     const retry = settings.getByRole("button", { name: "Retry", exact: true });
     await expect(retry).toBeVisible();
@@ -52,6 +52,60 @@ test("a rejected settings write is reported and Retry persists the requested val
   } finally {
     if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
     if (existsSync(backup)) renameSync(backup, stateFile);
+    await closeTestApp(l);
+  }
+});
+
+test("theme-manager appearance and paragraph choices retain failures and retry without blocking the other group", async () => {
+  const dirs = tempDirs();
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done", appearance: "light" }));
+  const l = await launch(dirs);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  try {
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+    await settings.getByRole("button", { name: "Open theme manager", exact: true }).click();
+    const theme = l.page.getByRole("complementary", { name: "Theme", exact: true });
+    const mode = theme.getByRole("radiogroup", { name: "Appearance", exact: true });
+    block();
+    await mode.getByText("Dark", { exact: true }).click();
+    await expect(theme.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    await expect(mode.getByRole("radio", { name: "Dark", exact: true })).toBeChecked();
+    await expect(l.page.locator("html")).toHaveAttribute("data-theme", "paper");
+    restore();
+    await theme.getByRole("tab", { name: "Reading", exact: true }).click();
+    const spacing = theme.getByRole("radiogroup", { name: "Paragraph spacing", exact: true });
+    await spacing.getByText("Airy", { exact: true }).click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).paragraphSpacing).toBe("airy");
+    await theme.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).appearance).toBe("dark");
+    await expect(l.page.locator("html")).toHaveAttribute("data-theme", "ink");
+    await expect(spacing.locator("..")).not.toHaveAttribute("data-commit", "pending");
+    block();
+    await spacing.getByText("Compact", { exact: true }).click();
+    await expect(spacing.getByRole("radio", { name: "Compact", exact: true })).toBeChecked();
+    const retries = theme.getByRole("button", { name: "Retry", exact: true });
+    await expect(retries).toHaveCount(1);
+    await expect(retries).toBeVisible();
+    restore();
+    await retries.click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).paragraphSpacing).toBe("compact");
+    await theme.getByRole("button", { name: "Close", exact: true }).click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+    await settings.getByRole("button", { name: "Open theme manager", exact: true }).click();
+    await theme.getByRole("tab", { name: "Reading", exact: true }).click();
+    await expect(mode.getByRole("radio", { name: "Dark", exact: true })).toBeChecked();
+    await expect(spacing.getByRole("radio", { name: "Compact", exact: true })).toBeChecked();
+  } finally {
+    restore();
     await closeTestApp(l);
   }
 });

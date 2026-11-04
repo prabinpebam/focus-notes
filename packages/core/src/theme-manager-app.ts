@@ -487,6 +487,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       tab: "theme.manager.setTab", mode: "appearance.setMode", "reading.lineHeight": "reading.setLineHeight",
       "reading.measure": "reading.setMeasure", "reading.spacing": "reading.setParagraphSpacing", "reading.focusDim": "reading.setFocusDim",
     },
+    commits: ["mode", "reading.spacing"],
     reads: ["ui.theme", "appearance"],
     select: (s) => {
       const st = s.ui.theme;

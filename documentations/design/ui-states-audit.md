@@ -26,6 +26,8 @@ Project font/theme choices, including Use app default, now enter that lane too. 
 
 The watermark-specific refusal journey now verifies that its failed On choice remains in Settings without adding the watermark to the writing surface. Retry persists it before the mark appears; a subsequent refused Off choice and Revert leave the saved mark present and do not write. The journey waits for the actual wrapper's minimum pending phase before the second change. Core/desktop typechecks, 17 related unit tests and this invisible journey pass; the other five focused journeys also pass on the combined app build.
 
+The app's theme-manager Appearance and Paragraph spacing groups now opt into the same declared commit lane; tab navigation and explicit-save colour drafts do not. A failed appearance choice stays local while paragraph spacing can save independently; Retry keeps both changes and reopening preserves them. Choice errors name the choice rather than saying it was typed. Core/runtime/desktop typechecks, 28 related unit tests, the theme-manager refusal/independent-group/Retry/reopening journey and the updated scale journey pass. The legacy category assertion now includes the Project section brought in by the prerequisite merge. Other app controls, sliders and explicit-save groups remain unaccepted; the same 54 inherited static findings remain.
+
 ## Scope, sources and method
 
 **Assessment date:** 4 November 2026. This is the owner's requested audit (4 November, 12:19), not an accepted decision: every fix below is a proposal until the owner picks it.

@@ -9,7 +9,7 @@ import { themeValues } from "@focus-notes/tokens";
 import { CONTRAST_PAIRS, createApp, saveWarning, type AppStateFile, type PlatformBridge } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
-function shell(opts: { state?: Partial<AppStateFile>; settings?: string | null } = {}) {
+function shell(opts: { state?: Partial<AppStateFile>; settings?: string | null; save?: PlatformBridge["saveAppState"] } = {}) {
   let state: AppStateFile = { version: 1, firstRun: "done", lastNotePath: "/n/a.md", ...opts.state };
   let settings: string | undefined = opts.settings ?? undefined;
   const bridge: PlatformBridge = {
@@ -20,7 +20,7 @@ function shell(opts: { state?: Partial<AppStateFile>; settings?: string | null }
     newNotePath: async () => "/n/Untitled.md",
     defaultNotePath: async () => "/n/a.md",
     loadAppState: async () => state,
-    saveAppState: async (s) => void (state = s),
+    saveAppState: async (s) => { await opts.save?.(s); state = s; },
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
     ...(opts.settings === undefined ? {} : {
@@ -41,6 +41,24 @@ async function started(opts: Parameters<typeof shell>[0] = {}) {
   const vm = (id = "vm.themeManager") => app.viewModels.select(id, app.store.state) as Record<string, any>;
   return { ...f, app, vm, run: (id: string, args?: Record<string, unknown>) => app.commands.run(id, args) };
 }
+
+it("keeps a failed appearance choice local while another reading group saves, then retries without reverting that group", async () => {
+  let reject = false;
+  const t = await started({ save: async () => { if (reject) throw new Error("disk full"); } });
+  await t.run("theme.manager.open");
+  expect(t.app.viewModels.get("vm.themeManager")?.commits).toEqual(["mode", "reading.spacing"]);
+  const mode = { target: "vm.themeManager.mode", command: "appearance.setMode", value: "dark" };
+  reject = true;
+  await expect(t.run("commit.run", mode)).rejects.toThrow("disk full");
+  expect(t.app.store.state.appearance.mode).toBe("system");
+  expect(t.app.store.state.commits).toContainEqual(expect.objectContaining({ target: mode.target, phase: "failed", value: "dark" }));
+  reject = false;
+  await t.run("commit.run", { target: "vm.themeManager.reading.spacing", command: "reading.setParagraphSpacing", value: "airy" });
+  expect(t.state()).toMatchObject({ paragraphSpacing: "airy" });
+  expect(t.app.store.state.appearance.mode).toBe("system");
+  await t.run("commit.run", mode);
+  expect(t.state()).toMatchObject({ appearance: "dark", paragraphSpacing: "airy" });
+});
 
 describe("THM-07: the theme manager's gallery previews on the real note", () => {
   it("opens from ⋯ → Theme… on the Themes tab, with every built-in theme as a tile", async () => {
@@ -212,7 +230,7 @@ describe("Settings → Appearance (DD-SET-02)", () => {
   it("summarizes the look, sets the interface size, and opens the theme manager", async () => {
     const t = await started({ settings: null });
     const a = () => (t.vm("vm.settings") as { appearance: Record<string, unknown> }).appearance;
-    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "ai", "appearance"]);
+    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "project", "workspace", "ai", "appearance"]);
     expect(a()).toMatchObject({ summary: "System · Paper / Ink · 16 px Mono (Roboto Mono)", scale: "1", canSync: false });
     expect((a().scales as { label: string }[]).map((s) => s.label)).toEqual(["90%", "100%", "110%", "125%", "150%"]);
     await t.run("ui.setScale", { value: "1.25" });

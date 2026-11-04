@@ -198,7 +198,7 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
     if (commit && commit.phase !== "confirmed" && node.type !== "Switch") props[committed[0]] = commit.value;
     if (node.type === "TextField") props.commitOnBlur = true;
     if (commit?.phase === "failed") {
-      props.error = deps.app.messages.format("commit.failed");
+      props.error = deps.app.messages.format(node.type === "SegmentedControl" || node.type === "ProjectMark" ? "commit.choiceFailed" : "commit.failed");
       props.retryLabel = deps.app.messages.format("commit.retry");
       props.revertLabel = deps.app.messages.format("commit.revert");
     }
