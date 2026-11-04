@@ -485,7 +485,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState });
   registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast });
   const workspace = registerWorkspaceFeatures({
-    store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
+    store, commands, viewModels, catalog, bridge, tracker, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
     outside: (path, mine, theirs) => conflicts.outside(path, mine, theirs),
     matched: (path) => conflicts.release(path),

@@ -55,6 +55,36 @@ const canvas = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.
 const toasts = (app: ReturnType<typeof createApp>) => app.store.state.ui.toasts.map((t) => t.message);
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
+it("keeps watcher changes arriving during a failed listing's read-only Retry", async () => {
+  const f = setup();
+  const scan = f.bridge.workspace!.scan;
+  f.bridge.workspace!.scan = async () => { throw new Error("unavailable"); };
+  const app = createApp(f.bridge, messages);
+  await app.start();
+  await settle();
+  expect(app.store.state.workspace.listing).toBe("error");
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let reads = 0;
+  f.bridge.workspace!.scan = async () => {
+    const snapshot = await scan();
+    reads++;
+    await gate;
+    return snapshot;
+  };
+  const retry = app.commands.run("workspace.retryList");
+  await app.commands.run("workspace.retryList");
+  expect(app.store.state.workspace).toMatchObject({ listing: "loading", listFailed: true });
+  f.files[`${ROOT}/during.md`] = "# During\n";
+  f.emit([{ path: `${ROOT}/during.md`, kind: "note", exists: true, title: "During" }]);
+  release();
+  await retry;
+  expect(reads).toBe(1);
+  expect(app.store.state.workspace.listing).toBe("ready");
+  expect(app.store.state.workspace.tree.roots[0]!.children.some(n => n.name === "during.md")).toBe(true);
+  expect(f.writes).toEqual([]);
+});
+
 it("FIL-18, KEY-03: Back and Forward follow a new note's first-save filename even without a heading", async () => {
   const f = setup();
   const app = createApp(f.bridge, messages);

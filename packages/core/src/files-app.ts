@@ -1371,7 +1371,7 @@ export function registerFiles(ctx: Ctx) {
       profileLink: Boolean(login && bridge.openLink), profileLabel: login ? catalog.format("files.source.openProfile", { login }) : "", titlePlain: !(repo && bridge.openLink), loginPlain: Boolean(at) && !bridge.openLink,
     };
   };
-  const CLOSED = { source: NO_SOURCE, open: false, pinned: false, docked: false, width: 0, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
+  const CLOSED = { source: NO_SOURCE, open: false, pinned: false, docked: false, width: 0, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", listingVisible: false, listFailed: false, listRetrying: false, selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
   const newNoteShortcut = () => (ctx.describeItem("note.new").shortcut as string | undefined) ?? "";
   /** The focused row's menu (D-162): its items as the ⋯ menu shows commands, and its name. */
   const menuOf = (s: AppState, rows: readonly FileRow[]) => {
@@ -1413,6 +1413,7 @@ export function registerFiles(ctx: Ctx) {
         shortcuts: { type: "array", items: TREE_ITEM },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
+        listingVisible: { type: "boolean" }, listFailed: { type: "boolean" }, listRetrying: { type: "boolean" },
         selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
         canMakePublic: { type: "boolean" }, canMakePrivate: { type: "boolean" },
         newNote: ctx.itemSchema, newFolder: ctx.itemSchema,
@@ -1421,7 +1422,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -1471,7 +1472,9 @@ export function registerFiles(ctx: Ctx) {
         });
       }
       const count = f.selection.selected.filter((x) => !isRootRow(x)).length;
-      const notes = rows.filter((r) => r.kind !== "root").length;
+      const content = f.filter.trim()
+        ? (f.collapsed.length ? visibleRows(s.workspace.tree, { expanded: new Set(f.expanded), collapsed: new Set() }, f.filter, f.sort) : rows).some(r => r.kind !== "root")
+        : s.workspace.tree.roots.some(root => root.children.length > 0);
       const pin = ctx.describeItem("files.togglePin");
       return {
         source: whereFrom(s), shortcuts,
@@ -1481,7 +1484,10 @@ export function registerFiles(ctx: Ctx) {
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
         editValue: f.edit?.value ?? "", editError: f.edit?.error ?? "",
         editLabel: catalog.format(f.edit?.kind === "newFolder" ? "files.folderName" : rows.find((r) => r.id === f.edit?.id)?.kind === "folder" ? "files.folderName" : "files.fileName"),
-        filter: f.filter, empty: notes === 0,
+        filter: f.filter, empty: s.workspace.tree.roots.length > 0 && s.workspace.listing !== "loading" && s.workspace.listing !== "error" && !content,
+        listingVisible: s.workspace.listing === "loading" && !s.workspace.listFailed && !s.workspace.tree.roots.length && s.tasks.findLast(t => t.target === "workspace.list")?.phase === "on",
+        listFailed: s.workspace.listFailed === true || s.workspace.listing === "error",
+        listRetrying: s.workspace.listFailed === true && s.workspace.listing === "loading",
         emptyText: f.filter.trim() ? catalog.format("files.noMatch", { query: f.filter.trim() }) : catalog.format("files.empty"),
         selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }),
         // The header's two buttons (D-123): New note shows the app's new-note shortcut it runs.

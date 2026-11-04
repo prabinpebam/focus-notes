@@ -5087,6 +5087,21 @@
             }
           },
           {
+            "type": "Skeleton",
+            "when": { "get": "vm.files.listingVisible" },
+            "props": { "shape": "row" }
+          },
+          {
+            "type": "StatusRow",
+            "when": { "get": "vm.files.listFailed" },
+            "props": {
+              "message": { "t": "files.listFailed" }, "tone": "danger",
+              "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.files.listRetrying" },
+              "actionBusyLabel": { "t": "uiStates.recovery.retrying" }
+            },
+            "on": { "action": { "run": "workspace.retryList" } }
+          },
+          {
             "type": "Stack",
             "when": {
               "expr": {

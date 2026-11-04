@@ -6,7 +6,8 @@ import type { Store } from "./store.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { ViewModelRegistry, Content } from "./view-models.ts";
 import type { MessageCatalog } from "./messages.ts";
-import type { AppStateFile, PlatformBridge } from "./bridge.ts";
+import { opErrorCode, type AppStateFile, type PlatformBridge } from "./bridge.ts";
+import type { TaskTracker } from "./tasks.ts";
 import type { AppState, ToastState } from "./app.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import {
@@ -28,6 +29,8 @@ export interface WorkspaceState {
   /** The notes repository on GitHub, as owner/name: Files says where the notes come from (D-188). */
   repo?: string;
   tree: WorkspaceTree;
+  listing?: "loading" | "ready" | "error";
+  listFailed?: boolean;
 }
 export const NO_WORKSPACE: WorkspaceState = { access: "write", tree: EMPTY_TREE };
 
@@ -49,6 +52,7 @@ interface Ctx {
   viewModels: ViewModelRegistry<AppState>;
   catalog: MessageCatalog;
   bridge: PlatformBridge;
+  tracker: TaskTracker;
   toast: (message: string, opts?: { tone?: ToastState["tone"]; action?: ToastState["action"] }) => number;
   setNote: (patch: Partial<AppState["note"]>) => void;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
@@ -65,7 +69,7 @@ interface Ctx {
 }
 
 export function registerWorkspaceFeatures(ctx: Ctx) {
-  const { store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState } = ctx;
+  const { store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, tracker } = ctx;
   const ws = bridge.workspace;
   const { current, migrations } = ctx.format ?? { current: WORKSPACE_FORMAT, migrations: MIGRATIONS };
   const setWorkspace = (patch: Partial<WorkspaceState>) => store.update((s) => ({ ...s, workspace: { ...s.workspace, ...patch } }));
@@ -133,6 +137,29 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   let outside = 0;
   let reconciliation = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
+  let listing = false;
+  async function list(): Promise<void> {
+    if (!ws || listing) return;
+    listing = true;
+    queued ??= [];
+    setWorkspace({ listing: "loading" });
+    try {
+      const scan = await tracker.section("workspace.list", "files.listing", () => ws.scan(), "fn:workspace.list");
+      const changes = queued ?? [];
+      queued = undefined;
+      setWorkspace({ tree: applyChanges(buildTree(scan), changes), listing: "ready", listFailed: false });
+    } catch (error) {
+      const changes = queued ?? [];
+      queued = undefined;
+      setWorkspace({ tree: applyChanges(store.state.workspace.tree, changes), listing: "error", listFailed: true });
+      console.error("Workspace listing failed", opErrorCode(error));
+    } finally { listing = false; }
+  }
+  commands.register({
+    id: "workspace.retryList", title: "commit.retry",
+    enabled: s => Boolean(ws) && s.workspace.listing === "error",
+    run: list,
+  });
 
   async function reconcile(path: string, revision: number): Promise<void> {
     if (revision !== reconciliation || store.state.note.path !== path) return;
@@ -185,9 +212,13 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   }
   async function written(path: string, markdown: string): Promise<void> {
     lastWritten = { path, text: markdown };
-    if (!ws || queued || store.state.workspace.access !== "write") return;
+    if (!ws || store.state.workspace.access !== "write") return;
     // Notes the app creates are in the tree before the watcher (if any) reports them, with their titles.
     const next = titleOfMarkdown(markdown);
+    if (queued) {
+      queued.push({ path, kind: "note", exists: true, title: next ?? "" });
+      return;
+    }
     setTree(applyChanges(store.state.workspace.tree, [{ path, kind: "note", exists: true, title: next ?? "" }]));
     if (!follows || !markdown.trim()) return;
     const date = new Date();
@@ -239,11 +270,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     start(): void {
       if (!ws) return;
       ws.onChange?.(onChange);
-      void ws.scan().then((scan) => {
-        const changes = queued ?? [];
-        queued = undefined;
-        setTree(applyChanges(buildTree(scan), changes));
-      }, () => { queued = undefined; });
+      void list();
     },
     loaded,
     written,

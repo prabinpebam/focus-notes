@@ -71,6 +71,55 @@ async function started(f: ReturnType<typeof setup>) {
 }
 
 describe("opening the panel (IA-VIEW-FILES)", () => {
+  it("does not call collapsed, unknown or failed Files content empty", async () => {
+    const f = setup();
+    const app = await started(f);
+    await app.commands.run("files.open");
+    app.store.update(s => ({ ...s, ui: { ...s.ui, files: { ...s.ui.files, collapsed: ["root:local", "root:public"] } } }));
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ empty: false });
+    await app.commands.run("files.setFilter", { value: "absent phrase" });
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ empty: true });
+    app.store.update(s => ({ ...s, workspace: { ...s.workspace, listing: "loading" } }));
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ empty: false });
+    app.store.update(s => ({ ...s, workspace: { ...s.workspace, listing: "error" } }));
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ empty: false, listFailed: true });
+  });
+  it("keeps a failed initial listing distinct from empty and retries the read without writing notes", async () => {
+    const f = setup();
+    const scan = f.bridge.workspace!.scan;
+    f.bridge.workspace!.scan = async () => { throw new Error("private-path-and-token"); };
+    const app = await started(f);
+    await app.commands.run("files.open");
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ empty: false, listFailed: true });
+    f.bridge.workspace!.scan = scan;
+    await app.commands.run("workspace.retryList");
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ empty: false, listFailed: false });
+    expect(ids(app)).toContain("welcome.md");
+    expect(f.batches).toHaveLength(0);
+  });
+  it("keeps a note acknowledged while a listing Retry is waiting, even without a watcher", async () => {
+    const f = setup(), scan = f.bridge.workspace!.scan;
+    f.bridge.workspace!.scan = async () => { throw new Error("unavailable"); };
+    const app = await started(f);
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    f.bridge.workspace!.scan = async () => {
+      const snapshot = await scan();
+      await gate;
+      return snapshot;
+    };
+    const retry = app.commands.run("workspace.retryList");
+    await settle();
+    await app.commands.run("note.new");
+    await app.commands.run("note.setContent", { value: "# During retry\n" });
+    await app.commands.run("note.save");
+    const path = app.store.state.note.path!;
+    release();
+    await retry;
+    await app.commands.run("files.open");
+    expect(vm(app).items.find(item => item.id === path)?.label).toBe("During retry");
+    expect(f.notes.get(path)?.text).toBe("# During retry\n");
+  });
   it("only docks after persistence, retains failed docking for Retry and never repeats a toggle", async () => {
     const f = setup();
     const app = await started(f);

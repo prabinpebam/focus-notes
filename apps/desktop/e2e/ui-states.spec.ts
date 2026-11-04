@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
 import { picture } from "./fre-fakes.ts";
 
@@ -21,6 +21,43 @@ async function closeTestApp(l: Launched) {
     }
   }
 }
+
+test("Files distinguishes collapsed content from no matches and replaces known-empty content in its own wrapper", async () => {
+  const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, "# Welcome\n\nSynthetic first action.\n");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Synthetic first action.");
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+p" : "Control+Alt+p");
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    const body = await files.locator("[data-sheet-body]").elementHandle();
+    if (!body) throw new Error("Files content wrapper is unavailable");
+    const tree = files.getByRole("tree", { name: "Notes and folders", exact: true });
+    const root = fileRow(tree, "Notes");
+    await root.click();
+    await root.press("ArrowLeft");
+    await expect(root).toHaveAttribute("aria-expanded", "false");
+    await expect(files.getByText("No notes yet", { exact: true })).toHaveCount(0);
+    const filter = files.getByRole("searchbox", { name: "Filter by name", exact: true });
+    await filter.fill("no-such-note");
+    await expect(files.getByText("No matches", { exact: true })).toBeVisible();
+    await files.getByRole("button", { name: "Clear search", exact: true }).click();
+    await expect(filter).toHaveValue("");
+    await expect(files.getByText("No matches", { exact: true })).toHaveCount(0);
+    await expect(files.getByText("No notes yet", { exact: true })).toHaveCount(0);
+    await root.click();
+    await root.press("ArrowRight");
+    await expect(fileRow(tree, "Welcome")).toBeVisible();
+    rmSync(note);
+    await expect(files.getByText("No notes yet", { exact: true })).toBeVisible();
+    await files.getByRole("button", { name: "New note", exact: true }).filter({ hasText: "New note" }).click();
+    await expect(files.getByText("No notes yet", { exact: true })).toHaveCount(0);
+    await expect(tree.getByRole("treeitem").filter({ hasText: "Untitled" }).first()).toBeVisible();
+    expect(await body.evaluate(el => el.isConnected)).toBe(true);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:workspace.list").length)).toBe(1);
+  } finally { await closeTestApp(l); }
+});
 
 test("Share item delays its own section, retains choices and history through failed reads and scoped Retry", async () => {
   const { dirs } = instance();
