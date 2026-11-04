@@ -1,5 +1,13 @@
 # Decisions
 
+## Pending number: Themes follows this window's theme scope
+
+**Direction accepted from the original main, 5 November; decision number pending orchestrator assignment.** A Themes-panel choice updates whichever setting currently decides this window's colour theme: a project's fixed theme changes only that project; a project following App default changes the app's chosen slot, as before. Never release a fixed project to App default or change the app default as a side effect of that project's choice. No new controls or labels are added.
+
+Preview, persisted selection and Revert use that same scope. A refused write leaves the acknowledged theme applied; Revert restores the opening project theme without rewriting app theme slots. Another project's settings remain unchanged, and a sheet belonging to a previous project cannot save after project navigation. Built in `bc45a4e1`; [evidence](definition-of-done.md#phase-2-themes-project-scope-bc45a4e1) covers real computed tokens and process restart, not only selected tiles.
+
+Affects [project appearance](../experience/projects.md), [Theme manager](../design/views/theme-manager.html), [UI states audit](../design/ui-states-audit.md) and [waits](../architecture/perceived-performance.md). This corrects selection/application within the existing per-project theme intent; it does not merge the candidate into main or complete phase 2.
+
 ## D-267: one Settings list, one remembered default
 
 **D-265/D-266/D-267 production boundary, 1 November:** owner approval of exact

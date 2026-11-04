@@ -10,6 +10,14 @@
 
 ## Visual review and approval
 
+### Owner feedback queue, 5 November
+
+The five new owner fixes supersede the earlier implementation pause: Themes application, structural full-app overlay layering, menu-description tooltips, icon-only code Copy overlay, and fixed Settings navigation, in that order. Toolbar customizer and AI-scan designs remain a separate track. Phase 2 is still in progress; only after all five will one new two-project owner candidate replace the existing review.
+
+**Themes, `bc45a4e1`:** reproduced in the built invisible app before fixing: choosing Dusk saved the app slot, while the fixed Sepia project still painted the window and editor. **Why it escaped:** the old journey used only an App-default project and reopened the sheet; it never selected a theme in a fixed-theme project or checked applied tokens after a real process restart.
+
+The fix follows the [pending-number scope decision](../plan/decisions.md#pending-number-themes-follows-this-windows-theme-scope): fixed project changes only itself; App-default project changes the app slot. Preview, failure retention and Revert follow the same scope. One root resolver owns window/editor theme application, avoiding a nested writing scope masking previews. Both native scope cases now check actual canvas/text tokens, root `data-theme`/scheme, saved state, sheet reopen, process restart, exact note bytes and unchanged Garden settings. [Focused evidence](../plan/definition-of-done.md#phase-2-themes-project-scope-bc45a4e1) is not full-suite or owner acceptance.
+
 **Owner direction, 4 November 13:01:** implement this audit in two phases. First show every proposed state in the gallery for visual approval; only then implement the approved slices against their Definition of Done. No tests, journeys, captures, benchmarks, CI waits or app wiring before approval. Phase 1 permits only typecheck, `ui:check` and gallery builds.
 
 **[Open the review hub](http://127.0.0.1:5231/?f=mock.uistates.hub).** Compare Before and After, then Play. Each slice offers light, dark and reduced motion. All data and timing demos are local simulations; none changes notes, settings or accounts. Reply, for example, “approve 2, 3; change 1: …”. Approval is explicit, per slice; the table below is the record.

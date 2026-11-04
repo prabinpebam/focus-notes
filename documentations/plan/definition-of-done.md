@@ -7,6 +7,23 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
+### Phase-2 Themes project scope, bc45a4e1
+
+The [owner's new feedback queue](../design/ui-states-audit.md#owner-feedback-queue-5-november) remains in progress. This is the first of five fixes, not phase completion. No app merge, full suite, CI wait, release or review-window replacement occurred.
+
+| Exact scoped check in worker16 at `bc45a4e1` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts` | Passed, 30 tests: fixed-project choice/preview/refusal/Revert, unchanged defaults/other project, App-default path, stale sheet rejection and existing theme/reading behavior |
+| `pnpm exec tsc --noEmit -p E:\Projects\side-projects\focus-notes-work\scratch\ui-states-worker13-core-tsconfig.json` | Passed; external config's extends/typeRoots/includes all target worker16 |
+| `pnpm --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm ui:check` | Passed, 780 documents / 82 components / 725 commands; no generated schema changes |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts ui-states.spec.ts --workers=1 -g "Themes applies\|theme and font choices"` | Passed, 3 native journeys: both theme scopes with computed canvas/text tokens, sheet reopen and real process restart; existing refused theme/font Retry journey |
+
+The regression first failed against the old built app with `html[data-theme="sepia"]` after a stored Dusk choice. The App-default baseline applied Dusk correctly. The new native fixtures assert Garden settings unchanged and exact note bytes retained; cleanup is finally-scoped to each test PID, dry-run before actual. The size-Retry unit fixture now allows startup persistence before injecting failure, so an unrelated startup toast cannot be mistaken for the tested Retry; no runtime recovery behavior was altered.
+
+**Try it:** in Field notes with a fixed theme, open Settings → Appearance → Themes, choose a light and a dark theme, close/reopen the sheet and restart. This window follows the choices; Garden and app defaults do not change. Repeat with App default to verify the app slot still changes. Final owner candidate waits for the remaining four fixes.
+
 **All eight design slices were approved** (owner, 4 November 14:06), including the compact border-spinner rule. The [audit's approval table](../design/ui-states-audit.md#visual-review-and-approval) records the authorization for phase 2. The rows below specify implementation evidence, not completed acceptance: silent failures land first, then commit states, with scoped typechecks, related unit tests and one journey per slice. App code stays on `vq-ui-states`; no full suite, CI wait or benchmarks are authorized by this increment.
 
 | Slice | Wiring done when | Unit evidence, after approval | One related journey, after approval |

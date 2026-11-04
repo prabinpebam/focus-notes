@@ -1,5 +1,9 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Themes: scope and acknowledgement
+
+Theme choices retain the existing responsive commit track and its pending/confirmed minimum beats; no new wait or latency claim is introduced. In a fixed-theme project, the acknowledged project theme remains applied until its own write succeeds, with retained attempted choice and scoped Retry on failure. In an App-default project, the existing app slot owns the write. Keyboard previews apply through the same root token resolver without a nested writing scope masking them. [Built-app evidence at bc45a4e1](../plan/definition-of-done.md#phase-2-themes-project-scope-bc45a4e1) covers actual root/editor tokens and restart, not only a selected control.
+
 ## Notification outcome lifetime
 
 The UI-states candidate uses the existing notification host, not a blocking wait: ordinary information/success notices get 6 visible seconds; actual multi-line geometry extends that total to `wait.noticeLong` (8 seconds), without restarting elapsed time. The queue's clock runs only for visible pills and pauses on interaction/window inactivity. Errors, recovery actions and explicit decision warnings require dismissal or resolution; progress stays until replaced by its outcome. Retry keeps its original error mounted and makes only its own action inert while the original operation runs. The [notification evidence](../plan/definition-of-done.md#phase-2-notification-acceptance-increment-0db24cb0) records exact clock and focus checks. [Overlapping hover/focus evidence](../plan/definition-of-done.md#phase-2-overlapping-notification-pauses-b68775f8) proves that ending one cause cannot resume the timer while the other remains. [Withdrawal evidence](../plan/definition-of-done.md#phase-2-irreversible-withdrawal-46c0cb31) verifies the existing irreversible confirmation instead of offering a misleading Undo.
