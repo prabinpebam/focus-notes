@@ -709,6 +709,19 @@ The audit's [D1–D8 map](../design/ui-states-audit.md#current-phase-2-evidence-
 
 **Review state:** no additional unmet implementation clause was identified within this authorized scoped evidence review. The branch and latest two-project candidate are ready for the owner's implementation review through the original main chat; this is not a phase-complete, merge or release declaration. Cross-slice consolidation/full validation was not authorized or run. The older sharing-preview type fixture and separate size-retry fixture remain explicit unrelated findings, not new scope or silent waivers.
 
+### Phase-2 visible implementation review, 9c512e40
+
+The original main chat requested that the latest candidate be opened for the owner, keeping the visible `f2127c67` review open. The canonical candidate launcher now runs `9c512e40` with its separate owner-review profile: Electron PID `64408`, launcher PID `39212`, session `uistates-owner-review15`. The launcher receipt records these identities. The window is visible; no OS keys, focus activation, maximising or window movement was used. Both distinct sample projects remain available, and the loopback repository endpoint returned both Field notes and Garden notes. The older owner review, gallery 5231 and docs 8787 remain untouched and available.
+
+**Try it in the already-open latest window:**
+
+1. Press Ctrl+Alt+O and choose Garden notes to open the second project's separate window. Compare its green/leaf identity and dark Settings with Field notes' blue/rocket identity and light Settings.
+2. In Settings → Project, change a name, colour or watermark; in Appearance, try theme/font/Reading values. Committed feedback follows the acknowledged save. Both projects keep their own choices.
+3. Visit Settings → Agents, More → Share and More → Note history. Their loading/recovery stays within the section; controlled initial/repeated refusals are in the scoped journeys, not permanently injected into this review.
+4. In the theme manager → Edit colors, type a failing colour and use Fix Text. The success row replaces the failure summary; editing the colour copy does not save it before the existing explicit Save.
+
+Only synthetic notes and loopback repositories are connected. This opens a review, not a phase-complete, merge, release or real-GitHub-testing result. Keep both owner-review instances open until the owner directs otherwise.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
