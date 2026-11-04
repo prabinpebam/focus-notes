@@ -326,6 +326,25 @@ Both journeys and candidate inspection ended with own-PID cleanup (`-WhatIf`, th
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\8f1fb690\Open review build.cmd`. The failed-read journey injects only its controlled target, not a permanent failure in the candidate. History/broken-image recovery, complete D5 and D8 acceptance, streaming, crash receipts and tracker coverage outside Open remain in progress.
 
+### Phase-2 history recovery and independent section, ef03a581
+
+History now retains the previous list and chosen preview on failure. Retry repeats the exact failed initial read, older page or version, not a fresh history request that discards loaded pages. The error and safe Details remain mounted while its action is inert. List and first-preview shapes use the shared 300 ms delay and 500 ms visible minimum. Back/close invalidate pending version reads.
+
+Restore first saves the current draft; refusal never replaces it. A failed restored save leaves the preview/sheet and unsaved restored text available, retaining the original Undo snapshot across Retry. If the person edits after that refusal, Retry reviews the version again before a new explicit Restore, never overwriting the new draft. Restore and Undo announce success only after their save acknowledgement; failed Undo retains its exact save target and offers Retry. All read/restore/Undo diagnostics use fixed operation names and known error codes, never raw exception text or note paths.
+
+| Check on `ef03a581` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\note-history.test.ts packages\core\test\history.test.ts packages\core\test\tasks.test.ts` | 33 passed: exact older-page/version Retry, retained preview, safe Details, exact first-preview 300/500 ms timing, obsolete Back response, pre-restore save refusal, changed-draft protection and original Undo retention across failed saves |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed on final source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 778 documents, 82 components, 711 commands; generated output current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final tracker edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "History delays its own section"` | Passed on final source: real local Git history, held/failed list and version reads, independent shapes and Retry, actual restored/Undo disk writes refused then accepted; no success before the saved text. Two measures each for `fn:history.list`, `fn:history.version`, `fn:history.restore` and `fn:history.undo` |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Exact pushed head built, earlier normal settings/Reading/compact/notification/AI/Agents/Open paths inspected invisibly and app closed |
+
+The initial fixture had no selected note; it now explicitly selects its synthetic note. The old Spotlight lookup did not expose history in this fixture, so the journey uses the normal toolbar More menu rather than widening into search repair. It also caught a persistent busy-label error: idle restore labels must be empty, with pending/elapsed words derived from the tracker. Fixed and covered by units before the final passing run. Every run closed its own invisible app and performed own-PID `-WhatIf`, then actual cleanup.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\ef03a581\Open review build.cmd`; toolbar More → Note history. Failures are injected only in the scoped journey. This accepts the independent delayed/failed history slice, not all D8: share-item proof, broken-image recovery, complete D5, streaming, crash receipts and remaining tracker coverage are still in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

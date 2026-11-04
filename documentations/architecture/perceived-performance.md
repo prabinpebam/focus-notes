@@ -36,6 +36,17 @@ The [partial-safe recovery evidence](../plan/definition-of-done.md#phase-2-parti
 
 Completed Local import receipts live for the current desktop process. Crash-persistent recovery and streaming remain unaccepted. If setup failed without returning a created-project receipt, the UI offers a location change rather than replaying uncertain creation.
 
+## History recovery
+
+The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-recovery-and-independent-section-ef03a581) covers actual local Git reads and disk acknowledgements with controlled delay/refusal, not a latency improvement. Existing entries and previews remain mounted. Initial list and first-version shapes appear only after 300 ms and stay at least 500 ms; older-page Retry keeps all already-loaded versions. Restore/Undo success means the disk accepted the text, not remote backup completion.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read initial/older history page | Responsive → waiting; independent section task | Existing history wrapper; Reading versions… / Reading older versions…; scoped Retry | `fn:history.list`; shared 300/500 ms shape timing; failed read retains content |
+| Read selected version | Responsive → waiting; independent preview task | Reading that version…; shapes only without an acknowledged preview; retained old preview on failure | `fn:history.version`; exact 300/500 ms first-preview units and real delayed/failed journey |
+| Restore selected version | Responsive → waiting; named save task | Restore this version → Restoring version…; retained error and scoped Retry | `fn:history.restore`; current draft saved first; no success or dismissal before restored write acknowledgement |
+| Undo restored text | Responsive → waiting; named save task | Existing notification action, retained failure and Retry | `fn:history.undo`; original Undo text survives refusal; no success announcement before write acknowledgement |
+
 ## Image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
