@@ -7,6 +7,29 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
+### Phase-2 Close-hover and Files pin
+
+Worker17 implemented owner item 7 before item 6. The existing five fixes are preserved. App local/origin are clean at `07c2e31a71fe4ae056fdf87c2a5742898f872de0`; its exact-head build passed all 12 combined native checks before packaging.
+
+| Scoped check in worker17 | Result |
+| --- | --- |
+| `pnpm exec vitest run packages/core/test/files-app.test.ts packages/ui/test/file-tree-detail.test.tsx packages/core/test/project-settings.test.ts packages/core/test/theme-manager.test.ts tools/test/layers.test.mjs` | Passed, 68 tests: acknowledged row pin/unpin, concurrent pins, explicit hovered target, menu Retry after selection changes, preserved selection, existing Files, project/theme scope and structural layers |
+| UI, UI-runtime and desktop package typechecks; scoped core typecheck using `scratch/ui-states-worker13-core-tsconfig.json` | Passed; external config now targets worker17 throughout, including Files tests |
+| `node tools/check-boundaries.mjs`; `pnpm ui:check`; component inventory and schema regeneration | Passed: 784 documents / 82 components / 726 commands; existing hover-capability rule retained |
+| Desktop build; `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "Close tooltip never"` | Passed, 2 native tests spanning three dialog variants, two sizes, both themes, repeated pointer/keyboard tooltip cycles and frame-by-frame geometry; body padding is independent of appended portal siblings |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts --workers=1 -g "Files pin swaps"` | Passed, 2 native tests: no row/label shift, explicit note/folder target without navigation, persisted pin/unpin, keyboard action, refused state write with exact Retry after selection changes, process restart, touch Unpin and exact note bytes |
+| `pnpm --filter @focus-notes/desktop run build`, then `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts ui-states.spec.ts --workers=1 -g "Files pin swaps\|Close tooltip never\|Settings keeps navigation\|Agents code Copy\|menu explanations\|full-app Connect\|Themes applies\|review feedback: project scheme\|theme and font choices"` | Passed on clean pushed `07c2e31a`: all 12 native journeys, preserving the original five fixes alongside the two additions |
+| External `ui-states-candidate.cjs --feedback-only`, normal generated `Open review build.cmd` launch, per-PID exposure receipt | Passed: one candidate at `focus-notes-work/preview/candidates/07c2e31a`; both distinct projects, notes, Settings schemes, Open cards and loopback repositories inspected invisibly, with own-PID cleanup. Only then old Electron 2480 was closed via worker17's scoped script, WhatIf first; its launcher exited. New Electron 62832 / launcher 65092 / HWND 2621926 has no E2E variables, is titled Focus Notes, and passed actual monitor exposure after 21.6 s (20/45 points; bounds 1970,314–3102,1126). |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and external headless changed-page checker | Passed: changed audit/DoD/system/wait pages have one H1, resolving evidence anchors, no page-wide overflow and light/dark rendering |
+
+**Why the repeated Close bug escaped:** the old owner build's Idea feedback dialog loses 24 px when a tooltip becomes its last child (580 → 556 px). Prior tooltip checks explicitly skipped dialog-height rules, while taller dialog content masked the padding loss. The shared primitive now declares content-slot edges; it does not patch a particular dialog's height or raise a z-index.
+
+**Try it:** hover Close in Settings, New project and short Idea feedback; repeat, then focus Close by keyboard. None moves or resizes. In Files, hover a note/folder or focus its row, then use the pin in its type-icon slot. It must not open/select/expand that row. Restart and confirm Pinned persists; touch users can act without hover. Failure retains the acknowledged pins and offers Retry for the original target/value, never a replayed toggle.
+
+All test apps use scoped finally cleanup. No full suite, CI wait, main app merge, release, real-account write, toolbar-customizer or AI-scan change is claimed. Phase 2 is not complete.
+
+**Current owner review:** leave Electron 62832 and launcher 65092 open. Start future reviews only through the public normal Shell entry and require a new per-PID exposure receipt; do not drive, activate, move or blindly relaunch this review. Both Field notes and Garden notes are preserved. The old 9c512e40 candidate was not regenerated; protected Preview, galleries and docs were not stopped.
+
 ### Phase-2 fixed Settings navigation and combined checks, b83c1e0c
 
 Settings uses the sealed navigation-height dialog variant: 600 px high/minimum, clamped to the available overlay space. Its body never scrolls. Tabs owns one content-only scroller while navigation and Send feedback remain outside it. A body shorter than the 400 px side-navigation budget, or too narrow for side-by-side content, uses wrapping horizontal tabs; navigation itself never gets a scrollbar. Other dialogs and Tabs retain their existing defaults.

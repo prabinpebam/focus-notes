@@ -1,5 +1,15 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Files item pin acknowledgement
+
+The existing Files pin write now uses a per-row commit target. The acknowledged pin and selection remain unchanged until storage succeeds; independent rows remain usable and writes serialize without dropping another pin. Retry retains the original row and intended value, including from the existing menu. No performance improvement is claimed.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Pin/unpin a Files note or folder | Responsive; per-row commit track | Same-slot Pin/Unpin button; own-border pending, confirmed or failed; retained error with exact Retry | `fn:files.pin`; immediate local pending, existing 200 ms pending/confirmed floors; no acknowledged pin before persistence |
+
+The [Close-hover correction](../plan/definition-of-done.md#phase-2-close-hover-and-files-pin) changes semantic slot spacing only; it introduces no save, load or wait. Every-frame native checks cover all dialog height variants rather than claiming faster tooltips.
+
 ## Themes: scope and acknowledgement
 
 The [structural overlay correction at b031948f](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f) changes paint ownership only: no load, save, reload, unmount or new wait is introduced. Dialogs/full-app steps portal above panels; the existing window band remains draggable and notifications keep their top-level role.
