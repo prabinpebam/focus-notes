@@ -338,6 +338,9 @@
           "$ref": "#/$defs/c_ProjectPill"
         },
         {
+          "$ref": "#/$defs/c_OpenItem"
+        },
+        {
           "$ref": "#/$defs/c_PickerButton"
         },
         {
@@ -1045,7 +1048,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -1282,7 +1287,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -1572,7 +1579,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -2332,7 +2341,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -2764,7 +2775,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -5086,7 +5099,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -5372,7 +5387,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -5884,7 +5901,9 @@
                     "upload",
                     "caption",
                     "description",
-                    "sparkle"
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
                   ]
                 },
                 {
@@ -7206,6 +7225,372 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_OpenItem": {
+      "type": "object",
+      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "OpenItem"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "project",
+                    "file"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "title": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "detail": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "path": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "pathLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "logo": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "book",
+                    "briefcase",
+                    "beaker",
+                    "heart",
+                    "star",
+                    "leaf",
+                    "rocket",
+                    "lightbulb",
+                    "music",
+                    "camera",
+                    "people",
+                    "home",
+                    "airplane",
+                    "code",
+                    "brush",
+                    "trophy",
+                    "earth",
+                    "food",
+                    "building",
+                    "chat",
+                    "diamond",
+                    "flag",
+                    "sparkle",
+                    "pen",
+                    "upload",
+                    "none"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "initials": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "accent": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "orange",
+                    "amber",
+                    "lime",
+                    "green",
+                    "teal",
+                    "cyan",
+                    "blue",
+                    "indigo",
+                    "violet",
+                    "pink",
+                    "slate",
+                    "app"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "sort",
+                    "inSelection",
+                    "grip",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough",
+                    "text",
+                    "taskList",
+                    "divider",
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "hardDrive",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail",
+                    "pin",
+                    "pinOff",
+                    "feedback",
+                    "sent",
+                    "print",
+                    "aiOllama",
+                    "aiLmStudio",
+                    "aiVllm",
+                    "aiAnthropic",
+                    "aiClaude",
+                    "aiClaudeCode",
+                    "aiGemini",
+                    "aiMistral",
+                    "aiDeepseek",
+                    "aiPerplexity",
+                    "aiOpenrouter",
+                    "aiHuggingface",
+                    "aiCopilot",
+                    "image",
+                    "imageAdd",
+                    "crop",
+                    "rotate",
+                    "openWindow",
+                    "quickNote",
+                    "upload",
+                    "caption",
+                    "description",
+                    "sparkle",
+                    "pinFilled",
+                    "documentText"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "pinned": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "pinLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "unpinLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "title"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "pin": {
+              "$ref": "#/$defs/actions"
+            },
+            "reveal": {
               "$ref": "#/$defs/actions"
             }
           }

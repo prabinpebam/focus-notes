@@ -19,6 +19,7 @@ import sitePage from "../views/sitePage.view.json" with { type: "json" };
 import en from "../messages/en.json" with { type: "json" };
 import { mocks, mockData } from "../mocks/index.ts";
 import { shareMocks } from "../mocks/share/index.ts";
+import { openMocks } from "../mocks/open/index.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
 export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewrite, newNote, shareItem, sitePreview, projects, projectNew, projectIntro, localImport };
@@ -37,4 +38,4 @@ export const messages: Record<string, Record<string, string>> = { en };/**
 export { mocks, mockData };
 
 /** Design mocks shown in the gallery before anything is wired (strict design mode): one group per area, each with its views, fake data and entries. */
-export const mockGroups = [shareMocks];
+export const mockGroups = [openMocks, shareMocks];

@@ -7222,6 +7222,580 @@
       ]
     },
     {
+      "type": "OpenItem",
+      "tier": "primitive",
+      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+      "props": {
+        "kind": {
+          "kind": "enum",
+          "values": [
+            "project",
+            "file"
+          ],
+          "default": "file"
+        },
+        "title": {
+          "kind": "message",
+          "required": true,
+          "description": "The project's or file's name: the person's own words."
+        },
+        "detail": {
+          "kind": "message",
+          "description": "A file: its project and folder."
+        },
+        "path": {
+          "kind": "text",
+          "description": "A project: its folder's full path."
+        },
+        "pathLabel": {
+          "kind": "message",
+          "description": "The path's action: Show in File Explorer, or Show in Finder."
+        },
+        "logo": {
+          "kind": "enum",
+          "values": [
+            "book",
+            "briefcase",
+            "beaker",
+            "heart",
+            "star",
+            "leaf",
+            "rocket",
+            "lightbulb",
+            "music",
+            "camera",
+            "people",
+            "home",
+            "airplane",
+            "code",
+            "brush",
+            "trophy",
+            "earth",
+            "food",
+            "building",
+            "chat",
+            "diamond",
+            "flag",
+            "sparkle",
+            "pen",
+            "upload",
+            "none"
+          ],
+          "default": "none"
+        },
+        "src": {
+          "kind": "text",
+          "description": "An uploaded logo's sanitized SVG data URL."
+        },
+        "initials": {
+          "kind": "text"
+        },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "A file's type icon."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name: Pin, with the item's name."
+        },
+        "unpinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name while pinned: Unpin, with the item's name."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The open action's accessible name, when the title alone doesn't say it."
+        }
+      },
+      "events": {
+        "press": {},
+        "pin": {},
+        "reveal": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.openItem.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "title"
+      },
+      "fixtures": [
+        {
+          "name": "project",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project pinned",
+          "covers": [
+            "selected"
+          ],
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "rocket",
+            "accent": "pink",
+            "pinned": true,
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project uploaded logo",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.long"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "upload",
+            "src": {
+              "get": "vm.gallery.logoSrc"
+            },
+            "accent": "indigo",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "logo book",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "book",
+            "accent": "red"
+          }
+        },
+        {
+          "name": "logo briefcase",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "briefcase",
+            "accent": "orange"
+          }
+        },
+        {
+          "name": "logo beaker",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "beaker",
+            "accent": "amber"
+          }
+        },
+        {
+          "name": "logo heart",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "heart",
+            "accent": "lime"
+          }
+        },
+        {
+          "name": "logo star",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "star",
+            "accent": "green"
+          }
+        },
+        {
+          "name": "logo leaf",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "leaf",
+            "accent": "teal"
+          }
+        },
+        {
+          "name": "logo rocket",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "rocket",
+            "accent": "cyan"
+          }
+        },
+        {
+          "name": "logo lightbulb",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "lightbulb",
+            "accent": "blue"
+          }
+        },
+        {
+          "name": "logo music",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "music",
+            "accent": "indigo"
+          }
+        },
+        {
+          "name": "logo camera",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "camera",
+            "accent": "violet"
+          }
+        },
+        {
+          "name": "logo people",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "people",
+            "accent": "pink"
+          }
+        },
+        {
+          "name": "logo home",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "home",
+            "accent": "slate"
+          }
+        },
+        {
+          "name": "logo airplane",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "airplane",
+            "accent": "red"
+          }
+        },
+        {
+          "name": "logo code",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "code",
+            "accent": "orange"
+          }
+        },
+        {
+          "name": "logo brush",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "brush",
+            "accent": "amber"
+          }
+        },
+        {
+          "name": "logo trophy",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "trophy",
+            "accent": "lime"
+          }
+        },
+        {
+          "name": "logo earth",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "earth",
+            "accent": "green"
+          }
+        },
+        {
+          "name": "logo food",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "food",
+            "accent": "teal"
+          }
+        },
+        {
+          "name": "logo building",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "building",
+            "accent": "cyan"
+          }
+        },
+        {
+          "name": "logo chat",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "chat",
+            "accent": "blue"
+          }
+        },
+        {
+          "name": "logo diamond",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "diamond",
+            "accent": "indigo"
+          }
+        },
+        {
+          "name": "logo flag",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "flag",
+            "accent": "violet"
+          }
+        },
+        {
+          "name": "logo sparkle",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "sparkle",
+            "accent": "pink"
+          }
+        },
+        {
+          "name": "logo pen",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "pen",
+            "accent": "slate"
+          }
+        },
+        {
+          "name": "initials, app accent",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "initials": {
+              "get": "vm.gallery.initials"
+            },
+            "logo": "none",
+            "accent": "app"
+          }
+        },
+        {
+          "name": "file",
+          "props": {
+            "kind": "file",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "icon": "documentText",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "file pinned",
+          "covers": [
+            "selected"
+          ],
+          "props": {
+            "kind": "file",
+            "title": {
+              "t": "gallery.long"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "icon": "documentText",
+            "pinned": true,
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "PickerButton",
       "tier": "primitive",
       "description": "A compact button that shows only a setting's current value and opens its choices in a popover (D-316, owner 3 November): a font's name drawn in that font, or a theme's name beside a small swatch of it, then a chevron. Use it as a PopoverPanel's trigger.",

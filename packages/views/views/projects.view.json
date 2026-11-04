@@ -3,7 +3,7 @@
   "id": "projects",
   "ia": "IA-VIEW-PROJECTS",
   "overlay": true,
-  "viewModels": ["vm.projects"],
+  "viewModels": ["vm.app", "vm.projects"],
   "focus": "projectSearch",
   "root": {
     "type": "Stack",
@@ -13,7 +13,7 @@
     "props": { "title": { "t": "project.open.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.projects.open" }, "size": "xl", "height": "content" },
     "on": { "openChange": { "run": "projects.close" } },
     "children": [{
-      "type": "Stack", "props": { "gap": "s" },
+      "type": "Stack", "props": { "gap": "xl" },
       "children": [
         { "type": "SearchField", "id": "projectSearch", "props": { "label": { "t": "project.open.search" }, "placeholder": { "t": "project.open.search" }, "clearLabel": { "t": "newNote.clear" }, "value": { "bind": "vm.projects.query" }, "autoFocus": true } },
         { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
@@ -23,27 +23,43 @@
           { "type": "Button", "props": { "label": { "t": "project.new" }, "variant": "subtle", "icon": "add" }, "on": { "press": { "run": "projects.new" } } },
           { "type": "Button", "props": { "label": { "t": "project.openProject" }, "variant": "subtle", "icon": "folder" }, "on": { "press": { "run": "projects.choose" } } }
         ] },
-        { "type": "Columns", "props": { "gap": "l" }, "children": [
-          { "type": "Stack", "props": { "gap": "s" }, "children": [
-            { "type": "Heading", "props": { "value": { "t": "recent.title" }, "level": "3" } },
-            { "each": { "get": "vm.projects.recent" }, "as": "recent", "key": "recent.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" } } }, "render": {
-              "type": "ItemCard", "props": { "title": { "get": "recent.label" }, "detail": { "get": "recent.description" } }, "children": [
-                { "type": "Button", "props": { "label": { "t": "project.open" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.launch", "args": { "id": { "get": "recent.id" } } } } },
-                { "type": "MenuButton", "props": { "icon": "more", "label": { "t": "pin.menu.label", "args": { "name": { "get": "recent.label" } } }, "sections": { "get": "recent.menu" } }, "on": { "action": { "run": "projects.pin", "args": { "id": { "get": "event.id" } } } } }
-              ]
-            } }
+        { "type": "Columns", "props": { "gap": "xxl" }, "children": [
+          { "type": "Stack", "props": { "gap": "m" }, "children": [
+            { "type": "Text", "props": { "value": { "t": "recent.title" }, "role": "label", "tone": "muted" } },
+            { "type": "Stack", "props": { "gap": "xxs" }, "children": [
+              { "each": { "get": "vm.projects.recent" }, "as": "recent", "key": "recent.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" }, "tone": "muted" } }, "render": {
+                "type": "OpenItem",
+                "props": {
+                  "kind": "file", "title": { "get": "recent.label" }, "detail": { "get": "recent.description" }, "icon": "documentText", "pinned": { "get": "recent.pinned" },
+                  "label": { "t": "project.open.openItem", "args": { "name": { "get": "recent.label" } } },
+                  "pinLabel": { "t": "project.open.pinItem", "args": { "name": { "get": "recent.label" } } },
+                  "unpinLabel": { "t": "project.open.unpinItem", "args": { "name": { "get": "recent.label" } } }
+                },
+                "on": {
+                  "press": { "run": "projects.launch", "args": { "id": { "get": "recent.id" } } },
+                  "pin": { "run": "projects.pin", "args": { "id": { "get": "recent.id" } } }
+                }
+              } }
+            ] }
           ] },
-          { "type": "Stack", "props": { "gap": "s" }, "children": [
-            { "type": "Heading", "props": { "value": { "t": "project.list.title" }, "level": "3" } },
-            { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" } } }, "render":
-              { "type": "ProjectScope", "props": { "accent": { "get": "entry.accent" } }, "children": [
-                { "type": "ItemCard", "props": { "title": { "get": "entry.name" }, "detail": { "get": "entry.folder" }, "personal": "all" }, "children": [
-                  { "type": "ProjectMark", "props": { "logo": { "get": "entry.logo" }, "src": { "get": "entry.logoSrc" }, "size": "s" } },
-                  { "type": "MenuButton", "props": { "icon": "more", "label": { "t": "pin.menu.label", "args": { "name": { "get": "entry.name" } } }, "sections": { "get": "entry.menu" } }, "on": { "action": { "run": "projects.pin", "args": { "id": { "get": "event.id" } } } } },
-                  { "type": "Button", "props": { "label": { "t": "project.open" }, "variant": "primary", "size": "s" }, "on": { "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } } } }
-                ] }
-              ] }
-            }
+          { "type": "Stack", "props": { "gap": "m" }, "children": [
+            { "type": "Text", "props": { "value": { "t": "project.list.title" }, "role": "label", "tone": "muted" } },
+            { "type": "Stack", "props": { "gap": "s" }, "children": [
+              { "each": { "get": "vm.projects.entries" }, "as": "entry", "key": "entry.id", "empty": { "type": "Text", "props": { "value": { "t": "project.empty.title" }, "tone": "muted" } }, "render": {
+                "type": "OpenItem",
+                "props": {
+                  "kind": "project", "title": { "get": "entry.name" }, "path": { "get": "entry.folder" }, "accent": { "get": "entry.accent" }, "logo": { "get": "entry.logo" }, "src": { "get": "entry.logoSrc" }, "pinned": { "get": "entry.pinned" },
+                  "pathLabel": { "t": "project.open.reveal", "args": { "platform": { "get": "vm.app.platform" } } },
+                  "label": { "t": "project.open.openItem", "args": { "name": { "get": "entry.name" } } },
+                  "pinLabel": { "t": "project.open.pinItem", "args": { "name": { "get": "entry.name" } } },
+                  "unpinLabel": { "t": "project.open.unpinItem", "args": { "name": { "get": "entry.name" } } }
+                },
+                "on": {
+                  "press": { "run": "projects.launch", "args": { "id": { "get": "entry.id" } } },
+                  "pin": { "run": "projects.pin", "args": { "id": { "get": "entry.id" } } }
+                }
+              } }
+            ] }
           ] }
         ] },
         { "type": "Text", "when": { "get": "vm.projects.pending" }, "props": { "value": { "t": "project.open.preparing" } } },

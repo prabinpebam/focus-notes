@@ -3140,6 +3140,163 @@
       ]
     },
     {
+      "type": "OpenItem",
+      "tier": "primitive",
+      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+      "props": {
+        "kind": {
+          "kind": "enum",
+          "values": [
+            "project",
+            "file"
+          ],
+          "default": "file"
+        },
+        "title": {
+          "kind": "message",
+          "required": true,
+          "description": "The project's or file's name: the person's own words."
+        },
+        "detail": {
+          "kind": "message",
+          "description": "A file: its project and folder."
+        },
+        "path": {
+          "kind": "text",
+          "description": "A project: its folder's full path."
+        },
+        "pathLabel": {
+          "kind": "message",
+          "description": "The path's action: Show in File Explorer, or Show in Finder."
+        },
+        "logo": {
+          "kind": "enum",
+          "values": [
+            "book",
+            "briefcase",
+            "beaker",
+            "heart",
+            "star",
+            "leaf",
+            "rocket",
+            "lightbulb",
+            "music",
+            "camera",
+            "people",
+            "home",
+            "airplane",
+            "code",
+            "brush",
+            "trophy",
+            "earth",
+            "food",
+            "building",
+            "chat",
+            "diamond",
+            "flag",
+            "sparkle",
+            "pen",
+            "upload",
+            "none"
+          ],
+          "default": "none"
+        },
+        "src": {
+          "kind": "text",
+          "description": "An uploaded logo's sanitized SVG data URL."
+        },
+        "initials": {
+          "kind": "text"
+        },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "orange",
+            "amber",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "blue",
+            "indigo",
+            "violet",
+            "pink",
+            "slate",
+            "app"
+          ],
+          "default": "app"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "A file's type icon."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name: Pin, with the item's name."
+        },
+        "unpinLabel": {
+          "kind": "message",
+          "description": "Pin's accessible name while pinned: Unpin, with the item's name."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The open action's accessible name, when the title alone doesn't say it."
+        }
+      },
+      "events": {
+        "press": {},
+        "pin": {},
+        "reveal": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "selected"
+      ],
+      "tokens": "cmp.openItem.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "title"
+      },
+      "fixtures": [
+        "project",
+        "project pinned",
+        "project uploaded logo",
+        "logo book",
+        "logo briefcase",
+        "logo beaker",
+        "logo heart",
+        "logo star",
+        "logo leaf",
+        "logo rocket",
+        "logo lightbulb",
+        "logo music",
+        "logo camera",
+        "logo people",
+        "logo home",
+        "logo airplane",
+        "logo code",
+        "logo brush",
+        "logo trophy",
+        "logo earth",
+        "logo food",
+        "logo building",
+        "logo chat",
+        "logo diamond",
+        "logo flag",
+        "logo sparkle",
+        "logo pen",
+        "initials, app accent",
+        "file",
+        "file pinned"
+      ]
+    },
+    {
       "type": "PickerButton",
       "tier": "primitive",
       "description": "A compact button that shows only a setting's current value and opens its choices in a popover (D-316, owner 3 November): a font's name drawn in that font, or a theme's name beside a small swatch of it, then a chevron. Use it as a PopoverPanel's trigger.",
@@ -5865,7 +6022,9 @@
     "upload",
     "caption",
     "description",
-    "sparkle"
+    "sparkle",
+    "pinFilled",
+    "documentText"
   ],
   "views": [
     {
@@ -5966,6 +6125,7 @@
       "id": "projects",
       "ia": "IA-VIEW-PROJECTS",
       "viewModels": [
+        "vm.app",
         "vm.projects"
       ]
     },

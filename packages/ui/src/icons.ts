@@ -14,7 +14,7 @@ import {
   ArrowDownload20Regular, Circle20Regular, Globe20Regular, CalendarLtr20Regular, ChevronLeft20Regular, Mail20Regular, Pin20Regular, PinOff20Regular,
   PersonFeedback20Regular, CheckmarkCircle20Regular, Print20Regular,
   Image20Regular, ImageAdd20Regular, Crop20Regular, ArrowRotateClockwise20Regular, WindowNew20Regular, Notepad20Regular,
-  ArrowUpload20Regular, ClosedCaption20Regular, TextDescription20Regular, Sparkle20Regular,
+  ArrowUpload20Regular, ClosedCaption20Regular, TextDescription20Regular, Sparkle20Regular, DocumentText20Regular, Pin20Filled,
 } from "@fluentui/react-icons";
 import type { ComponentType, SVGProps } from "react";
 import type { IconName } from "./icon-names.ts";
@@ -44,7 +44,7 @@ export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
   // Setup (D-142): an app to install, a step not reached yet, a website.
   download: ArrowDownload20Regular, circle: Circle20Regular, globe: Globe20Regular,
   // Pinning Files open (D-161).
-  pin: Pin20Regular, pinOff: PinOff20Regular,
+  pin: Pin20Regular, pinOff: PinOff20Regular, pinFilled: Pin20Filled, documentText: DocumentText20Regular,
   // Send feedback (D-203): the feedback itself, and that it was sent.
   feedback: PersonFeedback20Regular, sent: CheckmarkCircle20Regular,
   // Print (D-230).
