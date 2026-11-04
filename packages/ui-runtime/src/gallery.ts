@@ -264,6 +264,12 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "ink", label: "Ink", scheme: "dark", src: "#gallery", alt: "Ink" },
     ],
     colorValues: [{ id: "color.accent", value: "#9a3412" }, { id: "color.link", value: "#9a3412" }],
+    // The scan for AI models on this computer (ScanRadar, DD-RWR-12): one place answered, one still asked, one not running.
+    scanTargets: [
+      { id: "ollama", label: "Ollama", detail: "localhost:11434", icon: "aiOllama", status: "found", result: "2 models" },
+      { id: "lmstudio", label: "LM Studio", detail: "localhost:1234", icon: "aiLmStudio", status: "checking" },
+      { id: "vllm", label: "vLLM", detail: "localhost:8000", icon: "aiVllm", status: "none", result: "Not running" },
+    ],
     // The right-click menu in text (TextMenu, D-204): a misspelled word's suggestions, then the edit actions, Cut unavailable.
     textMenu: [
       { id: "textMenu0", items: [{ id: "s0", label: "mistake" }, { id: "s1", label: "mistakes" }] },
@@ -311,6 +317,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         treeEditLabel: { type: "string" },
         treeEditError: { type: "string" },
         versionBlocks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
+        scanTargets: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, icon: { type: "string" }, status: { type: "string" }, result: { type: "string" } } } },
         noteBlocks: BLOCK_LIST_SCHEMA,
         versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
         themeTiles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, kind: { type: "string" }, slot: { type: "string" }, badge: { type: "string" }, description: { type: "string" }, group: { type: "string" }, sample: { type: "string" }, colors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } } } } },

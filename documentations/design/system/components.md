@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **82 registered contracts**: **54 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **18 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **84 registered contracts**: **56 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **18 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch</h2>
 
@@ -43,7 +43,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**82 registered contracts:** 54 primitives, 5 host components, 18 layouts, 1 block component, 4 compound components.
+**84 registered contracts:** 56 primitives, 5 host components, 18 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -71,7 +71,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Toast | primitive | `rest`, `paused`, `focusVisible` | 6 | `paused`, `focusVisible` |
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
-| MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
+| MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 3 | None |
 | TextField | primitive | `rest`, `focused`, `invalid`, `pending`, `confirmed`, `failed` | 17 | `focused` |
 | PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 6 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen`, `pinAvailable`, `pinPending`, `pinConfirmed`, `pinFailed` | 3 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
@@ -97,6 +97,8 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | FontChoice | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 11 | None |
 | ProjectPill | primitive | `rest` | 27 | None |
 | PickerButton | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 26 | None |
+| ToolbarComposer | primitive | `rest`, `dragging`, `holding`, `lifted`, `full` | 2 | `dragging`, `holding`, `lifted` |
+| ScanRadar | primitive | `rest` | 4 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -243,6 +245,8 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **CodeBlock** | Implemented | `value` (required), `label`, `copyLabel` (required), `size` m or l; event `copy`. Something to type or paste elsewhere, such as a terminal command or a one-time code, in monospace with its own Copy (D-142). Not a note's code block, which NoteContent and the editor draw | Group, named by its label | Setup steps |
 | **VersionCompare** | Implemented | `found`, `needed`, `foundLabel`, `neededLabel` (all required), `label`. The version found against the version needed, as two pills with an arrow (D-142) | Group, named by its label | Setup's tool checks |
 | **StrengthMeter** | Implemented | `value`, `label` (required), `valueText`. Four segments toned by a passphrase's strength, with a word beside them (D-142) | Meter | Passphrase fields |
+| **ScanRadar** | Implemented | `label`, `phase` (scanning, found, none, error), `targets` (scan targets: name, address, icon, status, result), `count`, `checkingLabel`. The scan for AI models on this computer (DD-RWR-12): a radar disc whose sweep turns over `motion.sweep` (still under reduced motion), each answering place appearing as a blip, beside one row per place checked with its own status and a found count announced once at the end | Status, a polite live region | Settings → AI, Find on this computer (mock, pending owner approval) |
+| **ToolbarComposer** | Implemented | `label`, `items` (pinned command items), `groups` (menu sections: the catalogue by category), `max`, and the announcement messages; event `change` (the pinned ids). The real Toolbar shown open above the grouped catalogue: drag to add or reorder at a marker, hold over a button for `motion.hold` to replace it, drag off to remove; full, the marker turns red. Space or Enter picks up, arrows choose a place, Enter drops, Esc cancels, Delete removes (DD-IA-08) | Two groups of real buttons, keyboard pick-up and drop, polite live region | Customize toolbar (mock, pending owner approval) |
 | **Spinner** | Implemented | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
 | **Skeleton** | Implemented | `shape` line, tile or avatar; `width` full, long, medium or short. A placeholder shaped like content on its way, with a light that passes three times (4.5 s) and then stands still; still with reduced motion, a plain GrayText shape in forced colours (D-208); `cmp.skeleton.*` | None: always hidden, the region beside it carries the one status | ItemCard skeletons in the first run, the spelling menu's "Checking spelling…", Settings' account, sharing, agents and About while they load, Send feedback's report, history and Recently deleted |
 | **ProgressBar** | Implemented | `value`, `max`, `label`. A determinate bar for work that reports how far it has got, read out as a percentage; the words beside it say what the work is (PRF-13, D-149) | Progress bar | Setup, publishing, long work |
