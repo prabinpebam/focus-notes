@@ -54,7 +54,7 @@
               },
               {
                 "type": "StatusRow", "when": { "get": "vm.shareItem.loadFailed" },
-                "props": { "message": { "get": "vm.shareItem.problem" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
+                "props": { "message": { "get": "vm.shareItem.problem" }, "tone": "danger", "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.shareItem.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } },
                 "on": { "action": { "run": "share.item.reload" } }
               },
               {

@@ -1,4 +1,5 @@
 import type { AppState } from "./app.ts";
+import { opErrorCode } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
@@ -105,14 +106,18 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     commands.register<A>({ id, title: "command.note.share", run });
   const loadListing = async (current: number) => {
     if (!access) return;
-    set({ preparing: true, loadFailed: false, problem: "" });
+    set({ preparing: true });
     try {
-      const listing = await tracker.section("share.item.prepare", "share.item.preparing", () => access.load());
+      const listing = await tracker.section("share.item.prepare", "share.item.preparing", () => access.load(), "fn:share.item.prepare");
       if (current !== generation) return;
       store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+      set({ loadFailed: false, problem: "" });
       if (listing.localReview && (store.state.ui.share.settings.off || !listing.site)) await commands.run("sharing.firstOpen", { resume: true });
-    } catch {
-      if (current === generation) set({ problem: catalog.format("share.item.unavailable"), loadFailed: true });
+    } catch (error) {
+      if (current === generation) {
+        console.error("Sharing preparation failed", opErrorCode(error));
+        set({ problem: catalog.format("share.item.unavailable"), loadFailed: true });
+      }
     } finally {
       if (current === generation) set({ preparing: false });
     }
@@ -368,7 +373,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       history: { type: "array", items: { type: "object", properties: { id: STR, methods: STR, detail: STR, badge: STR, link: BOOL, active: BOOL } } },
       lines: { type: "array", items: { type: "object", properties: { id: STR, text: STR } } },
       actionsDisabled: BOOL, actionReason: STR, controlReason: STR,
-      notes: NUM, folders: NUM, counting: BOOL, countingVisible: BOOL, preparingVisible: BOOL, loadFailed: BOOL, deleted: BOOL, problem: STR, hasProblem: BOOL,
+      notes: NUM, folders: NUM, counting: BOOL, countingVisible: BOOL, preparingVisible: BOOL, loadFailed: BOOL, retrying: BOOL, deleted: BOOL, problem: STR, hasProblem: BOOL,
       link: BOOL, passcode: BOOL, later: BOOL, laterDetail: STR, noMethods: BOOL, blockedReason: STR,
       expiry: STR, expiries: { type: "array", items: OPTION }, until: STR, date: BOOL, never: BOOL,
       mode: STR, modes: { type: "array", items: OPTION }, own: STR, ownMode: BOOL, strength: NUM,
@@ -414,7 +419,8 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         controlReason: catalog.format(d.id ? "share.item.controlsSaved" : d.wordsBusy ? "share.item.wordsPreparing" : "share.item.creating"),
         actionsDisabled: d.busy || d.preparing || d.loadFailed || d.wordsBusy || Boolean(blockedReason),
         actionReason: d.preparing ? catalog.format("share.item.preparing") : d.loadFailed ? catalog.format("share.item.unavailable") : d.busy ? catalog.format("share.item.publishing") : d.wordsBusy ? catalog.format("share.item.wordsPreparing") : blockedReason,
-        preparingVisible: d.preparing && !history.length && s.tasks.findLast(t => t.target === "share.item.prepare")?.phase === "on",
+        retrying: d.preparing && d.loadFailed,
+        preparingVisible: d.preparing && !d.loadFailed && !history.length && s.tasks.findLast(t => t.target === "share.item.prepare")?.phase === "on",
         primaryLabel: catalog.format("share.dialog.primary", { system: platform }),
         title: catalog.format("share.item.title", { name: d.name }),
         countingVisible: d.counting && s.tasks.some((t) => t.target === "share.item.count" && t.phase === "on"),

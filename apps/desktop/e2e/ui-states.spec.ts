@@ -22,6 +22,85 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+test("Share item delays its own section, retains choices and history through failed reads and scoped Retry", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md");
+  const before = readFileSync(note, "utf8");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("First line.");
+    await l.app.evaluate(({ ipcMain }) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
+      const original: unknown = handlers.get("access:load");
+      if (typeof original !== "function") throw new Error("Sharing read handler is unavailable");
+      let reads = 0;
+      Reflect.set(globalThis, "uiStatesShareWrites", 0);
+      ipcMain.removeHandler("access:apply");
+      ipcMain.handle("access:apply", () => {
+        Reflect.set(globalThis, "uiStatesShareWrites", Number(Reflect.get(globalThis, "uiStatesShareWrites")) + 1);
+        throw new Error("Sharing preparation must not mutate grants");
+      });
+      ipcMain.removeHandler("access:load");
+      ipcMain.handle("access:load", async (event, ...args: unknown[]) => {
+        const request = ++reads;
+        await new Promise(resolve => setTimeout(resolve, 900));
+        if (request === 1 || request === 3) throw new Error("private-path-and-token");
+        const listing = await original(event, ...args);
+        return { ...listing, available: true, localReview: false, site: "https://sharing.test/", grants: [{
+          id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
+          createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
+          item: { path: "welcome.md", label: "Welcome", folder: false, includeLater: false },
+        }] };
+      });
+    });
+    const open = async () => {
+      await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+      await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+      await l.page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    };
+    await open();
+    const share = l.page.getByRole("dialog", { name: "Share “Welcome”", exact: true });
+    const shapes = share.locator("[data-shimmer]");
+    await expect(shapes).toHaveCount(3);
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationIterationCount)).toBe("3");
+    await l.page.emulateMedia({ reducedMotion: "reduce" });
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationName)).toBe("none");
+    const expiry = share.getByRole("radiogroup", { name: "Expires in", exact: true });
+    await expiry.getByText("7 days", { exact: true }).click();
+    const error = share.locator("[data-status-row=danger]");
+    await expect(error).toContainText("Sharing couldn't be loaded.");
+    await expect(shapes).toHaveCount(0);
+    await expect(error).not.toContainText("private-path-and-token");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expiry.getByText("90 days", { exact: true }).click();
+    await expect(error).toBeVisible();
+    await expect(share.getByRole("radio", { name: "90 days", exact: true })).toBeChecked();
+    const history = share.getByRole("button", { name: "Shared before · 1", exact: true });
+    await expect(history).toBeVisible();
+    await expect(error).toHaveCount(0);
+    await l.page.keyboard.press("Escape");
+    await open();
+    await expect(history).toBeVisible();
+    await expect(shapes).toHaveCount(0);
+    await expect(error).toContainText("Sharing couldn't be loaded.");
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(history).toBeVisible();
+    await expect(shapes).toHaveCount(0);
+    await expect(error).toHaveCount(0);
+    await expect(history).toBeVisible();
+    expect(await l.app.evaluate(() => Number(Reflect.get(globalThis, "uiStatesShareWrites")))).toBe(0);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:share.item.prepare").length)).toBe(4);
+    await l.page.keyboard.press("Escape");
+    await expect(editor).toContainText("First line.");
+    expect(readFileSync(note, "utf8")).toBe(before);
+  } finally { await closeTestApp(l); }
+});
+
 test("History delays its own section, retries exact reads and acknowledges restore and Undo only after saving", async () => {
   const { dirs } = instance();
   const repository = join(dirs.docs, "private"), note = join(repository, "notes", "welcome.md");

@@ -118,9 +118,45 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: true, preparingVisible: false, expiry: "7d" });
     await t.run("share.item.action", { what: "information" });
     expect(shareGrants(t.access())).toHaveLength(0);
-    t.bridge.access!.load = async () => listing;
+    let accept!: (value: typeof listing) => void;
+    t.bridge.access!.load = () => new Promise(resolve => { accept = resolve; });
+    const retry = t.run("share.item.reload");
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: true, retrying: true, expiry: "7d" });
+    await t.run("share.item.setExpiry", { value: "90d" });
+    await vi.advanceTimersByTimeAsync(300);
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: true, retrying: true, preparingVisible: false });
+    accept(listing);
+    await vi.advanceTimersByTimeAsync(500);
+    await retry;
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: false, retrying: false, expiry: "90d", open: true });
+    expect(shareGrants(t.access())).toHaveLength(0);
+  });
+  it("keeps acknowledged sharing history through a failed refresh and ignores a closed item's late read", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/diary.md" });
+    const listing = await t.bridge.access!.load();
+    const saved: typeof listing = { ...listing, grants: [{
+      id: "ghistory001", name: "Diary", scope: { all: false, notes: ["diary.md"], folders: [] },
+      createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
+      item: { path: "diary.md", label: "Diary", folder: false, includeLater: false },
+    }] };
+    t.bridge.access!.load = async () => saved;
     await t.run("share.item.reload");
-    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: false, expiry: "7d", open: true });
+    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyCount: 1 });
+    t.bridge.access!.load = async () => { throw new Error("private-path-and-token"); };
+    await t.run("share.item.reload");
+    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyCount: 1, loadFailed: true, preparingVisible: false });
+    let finish!: (value: typeof listing) => void;
+    t.bridge.access!.load = () => new Promise(resolve => { finish = resolve; });
+    const old = t.run("share.item.reload");
+    await t.run("share.item.setOpen", { open: false });
+    t.bridge.access!.load = async () => listing;
+    await t.run("share.item.open", { path: "/w/private/notes/trips/rome.md" });
+    finish(saved);
+    await old;
+    expect(t.vm("vm.shareItem")).toMatchObject({ name: "Rome", hasHistory: false, loadFailed: false });
   });
   it("waits for word preparation before any action or draft mutation", async () => {
     const t = shell();
