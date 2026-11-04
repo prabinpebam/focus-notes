@@ -321,7 +321,7 @@ export function ToolbarComposer(props: ToolbarComposerProps) {
         onPointerDownCapture={press({ from: "toolbar", id })}
         onKeyDownCapture={pickKeys({ from: "toolbar", id })}
       >
-        {button(it, `${uid}-on-${id}`)}
+        <span className={s.displaced}>{button(it, `${uid}-on-${id}`)}</span>
         {outgoing && byId.get(outgoing.id) ? (
           <span className={s.outgoing} aria-hidden="true" inert onAnimationEnd={() => setLeaving((x) => x.filter((y) => y.key !== outgoing.key))}>{button(byId.get(outgoing.id)!)}</span>
         ) : null}

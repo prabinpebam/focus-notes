@@ -73,7 +73,7 @@ export function MorphPanel({ label, open = false, trigger, content, onOpenChange
   }, [open, preview]);
 
   return (
-    <div ref={root} className={s.root} data-open={open ? "" : undefined} data-morph-panel="" data-surface={open ? "panel" : undefined}>
+    <div ref={root} className={s.root} data-open={open ? "" : undefined} data-preview={preview ? "" : undefined} data-morph-panel="" data-surface={open ? "panel" : undefined}>
       <div className={s.triggerSlot} inert={open}>{trigger}</div>
       <div ref={body} className={s.content} role={preview ? "group" : "dialog"} aria-label={label} aria-hidden={open ? undefined : true} inert={!open}>
         {content}

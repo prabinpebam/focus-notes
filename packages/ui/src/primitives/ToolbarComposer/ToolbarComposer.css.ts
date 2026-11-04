@@ -50,19 +50,27 @@ export const slot = style({
   position: "relative",
   display: "inline-flex",
   touchAction: "none",
-  transitionProperty: "transform, opacity",
-  transitionDuration: t.move,
-  transitionTimingFunction: t.easing,
+  "::before": {
+    content: '""', position: "absolute", inset: 0, pointerEvents: "none",
+    borderStyle: "solid", borderWidth: t.slotBorderWidth, borderColor: t.slotBorder,
+    borderRadius: t.slotRadius,
+  },
   selectors: {
     "[data-dragging] &": { pointerEvents: "none" },
     "&[data-origin]": { opacity: t.origin },
     "&[data-holding]": { animationName: holdTimer, animationDuration: t.hold, animationTimingFunction: "linear" },
-    // The button under a held drag moves out of its slot a little: dropping now replaces it.
-    "&[data-lifted]": { opacity: t.lifted, transform: `translateY(${t.lift}) scale(0.85)` },
     '&[data-entering="insert"]': { overflow: "clip", animationName: grow, animationDuration: t.move, animationTimingFunction: t.easeOut },
     '&[data-entering="replace"]': { animationName: dropIn, animationDuration: t.leave, animationTimingFunction: t.easeOut },
     "&[data-leaving]": { overflow: "clip", pointerEvents: "none", animationName: collapse, animationDuration: t.leave, animationTimingFunction: t.easeIn, animationFillMode: "forwards" },
   },
+});
+
+export const displaced = style({
+  display: "inline-flex",
+  transitionProperty: "transform, opacity",
+  transitionDuration: t.move,
+  transitionTimingFunction: t.easing,
+  selectors: { [`${slot}[data-lifted] > &`]: { opacity: t.lifted, transform: `translateY(${t.lift})` } },
 });
 
 // The replaced button, over the slot the new one takes: it carries on down, fades and is gone.
