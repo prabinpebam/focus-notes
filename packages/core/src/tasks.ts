@@ -120,8 +120,16 @@ export class TaskTracker {
     this.#clock = clock;
   }
 
-  /** Runs `work` as a tracked wait. Failures end the sign at once and are rethrown to the caller. */
-  async run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> {
+  run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> {
+    return this.#run(target, message, work, doneMessage, false);
+  }
+
+  /** A section replaces its shape only after the visible minimum, on success or failure. */
+  section<T>(target: string, message: string, work: () => Promise<T>): Promise<T> {
+    return this.#run(target, message, work, undefined, true);
+  }
+
+  async #run<T>(target: string, message: string, work: () => Promise<T>, doneMessage: string | undefined, section: boolean): Promise<T> {
     const c = this.#clock;
     const task: Running = { id: this.#next++, target, message, ...(doneMessage ? { doneMessage } : {}), phase: "ack", elapsed: 0, started: c.now(), announced: false, timers: [] };
     this.#tasks.set(task.id, task);
@@ -137,11 +145,18 @@ export class TaskTracker {
     task.timers.push(c.setTimeout(tick, this.#t.elapsedDelay));
     this.#emit();
     const mark = `focus-notes:${target}`;
+    const hold = async () => {
+      if (!section || task.shownAt === undefined) return;
+      const remaining = this.#t.signMinimum - (c.now() - task.shownAt);
+      if (remaining > 0) await new Promise<void>(resolve => c.setTimeout(resolve, remaining));
+    };
     try {
       const result = await work();
+      await hold();
       this.#finish(task, true);
       return result;
     } catch (error) {
+      await hold();
       this.#finish(task, false);
       throw error;
     } finally {

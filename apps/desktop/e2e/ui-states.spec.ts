@@ -46,6 +46,46 @@ test("known-empty wrappers keep their first actions local and filtered Open can 
   } finally { await closeTestApp(l); }
 });
 
+test("section loading uses the approved row shapes and keeps old content through a failed refresh and Retry", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  try {
+    await l.app.evaluate(({ ipcMain }) => {
+      let reads = 0;
+      ipcMain.removeHandler("agents:load");
+      ipcMain.handle("agents:load", async () => {
+        const request = ++reads;
+        await new Promise(resolve => setTimeout(resolve, 350));
+        if (request === 2) throw new Error("section read refused");
+        return {
+          permissions: { connect: false, readPublic: true, readPrivate: false, edit: false, createPublic: true, folders: "all" },
+          changedOutside: false, snippets: [], recent: [], cli: { available: false, installed: false, onPath: false },
+        };
+      });
+    });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Agents", exact: true }).click();
+    const shapes = settings.locator("[data-shimmer]");
+    await expect(shapes).toHaveCount(6);
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationIterationCount)).toBe("3");
+    await l.page.emulateMedia({ reducedMotion: "reduce" });
+    expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationName)).toBe("none");
+    await expect(shapes).toHaveCount(0);
+    const retained = settings.getByText("Agents can use all folders.", { exact: true });
+    await expect(retained).toBeVisible();
+    await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+    await settings.getByRole("tab", { name: "Agents", exact: true }).click();
+    await expect(retained).toBeVisible();
+    await expect(shapes).toHaveCount(0);
+    await expect(settings.getByText("Couldn't read agent settings. Try again.", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(retained).toBeVisible();
+    await expect(shapes).toHaveCount(0);
+    await expect(settings.getByText("Couldn't read agent settings. Try again.", { exact: true })).toHaveCount(0);
+  } finally { await closeTestApp(l); }
+});
+
 test("a rejected settings write is reported and Retry persists the requested value", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

@@ -4,7 +4,7 @@
  * connection snippets and their Copy; recent agent changes with Undo; and Install command-line tool
  * only where the shell offers it.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { connectionSnippets, createApp, type AgentsPage, type PlatformBridge } from "../src/index.ts";
@@ -52,8 +52,48 @@ async function opened(f: ReturnType<typeof setup>) {
 }
 type Vm = { ready: boolean; changedOutside: boolean; switches: { id: string; pressed: boolean; disabled: boolean; label: string }[]; folders: string; snippets: { id: string; value: string; copyLabel: string }[]; recent: { id: string; title: string; detail: string }[]; cli: { status: string; canInstall: boolean } };
 const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.agents", app.store.state) as Vm;
+afterEach(() => vi.useRealTimers());
 
 describe("AGT-02: Settings → Agents", () => {
+  it("delays its first skeleton by 300 ms, holds it for 500 ms and keeps old content on a failed refresh", async () => {
+    const f = setup();
+    const page = await f.bridge.agents!.load();
+    let done!: (value: AgentsPage) => void;
+    f.bridge.agents!.load = () => new Promise(resolve => { done = resolve; });
+    const app = createApp(f.bridge, messages);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
+    const loading = app.commands.run("agents.load");
+    const state = () => app.viewModels.select("vm.agents", app.store.state);
+    expect(state()).toMatchObject({ waiting: false, ready: false });
+    await vi.advanceTimersByTimeAsync(299);
+    expect(state()).toMatchObject({ waiting: false });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(state()).toMatchObject({ waiting: true });
+    done(page);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(state()).toMatchObject({ waiting: true, ready: false });
+    await vi.advanceTimersByTimeAsync(1);
+    await loading;
+    expect(state()).toMatchObject({ waiting: false, ready: true });
+    f.bridge.agents!.load = async () => { throw new Error("unreadable"); };
+    await app.commands.run("agents.load");
+    expect(state()).toMatchObject({ waiting: false, failed: true, ready: true });
+  });
+
+  it("ignores an older Agents reply after the newer refresh finishes", async () => {
+    const f = setup();
+    const page = await f.bridge.agents!.load();
+    const replies: ((value: AgentsPage) => void)[] = [];
+    f.bridge.agents!.load = () => new Promise(resolve => { replies.push(resolve); });
+    const app = createApp(f.bridge, messages);
+    const older = app.commands.run("agents.load");
+    const newer = app.commands.run("agents.load");
+    replies[1]!({ ...page, changedOutside: true });
+    await newer;
+    replies[0]!(page);
+    await older;
+    expect(vm(app).changedOutside).toBe(true);
+  });
   it("is a Settings section where the shell has agents, and shows the switches as the file holds them", async () => {
     const f = setup();
     const app = await opened(f);
@@ -115,7 +155,7 @@ describe("AGT-02: Settings → Agents", () => {
     expect(app.store.state.ui.toasts.at(-1)?.message).toBe("Undid the agent's change to notes/plan.md.");
     f.answer({ problem: "changed" });
     await app.commands.run("agents.undo", { commit: "a".repeat(40) });
-    expect(app.store.state.ui.toasts.at(-1)?.message).toBe("notes/plan.md changed since the agent's edit, so it wasn't undone.");
+    expect(app.store.state.ui.toasts.find(t => t.tone === "error")?.message).toBe("notes/plan.md changed since the agent's edit, so it wasn't undone.");
     // Only commits the page listed.
     await app.commands.run("agents.undo", { commit: "b".repeat(40) });
     expect(f.undos).toHaveLength(2);

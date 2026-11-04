@@ -12,6 +12,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { agentLabel, type AgentPermissions } from "./agents.ts";
+import type { TaskTracker } from "./tasks.ts";
 
 export type SnippetId = "vscode" | "claude" | "powershell" | "terminal";
 export interface AgentChangeRow { repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }
@@ -35,7 +36,7 @@ export interface AgentsBridge {
 export const SWITCHES = ["connect", "readPublic", "readPrivate", "edit", "createPublic"] as const;
 export type SwitchId = (typeof SWITCHES)[number];
 
-export interface AgentsState { page?: AgentsPage; loading: boolean; busy: boolean; copied?: SnippetId; undoing?: string }
+export interface AgentsState { page?: AgentsPage; loading: boolean; failed?: boolean; busy: boolean; copied?: SnippetId; undoing?: string }
 export const AGENTS_IDLE: AgentsState = { loading: false, busy: false };
 
 /** PowerShell: every word in single quotes, a quote inside doubled; `&` runs the quoted program. */
@@ -63,23 +64,29 @@ interface Ctx {
   bridge: PlatformBridge;
   toast: (message: string, opts?: { tone?: "info" | "error" }) => number;
   announce: (text: string) => void;
+  tracker: TaskTracker;
 }
 
 export function registerAgents(ctx: Ctx) {
-  const { store, commands, viewModels, catalog, bridge } = ctx;
+  const { store, commands, viewModels, catalog, bridge, tracker } = ctx;
   const agents = bridge.agents;
   const st = () => store.state.ui.agents;
   const set = (patch: Partial<AgentsState>) => store.update((s) => ({ ...s, ui: { ...s.ui, agents: { ...s.ui.agents, ...patch } } }));
   const fail = () => ctx.toast(catalog.format("agents.failed"), { tone: "error" });
+  let generation = 0;
 
   commands.register({
     id: "agents.load", title: "command.agents.load", enabled: () => Boolean(agents),
     run: async () => {
       if (!agents) return;
-      set({ loading: true });
-      const page = await agents.load().catch(() => undefined);
-      set({ loading: false, ...(page ? { page } : {}) });
-      if (!page) fail();
+      const current = ++generation;
+      set({ loading: true, failed: false });
+      try {
+        const page = await tracker.section("agents.load", "agents.loading", () => agents.load());
+        if (current === generation) set({ loading: false, page });
+      } catch {
+        if (current === generation) set({ loading: false, failed: true });
+      }
     },
   });
   commands.register<{ id: unknown }>({
@@ -90,8 +97,9 @@ export function registerAgents(ctx: Ctx) {
       const key = id as SwitchId;
       // Only the master switch works while agents can't connect.
       if (key !== "connect" && !page.permissions.connect) return;
+      generation++;
       const next = Object.fromEntries(SWITCHES.map((k) => [k, k === key ? !page.permissions[k] : page.permissions[k]])) as Pick<AgentPermissions, SwitchId>;
-      set({ busy: true });
+      set({ busy: true, loading: false });
       const read = await agents.setSwitches(next).catch(() => undefined);
       set({ busy: false, ...(read ? { page: read } : {}) });
       if (!read) return void fail();
@@ -141,7 +149,7 @@ export function registerAgents(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        loading: { type: "boolean" }, ready: { type: "boolean" }, busy: { type: "boolean" }, changedOutside: { type: "boolean" },
+        loading: { type: "boolean" }, waiting: { type: "boolean" }, failed: { type: "boolean" }, ready: { type: "boolean" }, busy: { type: "boolean" }, changedOutside: { type: "boolean" },
         switches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, pressed: { type: "boolean" }, disabled: { type: "boolean" }, reason: { type: "string" } } } },
         folders: { type: "string" },
         snippets: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, value: { type: "string" }, copyLabel: { type: "string" } } } },
@@ -150,13 +158,14 @@ export function registerAgents(ctx: Ctx) {
         cli: { type: "object", properties: { status: { type: "string" }, canInstall: { type: "boolean" } } },
       },
     },
-    reads: ["ui.agents"],
+    reads: ["ui.agents", "tasks"],
     select: (s) => {
       const a = s.ui.agents;
       const p = a.page;
-      if (!p) return { loading: a.loading, ready: false, busy: false, changedOutside: false, switches: [], folders: "", snippets: [], recent: [], recentEmpty: false, cli: { status: "", canInstall: false } };
+      const loading = { loading: a.loading, failed: a.failed === true, waiting: a.loading && !p && s.tasks.findLast(t => t.target === "agents.load")?.phase === "on" };
+      if (!p) return { ...loading, ready: false, busy: false, changedOutside: false, switches: [], folders: "", snippets: [], recent: [], recentEmpty: false, cli: { status: "", canInstall: false } };
       return {
-        loading: a.loading, ready: true, busy: a.busy, changedOutside: p.changedOutside,
+        ...loading, ready: true, busy: a.busy, changedOutside: p.changedOutside,
         switches: SWITCHES.map((id) => ({
           id, label: catalog.format(`agents.switch.${id}`), note: catalog.format(`agents.switch.${id}.note`), pressed: p.permissions[id] === true,
           disabled: a.busy || (id !== "connect" && !p.permissions.connect),

@@ -44,6 +44,38 @@ function setup() {
 }
 
 describe("the task tracker (PRF-08)", () => {
+  it("holds a section result until its visible shape has had 500 ms, without delaying a fast result", async () => {
+    const t = setup();
+    await t.tracker.section("agents.load", "agents.loading", async () => {});
+    expect(t.tasks()).toEqual([]);
+    const d = t.deferred();
+    let replaced = false;
+    const run = t.tracker.section("agents.load", "agents.loading", () => d.p).then(() => { replaced = true; });
+    await t.advance(299);
+    expect(t.tasks()[0]!.phase).toBe("ack");
+    await t.advance(1);
+    expect(t.tasks()[0]!.phase).toBe("on");
+    d.resolve();
+    await t.advance(499);
+    expect(replaced).toBe(false);
+    await t.advance(1);
+    await run;
+    expect(replaced).toBe(true);
+  });
+  it("holds a section failure for the same visible minimum and rethrows the cause", async () => {
+    const t = setup();
+    const d = t.deferred();
+    let caught = "";
+    const run = t.tracker.section("history.load", "history.loading", () => d.p).catch(e => { caught = e.message; });
+    await t.advance(350);
+    d.reject(new Error("unavailable"));
+    await t.advance(449);
+    expect(caught).toBe("");
+    await t.advance(1);
+    await run;
+    expect(caught).toBe("unavailable");
+    expect(t.tasks()).toEqual([]);
+  });
   it("shows nothing for work that ends within wait.signDelay", async () => {
     const { tracker, advance, tasks, deferred } = setup();
     const d = deferred();

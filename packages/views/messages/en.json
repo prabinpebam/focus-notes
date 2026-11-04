@@ -1919,6 +1919,7 @@
   "agents.heading.recent": "Recent agent changes",
   "agents.heading.cli": "Command-line tool",
   "agents.loading": "Reading agent settings…",
+  "agents.loadFailed": "Couldn't read agent settings. Try again.",
   "agents.failed": "Couldn't change agent settings. Try again.",
   "agents.changedOutside": "Agent settings were changed outside Focus Notes, so the safe defaults apply. Turning any switch saves them again.",
   "agents.switch.connect": "Agents can connect",

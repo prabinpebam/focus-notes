@@ -2365,13 +2365,13 @@
                       {
                         "type": "Text",
                         "when": {
-                          "get": "vm.agents.loading"
+                          "get": "vm.agents.waiting"
                         },
                         "props": {
                           "value": {
                             "t": "agents.loading"
                           },
-                          "announce": true
+                          "announce": false
                         }
                       },
                       {
@@ -2383,25 +2383,25 @@
                           {
                             "type": "Skeleton",
                             "props": {
-                              "width": "full"
+                              "shape": "row"
                             }
                           },
                           {
                             "type": "Skeleton",
                             "props": {
-                              "width": "long"
-                            }
-                          },
-                          {
-                            "type": "Skeleton",
-                            "props": {
-                              "width": "medium"
+                              "shape": "row"
                             }
                           }
                         ],
                         "when": {
-                          "get": "vm.agents.loading"
+                          "get": "vm.agents.waiting"
                         }
+                      },
+                      {
+                        "type": "StatusRow",
+                        "when": { "get": "vm.agents.failed" },
+                        "props": { "message": { "t": "agents.loadFailed" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
+                        "on": { "action": { "run": "agents.load" } }
                       },
                       {
                         "type": "Text",

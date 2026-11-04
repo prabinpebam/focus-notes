@@ -95,6 +95,24 @@ const VERSIONS: NoteVersion[] = [
 const TEXTS = { c0ffee3: "# Welcome\n\nNow.\n", c0ffee2: "# Welcome\n\nEarlier.\n", c0ffee1: "# Welcome\n\nFirst.\n" };
 
 describe("Note history in the app (FIL-13)", () => {
+  it("keeps the previous versions on a failed refresh and ignores an older response after reopening the same note", async () => {
+    const f = setup({ versions: VERSIONS, texts: TEXTS });
+    const app = await started(f);
+    await app.commands.run("history.open");
+    f.bridge.workspace!.versions = async () => { throw new Error("unavailable"); };
+    await app.commands.run("history.open");
+    expect(app.store.state.ui.history).toMatchObject({ versions: VERSIONS, failed: true, listFailed: true });
+    const replies: ((versions: NoteVersion[]) => void)[] = [];
+    f.bridge.workspace!.versions = () => new Promise(resolve => { replies.push(resolve); });
+    const older = app.commands.run("history.open");
+    await app.commands.run("history.close");
+    const newer = app.commands.run("history.open");
+    replies[1]!([VERSIONS[0]!]);
+    await newer;
+    replies[0]!(VERSIONS);
+    await older;
+    expect(app.store.state.ui.history.versions).toEqual([VERSIONS[0]]);
+  });
   it("is offered for a note in a Git workspace, and not without Git", async () => {
     expect((await started(setup())).commands.describe("history.open").enabled).toBe(true);
     expect((await started(setup({ git: false }))).commands.describe("history.open").enabled).toBe(false);

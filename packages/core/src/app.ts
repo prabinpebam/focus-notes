@@ -1270,7 +1270,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     reads: [],
     select: () => ({ on: Boolean(bridge.demo) }),
   });
-  registerNoteHistory({ store, commands, viewModels, catalog, bridge, toast, announce, setNote, flush });
+  registerNoteHistory({ store, commands, viewModels, catalog, bridge, toast, announce, setNote, flush, tracker });
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
   void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
@@ -1286,7 +1286,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerToolbarCustomize({ store, commands, viewModels, catalog, persistAppState, announce, pinnable, defaults: DEFAULT_TOOLBAR });
   const keybindings = registerKeybindings({ store, commands, viewModels, catalog, bridge, toast });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
-  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce });
+  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,

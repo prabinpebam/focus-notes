@@ -4,7 +4,7 @@
  * the invite text, adding people by link and passcode, problems explained before asking, changing
  * what an audience opens, extending, withdrawing, and deleting.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyAccessChange, audienceOf, itemInviteText, shareGrants, type AccessChange } from "@focus-notes/seal/access";
 import { displayShareCode, shareLink } from "@focus-notes/seal";
 import { generatePasscode } from "@focus-notes/seal/words";
@@ -80,6 +80,7 @@ describe("helpers", () => {
 });
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
+afterEach(() => vi.useRealTimers());
 
 it("opens Files from a sharing empty state without toggling an already-open panel shut", async () => {
   const t = shell();
@@ -94,6 +95,33 @@ it("opens Files from a sharing empty state without toggling an already-open pane
 });
 
 describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
+  it("holds the share section's shape on a failed load and Retry preserves the editable draft", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    const listing = await t.bridge.access!.load();
+    let reject!: (error: Error) => void;
+    t.bridge.access!.load = () => new Promise((_resolve, fail) => { reject = fail; });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
+    const opening = t.run("share.item.open", { path: "/w/private/notes/diary.md" });
+    expect(t.vm("vm.shareItem")).toMatchObject({ preparingVisible: false, actionsDisabled: true });
+    await vi.advanceTimersByTimeAsync(299);
+    expect(t.vm("vm.shareItem")).toMatchObject({ preparingVisible: false });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(t.vm("vm.shareItem")).toMatchObject({ preparingVisible: true });
+    await t.run("share.item.setExpiry", { value: "7d" });
+    reject(new Error("load rejected"));
+    await vi.advanceTimersByTimeAsync(499);
+    expect(t.vm("vm.shareItem")).toMatchObject({ preparingVisible: true });
+    await vi.advanceTimersByTimeAsync(1);
+    await opening;
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: true, preparingVisible: false, expiry: "7d" });
+    await t.run("share.item.action", { what: "information" });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    t.bridge.access!.load = async () => listing;
+    await t.run("share.item.reload");
+    expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: false, expiry: "7d", open: true });
+  });
   it("waits for word preparation before any action or draft mutation", async () => {
     const t = shell();
     let finish!: (words: { id: string; value: string }) => void;

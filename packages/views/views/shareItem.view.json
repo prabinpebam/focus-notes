@@ -49,8 +49,17 @@
                 "props": { "value": { "t": "share.dialog.counting" }, "tone": "muted", "role": "secondary" }
               },
               {
+                "type": "Skeleton", "when": { "get": "vm.shareItem.preparingVisible" },
+                "props": { "shape": "row" }
+              },
+              {
+                "type": "StatusRow", "when": { "get": "vm.shareItem.loadFailed" },
+                "props": { "message": { "get": "vm.shareItem.problem" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
+                "on": { "action": { "run": "share.item.reload" } }
+              },
+              {
                 "type": "Text",
-                "when": { "get": "vm.shareItem.hasProblem" },
+                "when": { "expr": { "and": [{ "get": "vm.shareItem.hasProblem" }, { "!": [{ "get": "vm.shareItem.loadFailed" }] }] } },
                 "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger" }
               },
               {

@@ -66,13 +66,14 @@
             },
             {
               "type": "Text",
+              "when": { "expr": { "!": [{ "get": "vm.history.listFailed" }] } },
               "props": {
                 "value": {
                   "get": "vm.history.status"
                 },
                 "role": "caption",
                 "tone": "muted",
-                "announce": true
+                "announce": false
               }
             }
           ]
@@ -96,22 +97,22 @@
                   {
                     "type": "Skeleton",
                     "props": {
-                      "width": "full"
+                      "shape": "row"
                     }
                   },
                   {
                     "type": "Skeleton",
                     "props": {
-                      "width": "long"
-                    }
-                  },
-                  {
-                    "type": "Skeleton",
-                    "props": {
-                      "width": "medium"
+                      "shape": "row"
                     }
                   }
                 ]
+              },
+              {
+                "type": "StatusRow",
+                "when": { "get": "vm.history.listFailed" },
+                "props": { "message": { "t": "history.failed" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
+                "on": { "action": { "run": "history.open" } }
               },
               {
                 "type": "ResultList",
