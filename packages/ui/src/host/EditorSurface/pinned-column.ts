@@ -19,6 +19,7 @@ const seconds = (v: string) => {
  */
 export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, editor: Editor): () => void {
   void column;
+  const frameElement = scroller.parentElement!;
   let current: string | undefined;
   let dockedLeft = dockLeft.get() > 0;
   let pinnedOnRight = pinnedRight.get() > 0;
@@ -53,11 +54,11 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
     current = key;
     anchor ??= caretTop();
     // Only docking and undocking glide; the first layout, resizing a panel and a window resize are at once.
-    if (first || !glide) scroller.dataset.pinnedInstant = "";
-    else delete scroller.dataset.pinnedInstant;
-    scroller.style.setProperty(varName(s.pinnedClearVar), `${leftWidth}px`);
-    scroller.style.setProperty(varName(s.pinnedRightVar), `${keep}px`);
-    const ms = first || !glide ? 0 : seconds(getComputedStyle(scroller).transitionDuration) || 0;
+    if (first || !glide) frameElement.dataset.pinnedInstant = "";
+    else delete frameElement.dataset.pinnedInstant;
+    frameElement.style.setProperty(varName(s.pinnedClearVar), `${leftWidth}px`);
+    frameElement.style.setProperty(varName(s.pinnedRightVar), `${keep}px`);
+    const ms = first || !glide ? 0 : seconds(getComputedStyle(frameElement).transitionDuration) || 0;
     gliding = ms > 0;
     // A safety net only: the glide's end is its transitionend.
     until = performance.now() + (gliding ? GLIDE_LIMIT_MS : 0);
@@ -68,13 +69,13 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
   };
   /** The glide ended: the caret's line is put back once more, then left alone. A glide replaced midway ends with its replacement. */
   const ended = (e: TransitionEvent) => {
-    if (e.target !== scroller || (e.propertyName !== varName(s.pinnedClearVar) && e.propertyName !== varName(s.pinnedRightVar))) return;
+    if (e.target !== frameElement || (e.propertyName !== varName(s.pinnedClearVar) && e.propertyName !== varName(s.pinnedRightVar))) return;
     gliding = false;
     until = 0;
     if (frame) cancelAnimationFrame(frame);
     hold();
   };
-  scroller.addEventListener("transitionend", ended);
+  frameElement.addEventListener("transitionend", ended);
   apply(false);
   // Docking or undocking Files glides; resizing it follows the pointer at once.
   const off = dockLeft.subscribe((width) => {
@@ -91,9 +92,9 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
   return () => {
     off();
     offRight();
-    scroller.removeEventListener("transitionend", ended);
+    frameElement.removeEventListener("transitionend", ended);
     if (frame) cancelAnimationFrame(frame);
-    scroller.style.removeProperty(varName(s.pinnedClearVar));
-    scroller.style.removeProperty(varName(s.pinnedRightVar));
+    frameElement.style.removeProperty(varName(s.pinnedClearVar));
+    frameElement.style.removeProperty(varName(s.pinnedRightVar));
   };
 }

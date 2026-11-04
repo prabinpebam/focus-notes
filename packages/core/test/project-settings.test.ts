@@ -20,6 +20,17 @@ function setup(save: PlatformBridge["saveAppState"], upload?: () => Promise<stri
   return app;
 }
 
+it("uses the project's resolved theme for the window and overlays, including changes and Follow app", async () => {
+  const app = setup(async () => {});
+  app.store.update(s => ({ ...s, appearance: { ...s.appearance, mode: "dark" } }));
+  await app.commands.run("project.theme", { value: "sepia" });
+  expect(app.viewModels.select("vm.app", app.store.state)).toMatchObject({ theme: "sepia", scheme: "light" });
+  await app.commands.run("project.theme", { value: "ink" });
+  expect(app.viewModels.select("vm.app", app.store.state)).toMatchObject({ theme: "ink", scheme: "dark" });
+  await app.commands.run("project.theme", { value: "app" });
+  expect(app.viewModels.select("vm.app", app.store.state)).toMatchObject({ theme: "ink", scheme: "dark" });
+});
+
 it("keeps an uploaded logo source across a refused save and retries without reopening the picker", async () => {
   const source = "data:image/svg+xml;base64,PHN2Zy8+";
   const upload = vi.fn().mockResolvedValue(source);

@@ -180,4 +180,5 @@ export function registerProject(ctx: {
       };
     },
   });
+  return { theme: () => transient.themeHover || settings().theme };
 }

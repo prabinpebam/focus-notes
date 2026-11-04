@@ -474,7 +474,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
-  registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
+  const project = registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
   const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
   const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load: (path, keepCurrent = false) => openNote(path, { keepOnFailure: keepCurrent }), flush, toast, tracker });
   registerProjectNew({ store, commands, viewModels, catalog, bridge });
@@ -1515,11 +1515,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode", "outlinePinned", "outlineWidth", "ui.files.pinned", "ui.files.width", "compositing", "ui.theme.preview", "ui.theme.draft", "ui.theme.readingPreview", "keybindings.version", "commits"],
+    reads: "*",
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       // A custom theme shows through its base's styles with its own colors over them (D-173).
-      const root = rootTheme(s);
+      const projectTheme = themeById(project.theme());
+      const root = projectTheme ? { theme: projectTheme.id, scheme: projectTheme.kind, colors: [] } : rootTheme(s);
       const theme = root.theme;
       const a = { ...s.appearance, ...s.ui.theme.readingPreview };
       return {

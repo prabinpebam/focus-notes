@@ -54,11 +54,6 @@ export const pinnedRightVar = createVar({ syntax: "<length>", inherits: true, in
 
 export const scroller = style({
   vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableInsertZone },
-  transitionProperty: `${pinnedClearVar.slice(4, -1)}, ${pinnedRightVar.slice(4, -1)}`,
-  transitionDuration: t.pinnedDuration,
-  transitionTimingFunction: t.pinnedEasing,
-  // The first layout, resizing and a window resize move the column at once; only docking and undocking glide.
-  selectors: { "&[data-pinned-instant]": { transitionDuration: t.pinnedInstant } },
   marginInlineStart: pinnedClearVar,
   marginInlineEnd: pinnedRightVar,
   flexGrow: 1,
@@ -78,6 +73,10 @@ minimalScrollbar(scroller, t);
 
 /** Holds the scroller and, over its top and bottom edges, the scroll edges (not scrolling with it). */
 export const frame = style({
+  transitionProperty: `${pinnedClearVar.slice(4, -1)}, ${pinnedRightVar.slice(4, -1)}`,
+  transitionDuration: t.pinnedDuration,
+  transitionTimingFunction: t.pinnedEasing,
+  selectors: { "&[data-pinned-instant]": { transitionDuration: t.pinnedInstant } },
   position: "relative",
   display: "flex",
   flexDirection: "column",
@@ -100,9 +99,9 @@ export const EDGE_BANDS = scrollEdge.bands;
 export const edge = style({
   position: "absolute",
   zIndex: t.edgeLayer,
-  insetInlineStart: 0,
+  insetInlineStart: pinnedClearVar,
   // Never over the scrollbar, which stays sharp and pressable.
-  insetInlineEnd: t.scrollbarSize,
+  insetInlineEnd: `calc(${pinnedRightVar} + ${t.scrollbarSize})`,
   height: t.scrollFade,
   pointerEvents: "none",
   // Shown with visibility, never opacity: an opacity under 1 would make it a backdrop root.

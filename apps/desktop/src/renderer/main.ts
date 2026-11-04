@@ -1,5 +1,5 @@
 /** The renderer entry: connects the preload bridge to the app core and mounts the canvas view. */
-import { createApp, resolvedScheme, resolvedTheme, type App, type PlatformBridge } from "@focus-notes/core";
+import { createApp, type App, type PlatformBridge } from "@focus-notes/core";
 import { mountApp, swapApp, flushApp } from "@focus-notes/ui-runtime";
 import { afterFirstThemedFrame, bootTheme, htmlToMarkdown, sanitizeSvgLogo } from "@focus-notes/ui";
 import { views, messages } from "@focus-notes/views";
@@ -88,10 +88,11 @@ interface Running {
 // The native parts follow the theme: title bar symbols and the window's own background (THM-02).
 let lastTheme = "";
 const followTheme = (app: App) => app.store.subscribe(() => {
-  const s = resolvedScheme(app.store.state);
+  const appearance = app.viewModels.select("vm.app", app.store.state) as { scheme: "light" | "dark"; theme: string };
+  const s = appearance.scheme;
   // The appearance too: macOS's native menus follow the app's light or dark (D-204).
   const mode = app.store.state.appearance.mode;
-  const t = `${s}:${resolvedTheme(app.store.state)}:${mode}`;
+  const t = `${s}:${appearance.theme}:${mode}`;
   if (t === lastTheme) return;
   lastTheme = t;
   requestAnimationFrame(() => {
