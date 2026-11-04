@@ -422,6 +422,26 @@ The owner's priority direction at 20:23 stopped the next implementation slice fo
 
 **Try it:** the launcher above includes Open file/Open from GitHub, broken-image recovery and all later sharing/Files slices. The GitHub list is a synthetic loopback stand-in with a local bare repository, not a real account. This expressly requested visible instance stays open. Phase 2 remains in progress; the launch does not accept remaining D5/D7 or hover/static work.
 
+### Phase-2 Recently deleted honest states, 71e94423
+
+Recently deleted distinguishes unknown, loading, failed and acknowledged empty results. A failed first read never says Nothing deleted; refresh failure keeps acknowledged rows. Read-only Retry retains its error, locks only that action and cannot restore or delete notes. Closing/reopening invalidates old results; successful Restore invalidates the old read too. The shared named section task supplies exact 300/500 ms shape timing and `fn:history.deleted`. Diagnostics contain only the fixed operation and known code. A refused Git log now rejects the listing instead of silently returning a partial/empty result.
+
+The approved success StatusRow replaces both bare empty-history branches, gated on a successful empty read. The colour editor's existing All colours pass branch also uses the approved success row. No writing-window element, new workflow or destructive replay was added.
+
+| Check on `71e94423` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\files-app.test.ts -t "Recently deleted known-empty"` before implementation | All 3 new regressions failed: failure became empty, refresh discarded rows and the first shape appeared before 300 ms |
+| `pnpm exec vitest run packages\core\test\files-app.test.ts packages\core\test\tasks.test.ts` | 36 passed: retained rows/error, duplicate Retry exclusion, read-only recovery, late closed/reopened result rejection, exact 299/300 and 499/500 ms boundaries, real task measure and existing Files behavior |
+| `pnpm exec vitest run apps\desktop\test\git-conflicts.test.ts -t "FIL-10: Recently deleted"` | 3 passed: real Git listing/restoration and controlled log refusal followed by acknowledged empty history |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed on final runtime/journey source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`; `pnpm check` | Passed: 779 documents, 82 components, 715 commands; generated schemas unchanged |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Recently deleted never calls failed history empty"` | Passed: real Git history behind held/refused IPC, no false empty during loading/failure, retained rows/error through Retry, actual restoration, then successful empty read shown as good news in the same connected Files body; 5 named measures and unchanged existing note bytes |
+
+An intermediate measurement assertion ran under mocked performance; moved it to the real-clock failure/Retry unit. Static validation required both repeat fallback branches; each is now gated on acknowledged empty state. A nonexistent command metadata property was replaced by the existing Spotlight exclusion mechanism. Final focused checks passed. The invisible journey closed and received own-PID `-WhatIf`, then actual cleanup; both explicitly requested owner-review instances stayed open.
+
+**Try it after the next candidate refresh:** Files → Recently deleted. The currently visible owner review is still `6218b99d`; this increment is pushed, not silently installed into that running app. Complete D5 first actions, independently delayed initial Files, D7 and hover/static acceptance remain in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.

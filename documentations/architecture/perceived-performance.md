@@ -63,6 +63,14 @@ The [Files known-empty evidence](../plan/definition-of-done.md#phase-2-files-kno
 | --- | --- | --- | --- |
 | Initial/retry Files scan | Responsive → waiting; independent section | Existing Files body; Reading your notes…; failure says notes weren't changed, Retry → Trying again… | `fn:workspace.list`; shared 300/500 ms task units, read/write-queue safety units and real known-empty first-action journey |
 
+## Recently deleted history
+
+The [honest-history evidence](../plan/definition-of-done.md#phase-2-recently-deleted-honest-states-71e94423) distinguishes a failed read from good news. The first-read shape is absent before 300 ms and, once shown, held at least 500 ms. Refresh keeps acknowledged rows; scoped Retry retains its error and never changes notes. A failed Git log propagates failure, not a partial empty result. This is feedback correctness, not a speed improvement.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read/retry Recently deleted | Responsive → waiting; independent named section task | Existing Files history wrapper; Looking through history…; local Retry → Trying again… | `fn:history.deleted`; exact 300/500 ms units and held/refused real-history journey; good news only after successful empty read |
+
 ## Image read recovery
 
 The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-recovery-cd0cede9) covers actual missing-file and native decode refusal, retained layout/alt/Retry and unchanged note bytes. It makes no speed claim. The read task includes the shared 300 ms sign delay and 500 ms minimum once shown; an existing broken frame stays mounted throughout Retry. Distinct failures coalesce per note, never one interrupting notice per Retry.
