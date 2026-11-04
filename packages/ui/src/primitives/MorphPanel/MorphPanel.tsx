@@ -10,6 +10,8 @@ export interface MorphPanelProps {
   trigger: ReactNode;
   content: ReactNode;
   onOpenChange?: (payload: { open: boolean }) => void;
+  /** Shown open as a picture of itself (the toolbar customizer, DD-IA-08): no focus taken, no Esc or click outside. */
+  preview?: boolean;
 }
 
 /** The property name inside a vanilla-extract variable reference, "var(--x)" → "--x". */
@@ -22,7 +24,7 @@ export const FLOATING_CHILD = "data-floating-child";
  * A trigger that morphs into its panel (UI-10): the trigger's circle grows into the panel's shape,
  * and the content fades in after it. Esc and clicking outside close it, and it reverses.
  */
-export function MorphPanel({ label, open = false, trigger, content, onOpenChange }: MorphPanelProps) {
+export function MorphPanel({ label, open = false, trigger, content, onOpenChange, preview = false }: MorphPanelProps) {
   const root = useRef<HTMLDivElement | null>(null);
   const body = useRef<HTMLDivElement | null>(null);
   const change = useRef(onOpenChange);
@@ -46,7 +48,7 @@ export function MorphPanel({ label, open = false, trigger, content, onOpenChange
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || preview) return;
     // Focus moves to the first action once the content can take it (Main UI → Behavior).
     const id = requestAnimationFrame(() => {
       body.current?.querySelector<HTMLElement>('[tabindex="0"]:not([aria-disabled="true"]), button:not([aria-disabled="true"]):not([tabindex="-1"])')?.focus();
@@ -68,12 +70,12 @@ export function MorphPanel({ label, open = false, trigger, content, onOpenChange
       window.removeEventListener("keydown", onEscape, true);
       document.removeEventListener("pointerdown", onPointer, true);
     };
-  }, [open]);
+  }, [open, preview]);
 
   return (
     <div ref={root} className={s.root} data-open={open ? "" : undefined} data-morph-panel="" data-surface={open ? "panel" : undefined}>
       <div className={s.triggerSlot} inert={open}>{trigger}</div>
-      <div ref={body} className={s.content} role="dialog" aria-label={label} aria-hidden={open ? undefined : true} inert={!open}>
+      <div ref={body} className={s.content} role={preview ? "group" : "dialog"} aria-label={label} aria-hidden={open ? undefined : true} inert={!open}>
         {content}
       </div>
     </div>
