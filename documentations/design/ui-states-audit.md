@@ -16,18 +16,35 @@
 
 | Slice | Findings | Review link | Availability | Approval |
 | --- | --- | --- | --- | --- |
-| D1 · Notifications | F3, F4 | [Open slice 1](http://127.0.0.1:5231/?f=mock.uistates.d1) | In design | Awaiting review |
-| D2 · Fields | F1, F2 | [Open slice 2](http://127.0.0.1:5231/?f=mock.uistates.d2) | Shown in the gallery | Awaiting review |
+| D1 · Notifications | F3, F4, F10 | [Open slice 1](http://127.0.0.1:5231/?f=mock.uistates.d1) | Shown in the gallery | Awaiting review |
+| D2 · Fields | F1, F2, F12 | [Open slice 2](http://127.0.0.1:5231/?f=mock.uistates.d2) | Shown in the gallery | Awaiting review |
 | D3 · Switches | F2 | [Open slice 3](http://127.0.0.1:5231/?f=mock.uistates.d3) | Shown in the gallery | Awaiting review |
-| D4 · Choices | F2 | [Open slice 4](http://127.0.0.1:5231/?f=mock.uistates.d4) | In design | Awaiting review |
-| D5 · Empty spaces | F6 | [Open slice 5](http://127.0.0.1:5231/?f=mock.uistates.d5) | In design | Awaiting review |
-| D6 · Recovery | F4, F5, F11 | [Open slice 6](http://127.0.0.1:5231/?f=mock.uistates.d6) | In design | Awaiting review |
-| D7 · Long operations | F7, F8 | [Open slice 7](http://127.0.0.1:5231/?f=mock.uistates.d7) | In design | Awaiting review |
-| D8 · Section loading | F9 | [Open slice 8](http://127.0.0.1:5231/?f=mock.uistates.d8) | In design | Awaiting review |
+| D4 · Choices | F2, F14 | [Open slice 4](http://127.0.0.1:5231/?f=mock.uistates.d4) | Shown in the gallery | Awaiting review |
+| D5 · Empty spaces | F6 | [Open slice 5](http://127.0.0.1:5231/?f=mock.uistates.d5) | Shown in the gallery | Awaiting review |
+| D6 · Recovery | F4, F5, F11, F15 | [Open slice 6](http://127.0.0.1:5231/?f=mock.uistates.d6) | Shown in the gallery | Awaiting review |
+| D7 · Long operations | F7, F8, F13 | [Open slice 7](http://127.0.0.1:5231/?f=mock.uistates.d7) | Shown in the gallery | Awaiting review |
+| D8 · Section loading | F9 | [Open slice 8](http://127.0.0.1:5231/?f=mock.uistates.d8) | Shown in the gallery | Awaiting review |
 
 Approval values are **Awaiting review**, **Approved** and **Changes requested**. The gallery index distinguishes an unfinished design from one available to review. The [phase-2 DoD](../plan/definition-of-done.md#ui-states-after-visual-approval) records future wiring, unit and journey evidence only; none is run in phase 1.
 
 **Two visual choices remain explicit in the first increment:** the proposed field border uses the commit colour while pending and returns to rest with the confirmed circle tick (the skill), rather than retaining a confirmed border (the audit's shorthand). The pending switch keeps its track visible with a spinner in the thumb (the audit); the skill describes replacing the control within its box. These are proposals for the owner's eye, not accepted decisions.
+
+### What phase 1 shows, and what it does not
+
+| Slice | Visual proposal now available | Deliberately deferred |
+| --- | --- | --- |
+| D1 | Success, warning, progress and sticky-error pills; 3 visible with a queued count; coalesced image failure; bottom-pill Play at 6 s and 8 s, Retry and Dismiss; conditional withdrawal Undo | Actual priority queue, coalescing, visible-only clocks and pause on hover/focus/window blur. Undo requires proof that the same link can be restored. |
+| D2 | Name and colour idle/pending/confirmed/error/empty-value states, retained input and Retry/Revert; separate AI connection-details and access-key groups | Real storage, provider checking and rejected-setter reporting. The key field contains no real key. |
+| D3 | Idle/pending/confirmed/error states on the same switch; Play holds the simulated stored value after the tick | Commit tracker, real persistence, rollback and focus/announcement evidence. Off is a value, not an empty state. |
+| D4 | Existing segments, theme tiles and font tiles with marks on the selected option, pending group lock and scoped failure; theme hover is restricted to hover-capable pointers, with pressed feedback | The 500 ms key pause, blur/release commits, remaining hover sites and the enforcement rule; no keyboard/device test claim. |
+| D5 | The same wrapper across Open's states; empty Files, Open, AI connections, sharing and all 4 site-preview lists; component-sized search empty and good-news examples | Real first actions and populated lists. Gallery actions only replace fake content. |
+| D6 | Retry and optional Details in Open, New project, Local import, history and the save menu; plain-language safety clauses; broken-image alt and local Retry | Real failed-command targets, partial-result safety and image reading. |
+| D7 | New project and Publish step lists, known-total progress, elapsed-time example and Cancel; success, failed step, cancelled and crashed-panel recovery; themed first-view appearance | Actual streamed steps, elapsed clocks, cancellation and crash recovery. The themed mock does not prove native first-paint timing. |
+| D8 | Idle content, in-shape section skeletons, content, error and empty; Play uses the 300 ms delay and 500 ms minimum; shimmer stops after 3 passes and is static with reduced motion | Real independent section loads, refresh retention, timeout and announcement behavior. |
+
+The new presentation pieces are `EmptyState` (compound) and `NotificationRegion` (layout). Existing components gain optional visual-state props; no normal app view opts into them yet. All UI is assembled in gallery view documents, and the writing window is unchanged. Token-based gallery timing is simulation, not production behavior. The developer gallery uses a nonce for Vite's development style injection; the app's and built gallery's content-security policies are unchanged.
+
+**Phase-1 evidence only:** the UI, views, runtime and desktop typechecks, `pnpm ui:check`, and the gallery-only Vite build passed. The hub and slices were opened for inspection without captures. No unit tests, journeys, benchmarks or CI waits were run; phase-2 evidence remains outstanding.
 
 ## Scope, sources and method
 
