@@ -238,6 +238,11 @@ describe("withdrawing and deleting (SHR-08)", () => {
     expect(() => validateAccess(w)).not.toThrow();
     // A withdrawn audience can't be changed back by an edit.
     expect(problem(() => apply(w, { op: "update", id, expiresAt: null }, NOW))).toBe("withdrawn");
+    const replacement = apply(w, create("Asha"), NOW);
+    const next = replacement.access.grants.find((x) => x.id === replacement.id)!;
+    expect(next.id).not.toBe(id);
+    expect(next.link).not.toEqual(g.link);
+    expect(replacement.access.grants.find((x) => x.id === id)).toEqual(g);
   });
   it("delete removes the record", () => {
     const { access, id } = apply(base(), create("Asha"), NOW);

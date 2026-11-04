@@ -14,6 +14,7 @@ import { git, instance, write } from "./instance.ts";
 test("SHR-16: first copy waits for a real deployed share; both methods work and reopening creates an independent share", async () => {
   test.setTimeout(120_000);
   const { dirs } = instance();
+  write(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "notes", "hello.md") }));
   const priv = join(dirs.docs, "private"), siteDir = join(dirs.userData, "published-share-fixture");
   write(join(priv, "notes", "trips", "rome.md"), "# Rome\n\nA sealed fixture plan.\n");
   git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add fixture plan");
@@ -108,14 +109,27 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     expect(expanded.passcode).toEqual(first.passcode);
     expect((await reader().openLinkSession(first.id, first.link!.secret)).share.notes).toHaveLength(2);
     expect((await reader().openAccessCode(`${first.shareCode} ${first.passcode!.value}`)).share.notes).toHaveLength(2);
+    const noteBeforeWithdrawal = readFileSync(join(priv, "notes", "trips", "rome.md"), "utf8");
     await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const confirm = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
     await expect(confirm.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
+    await expect(confirm).toContainText("This cannot be undone.");
+    await expect(confirm).toContainText("Sharing again creates a new link.");
     await confirm.getByRole("button", { name: "Cancel", exact: true }).click();
     expect(access().grants.find((g) => g.id === first.id)!.revokedAt).toBeUndefined();
+    await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+    await confirm.getByRole("button", { name: "Withdraw share", exact: true }).click();
+    await expect(confirm).not.toBeVisible();
+    await expect.poll(() => access().grants.find((g) => g.id === first.id)?.revokedAt).toBeTruthy();
+    await expect(share).toContainText("Its readers stop working after the next successful publication.");
+    await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Undo", exact: true })).toHaveCount(0);
+    expect(readFileSync(join(priv, "notes", "trips", "rome.md"), "utf8")).toBe(noteBeforeWithdrawal);
+    await expect(reader().openLinkSession(first.id, first.link!.secret)).rejects.toThrow();
   } finally {
     try { await quit(l); } finally {
-      if (process.platform === "win32") execFileSync("pwsh", ["-File", join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1"), "-OnlyPid", String(l.pid)], { stdio: "inherit" });
+      if (process.platform === "win32") {
+        for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-File", join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1"), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+      }
       server.closeAllConnections();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     }

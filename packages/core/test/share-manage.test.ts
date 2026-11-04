@@ -175,6 +175,8 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     expect(shareGrants(t.access())).toHaveLength(1);
     await t.run("share.item.row", { id, what: "withdraw" });
     expect(t.vm("vm.shareItem").confirmOpen).toBe(true);
+    expect(catalog.format("share.withdraw.text")).toContain("This cannot be undone.");
+    expect(catalog.format("share.withdraw.text")).toContain("Sharing again creates a new link.");
     expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
     await t.run("share.item.setConfirmOpen", { open: false });
     expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
@@ -548,6 +550,8 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     expect(shareGrants(t.access())[0]).toMatchObject({ scope: { notes: ["diary.md"], folders: [] }, link: { secret } });
     await t.run("share.manage.row", { id, action: "withdraw" });
     expect(t.vm("vm.shareConfirm")).toMatchObject({ open: true, title: "Withdraw access for Asha?", confirmLabel: "Withdraw" });
+    expect(t.vm("vm.shareConfirm").message).toContain("This cannot be undone.");
+    expect(t.vm("vm.shareConfirm").message).toContain("Sharing again creates a new link.");
     await t.run("share.manage.confirm");
     expect(shareGrants(t.access())[0]!.revokedAt).toBeTruthy();
     expect(t.vm("vm.shareManage").rows[0]).toMatchObject({ badge: "Withdrawn", active: false });
