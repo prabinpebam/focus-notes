@@ -9,6 +9,7 @@ import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import type { TaskTracker } from "./tasks.ts";
 import { sourceOf } from "./notes.ts";
 import { blocksOf, groupByDay, type DeletedNote } from "./history.ts";
 import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
@@ -59,7 +60,7 @@ export interface FilesState {
    */
   move: { open: boolean; query: string; activeId: string; paths: string[]; focus: number; restore?: string; save?: string };
   /** Recently deleted, in place of the tree (FIL-10). `notes` is undefined until it's first listed. */
-  recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
+  recent: { open: boolean; loading: boolean; failed?: boolean; notes?: readonly DeletedNote[]; focus: number };
   /**
    * Recovered, in place of the tree like Recently deleted (QLT-06, D-190, D-221): text a crash left
    * that couldn't go back in its note. `drafts` is undefined until first listed; `viewing` is the
@@ -104,7 +105,7 @@ interface Ctx {
   /** Runs an editor action: `edit.focus` puts the caret back in the note. */
   editorAction: (id: string) => void;
   /** The one task tracker (PRF-08): waits a person starts show their sign through it. */
-  tracker?: { run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> };
+  tracker?: Pick<TaskTracker, "run" | "section">;
   /** HTML as Markdown, for Import files (FIL-15); without it, Import files isn't offered. */
   htmlToMarkdown?: (html: string) => string;
 }
@@ -123,6 +124,7 @@ export function registerFiles(ctx: Ctx) {
   const setTree = (t: WorkspaceTree) => store.update((s) => (s.workspace.tree === t ? s : { ...s, workspace: { ...s.workspace, tree: t } }));
   const canWrite = (s: AppState) => Boolean(ws?.apply) && s.workspace.access === "write";
   const reason = (r: keyof typeof REASONS) => catalog.format(REASONS[r]);
+  let deletedGeneration = 0;
 
   // ---- rows ----
   // Worked out only when the tree, the open folders, the filter, or the order change: never per keystroke (D-175).
@@ -186,7 +188,10 @@ export function registerFiles(ctx: Ctx) {
     // The current note may be in a folder that only now shows; focus falls back to the first row.
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
   };
-  const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false }, recovered: { ...f.recovered, open: false, viewing: undefined } }));
+  const close = () => {
+    deletedGeneration++;
+    setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false, loading: false }, recovered: { ...f.recovered, open: false, viewing: undefined } }));
+  };
   /** Docked: pinned, with room beside the note (D-187). Undocked for room, it behaves as an unpinned panel. */
   const docked = () => files().pinned && files().fits;
   /** What would close an undocked panel (opening a note, a new note): docked, it stays (D-161, D-187). */
@@ -938,20 +943,37 @@ export function registerFiles(ctx: Ctx) {
   const recent = () => files().recent;
   const setRecent = (patch: Partial<FilesState["recent"]>) => setFiles((f) => ({ recent: { ...f.recent, ...patch } }));
   async function listDeleted(): Promise<void> {
+    const generation = ++deletedGeneration;
     setRecent({ loading: true });
-    const notes = await ws!.deleted!().catch(() => [] as DeletedNote[]);
-    setRecent({ loading: false, notes });
+    const current = () => generation === deletedGeneration && files().open && recent().open;
+    try {
+      const read = () => ws!.deleted!();
+      const notes = await (ctx.tracker ? ctx.tracker.section("history.deleted", "deleted.loading", read, "fn:history.deleted") : read());
+      if (current()) setRecent({ loading: false, failed: false, notes });
+    } catch (error) {
+      console.warn("history.deleted", opErrorCode(error));
+      if (current()) setRecent({ loading: false, failed: true });
+    }
   }
   commands.register({
     id: "files.showDeleted", title: "command.files.showDeleted", icon: "history",
     enabled: canRestore,
     run: async () => {
+      if (recent().open && recent().loading) return;
       if (!files().open) reveal();
       setFiles((f) => ({ edit: undefined, recent: { ...f.recent, open: true, focus: f.recent.focus + 1 }, recovered: { ...f.recovered, open: false, viewing: undefined } }));
       await listDeleted();
     },
   });
-  commands.register({ id: "files.hideDeleted", title: "command.files.hideDeleted", run: () => setFiles((f) => ({ recent: { ...f.recent, open: false }, focusRequest: f.focusRequest + 1 })) });
+  commands.register({
+    id: "files.retryDeleted", title: "commit.retry",
+    enabled: (s) => canRestore(s) && s.ui.files.open && s.ui.files.recent.open && s.ui.files.recent.failed === true && !s.ui.files.recent.loading,
+    run: listDeleted,
+  });
+  commands.register({ id: "files.hideDeleted", title: "command.files.hideDeleted", run: () => {
+    deletedGeneration++;
+    setFiles((f) => ({ recent: { ...f.recent, open: false, loading: false }, focusRequest: f.focusRequest + 1 }));
+  } });
   // The footer's button shows the list and goes back to the tree, so focus stays on it.
   commands.register({ id: "files.toggleDeleted", title: "command.files.showDeleted", enabled: canRestore, run: (_a, c) => c.run(recent().open ? "files.hideDeleted" : "files.showDeleted") });
   const deletedNote = (id: string) => recent().notes?.find((n) => n.id === id);
@@ -961,10 +983,11 @@ export function registerFiles(ctx: Ctx) {
     const what = notes.length === 1 ? catalog.format("files.quoted", { name: notes[0]!.title }) : catalog.format("files.items", { count: ids.length });
     try {
       const back = await ctx.exclusive(() => ws!.restore!(ids, folder));
+      deletedGeneration++;
       setTree(applyChanges(tree(), back.map((r) => ({ path: r.path, kind: "note" as const, exists: true, title: r.title }))));
       // Back in the tree, where it was put, selected and focused (Files → Deleting and restoring).
       setFiles((f) => ({
-        recent: { ...f.recent, open: false, notes: f.recent.notes?.filter((n) => !ids.includes(n.id)) },
+        recent: { ...f.recent, open: false, loading: false, notes: f.recent.notes?.filter((n) => !ids.includes(n.id)) },
         expanded: [...new Set([...f.expanded, ...back.flatMap((r) => ancestorsOf(tree(), r.path))])],
         selection: back[0] ? { selected: back.map((r) => r.path), anchor: back[0].path, focus: back[0].path } : f.selection,
         focusRequest: f.focusRequest + 1,
@@ -1567,10 +1590,10 @@ export function registerFiles(ctx: Ctx) {
         available: { type: "boolean" }, open: { type: "boolean" }, loading: { type: "boolean" }, footer: { type: "string" }, footerIcon: { type: "string", enum: ["history", "folder"] }, focus: { type: "number" },
         closed: { type: "boolean" },
         groups: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, notes: { type: "array", items: DELETED_NOTE } } } },
-        empty: { type: "boolean" }, status: { type: "string" },
+        empty: { type: "boolean" }, failed: { type: "boolean" }, retrying: { type: "boolean" }, status: { type: "string" },
       },
     },
-    reads: ["ui.files.recent", "ui.files.recovered", "ui.files.open", "sync.git", "workspace.access", "workspace.tree"],
+    reads: ["ui.files.recent", "ui.files.recovered", "ui.files.open", "sync.git", "workspace.access", "workspace.tree", "tasks"],
     select: (s) => {
       const r = s.ui.files.recent;
       const available = s.ui.files.open && canRestore(s);
@@ -1578,7 +1601,7 @@ export function registerFiles(ctx: Ctx) {
       const footer = available ? catalog.format(count === undefined ? "deleted.footer" : "deleted.footerCount", { count: count ?? 0 }) : "";
       // `closed`: the tree shows, neither Recently deleted nor Recovered in its place.
       const tree = !s.ui.files.recovered.open;
-      if (!available || !r.open) return { available, open: false, closed: tree, loading: false, footer, footerIcon: "history", focus: r.focus, groups: [], empty: false, status: "" };
+      if (!available || !r.open) return { available, open: false, closed: tree, loading: false, failed: false, retrying: false, footer, footerIcon: "history", focus: r.focus, groups: [], empty: false, status: "" };
       const now = new Date();
       const groups = groupByDay(r.notes ?? []).map((g) => ({
         id: g.day, label: dayLabel(g.at, now),
@@ -1590,8 +1613,12 @@ export function registerFiles(ctx: Ctx) {
       }));
       return {
         // Back to the tree from the list (D-189): the footer says where it goes.
-        available, open: true, closed: false, loading: r.loading, footer: catalog.format("deleted.browseFiles"), footerIcon: "folder", focus: r.focus, groups, empty: !r.loading && !groups.length,
-        status: r.loading ? catalog.format("deleted.loading") : catalog.format("deleted.count", { count: count ?? 0 }),
+        available, open: true, closed: false,
+        loading: r.loading && !r.notes && !r.failed && s.tasks.findLast(t => t.target === "history.deleted")?.phase === "on",
+        failed: r.failed === true, retrying: r.failed === true && r.loading,
+        footer: catalog.format("deleted.browseFiles"), footerIcon: "folder", focus: r.focus, groups,
+        empty: r.notes !== undefined && !r.loading && !r.failed && !groups.length,
+        status: r.failed ? "" : r.loading ? catalog.format("deleted.loading") : count ? catalog.format("deleted.count", { count }) : "",
       };
     },
   });

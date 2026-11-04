@@ -1863,6 +1863,7 @@
   "deleted.back": "Back to files",
   "deleted.explain": "Notes stay in Git history even after 30 days. Older ones can be recovered with Git.",
   "deleted.loading": "Looking through history…",
+  "deleted.failed": "Recently deleted couldn't be read. Your notes weren't changed. Try again.",
   "deleted.count": "{count, plural, =0 {Nothing deleted in the last 30 days.} one {# note deleted in the last 30 days.} other {# notes deleted in the last 30 days.}}",
   "deleted.empty": "Nothing deleted in the last 30 days.",
   "files.listing": "Reading your notes…",

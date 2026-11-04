@@ -5207,6 +5207,18 @@
                 ]
               },
               {
+                "type": "StatusRow",
+                "when": { "get": "vm.deleted.failed" },
+                "props": {
+                  "message": { "t": "deleted.failed" },
+                  "tone": "danger",
+                  "actionLabel": { "t": "commit.retry" },
+                  "actionBusy": { "get": "vm.deleted.retrying" },
+                  "actionBusyLabel": { "t": "uiStates.recovery.retrying" }
+                },
+                "on": { "action": { "run": "files.retryDeleted" } }
+              },
+              {
                 "each": {
                   "get": "vm.deleted.groups"
                 },
@@ -5320,25 +5332,17 @@
                         ]
                       },
                       "empty": {
-                        "type": "Text",
-                        "props": {
-                          "value": {
-                            "t": "deleted.empty"
-                          },
-                          "tone": "muted"
-                        }
+                        "type": "StatusRow",
+                        "when": { "get": "vm.deleted.empty" },
+                        "props": { "message": { "t": "deleted.empty" }, "tone": "success" }
                       }
                     }
                   ]
                 },
                 "empty": {
-                  "type": "Text",
-                  "props": {
-                    "value": {
-                      "t": "deleted.empty"
-                    },
-                    "tone": "muted"
-                  }
+                  "type": "StatusRow",
+                  "when": { "get": "vm.deleted.empty" },
+                  "props": { "message": { "t": "deleted.empty" }, "tone": "success" }
                 }
               }
             ]

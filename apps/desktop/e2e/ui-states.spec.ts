@@ -22,6 +22,74 @@ async function closeTestApp(l: Launched) {
   }
 }
 
+test("Recently deleted never calls failed history empty, retains rows through Retry and shows good news only after an acknowledged empty read", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md");
+  const before = readFileSync(note, "utf8");
+  const gone = join(dirs.docs, "notes", "gone.md"), text = "# Gone\n\nSynthetic deleted note.\n";
+  write(gone, text);
+  git(dirs.docs, "add", "notes/gone.md");
+  git(dirs.docs, "commit", "-q", "-m", "Add synthetic deleted note");
+  git(dirs.docs, "rm", "-q", "notes/gone.md");
+  git(dirs.docs, "commit", "-q", "-m", "Delete synthetic note");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("First line.");
+    await l.app.evaluate(({ ipcMain }) => {
+      const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+      if (!(handlers instanceof Map)) throw new Error("Electron invoke handlers are unavailable");
+      const original: unknown = handlers.get("history:deleted");
+      if (typeof original !== "function") throw new Error("Deleted history handler is unavailable");
+      let reads = 0;
+      ipcMain.removeHandler("history:deleted");
+      ipcMain.handle("history:deleted", async (event, ...args: unknown[]) => {
+        const request = ++reads;
+        await new Promise(resolve => setTimeout(resolve, 900));
+        if (request === 1 || request === 3) throw new Error("private-path-and-token");
+        return original(event, ...args);
+      });
+    });
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+p" : "Control+Alt+p");
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    const body = await files.locator("[data-sheet-body]").elementHandle();
+    if (!body) throw new Error("Files content wrapper is unavailable");
+    await files.getByRole("button", { name: /^Recently deleted/ }).click();
+    const shapes = files.locator("[data-shimmer]");
+    await expect(shapes).toHaveCount(3);
+    await expect(files.getByText("Nothing deleted in the last 30 days.", { exact: true })).toHaveCount(0);
+    const error = files.locator("[data-status-row=danger]");
+    await expect(error).toContainText("Recently deleted couldn't be read.");
+    await expect(error).not.toContainText("private-path-and-token");
+    await expect(shapes).toHaveCount(0);
+    await expect(files.locator("[data-status-row=success]")).toHaveCount(0);
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(error).toBeVisible();
+    await expect(files.getByText("Gone", { exact: true })).toBeVisible();
+    await expect(error).toHaveCount(0);
+    await files.getByRole("button", { name: "Browse files", exact: true }).click();
+    await files.getByRole("button", { name: /^Recently deleted/ }).click();
+    await expect(error).toBeVisible();
+    await expect(files.getByText("Gone", { exact: true })).toBeVisible();
+    await expect(files.locator("[data-status-row=success]")).toHaveCount(0);
+    await error.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    await expect(files.getByText("Gone", { exact: true })).toBeVisible();
+    await expect(error).toHaveCount(0);
+    await files.getByRole("button", { name: "Restore", exact: true }).click();
+    await expect(files.getByRole("tree", { name: "Notes and folders", exact: true })).toBeVisible();
+    expect(readFileSync(gone, "utf8")).toBe(text);
+    await files.getByRole("button", { name: /^Recently deleted/ }).click();
+    await expect(files.locator("[data-status-row=success]")).toHaveText("Nothing deleted in the last 30 days.");
+    await expect(error).toHaveCount(0);
+    await expect(shapes).toHaveCount(0);
+    expect(await body.evaluate(el => el.isConnected)).toBe(true);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:history.deleted").length)).toBe(5);
+    expect(readFileSync(note, "utf8")).toBe(before);
+  } finally { await closeTestApp(l); }
+});
+
 test("Files distinguishes collapsed content from no matches and replaces known-empty content in its own wrapper", async () => {
   const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md");
   writeFileSync(note, "# Welcome\n\nSynthetic first action.\n");

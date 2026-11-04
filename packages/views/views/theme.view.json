@@ -633,11 +633,12 @@
                           ]
                         },
                         "empty": {
-                          "type": "Text",
+                          "type": "StatusRow",
                           "props": {
-                            "value": {
+                            "message": {
                               "t": "colors.allPass"
-                            }
+                            },
+                            "tone": "success"
                           }
                         }
                       },

@@ -167,6 +167,19 @@ describe("FIL-12: a note changed here and elsewhere", () => {
 });
 
 describe("FIL-10: Recently deleted, from both repositories' history", () => {
+  it("rejects a refused history read instead of claiming there are no deleted notes", async () => {
+    const { ws } = instance();
+    const run = createRunner();
+    let refuse = false;
+    const s = await open(ws, { run: call => refuse && call.args.includes("--diff-filter=D")
+      ? Promise.resolve({ code: 128, stdout: "", stderr: "private-path-and-token" })
+      : run(call) });
+    refuse = true;
+    await expect(s.deleted()).rejects.toThrow("Couldn't read recently deleted history");
+    refuse = false;
+    expect(await s.deleted()).toEqual([]);
+  });
+
   it("lists notes deleted in the last 30 days in either repository, newest first, with titles and folders, but not moves between the roots", async () => {
     const { ws } = instance();
     const s = await open(ws);

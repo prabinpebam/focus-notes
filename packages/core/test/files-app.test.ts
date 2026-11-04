@@ -1,5 +1,5 @@
 /** The Files panel in the app (WP-2.4): FIL-01, FIL-02, FIL-03, FIL-08, and changes shown before they're saved (PRF-09). */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, planFlatOps, titleOfMarkdown, type FlatNote, type PlatformBridge, type WorkspaceOp } from "../src/index.ts";
@@ -69,6 +69,79 @@ async function started(f: ReturnType<typeof setup>) {
   await settle();
   return app;
 }
+
+afterEach(() => vi.useRealTimers());
+
+describe("Recently deleted known-empty and recovery (FIL-10)", () => {
+  const deletedVm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.deleted", app.store.state) as { empty: boolean; loading: boolean; failed: boolean; retrying: boolean; status: string; groups: unknown[] };
+  const row = { id: "public:abc1234:notes/gone.md", root: "public" as const, path: "gone.md", title: "Gone", folder: "", deletedAt: Date.now() };
+  async function ready() {
+    const f = setup();
+    f.bridge.workspace!.deleted = async () => [];
+    f.bridge.workspace!.restore = async () => [];
+    const app = await started(f);
+    app.store.update(s => ({ ...s, sync: { ...s.sync, git: true } }));
+    await app.commands.run("files.open");
+    return { f, app };
+  }
+  it("does not turn a failed read into good news, retains the error during read-only Retry and acknowledges empty only on success", async () => {
+    const { f, app } = await ready();
+    f.bridge.workspace!.deleted = async () => { throw new Error("private-path-and-token"); };
+    await app.commands.run("files.showDeleted");
+    expect(deletedVm(app)).toMatchObject({ empty: false, failed: true, retrying: false });
+    expect(deletedVm(app).status).not.toContain("Nothing deleted");
+    expect(JSON.stringify(deletedVm(app))).not.toContain("private-path-and-token");
+    let resolve!: (rows: []) => void, calls = 0;
+    f.bridge.workspace!.deleted = () => { calls++; return new Promise(done => { resolve = done; }); };
+    const retry = app.commands.run("files.retryDeleted");
+    await Promise.resolve();
+    expect(deletedVm(app)).toMatchObject({ empty: false, failed: true, retrying: true });
+    await app.commands.run("files.retryDeleted");
+    expect(calls).toBe(1);
+    resolve([]);
+    await retry;
+    expect(deletedVm(app)).toMatchObject({ empty: true, failed: false, retrying: false });
+    expect(performance.getEntriesByName("fn:history.deleted").length).toBeGreaterThan(0);
+    expect(f.batches).toEqual([]);
+    expect(f.notes.get("welcome.md")?.text).toBe("# Welcome\n");
+  });
+  it("keeps acknowledged rows on refresh failure and discards results from a closed/reopened list", async () => {
+    const { f, app } = await ready();
+    f.bridge.workspace!.deleted = async () => [row];
+    await app.commands.run("files.showDeleted");
+    f.bridge.workspace!.deleted = async () => { throw new Error("read refused"); };
+    await app.commands.run("files.showDeleted");
+    expect(deletedVm(app)).toMatchObject({ failed: true, empty: false });
+    expect(deletedVm(app).groups).toHaveLength(1);
+    let resolve!: (rows: []) => void;
+    f.bridge.workspace!.deleted = () => new Promise(done => { resolve = done; });
+    const obsolete = app.commands.run("files.retryDeleted");
+    await app.commands.run("files.hideDeleted");
+    f.bridge.workspace!.deleted = async () => [row];
+    await app.commands.run("files.showDeleted");
+    resolve([]);
+    await obsolete;
+    expect(deletedVm(app)).toMatchObject({ failed: false, empty: false, retrying: false });
+    expect(deletedVm(app).groups).toHaveLength(1);
+  });
+  it("delays first-read shapes exactly 300 ms and holds them 500 ms without an empty flash", async () => {
+    const { f, app } = await ready();
+    vi.useFakeTimers();
+    let resolve!: (rows: []) => void;
+    f.bridge.workspace!.deleted = () => new Promise(done => { resolve = done; });
+    const read = app.commands.run("files.showDeleted");
+    await vi.advanceTimersByTimeAsync(299);
+    expect(deletedVm(app)).toMatchObject({ loading: false, empty: false });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(deletedVm(app)).toMatchObject({ loading: true, empty: false });
+    resolve([]);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(deletedVm(app)).toMatchObject({ loading: true, empty: false });
+    await vi.advanceTimersByTimeAsync(1);
+    await read;
+    expect(deletedVm(app)).toMatchObject({ loading: false, empty: true });
+  });
+});
 
 describe("opening the panel (IA-VIEW-FILES)", () => {
   it("does not call collapsed, unknown or failed Files content empty", async () => {

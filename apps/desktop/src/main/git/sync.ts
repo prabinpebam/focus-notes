@@ -674,7 +674,7 @@ export class GitSync {
         if (!repo) continue;
         const exec = this.#exec(repo);
         const log = await exec([...DELETED_LOG_ARGS(Math.floor(now / 1000) - RECENTLY_DELETED_DAYS * 86_400)], { read: true });
-        if (log.code !== 0) continue;
+        if (log.code !== 0) throw new Error("Couldn't read recently deleted history");
         const entries = recentDeletions(parseDeletedLog(log.stdout), { now, exists: (rel) => existsSync(join(repo.dir, ...rel.split("/"))) });
         const texts = await readBlobs(exec, entries.map((e) => `${e.commit}^:${e.path}`)).catch(() => entries.map(() => undefined));
         for (const [i, e] of entries.entries()) {
