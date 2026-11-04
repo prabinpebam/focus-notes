@@ -44,6 +44,21 @@ function setup() {
 }
 
 describe("the task tracker (PRF-08)", () => {
+  for (const outcome of ["done", "failed", "cancelled"] as const) it.each(["all", "success", "none"] as const)(
+    `leaves ${outcome} announcements with the owning surface in %s mode`, async mode => {
+      const t = setup(), d = t.deferred();
+      const run = t.tracker.run("publish", "task.publishing", () => d.p, "task.published", undefined, mode);
+      await t.advance(1000);
+      if (outcome === "done") { d.resolve(); await run; }
+      else {
+        const rejected = expect(run).rejects.toThrow();
+        d.reject(outcome === "cancelled" ? new DOMException("Stopped", "AbortError") : new Error("refused"));
+        await rejected;
+      }
+      const end = outcome === "done" ? "task.published" : outcome === "cancelled" ? "task.cancelled" : "task.failed";
+      expect(t.said).toEqual(mode === "all" || (mode === "success" && outcome === "done") ? ["task.publishing", end] : ["task.publishing"]);
+    },
+  );
   it("announces a deliberately stopped operation as stopped, not failed", async () => {
     const t = setup(), d = t.deferred();
     const run = t.tracker.run("project.create", "project.new.creating", () => d.p);

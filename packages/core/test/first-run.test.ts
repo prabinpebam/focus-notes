@@ -730,10 +730,12 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     await clock.advance(3000);
     expect(t.vm()).toMatchObject({ cloneHasProgress: true, cloneCount: "1 of 3 steps complete", cloneCanCancel: true });
     expect(t.vm().waitText).toContain("3 s");
+    const announced = t.app.store.state.announcement.n;
     await t.run("firstRun.cancelClone");
     expect(t.vm()).toMatchObject({ cloneStopping: true, cloneCancelLabel: "Stopping after this step…" });
     held.resolve();
     await downloading;
+    expect(t.app.store.state.announcement.n).toBe(announced);
     expect(t.calls).not.toContain("openWorkspace");
     expect(t.vm()).toMatchObject({ cloneCanResume: true, cloneResumeLabel: "Resume download" });
     expect(t.vm().error).toContain("Downloaded files are kept");
@@ -756,7 +758,7 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     expect(t.calls.filter((x) => x === "openWorkspace")).toHaveLength(1);
   });
   it("counts actual setup receipts, requests safe cancellation, and resumes only saved options", async () => {
-    const t = shell();
+    const clock = manualClock(), t = shell({ clock });
     await t.app.start();
     const active = report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true);
     t.bridge.setup!.cancel = async () => {
@@ -774,8 +776,13 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     expect(t.vm()).toMatchObject({ setupCount: "5 of 9 steps complete", working: false, setupCanCancel: false, setupCancelled: true });
     expect(t.vm().progressText).toContain("Completed files and settings are kept");
     const started: unknown[] = [];
-    t.bridge.setup!.start = async (options) => { started.push(options); return report(Object.fromEntries(SETUP_STEPS.map((id) => [id, "done"]))); };
-    await t.run("firstRun.resumeSetup");
+    const held = deferred();
+    t.bridge.setup!.start = async (options) => { started.push(options); await held.promise; return report(Object.fromEntries(SETUP_STEPS.map((id) => [id, "done"]))); };
+    const resumed = t.run("firstRun.resumeSetup");
+    await clock.advance(1000);
+    const announced = t.app.store.state.announcement.n;
+    held.resolve(); await resumed;
+    expect(t.app.store.state.announcement.n).toBe(announced);
     await t.run("firstRun.resumeSetup");
     expect(started).toEqual([cancelled.options]);
     expect(t.vm()).toMatchObject({ setupCount: "9 of 9 steps complete", setupOverallPercent: 100, setupCancelled: false });

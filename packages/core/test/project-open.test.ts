@@ -165,12 +165,14 @@ describe("Open", () => {
       expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ elapsed: "" });
       await vi.advanceTimersByTimeAsync(1);
       expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ elapsed: expect.stringContaining("3") });
+      const announced = app.store.state.announcement.n;
       await app.commands.run("projects.newname", { value: "Changed while creating" });
       await app.commands.run("projects.newCreate");
       await app.commands.run("projects.newCancel");
       expect(cancelCreate).toHaveBeenCalledExactlyOnceWith(active);
       expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", pending: true, cancelLabel: en["project.new.stopping"], cancelReason: en["project.new.stopping"], nextReason: en["project.new.creating"], cannotCancel: true });
       finish(book.folder); await operation;
+      expect(app.store.state.announcement.n).toBe(announced);
       expect(open).not.toHaveBeenCalled();
       expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ pending: false, created: book.folder, cancelled: true, error: en["project.new.cancelledReady"], recoveryAction: "Retry" });
       progress({ request: active, steps: ["check"], step: "check", done: false });

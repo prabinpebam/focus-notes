@@ -47,7 +47,7 @@ export function registerSharingPreview(ctx: {
     retry = command;
     parts = labels.map(label => ({ label, status: "waiting" }));
     set({ busy: true, problem: state.operation === target ? state.problem : "", operation: target, cancelRequested: false, cancelled: false, atomic: false });
-    try { await tracker.run(target, message, work, undefined, measure); retry = undefined; set({ problem: "" }); }
+    try { await tracker.run(target, message, work, undefined, measure, command === "sharing.publish" ? "none" : "success"); retry = undefined; set({ problem: "" }); }
     catch (error) {
       if (state.cancelRequested && error instanceof DOMException && error.name === "AbortError") {
         parts = parts.map(part => part.status === "running" ? { ...part, status: "waiting" } : part);

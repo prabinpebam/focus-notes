@@ -30,9 +30,17 @@ for (const scheme of ["light", "dark"] as const) test(`First-run ${scheme} shows
   const entrypoint = join(dirs.userData, "inspect-first-frame.cjs");
   const main = pathToFileURL(fileURLToPath(new URL("../out/main/main.mjs", import.meta.url))).href;
   writeFileSync(entrypoint, `
-const { ipcMain, nativeTheme, BrowserWindow } = require("electron");
+const { app, ipcMain, nativeTheme, BrowserWindow } = require("electron");
 nativeTheme.themeSource = ${JSON.stringify(scheme === "dark" ? "light" : "dark")};
 globalThis.uiStatesFirstFrames = [];
+globalThis.uiStatesStartupFrames = [];
+app.on("web-contents-created", (_event, contents) => {
+  if (contents.getType() !== "window") return;
+  contents.once("did-start-loading", () => contents.beginFrameSubscription(image => {
+    const visible = BrowserWindow.fromWebContents(contents)?.isVisible() === true;
+    globalThis.uiStatesStartupFrames.push({ visible, png: image.toPNG().toString("base64") });
+  }));
+});
 ipcMain.on("window:firstFrame", event => {
   const hidden = !BrowserWindow.fromWebContents(event.sender).isVisible();
   const pixels = event.sender.capturePage(undefined, { stayHidden: true }).then(image => image.toPNG().toString("base64"));
@@ -57,6 +65,17 @@ import(${JSON.stringify(main)});
     if (scheme === "dark") expect(frames[0]!.background).not.toBe("rgb(255, 255, 255)");
     expect(frameProblems([{ label: "first-frame report", at: Date.now(), data: Buffer.from(frames[0]!.png, "base64") }],
       await windowBox(l.page), await l.page.evaluate(() => innerWidth), () => scheme)).toEqual([]);
+    await l.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 300)))));
+    const startup = await l.app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0]!.webContents.endFrameSubscription();
+      return Reflect.get(globalThis, "uiStatesStartupFrames") as { visible: boolean; png: string }[];
+    });
+    const visibleFrames = startup.filter(frame => frame.visible).map(frame => ({
+      label: `${scheme} startup after native show`, at: 0, data: Buffer.from(frame.png, "base64"),
+    }));
+    process.stdout.write(`[startup frames] ${scheme}: ${startup.length - visibleFrames.length} hidden, ${visibleFrames.length} after show\n`);
+    expect(visibleFrames.length).toBeGreaterThan(0);
+    expect(frameProblems(visibleFrames, await windowBox(l.page), await l.page.evaluate(() => innerWidth), () => scheme)).toEqual([]);
     expect(l.log.some(line => line.includes("window-shown on=timeout"))).toBe(false);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:window.firstFrame").length)).toBe(1);
   } finally { await closeTestApp(l); }
@@ -424,8 +443,11 @@ test("Site preview counts actual reads, cancels safely and retains Apply and loc
     await publish.getByRole("button", { name: "Publish", exact: true }).click();
     await expect(publish.getByRole("progressbar")).toHaveAttribute("value", "50");
     await expect(publish).toContainText("Save local publication draft");
+    await expect(l.page.getByRole("status").filter({ hasText: "Preparing publication…" })).toHaveCount(1);
     await release("releaseSiteSave");
     await expect(publish).toHaveCount(0);
+    await expect(l.page.getByRole("status").filter({ hasText: "Saved to the local site preview." })).toHaveCount(1);
+    await expect(l.page.getByRole("status").filter({ hasText: /^Done\.$/ })).toHaveCount(0);
     expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.state), "utf8")).sharingDrafts[dirs.docs].published).toEqual([note]);
     expect(readFileSync(note, "utf8")).toBe(before);
     for (const measure of ["fn:site.preview", "fn:site.settings", "fn:sharing.publishDraft"]) {

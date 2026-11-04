@@ -113,7 +113,7 @@ export function registerProjectNew(ctx: {
           changed();
           await bridge.projects!.open(state.created);
           steps = steps.map(step => ({ ...step, status: "done" }));
-        }, undefined, "fn:project.create");
+        }, undefined, "fn:project.create", "success");
         state.open = false; state.error = ""; recovery = undefined;
       } catch (error) {
         recovery = state.created ? "open" : "folder";

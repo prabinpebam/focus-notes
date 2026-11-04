@@ -98,6 +98,7 @@ interface Running extends TaskView {
   announced: boolean;
   timers: unknown[];
 }
+type OutcomeAnnouncements = "all" | "success" | "none";
 
 export interface TrackerEvents {
   /** The set of visible tasks changed. */
@@ -120,16 +121,17 @@ export class TaskTracker {
     this.#clock = clock;
   }
 
-  run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string, measure?: string): Promise<T> {
-    return this.#run(target, message, work, doneMessage, false, measure);
+  /** Local live outcomes own their announcement; waits and visible task phases remain tracked. */
+  run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string, measure?: string, outcomes: OutcomeAnnouncements = "all"): Promise<T> {
+    return this.#run(target, message, work, doneMessage, false, measure, outcomes);
   }
 
   /** A section replaces its shape only after the visible minimum, on success or failure. */
   section<T>(target: string, message: string, work: () => Promise<T>, measure?: string): Promise<T> {
-    return this.#run(target, message, work, undefined, true, measure);
+    return this.#run(target, message, work, undefined, true, measure, "all");
   }
 
-  async #run<T>(target: string, message: string, work: () => Promise<T>, doneMessage: string | undefined, section: boolean, measure?: string): Promise<T> {
+  async #run<T>(target: string, message: string, work: () => Promise<T>, doneMessage: string | undefined, section: boolean, measure: string | undefined, outcomes: OutcomeAnnouncements): Promise<T> {
     const c = this.#clock;
     const task: Running = { id: this.#next++, target, message, ...(doneMessage ? { doneMessage } : {}), phase: "ack", elapsed: 0, started: c.now(), announced: false, timers: [] };
     this.#tasks.set(task.id, task);
@@ -153,11 +155,11 @@ export class TaskTracker {
     try {
       const result = await work();
       await hold();
-      this.#finish(task, true);
+      this.#finish(task, true, undefined, outcomes !== "none");
       return result;
     } catch (error) {
       await hold();
-      this.#finish(task, false, error instanceof DOMException && error.name === "AbortError" ? "task.cancelled" : undefined);
+      this.#finish(task, false, error instanceof DOMException && error.name === "AbortError" ? "task.cancelled" : undefined, outcomes === "all");
       throw error;
     } finally {
       try {
@@ -168,11 +170,11 @@ export class TaskTracker {
     }
   }
 
-  #finish(task: Running, ok: boolean, endMessage?: string): void {
+  #finish(task: Running, ok: boolean, endMessage: string | undefined, announce: boolean): void {
     const c = this.#clock;
     for (const h of task.timers) c.clearTimeout(h);
     task.timers = [];
-    if (task.announced) this.#events.announce(endMessage ?? (ok ? (task.doneMessage ?? "task.done") : "task.failed"));
+    if (task.announced && announce) this.#events.announce(endMessage ?? (ok ? (task.doneMessage ?? "task.done") : "task.failed"));
     // A wait that ended before its sign showed leaves no trace; a failure ends the sign at once.
     if (task.phase === "ack" || !ok) return this.#remove(task);
     const remaining = Math.max(0, this.#t.signMinimum - (c.now() - (task.shownAt ?? c.now())));

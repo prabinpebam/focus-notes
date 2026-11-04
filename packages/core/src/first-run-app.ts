@@ -181,7 +181,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const mine = ++waitTurn;
     set({ busy: true, wait: op, ...(op === "clone" ? { progress: { ...NO_PROGRESS, op }, cloneStopping: false } : {}) });
     try {
-      return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn) : fn());
+      // These receipts may resolve with stopped or failed work; their result cards announce the outcome.
+      return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn, undefined, undefined, op === "clone" || op === "create" ? "none" : "all") : fn());
     } catch {
       return undefined;
     } finally {

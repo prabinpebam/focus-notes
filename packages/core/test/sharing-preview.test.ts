@@ -46,10 +46,12 @@ it("counts actual preview reads, stops before acceptance, and keeps the previous
   expect(t.vm().elapsed).toBe("");
   await vi.advanceTimersByTimeAsync(1);
   expect(t.vm().elapsed).toContain("3");
+  const announced = t.app.store.state.announcement.n;
   await t.run("sharing.operationCancel");
   expect(t.vm()).toMatchObject({ cancelRequested: true, canCancel: false, busy: true });
   read.resolve("# Replacement\n");
   await work;
+  expect(t.app.store.state.announcement.n).toBe(announced);
   expect(t.vm()).toMatchObject({ busy: false, cancelled: true, open: false, problem: "" });
   expect(t.vm().homeArticles).toEqual(expect.arrayContaining([expect.objectContaining({ title: "B" })]));
   expect(t.app.store.state.note.markdown).toBe("# A\n");
@@ -97,15 +99,45 @@ it("Apply snapshots its choices, never offers cancellation during the atomic sav
 it("Publish saves only a local path receipt and repeated activation cannot repeat the write", async () => {
   const t = await fixture();
   await t.run("sharing.publishOpen", { path: "/w/notes/b.md" });
+  vi.useFakeTimers();
   const write = deferred<void>();
   const save = vi.spyOn(t.bridge, "saveAppState").mockImplementation(() => write.promise);
   const work = t.run("sharing.publish");
   expect(t.vm()).toMatchObject({ busy: true, canCancel: false, completed: 1, total: 2 });
   await t.run("sharing.publish");
+  await vi.advanceTimersByTimeAsync(1000);
+  const announced = t.app.store.state.announcement.n;
+  expect(t.app.store.state.announcement.text).toBe(en["sharing.publish.saving"]);
+  expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(0);
   expect(save).toHaveBeenCalledTimes(1);
   expect(save.mock.calls[0]?.[0].sharingDrafts?.["/w"]?.published).toEqual(["/w/notes/b.md"]);
   write.resolve();
   await work;
+  expect(t.app.store.state.announcement.n).toBe(announced);
+  expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(1);
   expect(t.vm()).toMatchObject({ busy: false, publishOpen: false, completed: 2 });
   expect(t.app.store.state.note.markdown).toBe("# A\n");
+});
+
+it("a refused local Publish announces no success and Retry emits one acknowledged outcome", async () => {
+  const t = await fixture();
+  await t.run("sharing.publishOpen", { path: "/w/notes/b.md" });
+  vi.useFakeTimers();
+  const first = deferred<void>(), retry = deferred<void>();
+  const save = vi.spyOn(t.bridge, "saveAppState").mockImplementationOnce(() => first.promise).mockImplementationOnce(() => retry.promise);
+  const work = t.run("sharing.publish");
+  await vi.advanceTimersByTimeAsync(1000);
+  const announced = t.app.store.state.announcement.n;
+  first.reject(new Error("EACCES private-path"));
+  await work;
+  expect(t.vm()).toMatchObject({ failed: true, recovery: true, publishOpen: true });
+  expect(t.app.store.state.announcement.n).toBe(announced);
+  expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(0);
+  const recovery = t.run("sharing.operationRetry");
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(t.app.store.state.announcement.n).toBe(announced + 1);
+  retry.resolve(); await recovery;
+  expect(save).toHaveBeenCalledTimes(2);
+  expect(t.app.store.state.announcement.n).toBe(announced + 1);
+  expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(1);
 });
