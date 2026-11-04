@@ -346,6 +346,16 @@
       "searchText": "ui states audit loading saving confirmed pending failed error recovery empty state shimmer skeleton notification pill toast spinner switch tick scope improvements"
     },
     {
+      "path": "design/spacing-audit.md",
+      "title": "Spacing audit",
+      "order": 306.6,
+      "icon": "rule",
+      "status": "draft",
+      "updated": "2026-11-05",
+      "group": "Design/System",
+      "searchText": "spacing audit tokens roles inset stack inline gap padding margin sibling position negative margin targets probe perturb root causes"
+    },
+    {
       "path": "design/views/files.html",
       "title": "Files panel",
       "order": 320,
