@@ -180,6 +180,24 @@ The initial candidate inspection assumed Focus mode defaulted to Off; the app de
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\b6375b3a\Open review build.cmd`. Settings → Appearance → theme manager → Themes/Reading; then toolbar Focus mode, Files → Dock Files, More → Dock contents. Font size, AI save groups, notification acceptance, remaining recovery/streamed work and independent delayed history/share journeys remain in progress.
 
+### Phase-2 Reading size, 399bd9c9
+
+The existing size row reuses one inline CommitMark beside its number, not two competing button indicators. The attempted formatted size remains visible after refusal while the actual note keeps its acknowledged size. Smaller/Larger remain focusable but inert during their group's pending write; unrelated settings stay available. Retry saves the exact retained value even if another action has since reached a size boundary. Revert writes nothing. Menu and shortcut commands use the same commit lane, and font-size reset changes only size, not paragraph spacing or other reading choices.
+
+| Check on `399bd9c9` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\theme-manager.test.ts packages\core\test\settings-failures.test.ts` | 29 passed: retained formatted draft, unchanged acknowledged note, exact Retry after another size change, write-free Revert, reset, invalid-value refusal and pending-group isolation |
+| `pnpm exec vitest run packages\core\test\toolbar.test.ts -t "a setting keeps"` | 1 passed: size feedback keeps the toolbar open; an unrelated normal action still closes it |
+| `pnpm exec vitest run packages\core\test\roots-app.test.ts -t "settings"` | 3 passed: workspace reading-setting synchronization remains intact |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check` and UI schema regeneration | Passed, 773 documents, 82 components, 694 commands |
+| `pnpm --filter @focus-notes/desktop run build` | Passed at the final source state |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Reading size"` | Passed: real storage refusal, retained output, unchanged actual editor size, exact Retry, write-free Revert, unrelated spacing preserved and reopened setting retained |
+
+The journey waits for failure before repairing its synthetic blocked file; a visible draft alone is not proof the write has failed. No uncommitted draft is announced as saved. The invisible app closed and own-PID cleanup ran. No full suite, CI wait or merge ran. The candidate remains `b6375b3a`; it does not yet include `399bd9c9`.
+
+**Try it after the next candidate refresh:** Settings → Appearance → theme manager → Reading → Smaller/Larger text. AI groups, full notification acceptance, recovery and streamed operations remain in progress.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
