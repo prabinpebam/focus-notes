@@ -63,3 +63,15 @@ it.each([["font", "serif"], ["theme", "sepia"]])("retains a failed %s choice on 
     [`${field}Open`]: "no", [`${field}Hover`]: "", [`scope${field === "font" ? "Font" : "Theme"}`]: "app",
   });
 });
+
+it("keeps the saved watermark off after refusal and changes the writing surface only after Retry persists", async () => {
+  const save = vi.fn().mockRejectedValue(new Error("disk full"));
+  const app = setup(save);
+  const args = { target: "vm.project.watermark", command: "project.watermark", value: "on" };
+  await expect(app.commands.run("commit.run", args)).rejects.toThrow("disk full");
+  expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({ watermark: "off", watermarkOn: false });
+  expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: args.target, phase: "failed", value: "on" }));
+  save.mockResolvedValue(undefined);
+  await app.commands.run("commit.run", args);
+  expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({ watermark: "on", watermarkOn: true });
+});

@@ -215,3 +215,45 @@ test("project font and theme retain failed choices on their triggers and keep ke
     await closeTestApp(l);
   }
 });
+
+test("a refused watermark change keeps the writing surface unchanged and Retry/Revert preserve its last saved value", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  const stateFile = join(dirs.userData, DATA_FILES.state);
+  const backup = `${stateFile}.before-failure`;
+  const block = () => { if (existsSync(stateFile)) renameSync(stateFile, backup); mkdirSync(stateFile); };
+  const restore = () => {
+    if (existsSync(stateFile) && statSync(stateFile).isDirectory()) rmSync(stateFile, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, stateFile);
+  };
+  try {
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    const watermark = settings.getByRole("radiogroup", { name: "Watermark", exact: true });
+    const mark = l.page.locator('[data-project-mark="watermark"]');
+    await expect(mark).toHaveCount(0);
+    block();
+    await watermark.getByText("On", { exact: true }).click();
+    await expect(watermark.getByRole("radio", { name: "On", exact: true })).toBeChecked();
+    await expect(settings.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+    await expect(mark).toHaveCount(0);
+    restore();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => JSON.parse(readFileSync(stateFile, "utf8")).projectSettings?.[dirs.docs]?.watermark).toBe("on");
+    await expect(mark).toHaveCount(1);
+    await expect(watermark.locator("..")).not.toHaveAttribute("data-commit", "pending");
+    block();
+    await watermark.getByText("Off", { exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Revert", exact: true })).toBeVisible();
+    await expect(mark).toHaveCount(1);
+    await settings.getByRole("button", { name: "Revert", exact: true }).click();
+    await expect(watermark.getByRole("radio", { name: "On", exact: true })).toBeChecked();
+    await expect(mark).toHaveCount(1);
+    expect(statSync(stateFile).isDirectory()).toBe(true);
+    restore();
+  } finally {
+    restore();
+    await closeTestApp(l);
+  }
+});
