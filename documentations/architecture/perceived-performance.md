@@ -47,7 +47,16 @@ The [history recovery evidence](../plan/definition-of-done.md#phase-2-history-re
 | Restore selected version | Responsive → waiting; named save task | Restore this version → Restoring version…; retained error and scoped Retry | `fn:history.restore`; current draft saved first; no success or dismissal before restored write acknowledgement |
 | Undo restored text | Responsive → waiting; named save task | Existing notification action, retained failure and Retry | `fn:history.undo`; original Undo text survives refusal; no success announcement before write acknowledgement |
 
-## Image waits (planned)
+## Image read recovery
+
+The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-recovery-cd0cede9) covers actual missing-file and native decode refusal, retained layout/alt/Retry and unchanged note bytes. It makes no speed claim. The read task includes the shared 300 ms sign delay and 500 ms minimum once shown; an existing broken frame stays mounted throughout Retry. Distinct failures coalesce per note, never one interrupting notice per Retry.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read/retry one note image | Responsive → waiting; named image task, exact source and document identity | Existing image wrapper; alt and error remain, Retry → Trying again…; other images stay usable | `fn:image.read`; exact 300/500 ms task units and held/refused real-image journey |
+| Browser decode refusal | Responsive/waiting; explicit component failure, no blank success-shaped fallback | Approved broken ImageFrame and scoped Retry | Correctness journey passed; end-to-end native decode duration remains unmeasured |
+
+## Other image waits (planned)
 
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
 

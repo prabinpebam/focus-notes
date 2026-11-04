@@ -345,6 +345,25 @@ The initial fixture had no selected note; it now explicitly selects its syntheti
 
 **Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\ef03a581\Open review build.cmd`; toolbar More → Note history. Failures are injected only in the scoped journey. This accepts the independent delayed/failed history slice, not all D8: share-item proof, broken-image recovery, complete D5, streaming, crash receipts and remaining tracker coverage are still in progress. No full suite, CI wait or app merge ran.
 
+### Phase-2 broken-image recovery, cd0cede9
+
+The approved ImageFrame is now wired to actual file-read and browser-decode failures. Its alt, error and local Retry remain mounted during recovery; only that action is inert. Keyboard Retry retains focus through another refusal. Recovering one image does not disable another. Distinct failures coalesce into one retained notice per note; repeated failure of the same image does not add another notice/count.
+
+Image sources now have their own checked list shape with explicit pending/failed fields, not colour-value items or an empty-string-only failure signal. Retry bypasses a failed cache entry without rereading successful images. Read replies check both path and document key; per-request tokens prevent an obsolete completion from releasing a newer same-source read. Native decode errors carry their document key and exact cached value, so an old error cannot mark a replacement broken. Destroyed/obsolete editor nodes do not initiate reads for the new note.
+
+| Check on `cd0cede9` | Result |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\images-app.test.ts` | 6 passed: coalesced distinct failures, no repeat notice, exact scoped Retry/deduplication, retained failed state, 300/500 ms task boundaries, same-path generation/token isolation, obsolete failure suppression, invalid source/decode and old-value rejection |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/ui --filter @focus-notes/ui-runtime --filter @focus-notes/desktop run typecheck` | Passed on final runtime/journey source |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write`, `node tools\component-inventory.mjs --write` and `pnpm check` | Passed: 779 documents, 82 components, 713 commands; typed image list, retrying ImageFrame fixture, component inventory and committed UI schemas current |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after final runtime edits |
+| `FOCUS_NOTES_E2E=1` with `pnpm --filter @focus-notes/desktop exec playwright test ui-states.spec.ts --workers=1 -g "Broken images keep their alt"` | Passed: actual missing PNG and corrupt PNG decode, two alt/Retry frames with one notice, held keyboard Retry/refusal with retained focus and no notice growth, independent successful recovery to two decoded 128 px PNGs; note and final image bytes unchanged by the app; five `fn:image.read` measures |
+| `node E:\Projects\side-projects\focus-notes-work\scratch\ui-states-candidate.cjs` | Exact pushed head built, earlier normal settings/Reading/compact/notification/AI/Agents/Open paths inspected invisibly and app closed |
+
+The gallery fixture's busy label initially used a raw text value where the checked contract requires a message/read. It now uses the existing localized Retry words; regeneration and static gates passed. The new image diagnostics log only a fixed operation and known error code. This is read/recovery evidence, not an end-to-end decode performance benchmark or new image-editing acceptance.
+
+**Try it:** `E:\Projects\side-projects\focus-notes-work\preview\candidates\cd0cede9\Open review build.cmd`; in a synthetic note, reference an unavailable image, restore its file and choose its Retry. The controlled journey also tests a corrupt image and another refusal. All app runs were invisible and ended with own-PID `-WhatIf`, then actual cleanup. Complete D5, share-item D8 proof, streaming, crash receipts and remaining tracker coverage are still in progress. No full suite, CI wait or app merge ran.
+
 ## Projects and simpler sharing
 
 **MP design approved for projects, Files, Local notes and images (owner, 3 November 19:39: "The UI and UX looks good"); sharing and publishing approved at the same time, with MP.26 to MP.29 holding the built surfaces to those mocks (D-335). No implementation acceptance is claimed.** These rows define the future evidence, not tests to run before design approval. [Projects](../experience/projects.md), [Sharing](../design/views/sharing.md) and [the implementation plan](implementation-plan.md#mp) own the flows.
