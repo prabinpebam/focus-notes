@@ -7,7 +7,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## UI states, after visual approval
 
-**Phase 1 is visual review only** (owner, 4 November 13:01). The [audit's approval table](../design/ui-states-audit.md#visual-review-and-approval) controls entry to phase 2, one slice at a time. These rows specify future evidence; they authorize no wiring, unit tests, journeys or captures before the owner explicitly approves the slice. No implementation acceptance is claimed.
+**All eight design slices were approved** (owner, 4 November 14:06), including the compact border-spinner rule. The [audit's approval table](../design/ui-states-audit.md#visual-review-and-approval) records the authorization for phase 2. The rows below specify implementation evidence, not completed acceptance: silent failures land first, then commit states, with scoped typechecks, related unit tests and one journey per slice. App code stays on `vq-ui-states`; no full suite, CI wait or benchmarks are authorized by this increment.
 
 | Slice | Wiring done when | Unit evidence, after approval | One related journey, after approval |
 | --- | --- | --- | --- |

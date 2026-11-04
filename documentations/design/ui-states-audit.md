@@ -16,18 +16,20 @@
 
 | Slice | Findings | Review link | Availability | Approval |
 | --- | --- | --- | --- | --- |
-| D1 · Notifications | F3, F4, F10 | [Open slice 1](http://127.0.0.1:5231/?f=mock.uistates.d1) | Shown in the gallery | Awaiting review |
-| D2 · Fields | F1, F2, F12 | [Open slice 2](http://127.0.0.1:5231/?f=mock.uistates.d2) | Shown in the gallery | Awaiting review |
-| D3 · Switches | F2 | [Open slice 3](http://127.0.0.1:5231/?f=mock.uistates.d3) | Shown in the gallery | Awaiting review |
-| D4 · Choices | F2, F14 | [Open slice 4](http://127.0.0.1:5231/?f=mock.uistates.d4) | Shown in the gallery | Awaiting review |
-| D5 · Empty spaces | F6 | [Open slice 5](http://127.0.0.1:5231/?f=mock.uistates.d5) | Shown in the gallery | Awaiting review |
-| D6 · Recovery | F4, F5, F11, F15 | [Open slice 6](http://127.0.0.1:5231/?f=mock.uistates.d6) | Shown in the gallery | Awaiting review |
-| D7 · Long operations | F7, F8, F13 | [Open slice 7](http://127.0.0.1:5231/?f=mock.uistates.d7) | Shown in the gallery | Awaiting review |
-| D8 · Section loading | F9 | [Open slice 8](http://127.0.0.1:5231/?f=mock.uistates.d8) | Shown in the gallery | Awaiting review |
+| D1 · Notifications | F3, F4, F10 | [Open slice 1](http://127.0.0.1:5231/?f=mock.uistates.d1) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D2 · Fields | F1, F2, F12 | [Open slice 2](http://127.0.0.1:5231/?f=mock.uistates.d2) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D3 · Switches | F2 | [Open slice 3](http://127.0.0.1:5231/?f=mock.uistates.d3) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D4 · Choices | F2, F14 | [Open slice 4](http://127.0.0.1:5231/?f=mock.uistates.d4) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D5 · Empty spaces | F6 | [Open slice 5](http://127.0.0.1:5231/?f=mock.uistates.d5) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D6 · Recovery | F4, F5, F11, F15 | [Open slice 6](http://127.0.0.1:5231/?f=mock.uistates.d6) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D7 · Long operations | F7, F8, F13 | [Open slice 7](http://127.0.0.1:5231/?f=mock.uistates.d7) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
+| D8 · Section loading | F9 | [Open slice 8](http://127.0.0.1:5231/?f=mock.uistates.d8) | Shown in the gallery | Approved (owner, 4 Nov 14:06) |
 
 Approval values are **Awaiting review**, **Approved** and **Changes requested**. The gallery index distinguishes an unfinished design from one available to review. The [phase-2 DoD](../plan/definition-of-done.md#ui-states-after-visual-approval) records future wiring, unit and journey evidence only; none is run in phase 1.
 
-**Field treatment awaiting review:** the proposed field border uses the commit colour while pending and returns to rest with the confirmed circle tick (the skill), rather than retaining a confirmed border (the audit's shorthand).
+**Approved field treatment:** the field border uses the commit colour while pending and returns to rest with the confirmed circle tick, rather than retaining a confirmed border.
+
+**Phase-2 authorization (owner, 4 November 14:06):** “These look good, implement it and make it functional.” Approval covers all eight slices and the compact border-spinner rule. Wiring proceeds with silent failures first, then commit states, on `vq-ui-states`; implementation and exact-head evidence remain outstanding until recorded in the DoD.
 
 **Owner's compact-feedback rule (4 November, 13:58):** when there is room, keep the inline spinner, tick or error icon; when there is no room, the element's own border becomes the spinner. Compact segments, buttons, pills, tiles and switch tracks use a travelling arc following their shape, a success-coloured border for the confirmation minimum (with a brief draw-in), and a danger-coloured border on error; Retry stays in the nearest helper row. Reduced motion holds a dashed pending border, never a sweep. The hub shows both cases side by side with Play. This supersedes the earlier thumb-spinner proposal, not the requirement for visual approval of each slice.
 
