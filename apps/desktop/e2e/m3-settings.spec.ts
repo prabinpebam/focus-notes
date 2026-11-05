@@ -65,7 +65,7 @@ const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
 async function openFromGitHub(page: Page) {
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Settings" })).toHaveCount(0);
-  const spot = page.getByRole("dialog", { name: "Spotlight" });
+  const spot = page.getByRole("dialog", { name: "Actions", exact: true });
   await page.keyboard.press(`${mod}+/`);
   await spot.getByRole("combobox").fill("Open a project from GitHub");
   await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");

@@ -9,7 +9,7 @@ import { axeViolations } from "../../desktop/e2e/axe.ts";
 
 const mod = "Control";
 const editor = (page: Page) => page.getByRole("textbox", { name: "Note" });
-const spotlight = (page: Page) => page.getByRole("dialog", { name: "Spotlight" });
+const spotlight = (page: Page) => page.getByRole("dialog", { name: "Actions", exact: true });
 const field = (page: Page) => spotlight(page).getByRole("combobox");
 const active = (page: Page) => spotlight(page).locator("[role=option][aria-selected=true]");
 const settledAxe = async (page: Page) => {
@@ -22,10 +22,9 @@ test("SPT-01, SPT-05, FIL-04 on the web: Ctrl+/ opens Spotlight, Ctrl+P is quick
   await expect(editor(page)).toContainText(/Garden log|Reading list/);
   await page.keyboard.press(`${mod}+/`);
   await expect(field(page)).toBeFocused();
-  await expect(field(page)).toHaveAttribute("placeholder", "Search notes, commands, and settings");
-  await expect(spotlight(page).getByRole("group", { name: "Suggestions" })).toBeVisible();
-  // The action center (SPT-04, D-111): every action follows, here too.
-  await expect(spotlight(page).getByRole("group", { name: "Commands" }).getByRole("option", { name: /^Find in all notes/ })).toBeAttached();
+  await expect(field(page)).toHaveAttribute("placeholder", "Find and act");
+  // Only catalogued actions, grouped by what they act on (D-361, D-363): the App group is always there.
+  await expect(spotlight(page).getByRole("group", { name: "App", exact: true })).toBeVisible();
   expect(await settledAxe(page)).toEqual([]);
   // The instance's public notes are found by their text once the index has read them.
   await expect(async () => {
@@ -47,12 +46,9 @@ test("SPT-01, SPT-05, FIL-04 on the web: Ctrl+/ opens Spotlight, Ctrl+P is quick
   await expect(editor(page)).toContainText("Planted the tomatoes");
 
   await page.keyboard.press(`${mod}+Shift+P`);
-  await expect(field(page)).toHaveAttribute("placeholder", "Run a command or change a setting");
-  await field(page).fill("export");
-  await expect(active(page)).toContainText("Export my notes");
-  // Mod+N belongs to the browser: New note shows its substitute.
-  await field(page).fill("new note");
-  await expect(spotlight(page).getByRole("option", { name: /^New note/ }).first()).toContainText("Ctrl+Alt+N");
+  await expect(field(page)).toHaveAttribute("placeholder", "Find an action");
+  await field(page).fill("keyboard shortcuts");
+  await expect(active(page)).toContainText("Keyboard shortcuts");
   expect(await settledAxe(page)).toEqual([]);
 });
 
@@ -63,7 +59,7 @@ test("SPT-03 on the web: an instance's read-only note has only open, link, and C
   await field(page).fill("reading");
   await expect(active(page)).toContainText("Reading list");
   await page.keyboard.press(`${mod}+k`);
-  await expect(spotlight(page)).toContainText("Actions for “Reading list”");
+  await expect(spotlight(page)).toContainText("More actions for “Reading list”");
   const options = spotlight(page).getByRole("option");
   await expect(options).toHaveText([
     /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Copy public link/, /^Copy to my notes/,

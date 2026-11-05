@@ -782,7 +782,7 @@ test("Settings → Workspace → Open another workspace from GitHub: the same pi
     // Settings has no storage category (project model, slice 2): Spotlight opens a project from GitHub.
     await page.keyboard.press("Escape");
     await expect(settings).toHaveCount(0);
-    const spot = page.getByRole("dialog", { name: "Spotlight" });
+    const spot = page.getByRole("dialog", { name: "Actions", exact: true });
     await page.keyboard.press(`${mod}+/`);
     await spot.getByRole("combobox").fill("Open a project from GitHub");
     await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");

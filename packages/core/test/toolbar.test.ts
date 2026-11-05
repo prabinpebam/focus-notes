@@ -41,7 +41,7 @@ describe("the toolbar (UI-04, UI-07)", () => {
   it("UI-07: the six defaults are New note, Open, Search, Save, Focus, and Theme, in that order", () => {
     const vm = vmOf(appFor("windows"));
     expect(vm.items.map((i) => i.id)).toEqual([...DEFAULT_TOOLBAR]);
-    expect(vm.items.map((i) => i.label)).toEqual(["New note", "Open…", "Search", "Save", "Focus mode", "Switch light and dark"]);
+    expect(vm.items.map((i) => i.label)).toEqual(["New note", "Open…", "Actions", "Save", "Focus mode", "Switch light and dark"]);
   });
 
   it("UI-07: ⋯ holds font size, full screen, find, find and replace, share and visibility, settings, keyboard shortcuts, and help", () => {

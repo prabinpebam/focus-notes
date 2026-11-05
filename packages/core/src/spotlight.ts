@@ -151,8 +151,11 @@ export function rankLocal<T extends { label: string }>(items: readonly T[], quer
 // ---- one ranked list (SPT-02) ----
 
 export type RowKind = "note" | "heading" | "text" | "folder" | "command" | "setting" | "create" | "find" | "help";
-/** Result groups, each labeled (Spotlight → Anatomy). */
-export type GroupId = "top" | "recent" | "notes" | "headings" | "text" | "folders" | "commands" | "settings" | "suggestions" | "actions" | "help";
+/**
+ * Result groups, each labeled (Spotlight → Anatomy). Actions are grouped by what they act on
+ * (D-363): `selection`, `note`, `project`, `app`.
+ */
+export type GroupId = "top" | "recent" | "notes" | "headings" | "text" | "folders" | "commands" | "settings" | "suggestions" | "actions" | "help" | "selection" | "note" | "project" | "app";
 
 export interface SpotlightRow {
   /** Unique in the list: the group and the key. */
@@ -173,6 +176,7 @@ export interface SpotlightRow {
 /** At most this many rows of each group. */
 export const GROUP_LIMITS: Record<GroupId, number> = {
   top: 1, recent: 5, notes: 8, headings: 6, text: 5, folders: 4, commands: 8, settings: 5, suggestions: 3, actions: 2, help: 20,
+  selection: 8, note: 8, project: 8, app: 8,
 };
 const GROUP_OF: Record<SearchKind, GroupId> = { note: "notes", heading: "headings", folder: "folders", command: "commands", setting: "settings" };
 
@@ -371,46 +375,5 @@ export class Frecency {
 }
 const decay = (score: number, ms: number) => score * 0.5 ** (Math.max(0, ms) / FRECENCY_HALF_LIFE_MS);
 
-// ---- commands Spotlight lists (KEY-01) ----
+// ---- commands Actions lists: only the catalogue's (actions-catalog.ts, D-361, ACT-01) ----
 
-/** Steps the app's views and keys take rather than actions a person looks for. */
-const INTERNAL_PREFIXES = ["firstRun.", "slash.", "move.", "picker.", "unlock.", "import.", "gallery.", "spotlight.choose", "spotlight.set", "findAll.", "share.manage.", "textMenu."];
-const INTERNAL_IDS = new Set([
-  // Events from components and the editor, and the runner itself.
-  "app.ready", "command.run", "note.setContent", "find.prefill", "find.setResult", "paste.notice", "format.setState",
-  "table.setState", "table.action", "table.changed", "table.copied", "table.moveRow", "table.moveColumn", "table.insertRowAt", "table.insertColumnAt",
-  "table.openMenu", "table.closeMenu", "toast.dismiss", "toast.action", "window.drag",
-  // The launch toast's Review (QLT-06): it acts on what that launch found.
-  "recovery.review",
-  // Steps inside a dialog, a card, or the link editor, which their own controls run.
-  "link.openEditor", "link.apply", "link.cancel", "link.dismiss", "account.signOutNow", "workspace.removeSync", "workspace.removeConfirm",
-  // A Files row's own Copy public link (D-162): Spotlight has the open note's, note.copyPublicLink.
-  "files.copyPublicLink",
-  "conflict.choose", "conflict.later", "files.confirm",
-  // The Files panel's own selection and rows; Spotlight acts on a result through its quick actions instead.
-  "files.select", "files.activate", "files.undo", "files.drop", "files.clearSelection", "files.hideDeleted", "files.toggleDeleted",
-  "files.restore", "files.restoreTo", "files.hideRecovered", "files.toggleRecovered", "files.openRecovered", "files.closeRecovered", "files.saveRecovered", "files.copyRecovered", "files.discardRecovered",
-  "files.editBlur", "files.setFits", "files.setWidth", "outline.setWidth",
-  // The theme manager's own steps: previews from its gallery, a theme chosen there, its colors, closing and reverting it.
-  "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix",
-  // Send feedback's own buttons (D-203): Spotlight lists only Send feedback… and Report a problem….
-  "feedback.send", "feedback.submit", "feedback.retry", "feedback.continue", "feedback.done", "feedback.close", "feedback.openIssue", "feedback.signIn", "feedback.toggleAttach", "feedback.togglePreview",
-  "local.copyTo", "local.importClose", "local.importRetry", "projects.newRecover", "history.retry", "files.retryDeleted", "image.retry", "image.failed",
-  // Delete project's own steps (PRJ-23): Spotlight lists only Delete project….
-  "project.deleteSetOpen", "project.deleteCancel", "project.deleteStop", "project.deleteRetry", "project.deleteSignIn", "project.deleteRemoveInstead", "project.deleteType", "project.deletePrivate",
-  "project.deleteBack", "project.deleteContinue", "project.deleteExport", "project.deleteConfirm", "project.deleteOpenGitHub", "project.deletePoll", "project.deleteConfirmGitHub", "project.deleteShowFolder",
-  // A delete an earlier session left (DD-PROJ-14): its own screen runs these, never Spotlight.
-  "project.deleteResumeCheck", "project.deleteResume", "project.deleteForget",
-]);
-/** Scopes where a key acts on what's in front of it, not a place a person starts from. */
-const ACTION_SCOPES = new Set(["editor", "table"]);
-
-/**
- * Whether Spotlight leaves a command out (KEY-01): setters (`*.setX`), events from components, steps
- * inside a dialog, and keys that belong to a field or panel (Enter in the find field). Every other
- * command is listed, with its shortcut and its state.
- */
-export function isInternalCommand(id: string, handledBy?: string): boolean {
-  if (/\.set[A-Z]/.test(id) || INTERNAL_IDS.has(id) || INTERNAL_PREFIXES.some((p) => id.startsWith(p))) return true;
-  return handledBy !== undefined && !ACTION_SCOPES.has(handledBy);
-}

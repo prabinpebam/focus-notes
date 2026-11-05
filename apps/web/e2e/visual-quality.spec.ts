@@ -22,7 +22,7 @@ const SURFACES: { name: string; open: (page: Page) => Promise<void>; tooltips?: 
   { name: "visitor view", open: async () => {} },
   { name: "spotlight", open: async (page) => {
     await page.keyboard.press(`${mod}+p`);
-    await expect(page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox")).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("combobox")).toBeFocused();
   } },
   { name: "unlock", open: async (page) => {
     await corner(page).getByRole("button", { name: "Unlock" }).click();

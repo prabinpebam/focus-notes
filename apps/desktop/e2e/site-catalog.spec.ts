@@ -36,7 +36,7 @@ for (const theme of ["light", "dark"] as const) {
     if (theme === "light") {
       await capture(l, `note-${theme}`);
       await spotlight(page, `${mod}+Slash`);
-      await page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox").fill("gar");
+      await page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("combobox").fill("gar");
       await page.waitForTimeout(600);
       await capture(l, `spotlight-${theme}`);
       await reset(page);
