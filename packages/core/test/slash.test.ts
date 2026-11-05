@@ -67,6 +67,19 @@ describe("filtering the registry's entries (EDT-06)", () => {
 });
 
 describe("the slash menu's view model and commands (EDT-06)", () => {
+  it.each(["firstRun", "recover"] as const)("registers blocks while %s owns a newly mounted window (OFB.13)", async (surface) => {
+    const app = createApp(bridge, messages);
+    await app.start();
+    app.store.update((s) => surface === "firstRun"
+      ? { ...s, firstRun: { ...s.firstRun, active: true } }
+      : { ...s, recover: { ...s.recover, open: true } });
+    await app.commands.run("slash.register", { entries: REGISTRY });
+    app.store.update((s) => ({ ...s, firstRun: { ...s.firstRun, active: false }, recover: { ...s.recover, open: false } }));
+    await app.commands.run("slash.setState", { open: true, query: "", valid: ALL });
+    const vm = app.viewModels.select("vm.slash", app.store.state) as { items: { id: string; header?: boolean }[]; empty: boolean };
+    expect(vm.empty).toBe(false);
+    expect(vm.items.filter((item) => !item.header).map((item) => item.id)).toEqual(ids(""));
+  });
   it("opens with the first row active, its hint shown, and the Markdown shortcut on each row", async () => {
     const { app, vm } = await started();
     expect(vm().open).toBe(false);
@@ -74,8 +87,9 @@ describe("the slash menu's view model and commands (EDT-06)", () => {
     const v = vm();
     expect(v.open).toBe(true);
     expect(v.activeId).toBe("block.paragraph");
-    expect(v.items[0]).toEqual({ id: "block.paragraph", label: "Text", icon: "text", shortcut: "", description: "Plain text" });
-    expect(v.items[1]).toEqual({ id: "block.heading1", label: "Heading 1", icon: "heading1", shortcut: "#" });
+    expect(v.items[0]).toEqual({ id: "slash.group.text", label: "Text", header: true });
+    expect(v.items[1]).toEqual({ id: "block.paragraph", label: "Text", icon: "text", shortcut: "", description: "Plain text" });
+    expect(v.items[2]).toEqual({ id: "block.heading1", label: "Heading 1", icon: "heading1", shortcut: "#" });
   });
   it("typing filters and starts again at the top; arrows move and wrap", async () => {
     const { app, vm } = await started();
