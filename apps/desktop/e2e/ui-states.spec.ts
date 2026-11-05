@@ -1436,6 +1436,61 @@ test("Open retries the failed action in place, keeps input and never repeats a c
   } finally { await closeTestApp(l); }
 });
 
+test("Open shows each pin's own-border pending arc while it saves, then confirms the new state, for projects and files", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "open-pin.md");
+  writeFileSync(note, "# Open pin\n");
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+  const l = await launch(dirs);
+  try {
+    await l.app.evaluate(({ ipcMain }, folder) => {
+      const pins = new Set<string>();
+      const draft = `${folder}\\notes\\Draft.md`;
+      ipcMain.removeHandler("projects:list");
+      ipcMain.handle("projects:list", () => [{ folder, name: "Book", accent: "teal", logo: "book", pinned: pins.has(folder), recent: [{ path: draft, rank: 1, pinned: pins.has(draft) }] }]);
+      ipcMain.removeHandler("projects:pin");
+      ipcMain.handle("projects:pin", async (_event, project: string, path?: string) => {
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        const key = path ?? project;
+        if (pins.has(key)) pins.delete(key); else pins.add(key);
+      });
+    }, join(dirs.docs, "Synthetic Book"));
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+    await expect(open.getByRole("button", { name: "Pin Book", exact: true })).toBeAttached();
+    // The confirmed outline holds for 200 ms, shorter than a poll can promise to see, so the renderer records each beat as it's drawn.
+    await l.page.evaluate(() => {
+      const beats: string[] = [];
+      let last = "";
+      Reflect.set(globalThis, "fnPinBeats", beats);
+      new MutationObserver(() => {
+        const now = [...document.querySelectorAll<HTMLElement>("[role=dialog] button[data-commit]")]
+          .filter(el => /^(Un)?[Pp]in /.test(el.getAttribute("aria-label") ?? ""))
+          .map(el => `${el.getAttribute("aria-label")}:${el.dataset.commit}`);
+        for (const beat of now) if (!last.split("\n").includes(beat)) beats.push(beat);
+        last = now.join("\n");
+      }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-commit", "aria-label"] });
+    });
+    const beats = () => l.page.evaluate(() => (Reflect.get(globalThis, "fnPinBeats") as string[]).splice(0));
+    for (const name of ["Book", "Draft"]) {
+      for (const [from, to] of [["Pin", "Unpin"], ["Unpin", "Pin"]] as const) {
+        const before = open.getByRole("button", { name: `${from} ${name}`, exact: true });
+        await before.click();
+        await expect(before).toHaveAttribute("data-commit", "pending");
+        await expect(before).toHaveAttribute("aria-busy", "true");
+        await expect(before.locator("xpath=ancestor::span[@data-commit][1]")).toHaveCSS("opacity", "1");
+        const after = open.getByRole("button", { name: `${to} ${name}`, exact: true });
+        await expect(after).toHaveAttribute("data-commit", "rest");
+        const seen = await beats();
+        expect(seen.indexOf(`${from} ${name}:pending`)).toBeGreaterThanOrEqual(0);
+        expect(seen.indexOf(`${to} ${name}:confirmed`)).toBeGreaterThan(seen.indexOf(`${from} ${name}:pending`));
+        await expect(after).not.toHaveAttribute("aria-busy", "true");
+      }
+    }
+    await expect(open.locator("[data-status-row=danger]")).toHaveCount(0);
+  } finally { await closeTestApp(l); }
+});
+
 test("section loading uses the approved row shapes and keeps old content through a failed refresh and Retry", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);
