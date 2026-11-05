@@ -14,7 +14,7 @@ const allowed = (selection: Selection) => allowedAt(selection.$from);
 const imageFile = (file: File) => file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg|heic|avif|bmp|tiff?)$/i.test(file.name);
 
 export function requestImageCommand({ tr, dispatch }: CommandProps, files?: File[], pos = tr.selection.to): boolean {
-  if (!allowed(tr.selection)) return false;
+  if (!allowedAt(tr.doc.resolve(pos))) return false;
   if (dispatch) tr.setMeta(key, { add: { request: `image-${++sequence}`, pos, files, invalid: false } satisfies Target });
   return true;
 }
