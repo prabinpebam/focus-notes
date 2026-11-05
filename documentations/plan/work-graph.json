@@ -88,6 +88,13 @@
       "gate": "GATE-MP"
     },
     {
+      "id": "MACT",
+      "title": "Actions you can trust",
+      "outcome": "Draft, for owner review. Spotlight becomes Actions (Find and act): files and folders of the project, and a curated, proven catalogue of actions grouped by anchor, each distinct, with blocked actions explaining their fix. From the owner's Spotlight note of 5 November.",
+      "channel": "Planned desktop 1.x",
+      "gate": "GATE-MACT"
+    },
+    {
       "id": "Later",
       "title": "Components",
       "outcome": "Image, then gallery, each added as one block registration with directive syntax.",
@@ -2667,6 +2674,97 @@
       ],
       "lookahead": false,
       "status": "building"
+    },
+    {
+      "id": "WP-A.1",
+      "stage": "MACT",
+      "title": "Actions design in the gallery (strict design)",
+      "summary": "View-document mocks in packages/views/mocks/actions/: empty field with a selection, a typed query mixing files and anchored groups, a blocked AI row with its fix, `>` browse, a result's More actions, and a standalone file's window; light, dark and contrast. Gallery only; no wiring until the owner approves.",
+      "requirements": [],
+      "dependsOn": ["WP-4.2"],
+      "touches": ["views"],
+      "reviews": ["design-system", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-A.2",
+      "stage": "MACT",
+      "title": "Call it Actions, and list only what's catalogued",
+      "summary": "The first visible slice: the catalogue in core replaces the deny-list, seeded with today's actions that pass Q1 to Q7, relabelled; the repository check for proof, unique labels and look-alike pairs; every user-facing Spotlight becomes Actions with the Find and act placeholder.",
+      "requirements": ["ACT-01", "ACT-02", "ACT-03", "ACT-07"],
+      "dependsOn": ["WP-A.1", "WP-P.1"],
+      "touches": ["core", "views"],
+      "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-A.3",
+      "stage": "MACT",
+      "title": "Anchors, groups and context",
+      "summary": "Context snapshot on open; groups This selection, This note, This project, App; hidden and blocked states with reasons and fix rows; stale-context refusal; empty field and `>` browse; accessible group names and outcome descriptions.",
+      "requirements": ["ACT-05", "ACT-06", "ACT-08", "ACT-15"],
+      "dependsOn": ["WP-A.2"],
+      "touches": ["core", "views"],
+      "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-A.4",
+      "stage": "MACT",
+      "title": "Files and folders as content",
+      "summary": "Content follows the Files panel's rules in the window's project; folders open in Files revealed and focused; headings and body lines become reasons on file rows.",
+      "requirements": ["ACT-04"],
+      "dependsOn": ["WP-A.2"],
+      "touches": ["core", "views"],
+      "reviews": ["code", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-A.5",
+      "stage": "MACT",
+      "title": "The starter set, proven",
+      "summary": "Wire the few new entries (Connect to AI..., Rename project..., Project colour and logo...), relabel the rest, resolve Sync with GitHub now against Back up to GitHub, and prove each from Actions with a user-visible outcome; effect-class safeguards; no request while typing; the availability budget.",
+      "requirements": ["ACT-09", "ACT-11", "ACT-12"],
+      "dependsOn": ["WP-A.3"],
+      "touches": ["core", "views", "desktop"],
+      "reviews": ["code", "security", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-A.6",
+      "stage": "MACT",
+      "title": "AI actions through the approved prompt",
+      "summary": "Rewrite with AI..., Write with AI..., one row per preset opening the prompt pre-filled, and Caption image with AI... once IMG-09 exists; blocked without a connection; the anchor-only payload.",
+      "requirements": ["ACT-10"],
+      "dependsOn": ["WP-A.3", "WP-AI.14", "WP-P.2"],
+      "touches": ["core", "views"],
+      "reviews": ["code", "security", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-A.7",
+      "stage": "MACT",
+      "title": "Your own actions (waits for the owner's yes)",
+      "summary": "Saved prompts and text templates in app-data actions.json with schemas/actions.schema.json version 1; New action... from `>`; rename, edit, delete; the Yours group; label clashes refused; no code.",
+      "requirements": ["ACT-13", "ACT-14"],
+      "dependsOn": ["WP-A.6"],
+      "touches": ["core", "views", "desktop", "schemas"],
+      "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/actions.md", "architecture/actions-framework.md"],
+      "lookahead": true,
+      "status": "planned"
     },
     {
       "id": "WP-9.3",

@@ -12,7 +12,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | `CP-CALM-01` | Nothing competes with your words | Seed: blank UI with one trigger | SC-WRITE-01 |
 | `CP-FOCUS-01` | Your eye stays on the paragraph you're writing | Seed: focus mode; paragraph unit amended by the owner (D-232) | SC-WRITE-02 |
 | `CP-FLOW-01` | Shaping words, images and tables feels fluid | Seed: Notion/Loop editing; owner: tables, contextual toolbar, inline images | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04, SC-IMG-01, SC-IMG-02 |
-| `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-06 |
+| `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard; Actions note, 5 November (draft) | SC-FIND-01 to SC-FIND-06, SC-ACT-01 to SC-ACT-07 |
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04, SC-FILE-07 |
 | `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07, SC-IMG-03 |
 | `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
@@ -82,9 +82,9 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | --- | --- |
 | Customer promise | Any note, line, setting, or command is a few keystrokes away. |
 | Why it matters | A blank canvas only works if hidden things are easy to summon. |
-| Breaks when | Something can only be reached by browsing, or a common action has no familiar shortcut. |
+| Breaks when | Something can only be reached by browsing, or a common action has no familiar shortcut. *Draft, for owner review:* Actions lists an action that does nothing or can't work where you are, or two actions that can't be told apart ([Actions](../../experience/actions.md)). |
 | Signals | Share of note opens through Spotlight. Keystrokes from intent to action. |
-| Scenarios | SC-FIND-01, SC-FIND-02, SC-FIND-03, SC-FIND-04, SC-FIND-05, SC-FIND-06 |
+| Scenarios | SC-FIND-01, SC-FIND-02, SC-FIND-03, SC-FIND-04, SC-FIND-05, SC-FIND-06, SC-ACT-01, SC-ACT-02, SC-ACT-03, SC-ACT-04, SC-ACT-05, SC-ACT-06, SC-ACT-07 |
 
 ### CP-ORDER-01 — Organized your way
 

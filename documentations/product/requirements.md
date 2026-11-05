@@ -305,7 +305,7 @@ Owner: *"A solid keyboard shortcut strategy… same as the most popular apps… 
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| KEY-01 | Every action is a named command that can be run from Spotlight, which shows its shortcut. | P0 |
+| KEY-01 | Every action is a named command that can be run from Spotlight, which shows its shortcut. *Draft amendment, for owner review: every action is a named command; the catalogued ones are listed in Actions (ACT-01).* | P0 |
 | KEY-02 | The default keymap follows platform conventions and well-known app precedent on macOS, iPadOS and iOS with a hardware keyboard, Windows, and Linux. | P0 |
 | KEY-03 | The Basic, Writer, and Power layers of the keymap are complete. | P0 |
 | KEY-04 | The Pro layer (block selection mode, cell selection mode, expand selection, Spotlight action keys, reveal in Finder or Explorer) is complete. | P1 |
@@ -334,11 +334,33 @@ Owner: *"Powerful search-and-act… Ctrl+K can trigger a macOS Spotlight-like UI
 | SPT-01 | <kbd>Mod</kbd>+<kbd>/</kbd> opens Spotlight from anywhere in the app. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> also opens it on every keyboard layout (D-16). | P0 |
 | SPT-02 | One ranked list covering notes (title, path, headings, full text), folders, commands, and settings. | P0 |
 | SPT-03 | Quick actions for the selected result (<kbd>→</kbd> or <kbd>Mod</kbd>+<kbd>K</kbd>): open in a new window, copy link, move, rename, make public or private, delete, and more. | P0 |
-| SPT-04 | Commands and settings show their current state. The empty field shows recent notes and suggestions. No match offers create and find-in-all-notes. Spotlight is also the action center: with the field empty, after recent notes, it lists every action the app has, so <kbd>Mod</kbd>+<kbd>/</kbd>, the arrow keys, and <kbd>Enter</kbd> find and run any of them (D-111). | P0 |
+| SPT-04 | Commands and settings show their current state. The empty field shows recent notes and suggestions. No match offers create and find-in-all-notes. Spotlight is also the action center: with the field empty, after recent notes, it lists every action the app has, so <kbd>Mod</kbd>+<kbd>/</kbd>, the arrow keys, and <kbd>Enter</kbd> find and run any of them (D-111). *Draft amendment, for owner review: ACT-01 and ACT-06 list only catalogued actions.* | P0 |
 | SPT-05 | Modes and prefixes: quick open (<kbd>Mod</kbd>+<kbd>P</kbd>), commands (<code>&gt;</code>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>), headings (<code>#</code>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>), help (<code>?</code>). | P0 |
 | SPT-06 | Filters (`is:`, `in:`, `type:`, exact phrases) and a preview pane on the desktop. | P1 |
 | SPT-07 | Opens in under 50 ms. Title and command results in under 16 ms per keystroke and full text in under 100 ms, on 5,000 notes. | P0 |
 | SPT-08 | The search index is built and kept on the device only. Private note text never leaves it. | P0 |
+
+## Actions (ACT)
+
+**Draft, for owner review.** Owner, 5 November: *"The purpose of this feature is "Find and act", and we will simply call this "Actions"… We don't want to dump all actions and then figure out which ones don't work and remove it. Instead we want to put actions confidently and only the ones we know for sure makes sense and actually works."* The full note is on the [Actions framework](../architecture/actions-framework.md#the-owners-spotlight-note-5-november-2026); the feature is [Actions](../experience/actions.md). ACT-01 amends KEY-01 and supersedes SPT-04's "lists every action the app has" (D-111) once approved. ACT-13 and ACT-14 wait for the owner's yes.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| ACT-01 | **Allow-list.** Actions lists only actions in the catalogue. A registered command that isn't catalogued still runs from its key, menu, dialog, agent or deep link, but is never listed. The deny-list (`isInternalCommand`) goes. | P1 |
+| ACT-02 | **Proven before listed.** Every catalogue entry names a check that runs it from Actions and asserts the outcome the person sees; a repository check fails when an entry has none, and an entry whose check fails is not listed. | P1 |
+| ACT-03 | **Called Actions.** The dialog is *Actions* with the field placeholder *Find and act* everywhere a person reads or hears it (tooltip, cheat sheet, Help, accessible names); "Spotlight" leaves every user-facing string. Keys are unchanged. | P1 |
+| ACT-04 | **Content is files and folders.** Results are the files and folders the Files panel shows in the window's project, both roots; Enter opens a note, or opens Files with a folder revealed, expanded and focused. A heading or line that matches shows on its file's row and opens there. A standalone file's window finds that file and recent files only. | P1 |
+| ACT-05 | **One anchor each.** Each action has exactly one anchor (app, project, note, selection kind, chosen result). The context is captured as Actions opens; groups are *This selection*, *This note*, *This project*, *App*, then *Yours*, each headed; an action whose captured context changed refuses, keeps the query and says what changed. | P1 |
+| ACT-06 | **Empty and browse.** The empty field shows five recent files, then up to four actions per present anchor and a *Type > to browse all actions* hint; `>` lists the whole catalogue by anchor, showing unavailable actions with the anchor they need. | P1 |
+| ACT-07 | **Distinct.** Labels are unique across the catalogue; labels sharing a verb name their object; synonyms never equal another label; the active row's description is its one-line outcome. A repository check enforces uniqueness and lists look-alike pairs. | P1 |
+| ACT-08 | **Hidden or blocked, never dead.** An action whose anchor is missing, or that can't work in this window or on this platform, is hidden. One whose fixable precondition is missing is shown unavailable with its reason, and its fix is the next row. | P1 |
+| ACT-09 | **The starter set.** The App, This project, This note, This selection and result actions in [the starter set](../experience/actions.md#the-starter-set), each relabelled as listed and each passing ACT-02; the [deliberately out](../experience/actions.md#deliberately-out) rows are not listed. | P1 |
+| ACT-10 | **AI actions open the prompt.** AI-backed rows open the approved inline prompt on their anchor, pre-filled for a preset, showing integration, model and where it runs; nothing is sent from Actions; only the anchor and prompt are sent; with no AI connection the row is blocked with *Connect to AI…* next. | P1 |
+| ACT-11 | **Effects keep their safeguards.** Each action uses its existing confirmation and undo by effect: edits are one undo step; file changes use Files' confirmations; visibility and destructive actions always ask; outbound actions show their destination first. No chaining of actions. | P1 |
+| ACT-12 | **Private and quick.** Typing in Actions makes no network request; no action adds a network destination; availability for the whole catalogue takes at most 2 ms at 150 actions (`fn:actions.available`) and opening stays within SPT-07. | P1 |
+| ACT-13 | **Your own actions.** Saved prompts (open the AI prompt pre-filled) and text templates (insert at the caret, or a new note from it) in `actions.json` in the app's data folder, never committed, described by `schemas/actions.schema.json` version 1; no scripts, commands or code. | Later |
+| ACT-14 | **Managing your own actions.** Create from `>` *New action…*; rename, edit and delete from the row's own actions; listed under *Yours*; a name equal to any action's label is refused with the typed words kept; an unreadable file leaves built-ins working and says so. | Later |
+| ACT-15 | **Accessible anchors.** Group headings are read as their anchor; the active row's outcome (and for AI rows, where words go) is its accessible description; blocked rows are announced unavailable with their reason; focus, caret and selection return exactly on close. | P1 |
 
 ## Licensing (LIC)
 

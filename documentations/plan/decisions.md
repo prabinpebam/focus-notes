@@ -1,5 +1,43 @@
 # Decisions
 
+## D-TBD: Actions lists only catalogued actions
+
+**Status:** Proposed (worker, 6 November 2026), draft for owner review. The orchestrator assigns the number. **Affects** [Actions framework](../architecture/actions-framework.md), [Actions](../experience/actions.md), KEY-01, SPT-04, D-111, ACT-01, ACT-02, ACT-09, CP-REACH-01, UC-ACT-08, WP-A.2.
+
+The owner's Spotlight note (5 November): "We don't want to dump all actions and then figure out which ones don't work and remove it. Instead we want to put actions confidently and only the ones we know for sure makes sense and actually works." Today Spotlight lists every registered command not on a deny-list (D-111), about 200 rows including dialog steps and duplicates.
+
+- **Allow-list.** Only actions in a catalogue in `packages/core` are listed. Each entry passes Q1 to Q7 (intent, starts here, one anchor, distinct, proven, works here, reachable elsewhere) and names the check that proves its outcome from Actions; an entry without a passing proof isn't listed.
+- **Commands are unchanged.** Every command still runs from its key, menu, dialog, agent or deep link. KEY-01 becomes "every action is a named command; the catalogued ones are listed in Actions". D-111's "lists every action the app has" is superseded.
+- Rejected: pruning the deny-list (the next dialog's *Cancel* arrives with it); a per-command `palette: false` flag (opt-out repeats the failure; VS Code's `menus.commandPalette` shows the cost).
+
+## D-TBD: Spotlight is called Actions, "Find and act"
+
+**Status:** Owner direction from the Spotlight note (5 November 2026); proposed for implementation, draft for owner review. **Affects** ACT-03, IA-VIEW-SPOTLIGHT, [Actions](../experience/actions.md#words), Help, the cheat sheet. The orchestrator assigns the number.
+
+The owner wrote: "We don't want to call this Spotlight as that's a direct name that MacOS use. The purpose of this feature is "Find and act", and we will simply call this "Actions"… The tagline will be "Find and act"". User-facing words only: the dialog is *Actions*, its field placeholder *Find and act*, the per-result panel *More actions* (so it isn't "Actions inside Actions"). Keys, command IDs and code names keep `spotlight`, as *workspace* did in its first slice.
+
+## D-TBD: One anchor per action, grouped and named by it
+
+**Status:** Proposed (worker, 6 November 2026), draft for owner review. **Affects** ACT-04 to ACT-08, ACT-15, UC-ACT-01, UC-ACT-03, UC-ACT-05 to UC-ACT-07. The orchestrator assigns the number.
+
+From the owner's "independent actions" and "actions that need an anchor… explicit… implicit", and "enough distinction for each action so that it's not confused with anything else":
+
+- Each action has exactly one anchor: app, project, current note, a selection kind, or a chosen result. Results are grouped *This selection*, *This note*, *This project*, *App* (and later *Yours*).
+- Context is captured when Actions opens; an action whose context changed refuses and says so.
+- Labels are unique, start with a verb, and name their object when a verb repeats (*Rename note…*, *Rename project…*); the active row shows a one-line outcome.
+- Actions that can't apply are hidden; fixable ones are blocked with their reason and the fix as the next row; `>` browses the whole catalogue with what each needs.
+- Content is the files and folders the Files panel shows in this project (D-273); headings and body lines are reasons on a file's row, not groups of their own (owner question 1).
+- Rejected: one *Rename…* that asks what to rename (an extra step and an ambiguous row); showing every action disabled with a reason in the normal list (the dump the owner described); a blocked row that runs its fix itself (two meanings for one row).
+
+## D-TBD: AI actions open the approved prompt; no chains, scripts or plugins
+
+**Status:** Proposed (worker, 6 November 2026), draft for owner review. **Affects** ACT-10, ACT-11, ACT-13, ACT-14, UC-ACT-04, UC-ACT-09, RWR-70, D-256, D-303. The orchestrator assigns the number.
+
+- **AI-backed rows open the existing inline prompt** on their anchor, pre-filled for a preset, showing integration, model and where it runs; nothing is sent from Actions, and only the anchor and prompt are sent. "Presets never send" (UC-RWR-01) holds. No model runs in Focus Notes (RWR-70).
+- **No chaining or macros**, no scripts or shell commands, no plugin surface. Agents keep MCP (AGT-01 to AGT-06).
+- **User-defined actions are a later stage, waiting for the owner's yes:** saved prompts and text templates only, in `actions.json` in the app's data folder (never committed, because a project can be public), described by `schemas/actions.schema.json` version 1.
+- Rejected: running presets directly from Actions (sends without the disclosure the owner approved); "ask AI about my notes" (sends private notes beyond a selection); project-stored prompts (R-59).
+
 ## D-pending: Project replaces workspace everywhere
 
 **Status:** Accepted (the owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."; re-confirmed, the owner, 5 November 2026, 19:46: "Removing workspace and having only Project, the design is approved." and "Delete dialog looks good, it's approved." then "Go ahead and implement all of these."). The on-disk and template renames in (c) stay a separate owner decision; implementation changes user-facing words only. **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).

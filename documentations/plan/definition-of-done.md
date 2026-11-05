@@ -902,6 +902,32 @@ MP.7/WP-P.10 has no-name access-code readers, authenticated encrypted authorizat
 
 **Against the promise (5 November):** images are partly built: display, the image menu, crop and the missing-image state (WP-9.1, WP-9.4); adding images is not. The [readiness assessment](../experience/images.md#readiness-assessment-5-november) orders the rest. Highest-risk proofs are encrypted media closure, atomic/destructive saves and image-only provider payloads. Validate those in scoped work after the owner reviews JSON views; this document does not approve their UX or authorize real-note writes.
 
+## Actions (draft, for owner review)
+
+**Not authorized; nothing built.** From the owner's Spotlight note of 5 November ([Actions](../experience/actions.md), [framework](../architecture/actions-framework.md), [plan](implementation-plan.md#mact)). These rows define future evidence. Before the owner approves the WP-A.1 mocks, only the build, typecheck and `ui:check` run; no tests.
+
+**Try it (after approval and build, about ten minutes):**
+
+1. Press <kbd>Ctrl</kbd>+<kbd>/</kbd> with nothing selected. The field says *Find and act*; the word "Spotlight" appears nowhere. Arrow through every row with an empty field, then type `>` and arrow through the whole catalogue. Every row is something you'd set out to do; no *Cancel*, *Retry*, *Next* or duplicate label.
+2. Type `share`, then `rename`, then `publish`. Each row names what it acts on (*Share this note…*, *Rename project…*), and the highlighted row says what will happen.
+3. Select a word and open Actions. *This selection* is first; Enter on *Bold* bolds it and closes; <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes it.
+4. Type a folder's name and press Enter. Files opens with that folder revealed and focused.
+5. Remove your AI connection, select text and type `short`. *Make shorter with AI…* says *Connect to AI first*; the next row, *Connect to AI…*, takes you there. Reconnect, try again: the prompt opens pre-filled and nothing is sent until <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.
+6. Open a standalone `.md` file and open Actions. *Sign in to GitHub…* (or *Sign out*) and *Keyboard shortcuts* work; no project action is listed.
+7. Run five actions picked at random from the `>` list. Each does what its row said.
+
+| Row | Done when | Evidence required |
+| --- | --- | --- |
+| MACT.1 | UC-ACT-08 / ACT-01, ACT-02: only catalogued actions are listed; each has a passing check that runs it from Actions and asserts the visible outcome; uncatalogued commands still run from their keys and dialogs. | Repository check failing on an entry without proof; one parametrized journey asserting each entry's outcome (not that a handler ran); a key-only command still works |
+| MACT.2 | UC-ACT-06 / ACT-07: labels unique, shared verbs name their object, synonyms never equal a label, the active row shows its outcome. | Catalogue check output (no duplicates; look-alike pairs reviewed); Try it step 2 by the owner |
+| MACT.3 | UC-ACT-01 / ACT-03, ACT-04: *Actions*, *Find and act*, no user-facing "Spotlight"; files and folders follow Files' rules in this project; a folder opens Files focused; a body match opens at its line. | String inventory scan; two-project scope check; folder-focus journey; Try it steps 1 and 4 |
+| MACT.4 | UC-ACT-03, UC-ACT-05 / ACT-05, ACT-06, ACT-15: groups by anchor in order; context captured on open; a changed context refuses with the query kept; empty field and `>` browse as specified; groups and outcomes read by a screen reader. | Snapshot and stale-context units; selection-action journey with undo; keyboard and screen-reader pass in light, dark and contrast |
+| MACT.5 | UC-ACT-07 / ACT-08: impossible actions hidden; blocked ones unavailable with their reason and the fix as the next row. | Availability units over signed-out, no-AI, local-only project and standalone-window contexts; Try it step 5 |
+| MACT.6 | UC-ACT-02, UC-ACT-05 / ACT-09, ACT-11: the starter set listed, relabelled and each proven; the deliberately-out rows absent; every effect uses its existing confirmation and undo. | MACT.1's journey covering every starter entry; a visibility or destructive action asks first; Try it steps 6 and 7 |
+| MACT.7 | UC-ACT-02 / ACT-12: no network request while typing; no new destination; availability ≤ 2 ms at 150 actions; opening within SPT-07. | Network-monitor check while typing (as SPT-08); `fn:actions.available` and `SPT-07.panelOpenMs` in `pnpm bench` |
+| MACT.8 | UC-ACT-04 / ACT-10: AI rows open the approved prompt, pre-filled for presets; nothing sent from Actions; only anchor and prompt sent; blocked without a connection. | Fake local provider request inspection; Try it step 5 |
+| MACT.9 | UC-ACT-09 / ACT-13, ACT-14 (only if the owner says yes): saved prompts and templates in app-data `actions.json` valid against `schemas/actions.schema.json`; clashes refused with words kept; unreadable file leaves built-ins working; no code runs. | Schema fixtures (valid, newer version read-only, unknown fields kept); clash and corrupt-file units; owner creates and uses one of each |
+
 ## Settings AI single-list stage
 
 **Approved at 19:59, 1 November:** the owner accepted UX and UI of exact `d40b78a345b7fe79262116b270b3a908c0966eac`, including shared centering/opaque hover, discovery grouping, prominent Default, stable focused row/editor/scroll and Add last. Production hardening has 217 targeted passing units and six passing real-app journeys, plus the complete green Windows runtime/test/config gate on `ece4c25c722f96c572232c5c58398c9f25d74260`; [current gate evidence](gate-evidence.md#current-production-candidate-checks) supplies its exact commands/results/run and retains live-account/assistive-technology limitations. Earlier evidence below is historical, not a claim that the revised design remains unapproved.
