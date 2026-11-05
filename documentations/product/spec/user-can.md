@@ -146,6 +146,22 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | UC-KEY-02 | use platform-correct shortcuts for every common action | SC-FIND-04 | P0 | All views | KEY-02, KEY-03, KEY-06 | The Basic, Writer, and Power layers work as listed on [Keyboard shortcuts](../../experience/keyboard-shortcuts.md). |
 | UC-KEY-03 | change any key binding | SC-FIND-04 | P1 | IA-VIEW-SETTINGS | KEY-04, KEY-07 | A conflicting binding warns before saving. *Reset* restores the defaults. |
 
+<h2 id="actions" data-reader-personas="product design">Actions</h2>
+
+**Draft, for owner review.** From the owner's Spotlight note of 5 November; see [Actions](../../experience/actions.md). UC-ACT-07 and UC-ACT-09 are proposals.
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-ACT-01 | open any file or folder in this project by typing part of its name or a line inside it | SC-ACT-01 | P1 | IA-VIEW-SPOTLIGHT | ACT-03, ACT-04 | A note opens where it was left; a folder opens in Files revealed, expanded and focused; a body match opens at the line. Nothing from another project appears. |
+| UC-ACT-02 | find and run any app-wide action by what it does, from any window | SC-ACT-02 | P1 | IA-VIEW-SPOTLIGHT | ACT-06, ACT-09, ACT-12 | *Sign in to GitHub…*, *Connect to AI…*, *Keyboard shortcuts*, *Customize toolbar…* run or start their flow with Enter from a project window and a standalone file's window; no request is made while typing. |
+| UC-ACT-03 | act on my selection, formatting it or adding a link, with its actions listed first | SC-ACT-03 | P1 | IA-VIEW-SPOTLIGHT | ACT-05, ACT-15 | With text selected, *This selection* is first; *Bold* applies in one undo step and keeps the selection; the row shows *On* when it already applies. |
+| UC-ACT-04 | send a selection to my AI service only through the prompt that shows where it goes | SC-ACT-03 | P1 | IA-VIEW-SPOTLIGHT, IA-CMP-REWRITEPROMPT | ACT-10 | AI rows open the approved prompt (pre-filled for presets) and never send from Actions; only the selection and prompt are sent; with no connection the row is blocked. |
+| UC-ACT-05 | act on the note or project I'm in without naming it | SC-ACT-04 | P1 | IA-VIEW-SPOTLIGHT | ACT-11 | *Share this note…*, *Publish this note…*, *Project settings…* and *Rename project…* act on the captured context; if it changed, the action refuses and says so. |
+| UC-ACT-06 | tell any two actions apart by their words and group before running one | SC-ACT-05 | P1 | IA-VIEW-SPOTLIGHT | ACT-07 | No two labels are equal; shared verbs name their object; the active row's outcome line says what will happen. |
+| UC-ACT-07 | see why an action can't run yet and reach its fix | SC-ACT-06 | P1 | IA-VIEW-SPOTLIGHT | ACT-08 | A blocked row is unavailable with its reason, and its fix is the next row; actions that can't apply are hidden, and `>` lists them with what they need. |
+| UC-ACT-08 | never be shown an action that does nothing or can't work here | SC-ACT-02, SC-ACT-05 | P1 | IA-VIEW-SPOTLIGHT | ACT-01, ACT-02 | Every listed action has a passing check that runs it from Actions and sees its outcome; flow steps, browser-era and developer rows are never listed. |
+| UC-ACT-09 | keep my own prompt or text as an action and run it like any other | SC-ACT-07 | Later | IA-VIEW-SPOTLIGHT | ACT-13, ACT-14 | Later, with the owner's yes. Saved on this device only; listed under *Yours*; a clashing name is refused with my words kept; never runs code. |
+
 <h2 data-reader-personas="product design">Theme and comfort</h2>
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |

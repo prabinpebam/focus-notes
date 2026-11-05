@@ -430,6 +430,34 @@ These are independently reviewable slices; lookahead permits design without unre
 
 **GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has its named future evidence after design approval. Keep cancellation/no-side-effect checks, first-share/history copy, retained-repository removal and one-click owner-draft export proportionate to the accepted plans. Spec review is not implementation or execution acceptance.
 
+<h2 id="mact" data-reader-personas="product design engineering">MACT: Actions you can trust (draft, for owner review)</h2>
+
+**Not authorized.** From the owner's Spotlight note of 5 November; the spec is [Actions](../experience/actions.md) and the [Actions framework](../architecture/actions-framework.md). Nothing here is built. The design starts as gallery mocks (WP-A.1); no wiring, no tests until the owner approves them.
+
+**You can:** open any file or folder of the project from one dialog, and find and run a curated set of actions that all work, grouped by what they act on, each impossible to confuse with another; blocked actions say why and offer their fix. Delivers UC-ACT-01 to UC-ACT-08; UC-ACT-09 waits for the owner's yes.
+
+**Used by:** the owner first. **Delivered as:** planned desktop 1.x.
+
+**Order, smallest visible slice first:**
+
+1. **WP-A.1, strict design.** View-document mocks in `packages/views/mocks/actions/`, gallery only: the empty field with a selection, a typed query across files and groups, a blocked AI row with its fix, `>` browse, a result's *More actions*, a standalone file's window, in light, dark and contrast. The owner reviews them in the gallery. About one hour.
+2. **WP-A.2, the first thing the owner can try.** The name and the allow-list: the junk rows go, the survivors are relabelled and distinct. It reuses today's dialog, so it's mostly a catalogue and words. Each entry lands with its proof.
+3. **WP-A.3 and WP-A.4** in parallel (disjoint files): anchors and blocked rows; files and folders as content.
+4. **WP-A.5** the rest of the starter set, then **WP-A.6** AI actions.
+5. **WP-A.7** only after the owner says yes to their own actions ([question 3](../experience/actions.md#open-questions-for-the-owner)).
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-A.1 | **Actions design in the gallery (strict design).** Mocks of every state above; gallery only. | none | WP-4.2 | design-system, accessibility |
+| WP-A.2 | **Call it Actions, and list only what's catalogued.** Allow-list catalogue, proof and distinction checks, relabelled survivors, *Find and act*. | ACT-01, ACT-02, ACT-03, ACT-07 | WP-A.1, WP-P.1 | code, design-system, accessibility |
+| WP-A.3 | **Anchors, groups and context.** Snapshot, groups, hidden and blocked with fixes, stale refusal, empty and `>` browse. | ACT-05, ACT-06, ACT-08, ACT-15 | WP-A.2 | code, design-system, accessibility |
+| WP-A.4 | **Files and folders as content.** Files' rules, folders focused in Files, text matches as reasons. | ACT-04 | WP-A.2 | code, accessibility |
+| WP-A.5 | **The starter set, proven.** New wiring for three entries, relabels, each proven from Actions. | ACT-09, ACT-11, ACT-12 | WP-A.3 | code, security, accessibility |
+| WP-A.6 | **AI actions through the approved prompt.** Rewrite, Write, presets pre-filled, Caption. | ACT-10 | WP-A.3, WP-AI.14, WP-P.2 | code, security, accessibility |
+| WP-A.7 | **Your own actions (waits for the owner's yes).** Saved prompts and templates, `actions.json`, schema version 1. | ACT-13, ACT-14 | WP-A.6 | code, security, design-system, accessibility |
+
+**GATE-MACT:** every [Actions done row](definition-of-done.md#actions-draft-for-owner-review) has its evidence, and the owner has run its *Try it* in a review build.
+
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 
 **You can:** place and manage inline images, choose readable display modes, crop/rotate explicitly, ask a chosen integration for a reviewed caption, and share encrypted media with its note. Gallery remains a separate later registration. [Exact image source, flows and figures](../experience/images.md); D-300 to D-304.

@@ -92,6 +92,28 @@ The [image source/experience](../experience/images.md) is owner-requested; forma
 | A-SHR-01: a native bridge can open Windows' share sheet from Electron. | Feasibility / high / Chromium does it outside Electron; not tried here | A one-hour spike: a permissively licensed native module calls DataTransferManager's share UI for the window and receives text; it starts on Windows 10 and 11, packaged and unpacked. | If it fails: Copy share information stays the Windows primary action (D-308) |
 | A-SHR-02: people understand that a folder share covers what was in it, not later notes. | Usability / medium / derived (D-311) | The owner predicts, from the JSON view, what happens to a note added after sharing, without help. | Default the switch On and say so, or drop it |
 
+## Actions risks and assumptions
+
+**Draft, for owner review.** From the owner's Spotlight note of 5 November and the [Actions framework's proposals](../architecture/actions-framework.md#proposals-register). Nothing is built.
+
+| ID | Risk | Likelihood | Impact | Mitigation and criterion | Checked in |
+| --- | --- | --- | --- | --- | --- |
+| R-56 | **Catalogue drift.** New commands ship and are either never listed when they should be, or listed without proof under deadline pressure, and the junk returns. | High without a check | High | Listing needs a catalogue entry with a proof (ACT-02); the repository check fails otherwise and prints commands that are neither catalogued nor reachable from a visible control, for review. | MACT, WP-A.2 |
+| R-57 | **An action acts on the wrong thing.** The selection or note changes between opening Actions and pressing Enter (another window, a sync, an external edit), and a format, rename or AI rewrite lands somewhere else. | Medium | Severe | Context snapshot with the note's revision; refuse on mismatch with the query kept (ACT-05), reusing Rewrite's target-version guard. | MACT, WP-A.3 |
+| R-58 | **An AI action sends more than its anchor.** A preset row or saved prompt sends the note, the project or the Actions query. | Low | Severe | AI rows only open the approved prompt; the payload is Rewrite's (selection and prompt only); provider-request inspection in MACT.8. | MACT, WP-A.6 |
+| R-59 | **Personal prompts leak through a repository.** Saved prompts quoting private material end up committed to a public project. | Medium, if stored in the project | High | `actions.json` lives in the app's data folder, never in a project (ACT-13); project-shared templates would need their own decision. | MACT, WP-A.7 |
+| R-60 | **Dropping "every action is listed" hides something people relied on.** A command used only through Spotlight disappears from the keyboard path. | Medium | Medium | Q7 needs a pointer path for every catalogued action; the drift check lists uncatalogued commands with no visible control; the owner's Try it browses `>` before the old list goes. | MACT, WP-A.2 |
+| R-61 | **"Actions" collides with other uses of the word**: the per-result panel, and GitHub Actions in publishing messages. | Medium | Low | The panel is *More actions*; a string inventory of "Actions" before WP-A.2 lands; publishing words say "website" and "deploy", not "GitHub Actions". | MACT, WP-A.2 |
+
+| Assumption | Kind / impact / evidence | Criterion and cheapest check | Decision changed by failure |
+| --- | --- | --- | --- |
+| A-ACT-01: grouping by anchor plus labels that name their object make look-alike actions distinct. | Usability / high / the owner's note names the problem; not tried | In the WP-A.1 mock, the owner picks the intended row for *share*, *rename*, *publish*, *settings* and *delete* without reading the outcome lines. | Change group names, or put the object first in labels |
+| A-ACT-02: hiding actions whose anchor is missing doesn't make people think a feature vanished. | Usability / medium / VS Code and Obsidian hide; not tried here | With no selection the owner looks for *Bold*, and finds it through `>` with *Select text first*. | Show such actions unavailable in normal results too |
+| A-ACT-03: a file row with the matching line finds notes as well as separate *Headings* and *In notes* groups, and is calmer. | Usability / medium / derived from the owner's "files and folders" | The owner finds a note by a phrase in its body in the mock, first try. | Bring back a text group (question 1) |
+| A-ACT-04: about 55 curated actions cover what the owner reaches for. | Desirability / high / starter set is a proposal | After a week of use, the owner names three or fewer missing actions and none to remove. | Edit the catalogue; not the framework |
+| A-ACT-05: the owner wants their own actions (saved prompts, templates). | Desirability / medium / not in the note | Ask (question 3 on the feature page). | Drop WP-A.7 and ACT-13, ACT-14 |
+| A-ACT-06: one parametrized journey can prove every catalogued action within a normal CI shard. | Feasibility / medium / journeys take 5 to 8 minutes per shard today | After approval, time a spike proving five actions; extrapolate to 55. | Prove some actions with core-level outcome units instead of journeys |
+
 ## Rewrite assumptions to validate
 
 These are hypotheses unless an evidence boundary is explicitly resolved below. The 30 October history-bounds hypothesis was dropped with D-256. See [decisions](decisions.md#rewrite-with-ai-as-built-31-october-2026) and the [owner-testable stage](definition-of-done.md#owner-testable-rewrite-ux-stage).

@@ -28,6 +28,20 @@ Desktop only. Built on 31 October and in the owner's review build, not yet relea
 | SC-RWR-03 | CP-RWR-01 | When a rewrite is wrong or I stop it, I want my exact original back at once, so trying costs nothing. | Writer | Ctrl+Z gives back the original in one step and Ctrl+Y the rewrite; Esc, Stop or an error puts the original back. | UC-RWR-02, UC-RWR-07 | IA-CMP-REWRITEREVIEW |
 | SC-RWR-04 | CP-RWR-01 | When I set up rewriting or start another rewrite, I want to choose the integration and model I trust and know where my words go, so I decide whether they leave this device. | Writer, Comfort | Nothing is connected before I ask. Settings → AI offers 26 API/server kinds plus Copilot CLI. Find checks supported runtime-owned CLI authentication without words; signed-in Copilot is added directly and selected only if no integration is active (D-264). It is Cloud. The prompt shows the active integration, model and This computer/Cloud with a remembered picker. No first-send disclaimer or consent; private notes use the same user judgement, not a blocking switch (D-261, D-262, D-266). | UC-RWR-05, UC-RWR-08, UC-RWR-09 | IA-CMP-REWRITEPROMPT, IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS, IA-CMP-AIKEY, IA-CMP-AIDISCOVER |
 
+## Actions
+
+**Draft, for owner review.** From the owner's Spotlight note of 5 November; see [Actions](../../experience/actions.md) and the [Actions framework](../../architecture/actions-framework.md). SC-ACT-06 and SC-ACT-07 are proposals.
+
+| ID | Promise | Situation | Persona | Expected behavior | User can | Views |
+| --- | --- | --- | --- | --- | --- | --- |
+| SC-ACT-01 | CP-REACH-01 | When I know roughly which file or folder I want, I want to type part of its name and land on it, so I never browse. | Writer | Files and folders of this project, public and private, are found by name or by a line inside; a note opens, a folder opens in Files revealed and focused. | UC-ACT-01 | IA-VIEW-SPOTLIGHT |
+| SC-ACT-02 | CP-REACH-01 | When I want to do something in the app but don't know where it lives, I want to type what I want and do it, so I never hunt through menus. | Writer, Power user | App-wide actions (sign in, connect to AI, shortcuts, toolbar, theme) are found in my words and run, or start their flow, with Enter. Nothing listed fails to work. | UC-ACT-02, UC-ACT-08 | IA-VIEW-SPOTLIGHT |
+| SC-ACT-03 | CP-REACH-01 | When I've selected words or an image, I want to see what I can do to them first, so formatting, linking or rewriting is a few keys away. | Writer | *This selection* heads the list; formatting is one undo step; AI actions open the approved prompt showing where words go. | UC-ACT-03, UC-ACT-04 | IA-VIEW-SPOTLIGHT, IA-CMP-REWRITEPROMPT |
+| SC-ACT-04 | CP-REACH-01 | When I'm in a note or a project, I want to act on it without naming it, so sharing, publishing or renaming it is quick. | Writer | *This note* and *This project* actions act on the context captured when Actions opened, and refuse if it changed. | UC-ACT-05 | IA-VIEW-SPOTLIGHT |
+| SC-ACT-05 | CP-REACH-01 | When two actions sound alike, I want to know which is which before I press Enter, so I never do the wrong one. | Writer, Power user | Every label is unique and names its object; the group names the anchor; the active row says what will happen. | UC-ACT-06, UC-ACT-08 | IA-VIEW-SPOTLIGHT |
+| SC-ACT-06 | CP-REACH-01 | When an action can't run yet, I want to know why and reach the fix, so I'm never stuck on a dead row. | Writer | Actions that can't apply here are hidden; blocked ones say why, and their fix is the next row. | UC-ACT-07 | IA-VIEW-SPOTLIGHT |
+| SC-ACT-07 | CP-REACH-01 | When I reuse the same instruction or opening text, I want to keep it as my own action, so I don't retype it. | Writer, Power user | Later, with the owner's yes: saved prompts and text templates, kept on this device, listed under *Yours*, never code. | UC-ACT-09 | IA-VIEW-SPOTLIGHT |
+
 <h2 data-reader-personas="product design">Writing</h2>
 
 | ID | Promise | Situation | Persona | Expected behavior | User can | Views |

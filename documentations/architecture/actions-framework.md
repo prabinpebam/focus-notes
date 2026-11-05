@@ -135,7 +135,7 @@ The owner asks for "a good framework to qualify what goes as result", with "only
 </g>
 <g id="fnact-gate__labels" font-family="Segoe UI, system-ui, -apple-system, sans-serif" font-size="13" fill="var(--color-neutral-fg-2)">
 <text x="405" y="284" text-anchor="middle">Fails: stays a command, never listed</text>
-<text x="762" y="256" text-anchor="middle">anchor check at open</text>
+<text x="863" y="256" text-anchor="middle">filtered at each open</text>
 </g>
 </svg>
 <figcaption>Listing becomes a decision made once per action and checked, not a side effect of registering a command.</figcaption>
@@ -341,14 +341,14 @@ Everything here that isn't in the owner's note, with what it assumes and how to 
 
 | # | Proposal | Assumption and risk | Cheapest check | Decision it changes |
 | --- | --- | --- | --- | --- |
-| P-01 | Content is exactly what Files shows | A-ACT-04: nothing worth opening is hidden from Files. Low risk | Owner looks for 5 files in the mock list | Which files Actions finds |
+| P-01 | Content is exactly what Files shows | Nothing worth opening is hidden from Files. Low risk, not in the register | Owner looks for 5 files in the mock list | Which files Actions finds |
 | P-02 | Headings and text are reasons on the file row, not their own groups | A-ACT-03: a file row with the matching line is as findable as separate groups, and calmer. Medium | Owner finds a note by a phrase in its body in the mock | Whether *Headings* and *In notes* groups return |
 | P-03 | Context snapshot and refuse-on-change | Stale context would act on the wrong text (R-57). Feasible: Rewrite already guards its target | Unit check after design approval | Whether actions re-read context at run time |
 | P-04 | Hide what can't apply | A-ACT-02: people don't think a feature vanished when its anchor is missing. Medium | Owner, with no selection, looks for Bold; finds it via `>` | Hidden vs shown unavailable |
 | P-05 | Blocked rows with a reason and their fix listed next | Fix-next is clear without a two-purpose row. Low | Mock review | Whether a blocked row runs its fix itself |
 | P-06 | `>` browses the whole catalogue, with what each needs | Browsing is how rarely used actions are learned. Low | Mock review | Empty-field contents |
 | P-07 | Distinction rules D1 to D8 and anchor groups | A-ACT-01: anchor groups plus object-naming labels make look-alikes distinct. High value | Owner picks the right row for *share*, *rename*, *publish*, *settings*, *delete* in the mock without reading outcomes | Labels, groups |
-| P-08 | Preset-backed AI actions open the prompt pre-filled | Worth a row each only if people reuse presets. Medium | Owner tries *Make shorter with AI…* in the review build | Whether presets get rows |
+| P-08 | Preset-backed AI actions open the prompt pre-filled | Worth a row each only if people reuse presets; R-58 if it ever sent directly. Medium | Owner tries *Make shorter with AI…* in the review build | Whether presets get rows |
 | P-09 | No chaining | No starter job needs it. Low | Owner names any repeated multi-step job | Adds a composition stage |
 | P-10 | User-defined saved prompts and templates, later | A-ACT-05: the owner wants their own actions. Unknown | Ask (open question 3) | Whether stage 3 exists |
 | P-11 | No plugin or extension surface | Agents and user data cover extension needs. Low | None needed | Would need a security review and a new promise |
