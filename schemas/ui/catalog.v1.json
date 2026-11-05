@@ -3556,7 +3556,7 @@
     {
       "type": "ImageFrame",
       "tier": "primitive",
-      "description": "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Fit height and Rounded corners as saved choices. No border, frame or backdrop: transparent images are drawn as they are. Selected, it takes the editor's selection tint, as text does. Its menu opens only on right-click (or the context-menu key or Shift+F10 while selected), never from a button on the image (owner, 3 November). In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
+      "description": "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Limit height and Rounded corners as saved choices. No resting border, frame or backdrop: transparent images are drawn as they are. A single selected image has an inset outline; inside a text selection it takes the selection tint. Its menu opens only on right-click (or the context-menu key or Shift+F10 while selected), never from a button on the image. In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
       "props": {
         "src": {
           "kind": "text",
@@ -3590,7 +3590,12 @@
         "selected": {
           "kind": "boolean",
           "default": false,
-          "description": "Selected on its own or within a text selection: the editor's selection tint over it, never a ring."
+          "description": "Selected on its own: a full inset accent outline (owner, 5 November)."
+        },
+        "inSelection": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Part of a text selection: the editor's selection tint, not the single-image outline."
         },
         "broken": {
           "kind": "boolean",
@@ -3675,6 +3680,7 @@
         "mode thumb",
         "rounded, no fit height",
         "selected",
+        "in text selection",
         "crop, rotation 0",
         "crop, rotation 90",
         "crop, rotation 180",
@@ -5701,6 +5707,9 @@
           "payload": {
             "pos": "number",
             "src": "text",
+            "alt": "text",
+            "text": "boolean",
+            "announce": "boolean",
             "rounded": "boolean",
             "fitHeight": "boolean",
             "mode": "text",

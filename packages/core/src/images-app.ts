@@ -7,7 +7,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { noteReadOnly } from "./workspace-app.ts";
 import type { TaskTracker } from "./tasks.ts";
 
-type SelectedImage = { pos: number; src: string; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
+type SelectedImage = { pos: number; src: string; alt?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
 export interface ImagesState {
   sources: readonly { id: string; value: string; pending: boolean; failed: boolean }[];
   selected?: SelectedImage;
@@ -24,6 +24,7 @@ export function registerImages(ctx: {
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   toast: (text: string, opts?: { tone?: "info" | "error"; subject?: string }) => number;
   tracker: TaskTracker;
+  announce: (text: string) => void;
   itemSchema: Record<string, unknown>; describeItem: (id: string) => Record<string, unknown>;
 }) {
   const { store, bridge, commands, viewModels, catalog } = ctx;
@@ -39,7 +40,7 @@ export function registerImages(ctx: {
     notified.clear();
     set(IMAGES_CLOSED);
   });
-  const writable = () => Boolean(state().selected) && !noteReadOnly(store.state);
+  const writable = () => (state().selected?.count ?? 0) > 0 && !noteReadOnly(store.state);
   const failed = (src: string, error: unknown) => {
     console.error("Image read failed", opErrorCode(error));
     const previous = state().sources.find(s => s.id === src);
@@ -80,7 +81,10 @@ export function registerImages(ctx: {
       if (key === store.state.note.key && cached?.value === value && !cached.failed && !cached.pending) failed(src, new Error("Image decode failed"));
     },
   });
-  commands.register<SelectedImage>({ id: "image.select", title: "image.menu", run: (selected) => set({ selected }) });
+  commands.register<SelectedImage>({ id: "image.select", title: "image.menu", run: (selected) => {
+    set({ selected });
+    if (selected.announce) ctx.announce(catalog.format(selected.alt ? "image.selectedNamed" : "image.selected", { alt: selected.alt ?? "" }));
+  } });
   for (const field of ["rounded", "fitHeight"] as const) {
     commands.register({
       id: `image.${field}`, title: field === "rounded" ? "image.rounded" : "image.limit", enabled: writable,
@@ -91,6 +95,7 @@ export function registerImages(ctx: {
         const next = { ...selected, [field]: !selected[field], [field === "rounded" ? "roundMixed" : "limitMixed"]: false };
         ctx.editorAction("image.set", { pos: selected.pos, src: selected.src, from: selected.from, to: selected.to, [field]: !selected[field] });
         set({ selected: next });
+        ctx.announce(catalog.format(field === "rounded" ? "image.announce.rounded" : "image.announce.limit", { state: next[field] ? "on" : "off" }));
       },
     });
   }
@@ -156,13 +161,19 @@ export function registerImages(ctx: {
     },
   });
   commands.register({ id: "image.edit.failed", title: "image.edit.title", run: () => set({ saving: false, error: catalog.format("image.edit.failed") }) });
+  const imageSection = (s: AppState) => ({
+    id: "images", label: catalog.format("image.selection", { count: s.ui.images.selected?.count ?? 0 }),
+    items: ["image.rounded", "image.fitHeight"].map((id) => ({
+      ...ctx.describeItem(id), mixed: id === "image.rounded" ? s.ui.images.selected?.roundMixed ?? false : s.ui.images.selected?.limitMixed ?? false,
+    })),
+  });
   viewModels.register({
     id: "vm.images",
     reads: ["ui.images", "note.path", "workspace"],
     setters: { x: "image.edit.x", y: "image.edit.y", width: "image.edit.width", height: "image.edit.height" },
     schema: { type: "object", properties: {
       sources: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" }, pending: { type: "boolean" }, failed: { type: "boolean" } } } },
-      menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
+      menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       edit: { type: "boolean" }, saving: { type: "boolean" }, invalid: { type: "boolean" }, error: { type: "string" }, src: { type: "string" }, rotation: { type: "string", enum: ["0", "90", "180", "270"] },
       x: { type: "string" }, y: { type: "string" }, width: { type: "string" }, height: { type: "string" },
       cropX: { type: "number" }, cropY: { type: "number" }, cropWidth: { type: "number" }, cropHeight: { type: "number" },
@@ -173,9 +184,14 @@ export function registerImages(ctx: {
       return { ...s, invalid: !valid(), src: dataOf(),
         cropX: Number(s.x) / (s.selected?.width || 1) * 100, cropY: Number(s.y) / (s.selected?.height || 1) * 100,
         cropWidth: Number(s.width) / (s.selected?.width || 1) * 100, cropHeight: Number(s.height) / (s.selected?.height || 1) * 100,
-        menu: [{ id: "display", items: ["image.mode.column", "image.mode.wide", "image.mode.actual", "image.rounded", "image.fitHeight"].map((id) => ({ ...ctx.describeItem(id), ...(id === "image.rounded" ? { mixed: s.selected?.roundMixed ?? false } : id === "image.fitHeight" ? { mixed: s.selected?.limitMixed ?? false } : {}) })) }, ...(s.selected?.count === 1 ? [{ id: "edit", items: [ctx.describeItem("image.edit")] }] : [])],
+        menu: s.selected?.count === 1 && !s.selected.text ? [
+          { id: "pixels", items: [ctx.describeItem("image.edit")] },
+          { id: "mode", label: catalog.format("image.display"), items: ["image.mode.column", "image.mode.wide", "image.mode.actual"].map(ctx.describeItem) },
+          { id: "look", items: imageSection(store.state).items },
+        ] : s.selected?.count ? [imageSection(store.state)] : [],
         rotations: [{ id: "left", label: catalog.format("image.turn.left"), icon: "undo" }, { id: "right", label: catalog.format("image.turn.right"), icon: "redo" }, { id: "reset", label: catalog.format("image.turn.reset") }],
       };
     },
   });
+  return { textSections: (s: AppState) => s.ui.images.selected?.text && s.ui.images.selected.count > 0 ? [imageSection(s)] : [] };
 }

@@ -20,8 +20,11 @@ export const mode = styleVariants({
 });
 // No border, frame or backdrop: the picture is drawn as it is, transparent pixels included (owner, 3 November).
 export const box = style({ position: "relative", display: "inline-flex", maxWidth: "100%", overflow: "hidden", outline: "none" });
-// Selected, it takes the editor's selection tint over the picture, as selected text does: never a ring or a frame.
 export const selected = style({
+  outlineStyle: "solid", outlineWidth: t.selectedOutlineWidth, outlineColor: t.selectedOutline,
+  outlineOffset: `calc(-1 * ${t.selectedOutlineWidth})`,
+});
+export const inSelection = style({
   "::after": { content: "\"\"", position: "absolute", inset: 0, backgroundColor: t.selectedTint, pointerEvents: "none" },
 });
 export const rounded = style({ borderRadius: t.radius, overflow: "hidden" });

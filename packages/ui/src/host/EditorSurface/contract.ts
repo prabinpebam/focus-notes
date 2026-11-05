@@ -45,7 +45,7 @@ export const contract = defineContract({
     imageRead: { payload: { src: "text", key: "text" } },
     imageRetry: { payload: { src: "text", key: "text" } },
     imageFailed: { payload: { src: "text", value: "text", key: "text" } },
-    imageSelect: { payload: { pos: "number", src: "text", rounded: "boolean", fitHeight: "boolean", mode: "text", width: "number", height: "number", from: "number", to: "number", count: "number", roundMixed: "boolean", limitMixed: "boolean" } },
+    imageSelect: { payload: { pos: "number", src: "text", alt: "text", text: "boolean", announce: "boolean", rounded: "boolean", fitHeight: "boolean", mode: "text", width: "number", height: "number", from: "number", to: "number", count: "number", roundMixed: "boolean", limitMixed: "boolean" } },
     imageAction: { payload: { id: "text" } },
     imageEdited: { payload: { src: "text", data: "text" } },
     imageEditError: {},

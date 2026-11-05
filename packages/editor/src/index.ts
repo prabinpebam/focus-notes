@@ -4,7 +4,7 @@
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
 import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor, type NodeViewRenderer } from "@tiptap/core";
-import { Selection, TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, Selection, TextSelection } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
 import type { Node as DocNode } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
@@ -118,7 +118,29 @@ const InlineImage = Node.create<{ view?: NodeViewRenderer }>({
   parseHTML: () => [{ tag: "img[src]" }],
   renderHTML: ({ HTMLAttributes }) => ["img", HTMLAttributes],
   addNodeView() { return this.options.view ?? null; },
+  addKeyboardShortcuts() {
+    return { Escape: () => {
+      const { selection, doc } = this.editor.state;
+      if (!(selection instanceof NodeSelection) || selection.node.type.name !== "image") return false;
+      this.editor.view.dispatch(this.editor.state.tr.setSelection(TextSelection.near(doc.resolve(selection.to))));
+      return true;
+    } };
+  },
 });
+
+/** Display choices are one note undo step, separate from neighbouring typing and other choices. */
+export function setImageOptions(editor: Editor, image: { pos: number; src: unknown; from: number; to: number }, patch: { rounded?: boolean; fitHeight?: boolean; mode?: string }): void {
+  const { pos, src, from, to } = image;
+  if (!Number.isInteger(pos) || pos < 0 || pos >= editor.state.doc.content.size) return;
+  const node = editor.state.doc.nodeAt(pos);
+  if (!editor.isEditable || node?.type.name !== "image" || node.attrs.src !== src) return;
+  const transaction = closeHistory(editor.state.tr);
+  if (Number.isInteger(from) && Number.isInteger(to) && from >= 0 && to <= editor.state.doc.content.size && to > from) {
+    editor.state.doc.nodesBetween(from, to, (image, at) => { if (image.type.name === "image") transaction.setNodeMarkup(at, undefined, { ...image.attrs, ...patch }); });
+  } else transaction.setNodeMarkup(pos, undefined, { ...node.attrs, ...patch });
+  editor.view.dispatch(transaction);
+  editor.view.dispatch(closeHistory(editor.state.tr));
+}
 
 /** Markdown the editor can't represent yet, kept verbatim and read-only (EXT-05). */
 export const RawMarkdown = Node.create({
