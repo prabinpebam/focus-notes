@@ -430,6 +430,9 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
 test("A11Y: Actions exposes its active row and blocked reason in light, dark, more contrast and forced colours", async () => {
   const l = await started();
   const { page } = l;
+  await l.app.evaluate(({ app }) => { app.accessibilitySupportEnabled = true; });
+  const accessibility = await page.context().newCDPSession(page);
+  await accessibility.send("Accessibility.enable");
   const problems: string[] = [];
   for (const scheme of ["light", "dark", "contrast", "forced"] as const) {
     await l.app.evaluate(({ nativeTheme, BrowserWindow }, dark) => {
@@ -476,6 +479,12 @@ test("A11Y: Actions exposes its active row and blocked reason in light, dark, mo
     await expect(blocked).toHaveAttribute("aria-disabled", "true");
     await expect(blocked).toContainText("Select text first");
     expect(await blocked.ariaSnapshot()).toContain("Select text first");
+    const tree = await accessibility.send("Accessibility.getFullAXTree");
+    expect(tree.nodes.some((node) => !node.ignored && node.role?.value === "combobox")).toBe(true);
+    expect(tree.nodes.some((node) => !node.ignored && node.role?.value === "listbox")).toBe(true);
+    const blockedNode = tree.nodes.find((node) => !node.ignored && node.role?.value === "option" && node.name?.value?.startsWith("Bold"));
+    expect(blockedNode?.name?.value).toContain("Select text first");
+    expect(blockedNode?.properties?.find((property) => property.name === "disabled")?.value.value).toBe(true);
     await page.keyboard.press("Escape");
   }
   expect(problems).toEqual([]);
