@@ -1,5 +1,16 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Publishing pipeline (proposed design, 5 November)
+
+The [owner-directed long-task design](../experience/published-site.md#one-long-task-with-evidence-for-every-step) supersedes ongoing progress pills from D-351. No task engine, measurement or timing validation is implemented by this design slice.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Publish / Update published / Revert published | Long, leavable background task; captured saved revision, named step receipts and elapsed time | Existing bottom-left publish icon remains inspectable; its adapted detail card shows save locally → commit → push → Actions build → deploy → live check, done/total steps, known job/byte progress and matching Actions run. Only verified success gets the bottom pill | Planned `fn:publish.pipeline` with `fn:publish.saveLocal`, `fn:publish.commit`, `fn:publish.push`, `fn:publish.build`, `fn:publish.deploy`, `fn:publish.liveCheck`; next-frame acknowledgement, 200 ms pending/confirmed beats, elapsed after 3 s, named slow state after 10 minutes; no network-latency guarantee |
+| Read a verified published revision / prepare comparison | Responsive → waiting; keep current content and pinned draft until complete | Separate version-review surface; **Opening published version…** / **Comparing versions…**, then scoped error with Retry; no blank frame or replaced in-use text | Planned `fn:publish.readVersion`, `fn:publish.compare`; delayed load indicator after 300 ms, holds 500 ms once shown |
+
+No percentage is inferred from equal-weight steps. Before the run exists say **Run not started**; once known link only its exact Actions run. A failed status request leaves known deployment evidence intact; it does not invent failure or success. Newer local edits stay separate from the captured/public revision. The globe and local-disk states have independent truth sources.
+
 ## Files item pin acknowledgement
 
 The exact-brief candidate at `26c3bd1f` preserves these timings and adds row-named tooltips plus a visible resting pin. Native proof covers actual persistence/Retry and unchanged row-relative icon alignment, not an asserted latency improvement.

@@ -1,5 +1,23 @@
 # Decisions
 
+## D-pending: publish progress belongs to the existing corner control and its detail card
+
+**Status:** Owner direction accepted; UX proposal awaiting owner approval (5 November 2026, 14:29). **Number:** assigned by the orchestrator. **Affects:** [owner source and proposed publishing process](../experience/published-site.md#owner-source-publishing-is-a-process-5-november-1429), SC-SHARE-09, UC-SHARE-13, UC-SHARE-16, IA-CMP-PUBLISHSTATUS, IA-CMP-PUBLISHCARD, UI-12, SHR-26 and the wait inventory.
+
+Supersedes D-351’s ongoing bottom-pill placement and blanket no-writing-window-addition line only for this explicitly authorized cluster. Public notes show globe → publish → local disk; private cloud backup is unchanged. The globe opens the exact verified-live URL in the default browser. Publish opens an adapted backup card, never immediately publishes. The inspectable icon shows pending/failure; the card tracks save locally → commit → push → Actions build → deploy → live check, with real step receipts/progress and the matching run link when one exists. Only success uses the bottom pill. Nothing else is added to the writing window.
+
+## D-pending: the published revision and local draft are independent
+
+**Status:** Proposed UX, not implemented or approved (5 November 2026). **Number:** assigned by the orchestrator. **Affects:** [revision model](../experience/published-site.md#draft-published-and-compare), UC-SHARE-14, IA-CMP-PUBLISHVERSIONS, SHR-25, SHR-26.
+
+An explicit Publish / Update published captures one saved revision. Later typing remains an unpublished local draft; it never enters the in-flight revision. The card names both versions and opens a separate Draft / Published / Compare review, restoring draft/caret/scroll on return. Published is read-only. Compare pins two revisions; a newer draft requires refresh and review before update. This is one note at a time, no new bulk publisher or auto-publish-on-save behavior.
+
+## D-pending: Actions failures recover without erasing drafts or rewriting published history
+
+**Status:** Proposed UX, not implemented or approved (5 November 2026). **Number:** assigned by the orchestrator. **Affects:** [failure and recovery](../experience/published-site.md#failure-troubleshooting-and-recovery), UC-SHARE-15, IA-CMP-PUBLISHCARD, SHR-26.
+
+The card names the failing step, GitHub-reported cause, preserved local/previous-live versions, troubleshoot steps, applicable Retry and matching Actions run. Unknown observation is not build failure; retry observation separately. Revert published requires a previous verified-live revision and confirmation, deploys that revision through the same pipeline, preserves the current draft and never force-pushes history. Before first success there is no globe or fictitious rollback target. After push, closing the card is not cancellation; cancellation in GitHub is observed as its own outcome.
+
 ## D-pending: the image insertion design is approved; slice 1 needs no new mock
 
 **Status:** Accepted (owner, 5 November 2026). **Affects** [Images → Readiness assessment](../experience/images.md#readiness-assessment-5-november), WP-9.7, D-349.

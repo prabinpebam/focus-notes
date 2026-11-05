@@ -5,6 +5,17 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 > [!NOTE]
 > **TL;DR.** 132 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
 
+## Publishing as a long task (proposed, 5 November)
+
+One note at a time; a batch publisher is outside this design request. [Owner source, revision model and flows](../../experience/published-site.md#publishing-process-proposed-design). Existing requirement IDs are extended, not new implementation acceptance.
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-SHARE-13 | follow the exact revision through every publication step while continuing to write | SC-SHARE-09 | P1 | IA-CMP-PUBLISHSTATUS, IA-CMP-PUBLISHCARD | SHR-26 | Save locally, commit, push, Actions build, deploy and live check have evidence-based state/progress; matching run link when available; ongoing edits never enter the captured revision. |
+| UC-SHARE-14 | tell the local draft from the live version, inspect either and compare their differences before updating readers’ version | SC-SHARE-09 | P1 | IA-CMP-PUBLISHCARD, IA-CMP-PUBLISHVERSIONS | SHR-25, SHR-26 | Draft/Published are named, live is read-only, comparison pins two revisions and preserves newer edits; Update published is explicit and never publishes an unseen newer draft. |
+| UC-SHARE-15 | understand and recover a failed publication without losing the draft or silently replacing the last good live version | SC-SHARE-09 | P0 | IA-CMP-PUBLISHCARD | SHR-26 | Cause, troubleshoot and matching Actions run; retry the failed work or observation only; confirmed Revert published redeploys a previous good revision without changing local text or rewriting history. |
+| UC-SHARE-16 | distinguish local-save safety from publication status and open the verified-live page at its exact address | SC-SHARE-09 | P1 | IA-CMP-PUBLISHSTATUS | UI-12, SHR-26 | Public cluster order is globe, publish, local disk; globe absent before first live proof and retains old live after update failure; publish opens details rather than committing; exact-URL tooltip and default-browser action. |
+
 ## Inline images (planned)
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
