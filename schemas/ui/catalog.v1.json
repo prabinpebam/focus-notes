@@ -893,6 +893,10 @@
           "kind": "boolean",
           "default": false
         },
+        "expanded": {
+          "kind": "boolean",
+          "description": "Whether the region opened by this disclosure action is expanded, separate from a setting's checked state."
+        },
         "mixed": {
           "kind": "boolean",
           "default": false,
@@ -6559,6 +6563,14 @@
         "moreLabel": {
           "kind": "message",
           "required": true
+        },
+        "onLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "offLabel": {
+          "kind": "message",
+          "required": true
         }
       },
       "events": {
@@ -6612,6 +6624,14 @@
           "required": true
         },
         "moreLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "onLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "offLabel": {
           "kind": "message",
           "required": true
         }

@@ -21,8 +21,34 @@
       "footer": [
         { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
           { "type": "Inline", "when": { "expr": { "in": [{ "get": "vm.share.phase" }, ["list", "note"]] } }, "props": { "gap": "inlineItem", "wrap": true }, "children": [
-            { "type": "Button", "id": "remember", "props": { "label": { "t": "share.reader.remember" }, "size": "s", "toggle": true, "pressed": { "get": "vm.share.remember" } },
-              "on": { "press": { "run": "share.setRemember", "args": { "value": { "expr": { "!": { "get": "vm.share.remember" } } } } } } },
+            {
+              "type": "Switch",
+              "id": "remember",
+              "props": {
+                "label": {
+                  "t": "share.reader.remember"
+                },
+                "checked": {
+                  "get": "vm.share.remember"
+                },
+                "onLabel": {
+                  "t": "switch.on"
+                },
+                "offLabel": {
+                  "t": "switch.off"
+                }
+              },
+              "on": {
+                "change": {
+                  "run": "share.setRemember",
+                  "args": {
+                    "value": {
+                      "get": "event.value"
+                    }
+                  }
+                }
+              }
+            },
             { "type": "Button", "id": "signOut", "props": { "label": { "t": "share.reader.signOut" }, "size": "s" }, "on": { "press": { "run": "share.signOut" } } }
           ] },
           { "type": "Text", "props": { "value": { "t": "share.reader.footer" }, "role": "caption", "tone": "muted" } }

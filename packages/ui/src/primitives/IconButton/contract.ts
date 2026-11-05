@@ -12,6 +12,7 @@ export const contract = defineContract({
     tone: { kind: "enum", values: ["default", "muted"], default: "default" },
     toggle: { kind: "boolean", default: false },
     pressed: { kind: "boolean", default: false },
+    expanded: { kind: "boolean", description: "Whether the region opened by this disclosure action is expanded, separate from a setting's checked state." },
     mixed: { kind: "boolean", default: false, description: "A toggle that applies to only part of what it acts on (aria-pressed mixed)." },
     disabled: { kind: "boolean", default: false },
     disabledReason: { kind: "message", requiredWhen: "disabled" },

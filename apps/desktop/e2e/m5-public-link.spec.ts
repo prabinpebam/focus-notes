@@ -75,7 +75,7 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
     await menu.getByRole("menuitem", { name: /^Share…/ }).click();
     const share = page.getByRole("dialog", { name: /^Share “/ });
     await expect(share).toBeVisible();
-    await expect(share.getByRole("switch", { name: /^Link / })).toBeChecked();
+    await expect(share.getByRole("switch", { name: "Link", exact: true })).toBeChecked();
     await expect(share.getByRole("button", { name: "Copy share information", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(share).toHaveCount(0);

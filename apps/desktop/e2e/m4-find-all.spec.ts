@@ -94,7 +94,7 @@ test("FND-04 (M4 demo, step 4): find in all notes, grouped with snippets, and op
   await expect(field).toHaveValue("heron");
   await page.keyboard.press(mac ? "Meta+Alt+C" : "Alt+C");
   await expect(summary).toHaveText("4 matches in 2 notes");
-  await expect(sheet.getByRole("button", { name: "Match case" })).toHaveAttribute("aria-pressed", "true");
+  await expect(sheet.getByRole("switch", { name: "Match case" })).toBeChecked();
   // Esc clears the field, then closes the sheet, and the caret is back in the note.
   await field.focus();
   await page.keyboard.press("Escape");

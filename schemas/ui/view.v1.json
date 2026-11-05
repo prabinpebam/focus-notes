@@ -2855,6 +2855,19 @@
                 }
               ]
             },
+            "expanded": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "mixed": {
               "anyOf": [
                 {
@@ -13680,6 +13693,32 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "onLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "offLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -13687,7 +13726,9 @@
             "toolbarLabel",
             "items",
             "more",
-            "moreLabel"
+            "moreLabel",
+            "onLabel",
+            "offLabel"
           ]
         },
         "on": {
@@ -13768,13 +13809,41 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "onLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "offLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
             "label",
             "items",
             "more",
-            "moreLabel"
+            "moreLabel",
+            "onLabel",
+            "offLabel"
           ]
         },
         "on": {

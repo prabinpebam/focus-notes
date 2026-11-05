@@ -19,6 +19,8 @@ export interface IconButtonProps {
   tone?: keyof typeof s.tone;
   toggle?: boolean;
   pressed?: boolean;
+  /** Whether this action's disclosed region is open; not an on/off setting. */
+  expanded?: boolean;
   /** A toggle that applies to only part of what it acts on: half-pressed (DD-FMT-06). */
   mixed?: boolean;
   disabled?: boolean;
@@ -34,11 +36,11 @@ export interface IconButtonProps {
   onPress?: () => void;
 }
 
-export function IconButton({ icon, label, shortcut, size = "m", tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, commit, bleed, id, onPress }: IconButtonProps) {
+export function IconButton({ icon, label, shortcut, size = "m", tone = "default", toggle, pressed, expanded, mixed, disabled, disabledReason, busy, busyLabel, commit, bleed, id, onPress }: IconButtonProps) {
   const className = `${s.base} ${s.tone[tone]}${size === "stretch" ? ` ${s.stretch}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
   const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
-  const common = { id, className, "aria-label": name, ...attrs, ref, "data-commit": commit, preventFocusOnPress: keepNoteFocus };
+  const common = { id, className, "aria-label": name, "aria-expanded": expanded, ...attrs, ref, "data-commit": commit, preventFocusOnPress: keepNoteFocus };
   const glyph = commit && commit !== "rest" ? <><Icon name={icon} /><CommitMark variant="border" state={commit} /></> : busy ? (
     <span className={s.busyGlyph}>
       <span className={s.busyIcon}><Icon name={icon} /></span>

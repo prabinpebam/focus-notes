@@ -16,6 +16,42 @@ const settledAxe = async (page: Page) => {
 };
 const mod = mac ? "Meta" : "Control";
 
+test("OFB.6: Find switches wrap inside a minimum writing window without hiding the match", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Needle\n\nA needle to find.\n");
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(360, 320));
+    const editor = page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toBeFocused();
+    await page.keyboard.press(`${mod}+f`);
+    const bar = page.getByRole("region", { name: "Find in note" });
+    await bar.getByRole("searchbox", { name: "Find", exact: true }).fill("needle");
+    await bar.getByRole("button", { name: "Search options", exact: true }).click();
+    const options = page.getByRole("dialog", { name: "Search options", exact: true });
+    await expect(options.getByRole("switch")).toHaveCount(4);
+    for (const control of await options.getByRole("switch").all()) {
+      const bounds = await control.locator("xpath=ancestor::label").boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(360);
+      expect(bounds!.y).toBeGreaterThanOrEqual(0);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(320);
+    }
+    await options.getByRole("switch", { name: "Match case", exact: true }).press("Space");
+    await expect(options.getByRole("switch", { name: "Match case", exact: true })).toBeChecked();
+    await page.keyboard.press("Escape");
+    await expect(options).toBeHidden();
+    await expect.poll(async () => {
+      const b = (await bar.boundingBox())!, m = (await editor.locator(".ProseMirror-active-search-match").boundingBox())!;
+      return m.y - (b.y + b.height);
+    }).toBeGreaterThanOrEqual(0);
+    const match = (await editor.locator(".ProseMirror-active-search-match").boundingBox())!;
+    expect(match.y + match.height).toBeLessThanOrEqual(320);
+    await page.screenshot({ path: "../../test-results/screens/ofb-find-switches-minimum.png" });
+  } finally { await quit(l); }
+});
+
 test("FND-01: Mod+F fills from the selection, counts, steps with Enter, wraps, and Esc returns to the match", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.docs, "Welcome.md"), "# Focus\n\nStay in **focus** and keep focus on the café, the cafe, and FOCUS.\n");
@@ -59,7 +95,7 @@ test("FND-01: Mod+F fills from the selection, counts, steps with Enter, wraps, a
   await field.fill("cafe");
   await expect(status).toHaveText(/of 2$/);
   await page.keyboard.press(mac ? "Meta+Alt+c" : "Alt+c");
-  await expect(bar.getByRole("button", { name: "Match case" })).toHaveAttribute("aria-pressed", "true");
+  await expect(bar.getByRole("switch", { name: "Match case" })).toBeChecked();
   await expect(status).toHaveText(/of 2$/);
   await field.fill("CAFE");
   await expect(status).toHaveText("No results");

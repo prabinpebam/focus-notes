@@ -1884,31 +1884,20 @@
                 },
                 "children": [
                  {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "set": "local.plate",
-                    "to": "neutral"
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "project.upload.usePlate"
+                   "type": "Button",
+                   "on": {
+                     "press": {
+                       "set": "local.plate",
+                       "to": "neutral"
+                     }
                    },
-                   "variant": "secondary",
-                   "size": "s",
-                   "toggle": true,
-                   "pressed": {
-                    "expr": {
-                     "==": [
-                      {
-                       "get": "local.plate"
-                      },
-                      "neutral"
-                     ]
-                    }
+                   "props": {
+                     "label": {
+                       "t": "project.upload.usePlate"
+                     },
+                     "variant": "secondary",
+                     "size": "s"
                    }
-                  }
                  },
                  {
                   "type": "Button",
