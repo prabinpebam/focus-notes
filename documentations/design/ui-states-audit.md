@@ -37,6 +37,8 @@ The taller, correctly padded header also exposed minimum-height scroll clips. Th
 
 The approved ToolbarComposer replaces the old action-button list in the existing Customize toolbar dialog, reached from More or Settings → Keyboard. Each drop publishes a complete validated order to the live toolbar and the existing serial device-settings write lane. Failure restores the durable order and shows a localized error; unit evidence includes consecutive failed saves. Reorder, removal, addition, hold-to-replace, full refusal and Reset are checked through the real app and process restarts. Only the active drop slot has an accent outline; no new writing-window element is added, and the separately landed AI scan/editor focus work is not replayed.
 
+The first toolbar gate exposed a startup race in the unrelated delete/Undo fixture: its CI snapshot showed the deletion notification without Undo, while Git history became available only afterward. The journey now waits for the real Recently deleted control before deleting, proving the required history capability has initialized. Its Undo, exact restored bytes, history and remote assertions remain unchanged; three repeated invisible runs pass.
+
 | State family | Kept | Removed | Enforcement |
 | --- | --- | --- | --- |
 | Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |
