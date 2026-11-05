@@ -13,7 +13,6 @@ export const popover = style({
   borderColor: t.border,
   borderRadius: t.radius,
   boxShadow: t.shadow,
-  padding: t.padding,
   zIndex: t.layer,
   // The least width of its content, as before the box took in its padding and border.
   minWidth: `calc(${t.minWidth} + 2 * ${t.padding} + 2 * ${t.borderWidth})`,
@@ -30,10 +29,8 @@ export const popover = style({
   scrollPaddingBlock: t.padding,
 });
 
-// Its items have a gap between their highlight shapes (D-111). When the window is too short for it,
-// it scrolls with the wheel and the arrow keys, as a system menu does: its fading edges show
-// there's more, and no scrollbar takes room from its items (the same inset on every side).
-export const menu = style({ outline: "none", display: "flex", flexDirection: "column", gap: t.itemGap, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", fontFamily: t.font, fontSize: t.fontSize, color: t.text });
+// The popover scrolls edge-to-edge; the menu owns the content inset inside that scroller.
+export const menu = style({ outline: "none", display: "flex", flexDirection: "column", gap: t.itemGap, flexShrink: 0, padding: t.padding, fontFamily: t.font, fontSize: t.fontSize, color: t.text });
 export const section = style({ display: "flex", flexDirection: "column", gap: t.itemGap });
 
 export const header = style({ paddingInline: t.itemPaddingInline, fontSize: t.captionSize, fontWeight: t.headerWeight, color: t.textMuted });

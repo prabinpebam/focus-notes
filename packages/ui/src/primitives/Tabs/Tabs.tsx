@@ -78,7 +78,12 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
   return (
     <AriaTabs ref={rootRef} className={`${s.root[laid]}${scrollPanel ? ` ${s.scrollRoot}` : ""}`} data-scroll-panel={scrollPanel ? "" : undefined} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
       {scrollPanel && laid === "horizontal"
-        ? <div ref={navigationRef} className={s.navigationScroller} data-tab-navigation="">{navigation}</div>
+        ? <div className={s.navigationFrame} data-tab-navigation="" data-side-nav="">
+            <div ref={navigationRef} className={s.navigationScroller} data-tab-list-scroller="">
+              {tabList(`${s.list[laid]}${footer ? ` ${s.navigation[laid]}` : ""}`)}
+            </div>
+            {footer ? <div className={s.fixedFooter}><div className={s.footer[laid]}>{footer}</div></div> : null}
+          </div>
         : navigation}
       {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
       <TabPanel ref={panelRef} key={selected} id={selected} className={`${s.panel[laid]}${scrollPanel ? ` ${s.scroller}` : ""}`}>

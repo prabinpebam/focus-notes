@@ -118,6 +118,7 @@ export function ResultList({ label, items, activeId, width = "fill", height = "c
   return (
     <div
       ref={ref} id={id} role="listbox" aria-label={label} className={`${s.list} ${s.width[width]} ${s.height[height]}${grouped ? ` ${s.grouped}` : ""}`}
+      data-full-bleed={width === "fill" && height === "content" ? "" : undefined}
       tabIndex={0}
       aria-activedescendant={activeId ? resultItemId(id, activeId) : undefined}
       onKeyDown={onKeyDown}

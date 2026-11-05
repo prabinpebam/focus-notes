@@ -14,6 +14,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { instance } from "./instance.ts";
+import { moreMenu, reset, spotlight } from "./surfaces.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const OUT = resolve("../../test-results/settings-grouping");
@@ -220,6 +221,51 @@ async function checkRings(scope: Locator): Promise<string[]> {
   return problems;
 }
 
+test("SP-14: menu scroll frames, full-bleed results and navigation insets preserve grouping", async () => {
+  test.setTimeout(120_000);
+  const l = await launch(tempDirs());
+  try {
+    for (const compact of [false, true]) {
+      if (compact) await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
+      await moreMenu(l.page);
+      const menu = l.page.getByRole("menu", { name: "More", exact: true });
+      expect(await menu.evaluate(el => {
+        const content = getComputedStyle(el), frame = getComputedStyle(el.parentElement!);
+        return { inset: parseFloat(content.paddingTop), frameInset: parseFloat(frame.paddingTop), scrolls: frame.overflowY };
+      })).toEqual({ inset: 8, frameInset: 0, scrolls: "auto" });
+      for (const key of ["End", "Home"]) {
+        await l.page.keyboard.press(key);
+        const focused = menu.locator('[data-focus-visible]');
+        await expect(focused).toHaveCount(1);
+        expect(await focused.evaluate(clippedFocus)).toEqual([]);
+      }
+      await reset(l.page);
+      await spotlight(l.page, `${mod}+p`);
+      const results = l.page.getByRole("dialog", { name: "Spotlight", exact: true }).getByRole("listbox");
+      expect(await results.evaluate(el => {
+        const cs = getComputedStyle(el), parent = el.parentElement!, box = el.getBoundingClientRect(), region = parent.getBoundingClientRect();
+        return {
+          marginStart: parseFloat(cs.marginInlineStart), marginEnd: parseFloat(cs.marginInlineEnd),
+          tracks: getComputedStyle(parent).display, column: cs.gridColumn,
+          start: Math.round(box.left - region.left), end: Math.round(region.right - box.right),
+        };
+      })).toEqual({ marginStart: 0, marginEnd: 0, tracks: "grid", column: "full", start: 0, end: 0 });
+      await reset(l.page);
+      await l.page.keyboard.press(`${mod}+,`);
+      const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+      await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
+      expect(await settings.getByRole("tablist").evaluate(el => {
+        const navigation = el.closest("[data-side-nav]")!;
+        const content = getComputedStyle(navigation.hasAttribute("data-tab-navigation") ? el : navigation);
+        return Math.min(parseFloat(content.paddingTop), parseFloat(content.paddingBottom)) >= parseFloat(getComputedStyle(el).rowGap);
+      })).toBe(true);
+      await reset(l.page);
+    }
+  } finally {
+    await quit(l);
+  }
+});
+
 test("Settings: the scroll panel reaches the dialog edges and never clips a field's focus ring", async () => {
   test.setTimeout(120_000);
   const l = await launch(tempDirs());
@@ -229,7 +275,11 @@ test("Settings: the scroll panel reaches the dialog edges and never clips a fiel
     const dialog = l.page.getByRole("dialog", { name: "Settings" });
     const problems: string[] = [];
     for (const compact of [false, true]) {
-      if (compact) await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
+      if (compact) expect(await l.app.evaluate(({ BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows()[0]!;
+        window.setSize(480, 360);
+        return window.getSize();
+      })).toEqual([480, 360]);
       await dialog.getByRole("tab", { name: "Project", exact: true }).click();
       const name = dialog.getByRole("textbox", { name: "Name", exact: true });
       await name.focus();

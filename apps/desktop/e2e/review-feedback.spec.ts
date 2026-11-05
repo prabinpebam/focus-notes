@@ -331,6 +331,7 @@ test("Settings keeps navigation fixed and scrolls only content, with a short-win
       const nav = settings.locator("[data-side-nav]");
       const list = settings.getByRole("tablist");
       await expect(list).toHaveAttribute("aria-orientation", height! >= 720 ? "vertical" : "horizontal");
+      await list.getByRole("tab", { name: "Agents", exact: true }).click();
       const panel = settings.getByRole("tabpanel");
       await settled(l.page);
       const before = await nav.boundingBox();
@@ -339,8 +340,23 @@ test("Settings keeps navigation fixed and scrolls only content, with a short-win
       expect(await nav.boundingBox()).toEqual(before);
       expect(await settings.locator("[data-dialog-body]").evaluate(el => ({ top: el.scrollTop, overflow: getComputedStyle(el).overflowY }))).toEqual({ top: 0, overflow: "hidden" });
       expect(await nav.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
-      for (const tab of await list.getByRole("tab").all()) await expect(tab).toBeInViewport();
-      await expect(settings.getByRole("button", { name: /Send feedback/ })).toBeInViewport();
+      const feedback = settings.getByRole("button", { name: /Send feedback/ });
+      await expect(feedback).toBeInViewport({ ratio: 1 });
+      const feedbackBox = await feedback.boundingBox();
+      await list.getByRole("tab", { selected: true }).focus();
+      await l.page.keyboard.press("Home");
+      const visited = new Set<string>();
+      for (let i = 0; i < await list.getByRole("tab").count(); i++) {
+        const selected = list.getByRole("tab", { selected: true });
+        await expect(selected).toBeFocused();
+        await expect(selected).toBeInViewport({ ratio: 1 });
+        visited.add(await selected.innerText());
+        await expect(feedback).toBeInViewport({ ratio: 1 });
+        expect(await feedback.boundingBox()).toEqual(feedbackBox);
+        await l.page.keyboard.press(height! >= 720 ? "ArrowDown" : "ArrowRight");
+      }
+      expect(visited.size).toBe(await list.getByRole("tab").count());
+      expect(await panel.evaluate(el => el.clientHeight)).toBeGreaterThanOrEqual(128);
     }
   } finally {
     try { await quit(l); }

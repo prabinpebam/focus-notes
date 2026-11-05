@@ -34,8 +34,6 @@ export const EXEMPT = [
   { file: "MorphPanel/MorphPanel.css.ts", rule: "physical property", match: /^left: 50%$/, why: "centred by a translation" },
   // The switch's thumb is out of flow inside its track: its place is the state, and nothing beside it moves.
   { file: "Switch/Switch.css.ts", rule: "geometry in a state", match: /Switch_thumb__/, why: "an out-of-flow thumb; its place is the state" },
-  // Open (spacing-audit SP-3, lists): a scrolling list keeps its gutter on both edges by reaching into its container's padding.
-  { file: "ResultList/ResultList.css.ts", rule: "outer margin", match: /margin-inline: calc\(-1 \* var\(--fn-cmp-result-list-scrollbar-size\)\)/, why: "OPEN: SP-3 lists, until the dialog body owns the gutter" },
 ];
 
 const exempt = (file, f) => EXEMPT.find((e) => file.endsWith(e.file) && f.rule.startsWith(e.rule) && e.match.test(f.text));

@@ -14,8 +14,12 @@ export const navHeightVar = createVar({ syntax: "<length>", inherits: false, ini
 export const scrollRoot = style({ vars: { [navHeightVar]: t.navMinHeight }, flexGrow: 1, minHeight: 0 });
 export const scroller = style({ flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom });
 minimalScrollbar(scroller, t);
+export const navigationFrame = style({
+  display: "flex", flexDirection: "column", flexShrink: 0, minHeight: 0,
+  maxHeight: `calc(100% - ${t.panelMinHeight})`,
+});
 export const navigationScroller = style({
-  flexShrink: 0, minHeight: 0, maxHeight: `calc(100% - ${t.panelMinHeight})`,
+  minHeight: 0, flexShrink: 1,
   overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom,
 });
 minimalScrollbar(navigationScroller, t);
@@ -55,6 +59,9 @@ const footerBase = style({
   "@media": { "(forced-colors: active)": { backgroundImage: "none", paddingBlockStart: t.footerGap, borderBlockStartStyle: "solid", borderBlockStartWidth: t.borderWidth, borderColor: t.border } },
 });
 export const footer = { horizontal: footerBase, vertical: footerBase };
+export const fixedFooter = style({
+  flexShrink: 0, paddingInline: t.contentInset, paddingBlockEnd: t.focusRoom,
+});
 const tabBase = style({
   display: "inline-flex",
   alignItems: "center",
@@ -91,15 +98,15 @@ export const panel = {
 };
 
 export const navigation = {
-  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.focusRoom }),
-  vertical: style({ boxSizing: "border-box", flexBasis: `calc(${t.listWidth} + ${t.contentInset})`, paddingInlineStart: t.contentInset, paddingInlineEnd: t.panelInset, paddingBlockStart: t.focusRoom, paddingBlockEnd: t.contentInset }),
+  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.contentInset }),
+  vertical: style({ boxSizing: "border-box", flexBasis: `calc(${t.listWidth} + ${t.contentInset})`, paddingInlineStart: t.contentInset, paddingInlineEnd: t.panelInset, paddingBlock: t.contentInset }),
 };
 export const content = style({
   minWidth: 0, paddingInlineStart: t.panelInset,
   paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`,
-  paddingBlockStart: t.focusRoom, paddingBlockEnd: t.contentInset,
+  paddingBlock: t.contentInset,
 });
 export const contentOrientation = {
   horizontal: style({}),
-  vertical: style({ paddingBlockStart: `calc(${t.focusRoom} + (${t.height} - 1cap) / 2)` }),
+  vertical: style({ paddingBlockStart: `calc(${t.contentInset} + (${t.height} - 1cap) / 2)` }),
 };
