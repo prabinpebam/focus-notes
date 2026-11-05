@@ -16,7 +16,7 @@ function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
 }
 
-function windowsProtectedRecent(value: string, protect: boolean): Promise<string> {
+function windowsProtectedRecord(value: string, protect: boolean): Promise<string> {
   const operation = protect ? "Protect" : "Unprotect";
   const script = `Add-Type -AssemblyName System.Security; $bytes = [Convert]::FromBase64String([Console]::In.ReadToEnd()); $result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Write([Convert]::ToBase64String($result))`;
   return new Promise((accept, reject) => {
@@ -28,7 +28,7 @@ function windowsProtectedRecent(value: string, protect: boolean): Promise<string
     child.once("error", reject);
     child.stdin.once("error", reject);
     child.once("close", (code) => {
-      if (code !== 0 || !output.trim()) reject(new Error(`OS-protected Recent storage failed (${code}).`));
+      if (code !== 0 || !output.trim()) reject(new Error(`OS-protected project storage failed (${code}).`));
       else accept(output.trim());
     });
     child.stdin.end(value);
@@ -82,7 +82,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
       const encrypted = await readFile(join(profile, DATA_FILES.projectRecent), "utf8");
       const content = encrypted.startsWith("dpapi:")
-        ? Buffer.from(await windowsProtectedRecent(encrypted.slice(6), false), "base64").toString("utf8")
+        ? Buffer.from(await windowsProtectedRecord(encrypted.slice(6), false), "base64").toString("utf8")
         : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
       return JSON.parse(content);
     } catch (error) {
@@ -94,7 +94,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
     const content = JSON.stringify(record);
     const encrypted = process.platform === "win32"
-      ? `dpapi:${await windowsProtectedRecent(Buffer.from(content, "utf8").toString("base64"), true)}`
+      ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
       : safeStorage.encryptString(content).toString("base64");
     await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
     if (profile === app.getPath("userData")) ownRecent = structuredClone(record);
@@ -120,7 +120,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     try { encrypted = await readFile(lastNoteFile, "utf8"); }
     catch (error) { if (missing(error)) return; throw error; }
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-    const value = safeStorage.decryptString(Buffer.from(encrypted, "base64"));
+    const value = encrypted.startsWith("dpapi:")
+      ? Buffer.from(await windowsProtectedRecord(encrypted.slice(6), false), "base64").toString("utf8")
+      : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
     return value.startsWith("{") ? JSON.parse(value) : { path: value };
   }
   function lastRecord(): Promise<LaunchRecord | undefined> {
@@ -139,9 +141,17 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   async function remember(path: string, snapshot?: { from: number; to: number; scroll: number }) {
     if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-    const savedPosition = snapshot ?? await position(path);
+    let savedPosition = snapshot;
+    if (!savedPosition) {
+      try { savedPosition = await position(path); }
+      catch (error) { console.error("Could not restore the previous launch position:", error instanceof Error ? error.name : "Error"); }
+    }
     const record = { path, position: savedPosition };
-    await atomicWrite(lastNoteFile, safeStorage.encryptString(JSON.stringify(record)).toString("base64"));
+    const content = JSON.stringify(record);
+    const encrypted = process.platform === "win32"
+      ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
+      : safeStorage.encryptString(content).toString("base64");
+    await atomicWrite(lastNoteFile, encrypted);
     launchRecord = Promise.resolve(record);
     if (!snapshot) await score(path, 1);
   }

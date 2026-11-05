@@ -35,6 +35,12 @@ The SHR-16 publication journey now reads the visible, readonly Passcode textbox'
 
 **Quarantine.** Scope: this landing only; neither journey is skipped or changed, and every other branch still needs its own green run. Owner: whoever repairs `main`'s SHR-16 red. Expiry: the first green exact-head run on `main`. The owner set a 90-minute cap on waiting for the two in-flight gates; neither landed by then, and every CI run on `main` and its branches was red on these unrelated journeys.
 
+### Protected launch-record repair, 5 November
+
+Plain main `5e4906c9` is affected: an abrupt exit can leave the Chromium encryption key unavailable for its saved launch path and cursor. New Windows launch records use the existing user-scoped DPAPI mechanism used for Recent; old Electron-protected records and path-only records remain readable, with migration on the next acknowledged write. There is no plaintext fallback. An unreadable position is reported without blocking an explicitly opened disk note; its next successfully persisted launch record replaces the unreadable record, never the note.
+
+On the isolated branch, both targeted regressions fail against main's unchanged production source and pass with the repair. `pnpm exec vitest run apps/desktop/test/project-create.test.ts packages/core/test/project-open.test.ts` passes all 36 tests, including preservation of typed text when the outgoing save fails and acceptance of a disk note when only its saved position cannot be read. `pnpm check`, `pnpm typecheck` and the Slate runtime check pass. The independent security-reviewer reports no high-confidence security or data-safety findings. The combined AI-scan candidate supplies the exact-head Windows gate before landing.
+
 ### UI-states merge candidate: CI alignment, 5 November
 
 The returning-writer journey fixture now supplies a real note to reopen and marks the project terminology introduction as already seen. A new install still runs the first-run path; an explicitly empty `lastNotePath` still reaches Open (D-318). Product launch behavior is unchanged. The older checks now assert the approved local location and project pills, menu accessible descriptions, row pins and pending compact-setting feedback rather than their superseded presentation.
