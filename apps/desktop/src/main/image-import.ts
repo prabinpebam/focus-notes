@@ -72,7 +72,7 @@ const inside = (root: string, path: string) => {
 };
 
 /** All validation finishes in temporary storage before a single managed asset is written. */
-export async function importImages(note: string, root: string | undefined, inputs: readonly ImageInput[], decode: (path: string) => Promise<void>, publicCopy = false): Promise<{ images: ImportedImage[]; paths: string[] }> {
+export async function importImages(note: string, root: string | undefined, inputs: readonly ImageInput[], decode: (path: string, size: { width: number; height: number }) => Promise<void>, publicCopy = false): Promise<{ images: ImportedImage[]; paths: string[] }> {
   if (!inputs.length || inputs.length > 20) throw new Error("image-count");
   const buffers = inputs.map((input) => {
     if (!input || typeof input.data !== "string") throw invalid();
@@ -94,7 +94,7 @@ export async function importImages(note: string, root: string | undefined, input
     for (const [i, image] of buffers.entries()) {
       const path = join(temporary, `${i}.${image.ext}`);
       await writeFile(path, image.b, { flag: "wx" });
-      await decode(path);
+      await decode(path, image);
     }
     // Check each existing ancestor, not just the final folder, before following any symlink.
     const parts = relative(boundary, folder).split(sep);

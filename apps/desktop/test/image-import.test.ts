@@ -19,7 +19,11 @@ async function setup() {
 describe("image ingestion validates before managed writes", () => {
   it("uses opaque names and preserves original bytes in project assets", async () => {
     const { root, note } = await setup();
-    const decode = vi.fn(async (path: string) => { expect(await readFile(path)).toEqual(png); });
+    const decode = vi.fn(async (path: string, size: { width: number; height: number }) => {
+      expect(await readFile(path)).toEqual(png);
+      expect(size).toMatchObject({ width: 1, height: 1 });
+      expect(await readdir(root)).toEqual(["notes"]);
+    });
     const result = await importImages(note, root, [input(), input()], decode);
     expect(decode).toHaveBeenCalledTimes(2);
     expect(result.images).toEqual(result.paths.map((path) => ({ src: `../assets/images/${path.split(/[\\/]/).at(-1)}`, width: 1, height: 1 })));
@@ -48,6 +52,14 @@ describe("image ingestion validates before managed writes", () => {
     const chunk = Buffer.alloc(20); chunk.writeUInt32BE(8); chunk.write("acTL", 4);
     expect(() => rasterInfo(Buffer.concat([png.subarray(0, 33), chunk, png.subarray(33)]))).toThrow("animated-image");
     expect(() => rasterInfo(Buffer.from("not an image"))).toThrow("invalid-image");
+  });
+  it("enforces the pixel cap before invoking any renderer decoder or writing assets", async () => {
+    const { root, note } = await setup();
+    const huge = Buffer.from(png); huge.writeUInt32BE(10000, 16); huge.writeUInt32BE(10000, 20);
+    const decode = vi.fn();
+    await expect(importImages(note, root, [input(huge)], decode)).rejects.toThrow("image-pixels");
+    expect(decode).not.toHaveBeenCalled();
+    expect(await readdir(root)).toEqual(["notes"]);
   });
   it("does not create assets if any decoder rejects a corrupt file", async () => {
     const { root, note } = await setup();

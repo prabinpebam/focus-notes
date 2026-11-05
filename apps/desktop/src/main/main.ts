@@ -5,7 +5,7 @@
  * API for setup and sharing, configured AI integrations, and the workspace's own Pages site to
  * confirm publication without credentials or redirects (D-344).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { importImages, imageInputsFromPaths, type ImageInput } from "./image-import.ts";
 import { copyFile, lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
@@ -1261,7 +1261,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (inside(join(notesHome(), "notes"), note)) return notesHome();
     return undefined;
   };
-  handle("image:import", async (path, inputs) => {
+  handleFrom("image:import", async (event, path, inputs) => {
     const note = notePath(path);
     await assertWritable(note);
     await stat(note);
@@ -1277,9 +1277,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       files = inputs;
     }
     const root = imageRoot(note);
-    const result = await importImages(note, root, files, async (path) => {
-      const decoded = await nativeImage.createThumbnailFromPath(path, { width: 1, height: 1 });
-      if (decoded.isEmpty()) throw new Error("invalid-image");
+    const result = await importImages(note, root, files, async (path, size) => {
+      // Chromium's async decoder does not depend on Windows thumbnail codecs.
+      const data = `data:image/${path.endsWith(".jpg") ? "jpeg" : path.endsWith(".webp") ? "webp" : "png"};base64,${(await readFile(path)).toString("base64")}`;
+      const valid: boolean = await event.sender.executeJavaScript(`(async () => {
+        const image = new Image();
+        try {
+          image.src = ${JSON.stringify(data)};
+          await image.decode();
+          return image.naturalWidth === ${size.width} && image.naturalHeight === ${size.height};
+        } finally { image.src = ""; }
+      })()`);
+      if (!valid) throw new Error("invalid-image");
     }, root !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note));
     const batch = randomUUID();
     imageBatches.set(batch, result.paths);
