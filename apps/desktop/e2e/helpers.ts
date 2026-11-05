@@ -49,6 +49,7 @@ export const caret = {
 export async function writerSettingSettled(page: Page, setting: "fontSize" | "focusMode"): Promise<void> {
   await page.keyboard.press(`${mac ? "Meta" : "Control"}+.`);
   const toolbar = page.getByRole("toolbar", { name: "Toolbar", exact: true });
+  await expect(toolbar.locator(":focus")).toHaveCount(1);
   if (setting === "fontSize") {
     const more = toolbar.getByRole("button", { name: "More", exact: true });
     await more.click();

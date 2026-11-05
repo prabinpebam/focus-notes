@@ -1374,7 +1374,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // The actions that can be pinned (UI-08, D-170): the six defaults, then ⋯'s own commands.
   const planned = new Set<string>(PLANNED_MENU_COMMANDS.map((c) => c.id));
   const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && !planned.has(id));
-  registerToolbarCustomize({ store, commands, viewModels, catalog, persistAppState, announce, pinnable, defaults: DEFAULT_TOOLBAR });
+  registerToolbarCustomize({
+    store, commands, viewModels, catalog, persistAppState, announce, toast, pinnable, defaults: DEFAULT_TOOLBAR,
+    describeItem,
+    groups: () => [
+      { id: "actions", label: catalog.format("menu.actions"), items: DEFAULT_TOOLBAR.map(describeItem) },
+      ...[...MORE_MENU, ...extraMenu].map(g => ({
+        id: g.id, label: catalog.format(g.label),
+        items: g.items.filter((e): e is string => typeof e === "string" && pinnable().includes(e)).map(describeItem),
+      })).filter(g => g.items.length),
+    ],
+  });
   const keybindings = registerKeybindings({ store, commands, viewModels, catalog, bridge, toast });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker });
