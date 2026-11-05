@@ -155,7 +155,7 @@ export type RowKind = "note" | "heading" | "text" | "folder" | "command" | "sett
  * Result groups, each labeled (Spotlight → Anatomy). Actions are grouped by what they act on
  * (D-363): `selection`, `note`, `project`, `app`.
  */
-export type GroupId = "top" | "recent" | "notes" | "headings" | "text" | "folders" | "commands" | "settings" | "suggestions" | "actions" | "help" | "selection" | "note" | "project" | "app";
+export type GroupId = "top" | "recent" | "files" | "notes" | "headings" | "text" | "folders" | "commands" | "settings" | "suggestions" | "actions" | "help" | "selection" | "note" | "project" | "app";
 
 export interface SpotlightRow {
   /** Unique in the list: the group and the key. */
@@ -170,12 +170,13 @@ export interface SpotlightRow {
   rel?: string;
   root?: RootId;
   heading?: { level: number; index: number; note: string };
+  targetHeading?: { index: number; text: string };
   snippet?: { text: string; highlights: Range[] };
 }
 
 /** At most this many rows of each group. */
 export const GROUP_LIMITS: Record<GroupId, number> = {
-  top: 1, recent: 5, notes: 8, headings: 6, text: 5, folders: 4, commands: 8, settings: 5, suggestions: 3, actions: 2, help: 20,
+  top: 1, recent: 5, files: 20, notes: 8, headings: 6, text: 5, folders: 4, commands: 8, settings: 5, suggestions: 3, actions: 2, help: 20,
   selection: 8, note: 8, project: 8, app: 8,
 };
 const GROUP_OF: Record<SearchKind, GroupId> = { note: "notes", heading: "headings", folder: "folders", command: "commands", setting: "settings" };

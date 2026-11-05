@@ -207,11 +207,11 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   await expect(command).toContainText("On");
   await expect(command).toContainText(mac ? "⇧⌘D" : "Ctrl+Shift+D");
   await expect(option(page, /On focus/)).toContainText("essays/on-focus.md · Public");
-  await expect(results(page).getByRole("group", { name: "In notes" }).getByRole("option", { name: /Ideas/ })).toContainText("Keep a foc list");
+  await expect(results(page).getByRole("group", { name: "Files", exact: true }).getByRole("option", { name: /Ideas/ })).toContainText("Keep a foc list");
   await expect(results(page).getByRole("group", { name: "Actions" }).getByRole("option")).toHaveText([/Create note “foc”/, /Find “foc” in all notes/]);
   await expect(option(page, /Find “foc” in all notes/)).not.toHaveAttribute("aria-disabled", "true");
   // Matches are marked, as Find in all notes marks them (one ResultList, D-109, D-110).
-  await expect(results(page).getByRole("group", { name: "In notes" }).getByRole("option", { name: /Ideas/ }).locator("mark")).toHaveText(["foc"]);
+  await expect(results(page).getByRole("group", { name: "Files", exact: true }).getByRole("option", { name: /Ideas/ }).locator("mark")).toHaveText(["foc"]);
 
   // Shift+Enter leaves Spotlight open and its row shows the new state; Esc closes it.
   while (!(await active(page).textContent())?.startsWith("Focus mode")) await page.keyboard.press("ArrowDown");
@@ -258,7 +258,10 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
   const { page } = l;
   // Type part of a heading in another note and jump to it.
   await open(page);
-  await search(page, "deep wo", "Deep work");
+  await search(page, "deep wo", "On focus");
+  await expect(active(page)).toContainText("Deep work");
+  await expect(option(page, /^On focus/)).toHaveCount(1);
+  await expect(results(page).getByRole("group", { name: "Headings", exact: true })).toHaveCount(0);
   await page.keyboard.press("Enter");
   await expect(spotlight(page)).toBeHidden();
   await expect(editor(page)).toBeFocused();
@@ -297,6 +300,30 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
   await page.keyboard.press("Enter");
   await expect(editor(page)).toContainText("Morning blocks.");
   await quit(l);
+});
+
+test("ACT-04: a body match opens its file with Find ready; a folder opens Files focused", async () => {
+  const l = await started();
+  try {
+    const { page } = l;
+    await open(page);
+    await search(page, "morning", "Focus sessions");
+    await expect(active(page)).toContainText("Morning blocks.");
+    await page.keyboard.press("Enter");
+    await expect(spotlight(page)).toBeHidden();
+    await expect(editor(page)).toContainText("Morning blocks.");
+    await expect(page.getByRole("searchbox", { name: "Find", exact: true })).toHaveValue("morning");
+    await page.keyboard.press("Escape");
+    await open(page);
+    await search(page, "archive", "archive");
+    await page.keyboard.press("Enter");
+    const files = page.getByRole("complementary", { name: "Files", exact: true });
+    await expect(files).toBeVisible();
+    await expect(files.locator('[role="treeitem"]:focus')).toContainText("archive");
+    await expect(files.locator('[role="treeitem"]:focus')).toHaveAttribute("aria-expanded", "true");
+  } finally {
+    await quit(l);
+  }
 });
 
 test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make public, and open in a new window", async () => {

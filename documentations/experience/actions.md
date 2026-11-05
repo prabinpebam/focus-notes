@@ -241,6 +241,8 @@ The initial catalogue also proves *Open a project from GitHub…*, *Copy public 
 
 Shift+Enter retains a toggle's row and query while its acknowledged settings write completes. The row is temporarily unavailable during that write; its enabled state, not just its On/Off text, is the signal that a second Enter can run it.
 
+**Content slice, WP-A.4 (landing pending).** In All and quick-open results, Files contains both files and folders. A matching heading or body line is a reason on one file row, never another content kind. Enter on a heading reason opens at that heading; a body reason opens the file with Find ready. The `#` and `##` navigation modes retain their individual heading rows. Body-only results replace the provisional Create selection unless the person has moved to another row. A missing result is removed with a recovery message and the query kept; a folder opens Files revealed, expanded and focused.
+
 ## Owner decisions (approved defaults, 6 November)
 
 The owner approved the spec on 6 November at 02:07; the recommended default of each question below is the decision.

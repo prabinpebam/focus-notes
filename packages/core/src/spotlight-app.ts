@@ -253,6 +253,34 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     return rankLocal(items, text).slice(0, 40).map((h) => ({ kind: h.kind, key: h.id, label: h.label, highlights: h.highlights, tier: h.tier, score: h.score }));
   };
   const firstActive = (rows: readonly SpotlightRow[]) => rows.find((r) => rowEnabled(r))?.id ?? "";
+  /** A heading or body match explains a file result, not a second kind of content (ACT-04). */
+  const contentRows = (rows: readonly SpotlightRow[]): SpotlightRow[] => {
+    const groups = new Map<GroupId, SpotlightRow[]>();
+    const seen = new Set<string>();
+    for (const row of rows) {
+      let r = row;
+      if (r.path) {
+        if (seen.has(r.path)) continue;
+        seen.add(r.path);
+        const group = r.group === "top" || r.group === "recent" ? r.group : "files";
+        const heading = r.kind === "heading";
+        r = {
+          ...r, group, id: rowId(group, r.path), key: r.path,
+          kind: r.kind === "folder" ? "folder" : "note",
+          ...(heading ? {
+            label: noteRow(r.path, group)?.label ?? r.heading?.note ?? titleOfPath(r.path),
+            highlights: [],
+            targetHeading: { index: r.heading?.index ?? 0, text: r.label },
+            snippet: { text: r.label, highlights: r.highlights },
+          } : {}),
+        };
+      }
+      const list = groups.get(r.group) ?? [];
+      list.push(r);
+      groups.set(r.group, list);
+    }
+    return [...groups.values()].flat();
+  };
   const setRows = (rows: SpotlightRow[], busy: boolean, keep: boolean) => {
     const active = keep && rows.some((r) => r.id === sp().activeId) ? sp().activeId : firstActive(rows);
     set({ rows, busy, activeId: active, answered: answerKey(sp()) });
@@ -269,7 +297,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
    */
   async function refresh(follow = false): Promise<void> {
     const s = sp();
-    const placed = (...a: Parameters<typeof mergeResults>) => placeActions(mergeResults(...a), s.mode === "commands");
+    const placed = (...a: Parameters<typeof mergeResults>) => {
+      const rows = mergeResults(...a);
+      return placeActions(s.mode === "all" || s.mode === "notes" ? contentRows(rows) : rows, s.mode === "commands");
+    };
     const keep = follow && s.activeId !== firstActive(s.rows);
     if (!s.open) return;
     const my = ++seq;
@@ -282,7 +313,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         if (my === seq) setRows(listed, false, false);
         return;
       }
-      return setRows(s.mode === "headings" ? [] : emptyRows(s.mode), false, false);
+      const rows = s.mode === "headings" ? [] : emptyRows(s.mode);
+      return setRows(s.mode === "notes" ? contentRows(rows) : rows, false, false);
     }
     const kinds: readonly SearchKind[] | undefined = s.mode === "notes" ? ["note"] : s.mode === "commands" ? ["command", "setting"] : s.mode === "headings" ? ["heading"] : filters.kinds;
     const top = s.mode === "all";
@@ -304,9 +336,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       if (my !== seq) return;
       setRows(placed(titles, [], { query: text, top, actions }), wantsText, keep);
       if (!wantsText) return;
+      const titleActive = sp().activeId;
       const found = (await search.query({ ...base, scope: "text", limit: 10, ...(filters.phrase ? { phrase: true } : {}) })).hits;
       if (my !== seq) return;
-      setRows(placed(titles, found, { query: text, top, actions }), false, true);
+      setRows(placed(titles, found, { query: text, top, actions }), false, keep || sp().activeId !== titleActive);
     } catch {
       if (my === seq) set({ busy: false });
     }
@@ -594,6 +627,12 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
 
   async function perform(row: SpotlightRow, id: ActionId, keepOpen = false): Promise<void> {
     const path = row.path ?? "";
+    if (path && scope.project && rootOf(tree(), path) && !findNode(tree(), path)) {
+      ctx.toast(msg("actions.contentMissing"), { tone: "error" });
+      await refresh();
+      setRows(sp().rows.filter((r) => r.path !== path), false, false);
+      return;
+    }
     if (id === "run" && row.kind === "command") {
       const e = catalogEntry(row.key);
       if (!e) return;
@@ -624,7 +663,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     if (id === "copyPublicLink") return void (await copyPublicLink(ctx, path));
     switch (id) {
       case "open":
-        return row.kind === "text" ? openAt(path, { find: parseFilters(sp().query).text }) : openAt(path, {});
+        return row.targetHeading ? openAt(path, { heading: row.targetHeading })
+          : row.kind === "text" || row.snippet ? openAt(path, { find: parseFilters(sp().query).text }) : openAt(path, {});
       case "goTo":
         return openAt(path, { heading: { index: row.heading?.index ?? 0, text: row.label } });
       case "openWindow":
@@ -639,7 +679,9 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         await ctx.load(path);
         return run("note.copyToLocal");
       case "showInFiles":
-        return reveal(path);
+        await reveal(path);
+        if (row.kind === "folder") await run("files.setExpanded", { id: path, expanded: true });
+        return;
       case "newNoteHere":
         await reveal(path);
         return run("files.newNote");
@@ -718,8 +760,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       case "text": {
         const vis = (r.path ? visibilityOf(s.workspace.tree, r.path) : undefined) ?? (r.root === "public" || r.root === "private" ? r.root : undefined);
         const where = [r.rel, vis ? msg(`spotlight.visibility.${vis}`) : ""].filter(Boolean).join(" · ");
-        if (r.kind === "text" && r.snippet) {
-          return { ...base, icon: "text", description: r.snippet.text, descriptionHighlights: r.snippet.highlights.map((x) => [x[0], x[1]]), state: where };
+        if (r.snippet) {
+          return { ...base, icon: vis === "private" || vis === "shared" ? "lock" : "document", description: r.snippet.text, descriptionHighlights: r.snippet.highlights.map((x) => [x[0], x[1]]), state: where };
         }
         return { ...base, icon: vis === "private" || vis === "shared" ? "lock" : "document", ...(where ? { description: where } : {}) };
       }
