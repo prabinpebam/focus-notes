@@ -41,7 +41,7 @@ The [Open recovery evidence](../plan/definition-of-done.md#phase-2-scoped-open-r
 | --- | --- | --- | --- |
 | Read/refresh Open entries | Responsive → waiting; named section task, existing entries retained | Existing list wrapper; shapes only after 300 ms and for at least 500 ms; local Retry | `fn:project.list`; exact boundary/fast-read units and held-list journey passed |
 | Launch/pick a project or file | Responsive → waiting; named action task, acknowledged note retained | Opening project…; elapsed after 3 s; scoped Retry on failure | `fn:project.open`; same-project read must succeed before Open closes |
-| Pin/reveal an Open entry | Responsive → waiting; named action task | Saving pin… / Showing project folder…; scoped Retry | `fn:project.pin`, `fn:project.reveal`; completed pin never replayed for a failed follow-up list |
+| Pin/reveal an Open entry | Instant commit on the pin itself → waiting; named action task | The pin's own border is the pending arc, then a success or danger outline (200 ms minimum); Saving pin… / Showing project folder…; Retry in Open's status row | `fn:project.pin`, `fn:project.reveal`; completed pin never replayed for a failed follow-up list |
 | Count a project's size (planned, D-346) | Responsive → waiting; stale while updating, never blocking; async walk in the main process, cached per folder | The card's size line: the cached line at once, or a short placeholder line after 300 ms (at least 500 ms once shown); the count swaps in complete; a failed count leaves the line out | `fn:project.stats`; card and open action usable throughout; target 1 s for 5,000 files |
 
 ## New project and Local import recovery
@@ -162,6 +162,7 @@ IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker an
 | Save image defaults | Responsive; keep saved default until durable write | Menu/status: Saving image options…; retained old value on error | `fn:image.defaults`; no focus/selection reset |
 | Generate caption | Waiting/long; selected image and editable context retained, Stop | Caption surface: Writing caption…; progress through existing AI task | `fn:image.caption`; only explicit Generate sends; Stop/error changes no caption |
 | Seal/publish referenced media | Long; existing publish task steps, not a second spinner | Share status: Preparing images… → Waiting to publish | `fn:image.publish`; no Ready until full authorized media output succeeds |
+| Prepare images for print (D-348) | Responsive → waiting; the print dialog opens only when every image is decoded | Bottom pill: Preparing images for print…; Cancel keeps the note | `fn:image.print`; no blank image in the printed page |
 
 ## Project and sharing waits (planned)
 
@@ -189,6 +190,8 @@ The 3 November owner-review Open slice keeps the source window and draft intact 
 | Existing-row copy, withdrawal and sign-in resume | Responsive → waiting/long; existing dialog/draft stays; cancellation never copies | Named publication/handoff or Withdrawing share…; confirmation defaults to Cancel; signed-out failure offers existing Sign in | Tracker `share.item.publish`, `share.item.handoff`, `share.item.withdraw`; corresponding `focus-notes:` measures. Native callback mutation/cancellation/stale-readiness units; actual sign-in recovery and macOS sheet journeys remain pending |
 | First-share site setup | Long; named steps Creating site / Setting up publishing | Share task, preserved draft; partial results and Continue setup | `fn:project.enableSharing`; no remote action before confirmation |
 | Create/update/withdraw share | Long; commit, backup, seal, publish | Share status: Preparing share… / Waiting to publish / Ready to share; Retry publishing | `fn:share.publish`; ready only after exact deployment succeeds |
+| Publish note on today's workspace (D-351, SHR-26) | Long, leavable; one task with steps | Bottom pill: Saving to GitHub… → Publishing… usually about a minute → Published with Copy link; Not live yet + Retry; after 10 minutes Still publishing. GitHub is taking longer than usual. | `fn:publish.note`; Published only after the Pages deployment for that commit succeeded and the page answers |
+| Unpublish note (D-351) | Long, leavable; same task | Bottom pill: Removing from your site… → Removed from your site; Retry on failure | `fn:publish.unpublish`; removed claimed only after the deploy without the page succeeded |
 | Invite collaborator | Waiting/long; request then reconcile actual invitation state | People row: Sending invite… → Pending; errors keep username and role | `fn:project.invite`; no accepted claim from pending response |
 | Standalone/Local note save | Responsive; journal and atomic disk save | File state: Saving here… / Saved here; write refusal offers Save as… | `fn:file.saveLocal`; disk confirmation ≤ existing 1 s save target, retain journal otherwise |
 | Clipboard/OS share | Responsive; explicit result or cancellation | Copy action status / Ready to share when fresh gesture is required | `fn:share.handoff`; never claim copied/opened on refusal |

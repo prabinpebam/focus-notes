@@ -48,7 +48,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
 | EmptyState | primitive | `rest` | 4 | None |
-| OpenItem | primitive | `rest`, `selected` | 30 | None |
+| OpenItem | primitive | `rest`, `selected` | 33 | None |
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
