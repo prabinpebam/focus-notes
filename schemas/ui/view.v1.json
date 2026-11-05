@@ -368,6 +368,9 @@
           "$ref": "#/$defs/c_Stack"
         },
         {
+          "$ref": "#/$defs/c_Section"
+        },
+        {
           "$ref": "#/$defs/c_Inline"
         },
         {
@@ -4038,6 +4041,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "contentInset": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -4737,6 +4753,19 @@
               ]
             },
             "scrollPanel": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentInset": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -9627,6 +9656,65 @@
         }
       }
     },
+    "c_Section": {
+      "type": "object",
+      "description": "One section of a view: an optional heading and section-wide context over its items, grouped by space alone (spacing SP-12). Heading and context sit stackPair apart, the header stackItem above its items, and the items stackGroup apart; a control and its own description are one item, a stackPair Stack. Sections stack stackSection apart. So pair < heading < item < section, and a heading belongs to what follows.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Section"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "heading": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
     "c_Inline": {
       "type": "object",
       "description": "Children in a row, spaced by a spacing role (a relationship, never a size).",
@@ -11074,6 +11162,19 @@
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentInset": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -13153,6 +13254,19 @@
               ]
             },
             "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentInset": {
               "anyOf": [
                 {
                   "type": "boolean"

@@ -32,14 +32,6 @@ export const sheet = style({
   display: "flex",
   flexDirection: "column",
   gap: t.gap,
-  // Its inline padding stops short by the room its regions keep for a focus ring at the start and the
-  // scrollbar at the end; each region (band, header, body, footer) holds that room as its own padding,
-  // so the scrolling body never reaches into the sheet's padding (spacing SP-3).
-  // The block end stops short by the body's slack, which the body (or the footer, when it shows) holds as its own end padding.
-  paddingBlockStart: t.padding,
-  paddingBlockEnd: `calc(${t.padding} - ${t.bodySlack})`,
-  paddingInlineStart: `calc(${t.padding} - ${t.ringRoom})`,
-  paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,
   boxSizing: "border-box",
   width: fallbackVar(limitVar, widthVar),
   maxWidth: `calc(100% - 2 * ${insetVar})`,
@@ -61,16 +53,13 @@ export const sheet = style({
     // starts below the title band, which stays the window's drag region.
     "&[data-docked]": {
       zIndex: t.dock.layer,
-      top: 0, bottom: 0, width: dockWidthVar, maxWidth: "none", paddingTop: `calc(${t.dock.top} + ${t.padding})`,
+      top: 0, bottom: 0, width: dockWidthVar, maxWidth: "none",
       borderRadius: 0, borderWidth: 0, boxShadow: "none", backdropFilter: "none",
       backgroundColor: t.dock.background, animationName: "none",
     },
     "&[data-docked][data-side=start]": { left: 0, borderInlineEndStyle: "solid", borderInlineEndWidth: t.dock.borderWidth, borderInlineEndColor: t.dock.border },
     "&[data-docked][data-side=end]": { right: 0, borderInlineStartStyle: "solid", borderInlineStartWidth: t.dock.borderWidth, borderInlineStartColor: t.dock.border },
     // Led by where the notes come from (D-188): that band starts at the top edge itself.
-    "&[data-docked]:has(> [data-sheet-band])": { paddingTop: 0 },
-    // Short, the scrolling main part leads with the slack at its top: the sheet keeps it out of its own padding.
-    "&[data-short]:not(:has(> [data-sheet-band])):not([data-docked])": { paddingBlockStart: `calc(${t.padding} - ${t.bodySlack})` },
   },
 });
 
@@ -115,41 +104,42 @@ export const main = style({
   gap: `calc(${t.groupGap} - ${t.bodySlack})`,
   flexGrow: 1,
   minHeight: 0,
+  scrollPadding: t.ringRoom,
   selectors: {
     // Up and down only: a close button bleeding into the padding (D-111) never makes it scroll sideways.
     // The body's slack moves to the scroller here, so the header-to-body gap is the whole group gap again.
-      "[data-short] > &": { overflowY: "auto", overflowX: "hidden", scrollbarGutter: "stable", paddingBlock: t.bodySlack, paddingInlineStart: t.ringRoom, gap: t.groupGap },
+    "[data-short] > &": { overflowY: "auto", overflowX: "hidden", scrollbarGutter: "stable", gap: t.groupGap },
   },
 });
 minimalScrollbar(main, t);
 export const header = style({
-  display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0, paddingInlineStart: t.ringRoom, paddingInlineEnd: t.scrollbarSize,
-  // Short, the main part scrolls and its gutter is the scrollbar's room.
-  selectors: { "[data-short] > * > &": { paddingInlineStart: 0, paddingInlineEnd: 0 } },
+  display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0, paddingInline: t.padding,
+  paddingBlockStart: t.padding,
+  selectors: {
+    "[data-short] > * > &": { paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})` },
+    "[data-surface=sheet]:has(> [data-sheet-band]) > * > &": { paddingBlockStart: t.bodySlack },
+    "[data-docked]:not(:has(> [data-sheet-band])) > * > &": { paddingBlockStart: `calc(${t.dock.top} + ${t.padding})` },
+  },
 });
-// Where the notes come from (D-188): leads the sheet above a hairline that runs edge to edge (drawn
-// past the sheet's padding, so the band's own box keeps the sheet's uniform inset, D-111). Docked, it
-// starts at the window's top edge, so its upper part is in the title band, which stays the window's
-// drag region (its buttons don't drag).
+// The band's line bleeds to the edge; only its content is inset.
 export const band = style({
   position: "relative",
   display: "flex",
   alignItems: "center",
   flexShrink: 0,
   minWidth: 0,
+  paddingBlockStart: t.padding,
   paddingBlockEnd: t.gap,
-  paddingInlineStart: t.ringRoom,
-  paddingInlineEnd: t.scrollbarSize,
+  paddingInline: t.padding,
   selectors: {
-    "&::after": { content: '""', position: "absolute", bottom: 0, insetInlineStart: `calc(-1 * (${t.padding} - ${t.ringRoom}))`, insetInlineEnd: `calc(-1 * (${t.padding} - ${t.scrollbarSize}))`, height: t.band.borderWidth, backgroundColor: t.band.border },
+    "&::after": { content: '""', position: "absolute", bottom: 0, insetInline: 0, height: t.band.borderWidth, backgroundColor: t.band.border },
     // Docked, it leads from the window's top edge with the sheet's own padding around it, rather than fitted into the title band (the sheet drops its top padding for it).
     "[data-docked] > &": { paddingBlock: t.padding, minHeight: t.dock.top, boxSizing: "border-box" },
-    ":root[data-platform=macos] [data-docked][data-side=start] > &": { paddingInlineStart: `calc(${t.band.macStart} - (${t.padding} - ${t.ringRoom}))` },
+    ":root[data-platform=macos] [data-docked][data-side=start] > &": { paddingInlineStart: t.band.macStart },
   },
 });
 globalStyle(`${band} button`, { WebkitAppRegion: "no-drag" } as Record<string, string>);
-// The scrolling part. Its scrollbar's space is reserved in the sheet's padding at the end, so content
-// keeps the same inset on both sides whether or not it scrolls (UI-09, D-111).
+// No inset on the functional scroll region: its scrollbar stays at the visual surface's edge.
 export const body = style({
   display: "flex",
   flexDirection: "column",
@@ -157,28 +147,35 @@ export const body = style({
   minHeight: 0,
   overflowY: "auto",
   scrollbarGutter: "stable",
-  // What the view puts in the body (a tree, then its status) are its items: the body owns the space between them (spacing SP-8).
-  gap: t.bodyGap,
-  // Room inside its clip for the focus ring of a control at its edge (a button's ring is outside it),
-  // and the letters of what's at its very top or bottom, without moving anything (D-111).
-  paddingInlineStart: t.ringRoom,
-  paddingBlock: t.bodySlack,
+  scrollPadding: t.ringRoom,
   outline: "none",
   selectors: {
-    "[data-short] > * > &": { flexGrow: 0, flexShrink: 0, minHeight: "auto", overflowY: "visible", scrollbarGutter: "auto", paddingBlock: 0, paddingInlineStart: 0 },
+    "[data-short] > * > &": { flexGrow: 0, flexShrink: 0, minHeight: "auto", overflowY: "visible", scrollbarGutter: "auto" },
   },
 });
 minimalScrollbar(body, t);
+export const content = style({
+  display: "flex", flexDirection: "column", flexGrow: 1, flexShrink: 0, gap: t.bodyGap, minWidth: 0,
+});
+export const contentInset = style({
+  paddingInlineStart: t.padding,
+  paddingInlineEnd: `max(${t.ringRoom}, calc(${t.padding} - ${t.scrollbarSize}))`,
+  paddingBlock: t.bodySlack,
+  selectors: {
+    "[data-sheet-last] > &": { paddingBlockEnd: t.padding },
+    "[data-sheet-main]:not(:has(> [data-sheet-header])) > * > &": { paddingBlockStart: t.padding },
+    "[data-docked]:not(:has(> [data-sheet-band])) > [data-sheet-main]:not(:has(> [data-sheet-header])) > * > &": { paddingBlockStart: `calc(${t.dock.top} + ${t.padding})` },
+  },
+});
 export const footer = style({
   display: "flex",
   flexShrink: 0,
   position: "relative",
   paddingBlockStart: `calc(${t.gap} + ${t.footerBorderWidth})`,
-  paddingBlockEnd: t.bodySlack,
-  paddingInlineStart: t.ringRoom,
-  paddingInlineEnd: t.scrollbarSize,
+  paddingBlockEnd: t.padding,
+  paddingInline: t.padding,
   // Its rule spans the content's width, not the room the footer keeps beside it.
-  "::before": { content: '""', position: "absolute", top: 0, insetInlineStart: t.ringRoom, insetInlineEnd: t.scrollbarSize, borderBlockStartStyle: "solid", borderBlockStartWidth: t.footerBorderWidth, borderBlockStartColor: t.footerBorder },
+  "::before": { content: '""', position: "absolute", top: 0, insetInlineStart: t.padding, insetInlineEnd: t.padding, borderBlockStartStyle: "solid", borderBlockStartWidth: t.footerBorderWidth, borderBlockStartColor: t.footerBorder },
   // Nothing to show (no Recently deleted without Git): no rule either.
   selectors: { "&:empty": { display: "none" } },
 });

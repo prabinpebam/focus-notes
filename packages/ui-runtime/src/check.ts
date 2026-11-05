@@ -37,6 +37,76 @@ const ENV_SCHEMA: JsonSchema = {
   },
 };
 
+/** The vertical spacing roles, tightest first (spacing ST-1). */
+const STACK_ROLES = ["none", "stackPair", "stackItem", "stackGroup", "stackSection"] as const;
+type Component = Extract<Node, { type: string }>;
+
+/** What a child can render as: a repeat's row and empty case, each case of a switch, or itself. */
+function shapesOf(n: Node): Component[] {
+  if (isEach(n)) return [...shapesOf(n.render), ...(n.empty ? shapesOf(n.empty) : [])];
+  if (isSwitch(n)) return Object.values(n.cases).flatMap(shapesOf);
+  return isComponent(n) ? [n as Component] : [];
+}
+
+/** A Stack's gap as a stack role's rank, or undefined when it's another role or not a literal. */
+function stackRank(n: Component): number | undefined {
+  const gap = n.props?.gap ?? "none";
+  const i = typeof gap === "string" ? STACK_ROLES.indexOf(gap as (typeof STACK_ROLES)[number]) : -1;
+  return i < 0 ? undefined : i;
+}
+
+const headingLed = (n: Component): boolean => {
+  // A display heading is a full-window step's title under its mark (D-126), not an item in a list.
+  const isHeading = (k: Component) => k.type === "Heading" && k.props?.level !== "display";
+  return isHeading(n) || (n.type === "Inline" && shapesOf((n.children ?? [])[0] ?? ({} as Node)).some(isHeading));
+};
+
+/**
+ * Known places the grouping rule doesn't apply yet, each with its reason. They're in the writing
+ * window or an approved first-run step, which change only with the owner's direction (AGENTS.md
+ * rule 6); each is queued for the owner in spacing-audit.md SP-12.
+ */
+const GROUPING_EXCEPTIONS: Record<string, string> = {
+  // The Files sheet's deleted notes: each note's restore buttons sit stackPair under it, the notes stackItem apart.
+  "canvas /root/children/0/children/25/children/5/children/3/render/children/1": "writing window (Files sheet, deleted notes)",
+  // First run's "Trouble?" disclosure: the help it reveals sits stackItem under the button, its groups stackGroup apart.
+  "canvas /root/children/0/children/28/children/0/children/0/children/0/children/1/cases/connect/children/1/children/1": "approved first-run step (connect, trouble help)",
+};
+
+/**
+ * Grouping by proximity (the spacing skill, rules 2 and 3; spacing-audit.md SP-12): space alone
+ * says what belongs together, so each level must read apart from the one inside it. Flags a flat
+ * list, where a heading, an item and its description all sit the same distance apart.
+ */
+export function groupingProblems(node: Component): [string, string][] {
+  const out: [string, string][] = [];
+  const kids = node.children ?? [];
+  if (node.type === "Section") {
+    if (shapesOf(kids[0] ?? ({} as Node)).some(headingLed)) out.push(["/children/0", "a Section's heading goes in its heading slot, so it sits nearer its items than they sit to each other"]);
+  }
+  const own = node.type === "Section" ? STACK_ROLES.indexOf("stackGroup") : node.type === "Stack" ? stackRank(node) : undefined;
+  if (own === undefined) return out;
+  kids.forEach((k, i) => {
+    const shapes = shapesOf(k);
+    if (i > 0 && shapes.some(headingLed))
+      out.push([`/children/${i}`, "a heading among a stack's items is spaced like one of them, so it reads with the items above as much as its own: put it and what follows in a Section (spacing SP-12)"]);
+    if (i === 0 && node.type === "Stack" && own >= 3 && kids.length > 2 && shapes.some(headingLed))
+      out.push([`/children/${i}`, "a heading as far from its content as the items are from each other doesn't lead them: put it and what follows in a Section (spacing SP-12)"]);
+    if (node.type === "Stack" && shapes.some((s) => s.type === "Section") && own !== STACK_ROLES.indexOf("stackSection"))
+      out.push([`/children/${i}`, "Sections stack stackSection apart, so the space above a heading is clearly the largest (spacing SP-12)"]);
+    for (const s of shapes) {
+      if (s.type !== "Stack" || own === 0) continue;
+      const inner = stackRank(s);
+      if (inner === undefined || inner === 0) continue;
+      if (inner > own) out.push([`/children/${i}`, `a group inside this ${node.type} is spaced ${STACK_ROLES[inner]}, further apart than the ${STACK_ROLES[own]} around it, so its items read apart from each other more than from their neighbours: use a smaller role inside (spacing SP-12)`]);
+      // Text isn't trimmed: its leading adds the same few pixels to both gaps, so pairs a stackItem apart read evenly spaced.
+      else if (inner === 1 && own === 2 && (kids.length > 1 || isEach(k)))
+        out.push([`/children/${i}`, "pairs (a control and its description) stackItem apart read evenly spaced once text leading is added: separate them by stackGroup (spacing SP-12)"]);
+    }
+  });
+  return out;
+}
+
 export function checkUi(inputs: CheckInputs): Problem[] {
   const problems: Problem[] = [];
   const contracts = new Map(inputs.contracts.map((c) => [c.type, c]));
@@ -194,6 +264,9 @@ export function checkUi(inputs: CheckInputs): Problem[] {
       if (node.type === "Button" && props.variant === "primary") primaries.set(here, (primaries.get(here) ?? 0) + 1);
       for (const [e, actions] of Object.entries(node.on ?? {})) checkActions(actions, `${at}/on/${e}`, scope, c.events[e]?.payload);
       const kids = node.children ?? [];
+      // Gallery mocks are design proposals; the views built from them are checked.
+      for (const [where, m] of name.startsWith("gallery.") ? [] : groupingProblems(node))
+        if (!(`${name} ${at}${where}` in GROUPING_EXCEPTIONS)) add("design", `${at}${where}`, m);
       const slot = c.slots.default;
       if (slot) {
         if (slot.min !== undefined && kids.length < slot.min) add("design", `${at}/children`, `${node.type} needs at least ${slot.min} child`);

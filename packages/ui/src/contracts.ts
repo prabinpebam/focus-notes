@@ -40,6 +40,7 @@ import { contract as Toast } from "./primitives/Toast/contract.ts";
 import { contract as ResultList } from "./primitives/ResultList/contract.ts";
 import { contract as Tabs } from "./primitives/Tabs/contract.ts";
 import { contract as Field } from "./layouts/Field/contract.ts";
+import { contract as Section } from "./layouts/Section/contract.ts";
 import { contract as Positioner } from "./layouts/Positioner/contract.ts";
 import { contract as MorphPanel } from "./primitives/MorphPanel/contract.ts";
 import { contract as TextField } from "./primitives/TextField/contract.ts";
@@ -90,7 +91,7 @@ export const contractsByType = {
   SecureKeyField,
   OpenItem,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
-  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
+  Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
   NoteContent,

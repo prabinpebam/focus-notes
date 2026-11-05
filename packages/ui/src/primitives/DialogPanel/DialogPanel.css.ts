@@ -120,24 +120,34 @@ export const body = style({
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",
-  // Room inside its clip for the focus ring and letters of what's at its very top or bottom (a
-  // heading trimmed to its capitals), without moving anything (D-111).
-  paddingBlock: t.bodySlack,
-  paddingInlineStart: t.padding,
-  // The reserved gutter takes the place of the end padding, so text lines up either way (UI-09).
-  paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,
   scrollbarGutter: "stable",
+  scrollPaddingBlock: t.bodySlack,
   outline: "none",
   selectors: {
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     // At the dialog's top or bottom edge, the dialog's padding is inside the scroller: content keeps
     // that spacing at rest, scrolls right to the edge, and what scrolls into view keeps it too.
-    "&[data-dialog-first]": { paddingBlockStart: t.padding, scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
-    "&[data-dialog-last]": { paddingBlockEnd: t.padding, scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
+    "&[data-dialog-first]": { scrollPaddingBlockStart: t.padding, borderStartStartRadius: inner, borderStartEndRadius: inner },
+    "&[data-dialog-last]": { scrollPaddingBlockEnd: t.padding, borderEndStartRadius: inner, borderEndEndRadius: inner },
   },
 });
-export const fixedBody = style({ overflow: "hidden", scrollbarGutter: "auto", paddingInlineEnd: t.padding });
+export const fixedBody = style({ overflow: "hidden", scrollbarGutter: "auto" });
 minimalScrollbar(body, t);
+
+// The functional scroller is edge-to-edge; its content owns the inset, including the scrollable end.
+export const content = style({
+  display: "flex", flexDirection: "column", flexGrow: 1, flexShrink: 0, minWidth: 0,
+});
+export const contentInset = style({
+  paddingBlock: t.bodySlack, paddingInlineStart: t.padding,
+  paddingInlineEnd: `max(${t.bodySlack}, calc(${t.padding} - ${t.scrollbarSize}))`,
+  selectors: {
+    "[data-dialog-first] > &": { paddingBlockStart: t.padding },
+    "[data-dialog-last] > &": { paddingBlockEnd: t.padding },
+  },
+});
+// Navigation supplies independently inset regions (the tab list and the scrolling panel).
+export const navigationContent = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0, minWidth: 0 });
 
 /** The raised surface, or the theme's frosted one (Foundations → Surfaces). */
 export const material = {

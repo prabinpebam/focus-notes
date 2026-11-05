@@ -15,17 +15,20 @@ export interface DialogProps {
   toolbar?: ReactNode;
   id?: string;
   children?: ReactNode;
+  /** False for full-bleed body regions whose immediate child layouts own their insets. */
+  contentInset?: boolean;
   onOpenChange?: (payload: { open: boolean }) => void;
 }
 
 /** A titled modal dialog with a close button (IA-CMP-DIALOG). */
-export function Dialog({ title, closeLabel, open, size = "l", height = "stable", toolbar, id, children, onOpenChange }: DialogProps) {
+export function Dialog({ title, closeLabel, open, size = "l", height = "stable", contentInset = true, toolbar, id, children, onOpenChange }: DialogProps) {
   return (
     <DialogPanel
       label={title}
       {...(open !== undefined ? { open } : {})}
       size={size}
       height={height}
+      contentInset={contentInset}
       {...(id ? { id } : {})}
       {...(onOpenChange ? { onOpenChange } : {})}
       header={

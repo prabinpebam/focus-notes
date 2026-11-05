@@ -44,6 +44,74 @@
 | ST-4 | S3 | Physical properties: 62 `left`, `right` and `margin-left` declarations; most are `left: 0; right: 0` pairs or coordinates measured in px by script | hosts `WindowFrame`, `TableControls`, `BlockHandle`, `TextMenu`, `DocMinimap`; layouts `Layer`, `Sheet`, `Positioner`, `AppRoot`; primitives `CodeBlock`, `ImageFrame`, `Tooltip`, `MorphPanel`, `FileTree` | 62 declarations | `inset-inline: 0` for pairs, `inset-inline-end` for the code block's copy button and sheets; script-measured coordinates keep `left` with a named exemption in the lint (`/* physical: measured */`) | `lint-spacing` physical rule with the exemption list | fixed in `fde093b6`: logical insets; window edges, image handles, the minimap rail and the centred morph panel are named physical exemptions |
 | SP-11 | S4 | Edges out of line by 2 to 4 px: sheet bodies and footers 4 px from their headers, Settings' footer padding 12 top and 0 bottom, Open's path 2 px off its title, the setup's text 0.6 px | layout `Sheet`, primitives `Tabs`, `OpenItem`, `Text` | 28 | Follows from SP-2 and SP-3 (one inset per region); `Tabs.footer` takes the dialog region's inset | probe `alignment` and `uneven-insets` | fixed in `3c2731fc`: one inset per region (SP-2, SP-3); the Tabs footer's hairline is a separator drawn on its top edge, with even space either side. `uneven-insets` and `alignment` are S4 and reported |
 
+## Settings grouping (SP-12)
+
+**S2 Misgrouped, D-345; owner feedback, 5 November:** "Observe this screenshot, everything has the same gap between them. You don't know which things belong together. You have faild to apply the spacing skill here."
+
+The rule is **control and its own description tightest, item to item medium, section to section largest**, without adding borders or fills. Token names alone did not prove this: line leading made an 8 px item gap read almost like a 4 px pair, and headings in a flat Stack inherited the same gap as the items they should lead.
+
+| Relationship | Before, visible ink | Built correction |
+| --- | --- | --- |
+| Keyboard heading to its content / preceding content to next heading | 21 / 16 px (inverted) | Section header to body `stackItem`: 13 px visible; separate Sections `stackSection`: 32 to 36.6 px visible |
+| Agents control to description / description to next control | 9 / 12.6 px (nearly flat) | `stackPair` within each item, `stackGroup` between items: 9 / 20.6 px visible |
+| CodeBlock label to code / code to next label | 12.2 / 21 px | Component's gap aliases `stackPair`, not `inlineItem`: 8.2 / 21 px; snippets are direct Section items |
+| AI and Sharing empty-result content | Up to 24.2 px inside one result, competing with the space around it | EmptyState's own gap aliases `stackPair`, its action's extra room `stackItem`: largest inner gap 16.2 px; Sharing's filters and result list are separate sections |
+
+**System fix:** the reusable `Section` layout owns its header/body gap and its item gaps, with no enclosure or padding. Settings' nine tabs use it; section-wide context (Agents' folder scope) belongs beside the heading, not among the permission items. `ui:check` rejects headings stranded among items or leading a flat group-spaced list, Sections without section spacing, inner Stack gaps larger than their parent, and item-spaced lists of pairs. Conditional branches and repeated/empty rows are checked; gallery design proposals are not treated as built views. The component catalog, contract schema and fixtures include Section.
+
+**Enforcement:** `packages/ui-runtime/test/check.test.ts` exercises `groupingProblems` and its integration into `ui:check`. `apps/desktop/e2e/settings-grouping.spec.ts` measures every Settings tab in the built app, from glyph cap height to the last baseline (controls and filled/bordered shapes use their visible box). It compares neighbouring items and sections locally, requiring at least 1.5 times the inner space and at least twice as much above each heading as below. It descends through `display: contents` wrappers; genuinely clipped, non-rendering live regions are omitted, not visible status text. Each tab's rows and hierarchy are saved under `test-results/settings-grouping/`.
+
+### Why the kit audit missed it
+
+| Kit gap | Consequence | Project enforcement |
+| --- | --- | --- |
+| The probe measures element boxes, not visible text ink | Line leading can flatten a token-correct hierarchy; a passing box ratio does not prove grouping | Measure cap-to-baseline gaps in the Settings journey, without loosening ratios |
+| The project's kit integration, `apps/desktop/e2e/surfaces.ts`, opens only Account, Workspace and Appearance Settings tabs | Keyboard, Agents, Sharing, AI and the other tabs were not audited | Discover and walk all nine Settings tabs rather than maintaining a three-tab list |
+
+The pinned kits are unchanged here; these are gaps to fix upstream, not reasons to claim their existing audit covered the rejected screen.
+
+**Focused validation (5 November):** `pnpm check` and `pnpm typecheck` passed; `pnpm exec vitest run packages/ui-runtime/test/check.test.ts` passed (37 tests). After the desktop build, `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test e2e/settings-grouping.spec.ts e2e/wp74-agents-settings.spec.ts e2e/m3-settings.spec.ts --workers=1` passed (9 journeys, including every Settings tab). Test apps were closed and `tools/dev/close-test-apps.ps1 -OnlyPid` found no remaining instances in the worker's process tree.
+
+### Open owner questions: canvas exceptions
+
+`GROUPING_EXCEPTIONS` in `packages/ui-runtime/src/check.ts` contains exactly these two named exceptions. Neither was redesigned with Settings: the writing window and approved first-run design require the owner's direction.
+
+| Surface | Current structure | Open question |
+| --- | --- | --- |
+| Files sheet, deleted notes | Restore actions `stackPair` under each note, notes only `stackItem` apart | May deleted-note items be separated by `stackGroup`, keeping each note and its restore actions a pair? |
+| First run, Connect, "Trouble?" disclosure | Help groups `stackGroup` apart inside a wrapper only `stackItem` from its neighbours | May this disclosure use a section-level outer group, retaining tighter spacing inside its revealed help? |
+
+## Scroll frames and focus clearance (SP-13)
+
+**S1 Broken; owner feedback, 5 November, Settings → Project:**
+
+> Look how the focus blue border for "Project name input filed" is cropped at the left edge because the wrapper has overflow hidden. This is a very commn problem and should be avoided by getting the approach right at a fundamental framework level.
+
+> Padding all around a wrapper is a bad idea. It takes away the flexibility for the design to sometimes bleed ede to edge when required. ... we don't put padding on parent wrapper and instead try to find an optimum level ... one or 2 levels immediately below the main wrapper. We can end up having a functional wrapper that is not visible ... another wrapper which is visible in the UI. We are referring to the visual wrapper ... We do want to avoid defining padding at a very granular level ... Settings modal: a uniform padding seems to be there all around for the content. My content on the right column is now clipped before it reaches the bottom edge. The scrollbar is not at the right edge of the dialog. It's good that you didn't provide the padding all around the main modal wrapper and are able to add a header and content separately with separate paddings. Defining padding at the content wrapper itself is still not optimal ... the question is always about what is the right level to define the padding, not too high not too granular.
+
+| Before (failing built-app regression) | Required and built |
+| --- | --- |
+| The Name input's 1 px outer focus shadow crossed its tab panel's left clip | Inset content **inside** the panel's scroll region; no focus paint crosses an overflow ancestor |
+| Scrollbar 24 px inside the dialog's right edge | Functional scroll region reaches the dialog's inner edge: 0 px difference |
+| Tab panel ends 24 px above the dialog bottom | Scroll region reaches the dialog's inner bottom: 0 px difference; end inset scrolls with the content |
+| Sheet insets lived partly on the outer visual surface and partly on the scroller | Sheet, main and body are unpadded functional wrappers; band, header, body content and footer own their local insets |
+
+**Framework mechanism, not a Settings override:** DialogPanel's edge-to-edge body contains an inset content layout. A navigation body has no blanket inset: Tabs owns the independently inset navigation and panel content, with its scroller at the dialog's edge. Sheet uses the same separation, including its short-window mode where the header and body scroll together. Padding is not repeated on individual controls. The scroll content's minimum clearance is a token role (`stackPair`, 4 px), checked against `border.focus + border.focusOffset`; the reserved scrollbar gutter is subtracted from the content's end inset, never from the scroll region's width.
+
+DialogPanel, Dialog, Tabs and Sheet expose `contentInset: false` for edge-to-edge body regions. Their immediate child layouts can then own insets while dividers or rows remain full bleed. Gallery fixtures demonstrate the opt-out. It is not an excuse to leave a focusable control flush against a clip: its own region must retain the token focus clearance.
+
+**Changed surfaces:** every DialogPanel/Dialog body (including Open and Share), Settings' scrolling tab panels and fixed navigation, and every Sheet (including Files, Theme and Find in all notes, floating, docked and short). Existing dialog headers and footers remain separate regions; the writing window gets no new element.
+
+**Enforcement:** `settings-grouping.spec.ts` first failed on the exact three reported symptoms, then passed after the framework fix. It now focuses every focusable in every Settings panel and in Open, Share and Files, measures outlines **and** outer field-focus shadows against every clipping ancestor, and checks the actual scrollbar and bottom edges. Files is checked at normal size and at 480 × 360 with its header scrolling. Native inputs whose paint is genuinely clipped away for accessibility are not counted as visible rings; their visible label/parent ring is still checked. Short-sheet `scroll-padding` retains the same token clearance when focus scrolls a control into view.
+
+The compact Settings pass exposed a second real failure: wrapped navigation and its footer left a 54 px panel around 96 px Font and Theme tiles. Tabs now reserves a token minimum panel height (128 px) and lets the wrapped navigation scroll independently above it. Its functional wrapper is still unpadded; its immediate content owns the inset. The regression checks Settings at 480 × 360 as well as normal size, including navigation/footer controls; Files also gets the docked pass.
+
+**Updated kit probe applied (5 November, follow-up):** `ae60fc38` was already merged into the landed `5b771d99` review. The exact probe from its pinned Craft revision `8dd2576` was run with `ring: 4` and full-bleed scroll regions marked, on all nine Settings tabs, Open, Share and Files in both Field notes (light) and Garden notes (dark). No `scroll-inset` or `padded-surface` findings; no control-ring findings. The uniform-ring probe reports the focusable Account/Agents **panel itself** as needing an external 4 px ring. Actual keyboard-focused measurement proves those panels use a 2 px outline with **−2 px offset**: 0 px outward reach, wholly inside the panel, not clipped. Raw findings and actual outline measurements are retained in the candidate's `spacing-rule14-results.json`, rather than suppressed or repaired by insetting the scroller again. Account's temporary panel tab stop depends on whether its controls have loaded. Both invisible inspection apps were closed with scoped cleanup; the normal owner review was left untouched.
+
+`ui:check` also rejects padding on the named functional wrappers in DialogPanel, Tabs and Sheet, and verifies that the focus-clearance role covers ring width plus offset in every theme. The pinned kit is not edited here; the separate kit change carries this ownership principle upstream.
+
+**Validation (5 November):** `pnpm check`, `pnpm typecheck` and `pnpm --filter @focus-notes/desktop run build` passed. `pnpm exec vitest run packages/ui-runtime/test/check.test.ts packages/ui-runtime/test/empty-states.test.tsx packages/ui-runtime/test/render.test.ts packages/ui/test/registry-conformance.test.ts packages/core/test/project-open.test.ts` passed **73 tests**. With `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/settings-grouping.spec.ts e2e/wp74-agents-settings.spec.ts e2e/m3-settings.spec.ts e2e/ui-states.spec.ts --workers=1 --grep 'settings-grouping|wp74-agents-settings|m3-settings|Open shows each pin|Sharing settings distinguish|known-empty wrappers'` passed **14 journeys**, including compact Settings and normal/docked/short Files. Every launched test app was closed, followed by PID-scoped `close-test-apps.ps1` cleanup. Component inventory and generated schemas agree. Slate runtime check and headless rendering passed: one H1 per changed page, figures fit light/dark, 15 linked pages and 25 anchors resolve. No full suite or CI wait: these are UI-only changes under D-255.
+
 ## For the toolbar design worker
 
 ToolbarComposer and ScanRadar are being wired on `vq-toolbar-design`, so this audit doesn't change them. Customize toolbar shows SP-4 (rows that overflow by 54 to 291 px), SP-6 (its buttons at 28 px, below `size.hit`) and SP-7 (8 px between groups whose members are 16 px apart). When that branch lands after this one: run `node tools/spacing/to-roles.mjs` on its views (step names fail `ui:check`), let its rows wrap, and give its small buttons `hitReach`. Its surface is excluded from the enforcing journey by name until then.

@@ -15,6 +15,8 @@ export interface TabsProps {
   /** Gallery modal: temporary options share the design system's segmented track. */
   segmented?: boolean;
   scrollPanel?: boolean;
+  /** False for full-bleed panel regions; their immediate content layouts own their insets. */
+  contentInset?: boolean;
   id?: string;
   /** Under the list, on every tab: an action for the whole set (Settings' Send feedback, D-203). */
   footer?: ReactNode;
@@ -30,7 +32,7 @@ export interface TabsProps {
  * resting on the panel then, within React's commit; the dialog around it moves focus on to that
  * control (DialogPanel, DEF-12).
  */
-export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, segmented, scrollPanel = false, id, footer, children, onChange }: TabsProps) {
+export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, segmented, scrollPanel = false, contentInset = true, id, footer, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
   // Vertical tabs need room for the list and the panel side by side; without it (a narrow window,
   // 320 px reflow) they lay out across, over the panel, and the arrow keys go left and right.
@@ -53,6 +55,8 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     return () => observer.disconnect();
   }, [orientation, scrollPanel]);
   const laid = orientation === "vertical" && !narrow ? "vertical" : "horizontal";
+  const navigationRef = useRef<HTMLDivElement | null>(null);
+  useAutoHideScrollbar(navigationRef, scrollPanel && laid === "horizontal");
   // Once, as the selected tab is first drawn (the collection draws its tabs after the list).
   const focused = useRef(!autoFocus);
   const focusFirst = (el: HTMLDivElement | null) => {
@@ -61,22 +65,25 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     el.focus();
   };
   const tabList = (className: string) => (
-    <TabList className={segmented ? s.segmentTrack : className} aria-label={label}>
+    <TabList className={`${segmented ? s.segmentTrack : className}${scrollPanel && !footer ? ` ${s.navigation[laid]}` : ""}`} aria-label={label}>
       {items.map((o) => <Tab key={o.id} id={o.id} className={segmented ? s.segment : s.tab[laid]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
     </TabList>
   );
+  const navigation = footer ? (
+    <div className={`${s.side[laid]}${scrollPanel ? ` ${s.navigation[laid]}` : ""}`} data-side-nav="">
+      {tabList(s.sideList[laid])}
+      <div className={s.footer[laid]}>{footer}</div>
+    </div>
+  ) : tabList(s.list[laid]);
   return (
     <AriaTabs ref={rootRef} className={`${s.root[laid]}${scrollPanel ? ` ${s.scrollRoot}` : ""}`} data-scroll-panel={scrollPanel ? "" : undefined} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
-      {footer ? (
-        // The list and its footer share the column and its divider; the footer sits right under the tabs.
-        // `data-side-nav`: the column is the side navigation that runs the body's full height (D-123).
-        <div className={s.side[laid]} data-side-nav="">
-          {tabList(s.sideList[laid])}
-          <div className={s.footer[laid]}>{footer}</div>
-        </div>
-      ) : tabList(s.list[laid])}
+      {scrollPanel && laid === "horizontal"
+        ? <div ref={navigationRef} className={s.navigationScroller} data-tab-navigation="">{navigation}</div>
+        : navigation}
       {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
-      <TabPanel ref={panelRef} key={selected} id={selected} className={`${s.panel[laid]}${scrollPanel ? ` ${s.scroller}` : ""}`}>{children}</TabPanel>
+      <TabPanel ref={panelRef} key={selected} id={selected} className={`${s.panel[laid]}${scrollPanel ? ` ${s.scroller}` : ""}`}>
+        {scrollPanel ? <div className={contentInset ? `${s.content} ${s.contentOrientation[laid]}` : undefined} data-tab-content="">{children}</div> : children}
+      </TabPanel>
     </AriaTabs>
   );
 }

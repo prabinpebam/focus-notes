@@ -55,6 +55,23 @@ describe("the renderer (DSY-06)", () => {
     expect(() => render(app, doc({ type: "div" }))).toThrow(/Unknown component div/);
   });
 
+  it("keeps a Section's heading and context together above its item body (SP-12)", () => {
+    const { app } = setup([]);
+    const html = render(app, doc({
+      type: "Section",
+      slots: { heading: [
+        { type: "Heading", props: { level: "3", value: { t: "gallery.sample" } } },
+        { type: "Text", props: { value: { t: "gallery.long" } } },
+      ] },
+      children: [{ type: "Text", props: { value: { t: "gallery.action" } } }],
+    }));
+    expect(html).toMatch(/data-section-header=""[^]*<h3[^]*<\/h3>[^]*<\/div><div[^]*data-section-body=""/);
+    expect(html.slice(html.indexOf("data-section-body"))).toContain("Save note");
+    const noHeading = render(app, doc({ type: "Section", children: [{ type: "Text", props: { value: { t: "gallery.action" } } }] }));
+    expect(noHeading).not.toContain("data-section-header");
+    expect(noHeading).toContain("data-section-body");
+  });
+
   it("keeps repeated-item values inside nested project scopes", () => {
     const { app } = setup([{ id: "1", label: "One" }, { id: "2", label: "Two" }]);
     const html = render(app, doc({

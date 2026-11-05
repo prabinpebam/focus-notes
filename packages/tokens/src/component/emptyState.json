@@ -5,8 +5,8 @@
     "view": { "$value": "{size.emptyView}", "$description": "A whole view or panel." },
     "component": { "$value": "{size.hit}", "$description": "A menu or picker: one row." }
   },
-  "gap": { "$type": "dimension", "$value": "{space.inlineItem}", "$description": "Between the icon, the why and the detail." },
-  "actionGap": { "$type": "dimension", "$value": "{space.scale.m}", "$description": "Above the actions, so they read as the next step." },
+  "gap": { "$type": "dimension", "$value": "{space.stackPair}", "$description": "The icon, why and detail read as one item, tighter than neighbouring items." },
+  "actionGap": { "$type": "dimension", "$value": "{space.stackItem}", "$description": "Extra room above the next step, smaller than the space around the empty result." },
   "padding": { "$type": "dimension", "$value": "{space.insetMd}", "$description": "Room inside the wrapper." },
   "iconSize": { "$type": "dimension", "$value": "{size.iconL}", "$description": "The icon that says what would be here." },
   "iconTile": { "$type": "dimension", "$value": "{size.statusMark}", "$description": "The quiet round tile behind the icon." },

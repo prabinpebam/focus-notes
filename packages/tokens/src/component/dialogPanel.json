@@ -132,7 +132,8 @@
       },
       "bodySlack": {
         "$type": "dimension",
-        "$value": "{space.scale.xs}"
+        "$value": "{space.stackPair}",
+        "$description": "Minimum content room inside a scroll clip; covers focus width plus offset."
       }
     }
   }

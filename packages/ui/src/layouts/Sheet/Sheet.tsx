@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Children, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { FloatingContext } from "../Layer/floating.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import type { KeyScope } from "../../data.ts";
@@ -31,6 +31,8 @@ export interface SheetProps {
   footer?: ReactNode;
   id?: string;
   children?: ReactNode;
+  /** False for full-bleed body regions; immediate content layouts own their insets. */
+  contentInset?: boolean;
   onClose?: () => void;
   /** A resize ended: the width to keep. */
   onResize?: (payload: { width: number }) => void;
@@ -52,8 +54,10 @@ function placed(el: HTMLElement, side: "start" | "end") {
  * A side sheet (IA → Surface types): floats over the canvas without moving the reading column,
  * and closes on Esc or a click on the canvas. It isn't modal: the note stays readable beside it.
  */
-export function Sheet({ label, side = "start", width = "files", keyScope = "none", pinned = false, docked = false, dockWidth = 0, resizeLabel, band, header, footer, id, children, onClose, onResize }: SheetProps) {
+export function Sheet({ label, side = "start", width = "files", keyScope = "none", pinned = false, docked = false, dockWidth = 0, contentInset = true, resizeLabel, band, header, footer, id, children, onClose, onResize }: SheetProps) {
   const ref = useRef<HTMLElement | null>(null);
+  const hasFooter = Children.toArray(footer).length > 0;
+  const hasHeader = Children.toArray(header).length > 0;
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef);
   const mainRef = useRef<HTMLDivElement | null>(null);
@@ -169,11 +173,13 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
       >
         {band ? <div className={s.band} data-sheet-band="">{band}</div> : null}
         {/* The header and the body: the body scrolls, or in a short sheet both do (Sheet.css.ts). */}
-        <div className={s.main} ref={mainRef}>
-          {header ? <div className={s.header} data-sheet-header="">{header}</div> : null}
-          <div className={s.body} ref={bodyRef} data-sheet-body="">{children}</div>
+        <div className={s.main} ref={mainRef} data-sheet-main="">
+          {hasHeader ? <div className={s.header} data-sheet-header="">{header}</div> : null}
+          <div className={s.body} ref={bodyRef} data-sheet-body="" data-sheet-last={!hasFooter ? "" : undefined}>
+            <div className={`${s.content}${contentInset ? ` ${s.contentInset}` : ""}`} data-sheet-content="">{children}</div>
+          </div>
         </div>
-        {footer ? <div className={s.footer}>{footer}</div> : null}
+        {hasFooter ? <div className={s.footer} data-sheet-footer="">{footer}</div> : null}
         {docked && onResize && lengths.max ? <div className={s.handle} aria-label={resizeLabel ?? label} data-dock-handle="" {...handle} /> : null}
       </aside>
     </FloatingContext.Provider>

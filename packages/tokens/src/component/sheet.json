@@ -129,11 +129,13 @@
       },
       "bodySlack": {
         "$type": "dimension",
-        "$value": "{space.scale.xs}"
+        "$value": "{space.stackPair}",
+        "$description": "Minimum block inset on scroll content, covering focus width plus offset."
       },
       "ringRoom": {
         "$type": "dimension",
-        "$value": "{space.scale.xs}"
+        "$value": "{space.stackPair}",
+        "$description": "Minimum inline inset on scroll content, covering focus width plus offset."
       },
       "dock": {
         "layer": { "$type": "number", "$value": "{layer.docked}" },
