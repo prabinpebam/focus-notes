@@ -14,7 +14,7 @@ export interface SlashCatalogEntry {
   id: string;
   /** Message key for its name. `slash.keywords.<id>` and `slash.hint.<id>` hold its synonyms and hint. */
   title: string;
-  group: "text" | "lists" | "insert";
+  group: "text" | "lists" | "media" | "insert";
   icon: string;
   /** Its Markdown shortcut, shown on the right ("##"). */
   markdown: string;
@@ -30,7 +30,7 @@ export interface SlashMenuState {
 }
 export const SLASH_CLOSED: SlashMenuState = { open: false, query: "", valid: [], active: "" };
 
-const GROUP_ORDER = ["text", "lists", "insert"] as const;
+const GROUP_ORDER = ["text", "lists", "media", "insert"] as const;
 
 export interface SlashItem {
   id: string;

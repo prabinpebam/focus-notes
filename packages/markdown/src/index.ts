@@ -55,7 +55,7 @@ const KEPT_ATTRS: Record<string, string[]> = {
   tableHeader: ["align"],
   tableCell: ["align"],
   link: ["href", "title"],
-  image: ["src", "alt", "title", "rounded", "fitHeight", "mode"],
+  image: ["src", "alt", "title", "rounded", "fitHeight", "mode", "width", "height"],
 };
 
 /**
@@ -126,6 +126,10 @@ export function parseMarkdown(input: string): Parsed {
       if (node) {
         const parts = imageSettings[1]!.split(" ");
         node.attrs = { ...node.attrs, rounded: parts.includes("rounded"), fitHeight: !parts.includes("unlimited"), mode: parts.includes("wide") ? "wide" : parts.includes("actual") ? "actual" : "column" };
+        const size = parts.map((part) => /^size=(\d+)x(\d+)$/.exec(part)).find(Boolean);
+        if (size && Number(size[1]) > 0 && Number(size[2]) > 0 && Number(size[1]) * Number(size[2]) <= 40_000_000) {
+          node.attrs.width = Number(size[1]); node.attrs.height = Number(size[2]);
+        }
         end = next.position?.end.offset ?? end;
         i++;
       }
@@ -429,6 +433,7 @@ export function blockToMarkdown(node: PMNode): string {
   const note = node.type === "table" ? tableNote(tableSettingsOf(node)) : undefined;
   if (node.type === "image") {
     const parts = [node.attrs?.rounded ? "rounded" : "", node.attrs?.fitHeight === false ? "unlimited" : "", node.attrs?.mode !== "column" ? node.attrs?.mode : ""].filter(Boolean);
+    if (typeof node.attrs?.width === "number" && typeof node.attrs.height === "number" && node.attrs.width > 0 && node.attrs.height > 0) parts.push(`size=${node.attrs.width}x${node.attrs.height}`);
     return parts.length ? `<!-- image: ${parts.join(" ")} -->\n${text}` : text;
   }
   return note ? `${note}\n${text}` : text;

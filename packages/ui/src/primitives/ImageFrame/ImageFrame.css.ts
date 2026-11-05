@@ -9,6 +9,8 @@ export const broken = style({
   color: t.brokenText, backgroundColor: t.brokenBackground,
   fontFamily: t.brokenFont, fontSize: t.brokenSize, textAlign: "center", boxSizing: "border-box",
 });
+export const loading = style({ display: "grid", alignItems: "center", width: "100%", backgroundColor: t.brokenBackground });
+export const overImage = style({ position: "absolute", inset: 0, minHeight: 0 });
 
 export const frame = style({ display: "flex", flexDirection: "column", alignItems: "center", gap: t.gap, minWidth: 0 });
 export const mode = styleVariants({

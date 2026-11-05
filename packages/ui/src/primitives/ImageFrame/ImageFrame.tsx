@@ -1,6 +1,7 @@
 import type { CSSProperties, MouseEvent, KeyboardEvent } from "react";
 import { Icon } from "../Icon/Icon.tsx";
 import { Button } from "../Button/Button.tsx";
+import { Skeleton } from "../Skeleton/Skeleton.tsx";
 import * as s from "./ImageFrame.css.ts";
 
 export interface ImageFrameProps {
@@ -21,6 +22,10 @@ export interface ImageFrameProps {
   retryLabel?: string;
   retryBusy?: boolean;
   retryBusyLabel?: string;
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
+  loadingLabel?: string;
+  loading?: boolean;
   onRetry?: () => void;
   onError?: () => void;
   /** Edit image: the crop frame over the preview. */
@@ -36,8 +41,10 @@ export interface ImageFrameProps {
 }
 
 /** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, inSelection = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
-  const safe = src.startsWith("data:image/") ? src : undefined;
+export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, inSelection = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, intrinsicWidth, intrinsicHeight, loadingLabel, loading = false, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
+  const safe = !loading && src.startsWith("data:image/") ? src : undefined;
+  const sized = Boolean(intrinsicWidth && intrinsicHeight);
+  const imageClass = `${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`;
   const menu = onContextMenu ? {
     onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }); },
     onKeyDown: (e: KeyboardEvent) => {
@@ -52,12 +59,13 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
   return (
     <span className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
       <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${inSelection ? ` ${s.inSelection}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
-        {broken ? <span className={s.broken} role="group" aria-label={alt}>
+        {(!safe || broken) && sized ? <svg className={imageClass} width={intrinsicWidth} height={intrinsicHeight} aria-hidden="true" /> : null}
+        {broken ? <span className={`${s.broken}${sized ? ` ${s.overImage}` : ""}`} role="group" aria-label={alt}>
           <Icon name="image" />
           {alt ? <span>{alt}</span> : null}
           {error ? <span role="status">{error}</span> : null}
           {retryLabel ? <Button label={retryLabel} size="s" busy={retryBusy} busyLabel={retryBusy ? retryBusyLabel : undefined} {...(onRetry ? { onPress: onRetry } : {})} /> : null}
-        </span> : safe ? <img className={`${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`} src={safe} alt={alt ?? ""} draggable={false} onError={onError} onLoad={(e) => onSize?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} /> : null}
+        </span> : safe ? <img className={imageClass} width={intrinsicWidth} height={intrinsicHeight} src={safe} alt={alt ?? ""} draggable={false} onError={onError} onLoad={(e) => onSize?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} /> : <span className={`${s.loading}${sized ? ` ${s.overImage}` : ""}`} role="status" aria-label={loadingLabel}><Skeleton /></span>}
         {crop ? (
           <span className={`${s.crop}${cropWidth === undefined ? "" : ` ${s.cropCustom}`}`} style={cropWidth === undefined ? undefined : { [s.cropX.slice(4, -1)]: `${cropX ?? 0}%`, [s.cropY.slice(4, -1)]: `${cropY ?? 0}%`, [s.cropWidth.slice(4, -1)]: `${cropWidth}%`, [s.cropHeight.slice(4, -1)]: `${cropHeight ?? 100}%` } as CSSProperties} aria-hidden="true">
             {(["tl", "tr", "bl", "br"] as const).map((c) => <span key={c} className={`${s.handle} ${s.corner[c]}`} />)}

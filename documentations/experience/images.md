@@ -3,7 +3,7 @@
 Inline images that stay with the note, fit the writing canvas and remain private when the note is shared.
 
 > [!NOTE]
-> **TL;DR.** Drop an image into the note, choose Column / Wide / Actual size, and act on it where it sits. Images are managed local assets, not remote embeds or floating objects. Rounded corners and Limit height are checked menu options; bulk selection changes images, not text. Crop/rotate uses a focused dialog and an explicit destructive save. Optional captions use a chosen existing AI integration, never a model inside Focus Notes. Private shared media is encrypted with opaque public identifiers. The candidate slice below is working; the remaining image features are planned. **Status, 5 November:** showing, the image menu and crop are built; adding images (paste, drop, Insert image…) is not, and is the first of eight slices in the [readiness assessment](#readiness-assessment-5-november).
+> **TL;DR.** Drop an image into the note, choose Column / Wide / Actual size, and act on it where it sits. Images are managed local assets, not remote embeds or floating objects. Rounded corners and Limit height are checked menu options; bulk selection changes images, not text. Crop/rotate uses a focused dialog and an explicit destructive save. Optional captions use a chosen existing AI integration, never a model inside Focus Notes. Private shared media encryption remains planned. **Status, 6 November:** showing, the image menu and crop are built; slice 1 now adds paste, drop, `/` Image and Insert image through the native picker in the OFB candidate. Main/Preview evidence remains in the [OFB table](../plan/gate-evidence.md#owner-feedback-batch-6-november-ofb); the other slices are planned in the [readiness assessment](#readiness-assessment-5-november).
 
 > [!NOTE]
 > **Design approved (owner, 3 November 2026, 19:39).** Exact words are in the branch's `packages/views/messages/en.json` (`image.` keys; `image.mock.*` is gallery chrome). Mock 9 in the gallery at <http://127.0.0.1:5211>, branch `vq-project-mocks`, is the approved design for inserting, the three display modes, the right-click image menu with Rounded corners and Limit height (one image and a selection), Edit description…, Edit image… (one row of controls), Auto caption with AI… and a writer that can't read images. Not covered and still specification only: [Assets, Markdown and encrypted sharing](#assets-markdown-and-encrypted-sharing), View image history…, and the preparing, missing, saving and read-only states in [States, accessibility and Help](#states-accessibility-and-help).
@@ -182,6 +182,8 @@ With nothing selected, the same Ctrl+Enter prompt writes at the caret (**Write w
 
 ## Assets, Markdown and encrypted sharing
 
+**Slice 1 candidate (D-360):** still PNG, JPEG and WebP files are copied only after every file passes byte, pixel, format and decoder checks. Limits are 20 MiB each, 40 megapixels and 20 images per batch. Source files are unchanged; failed batches create no managed asset files. New references carry validated `size=640x360` metadata in the existing hidden image comment, reserving their intrinsic box during reads and Retry. Imports track the insertion point through typing; switching notes or deleting that target cancels insertion and removes the unused copied files. Existing images without size metadata retain their exact original Markdown. Toolbar placement is part of Customize toolbar integration, not a second insertion engine.
+
 | Context | Managed storage | What stays unchanged |
 | --- | --- | --- |
 | Project private note | Private repository `assets/images/<random-id>.<ext>` | Source file and current private/public repository layout |
@@ -265,11 +267,11 @@ The owner asked (5 November) what is done and pending for adding images, and whe
 7. **Moves, copies and standalone sidecars** (the rest of WP-9.3). About a day.
 8. **Encrypted images in shares** (WP-9.6). Several days.
 
-**Owner approval (5 November):** "I'd already approve the UI and UX for the image insertion. Launch that demo again." The owner re-confirmed the 3 November approval of mock 9 (D-pending). The demo is the approved gallery build of `vq-project-mocks` at `4afe907f`, served at <http://127.0.0.1:5211> → **9 · Images**. Building slice 1 still waits for the owner's separate go-ahead.
+**Owner approval (5 November):** "I'd already approve the UI and UX for the image insertion. Launch that demo again." The owner re-confirmed the 3 November approval of mock 9 (D-pending). The demo is the approved gallery build of `vq-project-mocks` at `4afe907f`, served at <http://127.0.0.1:5211> → **9 · Images**. **6 November, D-360:** the owner gave the implementation go-ahead; slice 1 is the OFB candidate described above.
 
 **Owner questions:**
 
-- **I1.** Keep images in normal Git with the 20 MiB per-image cap and no Git LFS? Recommended: yes.
+- **I1, resolved (D-360).** Normal Git, 20 MiB per image, no Git LFS.
 - **P3** (shared with publishing). When a note with images is published, publish its images as public files with location and camera metadata removed? Or can such notes not be published yet? See [Published website → Readiness](published-site.md#readiness-assessment-5-november).
 
 ## Design decisions and source map

@@ -148,6 +148,7 @@ The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-r
 | --- | --- | --- | --- |
 | Read/retry one note image | Responsive → waiting; named image task, exact source and document identity | Existing image wrapper; alt and error remain, Retry → Trying again…; other images stay usable | `fn:image.read`; exact 300/500 ms task units and held/refused real-image journey |
 | Browser decode refusal | Responsive/waiting; explicit component failure, no blank success-shaped fallback | Approved broken ImageFrame and scoped Retry | Correctness journey passed; end-to-end native decode duration remains unmeasured |
+| Insert pasted, dropped or chosen images (OFB.17–19) | Responsive → waiting; asynchronous validation/copy, mapped insertion target; typing stays available | Named section task: Adding image…; intrinsic aspect box and shimmer during local read; named size/type refusal keeps text | `fn:image.import`; 20 MiB and 40 MP caps, all-or-nothing managed writes. No speed claim; focused importer and built restart/limit journeys |
 
 ## Other image waits (planned)
 
@@ -155,7 +156,7 @@ IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker an
 
 | Operation | Class / pattern | Place and words | Measure / target |
 | --- | --- | --- | --- |
-| Validate/copy dropped images | Responsive → waiting; reserved-aspect placeholder, batch count | Insertion marker/task: Adding ⟨count⟩ images…; Retry/Choose images | `fn:image.import`; acknowledgement ≤100 ms, no partial-success batch |
+| Count-specific import feedback (after slice 1) | Responsive → waiting; reserved-aspect placeholder, batch count | Insertion marker/task: Adding ⟨count⟩ images…; Retry/Choose images | `fn:image.import`; acknowledgement ≤100 ms, no partial-success batch |
 | Decode/load image | Responsive/waiting; exact aspect box, previous complete pixels on replacement | Image: Preparing image… / Image unavailable | `fn:image.decode`; no layout-shift/blank replacement |
 | Prepare/update crop preview | Responsive/waiting; old preview until new one ready, latest transform wins | Dialog: Preparing image… / Updating image… | `fn:image.preview`; control feedback ≤100 ms, no queued drag updates |
 | Encode/save edited pixels | Waiting/long; leavable preparation, guarded commit with truthful state | Dialog: Saving image…; explicit retry/reopen error, no saved claim early | `fn:image.save`; original retained on failure, main process stays usable |

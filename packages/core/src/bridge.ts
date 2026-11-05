@@ -31,6 +31,8 @@ export interface PlatformBridge {
   readNote(path: string): Promise<string>;
   readImage?(note: string, src: string): Promise<string>;
   writeImage?(note: string, src: string, data: string, expected: string): Promise<void>;
+  importImages?(note: string, inputs?: readonly { data: string }[]): Promise<{ batch: string; images: { src: string; width: number; height: number }[] } | undefined>;
+  finishImageImport?(batch: string, keep: boolean): Promise<void>;
   /** As readNote, but only a missing file is null; permission and other read failures still reject. */
   readNoteIfExists?(path: string): Promise<string | null>;
   /**
