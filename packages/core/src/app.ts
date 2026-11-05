@@ -1112,10 +1112,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const openMatch = async (path: string, jump: FindJump) => {
     if (store.state.note.path === path && store.state.note.status === "ready") return showJump(jump);
-    pendingJump = { path, jump };
+    const request = { path, jump };
+    pendingJump = request;
     await load(path);
-    // The note couldn't be opened, or another one was asked for meanwhile.
-    if (pendingJump?.path === path && store.state.note.path !== path) pendingJump = undefined;
+    // A previous open of this path must not clear a newer request while it is still loading.
+    if (pendingJump === request && store.state.note.path !== path) pendingJump = undefined;
   };
   commands.register<{ count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }>({
     id: "find.setResult", title: "command.find.setResult",
@@ -1242,8 +1243,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
-        // Once the new editor has finished setting up (its caret placed, its listeners on).
-        afterPaint(() => showJump(jump.jump));
+        const key = store.state.note.key;
+        // A newer note may open before these frames; its editor must not receive the old match.
+        afterPaint(() => {
+          if (store.state.note.key === key && store.state.note.status === "ready") showJump(jump.jump);
+        });
       }
     },
   });
