@@ -128,29 +128,72 @@ test("OFB.19: a slow image reserves its actual box, and broken-image Retry never
     } finally { await close(reopened); }
   } finally { if (!closed) await close(launched); }
 });
-test("OFB.17: an offline project stores copied images at its root in normal Git", async () => {
+for (const [kind, format] of [["local", "png"], ["github", "png"], ["github", "jpeg"], ["github", "webp"]] as const) test(`OFB.17: ${kind} ${format} project preserves source files and applies its metadata policy before normal Git commits`, async () => {
   const dirs = tempDirs();
   mkdirSync(join(dirs.docs, ".focus-notes"));
   mkdirSync(join(dirs.docs, "notes"));
   writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{"formatVersion":1,"templateVersion":"0.0.0"}');
   const note = join(dirs.docs, "notes", "welcome.md");
   writeFileSync(note, "# Local project\n\nOnly local text.\n");
+  writeFileSync(join(dirs.userData, "workspace.json"), JSON.stringify({ version: 1, folder: dirs.docs, kind }));
+  const metadata = Buffer.from("Location\0Not-for-public"), body = Buffer.concat([Buffer.from("tEXt"), metadata]), length = Buffer.alloc(4), crc = Buffer.alloc(4);
+  length.writeUInt32BE(metadata.length); crc.writeUInt32BE(crc32(body));
+  let input = Buffer.concat([png.subarray(0, 33), length, body, crc, png.subarray(33)]);
+  const source = join(dirs.userData, `original.${format}`);
+  writeFileSync(source, input);
   const git = (...args: string[]) => execFileSync("git", ["-C", dirs.docs, ...args], { encoding: "utf8", env: { ...process.env, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: join(dirs.userData, "empty-gitconfig"), GIT_TERMINAL_PROMPT: "0" } });
   git("init", "--quiet"); git("config", "user.name", "Image test"); git("config", "user.email", "test@example.invalid");
   git("add", "."); git("-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "Seed disposable local project");
   const launched = await launch(dirs);
   try {
+    if (format !== "png") {
+      const data = await launched.page.evaluate((format) => {
+        const canvas = document.createElement("canvas"); canvas.width = 6; canvas.height = 4;
+        const context = canvas.getContext("2d")!; context.fillStyle = "red"; context.fillRect(0, 0, 6, 4);
+        return canvas.toDataURL(`image/${format}`);
+      }, format);
+      const encoded = Buffer.from(data.split(",")[1]!, "base64"), tiff = Buffer.alloc(26);
+      tiff.write("II"); tiff.writeUInt16LE(42, 2); tiff.writeUInt32LE(8, 4); tiff.writeUInt16LE(1, 8);
+      tiff.writeUInt16LE(0x112, 10); tiff.writeUInt16LE(3, 12); tiff.writeUInt32LE(1, 14); tiff.writeUInt16LE(6, 18);
+      const exif = Buffer.concat([tiff, metadata]);
+      if (format === "jpeg") {
+        const payload = Buffer.concat([Buffer.from("Exif\0\0"), exif]), header = Buffer.from([255, 225, 0, 0]);
+        header.writeUInt16BE(payload.length + 2, 2);
+        input = Buffer.concat([encoded.subarray(0, 2), header, payload, encoded.subarray(2)]);
+      } else {
+        const payload = Buffer.concat([Buffer.from("Exif\0\0"), exif]);
+        const header = Buffer.alloc(8); header.write("EXIF"); header.writeUInt32LE(payload.length, 4);
+        let chunks = encoded.subarray(12);
+        if (chunks.toString("ascii", 0, 4) === "VP8X") chunks[8] = chunks[8]! | 0x08;
+        else {
+          const extended = Buffer.alloc(18); extended.write("VP8X"); extended.writeUInt32LE(10, 4); extended[8] = 0x08;
+          extended.writeUIntLE(5, 12, 3); extended.writeUIntLE(3, 15, 3);
+          chunks = Buffer.concat([extended, chunks]);
+        }
+        input = Buffer.concat([Buffer.from("RIFF\0\0\0\0WEBP"), chunks, header, payload, Buffer.alloc(payload.length % 2)]);
+        input.writeUInt32LE(input.length - 8, 4);
+      }
+      writeFileSync(source, input);
+    }
     const editor = launched.page.getByRole("textbox", { name: "Note", exact: true });
     await editor.focus(); await launched.page.keyboard.press(caret.docEnd); await launched.page.keyboard.press("Enter");
-    await transfer(launched.page, "paste", png.toString("base64"));
+    await transfer(launched.page, "paste", input.toString("base64"));
     await expect(editor.locator("[data-image-node] img")).toBeVisible();
     await expect.poll(() => readFileSync(note, "utf8")).toContain("../assets/images/");
     const src = /!\[\]\(([^)]+)\)/.exec(readFileSync(note, "utf8"))![1]!;
     const asset = resolve(dirs.docs, "notes", src), relative = src.replace("../", "");
-    expect(readFileSync(asset)).toEqual(png);
+    const expected = format === "png" ? kind === "local" ? input : png : readFileSync(asset);
+    expect(readFileSync(asset)).toEqual(expected);
+    if (kind === "github") expect(expected.includes(metadata)).toBe(false);
+    if (format !== "png") {
+      const size = format === "jpeg" ? [4, 6] : [6, 4];
+      await expect.poll(() => editor.locator("[data-image-node] img").evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual(size);
+      await expect.poll(() => readFileSync(note, "utf8")).toContain(`size=${size.join("x")}`);
+    }
+    expect(readFileSync(source)).toEqual(input);
     await expect.poll(() => git("ls-tree", "-r", "--name-only", "HEAD"), { timeout: 15_000 }).toContain(relative);
     const blob = execFileSync("git", ["-C", dirs.docs, "show", `HEAD:${relative}`]);
-    expect(blob).toEqual(png);
+    expect(blob).toEqual(expected);
     expect(git("remote")).toBe("");
   } finally { await close(launched); }
 });

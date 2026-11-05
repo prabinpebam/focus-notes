@@ -184,6 +184,8 @@ With nothing selected, the same Ctrl+Enter prompt writes at the caret (**Write w
 
 **Slice 1 candidate (D-360):** still PNG, JPEG and WebP files are copied only after every file passes byte, pixel, format and decoder checks. Limits are 20 MiB each, 40 megapixels and 20 images per batch. Source files are unchanged; failed batches create no managed asset files. New references carry validated `size=640x360` metadata in the existing hidden image comment, reserving their intrinsic box during reads and Retry. Imports track the insertion point through typing; switching notes or deleting that target cancels insertion and removes the unused copied files. Existing images without size metadata retain their exact original Markdown. Toolbar placement is part of Customize toolbar integration, not a second insertion engine.
 
+The public-repository boundary applies already during insertion, not only in the later publishing slice (D-365): managed copies for public-root GitHub project notes discard ancillary source metadata before any asset write or Git commit. Raster pixels, colour profiles and a minimal orientation-only EXIF record are retained; location, camera/author fields, XMP, text/comments, thumbnails and trailing data are not. Private, explicitly offline/synced and standalone copies remain byte-identical. A project with unknown provenance takes the conservative public-copy policy. Linking or publishing existing offline media still belongs to the later publication slice and must sanitize it before public staging.
+
 | Context | Managed storage | What stays unchanged |
 | --- | --- | --- |
 | Project private note | Private repository `assets/images/<random-id>.<ext>` | Source file and current private/public repository layout |

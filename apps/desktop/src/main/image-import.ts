@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
+import { exifOrientation, publicImageBytes } from "./image-metadata.ts";
 
 export const IMAGE_BYTE_LIMIT = 20 * 1024 * 1024;
 const PIXEL_LIMIT = 40_000_000;
@@ -11,13 +12,14 @@ const invalid = () => new Error("invalid-image");
 
 /** Read raster headers before decoding, so a decompression bomb never reaches the decoder. */
 export function rasterInfo(b: Buffer): { ext: string; width: number; height: number } {
-  let ext = "", width = 0, height = 0;
+  let ext = "", width = 0, height = 0, orientation = 1;
   if (b.length >= 33 && b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
     ext = "png"; width = b.readUInt32BE(16); height = b.readUInt32BE(20);
     for (let at = 8; at + 12 <= b.length;) {
       const length = b.readUInt32BE(at);
       if (at + 12 + length > b.length) throw invalid();
       if (b.toString("ascii", at + 4, at + 8) === "acTL") throw new Error("animated-image");
+      if (b.toString("ascii", at + 4, at + 8) === "eXIf") orientation = exifOrientation(b.subarray(at + 8, at + 8 + length));
       at += length + 12;
     }
   } else if (b.length >= 12 && b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP") {
@@ -26,6 +28,10 @@ export function rasterInfo(b: Buffer): { ext: string; width: number; height: num
       const kind = b.toString("ascii", at, at + 4), length = b.readUInt32LE(at + 4), p = at + 8;
       if (p + length > b.length) throw invalid();
       if (kind === "ANIM" || kind === "ANMF") throw new Error("animated-image");
+      if (kind === "EXIF") {
+        const data = b.subarray(p, p + length);
+        orientation = exifOrientation(data.subarray(data.subarray(0, 6).equals(Buffer.from("Exif\0\0")) ? 6 : 0));
+      }
       if (kind === "VP8X" && length >= 10) {
         if (b[p]! & 2) throw new Error("animated-image");
         width = b.readUIntLE(p + 4, 3) + 1; height = b.readUIntLE(p + 7, 3) + 1;
@@ -47,16 +53,17 @@ export function rasterInfo(b: Buffer): { ext: string; width: number; height: num
       if (marker === 1 || marker >= 0xd0 && marker <= 0xd7) continue;
       const length = b.readUInt16BE(at);
       if (length < 2 || at + length > b.length) throw invalid();
+      if (marker === 0xe1 && b.subarray(at + 2, at + 8).equals(Buffer.from("Exif\0\0"))) orientation = exifOrientation(b.subarray(at + 8, at + length));
       if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker) && length >= 7) {
         height = b.readUInt16BE(at + 3); width = b.readUInt16BE(at + 5);
-        break;
       }
       at += length;
     }
   }
   if (!width || !height || !ext) throw invalid();
   if (width * height > PIXEL_LIMIT) throw new Error("image-pixels");
-  return { ext, width, height };
+  // Chromium applies JPEG EXIF rotation; WebP retains the tag but renders its raster dimensions.
+  return orientation >= 5 && ext !== "webp" ? { ext, width: height, height: width } : { ext, width, height };
 }
 
 const inside = (root: string, path: string) => {
@@ -65,7 +72,7 @@ const inside = (root: string, path: string) => {
 };
 
 /** All validation finishes in temporary storage before a single managed asset is written. */
-export async function importImages(note: string, root: string | undefined, inputs: readonly ImageInput[], decode: (path: string) => Promise<void>): Promise<{ images: ImportedImage[]; paths: string[] }> {
+export async function importImages(note: string, root: string | undefined, inputs: readonly ImageInput[], decode: (path: string) => Promise<void>, publicCopy = false): Promise<{ images: ImportedImage[]; paths: string[] }> {
   if (!inputs.length || inputs.length > 20) throw new Error("image-count");
   const buffers = inputs.map((input) => {
     if (!input || typeof input.data !== "string") throw invalid();
@@ -74,7 +81,8 @@ export async function importImages(note: string, root: string | undefined, input
     if (match[1]!.length > Math.ceil(IMAGE_BYTE_LIMIT / 3) * 4) throw new Error("image-too-large");
     const b = Buffer.from(match[1]!, "base64");
     if (b.length > IMAGE_BYTE_LIMIT) throw new Error("image-too-large");
-    return { b, ...rasterInfo(b) };
+    const info = rasterInfo(b);
+    return { b: publicCopy ? publicImageBytes(b, info.ext) : b, ...info };
   });
   const parent = await realpath(dirname(note));
   const boundary = await realpath(root ?? parent);

@@ -1276,10 +1276,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (!Array.isArray(inputs) || inputs.length > 20 || inputs.some((item) => !item || typeof item !== "object" || typeof item.data !== "string")) throw new Error("invalid-image");
       files = inputs;
     }
-    const result = await importImages(note, imageRoot(note), files, async (path) => {
+    const root = imageRoot(note);
+    const result = await importImages(note, root, files, async (path) => {
       const decoded = await nativeImage.createThumbnailFromPath(path, { width: 1, height: 1 });
       if (decoded.isEmpty()) throw new Error("invalid-image");
-    });
+    }, root !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note));
     const batch = randomUUID();
     imageBatches.set(batch, result.paths);
     return { batch, images: result.images };
