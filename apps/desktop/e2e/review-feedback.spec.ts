@@ -10,6 +10,34 @@ import { pointerModality, settled } from "./visual-quality.ts";
 import type { Locator } from "@playwright/test";
 import { configure, git, instance } from "./instance.ts";
 
+for (const appearance of ["light", "dark"]) test(`Project outline is solid and 3 px without moving the writing surface in ${appearance}`, async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
+    version: 1, appearance,
+    projectSettings: { [dirs.docs]: { name: "Sample project", accent: "blue", logo: "rocket", watermark: "off", font: "app", theme: appearance === "light" ? "paper" : "ink" } },
+  }));
+  const l = await launch(dirs);
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
+    const root = l.page.locator("[data-app-root]");
+    await expect(root).toHaveAttribute("data-project-accent", "blue");
+    const drawn = await root.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return { shadow: cs.boxShadow, border: cs.borderTopWidth, left: r.left, top: r.top };
+    });
+    expect(drawn.shadow).toMatch(/rgb\(\d+, \d+, \d+\) 0px 0px 0px 3px/);
+    expect(drawn.border).toBe("0px");
+    if (process.platform !== "darwin") expect({ left: drawn.left, top: drawn.top }).toEqual({ left: 16, top: 16 });
+    await l.page.screenshot({ path: `../../test-results/screens/project-outline-${appearance}.png` });
+  } finally {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
+
 for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and persists the exact row in ${appearance}`, async () => {
   const dirs = tempDirs();
   const note = join(dirs.docs, "Welcome.md"), other = join(dirs.docs, "Other.md"), folder = join(dirs.docs, "Ideas");
