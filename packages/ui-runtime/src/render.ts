@@ -177,8 +177,8 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
   const props: Record<string, unknown> = { key: node.id ?? key };
   if (node.id) props.id = node.id;
   for (const [name, v] of Object.entries(node.props ?? {})) props[name] = r.value(v, scope);
-  const committed = Object.entries(node.props ?? {}).find(([, v]) => {
-    if (!isBind(v) || !v.bind.startsWith("vm.") || !contract.props.commit) return false;
+  const committed = contract.props.commit && Object.entries(node.props ?? {}).find(([, v]) => {
+    if (!isBind(v) || !v.bind.startsWith("vm.")) return false;
     const [, id, ...field] = v.bind.split(".");
     return deps.app.viewModels.get(`vm.${id}`)?.commits?.includes(field.join("."));
   });
