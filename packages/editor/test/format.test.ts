@@ -45,6 +45,37 @@ it("refreshes the observed native selection after a focus-independent restore (D
   element.remove();
 });
 
+it("focus restoration reads a new Ctrl+Shift+Right range before its delayed callback (EDT-12)", () => {
+  const restore: (() => void)[] = [];
+  const setTimer = globalThis.setTimeout;
+  vi.spyOn(globalThis, "setTimeout").mockImplementation((handler, timeout, ...args) => {
+    if (timeout === 20 && typeof handler === "function") {
+      restore.push(() => handler(...args));
+      return setTimer(() => {}, 0);
+    }
+    return setTimer(handler, timeout, ...args);
+  });
+  const { editor } = open("A paragraph with words.\n");
+  const view = editor.view;
+  document.body.append(view.dom);
+  view.dom.focus();
+  const focusRestore = restore.at(-1)!;
+  expect(focusRestore).toBeTypeOf("function");
+  const observer = Reflect.get(view, "domObserver");
+  observer.disconnectSelection();
+  view.dom.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", keyCode: 39, ctrlKey: true, shiftKey: true, bubbles: true }));
+  const node = view.dom.querySelector("p")!.firstChild!;
+  const selection = document.getSelection()!;
+  selection.collapse(node, 0);
+  selection.extend(node, 2);
+  expect(editor.state.selection.empty).toBe(true);
+  focusRestore();
+  expect(selection.toString()).toBe("A ");
+  expect(editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to)).toBe("A ");
+  expect(formatState(editor.state).text).toBe(true);
+  view.dom.remove();
+});
+
 it.each([true, false])("focus restoration yields to an active pointer (%s), but still restores keyboard focus (EDT-13)", (pointer) => {
   const restore: (() => void)[] = [];
   const setTimer = globalThis.setTimeout;
