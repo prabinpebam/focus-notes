@@ -10,7 +10,7 @@ import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
-import { NotificationQueue } from "./notifications.ts";
+import { NotificationQueue, type NotificationOptions } from "./notifications.ts";
 import { CommitTracker, TaskTracker, busyProps, type Clock, type TaskView, type CommitView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
@@ -392,7 +392,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // ---- toasts (IA-CMP-TOAST) ----
   const notifications = new NotificationQueue(clock, waits.toastDuration, (toasts) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts } })), waits.noticeLong);
   const dismissToast = (id: number) => notifications.dismiss(id);
-  const toast = (message: string, opts: { tone?: ToastState["tone"]; action?: ToastState["action"]; subject?: string; sticky?: boolean } = {}) => notifications.show(message, opts);
+  const toast = (message: string, opts: NotificationOptions = {}) => notifications.show(message, opts);
   store.subscribe(() => notifications.setActive(store.state.window.active));
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saving: Promise<void> = Promise.resolve();
@@ -745,7 +745,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const conflict = e instanceof SyncFailed && e.problem === "conflict";
       const special = e instanceof SyncFailed ? syncProblemAction(e.problem, catalog) : undefined;
       const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : special ?? { command: "note.save", label: catalog.format("toast.retry") };
-      toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action });
+      toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), {
+        tone: "error", action,
+        ...(store.state.note.saveState === "error" ? { sticky: true, mustReadReason: "data-at-risk" }
+          : conflict ? { sticky: true, mustReadReason: "recovery-decision" } : {}),
+      });
     }),
   });
   // Save to cloud (D-132): Mod+Shift+S, and Mod+S for muscle memory, back up now; the pill's menu offers it.

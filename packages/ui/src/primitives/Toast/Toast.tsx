@@ -74,7 +74,7 @@ export function Toast({ message, tone = "info", sticky = false, actionLabel, act
       id={id}
       role={tone === "error" ? "alert" : "status"}
       data-tone={tone}
-      data-sticky={sticky || tone === "error" ? "" : undefined}
+      data-sticky={sticky ? "" : undefined}
       className={s.root}
       data-surface="toast"
       onMouseEnter={() => pause("hover", true)}

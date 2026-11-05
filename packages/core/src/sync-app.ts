@@ -7,6 +7,7 @@
 import type { PlatformBridge, SyncProblem, SyncReport } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
+import type { NotificationOptions } from "./notifications.ts";
 
 export interface SyncState {
   /** Whether the workspace is a Git repository. Without one there's no Git UI at all. */
@@ -48,7 +49,7 @@ interface Ctx<S extends { sync: SyncState }> {
   store: Store<S>;
   bridge: PlatformBridge;
   catalog: MessageCatalog;
-  toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }) => unknown;
+  toast: (message: string, opts?: NotificationOptions) => unknown;
   announce?: (text: string) => void;
   now?: () => number;
 }
@@ -83,7 +84,10 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     set({ git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, ...(backedUp ? { backedUpAt: now(), edited: undefined } : {}) });
     // Problems show when they first appear (EDT-11).
     // A conflict offers the resolver instead of Retry (Feedback → Save and sync status).
-    if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: action(problem) });
+    if (problem && problem !== before && !quiet && !asked) toast(describe(problem), {
+      tone: "error", action: action(problem),
+      ...(problem === "conflict" ? { sticky: true, mustReadReason: "recovery-decision" } : {}),
+    });
   };
   return {
     /**

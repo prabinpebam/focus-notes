@@ -12,6 +12,7 @@ import type { FoundDraft, PlatformBridge, RecoveryFound } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
+import type { NotificationOptions } from "./notifications.ts";
 import { rebase } from "./files.ts";
 
 /** The editor action that puts recovered text in the note as one undo step (`{ markdown, key }`). */
@@ -34,7 +35,7 @@ interface Ctx {
   commands: CommandRegistry<AppState>;
   catalog: MessageCatalog;
   bridge: PlatformBridge;
-  toast: (message: string, opts?: { action?: { command: string; label: string } }) => number;
+  toast: (message: string, opts?: NotificationOptions) => number;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   afterPaint: (fn: () => void) => void;
   /** The text becomes the open note's, unsaved, as if typed: the normal save writes it. */
@@ -227,7 +228,7 @@ export function registerDrafts(ctx: Ctx) {
       const words = summary(found);
       if (!words) return;
       const review = needsChoice() || (found.recovered > 0 && commands.has(SHOW_RECOVERED));
-      ctx.toast(words, review ? { action: { command: "recovery.review", label: catalog.format("toast.recovery.review") } } : {});
+      ctx.toast(words, review ? { action: { command: "recovery.review", label: catalog.format("toast.recovery.review") }, sticky: true, mustReadReason: "data-at-risk" } : {});
     },
   };
 }

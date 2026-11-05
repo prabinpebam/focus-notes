@@ -13,6 +13,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import type { TaskTracker } from "./tasks.ts";
+import type { NotificationOptions } from "./notifications.ts";
 import { compareVersions, conflictCopy, titleOrName, type ConflictChoiceKind } from "./history.ts";
 import { dirOf, walk } from "./workspace.ts";
 import { SYNC_PROBLEMS } from "./sync-app.ts";
@@ -44,7 +45,7 @@ interface Ctx {
   catalog: MessageCatalog;
   bridge: PlatformBridge;
   tracker: TaskTracker;
-  toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }) => number;
+  toast: (message: string, opts?: NotificationOptions) => number;
   announce: (text: string) => void;
   /** Runs after pending edits are written, with saves held until it finishes. */
   exclusive: <T>(fn: () => Promise<T>) => Promise<T>;
@@ -96,7 +97,7 @@ export function registerConflicts(ctx: Ctx) {
       store.update((s) => ({ ...s, ui: { ...s.ui, conflict: { ...CONFLICT_CLOSED, focus: s.ui.conflict.focus, ...(s.ui.conflict.held ? { held: s.ui.conflict.held } : {}) } } }));
       if (r.state === "problem") {
         const p = r.problem && SYNC_PROBLEMS.includes(r.problem) ? r.problem : "failed";
-        toast(catalog.format(`sync.problem.${p}`), { tone: "error", ...(p === "conflict" ? { action: resolveAction() } : {}) });
+        toast(catalog.format(`sync.problem.${p}`), { tone: "error", ...(p === "conflict" ? { action: resolveAction(), sticky: true, mustReadReason: "recovery-decision" } : {}) });
         return;
       }
       const done = settled(choices, notes);
@@ -104,7 +105,7 @@ export function registerConflicts(ctx: Ctx) {
       announce(done);
     } catch {
       set({ busy: false });
-      toast(catalog.format("sync.problem.failed"), { tone: "error", action: resolveAction() });
+      toast(catalog.format("sync.problem.failed"), { tone: "error", action: resolveAction(), sticky: true, mustReadReason: "recovery-decision" });
     }
   }
   const settled = (choices: readonly ConflictChoice[], notes: readonly NoteConflict[]) => {
@@ -125,7 +126,7 @@ export function registerConflicts(ctx: Ctx) {
     }
     const n: NoteConflict = { path, mine, theirs, theirsAt: now() };
     set({ kind: "outside", notes: [n], index: 0, choices: [], held: path, busy: false });
-    toast(catalog.format("toast.changedOutside", { note: titleOf(n) }), { action: resolveAction() });
+    toast(catalog.format("toast.changedOutside", { note: titleOf(n) }), { action: resolveAction(), sticky: true, mustReadReason: "data-at-risk" });
   }
   /**
    * Text a crash left over a note that changed since (QLT-06): the resolver opens with Recovered and
@@ -230,7 +231,7 @@ export function registerConflicts(ctx: Ctx) {
       // save lane, rather than holding them against the obsolete pre-resolution disk version.
       if (!conflict().held && store.state.note.saveState === "error") {
         set({ open: true, kind, notes: [{ ...n, mine: store.state.note.markdown }], held: n.path, busy: false });
-        toast(catalog.format("toast.saveFailed"), { tone: "error" });
+        toast(catalog.format("toast.saveFailed"), { tone: "error", sticky: true, mustReadReason: "data-at-risk" });
       }
       return;
     }

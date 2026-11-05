@@ -24,33 +24,53 @@ it("keeps every queued outcome, prioritizes errors and starts clocks only for th
   expect(items()).toHaveLength(5);
   expect(items()[0]?.id).toBe(error);
   await vi.advanceTimersByTimeAsync(6000);
-  expect(items().map((t) => t.message)).toEqual(["failed", "third", "waiting"]);
+  expect(items().map((t) => t.message)).toEqual(["third", "waiting"]);
   await vi.advanceTimersByTimeAsync(5999);
   expect(items().find((t) => t.id === waiting)).toBeDefined();
   await vi.advanceTimersByTimeAsync(1);
-  expect(items().map((t) => t.id)).toEqual([error]);
-  queue.dismiss(error);
   expect(items()).toEqual([]);
 });
 
-it("hard-dismisses errors and unique recovery actions instead of expiring them", async () => {
+it("OFB.11: auto-dismisses errors and optional actions, including Deleted with Undo", async () => {
   const { queue, items } = setup();
   queue.show("failed", { tone: "error" });
-  queue.show("recover", { action: { command: "retry", label: "Retry" } });
-  await vi.advanceTimersByTimeAsync(60_000);
+  queue.show("Deleted", { action: { command: "undo", label: "Undo" } });
+  await vi.advanceTimersByTimeAsync(5999);
   expect(items()).toHaveLength(2);
+  expect(items().every(item => item.sticky === false)).toBe(true);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(items()).toEqual([]);
 });
 
-it("keeps decision warnings and progress until resolved, then times the replacement outcome", async () => {
+it("OFB.11: only explicit, reasoned decisions and operation controls stay until resolved", async () => {
   const { queue, items } = setup();
-  queue.show("decide", { tone: "warning", action: { command: "review", label: "Review" } });
-  queue.show("working", { tone: "progress", subject: "publish" });
+  queue.show("decide", { tone: "warning", action: { command: "review", label: "Review" }, sticky: true, mustReadReason: "recovery-decision" });
+  queue.show("working", { tone: "progress", subject: "publish", sticky: true, mustReadReason: "operation-control" });
   await vi.advanceTimersByTimeAsync(60_000);
   expect(items().map((item) => item.message)).toEqual(["decide", "working"]);
   const id = queue.show("published", { tone: "success", subject: "publish" });
   expect(items().find((item) => item.id === id)).toMatchObject({ tone: "success", sticky: false, count: 1 });
   await vi.advanceTimersByTimeAsync(6000);
   expect(items()).toMatchObject([{ message: "decide", sticky: true }]);
+});
+
+it("OFB.11: refuses an unreasoned must-read rather than silently making it sticky", () => {
+  const { queue } = setup();
+  expect(() => queue.show("failed", { sticky: true })).toThrow(/allowed inventory reason/);
+});
+
+it("pauses an automatic notice while its action is pending, then resumes its retained time", async () => {
+  const { queue, items } = setup();
+  const id = queue.show("Deleted", { action: { command: "undo", label: "Undo" } });
+  await vi.advanceTimersByTimeAsync(1000);
+  queue.pending(id, true);
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(items()).toHaveLength(1);
+  queue.pending(id, false);
+  await vi.advanceTimersByTimeAsync(4999);
+  expect(items()).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(items()).toEqual([]);
 });
 
 it("extends an actually wrapped notice to eight visible seconds without restarting its clock", async () => {

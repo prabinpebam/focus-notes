@@ -4,7 +4,7 @@
 > **TL;DR.** This audit checks the design system and every surface of the app against the `ui-states` skill: every change confirmed where it happened, every failure recoverable, every empty space explained. The `design-system`, `perceived-performance` and `ui-copy` skills apply alongside it. The waits the app was built around are strong: the note save, conflicts, the AI rewrite and Spotlight. What's weak is what happens after a person changes something. The three biggest improvements:
 > 1. Stop silent failures. A failed setting or project change today says nothing, or keeps a value that wasn't saved (F1).
 > 2. Confirm every change on the control itself: a tick on a field, a spinner in a switch, a Retry when it fails. Add a commit track to the task tracker to drive it (F2).
-> 3. Make error notifications stay until they're dealt with, and queue three instead of dropping all but two (F3).
+> 3. Queue three notifications instead of dropping all but two, and retain only reasoned must-read decisions (F3, narrowed by D-357).
 >
 > Fifteen findings are ranked below, with the missing tokens and primitives and an order of work: eight design slices for the gallery first, then nine wiring slices.
 
@@ -19,11 +19,141 @@ The owner's 6 November feedback ([OFB stage](../plan/definition-of-done.md#owner
 
 #### Notification inventory
 
-Filled in by the OFB notification audit: one row per notification, with its message key, its type (auto-dismiss or must-read), its reason and its action, if any.
+One row per production notification call, including dynamic message expressions and forwarding calls (which delegate dismissal to the originating caller). `node tools/notification-inventory.mjs` scans the TypeScript AST, so dynamic keys cannot escape coverage. Call IDs hash the source call, not its line number. The check rejects missing or changed rows, dismissal types and reasons; the deliberate broken fixtures also reject invalid must-read reasons. `--write` refreshes this block after reviewing changed callsites.
 
-| Message key | Shown when | Type | Reason | Action |
-| --- | --- | --- | --- | --- |
-| (audit pending) | | | | |
+Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, a recovery decision or the running rewrite's only Stop control is must-read. Pending actions pause their remaining timer, as do hover, focus and a background window.
+
+<!-- generated:notification-inventory -->
+| Call ID | Message key or expression | Shown when (source) | Type | Reason | Action |
+| --- | --- | --- | --- | --- | --- |
+| 86af98ee0bdb-1 | catalog.format("agents.failed") | packages/core/src/agents-app.ts:76 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 8d55f99b65e0-1 | catalog.format(&#96;agents.undo.${known.includes(r.problem) ? r.problem : "failed"}&#96;, { path: row.path }) | packages/core/src/agents-app.ts:145 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| dc022ea5d858-1 | catalog.format("agents.undo.done", { path: row.path }) | packages/core/src/agents-app.ts:146 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 939f5deaa911-1 | catalog.format("agents.cli.failed") | packages/core/src/agents-app.ts:156 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| bef813ab1af3-1 | status | packages/core/src/ai-app.ts:148 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| bef813ab1af3-2 | status | packages/core/src/ai-app.ts:369 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 812a0f7ee465-1 | t("ai.scan.cancelFailed") | packages/core/src/ai-app.ts:473 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 97339fd20f6d-1 | t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter) }) | packages/core/src/ai-app.ts:577 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| eaf52e16a4df-1 | t("rewrite.error.stale") | packages/core/src/ai-app.ts:665 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d0962c951e39-1 | t(caret ? "rewrite.writing" : "rewrite.running", { name }) | packages/core/src/ai-app.ts:672 | must-read | operation-control: The running rewrite's only Stop control must remain reachable. | "rewrite.cancel" |
+| 622621cf4b88-1 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:653 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e30359ba296c-1 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:671 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e30359ba296c-2 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:687 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 29b2d94c6d43-1 | e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed") | packages/core/src/app.ts:748 | must-read | data-at-risk: Retained note text or recovered drafts need review before they can be safely stored.; recovery-decision: Conflicting versions need the person's recovery choice. | action |
+| e30359ba296c-3 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:774 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 92d64e7506d8-1 | catalog.format("toast.noUnderline") | packages/core/src/app.ts:983 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 5bc6099cdaf0-1 | catalog.format("find.replaced", { count: replaced }) | packages/core/src/app.ts:1147 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 70fd587254d1-1 | catalog.format("toast.actionFailed") | packages/core/src/app.ts:1169 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | retryCommand |
+| ab0cb7f69e8d-1 | m | packages/core/src/app.ts:1308 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| c92a56db27bf-1 | catalog.format("demo.aboutText") | packages/core/src/app.ts:1360 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "demo.download" |
+| dd1b834760a5-1 | catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal") | packages/core/src/app.ts:1423 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3ca8f065a3a8-1 | catalog.format("toast.settingsFailed") | packages/core/src/app.ts:1427 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 95707da4a75e-1 | catalog.format("toast.revealItemFailed") | packages/core/src/app.ts:1689 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 622621cf4b88-2 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1836 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 622621cf4b88-3 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1843 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d2cef3e5197d-1 | catalog.format("block.copiedLink", { name: b.text }) | packages/core/src/block-handle.ts:93 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2e9627698b69-1 | catalog.format("table.copyFailed") | packages/core/src/block-handle.ts:95 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| a22985aaed62-1 | catalog.format("toast.copiedToLocal", { note: titleOfPath(target) }) | packages/core/src/browser.ts:165 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| bb66f8128c94-1 | count &lt; 0 ? catalog.format("toast.exportFailed") : catalog.format("toast.exported", { count }) | packages/core/src/browser.ts:176 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | Conditional options; see source |
+| 156df44b13ae-1 | catalog.format("toast.imported", { count: r.added, renamed: r.renamed }) | packages/core/src/browser.ts:190 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| eb5aa6ab268d-1 | catalog.format("toast.importFailed") | packages/core/src/browser.ts:192 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 6e5ced57bfd5-1 | catalog.format(remember ? "toast.unlockedRemembered" : "toast.unlocked", { count: (await bridge.listNotes?.() ?? []).filter((n) =&gt; sourceOf(n.path) === "private").length }) | packages/core/src/browser.ts:215 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| ad63ab175976-1 | catalog.format(messageKey) | packages/core/src/browser.ts:228 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d08ca56be42b-1 | catalog.format(&#96;sync.problem.${p}&#96;) | packages/core/src/conflict-app.ts:100 | must-read | recovery-decision: Conflicting versions need the person's recovery choice. | resolveAction() |
+| 2edb5f53d5ed-1 | done | packages/core/src/conflict-app.ts:104 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 219b5148e76a-1 | catalog.format("sync.problem.failed") | packages/core/src/conflict-app.ts:108 | must-read | recovery-decision: Conflicting versions need the person's recovery choice. | resolveAction() |
+| 4aba116dd11a-1 | catalog.format("toast.changedOutside", { note: titleOf(n) }) | packages/core/src/conflict-app.ts:129 | must-read | data-at-risk: Retained note text or recovered drafts need review before they can be safely stored. | resolveAction() |
+| e36060f9059e-1 | catalog.format("conflict.changedAgain") | packages/core/src/conflict-app.ts:180 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| bd8810ae2781-1 | catalog.format(failure) | packages/core/src/conflict-app.ts:226 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 1f13275f5eb1-1 | catalog.format("toast.saveFailed") | packages/core/src/conflict-app.ts:234 | must-read | data-at-risk: Retained note text or recovered drafts need review before they can be safely stored. | None |
+| 2edb5f53d5ed-2 | done | packages/core/src/conflict-app.ts:239 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 21c6c994511c-1 | catalog.format(ok ? "diagnostics.copied" : "diagnostics.failed") | packages/core/src/diagnostics-app.ts:67 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | Conditional options; see source |
+| 38de238db4e7-1 | catalog.format("diagnostics.failed") | packages/core/src/diagnostics-app.ts:78 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| ead6b0781b05-1 | catalog.format("diagnostics.saved") | packages/core/src/diagnostics-app.ts:79 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 72e602cd7ca0-1 | words | packages/core/src/drafts-app.ts:231 | must-read | data-at-risk: Retained note text or recovered drafts need review before they can be safely stored. | "recovery.review" |
+| 70dabc00aaf0-1 | words | packages/core/src/feedback-app.ts:205 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "feedback.openIssue" |
+| f27dc8ffb4e9-1 | catalog.format("feedback.notSent") | packages/core/src/feedback-app.ts:212 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "feedback.open" |
+| 9c3a7621cbfa-1 | catalog.format(&#96;feedback.copied.${copied}&#96;) | packages/core/src/feedback-app.ts:235 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 0450a69e92c6-1 | catalog.format("toast.revealFolderFailed") | packages/core/src/files-app.ts:267 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 39607c2f300a-1 | withLinks(o.done, writes) | packages/core/src/files-app.ts:500 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | undoAction(o.undo) |
+| c1bd84941e01-1 | o.failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:515 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| db50c6bdb7cf-1 | catalog.format(key, { ...args, reason: reason(why) }) | packages/core/src/files-app.ts:519 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-1 | done | packages/core/src/files-app.ts:658 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-1 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:716 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b98c7ab09d1e-1 | failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:722 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b98c7ab09d1e-2 | failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:768 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 5ae426d72c8b-1 | catalog.format("files.importNone", { what: skipped }) | packages/core/src/files-app.ts:771 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-2 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:777 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 34d62b93c3e5-1 | catalog.format("toast.revealItemFailed") | packages/core/src/files-app.ts:813 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 34d62b93c3e5-2 | catalog.format("toast.revealItemFailed") | packages/core/src/files-app.ts:835 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2884623f70a5-1 | catalog.format("files.copiedItems", { what: rowsWhat(rows) }) | packages/core/src/files-app.ts:870 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 5685f46aae9b-1 | catalog.format("toast.copyItemsFailed") | packages/core/src/files-app.ts:872 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 427468e8dd77-1 | rows.length === 1 ? catalog.format("files.copiedPath", { what: rowsWhat(rows) }) : catalog.format("files.copiedPaths", { count: rows.length }) | packages/core/src/files-app.ts:885 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| c32033ff7f15-1 | catalog.format("toast.copyFailed") | packages/core/src/files-app.ts:887 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2124dbd82f11-1 | catalog.format("files.copiedText", { what: rowsWhat([row]) }) | packages/core/src/files-app.ts:906 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| c32033ff7f15-2 | catalog.format("toast.copyFailed") | packages/core/src/files-app.ts:908 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-3 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:935 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-2 | done | packages/core/src/files-app.ts:1019 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| f71763aea2b7-1 | failed(reason("notFound")) | packages/core/src/files-app.ts:1064 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-4 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:1068 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e46a31674a49-1 | catalog.format("recovered.discardFailed", { what: draftName(d) }) | packages/core/src/files-app.ts:1087 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-3 | done | packages/core/src/files-app.ts:1091 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 083bd07d0e10-1 | catalog.format("recovered.gone", { what: draftName(d) }) | packages/core/src/files-app.ts:1121 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b6fb889c4d99-1 | catalog.format("recovered.copyFailed", { what }) | packages/core/src/files-app.ts:1148 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-4 | done | packages/core/src/files-app.ts:1151 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e37d4f447ca7-1 | error | packages/core/src/files-app.ts:1177 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e37d4f447ca7-2 | error | packages/core/src/files-app.ts:1240 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-5 | done | packages/core/src/files-app.ts:1347 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d5276c437f2d-1 | catalog.format("files.renameFailed", { what: whatOf([path]), reason: reason(opErrorCode(e)) }) | packages/core/src/files-app.ts:1351 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b2910f7c51f7-1 | catalog.format("toast.signedIn", { login: signedInAs(a) }) | packages/core/src/first-run-app.ts:280 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 61e752d949cf-1 | catalog.format("format.link.copied") | packages/core/src/format.ts:201 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 6be22b1cff7e-1 | catalog.format("format.link.copyFailed") | packages/core/src/format.ts:203 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 9c91336d1d05-1 | catalog.format("held.failed") | packages/core/src/held-app.ts:99 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| aa825aae93a6-1 | catalog.format("image.read.notice") | packages/core/src/images-app.ts:50 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d7f5b5c55439-1 | catalog.format("image.edit.saved") | packages/core/src/images-app.ts:159 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 772796636aa7-1 | catalog.format("toast.imported", { count: 0, renamed: 0 }) | packages/core/src/import-app.ts:54 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| c43a381d7756-1 | catalog.format(/tooLarge\s*$/.test(e instanceof Error ? e.message : "") ? "toast.importTooLarge" : "toast.importFailed") | packages/core/src/import-app.ts:58 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 6ff80c2ea178-1 | catalog.format(i.to === "public" ? "toast.importedPublic" : "toast.importedPrivate", { count: r.added, renamed: r.renamed }) | packages/core/src/import-app.ts:82 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b3f851c12fc4-1 | catalog.format("toast.importNotWritten") | packages/core/src/import-app.ts:85 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 1b42fa8cf924-1 | reason ? catalog.format("keyboard.editFailedWhy", { reason }) : catalog.format("keyboard.editFailed") | packages/core/src/keybindings-app.ts:72 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2ab81cdd8c09-1 | catalog.format("keyboard.resetDone") | packages/core/src/keybindings-app.ts:87 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 364f21c82560-1 | catalog.format("keyboard.editFailed") | packages/core/src/keybindings-app.ts:87 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 277ecbb5f861-1 | done | packages/core/src/note-history-app.ts:236 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "history.undoRestore" |
+| 2034069aed21-1 | catalog.format("history.restoreFailed") | packages/core/src/note-history-app.ts:240 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| cf5cc757d082-1 | catalog.format("history.undoChanged") | packages/core/src/note-history-app.ts:255 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "history.open" |
+| 8220b5d4ba59-1 | catalog.format("history.undoFailed") | packages/core/src/note-history-app.ts:274 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "history.undoRestore" |
+| ed49319dc999-1 | catalog.format("toast.printFailed") | packages/core/src/print-app.ts:90 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 7d8efa32dffe-1 | catalog.format("project.delete.unavailable") | packages/core/src/project-delete-app.ts:140 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 50f6d9631bb9-1 | catalog.format("project.delete.unsaved") | packages/core/src/project-delete-app.ts:157 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 5542d39128f7-1 | catalog.format("project.delete.exportFailed") | packages/core/src/project-delete-app.ts:216 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2aaa120d3bc5-1 | catalog.format(off ? "project.delete.doneOffline" : r.privateKept ? "project.delete.donePrivate" : "project.delete.done", { name: n, path: r.privateKept ?? "" }) | packages/core/src/project-delete-app.ts:290 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 7d8efa32dffe-2 | catalog.format("project.delete.unavailable") | packages/core/src/project-delete-app.ts:330 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 45563c248bea-1 | ctx.catalog.format("quick.import.saved", {name: copied.split(/[\\/]/).at(-1) ?? ""}) | packages/core/src/project-open-app.ts:161 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e6f62a11ca27-1 | ctx.catalog.format("toast.publicLinkCopied", { note }) | packages/core/src/public-link-app.ts:50 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| df01200cab62-1 | ctx.catalog.format("spotlight.copyFailed") | packages/core/src/public-link-app.ts:52 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2d1816abb257-1 | e instanceof SyncFailed ? e.message : catalog.format("sync.problem.failed") | packages/core/src/repo-backup.ts:194 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2c24c1026632-1 | catalog.format("toast.signOutFailed") | packages/core/src/settings-app.ts:172 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e89e285fae73-1 | git ? catalog.format("toast.signedOut") : catalog.format("toast.signedOutApp", { login: &#96;@${r.account?.login ?? before}&#96; }) | packages/core/src/settings-app.ts:178 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| a1b8ed2dda3b-1 | catalog.format("toast.saveFailed") | packages/core/src/settings-app.ts:189 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 8bf767b91621-1 | catalog.format("sharing.publish.saved") | packages/core/src/sharing-preview.ts:107 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 12a158e779e1-1 | catalog.format("paste.imagesLeftOut") | packages/core/src/slash.ts:143 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 0b3ece652939-1 | catalog.format(key, args) | packages/core/src/slash.ts:149 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 88dc1e6063a2-1 | catalog.format("paste.lineBreaks") | packages/core/src/slash.ts:152 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 7284eb7be408-1 | done | packages/core/src/spotlight-app.ts:599 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 49ed82fdadc3-1 | msg("spotlight.copyFailed") | packages/core/src/spotlight-app.ts:601 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 91c87aa45309-1 | describe(problem) | packages/core/src/sync-app.ts:87 | must-read | recovery-decision: Conflicting versions need the person's recovery choice. | action(problem) |
+| 6858f3328871-1 | catalog.format(format === "tsv" ? "table.copied.tsv" : "table.copied.markdown") | packages/core/src/table.ts:134 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 046fc9d0f656-1 | catalog.format("table.copyFailed") | packages/core/src/table.ts:136 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 20eaa0d6a741-1 | catalog.format("theme.deleted", { name: t.name }) | packages/core/src/theme-manager-app.ts:483 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "theme.restore" |
+| fd47aa4be6cd-1 | catalog.format("toolbar.customize.saveFailed") | packages/core/src/toolbar-customize.ts:59 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 1ef287d1feb0-1 | catalog.format("toast.workspaceNewer", { found: w.found ?? 0 }) | packages/core/src/workspace-app.ts:81 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 22f5b10df45e-1 | catalog.format("toast.workspaceUnreadable") | packages/core/src/workspace-app.ts:82 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2f95d4f8beaa-1 | catalog.format("toast.workspaceOlder") | packages/core/src/workspace-app.ts:84 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "workspace.migrate" |
+| 96d315b91b76-1 | catalog.format("toast.workspaceUpdateFailed") | packages/core/src/workspace-app.ts:109 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| a1fa4aa71bfc-1 | catalog.format("toast.workspaceUpdated") | packages/core/src/workspace-app.ts:114 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| ae0f170964a6-1 | catalog.format("toast.changedOutside", { note: stemOf(nameOf(path)) }) | packages/core/src/workspace-app.ts:199 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 55b2286d882c-1 | catalog.format("files.firstNameFailed") | packages/core/src/workspace-app.ts:258 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+<!-- /generated:notification-inventory -->
 
 ### Owner feedback batch, 6 November: button geometry
 
@@ -154,7 +284,7 @@ Approval values are **Awaiting review**, **Approved** and **Changes requested**.
 | --- | --- | --- |
 | Integrated project prerequisite | `36e93da4`, merge from `vq-open-cards` | Combined monorepo typecheck passes; project settings are present |
 | Modal notification recovery | `5251ef0d` | Existing `layer.toast` plus React Aria's top-layer marker; F6 and pointer Retry work while Settings remains open |
-| Notification host | `414b9341` | Three visible, retained error-first queue, repeated subjects coalesced with latest Retry arguments; hard-dismiss errors/actions; visible-only clocks pause on hover/focus/window inactivity |
+| Notification host | `414b9341`, narrowed by D-357 | Three visible, retained error-first queue, repeated subjects coalesced with latest Retry arguments; auto-dismiss except inventoried must-read cases; visible-only clocks pause on hover/focus/window inactivity and pending actions |
 | Commit infrastructure and first controls | `bf1c5afd` | `vm.commits`; immediate pending and separate 200 ms pending/confirmed minimums; field-local lock, failed drafts and Retry/Revert; project name blur/Enter and scale; segmented keyboard changes wait 500 ms or blur; project writes compose independent fields in order |
 | Project colour and preset logo | `78d0a335`, pushed | Attempted mark's own border; focusable pending group; retained failed choice without changing saved identity; latest-choice Retry and write-free Revert |
 | Project font/theme triggers | `c766d793`, pushed | Persistent trigger feedback after the popover closes, retained attempted name, cleared failed preview, Retry/Revert and Use app default; keyboard theme browsing does not save |
@@ -384,12 +514,12 @@ Ranked by what the owner feels while writing (see [Method and limits](#method-an
   - `role="alert"` for errors.
 - **Rule broken.** The notification pill: an error that needs a choice is hard-dismissed; at most three show at once, and the rest queue with errors first; notices about the same subject coalesce; timers pause while the window is in the background; the stack is a labelled region.
 - **Fix.**
-  - Errors are sticky until Close or their action.
+  - Only inventoried must-read cases are sticky until Close or their action (D-357); an error tone, Retry or Undo alone never makes a notice sticky.
   - The host keeps a queue with three visible, errors first, and coalesces by a `subject` key ("3 images couldn't load").
   - Pause the timers on window blur.
   - Wrap the stack in a region named "Notifications".
   - Add the success, warning and progress tones to Toast.
-  - Add the long-notice token (8 s) for notices that have an action.
+  - Add the long-notice token (8 s) for notices that actually wrap to two or three lines, not merely those with an action.
 - **Files.** `core/src/app.ts`, `ui/src/primitives/Toast/`, `views/views/canvas.view.json`, `tokens/src/semantic/structure.json`.
 
 ### F4. A broken image can't be retried
