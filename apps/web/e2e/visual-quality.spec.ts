@@ -8,6 +8,8 @@
 import { test, expect, type Page } from "@playwright/test";
 import { hoverTooltips, settled, visualProblems } from "../../desktop/e2e/visual-quality.ts";
 
+test.use({ trace: "retain-on-failure" });
+
 const mod = "Control";
 const editor = (page: Page) => page.getByRole("textbox", { name: "Note" });
 const corner = (page: Page) => page.getByRole("region", { name: "Account" });
