@@ -1,5 +1,16 @@
 # Decisions
 
+## D-345: no visual noise; approved components keep their look
+
+**Decided (the owner, 5 November 2026: "We already have a good toolbar design, do not change that. To many wrapping borders adds visual clutter.").** A toolbar customizer mock drew a border around every icon button inside the already-enclosed toolbar pill. The owner had asked to "add a border to each slot" for drag to customize; that cue was applied to every button at rest instead of only during a drag. The skills had no rule against it, so the gap is fixed in the kit (agentic-craft `7459800`):
+
+- **`spacing`** rule 13: members of an enclosed group (toolbar, segmented control, card, menu) get no border, outline or resting fill of their own; hover, press, selection, focus and drop-target cues show only while active, and transient affordances stay transient. One enclosure level per boundary. The audit adds the `nested-enclosure` finding (S2), and the spacing probe reports it.
+- **`visual-noise`**, a new skill: an ink budget, one cue per meaning, the cue order space → alignment → type → tone → border → shadow, enclosure depth of two at rest, transient affordances, decoration, colour, icon and text noise (with the [visual vs verbose score](../design/visual-score.html)), approved components never restyled as a side effect, and measurable checks with N1 to N4 severities. `craft` and `design-system` route to it, and the `design-system-auditor` checks it.
+
+The approved toolbar stays as it is. In the drag-to-customize mode, slot outlines appear only while dragging. AGENTS.md Rule 6 carries the rule for this project.
+
+Affects [AGENTS.md](../../AGENTS.md) (Rule 6), [the main UI](../experience/main-ui.html) and [the spacing audit](../design/spacing-audit.md).
+
 ## D-344: confirm publication against the workspace's own Pages site
 
 **Decided (orchestrator for the merge, under the owner's "Rest you do as you see fit", 5 November 2026).** After publishing through Git, the main process may read the workspace's configured GitHub Pages site to check that the published access metadata has arrived. This is a new, explicit network destination beyond the GitHub API: only the configured site's origin, no renderer-selected host, no credentials, no redirects and no cached success. Each request has a ten-second timeout and follows cancellation. A missing page remains pending; offline or refused responses remain an explicit recoverable failure, never a successful publication. Agent evidence uses local protocol fakes only, as D-343 requires.
