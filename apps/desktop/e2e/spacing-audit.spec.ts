@@ -80,9 +80,52 @@ type Probe = {
   mirror: (a: unknown, b: unknown, o?: unknown) => Finding[];
 };
 
+/**
+ * Waits until geometry has settled before a snapshot: no finite animation or transition running or
+ * pending, and every element's box (and the page's scroll size) unchanged over 2 consecutive frames.
+ * A fade that starts a frame after the surface opens (the table handles hiding under a menu) is
+ * otherwise measured mid-flight and reads as a clip. Infinite animations (a spinner) and what they move
+ * don't count. Gives up after `timeout` and measures what's there; the state checks stay per frame.
+ */
+async function geometrySettled(page: Page, timeout = 3000) {
+  await settled(page);
+  const ok = await page.evaluate((limit) => new Promise<boolean>((done) => {
+    const t0 = performance.now();
+    const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const snap = () => {
+      const moving = new Set<Element>();
+      for (const a of document.getAnimations()) {
+        const target = (a.effect as KeyframeEffect | null)?.target ?? null;
+        if (a.effect?.getTiming().iterations === Infinity) { if (target) moving.add(target); continue; }
+        if (a.playState === "running" || a.pending) return null;
+      }
+      const parts = [document.documentElement.scrollWidth, document.documentElement.scrollHeight];
+      for (const e of document.body.querySelectorAll("*")) {
+        if ([...moving].some((m) => m.contains(e))) continue;
+        const r = e.getBoundingClientRect();
+        parts.push(Math.round(r.x * 2), Math.round(r.y * 2), Math.round(r.width * 2), Math.round(r.height * 2));
+      }
+      return parts.join(",");
+    };
+    void (async () => {
+      let prev: string | null = null;
+      let same = 0;
+      while (performance.now() - t0 < limit) {
+        await frame();
+        const s = snap();
+        same = s !== null && s === prev ? same + 1 : 0;
+        if (same >= 2) return done(true);
+        prev = s;
+      }
+      done(false);
+    })();
+  }), timeout);
+  if (!ok) console.log(`[spacing] geometry still moving after ${timeout} ms; measured as is`);
+}
+
 async function audit(page: Page, p: Probe, where: string, out: (Finding & { where: string; check: string })[], states = true) {
   const t0 = Date.now();
-  await settled(page);
+  await geometrySettled(page);
   await page.evaluate(() => document.fonts.ready);
   const base = await page.evaluate(p.collect, { root: ROOT, ignore: IGNORE });
   // The probe exempts prose (`ignore`) and skips visually hidden wrappers; this also drops any finding on a 1 px box.
@@ -187,7 +230,7 @@ for (const { name: sizeName, size } of SIZES) {
       for (const [label, open] of [["canvas", async () => {}], ["settings", async () => { await page.keyboard.press(`${mod}+,`); await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible(); }]] as const) {
         try {
           await open();
-          await settled(page);
+          await geometrySettled(page);
           const big = await page.evaluate(p.collect, { root: ROOT, ignore: IGNORE });
           for (const f of p.analyze(big, { base: 4 }).filter((f) => ["page-scroll", "clipped", "overlap", "content-intrudes"].includes(f.rule))) out.push({ ...f, where: `${label}, 200 % text + text spacing (${ctx})`, check: "large text" });
         } catch { /* reached or not, measured what was there */ }
