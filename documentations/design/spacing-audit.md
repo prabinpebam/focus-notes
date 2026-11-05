@@ -15,6 +15,8 @@
 
 ## How Focus Notes spaces today
 
+The 6 November Switch conversion adds a responsive toolbar correction: MorphPanel bounds its content to the viewport using component tokens, ToolbarRow uses `inlineItem` between controls and the panel owns one `insetSm` inset. Find's search group uses `inlineGroup`, with `inlineItem` between its options. Wrapped toolbar rows may have a ragged end; the visual-quality probe measures their full layout frame for the surface inset and still measures every control for clipping and containment. A deliberately missing end inset remains a failing fixture. The app frame itself uses non-scrollable clipping, preventing focus on small-dialog controls from scrolling the entire window while preserving the note and dialog's own scroll regions.
+
 | Layer | What it has | What the skill asks |
 | --- | --- | --- |
 | Scale | `space.none, xxs 2, xs 4, s 8, m 12, l 16, xl 24, xxl 32, xxxl 48`, in px | 4 px multiples in `rem`; 2 px only as a described component compensation |

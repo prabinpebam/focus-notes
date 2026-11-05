@@ -46,7 +46,7 @@ globalStyle('html:root[data-compositing="software"] *, html:root[data-compositin
 const drawn = {
   position: "absolute",
   height: "auto",
-  overflow: "hidden",
+  overflow: "clip",
   contain: "layout",
   // Heights given as parts of the window (the reading zone, the note's end) measure the drawn window, not the page.
   containerType: "size",
