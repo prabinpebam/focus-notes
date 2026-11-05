@@ -75,6 +75,7 @@ interface Ctx {
   toast(message: string, opts?: { tone?: ToastState["tone"] }): number;
   editorAction(id: string, args?: Record<string, unknown>): void;
   now(): number;
+  ai: { prepareActions(): Promise<void>; actionsReady(): boolean };
 }
 
 /** A setting as Spotlight lists it: its current value, a step, and its default (Spotlight → What it searches). */
@@ -113,7 +114,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const vis = path ? visibilityOf(t, path) : undefined;
     const writable = Boolean(path) && (root ? !root.readOnly : !isReadOnlyPath(path)) && s.workspace.access === "write";
     return {
-      selection: Boolean(path) && s.ui.format.toolbar,
+      selection: Boolean(path) && s.ui.format.selection,
       note: Boolean(path),
       writable,
       ...(vis ? { visibility: vis } : {}),
@@ -121,10 +122,12 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       standalone: standalone(),
       signedIn: Boolean(s.account.login),
       linked: Boolean(s.workspace.repo),
+      ai: ctx.ai.actionsReady(),
       ...(path ? { path } : {}),
     };
   };
   let scope: ActionScope = { selection: false, note: false, writable: false, project: false, standalone: false, signedIn: false, linked: false };
+  let contextId = 0;
   const platformArgs = { platform: bridge.platform };
   const onOff = (on: boolean) => msg(on ? "spotlight.on" : "spotlight.off");
   const actionLabel = (e: CatalogEntry) => msg(e.label, platformArgs);
@@ -172,7 +175,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       const group = r.group === "top" ? "top" : e.anchor;
       add(group, { ...r, group, id: rowId(group, e.id) });
       const fix = e.fix ? catalogEntry(e.fix) : undefined;
-      if (!browse && a.reason && fix && runnable(fix) && !availability(fix).reason && availability(fix).shown && !fixes.has(fix.id)) {
+      if (!browse && a.reason && !(e.leaves === "ai" && scope.aiChecking) && fix && runnable(fix) && !availability(fix).reason && availability(fix).shown && !fixes.has(fix.id)) {
         const row = actionRow(fix, group);
         fixes.set(fix.id, row.id);
         add(group, row);
@@ -355,6 +358,13 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       opening = now();
       // What the person was in when they asked (ACT-05): taken before the field takes focus.
       scope = scopeNow();
+      scope.aiChecking = Boolean(bridge.ai);
+      const captured = ++contextId;
+      void ctx.ai.prepareActions().then(() => {
+        if (!sp().open || captured !== contextId) return;
+        scope = { ...scope, ai: ctx.ai.actionsReady(), aiChecking: false };
+        void refresh(true);
+      });
       dismissDialogs();
     }
     store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
@@ -377,6 +387,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     for (const [shown, id] of open) if (shown && commands.has(id)) void run(id, { open: false });
   };
   const close = () => {
+    contextId++;
     seq++;
     opening = undefined;
     set({ open: false, actions: undefined, busy: false, fromLink: false });

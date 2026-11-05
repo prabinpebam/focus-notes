@@ -25,6 +25,7 @@ const TURN_INTO = [
 ] as const;
 
 export interface FormatState {
+  selection: boolean;
   /** The editor has a non-empty text selection and the toolbar should show (EDT-12). */
   toolbar: boolean;
   /** The caret is in a link, or the pointer rested on one: the hover card should show (EDT-13). */
@@ -65,7 +66,7 @@ export interface LinkEditorState {
   focus: number;
 }
 export const FORMAT_CLOSED: FormatState = {
-  toolbar: false, card: false, bold: "off", italic: "off", strike: "off", code: "off", block: "", codeBlock: false, inlineCode: false,
+  selection: false, toolbar: false, card: false, bold: "off", italic: "off", strike: "off", code: "off", block: "", codeBlock: false, inlineCode: false,
   oneBlock: false, canUndo: false, canRedo: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 }, slash: SLASH_CLOSED,
   inTable: false, table: TABLE_CLOSED, blockHandle: BLOCK_CLOSED,
 };
@@ -122,6 +123,7 @@ export function registerFormatting({ store, commands, viewModels, catalog, bridg
   commands.register<Record<string, unknown>>({
     id: "format.setState", title: "command.format.setState",
     run: (a) => set({
+      selection: Boolean(a.selection),
       toolbar: Boolean(a.toolbar), card: Boolean(a.card),
       bold: mark(a.bold), italic: mark(a.italic), strike: mark(a.strike), code: mark(a.code),
       block: typeof a.block === "string" ? a.block : "", codeBlock: Boolean(a.codeBlock), inlineCode: Boolean(a.inlineCode),

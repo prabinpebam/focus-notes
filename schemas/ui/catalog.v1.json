@@ -6085,6 +6085,7 @@
         },
         "format": {
           "payload": {
+            "selection": "boolean",
             "toolbar": "boolean",
             "card": "boolean",
             "bold": "text",

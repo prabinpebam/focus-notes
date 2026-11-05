@@ -100,7 +100,7 @@ function contextFor(app: App, e: CatalogEntry) {
   app.store.update((s: AppState) => ({
     ...s,
     account: { ...s.account, login: e.id === "account.signOut" ? "octo" : "" },
-    ui: { ...s.ui, format: { ...s.ui.format, toolbar: e.anchor === "selection" } },
+    ui: { ...s.ui, format: { ...s.ui.format, selection: e.anchor === "selection", toolbar: false } },
   }));
 }
 
@@ -108,6 +108,7 @@ function contextFor(app: App, e: CatalogEntry) {
 const OUTCOMES: Record<string, (s: AppState, before: AppState) => boolean> = {
   "settings.open": (s) => s.ui.settings.open,
   "project.settings": (s) => s.ui.settings.open && s.ui.settings.section === "project",
+  "project.rename": (s) => s.ui.settings.open && s.ui.settings.section === "project",
   "ai.connect": (s) => s.ui.settings.open && s.ui.settings.section === "ai",
   "shortcuts.open": (s) => s.ui.shortcuts.open,
   "toolbar.customize": (s) => s.ui.toolbarCustomize.open,
@@ -203,7 +204,7 @@ describe("ACT-05, ACT-08: anchors decide what's listed", () => {
     await type(app, "bold");
     expect(items(app).some((i) => i.label === "Bold")).toBe(false);
     await app.commands.run("spotlight.setOpen", { open: false });
-    app.store.update((s) => ({ ...s, ui: { ...s.ui, format: { ...s.ui.format, toolbar: true } } }));
+    await app.commands.run("format.setState", { selection: true, toolbar: false });
     await app.commands.run("spotlight.open");
     const groups = items(app).map((i) => i.group).filter((g, i, all) => all.indexOf(g) === i);
     expect(groups.filter((g) => g !== "Recent")[0]).toBe("This selection");

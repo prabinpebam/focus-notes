@@ -231,7 +231,7 @@ Following [UI states](../design/ui-states-audit.md): the dialog opens complete w
 
 ## Requirements
 
-ACT-01 to ACT-16 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-draft-for-owner-review). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-361 to D-364](../plan/decisions.md#d-361-actions-lists-only-catalogued-actions).
+ACT-01 to ACT-16 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-mact). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-361 to D-364](../plan/decisions.md#d-361-actions-lists-only-catalogued-actions).
 
 ## As built
 
@@ -242,6 +242,10 @@ The initial catalogue also proves *Open a project from GitHub…*, *Copy public 
 Shift+Enter retains a toggle's row and query while its acknowledged settings write completes. The row is temporarily unavailable during that write; its enabled state, not just its On/Off text, is the signal that a second Enter can run it.
 
 **Content slice, WP-A.4 (landing pending).** In All and quick-open results, Files contains both files and folders. A matching heading or body line is a reason on one file row, never another content kind. Enter on a heading reason opens at that heading; a body reason opens the file with Find ready. The `#` and `##` navigation modes retain their individual heading rows. Body-only results replace the provisional Create selection unless the person has moved to another row. A missing result is removed with a recovery message and the query kept; a folder opens Files revealed, expanded and focused.
+
+**Starter-flow slice, WP-A.5/A.6 (landing pending).** *Rename this project…* opens the existing Project settings name field focused; opening or cancelling writes nothing. The three selection presets open the existing Rewrite prompt pre-filled, with its provider, model and destination disclosure unchanged. Only explicit Generate or Ctrl+Enter sends; Escape sends nothing. Typing in Actions never contacts the provider: opening checks only cached, device-local connection settings, with a named checking state and a Connect to AI fix if no Writer is configured. Selection presence is independent of the formatting toolbar's intentional delay, so opening Actions immediately after selecting text does not hide selection actions.
+
+`pnpm check` now includes the catalogue proof tests, failing on a missing proof, command, pointer path or duplicate label. The generic catalogue tests prove listing and blocked reasons; renderer-only outcomes still need the native per-entry evidence in the MACT gate, not just a command event.
 
 ## Owner decisions (approved defaults, 6 November)
 

@@ -93,7 +93,7 @@ export const projectMocks = {
   label: "Mocks: One concept, Project (5 November)",
   models: {
     pnw: { sections: data.sections, fileSections: data.fileSections, folder: data.folder, repo: data.repo, file: data.file },
-    pnwProject: data.project,
+    pnwProject: { ...data.project, nameFocusRequest: 0 },
     pnwPeople: { ...data.people, available: true },
     pnwPeopleOff: data.people,
     pnwDel: data.del,

@@ -63,7 +63,7 @@ export const contract = defineContract({
     rewriteCancel: {},
     rewriteDeselect: { payload: { started: "number" } },
     format: { payload: {
-      toolbar: "boolean", card: "boolean", bold: "text", italic: "text", strike: "text", code: "text",
+      selection: "boolean", toolbar: "boolean", card: "boolean", bold: "text", italic: "text", strike: "text", code: "text",
       block: "text", codeBlock: "boolean", inlineCode: "boolean", oneBlock: "boolean", href: "text", table: "boolean",
       undo: "boolean", redo: "boolean",
     } },

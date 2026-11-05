@@ -1009,6 +1009,9 @@
           "format": {
             "run": "format.setState",
             "args": {
+              "selection": {
+                "get": "event.selection"
+              },
               "toolbar": {
                 "get": "event.toolbar"
               },
