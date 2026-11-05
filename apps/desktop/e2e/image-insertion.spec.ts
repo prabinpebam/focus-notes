@@ -195,11 +195,15 @@ for (const [kind, format] of [["local", "png"], ["github", "png"], ["github", "j
       }, probe);
       console.log("WebP decoder evidence", JSON.stringify({ header: rasterInfo(sanitized), chromium, native }));
       expect(chromium).toEqual([6, 4]);
+      await launched.app.evaluate(({ nativeImage }) => {
+        nativeImage.createThumbnailFromPath = async () => { throw new Error("OS thumbnail codecs unavailable"); };
+      });
     }
     const editor = launched.page.getByRole("textbox", { name: "Note", exact: true });
     await editor.focus(); await launched.page.keyboard.press(caret.docEnd); await launched.page.keyboard.press("Enter");
     await transfer(launched.page, "paste", input.toString("base64"));
     await expect(editor.locator("[data-image-node] img")).toBeVisible();
+    if (format === "webp") expect(await launched.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
     await expect.poll(() => readFileSync(note, "utf8")).toContain("../assets/images/");
     const src = /!\[\]\(([^)]+)\)/.exec(readFileSync(note, "utf8"))![1]!;
     const asset = resolve(dirs.docs, "notes", src), relative = src.replace("../", "");
@@ -217,4 +221,12 @@ for (const [kind, format] of [["local", "png"], ["github", "png"], ["github", "j
     expect(blob).toEqual(expected);
     expect(git("remote")).toBe("");
   } finally { await close(launched); }
+  if (format === "webp") {
+    const reopened = await launch(dirs);
+    try {
+      const image = reopened.page.locator("[data-image-node] img");
+      await expect(image).toBeVisible();
+      await expect.poll(() => image.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([6, 4]);
+    } finally { await close(reopened); }
+  }
 });
