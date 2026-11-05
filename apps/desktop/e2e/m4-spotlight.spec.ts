@@ -45,6 +45,7 @@ test("SPT-10: Enter dismisses toggles and Shift+Enter retains focus and query", 
     await expect(field(page)).toBeFocused();
     await expect(field(page)).toHaveValue("focus mode");
     await expect(active(page)).toContainText("Off");
+    await expect(active(page)).not.toHaveAttribute("aria-disabled", "true");
     await page.keyboard.press("Enter");
     await expect(spotlight(page)).toBeHidden();
     await expect(editor(page)).toBeFocused();
@@ -375,7 +376,7 @@ test("A11Y: Spotlight in every mode and its actions has no axe violations, in li
     await open(page);
     await search(page, "ideas", "Ideas");
     await page.keyboard.press(`${mod}+K`);
-    await expect(spotlight(page)).toContainText("Actions for");
+    await expect(spotlight(page)).toContainText("More actions for");
     await settled(page);
     problems.push(...(await axeViolations(page)).map((v) => `${scheme} actions: ${v}`));
     await page.screenshot({ path: `../../test-results/screens/spotlight-actions-${scheme}.png` });
