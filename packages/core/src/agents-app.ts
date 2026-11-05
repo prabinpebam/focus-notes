@@ -12,7 +12,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { agentLabel, type AgentPermissions } from "./agents.ts";
-import type { TaskTracker } from "./tasks.ts";
+import type { CommitTracker, TaskTracker } from "./tasks.ts";
 
 export type SnippetId = "vscode" | "claude" | "powershell" | "terminal";
 export interface AgentChangeRow { repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }
@@ -36,7 +36,7 @@ export interface AgentsBridge {
 export const SWITCHES = ["connect", "readPublic", "readPrivate", "edit", "createPublic"] as const;
 export type SwitchId = (typeof SWITCHES)[number];
 
-export interface AgentsState { page?: AgentsPage; loading: boolean; failed?: boolean; busy: boolean; copied?: SnippetId; undoing?: string }
+export interface AgentsState { page?: AgentsPage; loading: boolean; failed?: boolean; busy: boolean; saving?: SwitchId; copied?: SnippetId; undoing?: string }
 export const AGENTS_IDLE: AgentsState = { loading: false, busy: false };
 
 /** PowerShell: every word in single quotes, a quote inside doubled; `&` runs the quoted program. */
@@ -65,6 +65,7 @@ interface Ctx {
   toast: (message: string, opts?: { tone?: "info" | "error" }) => number;
   announce: (text: string) => void;
   tracker: TaskTracker;
+  commits: CommitTracker;
 }
 
 export function registerAgents(ctx: Ctx) {
@@ -104,11 +105,21 @@ export function registerAgents(ctx: Ctx) {
       if (key !== "connect" && !page.permissions.connect) return;
       generation++;
       const next = Object.fromEntries(SWITCHES.map((k) => [k, k === key ? !page.permissions[k] : page.permissions[k]])) as Pick<AgentPermissions, SwitchId>;
-      set({ busy: true, loading: false });
-      const read = await agents.setSwitches(next).catch(() => undefined);
-      set({ busy: false, ...(read ? { page: read } : {}) });
-      if (!read) return void fail();
-      ctx.announce(catalog.format(read.permissions[key] ? "agents.switchOn" : "agents.switchOff", { name: catalog.format(`agents.switch.${key}`) }));
+      set({ busy: true, saving: key, loading: false });
+      let read: AgentsPage | undefined;
+      try {
+        await ctx.commits.run(`agents.${key}`, "agents.toggle", { id: key }, async () => {
+          read = await agents.setSwitches(next);
+          if (read.permissions[key] !== next[key]) throw new Error("Agent setting was not accepted");
+        });
+        set({ page: read! });
+        ctx.announce(catalog.format(read!.permissions[key] ? "agents.switchOn" : "agents.switchOff", { name: catalog.format(`agents.switch.${key}`) }));
+      } catch (error) {
+        console.error("Agent setting write failed", opErrorCode(error));
+        throw error;
+      } finally {
+        set({ busy: false, saving: undefined });
+      }
     },
   });
   commands.register<{ id: unknown }>({
@@ -155,7 +166,7 @@ export function registerAgents(ctx: Ctx) {
       type: "object",
       properties: {
         loading: { type: "boolean" }, waiting: { type: "boolean" }, failed: { type: "boolean" }, retrying: { type: "boolean" }, ready: { type: "boolean" }, busy: { type: "boolean" }, changedOutside: { type: "boolean" },
-        switches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, pressed: { type: "boolean" }, disabled: { type: "boolean" }, reason: { type: "string" } } } },
+        switches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, pressed: { type: "boolean" }, disabled: { type: "boolean" }, reason: { type: "string" }, commit: { type: "string", enum: ["rest", "pending", "confirmed", "failed"] }, error: { type: "string" } } } },
         folders: { type: "string" },
         snippets: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, value: { type: "string" }, copyLabel: { type: "string" } } } },
         recent: { type: "array", items: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, detail: { type: "string" }, busy: { type: "boolean" }, undoLabel: { type: "string" } } } },
@@ -163,7 +174,7 @@ export function registerAgents(ctx: Ctx) {
         cli: { type: "object", properties: { status: { type: "string" }, canInstall: { type: "boolean" } } },
       },
     },
-    reads: ["ui.agents", "tasks"],
+    reads: ["ui.agents", "tasks", "commits"],
     select: (s) => {
       const a = s.ui.agents;
       const p = a.page;
@@ -173,8 +184,10 @@ export function registerAgents(ctx: Ctx) {
         ...loading, ready: true, busy: a.busy, changedOutside: p.changedOutside,
         switches: SWITCHES.map((id) => ({
           id, label: catalog.format(`agents.switch.${id}`), note: catalog.format(`agents.switch.${id}.note`), pressed: p.permissions[id] === true,
-          disabled: a.busy || (id !== "connect" && !p.permissions.connect),
-          reason: catalog.format("agents.switch.needsConnect"),
+          disabled: (a.busy && a.saving !== id) || (id !== "connect" && !p.permissions.connect),
+          reason: catalog.format(a.busy ? "agents.saving" : "agents.switch.needsConnect"),
+          commit: s.commits.find(c => c.target === `agents.${id}`)?.phase ?? "rest",
+          error: catalog.format("agents.failed"),
         })),
         folders: p.permissions.folders === "all" ? catalog.format("agents.folders.all") : catalog.format("agents.folders.some", { folders: p.permissions.folders.join(", ") || catalog.format("agents.folders.none") }),
         snippets: p.snippets.map((x) => ({ id: x.id, label: catalog.format(`agents.snippet.${x.id}`), value: x.text, copyLabel: catalog.format(a.copied === x.id ? "agents.copied" : "agents.copy") })),

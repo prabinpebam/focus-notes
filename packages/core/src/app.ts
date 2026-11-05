@@ -1386,7 +1386,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ],
   });
   const keybindings = registerKeybindings({ store, commands, viewModels, catalog, bridge, toast });
-  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker });
+  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker, commits });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now, ai });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });

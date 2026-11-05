@@ -39,6 +39,19 @@ The approved ToolbarComposer replaces the old action-button list in the existing
 
 The first toolbar gate exposed a startup race in the unrelated delete/Undo fixture: its CI snapshot showed the deletion notification without Undo, while Git history became available only afterward. The journey now waits for the real Recently deleted control before deleting, proving the required history capability has initialized. Its Undo, exact restored bytes, history and remote assertions remain unchanged; three repeated invisible runs pass.
 
+### Owner feedback batch, 6 November: on/off audit
+
+The source audit finds 27 production toggle declarations (one Agents repeat renders five permissions). The implementation proceeds by these semantic groups; the table does not claim pending conversions are built.
+
+| Surface | Meaning | Required treatment | Evidence |
+| --- | --- | --- | --- |
+| Settings → Agents | Five independent on/off permissions, saved as one permission document | Switch; own-border pending/confirmation/refusal, stored value and focus retained, row Retry | Implemented locally: 13 core units; real Git-backed restart journey; synthetic refusal/Retry keyboard journey with stable bounds |
+| Settings appearance sync; sharing link/passcode and included items; reader Remember; feedback attachment | Binary settings | Switch | Pending conversion |
+| Find and Find in all: case, whole word, regular expression, selection | Binary search settings | Switch | Pending conversion |
+| Find's replacement disclosure; Files pin/unpin; regenerate passcode words | Open/close or named actions, not settings | Action buttons, without misleading pressed semantics | Pending correction |
+| Bold, italic, strike, code, link | Editor formatting | Pressed buttons are appropriate | Preserve |
+| Rewrite presets | Three mutually exclusive choices | Segmented choice | Preserve three-way semantics; enforcement pending |
+
 | State family | Kept | Removed | Enforcement |
 | --- | --- | --- | --- |
 | Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |
