@@ -59,6 +59,15 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [dropId, setDropId] = useState("");
+  const [pinHover, setPinHover] = useState("");
+  const [pinFocus, setPinFocus] = useState("");
+  const [canHover, setCanHover] = useState(() => typeof matchMedia === "function" && matchMedia("(hover: hover)").matches);
+  useEffect(() => {
+    const media = matchMedia("(hover: hover)");
+    const changed = () => setCanHover(media.matches);
+    media.addEventListener("change", changed);
+    return () => media.removeEventListener("change", changed);
+  }, []);
   const drag = useRef<{ source: string; ids: string[] } | null>(null);
   const hover = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const typed = useRef<TypeAheadState>({ text: "", at: -Infinity });
@@ -345,6 +354,10 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             data-kind={item.kind}
             data-menu-open={menuAt?.id === item.id ? "" : undefined}
             onContextMenu={(e) => contextMenu(e, item)}
+            onPointerEnter={() => setPinHover(item.id)}
+            onPointerLeave={() => setPinHover(current => current === item.id ? "" : current)}
+            onFocusCapture={() => setPinFocus(item.id)}
+            onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setPinFocus(""); }}
             draggable={item.draggable && !item.editing}
             onClick={(e) => click(e, item)}
             onDoubleClick={() => !item.editing && onAction?.({ id: item.id })}
@@ -366,7 +379,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             {item.kind !== "section" ? (
               <span className={s.icon}>
                 <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></span>
-                {item.pinLabel && !item.editing ? (
+                {item.pinLabel && !item.editing && (!canHover || item.id === focused || item.id === pinHover || item.id === pinFocus || (item.pinCommit && item.pinCommit !== "rest")) ? (
                   <span className={s.pinControl} data-pin-commit={item.pinCommit}
                     data-key-scope="filesSection" data-key-scope-stop=""
                     onKeyDown={e => e.stopPropagation()}
