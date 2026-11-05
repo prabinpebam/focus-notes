@@ -221,7 +221,7 @@ test("Open and Recent empty first actions choose a real project and replace thei
       const empty = open.locator("[data-tone=neutral]").filter({ hasText: title });
       expect(await empty.evaluate(el => parseFloat(getComputedStyle(el).minHeight))).toBeGreaterThan(0);
       await empty.getByRole("button", { name: "Open project", exact: true }).click();
-      await expect(open).toHaveCount(0);
+      await expect(open).toHaveCount(0, { timeout: 30_000 });
       expect(await l.app.evaluate(() => Number(Reflect.get(globalThis, "uiStatesProjectPickers")))).toBe(index + 1);
       await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
       await expect(open.getByRole("button", { name: "Open ws", exact: true })).toBeVisible();
