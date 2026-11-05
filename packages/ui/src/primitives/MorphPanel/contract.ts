@@ -7,6 +7,7 @@ export const contract = defineContract({
   props: {
     label: { kind: "message", required: true },
     open: { kind: "boolean", default: false },
+    preview: { kind: "boolean", default: false, description: "A picture of the open panel (the toolbar customizer, DD-IA-08): it takes no focus and Esc or a click outside leave it open." },
   },
   events: { openChange: { payload: { open: "boolean" } } },
   slots: { trigger: { accepts: "any", min: 1, max: 1 }, content: { accepts: "any", min: 1, max: 1 } },
@@ -17,5 +18,6 @@ export const contract = defineContract({
   fixtures: [
     { name: "closed", covers: ["closed"], props: { label: { t: "toolbar.label" }, open: false }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
     { name: "open", covers: ["open"], props: { label: { t: "toolbar.label" }, open: true }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
+    { name: "preview", props: { label: { t: "toolbar.label" }, open: true, preview: true }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
   ],
 });

@@ -32,6 +32,7 @@ import { contract as DialogPanel } from "./primitives/DialogPanel/contract.ts";
 import { contract as Dialog } from "./compounds/Dialog/contract.ts";
 import { contract as Spinner } from "./primitives/Spinner/contract.ts";
 import { contract as ScanRadar } from "./primitives/ScanRadar/contract.ts";
+import { contract as ToolbarComposer } from "./primitives/ToolbarComposer/contract.ts";
 import { contract as CommitMark } from "./primitives/CommitMark/contract.ts";
 import { contract as EmptyState } from "./primitives/EmptyState/contract.ts";
 import { contract as NotificationRegion } from "./layouts/NotificationRegion/contract.ts";
@@ -91,6 +92,7 @@ export const contractsByType = {
   EmptyState, NotificationRegion,
   SecureKeyField,
   OpenItem,
+  ToolbarComposer,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, ScanRadar, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,

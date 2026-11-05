@@ -33,6 +33,10 @@ The obsolete `data-bleed` marker is removed too: the visual-quality probe must m
 
 The taller, correctly padded header also exposed minimum-height scroll clips. The category tabs' inset focus ring needs no exterior scroll-padding allowance (which otherwise pushes a 32 px tab beyond a 34 px viewport); SearchField uses its existing inset focus outline without a second exterior shadow, so it remains complete in a one-control-tall Files viewport.
 
+### Owner feedback batch, 6 November: toolbar integration
+
+The approved ToolbarComposer replaces the old action-button list in the existing Customize toolbar dialog, reached from More or Settings → Keyboard. Each drop publishes a complete validated order to the live toolbar and the existing serial device-settings write lane. Failure restores the durable order and shows a localized error; unit evidence includes consecutive failed saves. Reorder, removal, addition, hold-to-replace, full refusal and Reset are checked through the real app and process restarts. Only the active drop slot has an accent outline; no new writing-window element is added, and the separately landed AI scan/editor focus work is not replayed.
+
 | State family | Kept | Removed | Enforcement |
 | --- | --- | --- | --- |
 | Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |

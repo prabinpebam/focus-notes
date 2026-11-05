@@ -32,7 +32,7 @@ The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedbac
 | OFB.13–OFB.15 | "/" block menu lists every block, keyboard and mouse, round-trip | W2 | Open | |
 | OFB.16 | Table insertion end to end | W2 | Open | |
 | OFB.17–OFB.19 | Images slice 1 | W2 | Open | |
-| OFB.20–OFB.21 | Customize toolbar wired into the app | W1 after its first landing | Open | |
+| OFB.20–OFB.21 | Customize toolbar wired into the app | W1 | Checked locally; awaiting exact-head green main and Preview | Approved composer from `4829b2cc` is integrated without replaying the parked AI or editor patches. Six core units pass, including durable-order rollback after consecutive failures and validated complete-order persistence. Four built-app journeys pass: normal/minimum-window wrapping, pointer reorder/remove/add/one-second replace/full refusal, keyboard equivalents, Settings → Keyboard entry, actual toolbar order after restart and Reset after another restart. `pnpm check`, UI/core/desktop typechecks and desktop build pass. Target outlines remain transient; no writing-window element added. |
 | OFB.22 | Actions, stage MACT | W3 | Open | |
 | OFB.23 | Each slice on green `main` and in Preview | Coordinator | Open | |
 | OFB.24 | Owner corrections recorded as rules and checks | W1 with this stage's commit | Open | AGENTS.md rule 6 and D-354 to D-360 added with this stage |

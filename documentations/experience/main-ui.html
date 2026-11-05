@@ -151,7 +151,23 @@
   </tbody>
 </table>
 <p>The six defaults are a proposal (<a href="../plan/decisions.md">D-18</a>). In P1 the writer can pin any six commands (UI-08). Anything unpinned moves into ⋯ automatically, so the six-action cap always holds.</p>
-<p><strong>As built (WP-8.3, <a href="../plan/decisions.md">D-170</a>).</strong> <em>Customize toolbar…</em>, in ⋯ and in Settings → Keyboard, lists the pinned actions in order, each with <em>Move up</em>, <em>Move down</em>, and <em>Unpin</em>, and the other actions with <em>Pin</em>. It also has <em>Reset to default</em>. The pinnable actions are the six defaults and ⋯'s commands. An unpinned default joins a first ⋯ group, <em>Actions</em>. The choice is kept on this device.</p>
+<p><strong>Previous implementation (WP-8.3, <a href="../plan/decisions.md">D-170</a>).</strong> The text-button list is superseded by the approved composer below. <em>Customize toolbar…</em> remains in ⋯ and Settings → Keyboard, with <em>Reset to default</em> and <em>Done</em>. The pinnable actions remain the six defaults and ⋯'s commands. An unpinned default joins a first ⋯ group, <em>Actions</em>. The choice stays on this device.</p>
+
+<h3 id="customize-toolbar-visual">Customize toolbar, visual (approved, owner 5 November)</h3>
+<p><strong>Approved at 02:43 on 5 November; integrated for the <a href="../plan/definition-of-done.md#owner-feedback-batch-6-november-ofb">6 November owner feedback batch</a></strong> (DD-IA-08, OFB.20–OFB.21). It replaces the list of text buttons above with the toolbar itself:</p>
+<ul>
+  <li><strong>A wide dialog</strong> (<code>dialogL</code>) whose top is the real expanded toolbar: the same frame, buttons, ⋯ and tooltips (name and shortcut on hover, never written out). Hover and press work; pressing runs nothing.</li>
+  <li><strong>The catalogue below</strong>: every action that can be added, grouped by category, in 4 columns (3 or fewer when narrow). Each is the toolbar's own icon button with its name beside it.</li>
+  <li><strong>Targets and grouping.</strong> Icon buttons use the shared <code>size.hit</code> target (32 px). Catalogue groups have 32 px separation, at least twice the spacing within a group; token changes preserve the same hit target on the real toolbar and its preview.</li>
+  <li><strong>Narrow windows.</strong> The preview frame fits the stage's available width and its actions wrap, without clipping or shrinking hit targets. Pointer insertion and replacement follow the row under the pointer. The full composer is checked at normal size and the app's 360 &times; 320 px minimum window size.</li>
+  <li><strong>Drag to arrange.</strong> Drag from the catalogue or within the toolbar; an insertion marker shows exactly where it lands. Drag a toolbar button away from the toolbar to remove it.</li>
+  <li><strong>Hold to replace.</strong> Only the active drop target gets an accent outline (D-345); resting toolbar buttons remain unchanged. Rest a dragged button on a slot for 1 second: the button there moves fully clear of the dragged button so both remain visible, while the outlined slot stays in place. Move away and it settles back; drop and it slides out and fades while the new one settles in.</li>
+  <li><strong>Six at most.</strong> With six on the toolbar the marker is red and dropping between slots adds nothing; remove one, or hold to replace.</li>
+  <li><strong>Keyboard and screen readers.</strong> Space or Enter picks a button up; arrows, Home and End choose a place (gaps and buttons). Enter drops: inserting at a gap or replacing on a button. Esc cancels; Delete removes a toolbar button. Every pick up, move, drop, replace, removal and "toolbar is full" is announced.</li>
+  <li><strong>Reduced motion</strong> keeps the marker and the lifted button, without the slides and fades.</li>
+</ul>
+
+<p><strong>Persistence and evidence.</strong> Each drop commits one complete validated order through the existing device-settings write lane. Failure restores the last durable order and shows an error; no half-applied swap is saved. The built-app journeys in <code>toolbar-composer.spec.ts</code> verify pointer reorder, removal/addition, the one-second replacement, the red full refusal and keyboard equivalents. The Keyboard settings journey uses the same pick-and-drop model, checks the six-button limit, the real toolbar and unpinned actions in ⋯, and runs its accessibility checks. Restarts inspect the actual expanded toolbar, including after Reset, not just the saved settings or command calls. The approved design is wired without adding anything to the writing window; no live GitHub action is part of these checks.</p>
 
 <h3 id="the-menu">The ⋯ menu</h3>
 <table>

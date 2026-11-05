@@ -9,6 +9,7 @@ import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import type { CommandItem, MenuSection } from "../../ui/src/data.ts";
 
 export const TOOLBAR_SLOTS = 6;
 export interface ToolbarCustomizeState { open: boolean; focus: number }
@@ -29,9 +30,12 @@ interface Ctx {
   catalog: MessageCatalog;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   announce: (text: string) => void;
+  toast: (text: string, opts: { tone: "error" }) => unknown;
   /** The actions that can be pinned, in ⋯'s order after the defaults. */
   pinnable: () => readonly string[];
   defaults: readonly string[];
+  describeItem: (id: string) => CommandItem;
+  groups: () => MenuSection[];
 }
 
 export function registerToolbarCustomize(ctx: Ctx) {
@@ -40,15 +44,35 @@ export function registerToolbarCustomize(ctx: Ctx) {
   const label = (id: string) => catalog.format(commands.describe(id).title);
   // Opening it closes Settings (one dialog at a time), as other settings dialogs do.
   const setOpen = (open: boolean) => store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, ...(open ? { settings: { ...s.ui.settings, open: false } } : {}), toolbarCustomize: { open, focus: s.ui.toolbarCustomize.focus + (open ? 1 : 0) } } }));
+  let saveVersion = 0;
+  let savedPinned: string[] | undefined;
   async function save(next: string[], said: string): Promise<void> {
+    savedPinned ??= [...pinned()];
+    const version = ++saveVersion;
     store.update((s) => ({ ...s, toolbarPinned: next }));
-    ctx.announce(said);
-    await ctx.persistAppState({ toolbarPinned: next });
+    try {
+      await ctx.persistAppState({ toolbarPinned: next });
+      savedPinned = [...next];
+      if (version === saveVersion) ctx.announce(said);
+    } catch (error) {
+      if (version === saveVersion) store.update((s) => ({ ...s, toolbarPinned: savedPinned! }));
+      ctx.toast(catalog.format("toolbar.customize.saveFailed"), { tone: "error" });
+      throw error;
+    }
   }
   const id = (a: { id?: unknown }) => (typeof a.id === "string" ? a.id : "");
 
   commands.register({ id: "toolbar.customize", title: "command.toolbar.customize", icon: "settings", run: () => setOpen(true) });
   commands.register<{ open: unknown }>({ id: "toolbar.setCustomizeOpen", title: "command.toolbar.customize", run: ({ open }) => { if (!open) setOpen(false); } });
+  commands.register<{ ids: unknown }>({
+    id: "toolbar.setPinned", title: "command.toolbar.customize",
+    run: async ({ ids }) => {
+      if (typeof ids !== "string") throw new Error("Invalid toolbar order");
+      const next = ids ? ids.split(",") : [];
+      if (next.length > TOOLBAR_SLOTS || new Set(next).size !== next.length || next.some(x => !ctx.pinnable().includes(x))) throw new Error("Invalid toolbar order");
+      await save(next, catalog.format("toolbar.customize.updated"));
+    },
+  });
   commands.register<{ id: unknown }>({
     id: "toolbar.pin", title: "command.toolbar.pin",
     run: async (a) => {
@@ -92,16 +116,20 @@ export function registerToolbarCustomize(ctx: Ctx) {
         open: { type: "boolean" }, focus: { type: "number" }, count: { type: "string" }, full: { type: "boolean" }, canReset: { type: "boolean" },
         pinned: { type: "array", items: { ...ROW, properties: { ...ROW.properties, up: { type: "string" }, down: { type: "string" }, unpin: { type: "string" }, first: { type: "boolean" }, last: { type: "boolean" } } } },
         available: { type: "array", items: { ...ROW, properties: { ...ROW.properties, pin: { type: "string" } } } },
+        items: { type: "array", items: { ...ROW, properties: { ...ROW.properties, icon: { type: "string" }, shortcut: { type: "string" }, checked: { type: "boolean" } } } },
+        groups: { type: "array", items: { ...ROW, properties: { ...ROW.properties, items: { type: "array", items: { ...ROW, properties: { ...ROW.properties, icon: { type: "string" }, shortcut: { type: "string" }, checked: { type: "boolean" } } } } } } },
       },
     },
-    reads: ["ui.toolbarCustomize", "toolbarPinned"],
+    reads: "*",
     select: (s) => {
       const c = s.ui.toolbarCustomize;
-      if (!c.open) return { open: false, focus: c.focus, count: "", full: false, canReset: false, pinned: [], available: [] };
+      if (!c.open) return { open: false, focus: c.focus, count: "", full: false, canReset: false, pinned: [], available: [], items: [], groups: [] };
       const p = s.toolbarPinned;
       return {
         open: true, focus: c.focus, full: p.length >= TOOLBAR_SLOTS, canReset: p.join() !== ctx.defaults.join(),
         count: catalog.format("toolbar.customize.count", { count: p.length, slots: TOOLBAR_SLOTS }),
+        items: p.map(ctx.describeItem),
+        groups: ctx.groups(),
         pinned: p.map((x, i) => ({
           id: x, label: label(x), first: i === 0, last: i === p.length - 1,
           up: catalog.format("toolbar.customize.up", { name: label(x) }), down: catalog.format("toolbar.customize.down", { name: label(x) }), unpin: catalog.format("toolbar.customize.unpin", { name: label(x) }),
