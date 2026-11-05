@@ -6,7 +6,7 @@
 
 The owner's Spotlight note (5 November): "We don't want to dump all actions and then figure out which ones don't work and remove it. Instead we want to put actions confidently and only the ones we know for sure makes sense and actually works." Today Spotlight lists every registered command not on a deny-list (D-111), about 200 rows including dialog steps and duplicates.
 
-- **Allow-list.** Only actions in a catalogue in `packages/core` are listed. Each entry passes Q1 to Q7 (intent, starts here, one anchor, distinct, proven, works here, reachable elsewhere) and names the check that proves its outcome from Actions; an entry without a passing proof isn't listed.
+- **Allow-list.** Only actions in a catalogue in `packages/core` are listed. Each entry passes Q1 to Q7 (intent, starts here, one anchor, distinct, proven, works here, reachable elsewhere) and names the check that proves its outcome from Actions; an entry without a passing proof isn't listed. Rows whose command is missing or unproven wait as Candidates until their blocker is closed and recorded here.
 - **Commands are unchanged.** Every command still runs from its key, menu, dialog, agent or deep link. KEY-01 becomes "every action is a named command; the catalogued ones are listed in Actions". D-111's "lists every action the app has" is superseded.
 - Rejected: pruning the deny-list (the next dialog's *Cancel* arrives with it); a per-command `palette: false` flag (opt-out repeats the failure; VS Code's `menus.commandPalette` shows the cost).
 
@@ -24,7 +24,7 @@ From the owner's "independent actions" and "actions that need an anchor… expli
 
 - Each action has exactly one anchor: app, project, current note, a selection kind, or a chosen result. Results are grouped *This selection*, *This note*, *This project*, *App* (and later *Yours*).
 - Context is captured when Actions opens; an action whose context changed refuses and says so.
-- Labels are unique, start with a verb, and name their object when a verb repeats (*Rename note…*, *Rename project…*); the active row shows a one-line outcome.
+- Labels are unique, start with a verb, and name their object when a verb repeats (*Rename this note…*, *Rename project…*); the active row shows a one-line outcome.
 - Actions that can't apply are hidden; fixable ones are blocked with their reason and the fix as the next row; `>` browses the whole catalogue with what each needs.
 - Content is the files and folders the Files panel shows in this project (D-273); headings and body lines are reasons on a file's row, not groups of their own (owner question 1).
 - Rejected: one *Rename…* that asks what to rename (an extra step and an ambiguous row); showing every action disabled with a reason in the normal list (the dump the owner described); a blocked row that runs its fix itself (two meanings for one row).

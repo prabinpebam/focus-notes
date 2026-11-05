@@ -449,10 +449,10 @@ These are independently reviewable slices; lookahead permits design without unre
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-A.1 | **Actions design in the gallery (strict design).** Mocks of every state above; gallery only. | none | WP-4.2 | design-system, accessibility |
-| WP-A.2 | **Call it Actions, and list only what's catalogued.** Allow-list catalogue, proof and distinction checks, relabelled survivors, *Find and act*. | ACT-01, ACT-02, ACT-03, ACT-07 | WP-A.1, WP-P.1 | code, design-system, accessibility |
+| WP-A.2 | **Call it Actions, and list only what's catalogued.** Allow-list catalogue, proof and distinction checks, relabelled survivors, *Find and act*. | ACT-01, ACT-02, ACT-03, ACT-07, ACT-16 | WP-A.1, WP-P.1 | code, design-system, accessibility |
 | WP-A.3 | **Anchors, groups and context.** Snapshot, groups, hidden and blocked with fixes, stale refusal, empty and `>` browse. | ACT-05, ACT-06, ACT-08, ACT-15 | WP-A.2 | code, design-system, accessibility |
 | WP-A.4 | **Files and folders as content.** Files' rules, folders focused in Files, text matches as reasons. | ACT-04 | WP-A.2 | code, accessibility |
-| WP-A.5 | **The starter set, proven.** New wiring for three entries, relabels, each proven from Actions. | ACT-09, ACT-11, ACT-12 | WP-A.3 | code, security, accessibility |
+| WP-A.5 | **The starter set, proven.** New wiring for the owner-asked entries, relabels, Candidates closed or kept, each proven from Actions. | ACT-09, ACT-11, ACT-12 | WP-A.3 | code, security, accessibility |
 | WP-A.6 | **AI actions through the approved prompt.** Rewrite, Write, presets pre-filled, Caption. | ACT-10 | WP-A.3, WP-AI.14, WP-P.2 | code, security, accessibility |
 | WP-A.7 | **Your own actions (waits for the owner's yes).** Saved prompts and templates, `actions.json`, schema version 1. | ACT-13, ACT-14 | WP-A.6 | code, security, design-system, accessibility |
 

@@ -94,7 +94,7 @@ The owner asks for "a good framework to qualify what goes as result", with "only
 | **Q2 Starts here** | Enter performs it in one step, or opens the start of its task flow with focus inside. Nothing needs a dialog to be open already. | *Cancel naming*, *Restore this version* | Owner |
 | **Q3 One anchor** | It names exactly one anchor (app, project, current note, selection, chosen result) and is listed only while that anchor is there. | *Bold* with no selection; *Share…* with nothing to share | Owner (independent vs anchored) |
 | **Q4 Distinct** | Its label is unique in the catalogue, and its label, group and one-line outcome can't be mistaken for another action's. | *Share…* ×2, *New note in…* ×7 | Owner |
-| **Q5 Proven** | A check runs it **from Actions** and asserts the outcome the person sees. Unproven actions are not listed. | Most of today's rows have no such check | Owner ("know for sure… actually works") |
+| **Q5 Proven** | A check runs it **from Actions** and asserts the outcome the person sees. An action that leaves the app (GitHub, the browser, Explorer, printing) is proven at that boundary: a fake service or system shell asserts the exact request or path. Unproven actions are not listed. | Most of today's rows have no such check | Owner ("know for sure… actually works") |
 | **Q6 Works here** | It works on this platform and in this kind of window (project or standalone file). | *Lock*, *Reset demo*, *Open in new window* | Owner ("can't work") |
 | **Q7 Reachable elsewhere** | It also has a pointer path (toolbar, menu, Files context menu, Settings), so Actions is a shortcut, never the only door. | — (kept from Spotlight's accessibility rule) | Existing rule |
 
@@ -162,14 +162,15 @@ The owner asks for "a good framework to qualify what goes as result", with "only
 | Anchor | Explicit or implicit | Present when | Group heading | Examples | Source |
 | --- | --- | --- | --- | --- | --- |
 | **Selection** | Explicit | Text, an image or blocks are selected in the note when Actions opens | *This selection* | Bold, Add link…, Rewrite with AI…, Caption image with AI… | Owner (bold); the rest proposals |
-| **Chosen result** | Explicit | A note or folder row is active in Actions and you press <kbd>→</kbd> | *the item's name* | Rename note…, Move to…, Show in Files | Existing quick actions, curated |
+| **Chosen result** | Explicit | A note or folder row is active in Actions and you press <kbd>→</kbd> | *the item's name* | The same note and folder actions (*Rename this note…*, *Move this folder to…*), acting on the chosen item | Existing quick actions, curated |
 | **Current note** | Implicit | A note or standalone file is open | *This note* | Share this note…, Publish this note…, Note history | Owner (share, publish) |
-| **Project** | Implicit | The window is a project's window | *This project* | Project settings…, Rename project…, Project colour and logo… | Owner (settings, rename, theme) |
+| **Project** | Implicit | The window is a project's window | *This project* | Project settings…, Rename project… | Owner (settings, rename) |
 | **App** | None | Always | *App* | Sign in to GitHub…, Connect to AI…, Keyboard shortcuts, Customize toolbar… | Owner |
 
 Rules:
 
-1. **One anchor per action** (Q3). An action that could act on several (rename a note, a folder, a project) is several actions, each naming its object: *Rename note…*, *Rename folder…*, *Rename project…*. This is what makes two actions with the same verb distinguishable.
+1. **One anchor per action** (Q3). An action that could act on several kinds of thing (rename a note, a folder, a project) is several actions, each naming its object: *Rename this note…*, *Rename this folder…*, *Rename project…*. This is what makes two actions with the same verb distinguishable. A note action is one entry whether it acts on the open note (in *This note*) or on a chosen note (in that note's panel): one entry, one label, never a second look-alike.
+2. **The owner's "change the theme"** sits in *App*: themes are yours and per device (D-46), so the row says *Your theme, on this device* rather than pretending to belong to the project (question 5 on the feature page).
 2. **The context is captured as Actions opens** (proposal P-03): the project, the current note and its revision, the selection and its kind, and the Files panel's selection if it was focused. Actions acts on that snapshot. If, when you press Enter, the snapshot no longer matches (the note changed on disk, another window moved it, the selection was edited), the action **refuses and says why**; it never acts on something else. This reuses Rewrite's target-version guard.
 3. **The narrowest anchor wins the top of the list.** With a selection, *This selection* comes first; then *This note*, *This project*, *App*. Typing ranks across groups, but each row keeps its group heading, so the anchor is always visible.
 4. **A standalone file's window has no project anchor.** Project actions aren't listed there; app actions such as *Open project…* are.
@@ -218,12 +219,12 @@ The shortcut, icon and current state come from the command, so Actions shows the
 | Rule | Example | Checked by |
 | --- | --- | --- |
 | **D1 Unique label.** No two catalogued actions share a label, in any language file. | *Share…* and *Share…* become *Share this note…* and *Share folder…* | Catalogue check |
-| **D2 Verb, then object.** Labels start with the verb; the object is named whenever another action uses the same verb. | *Rename note…*, *Rename folder…*, *Rename project…* | Catalogue check: same first word ⇒ an object is required |
-| **D3 "This" for implicit anchors.** Actions on the current note or project say *this note*, *this project*; actions on a chosen result name it by its group. | *Publish this note…* vs a result's *Publish…* under its own name | Review |
+| **D2 Verb, then object.** Labels start with the verb; the object is named whenever another action uses the same verb. | *Rename this note…*, *Rename this folder…*, *Rename project…* | Catalogue check: same first word ⇒ an object is required |
+| **D3 "This" names the target.** Note and folder actions say *this note*, *this folder*; in the list "this" is the open note, in a result's panel it's that result, and the panel's heading is context, never what tells two rows apart. | *Publish this note…* in both places | Review |
 | **D4 Ellipsis means more input.** "…" only when a flow asks for something before anything changes. | *Rename project…* (asks a name), *Bold* (doesn't) | Review, existing convention |
 | **D5 One outcome, one action.** Two actions never reach the same outcome; two outcomes never share an action. | *Files* and *Show the current note in Files* become *Show Files* and *Show this note in Files* | Review |
 | **D6 State in the row, not a second action.** A toggle is one action showing its state; a choice of a few values is one action per value. | *Focus mode · On*; *Use dark appearance*, *Use light appearance*, *Match system appearance* | Review |
-| **D7 Synonyms never collide with a label.** A synonym that is another action's label is removed. | *theme* can't be a synonym of *Project colour and logo…* while *Change theme…* exists | Catalogue check |
+| **D7 Synonyms never collide with a label.** A synonym that is another action's label is removed. | *shortcuts* can be a synonym of *Keyboard shortcuts* only while no other action is labelled *Shortcuts* | Catalogue check |
 | **D8 Look-alike review.** Any two labels sharing a verb, or within a short edit distance, are listed for review with their outcomes side by side when the catalogue changes. | *Open project…* / *Open file…* / *Open project on GitHub* | Catalogue check prints the pairs |
 
 ## Effects, confirmation and undo
@@ -236,10 +237,10 @@ What an action can change decides how it confirms and how it's undone. Actions n
 | `toggle` | Focus mode, Use dark appearance | None; the row's state changes | Run it again | Yes; <kbd>Shift</kbd>+<kbd>Enter</kbd> keeps it open (SPT-10) |
 | `flow` | Rename project…, Connect to AI…, Customize toolbar… | The flow's own steps; nothing changes until you confirm there | The flow's own | Yes, focus moves into the flow |
 | `edit` | Bold, Add link… | None | One <kbd>Ctrl</kbd>+<kbd>Z</kbd> step | Yes, focus and selection return to the note |
-| `files` | Move note to…, Duplicate note | Files' own confirmations and batches (D-94, D-99) | Files' undo, Recently deleted | Yes |
+| `files` | Move this note to…, Duplicate this note | Files' own confirmations and batches (D-94, D-99) | Files' undo, Recently deleted | Yes |
 | `visibility` | Make this note public | Always asks (CP-REACH-01 conflict table: "even from Spotlight") | Make private | Yes, into the confirmation |
 | `outbound` | Share this note…, Publish this note…, Rewrite with AI… | The flow's disclosure (destination, integration, model, where it runs) | Unpublish, stop sharing, one undo step for AI text | Yes, into the flow |
-| `destructive` | Delete note, Delete project… | Its existing confirmation; the danger button | Recently deleted; none for a project (GitHub's own) | Yes, into the confirmation |
+| `destructive` | Delete this note, Delete project… | Its existing confirmation; the danger button | Recently deleted; none for a project (GitHub's own) | Yes, into the confirmation |
 
 **No action chains into an outbound or destructive effect without the person seeing the destination or the consequence first.** That's why [chaining](#composition-and-chaining) is out.
 
