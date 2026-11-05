@@ -84,6 +84,16 @@ describe("menus (TBL-08, Tables → Menus)", () => {
 });
 
 describe("actions go back to the editor (TBL-02, TBL-08)", () => {
+  it("offers Insert table outside tables and forwards it to the same editor insertion (OFB.16)", async () => {
+    const { app, actions } = await started();
+    expect(app.commands.describe("table.insert").enabled).toBe(true);
+    await app.commands.run("table.insert");
+    expect(actions).toEqual([{ id: "table.insert" }]);
+    app.store.update((s) => ({ ...s, ui: { ...s.ui, format: { ...s.ui.format, inTable: true } } }));
+    expect(app.commands.describe("table.insert").enabled).toBe(false);
+    await app.commands.run("table.insert");
+    expect(actions).toHaveLength(1);
+  });
   it("forwards known actions with their table, row, column, and drop target; refuses others", async () => {
     const { app, actions, at } = await started();
     await at({});
