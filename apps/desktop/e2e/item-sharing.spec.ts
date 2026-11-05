@@ -44,6 +44,12 @@ test("Share New words is icon-only, aligned and keeps pending feedback on its ow
       expect(field).not.toBeNull();
       expect(box!.y).toBe(field!.y);
       expect(box!.height).toBe(field!.height);
+      const row = await button.evaluate(el => {
+        const box = el.parentElement!.getBoundingClientRect();
+        return { right: box.right, width: box.width };
+      });
+      expect(box!.x + box!.width).toBe(row.right);
+      expect(field!.width).toBeGreaterThan(row.width / 2);
     }
     const before = await button.boundingBox();
     await pointerModality(page);
