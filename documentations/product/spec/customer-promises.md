@@ -22,7 +22,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
 | `CP-KNOW-01` | Know what you're getting, and get help when you need it | Owner: product site, support articles, demo (2026-10-16) | SC-HELP-01 to SC-HELP-04 |
 | `CP-RWR-01` | Ask AI for words without giving up control | Owner: optional writing, rewriting and image captions | SC-RWR-01, SC-RWR-03, SC-RWR-04, SC-RWR-05, SC-IMG-05 |
-| `CP-SCOPE-01` | One project, one focus | Owner: isolated projects, 3 November | SC-PROJ-01 to SC-PROJ-07 |
+| `CP-SCOPE-01` | One project, one focus | Owner: isolated projects, 3 November; deliberate deletion, 5 November | SC-PROJ-01 to SC-PROJ-08 |
 
 <h2 data-reader-personas="product">The promises</h2>
 
@@ -44,7 +44,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | Why it matters | A book, a job and a club should not share search results, commits or permissions by accident. |
 | Breaks when | A project window searches or changes another project's notes; opening another project loses a draft; a local file is imported or uploaded without asking; window identity depends on colour alone. |
 | Signals | Two-project scope checks, exact saved-draft recovery, distinct labelled windows and local-only capture tried by the owner. |
-| Scenarios | SC-PROJ-01, SC-PROJ-02, SC-PROJ-03, SC-PROJ-04, SC-PROJ-05, SC-PROJ-06, SC-PROJ-07 |
+| Scenarios | SC-PROJ-01, SC-PROJ-02, SC-PROJ-03, SC-PROJ-04, SC-PROJ-05, SC-PROJ-06, SC-PROJ-07, SC-PROJ-08 |
 
 ### CP-CALM-01 — Calm canvas
 

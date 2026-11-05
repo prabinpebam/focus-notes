@@ -1,5 +1,15 @@
 # Decisions
 
+## D-pending: Delete a project: hand-off to GitHub's Danger Zone
+
+**Status:** Proposed (5 November 2026; waits for the owner's approval). **Affects** [Deleting a project](../experience/project-model.md#deleting-a-project), CP-SCOPE-01, SC-PROJ-08, UC-PROJ-13, IA-VIEW-SETTINGS, DD-PROJ-09 to DD-PROJ-17, PRJ-23, WP-P.23, MP.34.
+
+The owner's full words, feasibility citations, task flow, screens and recovery table are on the experience page. Recommend **(b)**: after consequences, preservation and typed project-name confirmation, open `https://github.com/<owner>/<repo>/settings` through the safe external-link path. GitHub owns Danger Zone and its own confirmation/sign-in. The app observes each chosen repository, then finishes the explicitly approved local cleanup and returns to Open. The success pill is inside Open because toasts drop under dialogs.
+
+Reject **(a)** in-app step-up: GitHub supports deletion, but GCM, gh and pasted fine-grained tokens do not share a universal permission-upgrade path; normal sign-in does not include deletion rights. Reject the **hybrid** API/browser flow: two confirmation/failure paths for one action, depending on incidental credential permissions.
+
+**Safety:** a 404, even with `GET /user` returning 200, can mean lost repository access rather than deletion. It triggers verification and explicit confirmation that the person deleted the repository on GitHub, not automatic local deletion. Retained private notes must be preserved outside a parent folder before it is recycled. Current mocks do not yet cover those two safeguards or failed export; document the gaps, review them, and wire nothing destructive before approval. The orchestrator assigns the number.
+
 ## D-pending: Project replaces workspace everywhere
 
 **Status:** Accepted (the owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."). The on-disk and template renames in (c) stay a separate owner decision; implementation changes user-facing words only. **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).
