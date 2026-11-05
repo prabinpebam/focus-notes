@@ -4,6 +4,8 @@ import { join, resolve } from "node:path";
 import { launch, quit, tempDirs, caret } from "./helpers.ts";
 import { crc32, deflateSync } from "node:zlib";
 import { execFileSync } from "node:child_process";
+import { publicImageBytes } from "../src/main/image-metadata.ts";
+import { rasterInfo } from "../src/main/image-import.ts";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==", "base64");
 async function close(launched: Awaited<ReturnType<typeof launch>>) {
@@ -174,6 +176,25 @@ for (const [kind, format] of [["local", "png"], ["github", "png"], ["github", "j
         input.writeUInt32LE(input.length - 8, 4);
       }
       writeFileSync(source, input);
+    }
+    if (format === "webp") {
+      const sanitized = publicImageBytes(input, format);
+      const probe = join(dirs.userData, "decode-probe.webp");
+      writeFileSync(probe, sanitized);
+      const chromium = await launched.page.evaluate(async (data) => {
+        const image = new Image();
+        image.src = `data:image/webp;base64,${data}`;
+        await image.decode();
+        return [image.naturalWidth, image.naturalHeight];
+      }, sanitized.toString("base64"));
+      const native = await launched.app.evaluate(async ({ nativeImage }, path) => {
+        try {
+          const thumbnail = await nativeImage.createThumbnailFromPath(path, { width: 1, height: 1 });
+          return { empty: thumbnail.isEmpty() };
+        } catch (error) { return { error: String(error) }; }
+      }, probe);
+      console.log("WebP decoder evidence", JSON.stringify({ header: rasterInfo(sanitized), chromium, native }));
+      expect(chromium).toEqual([6, 4]);
     }
     const editor = launched.page.getByRole("textbox", { name: "Note", exact: true });
     await editor.focus(); await launched.page.keyboard.press(caret.docEnd); await launched.page.keyboard.press("Enter");
