@@ -8,6 +8,7 @@ export const contract = defineContract({
     icon: { kind: "icon", required: true },
     label: { kind: "message", required: true },
     shortcut: { kind: "text" },
+    size: { kind: "enum", values: ["m", "stretch"], default: "m", description: "Stretch matches an adjacent field's block size without changing the icon or its own-border feedback." },
     tone: { kind: "enum", values: ["default", "muted"], default: "default" },
     toggle: { kind: "boolean", default: false },
     pressed: { kind: "boolean", default: false },
@@ -36,5 +37,6 @@ export const contract = defineContract({
     { name: "busy", covers: ["busy"], props: { icon: "save", label: { t: "gallery.action" }, busy: true, busyLabel: { get: "vm.gallery.query" } } },
     { name: "bleed", props: { icon: "dismiss", label: { t: "gallery.action" }, tone: "muted", bleed: true } },
     { name: "disabled with reason", covers: ["disabled"], props: { icon: "save", label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
+    { name: "field-height refresh", props: { icon: "sync", label: { t: "share.dialog.newWords" }, size: "stretch" } },
   ],
 });

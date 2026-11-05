@@ -742,6 +742,15 @@
         "shortcut": {
           "kind": "text"
         },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "stretch"
+          ],
+          "default": "m",
+          "description": "Stretch matches an adjacent field's block size without changing the icon or its own-border feedback."
+        },
         "tone": {
           "kind": "enum",
           "values": [
@@ -828,7 +837,8 @@
         "toggle mixed",
         "busy",
         "bleed",
-        "disabled with reason"
+        "disabled with reason",
+        "field-height refresh"
       ]
     },
     {

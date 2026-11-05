@@ -2229,6 +2229,15 @@
         "shortcut": {
           "kind": "text"
         },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "stretch"
+          ],
+          "default": "m",
+          "description": "Stretch matches an adjacent field's block size without changing the icon or its own-border feedback."
+        },
         "tone": {
           "kind": "enum",
           "values": [
@@ -2467,6 +2476,16 @@
             "disabledReason": {
               "t": "gallery.reason"
             }
+          }
+        },
+        {
+          "name": "field-height refresh",
+          "props": {
+            "icon": "sync",
+            "label": {
+              "t": "share.dialog.newWords"
+            },
+            "size": "stretch"
           }
         }
       ]

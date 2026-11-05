@@ -17,6 +17,10 @@ The mocks live on branch `vq-share-mocks` (`b2b4e6e0`) in `packages/views/mocks/
 
 The review implementation's first-share, invitation, publishing and Turn off questions use the real project or selected-item names, not the gallery's “Book” sample. Site font labels are the approved Serif, Sans and Hyperlegible choices.
 
+**Owner correction, 5 November:** New words is an icon-only refresh action, with accessible name and tooltip **New words**, no visible label, and the same block size and alignment as the adjacent passcode field. The shared IconButton's stretch size follows the row, not a per-view CSS override; pending feedback stays on its own border. The generated-passcode mock places its label above the whole row so it cannot offset the refresh action. Source: the owner's [Share “Outline” screenshot](<file:///C:/Users/Prabin%20Pebam/AppData/Roaming/Code/agentSessionData/bb22263c-5a0f-4383-af19-9e0353ac77b9/attachments/21a4676f-6d38-4178-a107-0891dc9000fe/Pasted%20Image.png>).
+
+The live field is read-only, with Copy passcode retaining its existing command and disabled reason. The built-app regression measures refresh/field alignment at 900×700 and 480×360, checks the tooltip and border-only pending state, then verifies that new words replace the field's value without changing geometry. The existing draft-preservation journey also passes. The mock's code field and refresh have identical top and height in light/dark at 960 and 480 px.
+
 | Surface (gallery entry) | What the approved mock shows |
 | --- | --- |
 | Entry points (1) | **Share…** and **Publish…** in a Files row's right-click menu (between New note/New folder and Rename/Delete), for a note or a folder, and in ⋯ → Note (Share…, Publish…, Version history, Print…). Each opens its dialog at once. |

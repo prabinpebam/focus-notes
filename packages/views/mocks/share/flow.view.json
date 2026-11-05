@@ -638,7 +638,7 @@
               }
              },
              {
-              "type": "Inline",
+              "type": "Stack",
               "when": {
                "expr": {
                 "==": [
@@ -650,34 +650,37 @@
                }
               },
               "props": {
-               "gap": "inlineItem",
-               "align": "center",
-               "wrap": true
+               "gap": "stackPair"
               },
               "children": [
                {
-                "type": "CodeBlock",
+                "type": "Text",
                 "props": {
-                 "value": {
-                  "get": "vm.mockShare.generated"
-                 },
-                 "label": {
-                  "t": "share.dialog.passcode"
-                 },
-                 "copyLabel": {
-                  "t": "share.dialog.copyPasscode"
-                 }
+                 "value": { "t": "share.dialog.passcode" },
+                 "tone": "muted",
+                 "role": "secondary"
                 }
                },
                {
-                "type": "Button",
-                "props": {
-                 "label": {
-                  "t": "share.dialog.newWords"
+                "type": "Inline",
+                "props": { "gap": "inlineItem", "align": "stretch" },
+                "children": [
+                 {
+                  "type": "CodeBlock",
+                  "props": {
+                   "value": { "get": "vm.mockShare.generated" },
+                   "copyLabel": { "t": "share.dialog.copyPasscode" }
+                  }
                  },
-                 "size": "s",
-                 "icon": "sync"
-                }
+                 {
+                  "type": "IconButton",
+                  "props": {
+                   "label": { "t": "share.dialog.newWords" },
+                   "size": "stretch",
+                   "icon": "sync"
+                  }
+                 }
+                ]
                }
               ]
              },
