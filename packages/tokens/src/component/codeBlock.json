@@ -3,7 +3,7 @@
   "border": { "$type": "color", "$value": "{color.border}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "radius": { "$type": "dimension", "$value": "{radius.popover}" },
-  "gap": { "$type": "dimension", "$value": "{space.inlineItem}" },
+  "gap": { "$type": "dimension", "$value": "{space.stackPair}", "$description": "A code snippet's label belongs to its code; snippets stand stackGroup apart." },
   "copyInset": { "$type": "dimension", "$value": "{space.scale.xs}" },
   "copySpace": { "$type": "dimension", "$value": "{size.hit}" },
   "padding": { "$type": "dimension", "m": { "$value": "{space.scale.s}" }, "l": { "$value": "{space.scale.l}" } },

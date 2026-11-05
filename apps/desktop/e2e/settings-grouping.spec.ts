@@ -32,7 +32,8 @@ function measure(panel: Element): Measured {
   const visible = (e: Element) => {
     const r = e.getBoundingClientRect();
     const cs = getComputedStyle(e);
-    return r.width > 1 && r.height > 1 && cs.visibility !== "hidden" && cs.opacity !== "0";
+    return cs.visibility !== "hidden" && cs.opacity !== "0" && cs.clipPath !== "inset(50%)" &&
+      (cs.display === "contents" || (r.width > 1 && r.height > 1));
   };
   const enclosed = (e: Element) => {
     const cs = getComputedStyle(e);
@@ -58,7 +59,7 @@ function measure(panel: Element): Measured {
     const out: Row[] = [];
     const visit = (e: Element) => {
       if (!visible(e)) return;
-      if (e.matches(CONTROL) || (e !== root && enclosed(e))) {
+      if (getComputedStyle(e).display !== "contents" && (e.matches(CONTROL) || (e !== root && enclosed(e)))) {
         const r = e.getBoundingClientRect();
         out.push({ top: r.top, bottom: r.bottom, label: (e.getAttribute("aria-label") || (e as HTMLElement).innerText || e.tagName).trim().split("\n")[0]!.slice(0, 40) });
         return;
@@ -96,15 +97,14 @@ function measure(panel: Element): Measured {
   const sections = sectionEls.map((s, i) => {
     const header = s.querySelector(":scope > [data-section-header]");
     const body = s.querySelector(":scope > [data-section-body]");
-    const items = body ? [...body.children].filter(visible) : [];
-    const itemInk = items.map((it) => ink(it));
+    const itemInk = body ? [...body.children].filter(visible).map(ink).filter((rows) => rows.length) : [];
     return {
       heading: header ? (header as HTMLElement).innerText.split("\n")[0]! : "",
       headingGap: header ? gap(ink(header), itemInk[0]) : null,
-      items: items.map((it, j) => ({
-        label: itemInk[j]?.[0]?.label ?? it.tagName,
+      items: itemInk.map((rows, j) => ({
+        label: rows[0]!.label,
         inner: (itemInk[j] ?? []).slice(1).map((r, k) => Math.round((r.top - itemInk[j]![k]!.bottom) * 10) / 10),
-        gapAfter: j < items.length - 1 ? gap(itemInk[j], itemInk[j + 1]) : null,
+        gapAfter: j < itemInk.length - 1 ? gap(itemInk[j], itemInk[j + 1]) : null,
       })),
       gapAfter: i < sectionEls.length - 1 ? gap(sectionInk[i], sectionInk[i + 1]) : null,
     };
@@ -116,16 +116,25 @@ function measure(panel: Element): Measured {
 function problems(tab: string, m: Measured): string[] {
   const out: string[] = [];
   if (m.loose.length) out.push(`${tab}: heading outside a Section, spaced like an item: ${m.loose.join(", ")}`);
-  const inner = m.sections.flatMap((s) => s.items.flatMap((i) => i.inner));
-  const items = m.sections.flatMap((s) => s.items.map((i) => i.gapAfter)).filter((g): g is number => g !== null);
-  const headings = m.sections.map((s) => s.headingGap).filter((g): g is number => g !== null);
-  const sections = m.sections.map((s) => s.gapAfter).filter((g): g is number => g !== null);
   const max = (xs: number[]) => (xs.length ? Math.max(...xs) : 0);
-  const min = (xs: number[]) => (xs.length ? Math.min(...xs) : Infinity);
-  if (items.length && min(items) < RATIO * max(inner)) out.push(`${tab}: items ${min(items)} px apart, but ${max(inner)} px inside one (want ≥ ${RATIO} ×)`);
-  if (sections.length && min(sections) < RATIO * max([...items, ...inner])) out.push(`${tab}: sections ${min(sections)} px apart, but items ${max([...items, ...inner])} px (want ≥ ${RATIO} ×)`);
-  if (sections.length && min(sections) < 2 * max(headings)) out.push(`${tab}: ${min(sections)} px above a heading, ${max(headings)} px below it (want ≥ 2 ×)`);
-  if (items.length && headings.length && max(headings) > min(items)) out.push(`${tab}: a heading ${max(headings)} px from its content, further than its items (${min(items)} px)`);
+  m.sections.forEach((s, index) => {
+    const where = `${tab} / ${s.heading || `section ${index + 1}`}`;
+    s.items.forEach((item, i) => {
+      if (item.gapAfter === null) return;
+      const inner = max([...item.inner, ...(s.items[i + 1]?.inner ?? [])]);
+      if (item.gapAfter < RATIO * inner)
+        out.push(`${where}: ${item.label} → ${s.items[i + 1]?.label}: items ${item.gapAfter} px apart, but ${inner} px inside a neighbour (want ≥ ${RATIO} ×)`);
+      if (s.headingGap !== null && s.headingGap > item.gapAfter)
+        out.push(`${where}: heading ${s.headingGap} px from its content, further than its items (${item.gapAfter} px)`);
+    });
+    const next = m.sections[index + 1];
+    if (s.gapAfter === null || !next) return;
+    const inside = max([s, next].flatMap((section) => section.items.flatMap((item) => [...item.inner, ...(item.gapAfter === null ? [] : [item.gapAfter])])));
+    if (s.gapAfter < RATIO * inside)
+      out.push(`${where}: sections ${s.gapAfter} px apart, but ${inside} px inside a neighbour (want ≥ ${RATIO} ×)`);
+    if (next.headingGap !== null && s.gapAfter < 2 * next.headingGap)
+      out.push(`${where}: ${s.gapAfter} px above the next heading, ${next.headingGap} px below it (want ≥ 2 ×)`);
+  });
   return out;
 }
 

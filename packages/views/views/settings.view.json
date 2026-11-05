@@ -2322,7 +2322,12 @@
                               "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.sharingSettings.retrying" }
                             },
                             "on": { "action": { "run": "share.manage.load" } }
-                          },
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Section",
+                        "children": [
                           {
                             "type": "Stack",
                             "props": {
@@ -2515,6 +2520,14 @@
                                   "t": "agents.heading.permissions"
                                 }
                               }
+                            },
+                            {
+                              "type": "Text",
+                              "when": { "get": "vm.agents.ready" },
+                              "props": {
+                                "value": { "get": "vm.agents.folders" },
+                                "tone": "muted"
+                              }
                             }
                           ]
                         },
@@ -2574,12 +2587,6 @@
                             }
                           },
                           {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "stackGroup"
-                            },
-                            "children": [
-                              {
                                 "each": {
                                   "get": "vm.agents.switches"
                                 },
@@ -2640,20 +2647,6 @@
                                     "tone": "muted"
                                   }
                                 }
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Text",
-                            "when": {
-                              "get": "vm.agents.ready"
-                            },
-                            "props": {
-                              "value": {
-                                "get": "vm.agents.folders"
-                              },
-                              "tone": "muted"
-                            }
                           }
                         ]
                       },
@@ -2674,12 +2667,6 @@
                         },
                         "children": [
                           {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "stackGroup"
-                            },
-                            "children": [
-                              {
                                 "each": {
                                   "get": "vm.agents.snippets"
                                 },
@@ -2718,8 +2705,6 @@
                                     "tone": "muted"
                                   }
                                 }
-                              }
-                            ]
                           }
                         ]
                       },

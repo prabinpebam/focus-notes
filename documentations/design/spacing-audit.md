@@ -44,6 +44,43 @@
 | ST-4 | S3 | Physical properties: 62 `left`, `right` and `margin-left` declarations; most are `left: 0; right: 0` pairs or coordinates measured in px by script | hosts `WindowFrame`, `TableControls`, `BlockHandle`, `TextMenu`, `DocMinimap`; layouts `Layer`, `Sheet`, `Positioner`, `AppRoot`; primitives `CodeBlock`, `ImageFrame`, `Tooltip`, `MorphPanel`, `FileTree` | 62 declarations | `inset-inline: 0` for pairs, `inset-inline-end` for the code block's copy button and sheets; script-measured coordinates keep `left` with a named exemption in the lint (`/* physical: measured */`) | `lint-spacing` physical rule with the exemption list | fixed in `fde093b6`: logical insets; window edges, image handles, the minimap rail and the centred morph panel are named physical exemptions |
 | SP-11 | S4 | Edges out of line by 2 to 4 px: sheet bodies and footers 4 px from their headers, Settings' footer padding 12 top and 0 bottom, Open's path 2 px off its title, the setup's text 0.6 px | layout `Sheet`, primitives `Tabs`, `OpenItem`, `Text` | 28 | Follows from SP-2 and SP-3 (one inset per region); `Tabs.footer` takes the dialog region's inset | probe `alignment` and `uneven-insets` | fixed in `3c2731fc`: one inset per region (SP-2, SP-3); the Tabs footer's hairline is a separator drawn on its top edge, with even space either side. `uneven-insets` and `alignment` are S4 and reported |
 
+## Settings grouping (SP-12)
+
+**S2 Misgrouped, D-345; owner feedback, 5 November:** "Observe this screenshot, everything has the same gap between them. You don't know which things belong together. You have faild to apply the spacing skill here."
+
+The rule is **control and its own description tightest, item to item medium, section to section largest**, without adding borders or fills. Token names alone did not prove this: line leading made an 8 px item gap read almost like a 4 px pair, and headings in a flat Stack inherited the same gap as the items they should lead.
+
+| Relationship | Before, visible ink | Built correction |
+| --- | --- | --- |
+| Keyboard heading to its content / preceding content to next heading | 21 / 16 px (inverted) | Section header to body `stackItem`: 13 px visible; separate Sections `stackSection`: 32 to 36.6 px visible |
+| Agents control to description / description to next control | 9 / 12.6 px (nearly flat) | `stackPair` within each item, `stackGroup` between items: 9 / 20.6 px visible |
+| CodeBlock label to code / code to next label | 12.2 / 21 px | Component's gap aliases `stackPair`, not `inlineItem`: 8.2 / 21 px; snippets are direct Section items |
+| AI and Sharing empty-result content | Up to 24.2 px inside one result, competing with the space around it | EmptyState's own gap aliases `stackPair`, its action's extra room `stackItem`: largest inner gap 16.2 px; Sharing's filters and result list are separate sections |
+
+**System fix:** the reusable `Section` layout owns its header/body gap and its item gaps, with no enclosure or padding. Settings' nine tabs use it; section-wide context (Agents' folder scope) belongs beside the heading, not among the permission items. `ui:check` rejects headings stranded among items or leading a flat group-spaced list, Sections without section spacing, inner Stack gaps larger than their parent, and item-spaced lists of pairs. Conditional branches and repeated/empty rows are checked; gallery design proposals are not treated as built views. The component catalog, contract schema and fixtures include Section.
+
+**Enforcement:** `packages/ui-runtime/test/check.test.ts` exercises `groupingProblems` and its integration into `ui:check`. `apps/desktop/e2e/settings-grouping.spec.ts` measures every Settings tab in the built app, from glyph cap height to the last baseline (controls and filled/bordered shapes use their visible box). It compares neighbouring items and sections locally, requiring at least 1.5 times the inner space and at least twice as much above each heading as below. It descends through `display: contents` wrappers; genuinely clipped, non-rendering live regions are omitted, not visible status text. Each tab's rows and hierarchy are saved under `test-results/settings-grouping/`.
+
+### Why the kit audit missed it
+
+| Kit gap | Consequence | Project enforcement |
+| --- | --- | --- |
+| The probe measures element boxes, not visible text ink | Line leading can flatten a token-correct hierarchy; a passing box ratio does not prove grouping | Measure cap-to-baseline gaps in the Settings journey, without loosening ratios |
+| The project's kit integration, `apps/desktop/e2e/surfaces.ts`, opens only Account, Workspace and Appearance Settings tabs | Keyboard, Agents, Sharing, AI and the other tabs were not audited | Discover and walk all nine Settings tabs rather than maintaining a three-tab list |
+
+The pinned kits are unchanged here; these are gaps to fix upstream, not reasons to claim their existing audit covered the rejected screen.
+
+**Focused validation (5 November):** `pnpm check` and `pnpm typecheck` passed; `pnpm exec vitest run packages/ui-runtime/test/check.test.ts` passed (37 tests). After the desktop build, `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test e2e/settings-grouping.spec.ts e2e/wp74-agents-settings.spec.ts e2e/m3-settings.spec.ts --workers=1` passed (9 journeys, including every Settings tab). Test apps were closed and `tools/dev/close-test-apps.ps1 -OnlyPid` found no remaining instances in the worker's process tree.
+
+### Open owner questions: canvas exceptions
+
+`GROUPING_EXCEPTIONS` in `packages/ui-runtime/src/check.ts` contains exactly these two named exceptions. Neither was redesigned with Settings: the writing window and approved first-run design require the owner's direction.
+
+| Surface | Current structure | Open question |
+| --- | --- | --- |
+| Files sheet, deleted notes | Restore actions `stackPair` under each note, notes only `stackItem` apart | May deleted-note items be separated by `stackGroup`, keeping each note and its restore actions a pair? |
+| First run, Connect, "Trouble?" disclosure | Help groups `stackGroup` apart inside a wrapper only `stackItem` from its neighbours | May this disclosure use a section-level outer group, retaining tighter spacing inside its revealed help? |
+
 ## For the toolbar design worker
 
 ToolbarComposer and ScanRadar are being wired on `vq-toolbar-design`, so this audit doesn't change them. Customize toolbar shows SP-4 (rows that overflow by 54 to 291 px), SP-6 (its buttons at 28 px, below `size.hit`) and SP-7 (8 px between groups whose members are 16 px apart). When that branch lands after this one: run `node tools/spacing/to-roles.mjs` on its views (step names fail `ui:check`), let its rows wrap, and give its small buttons `hitReach`. Its surface is excluded from the enforcing journey by name until then.

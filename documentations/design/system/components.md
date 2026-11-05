@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **82 registered contracts**: **54 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **18 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **83 registered contracts**: **54 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **19 layouts** (AppRoot, Stack, Section, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch</h2>
 
@@ -43,7 +43,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**82 registered contracts:** 54 primitives, 5 host components, 18 layouts, 1 block component, 4 compound components.
+**83 registered contracts:** 54 primitives, 5 host components, 19 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -108,6 +108,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
 | NotificationRegion | layout | `rest` | 1 | None |
 | Stack | layout | `rest` | 21 | None |
+| Section | layout | `rest` | 2 | None |
 | Inline | layout | `rest` | 22 | None |
 | Columns | layout | `rest` | 2 | None |
 | Surface | layout | `rest` | 29 | None |
@@ -274,11 +275,12 @@ Primitives that wrap a library needing direct DOM access. They have contracts li
 | --- | --- | --- | --- | --- |
 | **NotificationRegion** | Implemented | Named region for three pills and a queued count; host owns queue, pausing and timers; `cmp.notificationRegion.*` | Region | Canvas notification layer above dialogs |
 
-Layout props accept only token names: `gap`, `padding`, and `inset` take `space.*` steps, `width` takes `layout.*` sizes, and alignment takes enums. Layout props may vary by size class (`{ "compact": "s", "default": "m" }`) where the contract allows it.
+Layout props accept only token names: `gap`, `padding`, and `inset` take `space.*` relationship roles, `width` takes `layout.*` sizes, and alignment takes enums. Layout props may vary by size class where the contract allows it.
 
 | Component | Status | What it does | Key props |
 | --- | --- | --- | --- |
 | **Stack** | Implemented | Children in a column | `gap`, `align`, `padding` |
+| **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart. No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
 | **Inline** | Implemented | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
 | **ToolbarRow** | Implemented | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items. A new `focusRequest` moves focus into it (<kbd>Alt+F10</kbd>) | `label` (required), `focusRequest` |
 | **Columns** | Implemented | Children side by side in equal columns while each has room (`layout.sheetMin`), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window | `gap` |

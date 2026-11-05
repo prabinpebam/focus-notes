@@ -5,7 +5,8 @@ import { contracts, ICON_NAMES, type Contract } from "@focus-notes/ui/contracts"
 import { createApp, type JsonSchema, type PlatformBridge } from "@focus-notes/core";
 import { views, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
-import { checkUi, checkFixtureCoverage, type Problem } from "../src/check.ts";
+import { checkUi, checkFixtureCoverage, groupingProblems, type Problem } from "../src/check.ts";
+import type { ComponentNode, Node } from "../src/types.ts";
 import { checkExpression, evaluate } from "../src/expr.ts";
 import { VIEW_SCHEMA_URL } from "../src/migrate.ts";
 
@@ -28,6 +29,76 @@ const problems = (root: unknown, extra?: Record<string, unknown>): Problem[] => 
 const messagesOf = (ps: Problem[]) => ps.map((p) => `${p.stage}: ${p.message}`);
 const repo = join(import.meta.dirname, "..", "..", "..");
 const exists = (p: string) => existsSync(join(repo, p));
+
+describe("grouping by proximity (SP-12)", () => {
+  const text: ComponentNode = { type: "Text", props: { value: { t: "gallery.sample" } } };
+  const heading: ComponentNode = { type: "Heading", props: { level: "3", value: { t: "gallery.sample" } } };
+  const stack = (gap: string, children: Node[]): ComponentNode => ({ type: "Stack", props: { gap }, children });
+  const pair = stack("stackPair", [text, text]);
+  const section: ComponentNode = { type: "Section", slots: { heading: [heading] }, children: [pair, pair] };
+  const repeat = (render: Node, empty?: Node): Node => ({
+    each: { get: "vm.gallery.items" }, as: "item", key: "item.id", render, ...(empty ? { empty } : {}),
+  });
+  const paths = (node: ComponentNode) => groupingProblems(node).map(([path]) => path);
+  const messages = (node: ComponentNode) => groupingProblems(node).map(([, message]) => message).join("\n");
+
+  it("accepts sections, their heading slots, and pairs separated by group space", () => {
+    expect(groupingProblems(stack("stackSection", [section, section]))).toEqual([]);
+    expect(groupingProblems(section)).toEqual([]);
+    expect(groupingProblems(stack("stackGroup", [pair, pair]))).toEqual([]);
+    expect(groupingProblems(stack("stackGroup", [repeat(pair)]))).toEqual([]);
+  });
+  it("rejects a heading after an item, including one led by an Inline", () => {
+    expect(paths(stack("stackItem", [text, heading]))).toEqual(["/children/1"]);
+    expect(messages(stack("stackGroup", [text, { type: "Inline", children: [heading, text] }]))).toMatch(/heading among/);
+    expect(messages({ type: "Section", children: [text, heading] })).toMatch(/heading among/);
+  });
+  it("rejects a flat heading-led list, but permits a tight heading pair and display titles", () => {
+    for (const gap of ["stackGroup", "stackSection"]) {
+      expect(messages(stack(gap, [heading, text, text]))).toMatch(/doesn't lead/);
+    }
+    expect(groupingProblems(stack("stackGroup", [heading, text]))).toEqual([]);
+    expect(groupingProblems(stack("stackPair", [heading, text, text]))).toEqual([]);
+    expect(groupingProblems(stack("stackGroup", [{ ...heading, props: { ...heading.props, level: "display" } }, text, text]))).toEqual([]);
+  });
+  it("puts a Section's leading heading in its slot, not its item list", () => {
+    expect(messages({ type: "Section", children: [heading, text] })).toMatch(/heading slot/);
+    expect(groupingProblems({ type: "Section", slots: { heading: [heading] }, children: [text] })).toEqual([]);
+  });
+  it("requires section spacing around Sections, even when conditional", () => {
+    for (const gap of ["none", "stackPair", "stackItem", "stackGroup"]) {
+      expect(messages(stack(gap, [{ ...section, when: false }]))).toMatch(/Sections stack stackSection/);
+    }
+  });
+  it("rejects an inner gap larger than the one around it", () => {
+    expect(paths(stack("stackItem", [stack("stackGroup", [text, text])]))).toEqual(["/children/0"]);
+    expect(messages({ type: "Section", children: [stack("stackSection", [text, text])] })).toMatch(/further apart/);
+    expect(groupingProblems(stack("stackSection", [stack("stackGroup", [text, text])]))).toEqual([]);
+  });
+  it("rejects item-spaced pairs, including one repeated row, but not a single non-list pair", () => {
+    expect(messages(stack("stackItem", [pair, pair]))).toMatch(/pairs .*read evenly spaced/);
+    expect(messages(stack("stackItem", [repeat(pair)]))).toMatch(/pairs .*read evenly spaced/);
+    expect(groupingProblems(stack("stackItem", [pair]))).toEqual([]);
+  });
+  it("checks repeat rows, empty cases and every switch case", () => {
+    expect(messages(stack("stackItem", [repeat(text, stack("stackGroup", [text]))]))).toMatch(/further apart/);
+    expect(messages(stack("stackGroup", [text, repeat(heading)]))).toMatch(/heading among/);
+    expect(messages(stack("stackGroup", [text, { switch: { get: "vm.app.firstRun" }, cases: { done: text, start: heading } }]))).toMatch(/heading among/);
+    expect(messages(stack("stackItem", [{ switch: { get: "vm.app.firstRun" }, cases: { done: text, start: stack("stackGroup", [text]) } }]))).toMatch(/further apart/);
+  });
+  it("leaves non-stack layouts and non-stack roles to their own checks", () => {
+    expect(groupingProblems({ type: "Inline", children: [text, heading] })).toEqual([]);
+    expect(groupingProblems(stack("inlineItem", [text, heading]))).toEqual([]);
+    expect(groupingProblems(stack("none", [stack("stackGroup", [text])]))).toEqual([]);
+    expect(groupingProblems({ type: "Stack" })).toEqual([]);
+  });
+  it("reports design errors through ui:check, while gallery proposals remain exempt", () => {
+    const root = stack("stackGroup", [heading, text, text]);
+    expect(problems(root).some((p) => p.stage === "design" && p.at.endsWith("/children/0") && /doesn't lead/.test(p.message))).toBe(true);
+    const doc = view(root).t;
+    expect(checkUi({ ...base, views: { "gallery.proposal": { ...doc, id: "gallery.proposal" } } })).toEqual([]);
+  });
+});
 
 describe("ui:check (DSY-08)", () => {
   it("passes the real views", () => expect(checkUi({ ...base, views })).toEqual([]));
