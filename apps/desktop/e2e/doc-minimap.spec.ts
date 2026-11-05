@@ -207,7 +207,7 @@ test("UI-13: Show contents opens the card from the keyboard with focus on the cu
   const l = await start(NOTE, { appearance: "dark" });
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
-  const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+  const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
   const show = async () => {
     await page.keyboard.press(`${mod}+/`);
     await spotlight.getByRole("combobox").fill("Show contents");
@@ -293,7 +293,7 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
     await hoverRail(page);
     await expect(card(page)).toBeVisible();
     await page.keyboard.press(`${mod}+/`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await expect(spotlight).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(spotlight).toBeHidden();
@@ -383,7 +383,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     await expect(card(page)).toBeVisible();
     // Show contents: focus on its current heading; Esc back to the note, still pinned.
     await page.keyboard.press(`${mod}+/`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await spotlight.getByRole("combobox").fill("Show contents");
     await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Show contents");
     await page.keyboard.press("Enter");
@@ -438,7 +438,7 @@ test("UI-13: hidden with fewer than two headings and where it would cover the te
     await page.waitForTimeout(300);
     await expect(rail(page)).toHaveCount(0);
     await page.keyboard.press(`${mod}+/`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await spotlight.getByRole("combobox").fill("Show contents");
     await expect(spotlight.getByRole("option", { name: /^Show contents/ })).toHaveAttribute("aria-disabled", "true");
     // The first Esc clears the query; the next closes Spotlight.

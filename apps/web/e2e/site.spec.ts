@@ -154,7 +154,7 @@ test("D-167: the owner's app works at /app/, reading the public notes and the va
   await dialog.getByRole("button", { name: "Unlock", exact: true }).click();
   await expect(dialog).toBeHidden({ timeout: 15_000 });
   await page.keyboard.press("Control+p");
-  const open = page.getByRole("dialog", { name: "Spotlight" });
+  const open = page.getByRole("dialog", { name: "Actions", exact: true });
   await expect(open.getByRole("option", { name: /Launch plan/ })).toBeVisible();
   expect(others).toEqual([]);
 });

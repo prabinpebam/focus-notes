@@ -48,7 +48,7 @@ test("D-223: the note, Spotlight, Files and Themes", async () => {
   await fullNote(page);
   await capture(l, "note-light");
   await spotlight(page, `${mod}+Slash`);
-  await page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox").fill("gar");
+  await page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("combobox").fill("gar");
   await page.waitForTimeout(600);
   await capture(l, "spotlight-light");
   await reset(page);

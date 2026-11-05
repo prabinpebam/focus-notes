@@ -88,8 +88,8 @@ export async function moreMenu(page: Page) {
 }
 export async function spotlight(page: Page, keys: string) {
   await page.keyboard.press(keys);
-  await expect(page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox")).toBeFocused();
-  await expect(page.getByRole("dialog", { name: "Spotlight" }).getByRole("option").first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("combobox")).toBeFocused();
+  await expect(page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("option").first()).toBeVisible({ timeout: 15_000 });
 }
 export async function files(page: Page) {
   await page.keyboard.press(`${mod}+O`);
@@ -196,7 +196,7 @@ export const SURFACES: Surface[] = [
   { name: "spotlight actions", open: async (page) => {
     await spotlight(page, `${mod}+P`);
     await page.keyboard.press(`${mod}+K`);
-    await expect(page.getByRole("dialog", { name: "Spotlight" }).getByRole("option").first()).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("option").first()).toBeVisible();
   } },
   { name: "theme manager", open: async (page) => {
     await moreMenu(page);
