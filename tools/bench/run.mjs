@@ -3,7 +3,7 @@
 import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { cpSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
+import { arch, cpus, release, tmpdir, totalmem } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { largeWorkspace } from "./large.mjs";
@@ -269,12 +269,13 @@ async function recoveryTimes() {
 }
 
 // Every step, in order (PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note).
+const diagnostics = {};
 const STEPS = [
   ["start times (PRF-02)", startTimes],
   ["renderer overhead (DSY-11)", async () => rendererOverhead()],
   ["Git status (PRF-07)", gitStatus],
   ["opening and saving notes (PRF-03, PRF-14)", noteTimes],
-  ["the 10,000-note workspace (PRF-04, PRF-10)", () => largeWorkspace({ root, mainEntry })],
+  ["the 10,000-note workspace (PRF-04, PRF-10)", () => largeWorkspace({ root, mainEntry, recordDiagnostics: (value) => { diagnostics["PRF-10"] = value; } })],
   ["Spotlight in the app (SPT-07)", spotlightTimes],
   ["the search index (SPT-07, FND-04)", searchTimes],
   ["matching drafts at launch (QLT-06)", recoveryTimes],
@@ -284,7 +285,17 @@ const STEPS = [
 const only = arg("--only") ? argValue("--only") : undefined;
 const measures = {};
 for (const [name, fn] of STEPS) if (!only || name.includes(only)) Object.assign(measures, await step(name, fn));
-const report = { at: new Date().toISOString(), platform: process.platform, ...(only ? { only } : {}), measures };
+const report = {
+  at: new Date().toISOString(),
+  commit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
+  workingTreeDirty: Boolean(execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }).trim()),
+  platform: process.platform,
+  machine: { arch: arch(), osRelease: release(), cpu: cpus()[0]?.model, logicalCpus: cpus().length, memoryGB: Math.round(totalmem() / 1024 ** 3) },
+  ...(process.env.GITHUB_RUN_ID ? { ci: { run: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT, image: process.env.ImageOS, imageVersion: process.env.ImageVersion } } : {}),
+  ...(only ? { only } : {}),
+  measures,
+  diagnostics,
+};
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 

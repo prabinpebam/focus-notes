@@ -46,6 +46,17 @@ Rewrite recovery now reuses that retained-fragment return action after the exiti
 
 Run 41940378451 on `60d41ed3` passes the Windows test job and journey shards 1, 2 and 3. Shard 4 has one failure: the Open/Recent empty-state journey's five-second wait for its dialog to close. That path performs real project-list reads, including Windows-protected Recent storage; its precise CI delay was not captured. Three normal and five throttled local repeats pass. A temporary six-second opening seam reproduces the same deadline failure; a bounded 30-second completion wait passes with the same project, recent-note, byte-preservation and single-window assertions. The seam is removed from the candidate. This changes neither product behavior nor a performance budget and adds no quarantine; a fresh exact-head CI run is still required.
 
+**Open performance regression, PRF-10 (owner: merge follow-up; branch: `fix-reopen-variance`).** Main's last green runtime run, 41386720103 at `c7b6c879` (an ancestor of current main), reports 33.1 ms for reopening. Candidate runs report 76.9 ms, 68.7 ms and 83.1 ms; the last two have identical product code. The authorized failed-job rerun on the exact same `71f030bd` head passes at 44.1 ms; all five required Windows jobs are green and main moved to that head. These are medians of seven samples, not their individual sample spread; no same-runner causal comparison is claimed. No quarantine was needed or introduced, and the 75 ms CI limit, budgets and baselines remain unchanged. The packaged two-project review passes invisible inspection; its normal Shell process is live but covered, so exposure has not been claimed and old owner reviews remain open. The follow-up records ordered individual samples, median, p75, min/max and spread, initial opens, actual warm-up setting, CPU throttle, runner image and machine details, without changing the measured interval or the gate. Investigate warm-up and runner effects and resolve the regression before 7 November.
+
+The diagnostic checkpoint passes `pnpm check`, all nine focused statistics tests (`pnpm exec vitest run tools/test/bench-reopen.test.mjs tools/test/bench-settle.test.mjs`) and two consecutive `node tools/bench/run.mjs --only 10,000 --check` runs with `FOCUS_NOTES_E2E=1` and `FOCUS_NOTES_BENCH_DETAIL=1`. Both use the unchanged merged-main product, warm-up enabled and no CPU throttle.
+
+| Same-machine run | Median (ms) | p75 (ms) | Min/max (ms) | Spread (ms) | Initial Alpha/Beta (ms) |
+| --- | --- | --- | --- | --- | --- |
+| First | 46.1 | 54.0 | 37.0/60.6 | 23.6 | 46.1/56.0 |
+| Repeat | 32.3 | 37.1 | 29.7/42.7 | 13.0 | 38.5/37.4 |
+
+Ordered reopen samples are 46.0, 46.1, 44.3, 54.0, 46.9, 37.0, 60.6 ms and then 42.7, 32.0, 32.3, 37.1, 32.9, 31.3, 29.7 ms. All three scoped budgets pass both times: memory 329/325 MB, idle CPU 0.02/0.02%, reopen 46.1/32.3 ms. This demonstrates same-machine variation, not reduced CI variance or a causal warm-up result. CI runner/image evidence is still required; no performance fix is claimed.
+
 ### General fixes: approved 3 November design
 
 The owner approved the designs at 19:39. WP-P.1 / WP-P.2 are pushed at
