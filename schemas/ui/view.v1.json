@@ -633,6 +633,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -1261,6 +1262,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -1833,6 +1835,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -2072,6 +2075,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -2398,6 +2402,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -3194,6 +3199,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -3659,6 +3665,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -3876,6 +3883,19 @@
               ]
             },
             "actions": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "iconsOnly": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -6418,6 +6438,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -6706,6 +6727,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -6865,6 +6887,32 @@
                     "title",
                     "all"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "reading": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "chevron": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -7220,6 +7268,7 @@
                     "save",
                     "darkTheme",
                     "lightTheme",
+                    "systemTheme",
                     "more",
                     "search",
                     "add",
@@ -11719,6 +11768,58 @@
           "additionalProperties": false,
           "properties": {
             "skipLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "themeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "lightLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "darkLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "systemLabel": {
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"

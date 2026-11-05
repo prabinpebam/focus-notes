@@ -10,7 +10,11 @@
     "type": "ReaderPage",
     "id": "page",
     "props": {
-      "skipLabel": { "t": "reader.skip" }
+      "skipLabel": { "t": "reader.skip" },
+      "themeLabel": { "t": "site.preview.readerTheme" },
+      "lightLabel": { "t": "command.appearance.light" },
+      "darkLabel": { "t": "command.appearance.dark" },
+      "systemLabel": { "t": "command.appearance.system" }
     },
     "slots": {
       "footer": [

@@ -4,7 +4,7 @@
  * values the `icon` prop accepts.
  */
 export const ICON_NAMES = [
-  "open", "save", "darkTheme", "lightTheme", "more", "search", "add", "dismiss", "check", "newNote",
+  "open", "save", "darkTheme", "lightTheme", "systemTheme", "more", "search", "add", "dismiss", "check", "newNote",
   "bold", "italic", "link", "minimize", "restore", "maximize", "fullScreen", "exitFullScreen", "focus",
   "font", "keyboard", "settings", "info", "warning", "error", "sync", "delete", "rename", "copy", "folder",
   "document", "chevronRight", "chevronDown", "undo", "redo", "table", "quote", "code", "bulletList",

@@ -55,6 +55,24 @@ Public Git history retains earlier plaintext and encrypted builds. A later unpub
 
 ## Home, sections and articles
 
+### Owner corrections, 5 November: article entries and reading controls
+
+Owner source, verbatim:
+
+> "On the actual published site and that means preview too, articles/notes should not have a chevron right."
+>
+> "Font and size don't work in site preview mode."
+>
+> "Light/dark/system should be just icon in the actual site."
+
+| Surface | Rule |
+| --- | --- |
+| Public home/section article entries and desktop preview | No trailing chevron on articles. Section navigation and unrelated app cards keep their existing cues. |
+| Desktop preview's article titles, excerpts and body | The selected reading font and size apply immediately, within the preview only. Article headings use the same sanitized title blocks as the published renderer. Nested size scopes rebind dependent component tokens rather than inheriting the app root's resolved sizes. |
+| Generated note/index pages and desktop preview | Light, dark and system are icon-only radio choices, each with an accessible name and tooltip. The selected choice is visible and keyboard-operable. Generated pages use native radios and CSS, keeping the existing no-script CSP, no cookies and no network additions. System follows the device on generated pages; an explicit override lasts for that page. Preview changes remain device-local and never publish. |
+
+These corrections do not make the still-planned publication pipeline functional. Persistent reader overrides and applying saved site defaults to a real publish remain part of that later wiring.
+
 Home names the project and lists its published top-level folders as sections and root files as article entries. Every public descendant is reachable through those sections, not flattened into a giant feed. A folder always looks like a section with a folder cue and **⟨count⟩ articles**; the count is descendant published files, not folders or private/shared-only notes.
 
 A section lists its child sections and direct articles. An article entry shows the first H1 (otherwise file name) and the first readable body lines, clamped to two rendered lines with an ellipsis. Derive excerpts only from sanitized public source, skipping front matter/code/hidden metadata; no excerpt is a valid state. Selecting the title opens the article's canonical `/n/…/` page with breadcrumb, readable body, media and scope-safe Markdown links. Folders have stable section addresses; preserve old article URLs/redirects on explicit rename.

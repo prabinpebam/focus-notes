@@ -18,6 +18,10 @@ export interface ItemCardProps {
   size?: "m" | "l";
   /** Which words are the person's data, not the interface's (D-127). */
   personal?: "none" | "title" | "all";
+  /** Article text follows the scoped reading font and size, not interface typography. */
+  reading?: boolean;
+  /** A trailing navigation cue; published article entries deliberately omit it. */
+  chevron?: boolean;
   label?: string;
   /** A pressable card's action is running: it stays focusable, says so, and doesn't run again. */
   busy?: boolean;
@@ -44,7 +48,7 @@ const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
  * @a11y A choice uses native grouped radios; its slot actions are outside the choice label.
  * @key Arrow keys choose within the native radio group; Space chooses the focused radio.
  */
-export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
+export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", reading = false, chevron = true, label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
   // The shared busy policy (D-199): inert, aria-busy and data-busy, the same as Button's.
   const { inert, attrs: busyAttrs, ref: busyRef } = useBusy({ busy, label: label ?? "", disabled });
   if (skeleton) {
@@ -74,9 +78,9 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
   const Detail = pressable || choiceGroup ? "span" : "div";
   const text = (
     <Detail className={s.text}>
-      <Title className={`${s.title} ${size === "l" ? s.titleLarge : ""} ${pressable ? s.titleAction : ""}`} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>
+      <Title className={`${s.title} ${size === "l" ? s.titleLarge : ""} ${pressable ? s.titleAction : ""} ${reading ? s.readingTitle : ""}`} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>
       {detail || badge || mark ? (
-        <Detail className={s.detail}>
+        <Detail className={`${s.detail} ${reading ? s.readingDetail : ""}`}>
           {mark ? <GitHub className={s.mark} aria-hidden="true" /> : null}
           {detail ? <span data-personal={personal === "all" ? "" : undefined}>{detail}</span> : null}
           {badge ? <span className={`${s.badge} ${selected ? s.selectedBadge : ""}`}>{badge}</span> : null}
@@ -86,7 +90,7 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
   );
   if (choiceGroup) {
     return (
-      <div id={id} className={`${s.base} ${s.choiceCard}`} data-item-card="" data-selected={selected ? "" : undefined} aria-busy={busy || undefined}>
+      <div id={id} className={`${s.base} ${s.choiceCard} ${reading ? s.reading : ""}`} data-item-card="" data-reading={reading ? "" : undefined} data-selected={selected ? "" : undefined} aria-busy={busy || undefined}>
         <label className={s.choice}>
           <input className={s.radio} type="radio" name={choiceGroup} value={choiceValue} checked={Boolean(selected)} aria-disabled={busy || disabled || undefined} aria-label={label ?? title}
             onClick={(e) => { if (inert) e.preventDefault(); }}
@@ -103,8 +107,9 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
     return (
       <AriaButton
         id={id}
-        className={`${s.base} ${s.pressable} ${size === "l" ? s.large : ""}`}
+        className={`${s.base} ${s.pressable} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`}
         data-item-card=""
+        data-reading={reading ? "" : undefined}
         aria-label={label}
         {...busyAttrs}
         ref={busyRef}
@@ -114,12 +119,12 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
       >
         {visual}
         {text}
-        <Chevron className={s.chevron} aria-hidden="true" />
+        {chevron ? <Chevron className={s.chevron} aria-hidden="true" /> : null}
       </AriaButton>
     );
   }
   return (
-    <div id={id} className={`${s.base} ${size === "l" ? s.large : ""}`} role={label ? "group" : undefined} aria-label={label} data-item-card="">
+    <div id={id} className={`${s.base} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`} role={label ? "group" : undefined} aria-label={label} data-item-card="" data-reading={reading ? "" : undefined}>
       {visual}
       {text}
       {Children.count(children) ? <div className={s.actions}>{children}</div> : null}

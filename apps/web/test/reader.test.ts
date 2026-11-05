@@ -25,7 +25,7 @@ describe("public page document", () => {
     expect(html).not.toMatch(/<script|<img/);
     expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
-    expect(html).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
+    expect(html.replaceAll('xmlns="http://www.w3.org/2000/svg"', "")).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
   });
 
   it("PRF-12: preloads only the latin woff2 faces the first screen uses", () => {
@@ -60,7 +60,7 @@ describe("public notes index (D-139)", () => {
     expect(html.match(/<h1/g)).toHaveLength(1);
     expect(html).toContain('data-theme="auto"');
     expect(html).not.toMatch(/<script/);
-    expect(html).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
+    expect(html.replaceAll('xmlns="http://www.w3.org/2000/svg"', "")).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
   });
 
   it("lists each public note as a row, newest first: its title linking to its page, when it was updated, and its excerpt if it has one", () => {
@@ -74,5 +74,15 @@ describe("public notes index (D-139)", () => {
     expect(html).toContain("What grew, &amp; when.");
     expect(html.match(/What grew/g)).toHaveLength(1);
     expect(html).toContain("2 public notes");
+  });
+
+  it("uses the same icon-only, script-free theme radios on articles and the index", () => {
+    for (const html of [page("# T\n\nBody.\n").html, index().html]) {
+      expect(html.match(/type="radio"/g)).toHaveLength(3);
+      expect(html.match(/<svg /g)).toHaveLength(3);
+      expect(html).toContain('data-reader-appearance=""');
+      expect(html).not.toContain('style="');
+      for (const value of ["light", "dark", "system"]) expect(html).toContain(`value="${value}"`);
+    }
   });
 });
