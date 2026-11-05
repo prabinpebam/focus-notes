@@ -391,10 +391,6 @@ export function EditorSurface({
     else dom.removeAttribute("aria-activedescendant");
   }, [editor, slashOpen, slashActive, slashList]);
 
-  useEffect(() => {
-    if (editor) onReady?.();
-  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // The find query lives in the app; the editor highlights it and jumps to the first match at the caret.
   // Searching waits for a short pause in typing (FND-01: 60 ms), so long notes stay responsive.
   useEffect(() => {
@@ -870,9 +866,12 @@ export function EditorSurface({
 
   // The caret starts at the note's end, once every tracker above is listening (the reading zone
   // places it). At once rather than through Tiptap's autofocus, which focuses a frame later.
+  // Only then may readiness deliver a restored cursor or a find target.
   useEffect(() => {
-    if (editor) focusAtEnd(editor);
-  }, [editor]);
+    if (!editor) return;
+    focusAtEnd(editor);
+    onReady?.();
+  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={s.frame}>

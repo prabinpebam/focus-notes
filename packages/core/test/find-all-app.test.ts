@@ -193,6 +193,63 @@ describe("jumping to a match", () => {
     expect(app.store.state.ui.find).toMatchObject({ open: true, query: "here" });
     expect(actions.filter(([id]) => id === "find.select").map(([, a]) => a?.index)).toEqual([1]);
   });
+  it("does not deliver an earlier note's queued match to the editor opened by the next result", async () => {
+    const { app, actions, type } = await started();
+    await app.commands.run("find.allNotes");
+    await type("focus");
+    await app.commands.run("findAll.next");
+    await app.commands.run("findAll.next");
+    const frames: (() => void)[] = [];
+    vi.stubGlobal("requestAnimationFrame", (fn: () => void) => frames.push(fn));
+    try {
+      await app.commands.run("findAll.openActive");
+      await app.commands.run("app.ready");
+      await app.commands.run("find.nextResult");
+      await app.commands.run("app.ready");
+      expect(app.store.state.note.path).toBe(`${PUB}/garden.md`);
+      while (frames.length) for (const fn of frames.splice(0)) fn();
+      expect(actions.filter(([id]) => id === "find.select").map(([, args]) => args?.index)).toEqual([0]);
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it("keeps a returning note's target when its earlier open finishes remembering", async () => {
+    const garden = `${PUB}/garden.md`;
+    const files = { ...NOTES, [garden]: "# Garden\n\nOne focus, two focus, three Focus.\n" };
+    const { app, actions, type } = await started(files);
+    await app.commands.run("find.allNotes");
+    await type("focus");
+    for (let i = 0; i < 5; i++) await app.commands.run("findAll.next");
+    let finishSave!: () => void;
+    const saving = new Promise<void>((resolve) => { finishSave = resolve; });
+    const save = vi.spyOn(app.bridge, "saveAppState").mockImplementationOnce(() => saving);
+    let finishRead!: (value: string) => void;
+    const reading = new Promise<string>((resolve) => { finishRead = resolve; });
+    const read = vi.spyOn(app.bridge, "readNote");
+    try {
+      const opening = app.commands.run("findAll.openActive");
+      await vi.waitFor(() => expect(app.store.state.note).toMatchObject({ path: garden, status: "ready" }));
+      await app.commands.run("app.ready");
+      const next = app.commands.run("find.nextResult");
+      await vi.waitFor(() => expect(app.store.state.note).toMatchObject({ path: `${PRIV}/essays/on-focus.md`, status: "ready" }));
+      await app.commands.run("app.ready");
+      expect(app.store.state.note.path).toBe(`${PRIV}/essays/on-focus.md`);
+      read.mockImplementationOnce(() => reading);
+      const returning = app.commands.run("find.prevResult");
+      await vi.waitFor(() => expect(app.store.state.note.status).toBe("loading"));
+      finishSave();
+      await opening;
+      await next;
+      finishRead(files[garden]);
+      await returning;
+      await app.commands.run("app.ready");
+      expect(app.store.state.note.path).toBe(garden);
+      expect(actions.filter(([id]) => id === "find.select").map(([, args]) => args?.index)).toEqual([2, 0, 2]);
+    } finally {
+      finishSave();
+      finishRead(files[garden]);
+      save.mockRestore();
+      read.mockRestore();
+    }
+  });
   it("steps to the next and previous result across notes with F4 and Shift+F4, without the sheet", async () => {
     const { app, actions, type } = await started();
     expect(app.commands.describe("find.nextResult")).toMatchObject({ shortcut: "F4" });
