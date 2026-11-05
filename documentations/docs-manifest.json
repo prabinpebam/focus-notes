@@ -74,6 +74,15 @@
       "group": "Architecture"
     },
     {
+      "path": "architecture/actions-framework.md",
+      "title": "Actions framework",
+      "order": 453,
+      "icon": "rule",
+      "status": "draft",
+      "updated": "2026-11-06",
+      "group": "Architecture"
+    },
+    {
       "path": "architecture/rewrite-providers.md",
       "title": "Rewrite providers",
       "order": 452,
@@ -205,6 +214,15 @@
       "icon": "manage_search",
       "status": "draft",
       "updated": "2026-10-14",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/actions.md",
+      "title": "Actions: find and act",
+      "order": 241,
+      "icon": "bolt",
+      "status": "draft",
+      "updated": "2026-11-06",
       "group": "Experience"
     },
     {
