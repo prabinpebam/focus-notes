@@ -159,12 +159,12 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
     expect(items[0]).toMatchObject({ group: "Top hit" });
     const focus = items.find((i) => i.label === "Focus mode");
     expect(focus).toMatchObject({ state: "On", shortcut: formatChord("Mod+Shift+D", "windows") });
-    expect(labels(app)).toEqual(expect.arrayContaining(["Notes: On focus", "In notes: Ideas"]));
+    expect(labels(app)).toEqual(expect.arrayContaining(["Files: On focus", "Files: Ideas"]));
     // One Focus mode, in App (or as the top hit): no second row for the setting (ACT-07).
     expect(labels(app).filter((l) => l.endsWith(": Focus mode"))).toHaveLength(1);
     expect(["App: Focus mode", "Top hit: Focus mode"]).toContain(labels(app).find((l) => l.endsWith(": Focus mode")));
-    expect(labels(app)).toContain(items[0]!.label === "Focus sessions" ? "Top hit: Focus sessions" : "Notes: Focus sessions");
-    const ideas = items.find((i) => i.group === "In notes")!;
+    expect(labels(app)).toContain(items[0]!.label === "Focus sessions" ? "Top hit: Focus sessions" : "Files: Focus sessions");
+    const ideas = items.find((i) => i.label === "Ideas")!;
     expect(ideas.description).toContain("foc");
     expect(items.slice(-2).map((i) => i.label)).toEqual(["Create note “foc”", "Find “foc” in all notes"]);
     // The top hit is selected, so Enter does the most likely thing.
@@ -176,7 +176,7 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
     expect(raw[0]).toMatchObject({ header: true, label: "Top hit" });
     const headers = raw.filter((i) => i.header).map((i) => i.label);
     expect(new Set(headers).size).toBe(headers.length);
-    expect(headers).toEqual(expect.arrayContaining(["Notes", "In notes", "Actions"]));
+    expect(headers).toEqual(expect.arrayContaining(["Files", "Actions"]));
     expect(raw.filter((i) => i.header).every((i) => !i.highlights?.length && !i.disabled)).toBe(true);
   });
 
@@ -184,12 +184,49 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
     const { app } = await started();
     await app.commands.run("spotlight.open");
     await type(app, "deep work");
-    const heading = vm(app).items.find((i) => i.label === "Deep work")!;
-    expect(heading.description).toBe("On focus · essays/on-focus.md");
+    const heading = vm(app).items.find((i) => i.label === "On focus")!;
+    expect(heading.description).toBe("Deep work");
+    expect(sp(app).rows.find((r) => r.id === heading.id)).toMatchObject({ kind: "note", targetHeading: { index: 1, text: "Deep work" } });
+    expect(vm(app).items.some((i) => i.label === "Deep work")).toBe(false);
     await type(app, "essays");
     expect(vm(app).items.find((i) => i.label === "essays")).toMatchObject({ icon: "folder", description: "essays" });
     await type(app, "on focus");
     expect(vm(app).items.find((i) => i.label === "On focus")?.description).toBe("essays/on-focus.md · Public");
+  });
+  it("ACT-04: heading matches open their file at the heading, once per file; body matches open Find", async () => {
+    const { app } = await started();
+    const actions: [string, Record<string, unknown> | undefined][] = [];
+    app.onEditorAction((id, args) => { actions.push([id, args]); });
+    await app.commands.run("spotlight.open");
+    await type(app, "deep work");
+    expect(sp(app).rows.filter((r) => r.path === `${PUB}/essays/on-focus.md`)).toHaveLength(1);
+    await app.commands.run("spotlight.run");
+    await vi.waitFor(() => expect(app.store.state.note).toMatchObject({ status: "ready", path: `${PUB}/essays/on-focus.md` }));
+    await app.commands.run("app.ready");
+    await vi.waitFor(() => expect(actions).toContainEqual(["editor.goToHeading", { index: 1, text: "Deep work" }]));
+    await app.commands.run("spotlight.open");
+    await type(app, "morning");
+    expect(vm(app).items[0]?.label).toBe("Focus sessions");
+    await app.commands.run("spotlight.run");
+    await vi.waitFor(() => expect(app.store.state.note).toMatchObject({ status: "ready", path: `${PRIV}/journal/focus-sessions.md` }));
+    await app.commands.run("app.ready");
+    await vi.waitFor(() => expect(app.store.state.ui.find).toMatchObject({ open: true, query: "morning" }));
+  });
+  it("ACT-04: a moved result is removed without closing Actions or losing the query", async () => {
+    const { app } = await started();
+    await app.commands.run("spotlight.open");
+    await type(app, "ideas");
+    const row = sp(app).rows.find((r) => r.path === `${PRIV}/ideas.md`)!;
+    app.store.update((s) => ({
+      ...s, workspace: { ...s.workspace, tree: {
+        ...s.workspace.tree,
+        roots: s.workspace.tree.roots.map((root) => ({ ...root, children: root.children.filter((node) => node.name !== "ideas.md") })),
+      } },
+    }));
+    await app.commands.run("spotlight.choose", { id: row.id });
+    expect(sp(app)).toMatchObject({ open: true, query: "ideas" });
+    expect(sp(app).rows.some((r) => r.path === `${PRIV}/ideas.md`)).toBe(false);
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe(messages["actions.contentMissing"]);
   });
 });
 
@@ -315,7 +352,7 @@ describe("SPT-04: states, the empty field, and no match", () => {
     hits = [{ kind: "note", key: `${PUB}/reading.md`, label: "Reading list", highlights: [[0, 7]], tier: "prefix", score: 1, path: `${PUB}/reading.md`, rel: "reading.md", root: "public" }];
     status = { notes: 1, indexed: 1, pending: 0, seq: 1 };
     for (const l of listeners) l(status);
-    await vi.waitFor(() => expect(labels(app)[0]).toBe("Notes: Reading list"));
+    await vi.waitFor(() => expect(labels(app)[0]).toBe("Files: Reading list"));
     expect(vm(app).items.find((i) => i.id === sp(app).activeId)?.label).toBe("Reading list");
     // A row the person moved to stays active as more arrives.
     await app.commands.run("spotlight.next");
@@ -323,7 +360,7 @@ describe("SPT-04: states, the empty field, and no match", () => {
     hits = [...hits, { ...hits[0]!, key: `${PUB}/reading-2.md`, label: "Reading log", path: `${PUB}/reading-2.md`, rel: "reading-2.md" }];
     status = { notes: 2, indexed: 2, pending: 0, seq: 2 };
     for (const l of listeners) l(status);
-    await vi.waitFor(() => expect(labels(app)).toContain("Notes: Reading log"));
+    await vi.waitFor(() => expect(labels(app)).toContain("Files: Reading log"));
     expect(sp(app).activeId).toBe(moved);
     // Nothing new in the index: it isn't asked again.
     const asked = vi.spyOn(service, "query");
@@ -419,12 +456,12 @@ describe("FIL-04: quick open finds notes by title or path, fuzzily (Mod+P)", () 
     expect(vm(app)).toMatchObject({ mode: "Notes" });
     expect(vm(app).items.map((i) => i.label).sort()).toEqual(["Focus sessions", "Ideas", "On focus", "Welcome"]);
     await type(app, "journal foc");
-    expect(vm(app).items.filter((i) => i.group === "Notes").map((i) => i.label)).toEqual(["Focus sessions"]);
+    expect(vm(app).items.filter((i) => i.group === "Files").map((i) => i.label)).toEqual(["Focus sessions"]);
     await type(app, "sesions");
     expect(vm(app).items[0]?.label).toBe("Focus sessions");
     // Only notes: no commands, and Enter opens the selected one.
     await type(app, "focus");
-    expect(vm(app).items.filter((i) => i.group !== "Actions").every((i) => i.group === "Notes")).toBe(true);
+    expect(vm(app).items.filter((i) => i.group !== "Actions").every((i) => i.group === "Files")).toBe(true);
     await app.commands.run("spotlight.run");
     await vi.waitFor(() => expect(app.store.state.note.path).toMatch(/focus/));
   });

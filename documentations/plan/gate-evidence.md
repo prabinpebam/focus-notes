@@ -44,7 +44,7 @@ The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedbac
 | Row | Current evidence | Remaining |
 | --- | --- | --- |
 | MACT.1, MACT.2, MACT.10 | `actions-proof.test.ts`: catalogue integrity rejects duplicate labels, absent commands/proof/pointer paths and bare shared verbs; allow-list excludes dialog steps. | Native outcome proof for every entry; exact-head CI and Preview |
-| MACT.3 | Dialog/toolbar/message words changed to Actions; existing folder and note navigation retained. | Files/text merging slice WP-A.4; complete word inventory |
+| MACT.3 | Dialog/toolbar/message words changed to Actions. WP-A.4 has 93 focused passing units and eight passing Actions journeys across the full run and corrected folder-expansion run: one file per heading/body match, heading caret, body Find and revealed/expanded/focused folder. | Exact-head CI/Preview; complete word inventory |
 | MACT.4, MACT.5 | Units cover captured note context, stale refusal with query retained, selection/anchor groups, empty list, browse, private Publish and its confirmation fix. | Native selection/undo and remaining contexts |
 | MACT.6, MACT.7, MACT.8 | Initial starter catalogue reuses existing command flows. | Remaining starter/AI wiring, native per-effect proofs and privacy/performance checks |
 | MACT.9 | Deferred by approved D-364, after a week of starter-set use. | Owner's later go-ahead |
