@@ -187,9 +187,8 @@ test("A crashed native panel reloads locally and opens safe Feedback without los
     expect(await l.page.evaluate(() => performance.timeOrigin)).toBe(origin);
     await expect(editor).toContainText("First line.");
     expect(readFileSync(note)).toEqual(bytes);
-    const windowCount = await l.app.evaluateHandle(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
-    try { expect(await windowCount.jsonValue()).toBe(1); }
-    finally { await windowCount.dispose(); }
+    const windowCount = await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
+    expect(windowCount).toBe(1);
   } finally { await closeTestApp(l); }
 });
 
