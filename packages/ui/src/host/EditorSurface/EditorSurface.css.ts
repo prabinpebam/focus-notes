@@ -1,6 +1,7 @@
-import { createVar, globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, fallbackVar, globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { scrollEdge, tokens } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { topClearance } from "../../layouts/Layer/clearance.css.ts";
 
 const t = tokens.cmp.editorSurface;
 
@@ -201,7 +202,7 @@ export const column = style({
   paddingBottom: t.endPadding,
   selectors: {
     // While the find bar is open, the top of the note sits below it, so it never covers a match.
-    "[data-find-open] > &": { paddingTop: `max(${t.readingTop}, calc(${t.topBand} + ${t.findClearance}))` },
+    "[data-find-open] > &": { paddingTop: `max(${t.readingTop}, calc(${fallbackVar(topClearance, `calc(${t.topBand} + ${t.findClearance})`)} + ${t.findGap}))` },
   },
 });
 

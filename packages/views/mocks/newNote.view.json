@@ -116,58 +116,36 @@
             },
             "children": [
              {
-              "type": "Button",
-              "on": {
-               "press": {
-                "set": "local.step",
-                "to": "closed"
-               }
-              },
-              "props": {
-               "label": {
-                "t": "project.mock.step.inBook"
+               "type": "Button",
+               "on": {
+                 "press": {
+                   "set": "local.step",
+                   "to": "closed"
+                 }
                },
-               "size": "s",
-               "variant": "subtle",
-               "toggle": true,
-               "pressed": {
-                "expr": {
-                 "==": [
-                  {
-                   "get": "local.step"
-                  },
-                  "closed"
-                 ]
-                }
+               "props": {
+                 "label": {
+                   "t": "project.mock.step.inBook"
+                 },
+                 "size": "s",
+                 "variant": "subtle"
                }
-              }
              },
              {
-              "type": "Button",
-              "on": {
-               "press": {
-                "set": "local.step",
-                "to": "quick"
-               }
-              },
-              "props": {
-               "label": {
-                "t": "project.mock.step.inQuick"
+               "type": "Button",
+               "on": {
+                 "press": {
+                   "set": "local.step",
+                   "to": "quick"
+                 }
                },
-               "size": "s",
-               "variant": "subtle",
-               "toggle": true,
-               "pressed": {
-                "expr": {
-                 "==": [
-                  {
-                   "get": "local.step"
-                  },
-                  "quick"
-                 ]
-                }
+               "props": {
+                 "label": {
+                   "t": "project.mock.step.inQuick"
+                 },
+                 "size": "s",
+                 "variant": "subtle"
                }
-              }
              }
             ]
            }

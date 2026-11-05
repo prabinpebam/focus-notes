@@ -424,40 +424,34 @@
                     },
                     "children": [
                      {
-                      "type": "Button",
-                      "props": {
-                       "label": {
-                        "t": "rewrite.preset.concise"
-                       },
-                       "size": "s",
-                       "variant": "subtle",
-                       "toggle": true,
-                       "pressed": false
-                      }
+                       "type": "Button",
+                       "props": {
+                         "label": {
+                           "t": "rewrite.preset.concise"
+                         },
+                         "size": "s",
+                         "variant": "subtle"
+                       }
                      },
                      {
-                      "type": "Button",
-                      "props": {
-                       "label": {
-                        "t": "rewrite.preset.warmer"
-                       },
-                       "size": "s",
-                       "variant": "subtle",
-                       "toggle": true,
-                       "pressed": false
-                      }
+                       "type": "Button",
+                       "props": {
+                         "label": {
+                           "t": "rewrite.preset.warmer"
+                         },
+                         "size": "s",
+                         "variant": "subtle"
+                       }
                      },
                      {
-                      "type": "Button",
-                      "props": {
-                       "label": {
-                        "t": "rewrite.preset.grammar"
-                       },
-                       "size": "s",
-                       "variant": "subtle",
-                       "toggle": true,
-                       "pressed": false
-                      }
+                       "type": "Button",
+                       "props": {
+                         "label": {
+                           "t": "rewrite.preset.grammar"
+                         },
+                         "size": "s",
+                         "variant": "subtle"
+                       }
                      }
                     ]
                    },

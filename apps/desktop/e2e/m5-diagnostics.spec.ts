@@ -90,7 +90,7 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
     const feedback = page.getByRole("dialog", { name: "Send feedback" });
     await expect(feedback).toBeVisible();
     await expect(feedback.getByRole("radio", { name: "Problem" })).toBeChecked();
-    await expect(feedback.getByRole("button", { name: "Attach diagnostic report" })).toHaveAttribute("aria-pressed", "true");
+    await expect(feedback.getByRole("switch", { name: "Attach diagnostic report" })).toBeChecked();
     await expect(feedback.getByRole("textbox", { name: "Title" })).toBeFocused();
     await page.keyboard.type("The app closed");
     await feedback.getByRole("button", { name: "Continue on GitHub" }).click();

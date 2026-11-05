@@ -164,10 +164,10 @@ test("SHR-10: a name and passcode open their scope, whatever the name's case or 
   await other.goto(origin + READER);
   await expect(other.getByRole("heading", { level: 1 })).toHaveText("This note is private");
   // Remember on this device: a new tab opens it without asking.
-  const remember = page.getByRole("button", { name: "Remember on this device" });
-  await expect(remember).toHaveAttribute("aria-pressed", "false");
-  await remember.click();
-  await expect(remember).toHaveAttribute("aria-pressed", "true");
+  const remember = page.getByRole("switch", { name: "Remember on this device" });
+  await expect(remember).not.toBeChecked();
+  await remember.press("Space");
+  await expect(remember).toBeChecked();
   await other.reload();
   await expect(other.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
   // Sign out in one tab signs out every tab, and forgets the session on this device.
@@ -182,14 +182,14 @@ test("SHR-10: a name and passcode open their scope, whatever the name's case or 
   // Open and remember keeps it on this device from the start.
   await signIn(page, "Sam Lee", PASSCODE, "Open and remember");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
-  await expect(page.getByRole("button", { name: "Remember on this device" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("switch", { name: "Remember on this device" })).toBeChecked();
   await other.reload();
   await expect(other.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
   expect(await records(page)).toEqual([expect.objectContaining({ remembered: true, extractable: false, exported: false })]);
   // A new link opens for that tab only, whatever this device remembers.
   await other.goto(origin + link("gnote0001", secrets.note));
   await expect(other.getByRole("heading", { level: 1 })).toHaveText("To Asha");
-  await expect(other.getByRole("button", { name: "Remember on this device" })).toHaveAttribute("aria-pressed", "false");
+  await expect(other.getByRole("switch", { name: "Remember on this device" })).not.toBeChecked();
 });
 
 test("SHR-06: wrong, expired, and withdrawn grants all show the one generic error", async ({ page }) => {
@@ -221,7 +221,7 @@ test("SHR-06: wrong, expired, and withdrawn grants all show the one generic erro
   // A grant withdrawn after it was opened (and remembered) stops at the next publish.
   await page.goto(origin + link("gwithdr02", secrets.later));
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("To Asha");
-  await page.getByRole("button", { name: "Remember on this device" }).click();
+  await page.getByRole("switch", { name: "Remember on this device" }).press("Space");
   await seal(true);
   try {
     await page.reload();

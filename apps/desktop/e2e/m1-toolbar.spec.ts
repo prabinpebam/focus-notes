@@ -20,7 +20,7 @@ test("UI-04, UI-05: the trigger opens the toolbar: six actions, then ⋯, one ta
   await page.getByRole("button", { name: "Focus Notes menu" }).click();
   const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
   await expect(toolbar).toBeVisible();
-  const names = await toolbar.getByRole("button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+  const names = await toolbar.locator('button, input[role="switch"]').evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
   expect(names).toEqual(["New note", "Open…", "Search", "Save", "Focus mode", "Switch light and dark", "More"]);
   await expect(page.getByRole("button", { name: "Focus Notes menu" })).toHaveAttribute("aria-expanded", "true");
   expect(await axeViolations(page)).toEqual([]);
@@ -53,7 +53,7 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   await expect(toolbar).toBeVisible();
   await expect(toolbar.locator(":focus")).toHaveCount(1);
   await settled(page);
-  await toolbar.getByRole("button", { name: "Switch light and dark" }).click();
+  await toolbar.getByRole("switch", { name: "Switch light and dark" }).press("Space");
   // The switch first: if this ever fails again, it says whether the press ran at all (DEF-15).
   await expect.poll(theme, "the press on Switch light and dark ran its command").not.toBe(before);
   await expect(toolbar).toBeHidden();
@@ -62,12 +62,12 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   // Focus mode (on for new installs, D-04) toggles off, and the button shows its state.
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBe("on");
   await page.keyboard.press(`${mod}+.`);
-  await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "true");
-  await toolbar.getByRole("button", { name: "Focus mode" }).click();
+  await expect(toolbar.getByRole("switch", { name: "Focus mode" })).toBeChecked();
+  await toolbar.getByRole("switch", { name: "Focus mode" }).press("Space");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
   // Persisted compact settings stay visible for their own commit feedback.
   await expect(toolbar).toBeVisible();
-  await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "false");
+  await expect(toolbar.getByRole("switch", { name: "Focus mode" })).not.toBeChecked();
   // Escape reaches the toolbar only once it has taken focus; before that the keypress goes to the note.
   await expect(toolbar.locator(":focus")).toHaveCount(1);
   await page.keyboard.press("Escape");

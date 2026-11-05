@@ -5,7 +5,7 @@ import { contracts, ICON_NAMES, type Contract } from "@focus-notes/ui/contracts"
 import { createApp, type JsonSchema, type PlatformBridge } from "@focus-notes/core";
 import { views, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
-import { checkUi, checkFixtureCoverage, groupingProblems, type Problem } from "../src/check.ts";
+import { checkUi, checkFixtureCoverage, groupingProblems, toggleButtonProblems, type Problem } from "../src/check.ts";
 import type { ComponentNode, Node } from "../src/types.ts";
 import { checkExpression, evaluate } from "../src/expr.ts";
 import { VIEW_SCHEMA_URL } from "../src/migrate.ts";
@@ -97,6 +97,26 @@ describe("grouping by proximity (SP-12)", () => {
     expect(problems(root).some((p) => p.stage === "design" && p.at.endsWith("/children/0") && /doesn't lead/.test(p.message))).toBe(true);
     const doc = view(root).t;
     expect(checkUi({ ...base, views: { "gallery.proposal": { ...doc, id: "gallery.proposal" } } })).toEqual([]);
+  });
+});
+
+describe("on/off semantics (OFB.6, D-355)", () => {
+  const toggle = (run: string, value?: string): ComponentNode => ({
+    type: "Button", props: { toggle: true, pressed: false, label: { t: "gallery.sample" } },
+    on: { press: { run, ...(value ? { args: { value } } : {}) } },
+  });
+  it("rejects boolean buttons including false pressed state without toggle", () => {
+    expect(toggleButtonProblems(toggle("settings.sync"))).toHaveLength(1);
+    expect(toggleButtonProblems({ type: "IconButton", props: { pressed: false } })).toHaveLength(1);
+    expect(messagesOf(problems(toggle("settings.sync"))).join()).toContain("must use Switch");
+  });
+  it("preserves formatting and actual three-way named choices, not two or three duplicates", () => {
+    expect(toggleButtonProblems(toggle("format.bold"))).toEqual([]);
+    const choices = ["concise", "warmer", "grammar"].map((v) => toggle("rewrite.preset", v));
+    expect(toggleButtonProblems(choices[0]!, choices)).toEqual([]);
+    expect(toggleButtonProblems(choices[0]!, choices.slice(0, 2))).toHaveLength(1);
+    expect(toggleButtonProblems(choices[0]!, [choices[0]!, choices[0]!, choices[1]!])).toHaveLength(1);
+    expect(toggleButtonProblems({ type: "Switch", props: { checked: false } })).toEqual([]);
   });
 });
 
@@ -195,7 +215,7 @@ describe("list item contracts (DS-A04)", () => {
     badIds: { type: "array", items: { type: "object", properties: { id: { type: "number" }, label: { type: "string" } } } },
     flatSections: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: { type: "string" } } } } },
   } } as const;
-  const toolbar = (items: string, more: string) => ({ type: "Toolbar", props: { label: { t: "toolbar.label" }, items: { get: items }, more: { get: more }, moreLabel: { t: "toolbar.more" } } });
+  const toolbar = (items: string, more: string) => ({ type: "Toolbar", props: { label: { t: "toolbar.label" }, items: { get: items }, more: { get: more }, moreLabel: { t: "toolbar.more" }, onLabel: { t: "switch.on" }, offLabel: { t: "switch.off" } } });
   const check = (items: string, more: string) => messagesOf(checkUi({
     ...base, viewModels: new Map<string, { schema: JsonSchema; setters?: Record<string, string> }>([...base.viewModels, ["vm.probe", { schema: probe as unknown as JsonSchema }]]),
     views: { t: { ...view(toolbar(items, more)).t, viewModels: ["vm.app", "vm.canvas", "vm.probe"] } },

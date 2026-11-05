@@ -220,6 +220,28 @@ describe("FRE-10: Import notes on the desktop", () => {
 });
 
 describe("PRV-03: Sync appearance stores synced settings in the private repository", () => {
+  it("OFB.7: retains the stored Switch value during a delayed refusal and retries its exact choice", async () => {
+    const f = setup();
+    const app = await started(f);
+    const save = f.bridge.settings!.save;
+    let reject!: (error: Error) => void;
+    f.bridge.settings!.save = () => new Promise((_resolve, fail) => { reject = fail; });
+    const pending = app.commands.run("settings.sync", { value: true });
+    await settle();
+    expect(app.store.state.settingsSync).toBe("off");
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: "settings.sync", phase: "pending", value: true }));
+    expect(app.commands.describe("settings.sync").enabled).toBe(false);
+    const failure = expect(pending).rejects.toThrow("disk full");
+    reject(new Error("disk full"));
+    await failure;
+    expect(app.store.state.settingsSync).toBe("off");
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: "settings.sync", phase: "failed" }));
+    f.bridge.settings!.save = save;
+    await app.commands.run("settings.sync", { value: true });
+    expect(app.store.state.settingsSync).toBe("on");
+    expect(f.settings()).toBeDefined();
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: "settings.sync", phase: "confirmed" }));
+  });
   it("while on, the synced settings come from the file and go to it; the device keeps the rest", async () => {
     const f = setup({ settings: JSON.stringify({ appearance: { mode: "dark", darkTheme: "dusk" }, reading: { fontSize: 18 } }), state: { appearance: "light", fontSize: 14 } });
     const app = await started(f);

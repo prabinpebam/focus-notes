@@ -14,6 +14,8 @@ export const contract = defineContract({
     items: { kind: "list", of: "commandItems", required: true },
     more: { kind: "list", of: "menuSections", required: true },
     moreLabel: { kind: "message", required: true },
+    onLabel: { kind: "message", required: true },
+    offLabel: { kind: "message", required: true },
   },
   events: { openChange: { payload: { open: "boolean" } }, action: { payload: { id: "text" } } },
   slots: {},
@@ -23,7 +25,7 @@ export const contract = defineContract({
   journeys: [{ spec: "apps/desktop/e2e/m1-canvas.spec.ts", covers: ["hover", "open"] }],
   uncovered: { pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: [
-    { name: "rest", props: { label: { t: "trigger.label" }, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },
-    { name: "save problem", covers: ["problem"], props: { label: { t: "trigger.label" }, problemLabel: { t: "trigger.saveProblem" }, problem: true, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },
+    { name: "rest", props: { label: { t: "trigger.label" }, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" }, onLabel: { t: "switch.on" }, offLabel: { t: "switch.off" } } },
+    { name: "save problem", covers: ["problem"], props: { label: { t: "trigger.label" }, problemLabel: { t: "trigger.saveProblem" }, problem: true, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" }, onLabel: { t: "switch.on" }, offLabel: { t: "switch.off" } } },
   ],
 });

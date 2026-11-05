@@ -4,7 +4,7 @@ import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT,
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
-import type { PlatformBridge, AppStateFile, Compositing, RepoId } from "./bridge.ts";
+import { opErrorCode, type PlatformBridge, type AppStateFile, type Compositing, type RepoId } from "./bridge.ts";
 import { registerBrowserFeatures, PICKER_CLOSED, UNLOCK_CLOSED, NO_INSTANCE, type PickerState, type UnlockState, type InstanceState } from "./browser.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
@@ -1395,29 +1395,33 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     themesAvailable: () => { const roots = store.state.workspace.tree.roots; return !roots.length || roots.some((r) => r.id === "private" || r.id === "public"); } });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
-  commands.register({
+  commands.register<{ value?: boolean }>({
     id: "settings.sync", title: "command.settings.sync",
-    enabled: (s) => s.settingsSync !== "unavailable",
+    enabled: (s) => s.settingsSync !== "unavailable" && !s.commits.some(c => c.target === "settings.sync" && c.phase === "pending"),
     checked: (s) => s.settingsSync === "on",
-    run: async () => {
+    run: async ({ value }) => {
       if (!bridge.settings || store.state.settingsSync === "unavailable") return;
-      const on = store.state.settingsSync === "off";
+      const on = value ?? store.state.settingsSync === "off";
       const { synced } = splitAppState(appState);
       const before = settingsFile;
       try {
-        if (on) {
-          settingsFile = settingsFileOf(synced);
-          await saveSettings();
-        } else {
-          settingsFile = undefined;
-          await saveDevice(synced);
-          await bridge.settings.remove();
-        }
+        await commits.run("settings.sync", "settings.sync", on, async () => {
+          if (on) {
+            settingsFile = settingsFileOf(synced);
+            await saveSettings();
+          } else {
+            settingsFile = undefined;
+            await saveDevice(synced);
+            await bridge.settings!.remove();
+          }
+        });
         store.update((s) => ({ ...s, settingsSync: on ? "on" : "off" }));
         toast(catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal"), { tone: "success" });
-      } catch {
+      } catch (error) {
         settingsFile = before;
+        console.error("Appearance sync write failed", opErrorCode(error));
         toast(catalog.format("toast.settingsFailed"), { tone: "error" });
+        throw error;
       }
     },
   });

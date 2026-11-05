@@ -41,16 +41,21 @@ The first toolbar gate exposed a startup race in the unrelated delete/Undo fixtu
 
 ### Owner feedback batch, 6 November: on/off audit
 
-The source audit finds 27 production toggle declarations (one Agents repeat renders five permissions). The implementation proceeds by these semantic groups; the table does not claim pending conversions are built.
+The source audit found 27 production toggle declarations (one Agents repeat renders five permissions), plus the command-driven toolbar. All view declarations and the runtime toolbar now follow these semantic groups. The checker rejects boolean buttons, including an explicit false pressed state without `toggle`; only formatting and sibling groups of at least three distinct named choices pass. Primitive gallery fixtures demonstrate supported states, not settings, and are the only fixture exemption.
 
 | Surface | Meaning | Required treatment | Evidence |
 | --- | --- | --- | --- |
 | Settings → Agents | Five independent on/off permissions, saved as one permission document | Switch; own-border pending/confirmation/refusal, stored value and focus retained, row Retry | Implemented locally: 13 core units; real Git-backed restart journey; synthetic refusal/Retry keyboard journey with stable bounds |
-| Settings appearance sync; sharing link/passcode and included items; reader Remember; feedback attachment | Binary settings | Switch | Pending conversion |
-| Find and Find in all: case, whole word, regular expression, selection | Binary search settings | Switch | Pending conversion |
-| Find's replacement disclosure; Files pin/unpin; regenerate passcode words | Open/close or named actions, not settings | Action buttons, without misleading pressed semantics | Pending correction |
+| Settings appearance sync; sharing link/passcode, new words on Save and included items; reader Remember; feedback attachment | Binary settings or explicit-save draft choices | Switch | Converted. Appearance sync keeps the stored value until acknowledged, shows pending/confirmation/refusal and row Retry; drafts commit only on their existing Save |
+| Find and Find in all: case, whole word, regular expression, selection | Binary search settings | Switch | Converted; shortcuts preserved. Compact Find puts the same Switches in the existing PopoverPanel, with every label in bounds at 360 × 320; the match remains visible afterward |
+| Trigger toolbar: Focus mode and light/dark | Binary mode settings | Switch | Converted; real command and keyboard journeys, durable focus refusal/Retry, composer restart journey |
+| Find's replacement disclosure; Files pin/unpin; immediate new passcode words | Open/close or named actions, not settings | Action buttons, without misleading pressed semantics | Disclosure uses `aria-expanded`; Files uses Dock/Undock names, not pressed state. Immediate passcode regeneration stays an action; the manage-share draft's new-words choice is a Switch |
 | Bold, italic, strike, code, link | Editor formatting | Pressed buttons are appropriate | Preserve |
-| Rewrite presets | Three mutually exclusive choices | Segmented choice | Preserve three-way semantics; enforcement pending |
+| Rewrite presets | Three mutually exclusive choices | Segmented choice | Preserved; checker accepts three distinct named values and rejects two or duplicated choices |
+| Gallery prototype navigation and image samples | Named screen/sample choices, not settings | Three-or-more choice buttons; smaller prototype navigation stays an ordinary action | Preserved. Image Rounded corners and Fit are Switches, not formatting buttons |
+| Theme, font, colour and project-logo selection | Named multi-option palettes, not a binary setting | Existing radio/choice primitives | Preserved unchanged |
+
+Find now reserves its actual measured layer height, plus the semantic item gap, rather than assuming an icon-only row height. The renderer supplies and subscribes to its already-declared `env.sizeClass` using the token breakpoints; only regions that read the environment subscribe, and resizing within a class does not rerender them. The native small-window check measures the visible label, not React Aria's hidden checkbox wrapper, and checks both axes and the match's on-screen bottom.
 
 | State family | Kept | Removed | Enforcement |
 | --- | --- | --- | --- |

@@ -94,7 +94,7 @@ test("QLT-07: from Settings' foot, a problem with the report is posted as an iss
     await expect(settings).toHaveCount(0);
     await expect(d.getByRole("radio", { name: "Problem" })).toBeChecked();
     await expect(d.getByRole("textbox", { name: "Title" })).toBeFocused();
-    await expect(d.getByRole("button", { name: "Attach diagnostic report" })).toHaveAttribute("aria-pressed", "true");
+    await expect(d.getByRole("switch", { name: "Attach diagnostic report" })).toBeChecked();
     // Attached, the exact report that will be posted shows, read-only, from the start (D-203).
     const report = d.getByRole("textbox", { name: "Diagnostic report, as it will be posted" });
     await expect(report).toHaveValue(/^## Focus Notes diagnostic report/, { timeout: 20_000 });
@@ -167,7 +167,7 @@ test("QLT-07: from the ⋯ menu, an idea goes without the report, after Try agai
     // The segment's label takes the press, as a person's would.
     await d.getByRole("radiogroup", { name: "Kind" }).getByText("Idea", { exact: true }).click();
     await expect(d.getByRole("radio", { name: "Idea" })).toBeChecked();
-    await expect(d.getByRole("button", { name: "Attach diagnostic report" })).toHaveAttribute("aria-pressed", "false");
+    await expect(d.getByRole("switch", { name: "Attach diagnostic report" })).not.toBeChecked();
     await d.getByRole("textbox", { name: "Title" }).fill("Tags in Files");
     await d.getByRole("textbox", { name: "Details" }).fill("Show each note's tags beside its name.");
     await expect(d.getByText("@ada")).toBeVisible({ timeout: 15_000 });
@@ -291,9 +291,9 @@ test("QLT-07: signed out, it continues on GitHub only, by keyboard alone from st
     await expect(d.getByRole("textbox", { name: "Details" })).toBeFocused();
     await page.keyboard.type("In a table cell.");
     // The report off by keyboard: Space on the toggle.
-    await tabTo(page, d.getByRole("button", { name: "Attach diagnostic report" }));
+    await tabTo(page, d.getByRole("switch", { name: "Attach diagnostic report" }));
     await page.keyboard.press("Space");
-    await expect(d.getByRole("button", { name: "Attach diagnostic report" })).toHaveAttribute("aria-pressed", "false");
+    await expect(d.getByRole("switch", { name: "Attach diagnostic report" })).not.toBeChecked();
     await tabTo(page, d.getByRole("button", { name: "Continue on GitHub" }));
     await page.keyboard.press("Enter");
     await expect(d).toHaveCount(0);

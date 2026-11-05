@@ -224,9 +224,9 @@ test("SHR-13/14/15/24: Share… opens a fixed item, reviews contents and preserv
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await expect(share).toBeVisible();
     await expect(share.getByText("Folder · 2 notes · 1 folder", { exact: true })).toBeVisible();
-    await expect(share.getByRole("switch", { name: /^Link / })).toBeChecked();
-    await expect(share.getByRole("switch", { name: /^Passcode / })).not.toBeChecked();
-    await expect(share.getByRole("switch", { name: /^Include notes added later / })).not.toBeChecked();
+    await expect(share.getByRole("switch", { name: "Link", exact: true })).toBeChecked();
+    await expect(share.getByRole("switch", { name: "Passcode", exact: true })).not.toBeChecked();
+    await expect(share.getByRole("switch", { name: "Include notes added later", exact: true })).not.toBeChecked();
     await share.getByText("Link", { exact: true }).click();
     await expect(share.getByText("Keep Link or Passcode on to share this item.", { exact: true })).toBeVisible();
     await share.getByText("Passcode", { exact: true }).click();

@@ -2649,6 +2649,10 @@
           "kind": "boolean",
           "default": false
         },
+        "expanded": {
+          "kind": "boolean",
+          "description": "Whether the region opened by this disclosure action is expanded, separate from a setting's checked state."
+        },
         "mixed": {
           "kind": "boolean",
           "default": false,
@@ -17801,6 +17805,14 @@
         "moreLabel": {
           "kind": "message",
           "required": true
+        },
+        "onLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "offLabel": {
+          "kind": "message",
+          "required": true
         }
       },
       "events": {
@@ -17860,6 +17872,12 @@
             },
             "moreLabel": {
               "t": "toolbar.more"
+            },
+            "onLabel": {
+              "t": "switch.on"
+            },
+            "offLabel": {
+              "t": "switch.off"
             }
           }
         },
@@ -17887,6 +17905,12 @@
             },
             "moreLabel": {
               "t": "toolbar.more"
+            },
+            "onLabel": {
+              "t": "switch.on"
+            },
+            "offLabel": {
+              "t": "switch.off"
             }
           }
         }
@@ -17912,6 +17936,14 @@
           "required": true
         },
         "moreLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "onLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "offLabel": {
           "kind": "message",
           "required": true
         }
@@ -17947,6 +17979,12 @@
             },
             "moreLabel": {
               "t": "toolbar.more"
+            },
+            "onLabel": {
+              "t": "switch.on"
+            },
+            "offLabel": {
+              "t": "switch.off"
             }
           }
         }
