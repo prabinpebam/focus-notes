@@ -515,6 +515,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
 
   // ---- Rewrite: the inline popover takes the prompt; the answer streams into the note ----
   let open = false, selection = "", prompt = "", instruction = "", caret = false, beginning = false;
+  let requestedPreset: (typeof PRESETS)[number] | undefined;
   let confirmingDiscard = false, focusRequest = 0;
   /** The note the selection came from: a switch stops the rewrite. */
   let fromKey = "", fromPath = "";
@@ -603,13 +604,17 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   // The window going away (reload, close): nothing keeps running in the shell for it.
   (globalThis as { addEventListener?: (type: string, fn: () => void) => void }).addEventListener?.("pagehide", drop);
 
-  reg("rewrite.open", () => {
+  reg("rewrite.open", (a) => {
+    const preset = PRESETS.find((p) => p === a.preset);
+    if (a.preset !== undefined && !preset) throw new Error("Invalid rewrite preset");
     if (running) return;
     // The editor answers with the selection (rewrite.captured).
     if (open) {
+      if (preset && !caret) prompt = presetText(preset);
       if (!confirmingDiscard) { focusRequest++; changed(); }
       return;
     }
+    requestedPreset = preset;
     editorAction("rewrite.capture");
   }, { icon: "rename", shortcut: { default: "Mod+Shift+R" }, layer: "writer", group: "editing", enabled: (s) => Boolean(ai) && s.note.status === "ready" });
   reg("rewrite.captured", async (a) => {
@@ -618,7 +623,10 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       announce(t("rewrite.selectFirst"));
       return;
     }
-    open = true; caret = a.caret === true; selection = caret ? "" : text; prompt = ""; confirmingDiscard = false; focusRequest++;
+    open = true; caret = a.caret === true; selection = caret ? "" : text;
+    prompt = requestedPreset && !caret ? presetText(requestedPreset) : "";
+    requestedPreset = undefined;
+    confirmingDiscard = false; focusRequest++;
     fromKey = store.state.note.key;
     fromPath = store.state.note.path ?? "";
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
@@ -678,4 +686,13 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     void ai.rewriteCancel(running.id).catch(() => {});
     fail("cancelled");
   });
+  return {
+    prepareActions: async () => {
+      if (connectionsLoaded || !ai) return;
+      const start = performance.now();
+      await tracker.run("actions.ai", "actions.reason.checkingAi", load);
+      performance.measure("fn:actions.ai", { start, duration: performance.now() - start });
+    },
+    actionsReady: () => Boolean(writerConnection()),
+  };
 }

@@ -11,6 +11,7 @@ import { createServer, type Server } from "node:http";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
+import messages from "../../../packages/views/messages/en.json" with { type: "json" };
 import { launch, quit, tempDirs, PROMPTLY, type Launched } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -22,7 +23,9 @@ function fakeOllama() {
   let gate: Promise<void> = Promise.resolve();
   let open: () => void = () => {};
   const seen: { body: unknown; closed: boolean; finished: boolean }[] = [];
+  const requests: string[] = [];
   const server: Server = createServer((req, res) => {
+    requests.push(`${req.method} ${req.url}`);
     if (req.url === "/api/tags") {
       res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ models: [{ name: "fake" }] }));
       return;
@@ -51,6 +54,7 @@ function fakeOllama() {
   });
   return {
     seen,
+    requests,
     play(chunks: string[], holdAt = -1) {
       plan = { chunks, holdAt };
       gate = new Promise((r) => { open = r; });
@@ -97,6 +101,96 @@ const ANSWER = ["New ", "**bol", "d** words", " and `co", "de`."];
 const REWRITTEN = "# Plan\n\nKeep this. New **bold** words and `code`. Keep that.\n";
 
 test.describe.configure({ mode: "serial" });
+
+test("ACT-11: Actions presets open the existing AI prompt without sending; only the selection is sent and Undo restores", async () => {
+  const fake = fakeOllama();
+  const port = await fake.listen();
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, DATA_FILES.ai), JSON.stringify({
+    version: 2, writer: "fake",
+    connections: [{ id: "fake", provider: "ollama", name: "Fake Ollama", endpoint: `http://127.0.0.1:${port}`, model: "fake" }],
+  }));
+  const note = join(dirs.docs, "Welcome.md");
+  writeFileSync(note, ORIGINAL);
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs);
+    const { page } = l;
+    const editor = page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toBeFocused();
+    for (const preset of ["concise", "warmer", "grammar"] as const) {
+      await editor.focus();
+      await select(page, "Change this part.");
+      await page.keyboard.press(`${mod}+/`);
+      const actions = page.getByRole("dialog", { name: "Actions", exact: true });
+      await actions.getByRole("combobox").fill(messages[`actions.rewrite.${preset}`]);
+      const row = actions.getByRole("option", { name: new RegExp(`^${messages[`actions.rewrite.${preset}`].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) });
+      await expect(row).not.toHaveAttribute("aria-disabled", "true");
+      await row.click();
+      const prompt = page.getByRole("region", { name: "Rewrite", exact: true });
+      await expect(prompt).toBeVisible();
+      await expect(prompt.getByRole("textbox", { name: "Prompt" })).toHaveValue(messages[`rewrite.preset.${preset}.prompt`]);
+      await expect(prompt.getByText("Ollama", { exact: true })).toBeVisible();
+      await expect(prompt.getByText("fake", { exact: true })).toBeVisible();
+      await expect(prompt.getByText("This computer", { exact: true })).toBeVisible();
+      expect(fake.seen).toHaveLength(0);
+      expect(fake.requests).toEqual([]);
+      if (preset !== "grammar") {
+        await page.keyboard.press("Escape");
+        await expect(prompt).toBeHidden();
+        expect(readFileSync(note, "utf8")).toBe(ORIGINAL);
+        continue;
+      }
+      fake.play(ANSWER);
+      await page.keyboard.press(`${mod}+Enter`);
+      await expect.poll(() => readFileSync(note, "utf8"), PROMPTLY).toBe(REWRITTEN);
+      expect(fake.seen).toHaveLength(1);
+      const payload = JSON.stringify(fake.seen[0]!.body);
+      expect(payload).toContain("Change this part.");
+      expect(payload).toContain(messages["rewrite.preset.grammar.prompt"]);
+      expect(payload).not.toContain("Keep this");
+      expect(payload).not.toContain("Keep that");
+      await editor.focus();
+      await page.keyboard.press(`${mod}+z`);
+      await expect.poll(() => readFileSync(note, "utf8"), PROMPTLY).toBe(ORIGINAL);
+    }
+  } finally {
+    fake.release();
+    if (l) await quit(l);
+    await fake.close();
+  }
+});
+
+test("ACT-08: an AI preset without a Writer says why and offers the existing connection flow", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), ORIGINAL);
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs);
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    await select(page, "Change this part.");
+    await page.keyboard.press(`${mod}+/`);
+    const actions = page.getByRole("dialog", { name: "Actions", exact: true });
+    await actions.getByRole("combobox").fill("shorten");
+    const rows = actions.getByRole("option");
+    const blocked = rows.filter({ hasText: messages["actions.rewrite.concise"] });
+    await expect(blocked).toHaveAttribute("aria-disabled", "true");
+    await expect(blocked).toContainText(messages["actions.reason.connectAi"]);
+    const connect = actions.getByRole("option", { name: /^Connect to AI/ });
+    await expect(connect).not.toHaveAttribute("aria-disabled", "true");
+    const labels = await rows.allTextContents();
+    expect(labels.findIndex((text) => text.includes("Connect to AI"))).toBe(labels.findIndex((text) => text.includes(messages["actions.rewrite.concise"])) + 1);
+    await connect.click();
+    await expect(actions).toBeHidden();
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await expect(settings).toBeVisible();
+    await expect(settings.getByRole("tab", { name: "AI", exact: true })).toHaveAttribute("aria-selected", "true");
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(ORIGINAL);
+  } finally {
+    if (l) await quit(l);
+  }
+});
 
 test("RWR-91, RWR-92: prompt keys never send during IME; write at caret sends no context and Undo restores", async () => {
   const fake = fakeOllama();

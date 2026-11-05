@@ -325,6 +325,31 @@ test("ACT-04: a body match opens its file with Find ready; a folder opens Files 
   }
 });
 
+test("ACT-10: Rename this project opens its existing name field focused without writing", async () => {
+  const l = await started();
+  try {
+    const { page } = l;
+    await open(page);
+    await search(page, "rename this project", "Rename this project");
+    await page.keyboard.press("Enter");
+    await expect(spotlight(page)).toBeHidden();
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await expect(settings).toBeVisible();
+    const name = settings.getByRole("textbox", { name: "Name", exact: true });
+    await expect(name).toBeFocused();
+    const before = await name.inputValue();
+    await page.keyboard.press("Escape");
+    await expect(settings).toBeHidden();
+    await open(page);
+    await search(page, "rename this project", "Rename this project");
+    await page.keyboard.press("Enter");
+    await expect(name).toBeFocused();
+    await expect(name).toHaveValue(before);
+  } finally {
+    await quit(l);
+  }
+});
+
 test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make public, and open in a new window", async () => {
   const l = await started();
   const { page } = l;

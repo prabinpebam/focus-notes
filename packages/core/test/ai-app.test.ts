@@ -221,6 +221,21 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
 }
 
 describe("independent AI detail commits and the separately checked key", () => {
+  it.each(["concise", "warmer", "grammar"])("retains the Actions %s preset through asynchronous selection capture without sending", async (preset) => {
+    const t = setup();
+    await t.commands.run("rewrite.open", { preset });
+    expect(t.editor).toEqual(["rewrite.capture"]);
+    expect(t.calls).toEqual([]);
+    await t.commands.run("rewrite.captured", { text: "Old words." });
+    expect(t.vm()).toMatchObject({ open: true, prompt: en[`rewrite.preset.${preset}.prompt` as keyof typeof en] });
+    expect(t.calls).toEqual([]);
+    await t.commands.run("rewrite.dismiss", { open: false });
+    await t.commands.run("rewrite.open");
+    await t.commands.run("rewrite.captured", { text: "Different words." });
+    expect(t.vm()).toMatchObject({ open: true, prompt: "" });
+    expect(t.calls).toEqual([]);
+  });
+
   it("persists a provider with ready defaults without an unrelated field edit or a second form Save", async () => {
     const t = setup({ connections: [] });
     await t.commands.run("ai.load"); await t.commands.run("ai.add");

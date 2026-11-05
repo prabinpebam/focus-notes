@@ -33,6 +33,8 @@ export interface ActionScope {
   signedIn: boolean;
   /** The project is linked to GitHub. */
   linked: boolean;
+  ai?: boolean;
+  aiChecking?: boolean;
   /** The open note's path, to notice it changed before an action runs. */
   path?: string;
 }
@@ -66,6 +68,7 @@ export interface CatalogEntry {
 
 const inProject = (s: ActionScope) => s.project;
 const writable = (s: ActionScope) => s.writable;
+const needsAi = (s: ActionScope) => s.aiChecking ? "actions.reason.checkingAi" : !s.ai ? "actions.reason.connectAi" : undefined;
 
 const PROOF = "packages/core/test/actions-proof.test.ts";
 const proof = (title: string) => `${PROOF}: ${title}`;
@@ -78,7 +81,12 @@ export const CATALOG: readonly CatalogEntry[] = [
   { id: "format.strike", steps: [["format.strike"]], label: "actions.format.strike", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("format.strike") },
   { id: "format.code", steps: [["format.code"]], label: "actions.format.code", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("format.code") },
   { id: "link.edit", steps: [["link.edit"]], label: "actions.link.edit", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("link.edit") },
-  { id: "rewrite.open", steps: [["rewrite.open"]], label: "actions.rewrite.open", anchor: "selection", effect: "outbound", leaves: "ai", when: writable, fix: "ai.connect", alsoIn: ["text menu", "Edit menu"], proof: proof("rewrite.open") },
+  { id: "rewrite.open", steps: [["rewrite.open"]], label: "actions.rewrite.open", anchor: "selection", effect: "outbound", leaves: "ai", when: writable, blockedBy: needsAi, fix: "ai.connect", alsoIn: ["text menu", "Edit menu"], proof: proof("rewrite.open") },
+  ...(["concise", "warmer", "grammar"] as const).map((preset): CatalogEntry => ({
+    id: `rewrite.${preset}`, steps: [["rewrite.open", { preset }]], label: `actions.rewrite.${preset}`,
+    anchor: "selection", effect: "outbound", leaves: "ai", when: writable, blockedBy: needsAi, fix: "ai.connect",
+    alsoIn: ["Rewrite prompt presets"], proof: proof(`rewrite.${preset}`),
+  })),
 
   // ---- This note ----
   { id: "note.share", steps: [["note.share"]], label: "actions.note.share", anchor: "note", effect: "outbound", leaves: "github", when: inProject, alsoIn: ["toolbar", "File menu"], proof: proof("note.share") },
@@ -104,6 +112,7 @@ export const CATALOG: readonly CatalogEntry[] = [
 
   // ---- This project ----
   { id: "project.settings", steps: [["project.settings"]], label: "actions.project.settings", anchor: "project", effect: "navigate", leaves: "none", alsoIn: ["project pill", "Settings"], proof: proof("project.settings") },
+  { id: "project.rename", steps: [["project.rename"]], label: "actions.project.rename", anchor: "project", effect: "flow", leaves: "none", alsoIn: ["Settings > Project > Name"], proof: proof("project.rename") },
   { id: "note.new", steps: [["note.new"]], label: "actions.note.new", anchor: "project", effect: "files", leaves: "none", alsoIn: ["toolbar", "File menu"], proof: proof("note.new") },
   { id: "note.newIn", steps: [["note.newIn"]], label: "actions.note.newIn", anchor: "project", effect: "flow", leaves: "none", alsoIn: ["File menu", "Files menu"], proof: proof("note.newIn") },
   { id: "files.newFolder", steps: [["files.newFolder"]], label: "actions.files.newFolder", anchor: "project", effect: "flow", leaves: "none", alsoIn: ["Files menu"], proof: proof("files.newFolder") },

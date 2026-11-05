@@ -136,6 +136,9 @@
                               "value": {
                                 "bind": "vm.project.name"
                               },
+                              "focusRequest": {
+                                "get": "vm.project.nameFocusRequest"
+                              },
                               "description": {
                                 "t": "project.settings.nameHint"
                               }

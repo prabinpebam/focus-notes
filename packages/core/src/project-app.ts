@@ -118,6 +118,16 @@ export function registerProject(ctx: {
     id: "project.settings", title: "project.settings.title", group: "app",
     run: async () => { await commands.run("settings.setSection", { value: "project" }); await commands.run("settings.open"); },
   });
+  let nameFocusRequest = 0;
+  commands.register({
+    id: "project.rename", title: "actions.project.rename",
+    enabled: () => Boolean(folder()) && !ctx.bridge.projects?.local,
+    run: async () => {
+      await commands.run("project.settings");
+      nameFocusRequest++;
+      changed();
+    },
+  });
   const text = { type: "string" as const };
   const option = { type: "object" as const, properties: { id: text, label: text } };
   const choiceFields = ["accent", "logo", "font", "theme"] as const;
@@ -127,6 +137,7 @@ export function registerProject(ctx: {
     commits: ["name", "accent", "logo", "watermark", "font", "theme"],
     schema: { type: "object", properties: {
       available: { type: "boolean" }, local: { type: "boolean" }, watermarkOn: { type: "boolean" },
+      nameFocusRequest: { type: "number" },
       uploadChoosing: { type: "boolean" }, uploadFailed: { type: "boolean" },
       uploadCommit: { type: "string", enum: ["rest", "pending", "confirmed", "failed"] },
       uploadSrc: text, logoError: text,
@@ -164,7 +175,7 @@ export function registerProject(ctx: {
       const uploaded = logo?.command === "project.logoUpload";
       const source = uploaded && logo.value && typeof logo.value === "object" && "logoSrc" in logo.value && typeof logo.value.logoSrc === "string" ? logo.value.logoSrc : current.logoSrc ?? "";
       return {
-        ...current, ...transient, ...choices, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
+        ...current, ...transient, ...choices, nameFocusRequest, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
         uploadChoosing: selectingLogo, uploadFailed: Boolean(transient.uploadError),
         uploadCommit: selectingLogo || logo?.phase === "pending" && uploaded ? "pending" : uploaded ? logo.phase : "rest",
         uploadSrc: source, logoError: catalog.format(uploaded ? "project.settings.uploadSaveFailed" : "commit.choiceFailed"),

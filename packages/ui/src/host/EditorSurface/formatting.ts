@@ -11,6 +11,7 @@ import { autoScrollRemaining } from "./reading-zone.ts";
 type EditorView = Editor["view"];
 
 export interface FormatPayload {
+  selection: boolean;
   toolbar: boolean;
   card: boolean;
   bold: string;
@@ -112,7 +113,7 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
       if (r) anchors.set("link", rangeRect(view, r.from, r.to), live(r.from, r.to, false));
     }
     const p: FormatPayload = {
-      toolbar, card, bold: info.marks.bold, italic: info.marks.italic, strike: info.marks.strike, code: info.marks.code,
+      selection: info.text, toolbar, card, bold: info.marks.bold, italic: info.marks.italic, strike: info.marks.strike, code: info.marks.code,
       block: info.block, codeBlock: info.codeBlock, inlineCode: info.inlineCode, oneBlock: info.oneBlock, href, table: info.table,
       undo: info.undo, redo: info.redo,
     };
@@ -144,6 +145,7 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
       return publish(false, card, info, href);
     }
     if (shown) return publish(true, false, info, href);
+    publish(false, false, info, href);
     // Not showing yet: wait until the selection has settled.
     clearTimeout(showTimer);
     const show = () => {
