@@ -131,7 +131,10 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await open();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await share.getByText("Passcode", { exact: true }).click();
-    await expect(share.getByText(/^[a-z]+(-[a-z]+){3}$/)).toBeVisible();
+    const passcode = share.getByRole("textbox", { name: "Passcode", exact: true });
+    await expect(passcode).toBeVisible();
+    await expect(passcode).toHaveAttribute("readonly", "");
+    await expect(passcode).toHaveValue(/^[a-z]+(-[a-z]+){3}$/);
     await share.getByRole("button", { name: "Copy share information", exact: true }).click();
     await expect(share.getByText("Publishing this share. It copies when the site is ready.", { exact: true })).toBeVisible();
     await expect.poll(() => existsSync(join(priv, "access.json")) ? access().grants.filter((g) => !g.owner).length : 0).toBe(1);

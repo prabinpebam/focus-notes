@@ -18,6 +18,10 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Share passcode fixture alignment, 5 November
+
+The SHR-16 publication journey now reads the visible, readonly Passcode textbox's value, matching the generated-passcode field introduced in `88ba734b`, instead of looking for a text node that no longer exists. It retains the four-word format assertion and every publication, clipboard, reader, snapshot and withdrawal check. The complete related journey passes locally on the spacing-integrated AI candidate; this isolated fixture correction is shared with the image candidate.
+
 ### UI-states merge candidate: CI alignment, 5 November
 
 The returning-writer journey fixture now supplies a real note to reopen and marks the project terminology introduction as already seen. A new install still runs the first-run path; an explicitly empty `lastNotePath` still reaches Open (D-318). Product launch behavior is unchanged. The older checks now assert the approved local location and project pills, menu accessible descriptions, row pins and pending compact-setting feedback rather than their superseded presentation.
