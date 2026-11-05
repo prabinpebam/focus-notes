@@ -39,13 +39,14 @@ const view = (model: string) => withCard(mockOf(compose(projects), model)) as No
 export const openMocks = {
   id: "open",
   label: "Mocks: Open (4 and 5 November)",
-  models: { openMock: data, openStates: { ...data, entries: states.entries } },
+  // The card states show only cards' own pins: the borrowed recent list has none pinned, so no recent row's pin sits beside a card.
+  models: { openMock: data, openStates: { ...data, recent: data.recent.map((r) => ({ ...r, pinned: false })), entries: states.entries } },
   views: {
     open: { ...view("openMock"), id: "gallery.mock.open" },
     openStates: { ...view("openStates"), id: "gallery.mock.openStates" },
   },
   entries: [
     { id: "open.view", label: "1. Open (Ctrl+Alt+O): project cards and recent files", view: "open" },
-    { id: "open.cardStates", label: "2. Project card: on GitHub, local only, still counting (5 November)", view: "openStates" },
+    { id: "open.cardStates", label: "2. Project card: on GitHub, local only, still counting, empty (5 November)", view: "openStates" },
   ] as Entry[],
 };
