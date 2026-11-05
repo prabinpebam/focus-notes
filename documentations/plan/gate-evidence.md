@@ -40,6 +40,8 @@ Run 41931813978 on `93c15ff1` is red: shard 2 passed; the other shards reported 
 
 The final tooltip guard distinguishes actual modal boxes from toolbar popovers that also carry `role=dialog`: the keyboard landmark journey and both modal geometry journeys pass together. All seven setup-app unit tests pass with the approved shortened failure copy. The OS and removal waits add no sleeps; their existing visible-output and recovery assertions remain enabled.
 
+On `d61d3007`, run 41936401734 passes journey shards 2, 3 and 4. Shard 1 reaches a later Rewrite prompt-focus failure and reports 64 interface words (8/20 economy) in creating-progress. Shortening two existing setup step labels by four words makes the main-path catalogue pass without changing its threshold; 57 first-run unit tests and `pnpm check` pass. The Rewrite failure is real: moving the note off-screen while its discard confirmation is open reproduces the lost prompt after Escape. A plain editor `scrollIntoView()` did not fix the pinned popover and was removed. Its existing return action reveals the anchored fragment; recovery still needs to use that mechanism. Main has not moved, and no replacement review has been built.
+
 ### General fixes: approved 3 November design
 
 The owner approved the designs at 19:39. WP-P.1 / WP-P.2 are pushed at

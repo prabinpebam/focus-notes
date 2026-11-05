@@ -881,7 +881,7 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     t.app.store.update((s) => ({ ...s, setup: { available: true, report: report({ account: "done", instance: "running" }, true) } }));
     expect(t.vm()).toMatchObject({ partText: "Making your notes on GitHub · 2 of 9", hasPart: true });
     const parts = t.vm().parts as { label: string; state: string }[];
-    expect(parts.map((p) => p.label)).toEqual(["Sign in to GitHub", "Make your notes on GitHub", "Make a place for private notes", "Let your website read them", "Download to this computer", "Link them", "Save the browser key", "Turn on your website", "Save to GitHub"]);
+    expect(parts.map((p) => p.label)).toEqual(["Sign in to GitHub", "Make notes on GitHub", "Make private notes", "Let your website read them", "Download to this computer", "Link them", "Save the browser key", "Turn on your website", "Save to GitHub"]);
     t.app.store.update((s) => ({ ...s, setup: { available: true, report: { ...report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true), steps: report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true).steps.map((x) => (x.id === "clone" ? { ...x, percent: 45 } : x)) } } }));
     expect(t.vm()).toMatchObject({ partText: "Downloading to this computer · 5 of 9 · 45%", hasSetupPercent: true, setupPercent: 45 });
     expect(parts.map((p) => p.label).join(" ")).not.toMatch(/\b(repositor(y|ies)|Git|commits?|tokens?|credentials?|CLI|instances?|Pages)\b/);

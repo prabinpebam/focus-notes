@@ -108,7 +108,7 @@ test("PRF-13: creating the notes always shows its parts in plain words and the o
 
     // The parts, without Show details, and the one it's on in words with its number, then the seconds.
     await expect(card(page).getByText("Making your notes on GitHub · 2 of 9", { exact: true })).toBeVisible({ timeout: 15_000 });
-    for (const part of ["Sign in to GitHub", "Make your notes on GitHub", "Download to this computer", "Turn on your website", "Save to GitHub"]) {
+    for (const part of ["Sign in to GitHub", "Make notes on GitHub", "Download to this computer", "Turn on your website", "Save to GitHub"]) {
       await expect(card(page).getByText(part, { exact: true })).toBeVisible();
     }
     await expect(card(page).getByRole("button", { name: "Show details" })).toHaveCount(0);

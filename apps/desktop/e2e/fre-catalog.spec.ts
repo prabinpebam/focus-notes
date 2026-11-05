@@ -719,7 +719,7 @@ for (const [id, what, says, breakIt] of FAILURES) {
       await expect(text(page, says)).toHaveCount(0, { timeout: 30_000 });
       await expect(text(page, "Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
       await expect(button(page, "Continue")).toBeEnabled();
-      for (const step of ["Make your notes on GitHub", "Make a place for private notes", "Download to this computer", "Link them"]) await expect(card(page).getByText(step, { exact: true })).toBeVisible();
+      for (const step of ["Make notes on GitHub", "Make private notes", "Download to this computer", "Link them"]) await expect(card(page).getByText(step, { exact: true })).toBeVisible();
       await expect(card(page).getByRole("img", { name: "Not started yet" })).toHaveCount(0);
       await shot(l, "creating-retried");
       await button(page, "Continue").click();
