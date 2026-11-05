@@ -32,7 +32,7 @@ const withCard = (node: unknown): unknown => {
 };
 const view = (model: string) => withCard(mockOf(compose(projects), model)) as Node;
 
-// One column per theme, each a project scope of that theme holding a counting card in every accent.
+// One full-width group per theme keeps project names and paths legible in the gallery.
 const tintColumn = (theme: string) => ({
   type: "ProjectScope", props: { theme, part: "window" },
   children: [{
@@ -49,10 +49,8 @@ const tintColumn = (theme: string) => ({
 const tintsView = {
   id: "gallery.mock.openTints",
   focus: "tints",
-  root: { type: "Stack", id: "tints", props: { gap: "stackSection", padding: "insetLg" }, children: [
-    { type: "Columns", props: { gap: "stackSection" }, children: ["app", "paper", "ink"].map(tintColumn) },
-    { type: "Columns", props: { gap: "stackSection" }, children: ["sepia", "contrast-light", "contrast-dark"].map(tintColumn) },
-  ] },
+  root: { type: "Stack", id: "tints", props: { gap: "stackSection", padding: "insetLg" },
+    children: ["app", "paper", "ink", "sepia", "contrast-light", "contrast-dark"].map(tintColumn) },
 };
 
 export const openMocks = {
