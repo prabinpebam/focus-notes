@@ -101,6 +101,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   const frecency = new Frecency();
   let seq = 0;
   let opening: number | undefined;
+  let selectedByUser = false;
+  const selectRow = (id: string) => {
+    selectedByUser = true;
+    set({ activeId: id });
+  };
 
   // ---- what it lists: the catalogue's actions only (D-361, ACT-01) ----
   const run = (id: string, args?: Record<string, unknown>) => commands.run(id, args);
@@ -304,7 +309,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       const rows = mergeResults(...a);
       return placeActions(s.mode === "all" || s.mode === "notes" ? contentRows(rows) : rows, s.mode === "commands");
     };
-    const keep = follow && s.activeId !== firstActive(s.rows);
+    const keep = follow && selectedByUser;
     if (!s.open) return;
     const my = ++seq;
     if (s.mode === "help") return setRows(helpRows(s.query), false, false);
@@ -337,12 +342,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     try {
       if (!filters.phrase) titles = (await search.query({ ...base, scope: "titles" })).hits;
       if (my !== seq) return;
-      setRows(placed(titles, [], { query: text, top, actions }), wantsText, keep);
+      setRows(placed(titles, [], { query: text, top, actions }), wantsText, keep || selectedByUser);
       if (!wantsText) return;
-      const titleActive = sp().activeId;
       const found = (await search.query({ ...base, scope: "text", limit: 10, ...(filters.phrase ? { phrase: true } : {}) })).hits;
       if (my !== seq) return;
-      setRows(placed(titles, found, { query: text, top, actions }), false, keep || sp().activeId !== titleActive);
+      setRows(placed(titles, found, { query: text, top, actions }), false, keep || selectedByUser);
     } catch {
       if (my === seq) set({ busy: false });
     }
@@ -355,6 +359,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     // Pressing a mode's key again switches mode and keeps the query; the same mode's key closes it.
     if (s.open && s.mode === mode && !s.everywhere) return close();
     if (!s.open) {
+      selectedByUser = false;
       opening = now();
       // What the person was in when they asked (ACT-05): taken before the field takes focus.
       ctx.editorAction("actions.capture");
@@ -437,6 +442,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       const s = sp();
       const query = typeof value === "string" ? value : "";
       const switched = prefixMode(s.mode, s.everywhere, query);
+      selectedByUser = false;
       set({ ...(switched ?? { query }), actions: undefined, fromLink: false });
       void refresh();
     },
@@ -458,7 +464,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const list = s.rows.filter(rowEnabled);
     if (!list.length) return;
     const i = list.findIndex((r) => r.id === s.activeId);
-    set({ activeId: list[Math.min(list.length - 1, Math.max(0, (i < 0 ? 0 : i) + dir))]!.id });
+    selectRow(list[Math.min(list.length - 1, Math.max(0, (i < 0 ? 0 : i) + dir))]!.id);
   };
   const field = "spotlightField";
   const isOpen = (s: AppState) => s.ui.spotlight.open;
@@ -499,7 +505,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       run: () => {
         const row = shown()[n - 1];
         if (!row) return;
-        set({ activeId: row.id });
+        selectRow(row.id);
         return runActive(false);
       },
     });
@@ -521,13 +527,13 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     // The first row of the next group down, or of the group above (the current group's first row first).
     if (dir > 0) {
       const next = list.slice(i + 1).find((r) => r.group !== group);
-      if (next) set({ activeId: next.id });
+      if (next) selectRow(next.id);
       return;
     }
     const start = list.findIndex((r) => r.group === group);
-    if (i > start) return void set({ activeId: list[start]!.id });
+    if (i > start) return void selectRow(list[start]!.id);
     const prev = list.slice(0, Math.max(0, start)).at(-1);
-    if (prev) set({ activeId: list.find((r) => r.group === prev.group)!.id });
+    if (prev) selectRow(list.find((r) => r.group === prev.group)!.id);
   };
   const hasRows = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && s.ui.spotlight.rows.length > 0;
   commands.register({ id: "spotlight.nextGroup", title: "command.spotlight.nextGroup", shortcut: { default: "Alt+Down", handledBy: field, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(1) });
@@ -538,7 +544,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       if (typeof id !== "string") return;
       const s = sp();
       if (s.actions) set({ actions: { ...s.actions, activeId: id } });
-      else set({ activeId: id });
+      else selectRow(id);
     },
   });
   commands.register<{ id: string }>({
@@ -547,7 +553,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       if (typeof id !== "string") return;
       const s = sp();
       if (s.actions) set({ actions: { ...s.actions, activeId: id } });
-      else set({ activeId: id });
+      else selectRow(id);
       return runActive(false);
     },
   });
@@ -664,6 +670,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         throw error;
       }
       if (keepOpen) {
+        selectedByUser = true;
         scope = scopeNow();
         await refresh(true);
       }
