@@ -268,18 +268,20 @@ test("UI-05: every toolbar control shows a visible focus ring and is at least 24
   const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
   await expect(toolbar).toBeVisible();
   await settled(page);
-  const buttons = toolbar.getByRole("button");
+  const buttons = toolbar.getByRole("button").or(toolbar.getByRole("switch"));
   const count = await buttons.count();
   for (let i = 0; i < count; i++) {
     const b = buttons.nth(i);
     if (i > 0) await page.keyboard.press("ArrowRight");
     await expect(b).toBeFocused();
     const ring = await b.evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { style: cs.outlineStyle, width: parseFloat(cs.outlineWidth), visible: el.hasAttribute("data-focus-visible") };
+      const label = el.getAttribute("role") === "switch" ? el.closest("label") : null;
+      const ring = label?.querySelector("span[aria-hidden] > span") ?? el;
+      const cs = getComputedStyle(ring);
+      return { style: cs.outlineStyle, width: parseFloat(cs.outlineWidth), visible: (label ?? el).hasAttribute("data-focus-visible") };
     });
     expect(ring, await b.getAttribute("aria-label") ?? "").toEqual({ style: "solid", width: 2, visible: true });
-    const box = (await b.boundingBox())!;
+    const box = (await (await b.getAttribute("role") === "switch" ? b.locator("xpath=ancestor::label") : b).boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(24);
     expect(box.height).toBeGreaterThanOrEqual(24);
   }

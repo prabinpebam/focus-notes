@@ -265,17 +265,19 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
   // 4. Focus mode from the trigger toolbar: the caret's paragraph is bright (FOC-01, UI-03, UI-07).
   const toolbarButton = async (name: string) => {
     await page.keyboard.press(`${mod}+.`);
-    const button = page.getByRole("toolbar", { name: "Toolbar" }).getByRole("button", { name });
+    const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
+    const button = toolbar.getByRole(name === "Focus mode" ? "switch" : "button", { name, exact: true });
     if (keyboardOnly) {
       // Focus lands on the first action, or the one used last (React Aria's toolbar, D-100); Home is the first.
       await expect(page.getByRole("toolbar", { name: "Toolbar" }).locator(":focus")).toHaveCount(1);
       await page.keyboard.press("Home");
       for (let i = 0; i < 6 && !(await button.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("ArrowRight");
       await expect(button).toBeFocused();
-      await page.keyboard.press("Enter");
+      await page.keyboard.press(name === "Focus mode" ? "Space" : "Enter");
     } else {
-      await button.click();
+      await (name === "Focus mode" ? button.locator("xpath=ancestor::label") : button).click();
     }
+    if (name === "Focus mode") await expect(button.locator("xpath=ancestor::label")).not.toHaveAttribute("data-commit", "pending");
     await expect(page.getByRole("toolbar", { name: "Toolbar" })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("toolbar", { name: "Toolbar" })).toBeHidden();

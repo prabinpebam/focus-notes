@@ -467,7 +467,7 @@
                           {
                             "type": "Inline",
                             "props": {
-                              "gap": "inlinePair",
+                              "gap": "inlineGroup",
                               "grow": true
                             },
                             "children": [
@@ -700,7 +700,7 @@
                               "false": {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "inlinePair",
+                                  "gap": "inlineItem",
                                   "wrap": true
                                 },
                                 "children": [

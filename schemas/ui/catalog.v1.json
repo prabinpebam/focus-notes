@@ -6834,6 +6834,7 @@
       "scrollbar"
     ],
     "layout": [
+      "viewportWidth",
       "topBand",
       "titleBar",
       "measure",
