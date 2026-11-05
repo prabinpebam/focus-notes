@@ -49,6 +49,9 @@
       "projectAccent": {
         "get": "vm.project.accent"
       },
+      "projectBorder": {
+        "get": "vm.project.border"
+      },
       "scheme": {
         "get": "vm.app.scheme"
       },

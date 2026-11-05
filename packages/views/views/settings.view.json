@@ -319,17 +319,23 @@
                             ]
                           },
                           {
-                            "type": "SegmentedControl",
+                            "type": "Switch",
+                            "props": {
+                              "label": { "t": "project.settings.border" },
+                              "checked": { "bind": "vm.project.border" },
+                              "onLabel": { "t": "switch.on" },
+                              "offLabel": { "t": "switch.off" }
+                            }
+                          },
+                          {
+                            "type": "Switch",
                             "props": {
                               "label": {
                                 "t": "project.settings.watermark"
                               },
-                              "options": {
-                                "get": "vm.project.watermarkOptions"
-                              },
-                              "value": {
-                                "bind": "vm.project.watermark"
-                              }
+                              "checked": { "bind": "vm.project.watermarkOn" },
+                              "onLabel": { "t": "switch.on" },
+                              "offLabel": { "t": "switch.off" }
                             }
                           },
                           {

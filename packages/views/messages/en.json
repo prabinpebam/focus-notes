@@ -328,6 +328,7 @@
   "project.pinned": "Pinned",
   "project.retry": "Try again",
   "project.settings.colour": "Colour",
+  "project.settings.border": "Project colour border",
   "project.settings.font": "Font",
   "project.settings.fontShort": "Font",
   "project.settings.logo": "Logo",

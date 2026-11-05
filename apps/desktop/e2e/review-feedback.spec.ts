@@ -11,7 +11,7 @@ import { LONG_NOTE } from "./surfaces.ts";
 import type { Locator } from "@playwright/test";
 import { configure, git, instance } from "./instance.ts";
 
-for (const appearance of ["light", "dark"]) test(`Project outline is solid and 3 px without moving the writing surface in ${appearance}`, async () => {
+for (const appearance of ["light", "dark"]) test(`Project outline is solid and 2 px without moving the writing surface in ${appearance}`, async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.docs, "Welcome.md"), LONG_NOTE);
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
@@ -28,7 +28,7 @@ for (const appearance of ["light", "dark"]) test(`Project outline is solid and 3
       const r = el.getBoundingClientRect();
       return { outline: cs.outlineWidth, color: cs.outlineColor, style: cs.outlineStyle, border: cs.borderTopWidth, left: r.left, top: r.top };
     });
-    expect(drawn).toMatchObject({ outline: "3px", style: "solid" });
+    expect(drawn).toMatchObject({ outline: "2px", style: "solid" });
     expect(drawn.color).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
     expect(drawn.border).toBe("0px");
     if (process.platform !== "darwin") expect({ left: drawn.left, top: drawn.top }).toEqual({ left: 16, top: 16 });
@@ -41,6 +41,53 @@ for (const appearance of ["light", "dark"]) test(`Project outline is solid and 3
       for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
     }
   }
+});
+
+test("OFB.8: the colour-border Switch defaults on, changes only the outline and survives restart", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md"), stateFile = join(dirs.userData, "state.json");
+  const text = "# Kept note\n\nUnchanged while the border is off.\n";
+  writeFileSync(note, text);
+  let l = await launch(dirs);
+  const close = async () => {
+    try { await quit(l); }
+    finally {
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url)), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  };
+  const saved = () => JSON.parse(readFileSync(stateFile, "utf8")).projectSettings?.[dirs.docs];
+  const open = async () => {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    return settings.getByRole("switch", { name: "Project colour border", exact: true });
+  };
+  try {
+    let control = await open();
+    await expect(control).toBeChecked();
+    const root = l.page.locator("[data-app-root]");
+    const bounds = await root.boundingBox();
+    const accent = await root.getAttribute("data-project-accent");
+    await expect.poll(() => root.evaluate(el => getComputedStyle(el).outlineWidth)).toBe("2px");
+    await control.press("Space");
+    await expect.poll(() => saved()?.border).toBe(false);
+    await expect(control).not.toBeChecked();
+    await expect.poll(() => root.evaluate(el => getComputedStyle(el).outlineStyle)).toBe("none");
+    expect(await root.boundingBox()).toEqual(bounds);
+    expect(await root.getAttribute("data-project-accent")).toBe(accent);
+    const kept = saved();
+    await close();
+    l = await launch(dirs);
+    control = await open();
+    await expect(control).not.toBeChecked();
+    await expect.poll(() => l.page.locator("[data-app-root]").evaluate(el => getComputedStyle(el).outlineStyle)).toBe("none");
+    await control.press("Space");
+    await expect.poll(() => saved()?.border).toBe(true);
+    expect(saved()).toEqual({ ...kept, border: true });
+    await expect.poll(() => l.page.locator("[data-app-root]").evaluate(el => getComputedStyle(el).outlineWidth)).toBe("2px");
+    expect(readFileSync(note, "utf8")).toBe(text);
+  } finally { await close(); }
 });
 
 for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and persists the exact row in ${appearance}`, async () => {

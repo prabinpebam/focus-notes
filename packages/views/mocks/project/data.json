@@ -81,6 +81,8 @@
     "uploadFailed": false,
     "uploadError": "",
     "watermark": "on",
+    "watermarkOn": true,
+    "border": true,
     "fontCommit": "rest",
     "fontValue": "App default",
     "scopeFont": "app",
