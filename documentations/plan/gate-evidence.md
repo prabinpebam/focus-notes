@@ -37,6 +37,18 @@ The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedbac
 | OFB.23 | Each slice on green `main` and in Preview | Coordinator | Open | |
 | OFB.24 | Owner corrections recorded as rules and checks | W1 with this stage's commit | Open | AGENTS.md rule 6 and D-354 to D-360 added with this stage |
 
+### Actions (MACT), 6 November
+
+**WP-A.2/A.3 landing candidate, not yet Met.** The owner approved D-361 to D-364 at 02:07. `pnpm check` and `pnpm typecheck` pass; `pnpm test` passes 3,023 tests (240 files, 14 tests skipped). The rebuilt desktop passes the Shift+Enter → Enter journey after waiting for the acknowledged toggle write to enable its row. Pending-save units also preserve the selected row and query. Exact-head Windows CI and Preview evidence remain required before marking any row Met.
+
+| Row | Current evidence | Remaining |
+| --- | --- | --- |
+| MACT.1, MACT.2, MACT.10 | `actions-proof.test.ts`: catalogue integrity rejects duplicate labels, absent commands/proof/pointer paths and bare shared verbs; allow-list excludes dialog steps. | Native outcome proof for every entry; exact-head CI and Preview |
+| MACT.3 | Dialog/toolbar/message words changed to Actions; existing folder and note navigation retained. | Files/text merging slice WP-A.4; complete word inventory |
+| MACT.4, MACT.5 | Units cover captured note context, stale refusal with query retained, selection/anchor groups, empty list, browse, private Publish and its confirmation fix. | Native selection/undo and remaining contexts |
+| MACT.6, MACT.7, MACT.8 | Initial starter catalogue reuses existing command flows. | Remaining starter/AI wiring, native per-effect proofs and privacy/performance checks |
+| MACT.9 | Deferred by approved D-364, after a week of starter-set use. | Owner's later go-ahead |
+
 ### Open project cards and hue-safe shimmer, 5 November
 
 The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-352, D-353) passes its focused Windows checks:

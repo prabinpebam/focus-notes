@@ -106,6 +106,12 @@ const key = (key: string, mods: Partial<KeyEventLike> = {}): KeyEventLike => ({ 
 const labels = (app: App) => vm(app).items.map((i) => `${i.group}: ${i.label}`);
 
 describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every layout (D-16)", () => {
+  it("finds the GitHub project opener by its full label through the search index", async () => {
+    const { app } = await started();
+    await app.commands.run("spotlight.open");
+    await type(app, "Open a project from GitHub");
+    expect(vm(app).items.some((i) => i.label === "Open a project from GitHub…")).toBe(true);
+  });
   it("binds Mod+/ to All and Mod+Shift+P to commands, on every platform; Mod+K stays the link key", async () => {
     for (const platform of ["windows", "linux", "macos", "web"] as const) {
       const { app } = await started(desktop(platform), { search: false });
@@ -234,6 +240,11 @@ describe("SPT-04: states, the empty field, and no match", () => {
     expect(sp(app).open).toBe(true);
     expect(sp(app).query).toBe("focus mode");
     expect(vm(app).items.find((i) => i.id === row.id)?.state).toBe("On");
+    expect(sp(app).activeId).toBe(row.id);
+    await app.commands.run("spotlight.run");
+    expect(app.store.state.focusMode).toBe(false);
+    expect(sp(app).open).toBe(false);
+    await app.commands.run("spotlight.commands");
     // Appearance is three plain actions, one of them On (D6): Shift+Enter keeps Actions open on it.
     await type(app, "dark appearance");
     const dark = vm(app).items.find((i) => i.label === "Use dark appearance")!;
@@ -241,6 +252,25 @@ describe("SPT-04: states, the empty field, and no match", () => {
     await app.commands.run("spotlight.runKeep");
     expect(app.store.state.appearance.mode).toBe("dark");
     expect(sp(app).open).toBe(true);
+  });
+
+  it("keeps the active toggle through a pending settings write, then Enter runs it", async () => {
+    const d = desktop();
+    const { app } = await started(d);
+    let release!: () => void;
+    const saved = d.bridge.saveAppState!;
+    d.bridge.saveAppState = async (value) => { await new Promise<void>((resolve) => { release = resolve; }); await saved(value); };
+    await app.commands.run("spotlight.commands");
+    await type(app, "focus mode");
+    const row = sp(app).activeId;
+    const pending = app.commands.run("spotlight.runKeep");
+    await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+    release();
+    await pending;
+    expect(sp(app).activeId).toBe(row);
+    d.bridge.saveAppState = saved;
+    await app.commands.run("spotlight.run");
+    expect(sp(app).open).toBe(false);
   });
 
   it("the empty field shows recent notes, then what applies here, a few per group; > lists every action (ACT-06, D-361)", async () => {
