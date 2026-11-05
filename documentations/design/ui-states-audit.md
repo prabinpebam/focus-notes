@@ -25,6 +25,15 @@ Filled in by the OFB notification audit: one row per notification, with its mess
 | --- | --- | --- | --- | --- |
 | (audit pending) | | | | |
 
+### Owner feedback batch, 6 November: button geometry
+
+The owner's found-notes screenshots exposed a shared primitive defect, not three missing per-view insets. Legacy `bleed` removed Button's start padding and painted on a negative-inset pseudo-element; the floating hover override also painted the smaller real button. The overlapping boxes explain the offset "More options" hover. Button, MenuButton and IconButton now keep their token inset and all state paint on their own box; the compatibility input cannot opt out.
+
+| State family | Kept | Removed | Enforcement |
+| --- | --- | --- | --- |
+| Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |
+| First-run actions | Create new notes instead, More options and Back use the primitive unchanged | Per-view edge-alignment escape | Built-app `ofb-buttons.spec.ts`: measured padding and bounds, real hover/press/focus, light/dark and default/narrow captures |
+
 ### Owner feedback queue, 5 November
 
 **"No tooltip on menu", fixed in `f892846a`:** the menu items' explanations (for example Publish… and Help and docs) were rendered as tooltips, but every React Aria popover carried an inline `z-index: 100000` from its overlay positioning. That put the menu above the tooltip layer, so it painted over its own items' tooltips. The shared `useWindowBoundary` now clears that inline value, so every popover stacks by its layer token (popover 8, below tooltip 9). Worker16's journey missed it because `toBeVisible` doesn't detect occlusion. The new native journey hit-tests the tooltip's centre and corners in the built app, on keyboard focus and on a real mouse rest, for a disabled item and a later-preview item. It also checks that an item without a reason shows none, that the explanation remains the item's accessible description, and that pressing a disabled item keeps the menu open. Forcing the old inline value back makes the journey fail on paint. A static guard (`popover-box.test.ts`) keeps every `<Popover>` on `useWindowBoundary()` and a layer token.

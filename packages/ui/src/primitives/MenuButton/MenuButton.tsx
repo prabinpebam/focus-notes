@@ -28,7 +28,7 @@ export interface MenuButtonProps {
   placement?: "bottom end" | "bottom start" | "top start";
   sections: Section[];
   shortcut?: string;
-  /** The text variant at the edge of a panel's content (the Files sheet's New): its text lines up with the edge (D-111). */
+  /** @deprecated Retained for old view documents; never removes padding or moves paint (D-354). */
   bleed?: boolean;
   busy?: boolean;
   /** Own-border feedback for a persisted choice; recovery stays outside the compact trigger. */
@@ -233,7 +233,7 @@ export function MenuButton({ icon = "more", label, variant = "icon", text, place
         : variant === "select"
           ? <Button {...trigger} className={`${s.select} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : variant === "text"
-          ? <Button {...trigger} className={`${s.text} ${s.busyAnchor}${surface}${bleed ? ` ${s.textBleed}` : ""}`} data-floating-control={floating ? "" : undefined} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
+          ? <Button {...trigger} className={`${s.text} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : <IconButton icon={icon} label={label} busy={busy} commit={commit} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">
         <CommandMenu label={label} sections={sections} onAction={onAction} />

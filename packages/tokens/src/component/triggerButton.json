@@ -1,6 +1,11 @@
 {
   "cmp": {
     "triggerButton": {
+      "paddingInline": {
+        "$type": "dimension",
+        "$value": "{space.inlinePair}",
+        "$description": "Positive inline inset inside the trigger button's own box (D-354)."
+      },
       "size": {
         "$type": "dimension",
         "$value": "{size.triggerRing}"

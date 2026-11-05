@@ -24,7 +24,7 @@ The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedbac
 
 | Row | Item | Owner | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| OFB.1–OFB.4 | Button padding and one geometry, with the design-system check | W1 | Open | |
+| OFB.1–OFB.4 | Button padding and one geometry, with the design-system check | W1 | Checked locally; awaiting green main and Preview | `pnpm check` passed, including 2 real-renderer tests: 87 controls × 7 states × ordinary/floating, positive token padding, zero geometry drift and no painted offset layer; broken zero/literal-padding, 1 px shift and offset-paint fixtures detected. UI and desktop typechecks passed. Desktop build passed. `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/ofb-buttons.spec.ts --workers=1` passed (1 journey), including per-frame hover/press/focus bounds and default/narrow light/dark captures. Removed cause: zero-padding bleed pseudo-element plus the floating override painting a second, smaller box. |
 | OFB.5–OFB.7 | Switches for every on/off setting, starting with Settings → Agents; toggle-button rule | W1 | Open | |
 | OFB.8 | Project colour border Switch, on by default, 2 px | W1 | Open | |
 | OFB.9–OFB.10 | One pending pattern; overlaid pin spinner removed; variant inventory | W1 | Open | |

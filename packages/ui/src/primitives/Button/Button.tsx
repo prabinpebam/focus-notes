@@ -36,7 +36,7 @@ export interface ButtonProps {
   disabledReason?: string;
   /** Takes focus when it appears: a confirmation's choice that changes nothing (APG alert dialog), or a first-run step's primary action. */
   autoFocus?: boolean;
-  /** A subtle button at the start of the content (a first-run step's Back): its label lines up with the edge, its hit area reaching into the padding. */
+  /** @deprecated Retained for old view documents; padding and paint always stay inside the button (D-354). */
   bleed?: boolean;
   id?: string;
   onPress?: () => void;
@@ -49,7 +49,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
   const floating = useContext(FloatingContext) && (variant === "secondary" || variant === "subtle");
   const common = {
     id,
-    className: [s.base, s.size[size], ...(icon ? [iconPosition === "start" ? s.iconStart[size] : s.iconEnd[size]] : []), s.variant[variant], ...(floating ? [s.floating] : []), ...(bleed ? [s.bleed[size]] : []), ...(borderFeedback ? [s.borderAnchor] : [])].join(" "),
+    className: [s.base, s.size[size], ...(icon ? [iconPosition === "start" ? s.iconStart[size] : s.iconEnd[size]] : []), s.variant[variant], ...(floating ? [s.floating] : []), ...(borderFeedback ? [s.borderAnchor] : [])].join(" "),
     "data-floating-control": floating ? "" : undefined,
     "data-bleed": bleed ? "" : undefined,
     ...attrs,

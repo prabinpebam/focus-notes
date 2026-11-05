@@ -2,7 +2,7 @@ import { createVar, keyframes, style, styleVariants } from "@vanilla-extract/css
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.iconButton;
-/** Its state fill: on the box, or on a bleeding button's hit extension. */
+/** Its state fill stays on the button's own box. */
 const fill = createVar();
 
 export const base = style({
@@ -15,7 +15,9 @@ export const base = style({
   flexShrink: 0,
   width: t.size,
   height: t.size,
-  padding: 0,
+  boxSizing: "border-box",
+  paddingBlock: 0,
+  paddingInline: t.paddingInline,
   borderStyle: "none",
   borderRadius: t.radius,
   backgroundColor: fill,
@@ -34,20 +36,6 @@ export const base = style({
   },
 });
 export const stretch = style({ height: "auto", minHeight: t.size, alignSelf: "stretch" });
-/**
- * Its icon lines up with the content's edge (a dialog's close button, D-111): the box is the icon's
- * size, in line with the content, and its hit area, fill and focus ring reach past it by an invisible
- * extension, so nothing pulls it into its container's padding (spacing SP-2).
- */
-const reach = `calc((${t.size} - ${t.iconSize}) / 2)`;
-export const bleed = style({
-  width: t.iconSize,
-  height: t.iconSize,
-  isolation: "isolate",
-  backgroundColor: t.color.transparent,
-  "::before": { content: '""', position: "absolute", zIndex: t.extensionLayer, inset: `calc(-1 * ${reach})`, borderRadius: t.radius, backgroundColor: fill },
-  selectors: { "&[data-focus-visible]": { outlineOffset: `calc(${t.focusOffset} + ${reach})` } },
-});
 export const tone = styleVariants({ default: { color: t.color.icon }, muted: { color: t.color.iconMuted } });
 
 // The busy sign (Waits, D-199): the icon and a Spinner share one cell, so the control keeps its size.

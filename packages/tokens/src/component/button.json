@@ -1,5 +1,4 @@
 { "cmp": { "button": {
-  "extensionLayer": { "$type": "number", "$value": "{layer.underlay}", "$description": "Under the box: the invisible extension that carries its hit area, fill and ring (spacing SP-2)." },
   "hit": { "$type": "dimension", "$value": "{size.hit}", "$description": "Its pointer target: a small button reaches it by an invisible extension (spacing SP-6)." },
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "height": { "$type": "dimension", "s": { "$value": "{size.controlS}" }, "m": { "$value": "{size.controlM}" }, "l": { "$value": "{size.controlL}" } },

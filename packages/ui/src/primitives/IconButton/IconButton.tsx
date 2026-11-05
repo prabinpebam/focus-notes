@@ -28,14 +28,14 @@ export interface IconButtonProps {
   busyLabel?: string;
   /** Immediate own-border commit feedback; recovery belongs beside this compact control. */
   commit?: CommitState;
-  /** At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding. */
+  /** @deprecated Retained for old view documents; padding and paint always stay inside the button (D-354). */
   bleed?: boolean;
   id?: string;
   onPress?: () => void;
 }
 
 export function IconButton({ icon, label, shortcut, size = "m", tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, commit, bleed, id, onPress }: IconButtonProps) {
-  const className = `${s.base} ${s.tone[tone]}${size === "stretch" ? ` ${s.stretch}` : ""}${bleed ? ` ${s.bleed}` : ""}`;
+  const className = `${s.base} ${s.tone[tone]}${size === "stretch" ? ` ${s.stretch}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
   const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
   const common = { id, className, "aria-label": name, ...attrs, ref, "data-commit": commit, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };

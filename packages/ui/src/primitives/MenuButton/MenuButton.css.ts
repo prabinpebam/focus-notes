@@ -76,7 +76,7 @@ export const shortcut = style({
 export const separator = style({ height: t.separatorWidth, boxSizing: "content-box", paddingBlock: t.separatorSpace, backgroundColor: t.separator, backgroundClip: "content-box" });
 
 // The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).
-/** The text variant's fill: on its box, or on a bleeding text button's hit extension. */
+/** The text variant's fill is always on its own box. */
 const textFill = createVar();
 export const text = style({
   vars: { [textFill]: t.textTransparent },
@@ -117,25 +117,6 @@ export const select = style([text, {
   borderColor: t.selectBorder,
   backgroundColor: t.selectBackground,
 }]);
-
-/** The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111). */
-export const textBleed = style({
-  // Its box is its text's line, in line with the content; its hit area, fill and ring reach past it
-  // by an invisible extension, never by pulling the box into its container's padding (spacing SP-2).
-  position: "relative",
-  isolation: "isolate",
-  minHeight: 0,
-  paddingInline: 0,
-  backgroundColor: "transparent",
-  "::before": {
-    content: '""', position: "absolute", zIndex: t.extensionLayer, borderRadius: t.textRadius, backgroundColor: textFill,
-    insetInline: `calc(-1 * ${t.textPaddingInline})`, insetBlock: `calc((${t.fontSize} * ${t.lineHeight} - ${t.textHeight}) / 2)`,
-  },
-  selectors: {
-    "&[data-focus-visible]": { outlineStyle: "none" },
-    "&[data-focus-visible]::before": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.pillFocusWidth})` },
-  },
-});
 
 // The pill variant: the trigger is a quiet text pill (UI-12).
 
