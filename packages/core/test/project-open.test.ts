@@ -25,6 +25,24 @@ const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", l
 afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it.each([false, true])("keeps typed text safe when opening from disk with an unreadable launch record (save fails: %s)", async (refused) => {
+    const current = `${book.folder}\\notes\\current.md`, target = `${book.folder}\\notes\\target.md`;
+    const writeNote = vi.fn(async (_path: string, _markdown: string) => { if (refused) throw new Error("storage refused"); });
+    const readNote = vi.fn(async () => "# Accepted from disk");
+    const position = vi.fn(async () => { throw new Error("Chromium key unavailable after crash"); });
+    const app = appWith({ position, remember: async () => {} }, readNote, { writeNote, chooseNote: async () => target });
+    app.store.update(s => ({ ...s, note: { ...s.note, path: current, key: "original", markdown: "# Typed just now", initialMarkdown: "# Before typing", status: "ready", saveState: "unsaved" } }));
+    await app.commands.run("note.open");
+    expect(writeNote.mock.calls[0]?.slice(0, 2)).toEqual([current, "# Typed just now"]);
+    if (refused) {
+      expect(readNote).not.toHaveBeenCalled();
+      expect(app.store.state.note).toMatchObject({ path: current, markdown: "# Typed just now", saveState: "error" });
+    } else {
+      expect(position).toHaveBeenCalledWith(target);
+      expect(app.store.state.note).toMatchObject({ path: target, markdown: "# Accepted from disk", status: "ready" });
+      expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ tone: "error", message: en["project.launch.restoreFailed"] }));
+    }
+  });
   it("writes only the incoming launch record when switching, but persists the current cursor on flush and same-note reload", async () => {
     const previous = `${book.folder}\\notes\\previous.md`, target = `${book.folder}\\notes\\target.md`;
     const remember = vi.fn(async () => {});

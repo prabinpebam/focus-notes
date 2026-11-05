@@ -62,7 +62,7 @@ it("reads the protected launch record once and keeps cursor writes coherent with
   expect(protection.decrypt).toHaveBeenCalledTimes(1);
   const restarted = projectWindows(() => root, writeFile);
   expect(await restarted.position(next)).toEqual(moved);
-  expect(protection.decrypt).toHaveBeenCalledTimes(2);
+  expect(protection.decrypt).toHaveBeenCalledTimes(process.platform === "win32" ? 1 : 2);
 });
 
 it("does not cache a failed launch-record read or an unacknowledged cursor write", async () => {
@@ -86,19 +86,49 @@ it("does not cache a failed launch-record read or an unacknowledged cursor write
   expect(await projects.position(note)).toEqual(moved);
 });
 
+it.skipIf(process.platform !== "win32")("keeps the protected launch record readable when a crash loses Chromium's encryption key", async () => {
+  const { root, projects } = await setup();
+  const note = join(root, "first.md");
+  const position = { from: 6, to: 9, scroll: 40 };
+  await projects.remember(note, position);
+  protection.decrypt.mockImplementation(() => { throw new Error("Chromium key unavailable after crash"); });
+  try {
+    const restarted = projectWindows(() => root, writeFile);
+    expect(await restarted.lastNote()).toBe(note);
+    expect(await restarted.position(note)).toEqual(position);
+    expect(protection.decrypt).not.toHaveBeenCalled();
+  } finally { protection.decrypt.mockReset(); }
+});
+
 it("reuses its own protected Recent record between opens but still persists every ranking update", async () => {
   const { root, projects } = await setup();
   const first = join(root, "first.md"), second = join(root, "second.md");
   await projects.remember(first);
   await projects.remember(second);
-  expect(protection.recent).toEqual(["protect", "protect"]);
+  expect(protection.recent).toEqual(["protect", "protect", "protect", "protect"]);
   const disk = await readFile(join(paths.profile, DATA_FILES.projectRecent), "utf8");
   expect(disk.startsWith("dpapi:")).toBe(true);
   const record = JSON.parse(Buffer.from(disk.slice(6), "base64").toString("utf8"));
   expect(record.notes.map((note: { path: string }) => note.path).sort()).toEqual([first, second].sort());
   const restarted = projectWindows(() => root, writeFile);
   await restarted.remember(first);
-  expect(protection.recent).toEqual(["protect", "protect", "unprotect", "protect"]);
+  expect(protection.recent).toEqual(["protect", "protect", "protect", "protect", "unprotect", "protect", "unprotect", "protect"]);
+});
+
+it("replaces an unreadable launch position only when remembering a successfully opened disk note", async () => {
+  const { root, projects } = await setup();
+  const note = join(root, "first.md");
+  await writeFile(note, "# Kept on disk\n");
+  await writeFile(join(paths.profile, DATA_FILES.projectLastNote), Buffer.from("{corrupt").toString("base64"));
+  await expect(projects.lastNote()).rejects.toThrow();
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await projects.remember(note);
+    expect(error).toHaveBeenCalledWith("Could not restore the previous launch position:", "SyntaxError");
+    const restarted = projectWindows(() => root, writeFile);
+    expect(await restarted.lastNote()).toBe(note);
+    expect(await readFile(note, "utf8")).toBe("# Kept on disk\n");
+  } finally { error.mockRestore(); }
 });
 
 it("keeps the last persisted Recent value when a ranking write fails and retries on the next open", async () => {
