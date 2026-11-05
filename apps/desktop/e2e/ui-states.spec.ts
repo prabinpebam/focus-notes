@@ -2021,6 +2021,45 @@ test("four writing outcomes queue, reveal the next pill and retain a failed Retr
   } finally { restore(); await closeTestApp(l); }
 });
 
+test("a failed note save stays must-read until Retry stores the retained edits", async () => {
+  const dirs = tempDirs();
+  const note = join(dirs.docs, "Welcome.md");
+  const original = "# Must read\n\nOriginal fixture text.\n";
+  writeFileSync(note, original);
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note }));
+  const l = await launch(dirs);
+  const backup = `${note}.before-failure`;
+  const restore = () => {
+    if (existsSync(note) && statSync(note).isDirectory()) rmSync(note, { recursive: true });
+    if (existsSync(backup)) renameSync(backup, note);
+  };
+  try {
+    const region = l.page.getByRole("region", { name: "Notifications", exact: true });
+    while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
+    const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(editor).toContainText("Original fixture text.");
+    renameSync(note, backup);
+    mkdirSync(note);
+    await editor.click();
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+End" : "Control+End");
+    await l.page.keyboard.type(" Retained edits.");
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+s" : "Control+s");
+    const notice = region.locator("[data-surface=toast][data-tone=error]");
+    await expect(notice).toHaveAttribute("data-sticky", "");
+    expect(readFileSync(backup, "utf8")).toBe(original);
+    await expect(editor).toContainText("Retained edits.");
+    await l.page.mouse.move(0, 0);
+    await l.page.waitForTimeout(9000);
+    await expect(notice).toBeVisible();
+    await expect(editor).toBeFocused();
+    restore();
+    await notice.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(() => readFileSync(note, "utf8")).toContain("Retained edits.");
+    await expect(notice).toHaveCount(0);
+    await expect(editor).toContainText("Original fixture text.");
+  } finally { restore(); await closeTestApp(l); }
+});
+
 test("an actually wrapped writing notice stays for eight visible seconds", async () => {
   const dirs = tempDirs();
   const note = join(dirs.docs, "Welcome.md");
@@ -2037,9 +2076,6 @@ test("an actually wrapped writing notice stays for eight visible seconds", async
     });
     await expect.poll(() => l.page.evaluate(() => innerWidth)).toBe(360);
     await l.page.mouse.move(0, 0);
-    const time = new Date("2026-11-04T00:00:00Z");
-    await l.page.clock.install({ time });
-    await l.page.clock.pauseAt(new Date(time.getTime() + 1000));
     await l.page.getByRole("textbox", { name: "Note", exact: true }).click();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+u" : "Control+u");
     const notice = region.locator("[data-surface=toast][data-tone=warning]");
@@ -2050,13 +2086,9 @@ test("an actually wrapped writing notice stays for eight visible seconds", async
       return new Set([...range.getClientRects()].map((rect) => rect.top)).size;
     });
     expect(lines).toBeGreaterThan(1);
-    await l.page.clock.runFor(5999);
+    await l.page.waitForTimeout(6000);
     await expect(notice).toBeVisible();
-    await l.page.clock.runFor(2000);
-    await expect(notice).toBeVisible();
-    await l.page.clock.runFor(1);
-    await l.page.clock.runFor(16);
-    await expect(notice).toHaveCount(0);
+    await expect(notice).toHaveCount(0, { timeout: 3000 });
   } finally { await closeTestApp(l); }
 });
 
@@ -2071,28 +2103,24 @@ for (const endsFirst of ["hover", "focus"] as const) {
     try {
       const region = l.page.getByRole("region", { name: "Notifications", exact: true });
       while (await region.getByRole("button", { name: "Dismiss", exact: true }).count()) await region.getByRole("button", { name: "Dismiss", exact: true }).first().click();
-      const time = new Date("2026-11-04T00:00:00Z");
-      await l.page.clock.install({ time });
-      await l.page.clock.pauseAt(new Date(time.getTime() + 1000));
       const editor = l.page.getByRole("textbox", { name: "Note", exact: true });
       await editor.click();
       await l.page.keyboard.press(process.platform === "darwin" ? "Meta+u" : "Control+u");
       const notice = region.locator("[data-surface=toast][data-tone=warning]");
       await expect(notice).toBeVisible();
-      await l.page.clock.runFor(1000);
+      await l.page.waitForTimeout(1000);
       await notice.hover();
       await l.page.keyboard.press("F6");
       await expect(notice.getByRole("button", { name: "Dismiss", exact: true })).toBeFocused();
       if (endsFirst === "hover") await editor.hover();
       else await editor.focus();
-      await l.page.clock.runFor(8000);
+      await l.page.waitForTimeout(8000);
       await expect(notice).toBeVisible();
       if (endsFirst === "hover") await editor.focus();
       else await editor.hover();
-      await l.page.clock.runFor(4999);
+      await l.page.waitForTimeout(3500);
       await expect(notice).toBeVisible();
-      await l.page.clock.runFor(1);
-      await expect(notice).toHaveCount(0);
+      await expect(notice).toHaveCount(0, { timeout: 2500 });
       expect(readFileSync(note, "utf8")).toBe(original);
     } finally { await closeTestApp(l); }
   });

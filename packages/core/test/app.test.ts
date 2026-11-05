@@ -94,13 +94,15 @@ describe("saving (EDT-11 write-to-disk part, QLT-03)", () => {
   });
   it("shows a save problem when writing fails, and keeps the text", async () => {
     const f = fakeBridge({}, { writeNote: async () => { throw new Error("disk full"); } });
-    const app = createApp(f.bridge, messages);
+    const app = createApp(f.bridge, en);
     await app.start();
     await app.commands.run("note.setContent", { value: "keep me" });
     expect(await app.flush()).toBe(false);
     expect(app.store.state.note.saveState).toBe("error");
     expect(app.store.state.note.markdown).toBe("keep me");
     expect(app.viewModels.select("vm.canvas", app.store.state).saveProblem).toBe(true);
+    await app.commands.run("note.save");
+    expect(app.store.state.ui.toasts.at(-1)).toMatchObject({ sticky: true, action: { command: "note.save" } });
   });
   it("retries a failed save on flush, and never switches notes while unsaved (review issue 3)", async () => {
     let fail = true;

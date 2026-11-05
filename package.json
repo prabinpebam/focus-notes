@@ -28,7 +28,7 @@
     "bench:launch": "node tools/bench/launch.mjs",
     "check:kits": "node tools/agent-kits.mjs",
     "check:spacing": "node tools/spacing/lint.mjs && vitest run packages/ui/test/button-geometry.test.tsx",
-    "check": "pnpm run check:boundaries && pnpm run check:kits && pnpm run check:chain && pnpm run check:plan && pnpm run check:actions && pnpm run check:licenses && pnpm run check:generated && pnpm run check:spacing && pnpm run ui:check",
+    "check": "pnpm run check:boundaries && pnpm run check:kits && pnpm run check:chain && pnpm run check:plan && pnpm run check:actions && pnpm run check:licenses && pnpm run check:generated && pnpm run check:spacing && node tools/notification-inventory.mjs && pnpm run ui:check",
     "dev": "pnpm --filter @focus-notes/desktop run dev",
     "gallery": "pnpm --filter @focus-notes/desktop run gallery",
     "dist": "pnpm --filter @focus-notes/desktop run dist",

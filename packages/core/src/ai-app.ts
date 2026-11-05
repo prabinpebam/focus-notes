@@ -16,6 +16,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import type { CommitTracker, CommitView, TaskTracker, TaskView } from "./tasks.ts";
 import type { WorkspaceTree } from "./workspace.ts";
 import type { ScanTarget } from "../../ui/src/data.ts";
+import type { NotificationOptions } from "./notifications.ts";
 
 interface S {
   note: { status: string; key: string; path?: string };
@@ -35,7 +36,7 @@ interface Ctx<St extends S> {
   commits: Pick<CommitTracker, "run" | "clear">;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   announce: (text: string) => void;
-  toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }) => unknown;
+  toast: (message: string, opts?: NotificationOptions) => unknown;
 }
 
 const PRESETS = ["concise", "warmer", "grammar"] as const;
@@ -676,7 +677,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const id = `rw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     const off = ai.onRewriteEvent(onEvent);
     const name = writerConnection()?.name ?? "";
-    running = { id, got: false, off, toast: toast(t(caret ? "rewrite.writing" : "rewrite.running", { name }), { action: { command: "rewrite.cancel", label: t("rewrite.stop") } }) };
+    running = { id, got: false, off, toast: toast(t(caret ? "rewrite.writing" : "rewrite.running", { name }), { action: { command: "rewrite.cancel", label: t("rewrite.stop") }, sticky: true, mustReadReason: "operation-control" }) };
     announce(t("rewrite.started"));
     ai.rewriteStart(id, { text: selection, instruction, path: fromPath, ...(caret ? { mode: "write" } : {}) }).catch((e: unknown) => { if (running?.id === id) fail(String((e as Error)?.message ?? "provider")); });
   });

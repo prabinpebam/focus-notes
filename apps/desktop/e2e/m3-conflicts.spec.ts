@@ -12,6 +12,8 @@ import { join } from "node:path";
 import { launch, quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { configure, git, instance } from "./instance.ts";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const settledAxe = async (page: Page) => {
@@ -257,26 +259,48 @@ test("FIL-10, DD-FB-01: a delete's toast offers Undo, which restores the note fr
   const { dirs, notesRemote } = instance();
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
   const { page } = l;
-  await expect(page.getByRole("textbox", { name: "Note" })).toContainText("First line.");
-  await page.keyboard.press(`${mod}+O`);
-  const sheet = page.getByRole("complementary", { name: "Files" });
-  // Undo requires Git history, which initializes independently of the first note.
-  await expect(sheet.getByRole("button", { name: "Recently deleted", exact: true })).toBeVisible();
-  const hello = sheet.getByRole("treeitem", { name: "Hello, public" });
-  await hello.click();
-  // Delete is ⌘⌫ on macOS, as in Finder (Keyboard shortcuts → Files panel).
-  await page.keyboard.press(process.platform === "darwin" ? "Meta+Backspace" : "Delete");
-  // A public note asks first.
-  await page.getByRole("dialog", { name: /Delete/ }).getByRole("button", { name: "Delete and unpublish" }).click();
-  await expect(page.locator("#toasts").getByText("Moved “Hello” to the trash.")).toBeVisible({ timeout: 15_000 });
-  expect(existsSync(join(dirs.docs, "notes", "hello.md"))).toBe(false);
-  await page.keyboard.press("F6");
-  await expect(page.locator("#toasts").getByRole("button", { name: "Undo" })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#toasts").getByText("Restored “Hello”.")).toBeVisible({ timeout: 15_000 });
-  expect(readFileSync(join(dirs.docs, "notes", "hello.md"), "utf8")).toBe("# Hello\n");
-  expect(git(dirs.docs, "log", "-2", "--format=%s").split("\n")).toEqual(["Restore notes/hello.md", "Delete notes/hello.md"]);
-  await expect(sheet.getByRole("treeitem", { name: "Hello, public" })).toBeVisible();
-  await expect.poll(() => show(notesRemote, "main:notes/hello.md"), { timeout: 20_000 }).toBe("# Hello");
-  await quit(l);
+  try {
+    await expect(page.getByRole("textbox", { name: "Note" })).toContainText("First line.");
+    await page.keyboard.press(`${mod}+O`);
+    const sheet = page.getByRole("complementary", { name: "Files" });
+    // Undo requires Git history, which initializes independently of the first note.
+    await expect(sheet.getByRole("button", { name: "Recently deleted", exact: true })).toBeVisible();
+    const hello = sheet.getByRole("treeitem", { name: "Hello, public" });
+    await hello.click();
+    // Delete is ⌘⌫ on macOS, as in Finder (Keyboard shortcuts → Files panel).
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+Backspace" : "Delete");
+    // A public note asks first.
+    await page.getByRole("dialog", { name: /Delete/ }).getByRole("button", { name: "Delete and unpublish" }).click();
+    await expect(page.locator("#toasts").getByText("Moved “Hello” to the trash.")).toBeVisible({ timeout: 15_000 });
+    expect(existsSync(join(dirs.docs, "notes", "hello.md"))).toBe(false);
+    await page.keyboard.press("F6");
+    await expect(page.locator("#toasts").getByRole("button", { name: "Undo" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("#toasts").getByText("Restored “Hello”.")).toBeVisible({ timeout: 15_000 });
+    expect(readFileSync(join(dirs.docs, "notes", "hello.md"), "utf8")).toBe("# Hello\n");
+    expect(git(dirs.docs, "log", "-2", "--format=%s").split("\n")).toEqual(["Restore notes/hello.md", "Delete notes/hello.md"]);
+    await expect(sheet.getByRole("treeitem", { name: "Hello, public" })).toBeVisible();
+    await expect.poll(() => show(notesRemote, "main:notes/hello.md"), { timeout: 20_000 }).toBe("# Hello");
+    // The same real deletion still expires when its optional Undo is not used.
+    await sheet.getByRole("treeitem", { name: "Hello, public" }).click();
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+Backspace" : "Delete");
+    await page.getByRole("dialog", { name: /Delete/ }).getByRole("button", { name: "Delete and unpublish" }).click();
+    const deleted = page.locator("#toasts [data-surface=toast]").filter({ hasText: "Moved “Hello” to the trash." });
+    await expect(deleted).toBeVisible();
+    await expect(deleted).not.toHaveAttribute("data-sticky");
+    await expect(deleted.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+    await page.getByRole("textbox", { name: "Note" }).focus();
+    await page.mouse.move(0, 0);
+    await expect(deleted).toHaveCount(0, { timeout: 10_000 });
+    expect(existsSync(join(dirs.docs, "notes", "hello.md"))).toBe(false);
+    expect(git(dirs.docs, "log", "-1", "--format=%s")).toBe("Delete notes/hello.md");
+  } finally {
+    try { await quit(l); }
+    finally {
+      if (process.platform === "win32") {
+        const cleanup = fileURLToPath(new URL("../../../tools/dev/close-test-apps.ps1", import.meta.url));
+        for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", cleanup, "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+      }
+    }
+  }
 });

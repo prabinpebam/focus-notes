@@ -1,6 +1,15 @@
 import type { ToastState } from "./app.ts";
 import type { Clock } from "./tasks.ts";
 
+export const MUST_READ_REASONS = ["data-at-risk", "recovery-decision", "operation-control"] as const;
+export interface NotificationOptions {
+  tone?: ToastState["tone"];
+  action?: ToastState["action"];
+  subject?: string;
+  sticky?: boolean;
+  mustReadReason?: typeof MUST_READ_REASONS[number];
+}
+
 export class NotificationQueue {
   #items: ToastState[] = [];
   #next = 1;
@@ -19,7 +28,10 @@ export class NotificationQueue {
     this.change = change;
   }
 
-  show(message: string, opts: { tone?: ToastState["tone"]; action?: ToastState["action"]; subject?: string; sticky?: boolean } = {}): number {
+  show(message: string, opts: NotificationOptions = {}): number {
+    if (opts.sticky && (!opts.mustReadReason || !MUST_READ_REASONS.includes(opts.mustReadReason))) {
+      throw new Error("A must-read notification needs an allowed inventory reason");
+    }
     const same = this.#items.find((t) => opts.subject
       ? t.subject === opts.subject
       : !t.subject && t.message === message && t.tone === (opts.tone ?? "info") && t.action?.command === opts.action?.command && t.action?.args === opts.action?.args);
@@ -27,7 +39,7 @@ export class NotificationQueue {
     const item: ToastState = {
       id, message, tone: opts.tone ?? "info", paused: same?.paused ?? false,
       count: same?.tone === (opts.tone ?? "info") ? (same.count ?? 1) + 1 : 1,
-      sticky: opts.tone === "error" || opts.tone === "progress" || Boolean(opts.action) || Boolean(opts.sticky),
+      sticky: Boolean(opts.sticky),
       ...(opts.action ? { action: opts.action } : {}), ...(opts.subject ? { subject: opts.subject } : {}),
     };
     if (same) this.#items = this.#items.map((t) => t.id === id ? item : t);
@@ -86,7 +98,7 @@ export class NotificationQueue {
     for (const item of this.#items) {
       const timer = this.#timers.get(item.id);
       if (!timer) continue;
-      if (!visible.has(item.id) || !this.#active || item.paused) this.#stop(item.id);
+      if (!visible.has(item.id) || !this.#active || item.paused || item.pending) this.#stop(item.id);
       else if (timer.started === undefined) {
         timer.started = this.clock.now();
         timer.handle = this.clock.setTimeout(() => this.dismiss(item.id), timer.remaining);

@@ -116,6 +116,7 @@ describe("EDT-11: save and sync", () => {
     await t.app.commands.run("note.save");
     expect(t.toasts()).toEqual(["Couldn't sync: you're offline."]);
     expect(t.app.store.state.ui.toasts[0]!.action).toEqual({ command: "note.save", label: "Retry" });
+    expect(t.app.store.state.ui.toasts[0]!.sticky).toBe(false);
     expect(t.canvas()).toMatchObject({ problem: true, problemLabel: "Couldn't sync" });
   });
 
@@ -153,6 +154,7 @@ describe("EDT-11: save and sync", () => {
     expect(t.toasts()).toEqual(["Couldn't sync: changes don't fit."]);
     // A conflict's toast offers the resolver (FIL-12) rather than Retry.
     expect(t.app.store.state.ui.toasts[0]!.action).toEqual({ command: "conflict.open", label: "Resolve" });
+    expect(t.app.store.state.ui.toasts[0]!.sticky).toBe(true);
     expect(t.canvas().problem).toBe(true);
     t.report({ git: true, state: "idle", waiting: 0 });
     expect(t.canvas().problem).toBe(false);
