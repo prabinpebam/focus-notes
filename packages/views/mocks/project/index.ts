@@ -39,6 +39,7 @@ const dialog = (sections: string, panels: Record<string, unknown>) => ({
     type: "Tabs",
     id: "settingsCategories",
     props: { label: { t: "settings.categories" }, items: { get: sections }, value: { bind: "local.section" }, orientation: "vertical", scrollPanel: true },
+    slots: { footer: [{ type: "Button", id: "settingsFeedback", props: { label: { t: "feedback.settingsButton" }, variant: "subtle", icon: "feedback" } }] },
     children: [{ switch: { get: "local.section" }, cases: panels }],
   }],
 });
