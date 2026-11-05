@@ -18,6 +18,10 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Native panel recovery journey transport, 5 November
+
+Image candidate `c96f4a8e` passed the Windows test job and journey shards 1–3 in run `42012099831`. Shard 4 passed the recovery journey's panel, feedback, editor identity, unchanged note bytes and time-origin assertions, then failed while Playwright transported the synchronous native window count: `electronApplication.evaluate: Resulting promise was garbage collected`. The unchanged focused journey reproduced that error once in five local software-rendered runs. The window-count check now retrieves the same `BrowserWindow.getAllWindows().length` through `evaluateHandle`, asserts its JSON value is exactly one, and disposes the handle. All 20 focused software-rendered repetitions pass; no wait, retry, fallback, assertion, app behavior or budget changed. Exact-head combined Windows CI remains required before landing.
+
 ### Share passcode fixture alignment, 5 November
 
 The SHR-16 publication journey now reads the visible, readonly Passcode textbox's value, matching the generated-passcode field introduced in `88ba734b`, instead of looking for a text node that no longer exists. It retains the four-word format assertion and every publication, clipboard, reader, snapshot and withdrawal check. The complete related journey passes locally on the spacing-integrated AI candidate; this isolated fixture correction is shared with the image candidate.
