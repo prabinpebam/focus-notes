@@ -50,7 +50,7 @@ export const RECOVER_CLOSED: RecoverState = {
 };
 
 /** The commands that still work while the view owns the window; every other one is held (D-212). */
-export const RECOVER_COMMANDS = /^(recover\.|firstRun\.|setup\.|window\.|toast\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|command\.run$|app\.ready$)/;
+export const RECOVER_COMMANDS = /^(recover\.|firstRun\.|setup\.|window\.|toast\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|command\.run$|app\.ready$|slash\.register$)/;
 
 /** Each wait's tracker target: fixed IDs, measured as `focus-notes:<target>` and allow-listed for the report (QLT-04). */
 export const RECOVER_WAITS = { account: "recover.account", download: "recover.download", open: "recover.open", find: "recover.find", place: "recover.place", create: "recover.create" } as const;

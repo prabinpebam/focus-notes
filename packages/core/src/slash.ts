@@ -34,6 +34,7 @@ const GROUP_ORDER = ["text", "lists", "insert"] as const;
 
 export interface SlashItem {
   id: string;
+  group: SlashCatalogEntry["group"];
   label: string;
   icon: string;
   shortcut: string;
@@ -59,7 +60,7 @@ export function slashItems(entries: readonly SlashCatalogEntry[], valid: readonl
       return terms.every((t) => words.some((w) => w.startsWith(t)));
     })
     .sort((a, b) => GROUP_ORDER.indexOf(a.e.group) - GROUP_ORDER.indexOf(b.e.group) || a.i - b.i)
-    .map(({ e, label }) => ({ id: e.id, label, icon: e.icon, shortcut: e.markdown, hint: text(`slash.hint.${e.id}`) }));
+    .map(({ e, label }) => ({ id: e.id, group: e.group, label, icon: e.icon, shortcut: e.markdown, hint: text(`slash.hint.${e.id}`) }));
 }
 
 export interface SlashDeps {
@@ -81,7 +82,11 @@ export function registerSlash({ store, commands, viewModels, catalog, editorActi
     id: "slash.register", title: "command.slash.register",
     // The editor's block registry, handed over once when the app mounts.
     run: ({ entries: list }) => {
-      if (Array.isArray(list)) entries = list.filter((e) => e && typeof e.id === "string" && typeof e.title === "string");
+      if (Array.isArray(list)) {
+        entries = list.filter((e) => e && typeof e.id === "string" && typeof e.title === "string");
+        const s = get();
+        set({ ...s, active: items(s)[0]?.id ?? "" });
+      }
     },
   });
   commands.register<{ open: boolean; query: string; valid: string }>({
@@ -150,7 +155,7 @@ export function registerSlash({ store, commands, viewModels, catalog, editorActi
 
   const ITEM = {
     type: "object" as const,
-    properties: { id: { type: "string" as const }, label: { type: "string" as const }, description: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const } },
+    properties: { id: { type: "string" as const }, label: { type: "string" as const }, description: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, header: { type: "boolean" as const } },
   };
   viewModels.register({
     id: "vm.slash",
@@ -169,10 +174,15 @@ export function registerSlash({ store, commands, viewModels, catalog, editorActi
       const open = s.open && (list.length > 0 || !/\s/.test(s.query));
       return {
         open,
-        items: list.map((i) => ({ id: i.id, label: i.label, icon: i.icon, shortcut: i.shortcut, ...(i.id === s.active && i.hint ? { description: i.hint } : {}) })),
+        items: list.flatMap((i, index) => {
+          const row = { id: i.id, label: i.label, icon: i.icon, shortcut: i.shortcut, ...(i.id === s.active && i.hint ? { description: i.hint } : {}) };
+          return !s.query.trim() && (index === 0 || list[index - 1]?.group !== i.group)
+            ? [{ id: `slash.group.${i.group}`, label: catalog.format(`slash.group.${i.group}`), header: true }, row]
+            : [row];
+        }),
         activeId: open ? s.active : "",
-        empty: open && list.length === 0,
-        emptyText: open && list.length === 0 ? catalog.format("slash.empty", { query: s.query }) : "",
+        empty: open && list.length === 0 && s.query.length > 0,
+        emptyText: open && list.length === 0 && s.query.length > 0 ? catalog.format("slash.empty", { query: s.query }) : "",
       };
     },
   });

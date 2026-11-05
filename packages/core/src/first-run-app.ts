@@ -158,7 +158,7 @@ const FAIL_LABEL: Record<SetupFailureAction, string> = {
   retry: "firstRun.retry", chooseFolder: "firstRun.fail.chooseFolder", newFolder: "firstRun.fail.newFolder", startOver: "firstRun.fail.startOver", back: "firstRun.back",
 };
 
-export const SETUP_COMMANDS = /^(firstRun\.|window\.|toast\.|setup\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|notes\.import$|command\.run$|app\.ready$)/;
+export const SETUP_COMMANDS = /^(firstRun\.|window\.|toast\.|setup\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|notes\.import$|command\.run$|app\.ready$|slash\.register$)/;
 
 export function registerFirstRun<St extends S>({ store, bridge, catalog, commands, viewModels, tracker, toast, persistAppState, hold, release, now = Date.now }: Ctx<St>) {
   const fr = bridge.firstRun;
