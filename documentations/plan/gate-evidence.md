@@ -37,6 +37,8 @@ The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedbac
 | OFB.23 | Each slice on green `main` and in Preview | Coordinator | Open | |
 | OFB.24 | Owner corrections recorded as rules and checks | W1 with this stage's commit | Open | AGENTS.md rule 6 and D-354 to D-360 added with this stage |
 
+**Image privacy follow-up (D-365):** public-root GitHub copies strip ancillary source metadata before writing or committing. Four sanitizer units cover PNG text/location, EXIF orientation-only data, JPEG metadata between progressive scans, WebP flags and malformed input. Four real-app local/GitHub PNG/JPEG/WebP journeys prove the private/offline byte policy, original-file preservation, successful decoding, JPEG rotated intrinsic dimensions and normal Git blobs without source metadata. Colour profiles and compressed raster data are retained rather than re-encoded. WebP keeps its orientation metadata; its reserved dimensions follow Chromium's unrotated WebP rendering. Main/Preview remain pending.
+
 ### Open project cards and hue-safe shimmer, 5 November
 
 The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-352, D-353) passes its focused Windows checks:
