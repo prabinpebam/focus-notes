@@ -569,6 +569,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     const paths = new Map(moves.map(({ from, to }) => [from, to]));
     trail.paths = trail.paths.map((path) => paths.get(path) ?? path);
     drafts.moved(moves);
+    const moved = store.state.note.path && paths.get(store.state.note.path);
+    if (moved && bridge.projects) rememberLaunch(moved, notePosition?.key === store.state.note.key ? notePosition : undefined);
   };
   const visited = (path: string) => {
     const step = trail.step;
@@ -659,14 +661,20 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         }
       }
       if (bridge.projects) {
-        try { await bridge.projects.remember(path); }
-        catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
+        rememberLaunch(path);
       }
       return true;
     } catch {
       setNote({ status: opts.keepOnFailure ? previousStatus : "error" });
       return false;
     }
+  }
+
+  function rememberLaunch(path: string, position?: { from: number; to: number; scroll: number }) {
+    const remembering = position ? bridge.projects?.remember(path, position) : bridge.projects?.remember(path);
+    void remembering?.catch(() => {
+      toast(catalog.format("project.launch.rememberFailed"), { tone: "error" });
+    });
   }
 
   /** Writes any unsaved or previously failed change now. Resolves to whether the note is saved. */
@@ -676,8 +684,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     await saving;
     const path = store.state.note.path;
     if (rememberPosition && bridge.projects && path && notePosition?.key === store.state.note.key) {
-      try { await bridge.projects.remember(path, notePosition); }
-      catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
+      rememberLaunch(path, notePosition);
     }
     // Text that can't be written without overwriting the other version asks for a choice instead.
     if (conflicts.holds(store.state.note.path) && store.state.note.saveState !== "saved") {
@@ -1800,7 +1807,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           catch { toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
         }
         const last = bridge.windows?.initialNote ?? remembered ?? appState.lastNotePath;
-        const reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
+        let reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
+        // A crash can leave protected metadata behind a completed rename. The saved disk path is
+        // still usable; explicit window targets never fall back to a different note.
+        if (!reopened && !bridge.windows?.initialNote && remembered && appState.lastNotePath && appState.lastNotePath !== remembered) {
+          toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+          const saved = appState.lastNotePath;
+          reopened = await openNote(saved, { accept: (md) => !(folder && publicInWorkspace(saved, folder) && !md.trim()) });
+        }
         if (!reopened && bridge.projects) await projects.start();
         else if (!reopened) await load(await bridge.defaultNotePath());
         // A link the app was opened with goes on from the note it opened (D-165).

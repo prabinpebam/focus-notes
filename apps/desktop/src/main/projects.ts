@@ -22,13 +22,19 @@ function windowsProtectedRecord(value: string, protect: boolean): Promise<string
   const script = `Add-Type -AssemblyName System.Security; $bytes = [Convert]::FromBase64String([Console]::In.ReadToEnd()); $result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Write([Convert]::ToBase64String($result))`;
   return new Promise((accept, reject) => {
     const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+    const timeout = setTimeout(() => {
+      reject(new Error("OS-protected project storage timed out."));
+      child.kill();
+    }, 5000);
+    const failed = (error: Error) => { clearTimeout(timeout); reject(error); child.kill(); };
     let output = "";
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk: string) => { output += chunk; });
     child.stderr.resume();
-    child.once("error", reject);
-    child.stdin.once("error", reject);
+    child.once("error", failed);
+    child.stdin.once("error", failed);
     child.once("close", (code) => {
+      clearTimeout(timeout);
       if (code !== 0 || !output.trim()) reject(new Error(`OS-protected project storage failed (${code}).`));
       else accept(output.trim());
     });
@@ -112,7 +118,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await saveRecent(profile, record);
     });
     recentWrites = write.catch(error => { console.error("Could not persist project ranking:", error instanceof Error ? error.name : "Error"); });
-    return write;
+    return recentWrites;
   }
   type LaunchRecord = { path: string; position?: { from: number; to: number; scroll: number } };
   let launchRecord: Promise<LaunchRecord | undefined> | undefined;
@@ -139,22 +145,49 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const record = await lastRecord();
     return record?.path === path ? record.position : undefined;
   }
+  type PendingLaunch = { record: LaunchRecord; previous?: Promise<LaunchRecord | undefined> };
+  let pendingLaunch: PendingLaunch | undefined;
+  let writingLaunch = false;
+  async function writeLaunchRecords() {
+    try {
+      while (pendingLaunch) {
+        const pending = pendingLaunch;
+        pendingLaunch = undefined;
+        try {
+          if (pending.previous) {
+            try {
+              const previous = await pending.previous;
+              if (previous?.path === pending.record.path) pending.record.position = previous.position;
+            } catch (error) {
+              console.error("Could not restore the previous launch position:", error instanceof Error ? error.name : "Error");
+            }
+          }
+          if (pendingLaunch) continue;
+          if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
+          const content = JSON.stringify(pending.record);
+          const encrypted = process.platform === "win32"
+            ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
+            : safeStorage.encryptString(content).toString("base64");
+          // Protection can finish after a newer cursor or note arrived. Never publish the stale record.
+          if (!pendingLaunch) await atomicWrite(lastNoteFile, encrypted);
+        } catch (error) {
+          console.error("Could not persist protected launch record:", error instanceof Error ? error.name : "Error");
+        }
+      }
+    } finally { writingLaunch = false; }
+  }
   async function remember(path: string, snapshot?: { from: number; to: number; scroll: number }) {
     if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-    let savedPosition = snapshot;
-    if (!savedPosition) {
-      try { savedPosition = await position(path); }
-      catch (error) { console.error("Could not restore the previous launch position:", error instanceof Error ? error.name : "Error"); }
-    }
-    const record = { path, position: savedPosition };
-    const content = JSON.stringify(record);
-    const encrypted = process.platform === "win32"
-      ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
-      : safeStorage.encryptString(content).toString("base64");
-    await atomicWrite(lastNoteFile, encrypted);
+    const previous = snapshot ? undefined : lastRecord();
+    const record: LaunchRecord = { path, position: snapshot };
+    pendingLaunch = { record, previous };
     launchRecord = Promise.resolve(record);
-    if (!snapshot) await score(path, 1);
+    if (!writingLaunch) {
+      writingLaunch = true;
+      setImmediate(() => { void writeLaunchRecords(); });
+    }
+    if (!snapshot) void score(path, 1);
   }
   async function closed() {
     await atomicWrite(join(rootProfile, DATA_FILES.lastProject), `${JSON.stringify({ profile: app.getPath("userData") })}\n`);

@@ -25,6 +25,56 @@ const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", l
 afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it.each([false, true])("opens the saved disk note when launch metadata is stale or unreadable (unreadable: %s)", async (unreadable) => {
+    const target = "C:\\Book\\renamed.md", stale = "C:\\Book\\Untitled.md";
+    const writeNote = vi.fn(async () => {});
+    const readNote = vi.fn(async (path: string) => { if (path !== target) throw new Error("missing"); return "# Recovered disk note"; });
+    const app = appWith({
+      lastNote: async () => { if (unreadable) throw new Error("protection unavailable"); return stale; },
+      position: async () => undefined, remember: async () => {}, list: async () => [],
+    }, readNote, { writeNote, loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: target }) });
+    await app.start();
+    expect(app.store.state.note).toMatchObject({ path: target, markdown: "# Recovered disk note", status: "ready" });
+    expect(writeNote).not.toHaveBeenCalled();
+    expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ tone: "error", message: en["project.launch.restoreFailed"] }));
+  });
+  it("queues the renamed launch path without blocking its save and updates the saved disk path", async () => {
+    const current = "/w/private/notes/untitled.md";
+    const files: Record<string, string> = { [current]: "" };
+    const remember = vi.fn<NonNullable<PlatformBridge["projects"]>["remember"]>(() => new Promise<void>(() => {}));
+    const saveAppState = vi.fn(async () => {});
+    const app = appWith({ remember, lastNote: async () => current, position: async () => undefined, edited: async () => {} }, async path => files[path]!, {
+      writeNote: async (path, text) => { files[path] = text; },
+      loadAppState: async () => ({ version: 1, firstRun: "done" }), saveAppState,
+      workspace: {
+        info: async () => ({ folder: "/w" }),
+        scan: async () => ({ folder: "/w", roots: [{ id: "private", path: "/w/private/notes", readOnly: false }], entries: [{ path: current, kind: "note" }] }),
+        renameNote: async (from, to) => { files[to] = files[from]!; delete files[from]; },
+        writeFormat: async () => {},
+        onChange: () => () => {},
+      },
+    });
+    await app.start();
+    await app.commands.run("note.setContent", { value: "# Kept title\n" });
+    expect(await app.flush()).toBe(true);
+    expect(app.store.state.note.path).toBe("/w/private/notes/kept-title.md");
+    expect(remember.mock.calls.at(-1)?.[0]).toBe("/w/private/notes/kept-title.md");
+    expect(files["/w/private/notes/kept-title.md"]).toBe("# Kept title\n");
+    expect(saveAppState.mock.calls).toContainEqual([expect.objectContaining({ lastNotePath: "/w/private/notes/kept-title.md" })]);
+  });
+  it("flushes typed text and finishes Mod+N while launch-record protection never acknowledges", async () => {
+    const current = `${book.folder}\\notes\\current.md`;
+    const remember = vi.fn(() => new Promise<void>(() => {}));
+    const writeNote = vi.fn(async () => {});
+    const app = appWith({ remember }, async () => "", { writeNote });
+    app.store.update(s => ({ ...s, note: { ...s.note, path: current, key: "original", markdown: "# Typed just now", initialMarkdown: "# Before typing", status: "ready", saveState: "unsaved" } }));
+    await app.commands.run("note.position", { key: "original", from: 2, to: 2, scroll: 0 });
+    expect(await app.flush()).toBe(true);
+    expect(writeNote).toHaveBeenCalledWith(current, "# Typed just now", "# Before typing");
+    await app.commands.run("note.new");
+    expect(app.store.state.note).toMatchObject({ path: "/n/Untitled.md", markdown: "", status: "ready", saveState: "saved" });
+    expect(remember).toHaveBeenCalled();
+  });
   it.each([false, true])("keeps typed text safe when opening from disk with an unreadable launch record (save fails: %s)", async (refused) => {
     const current = `${book.folder}\\notes\\current.md`, target = `${book.folder}\\notes\\target.md`;
     const writeNote = vi.fn(async (_path: string, _markdown: string) => { if (refused) throw new Error("storage refused"); });
