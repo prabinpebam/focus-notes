@@ -8,6 +8,9 @@ Separate places for separate work, without making every thought choose a project
 > [!NOTE]
 > **Design approved (owner, 3 November 2026, 19:39): "The UI and UX looks good."** The mocks' exact words are in the branch's `packages/views/messages/en.json` (keys `project.`, `quick.`, `newNote.`, `migrate.`, `recent.`, `pin.`; `*.mock.*` keys are gallery chrome, not product copy). Mocks 1 to 8 in the gallery at <http://127.0.0.1:5211>, branch `vq-project-mocks`, are the approved design for: Launch and the Open view, New project, window identity (outline, pill, watermark) and Settings → Project with its Font and Theme tiles, Files (pinned and recent), New note in…, names and titles, Local notes and a file on its own with the local-drive pill, Meeting Project for the first time, and Rewrite and Spotlight. Not covered by this approval and still specification only: [Private only until the first share](#private-only-until-the-first-share) and [People in a project](#people-in-a-project) (reviewed with the sharing mocks), the frecency ranking and pin sync rules (not visible in a mock), and the waits and failure states in [States, waits and accessibility](#states-waits-and-accessibility) that no mock shows.
 
+> [!IMPORTANT]
+> **Proposed, 5 November (owner direction, D-pending): one concept, Project.** "Workspace" leaves the app. Every project keeps its history with Git, either **on this computer only** or **linked to GitHub**; the only thing outside a project is a standalone file. Where this page says a project is a GitHub repository, read "a folder kept with Git, optionally linked to a GitHub repository". The contradictions with Local notes and with offline folders that have no Git are listed in [One concept: Project → Reconciling the existing specs](project-model.md#reconciling-the-existing-specs), waiting for the owner.
+
 ## What a project is for
 
 > [!NOTE]
@@ -283,6 +286,8 @@ Pinning a file in Open never pins it in its project's Files, and the other way r
 
 > Windows Recent records use user-scoped DPAPI protection, independently of Chromium's per-profile encryption keys, so Open can read them across project profiles. The preview uses an invisible asynchronous built-in PowerShell helper for that protection. A window reuses its own last acknowledged Recent and launch records in memory rather than decrypting them on every note switch; updates are still protected and persisted, and other windows' Recent records are reread from disk. Switching notes saves pending text once without writing an outgoing cursor record that the incoming note would immediately replace; closing or reloading the same note still saves its cursor. Existing Chromium keys and protected data are never replaced; migration of older independently encrypted preview records is not part of this slice.
 
+> **Contradiction flagged (5 November, D-pending):** the owner's direction says standalone files are the only thing outside a project, and that every project has Git. Local notes, as specified below, is a third scope with no Git. Recommended: Local notes becomes an ordinary project on this computer only, with local Git history, keeping its quick-jot behaviour. See [One concept: Project](project-model.md#reconciling-the-existing-specs).
+
 **Local notes are notes that aren't part of any project** (renamed from Quick notes, owner, 3 November; D-320: "this note is not quicker than creating notes in a proper project"). **New Local note** is in Open. **Local notes** opens a local folder window under `Documents\Focus Notes\Local notes`. The OS-resolved Documents location is used, not a hardcoded English directory. No sign-in, repository, share controls or implicit upload. If Documents is cloud-synced, state the detected service as the existing [notes-folder policy](notes-folder.md) does; “Local only” means no Focus Notes/GitHub backup, not a promise that another service never syncs it.
 
 **The local-drive pill replaces Backed up** (owner, 3 November 19:22; D-333): "Local notes should also show the icon of local hard drive instead of Back up with the part of the folder location ellipsized after a max width of the pill. Clicking here opens the containing folder with the file selected in File Explorer/Finder." A Local note's window, and a file on its own, show no backup status. At the bottom left, in Backed up's place, is one pill: a local hard drive icon and the folder's location, the same `ProjectPill` as a project's (24 px high, about 6 px visible inset all round, 4 px icon to text) on a neutral fill, as there's no project colour. Past the pill's max width (`size.pillMax`) the location ellipsizes in the middle, keeping the drive and root and the containing folder (`C:\Users\…\Local notes`; orchestrator's decision); the full path is its tooltip and accessible name. Pressing it shows the note in its folder, selected, in File Explorer (**Show in File Explorer**; **Show in Finder** on macOS, **Show in file manager** on Linux). Nothing else is added to the window.
@@ -296,6 +301,8 @@ In the approved mock (mock 6) a Local notes window is its list, headed **Local n
 ## A file on its own
 
 **Open file…** or **Open with Focus Notes** handles `.md`, `.markdown` and `.txt`. It opens one file window and saves in place, not in the last-used project. A file already inside an open project goes to that window. If inside a closed known project, offer **Open project** (the default) or **Open file only**, which says **Not backed up** while open, rather than silently cloning or importing it.
+
+**Owner, 5 November:** "This are just direct edit of compatible files as a one time standalone. We don't do version control, can't insert image on certain file types like txt. Inserting image create a folder beside the file with the image file in it." Its Settings show **This file** in place of Project ("Not in a project"), mocked in [One concept: Project](project-model.md#settings--project-merged).
 
 The file window keeps writing, focus, find-in-note, theme and print. It has no project Files/search, Git backup, People, Share, Publish or agent exposure. `.txt` stays plain text; formatting that would require conversion is unavailable until an explicit **Save as…** to Markdown. Preserve encoding, BOM and line endings, reject unsupported encodings explicitly, and never replace the original during conversion. Save as a taken path needs an overwrite confirmation.
 
@@ -318,11 +325,14 @@ Organization invites carry one line instead: **“They can see every private not
 
 ## Settings and words
 
+Proposed (D-pending): the Workspace tab is removed and its contents become **Where it's kept** at the end of Settings → Project ([mocks](project-model.md#settings--project-merged)).
+
 Settings → **Project** contains **Name**, **Font**, **Colour theme** (with the live preview), **Colour**, **Logo**, **People**, **Sharing**, **Site theme** (only with sharing on) and **On GitHub**. Local **Folder** remains reachable; moves use existing lossless recovery safeguards. **Name** is a display name; repository rename is not implied. **Sharing** names Private only / On and its explicit action; **Site theme** never changes the app's or the project's colour theme.
 
 | Use | Meaning | Do not use |
 | --- | --- | --- |
-| Project | One private scope, history and window | Workspace / repository on the main path |
+| Project | One scope, Git history and window; on this computer only or linked to GitHub | Workspace (anywhere, D-pending) / repository on the main path |
+| Standalone file | One file opened on its own, edited in place, no version history | Loose file / untracked note |
 | Open project | Open or focus its separate window | Switch project |
 | Pinned | Shortcut kept at the top | Favourites |
 | Local notes | Local capture, no GitHub setup | Temporary / unsaved notes |

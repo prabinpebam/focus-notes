@@ -2,11 +2,40 @@
 
 ## D-pending: Project replaces workspace everywhere
 
-**Status:** Accepted (owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."). **Affects** [Projects → terminology slice](../experience/projects.md#what-a-project-is-for), [Foundations → Words](../design/foundations.md#words), [information architecture](../design/information-architecture.html), [command-line tool](../architecture/agents.md#command-line-tool), PRJ-11, WP-P.17.
+**Status:** Accepted (the owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."; re-confirmed, the owner, 5 November 2026, 19:46: "Removing workspace and having only Project, the design is approved." and "Delete dialog looks good, it's approved." then "Go ahead and implement all of these."). The on-disk and template renames in (c) stay a separate owner decision; implementation changes user-facing words only. **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).
 
-One user-facing noun, **project**, for the notes folder and its identity. The [approved design and full inventory](http://127.0.0.1:5243/documentations/#experience/project-model.md) are on `vq-project-not-workspace`. Build in four slices: words; merged Project tab; Git for every project plus Link to GitHub; standalone-file Settings. Deleting a project is a separate proposed flow and waits for approval.
+The owner wrote: "Project and workspace are the same thing. Why have two separate concepts. It's confusing. … eliminate the term workspace completely from the app. all projects have version control with git. Projects can be completely offline or linked to a GitHub repo." The full words are on [One concept: Project](../experience/project-model.md#the-owners-direction).
 
-Slice 1 changes text only except the necessary `--project` CLI spelling, mapped to the existing `workspace` argument key with `--workspace` retained as a silent alias. No data, repository, IPC, message-key or on-disk rename. Before slice 2, the existing storage category is called **Where it's kept** and sharing recovery links name that actual location, avoiding two Project tabs or directions to an unwired control. Migration copy can name the old word once. The orchestrator assigns the number.
+- **One noun.** "Workspace" leaves every message, menu, dialog title, Help page, CLI message and accessible name; **Project** is used instead. The inventory with its proposed wording is on the spec page. `migrate.notice` keeps the one sentence that explains the rename.
+- **Every project has Git.** A project is either **on this computer only** (local Git) or **linked to GitHub**. Linking is a later, optional step; offline is a complete state.
+- **Settings loses the Workspace tab.** Its contents become **Where it's kept** at the end of Settings → Project (mocks `pnw.linked` and `pnw.offline`).
+- **Standalone files are the only thing outside a project:** edited in place, no version history, no images for types such as .txt, and an image insert creates a folder beside the file (mocks `pnw.fileMd` and `pnw.fileTxt`).
+- **For the owner to decide separately:**
+  - (a) Local notes becomes an offline project, as recommended, or is removed;
+  - (b) flatten standalone images to `<file>.assets/<id>.<ext>`;
+  - (c) rename `.focus-notes/workspace.json` to `project.json` and the template repository `focus-notes-workspace` to `focus-notes-project`, with a migration that reads both.
+
+  Nothing on disk is renamed until then.
+
+Rejected: keeping "workspace" as the word for the folder and "project" for its identity (two words for one thing is the confusion the owner named), and a silent alias in the UI. The orchestrator assigns the number.
+
+**Built in four slices** on `wp-project-not-workspace`: the words; the merged Project tab; Git for every project (Link to GitHub follows after a security review); This file Settings for standalone files. Slice 1 changes text only except the `--project` CLI spelling, mapped to the existing `workspace` argument key with `--workspace` kept as a silent alias. No data, repository, IPC, message-key or on-disk rename.
+
+## D-pending: Delete a project: hand-off to GitHub's Danger Zone
+
+**Status:** Accepted (the owner, 5 November 2026, 19:46: "Removing workspace and having only Project, the design is approved." and "Delete dialog looks good, it's approved." then "Go ahead and implement all of these."). Wired with fakes only: no real repository is ever deleted by an agent, and any real-account test asks the owner first. **Affects** [Deleting a project](../experience/project-model.md#deleting-a-project), CP-SCOPE-01, SC-PROJ-08, UC-PROJ-13, IA-VIEW-SETTINGS, DD-PROJ-09 to DD-PROJ-17, PRJ-23, WP-P.23, MP.34.
+
+The owner's full words, feasibility citations, task flow, screens and recovery table are on the experience page. Recommend **(b)**: after consequences, preservation and typed project-name confirmation, open `https://github.com/<owner>/<repo>/settings` through the safe external-link path. GitHub owns Danger Zone and its own confirmation/sign-in. The app observes each chosen repository, then finishes the explicitly approved local cleanup and returns to Open. The success pill is inside Open because toasts drop under dialogs.
+
+Reject **(a)** in-app step-up: GitHub supports deletion, but GCM, gh and pasted fine-grained tokens do not share a universal permission-upgrade path; normal sign-in does not include deletion rights. Reject the **hybrid** API/browser flow: two confirmation/failure paths for one action, depending on incidental credential permissions.
+
+**Safety:** a 404, even with `GET /user` returning 200, can mean lost repository access rather than deletion. It triggers verification and explicit confirmation that the person deleted the repository on GitHub, not automatic local deletion. Retained private notes must be preserved outside a parent folder before it is recycled. The build keeps both safeguards: the 404 asks for that confirmation before the Recycle Bin step, and a retained private repository is moved out before its parent folder is recycled. The orchestrator assigns the number.
+
+## D-pending: Destructive actions use the danger button, from semantic tokens
+
+**Status:** Accepted (the owner, 5 November 2026: "Delete project should be semantic danger/critical, red color btn. Use proper token implementation for this."). **Affects** [Deleting a project](../experience/project-model.md#deleting-a-project), [Components → Button](../design/system/components.md), `packages/tokens` (`color.danger`, `color.onDanger`, `cmp.button.danger`), `packages/core/src/contrast.ts`, DD-PROJ-09 to DD-PROJ-17.
+
+The existing danger family is reused, not a parallel one: `color.danger` is the fill and `color.onDanger` its text, defined in every theme, light, dark and High contrast. Button's `danger` variant reads `cmp.button.danger`; its hover and pressed are the shared `color.hover` and `color.pressed` overlays drawn on the red fill (they were the fill itself, so a hovered danger button didn't change). Focus is the shared focus ring and disabled the shared opacity, the same as every button. The contrast guard now checks `color.onDanger` on `color.danger` at rest, hovered and pressed, 4.5:1 (7:1 in High contrast), in every built-in theme. Views pick `variant: "danger"`; they never style it. Only the action that destroys (**Delete project…** and its final **Delete project** confirm) is red. Cancel and the GitHub hand-off are not. The orchestrator assigns the number.
 
 ## D-pending: GitHub Actions runs are batched on accumulated work
 

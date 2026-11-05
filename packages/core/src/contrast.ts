@@ -60,6 +60,10 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   pair("color.danger", "color.canvas", 4.5, 7),
   pair("code.text", "code.background", 4.5, 7),
   pair("color.onAccent", "color.accent", 4.5, 7),
+  // The danger button (Delete project): its text on the fill, at rest and with the hover and pressed overlays on it.
+  pair("color.onDanger", "color.danger", 4.5, 7),
+  pair("color.onDanger", "color.hover", 4.5, 7, "text", undefined, { under: [{ color: "color.danger" }], where: "on a hovered danger button" }),
+  pair("color.onDanger", "color.pressed", 4.5, 7, "text", undefined, { under: [{ color: "color.danger" }], where: "on a pressed danger button" }),
   // Tooltips are inverted (cmp.tooltip): their text, and their shortcut at opacity.muted (0.75).
   pair("color.textInverse", "color.text", 4.5, 7),
   pair("color.textInverse", "color.text", 4.5, 7, "text", 0.75),

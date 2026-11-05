@@ -723,7 +723,9 @@
         "busy with icon and words",
         "toggle off",
         "toggle on",
-        "disabled with reason"
+        "disabled with reason",
+        "danger with icon",
+        "danger disabled with reason"
       ]
     },
     {

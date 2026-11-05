@@ -341,7 +341,9 @@ describe("THM-13: Edit colors and the contrast guard", () => {
     expect(saveWarning(t.app.messages, themeValues.paper!)).toBeUndefined();
     const bad = { ...themeValues.paper!, "color.text": "#d0ccc4", "color.textMuted": "#e0dcd4" };
     expect(saveWarning(t.app.messages, bad)).toMatch(/^This theme has \d+ hard-to-read pairs\. Save anyway\?$/);
-    expect(saveWarning(t.app.messages, { ...themeValues.paper!, "color.danger": "#ff9a8f" })).toBe("This theme has 1 hard-to-read pair. Save anyway?");
+    // A pale danger fails as text on the canvas, and as the danger button's fill under its white text, at rest, hovered and pressed.
+    expect(saveWarning(t.app.messages, { ...themeValues.paper!, "color.danger": "#ff9a8f" })).toBe("This theme has 4 hard-to-read pairs. Save anyway?");
+    expect(saveWarning(t.app.messages, { ...themeValues.paper!, "color.onDanger": "#f4b0a8" })).toBe("This theme has 3 hard-to-read pairs. Save anyway?");
   });
 });
 

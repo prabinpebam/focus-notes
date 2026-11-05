@@ -28,7 +28,7 @@
   "subtle": { "$type": "color",
     "background": { "rest": { "$value": "{color.none}" }, "hover": { "$value": "{color.hover}" }, "pressed": { "$value": "{color.pressed}" } },
     "text": { "$value": "{color.text}" }, "border": { "$value": "{color.none}" } },
-  "danger": { "$type": "color",
-    "background": { "rest": { "$value": "{color.danger}" }, "hover": { "$value": "{color.danger}" }, "pressed": { "$value": "{color.danger}" } },
+  "danger": { "$type": "color", "$description": "The one action that destroys (Delete project, D-pending): the danger fill and its text from the semantic danger family, in every theme. Hover and pressed are the shared state overlays drawn on the fill; focus and disabled are the button's own.",
+    "background": { "rest": { "$value": "{color.danger}" }, "hover": { "$value": "{color.hover}" }, "pressed": { "$value": "{color.pressed}" } },
     "text": { "$value": "{color.onDanger}" }, "border": { "$value": "{color.danger}" } }
 } } }
