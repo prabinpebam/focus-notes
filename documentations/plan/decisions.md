@@ -7,7 +7,7 @@
 - **`spacing`** rule 13: members of an enclosed group (toolbar, segmented control, card, menu) get no border, outline or resting fill of their own; hover, press, selection, focus and drop-target cues show only while active, and transient affordances stay transient. One enclosure level per boundary. The audit adds the `nested-enclosure` finding (S2), and the spacing probe reports it.
 - **`visual-noise`**, a new skill: an ink budget, one cue per meaning, the cue order space → alignment → type → tone → border → shadow, enclosure depth of two at rest, transient affordances, decoration, colour, icon and text noise (with the [visual vs verbose score](../design/visual-score.html)), approved components never restyled as a side effect, and measurable checks with N1 to N4 severities. `craft` and `design-system` route to it, and the `design-system-auditor` checks it.
 
-The approved toolbar stays as it is. In the drag-to-customize mode, slot outlines appear only while dragging. AGENTS.md Rule 6 carries the rule for this project.
+The approved toolbar stays as it is. The owner clarified (5 November, 08:22): "Yes, border was only for the drop target, only when it's active as a drop target with the accent color border." In drag to customize, only the slot that is the active drop target gets a border, in the accent colour, while a dragged item is over it; at rest, nothing in the toolbar has a border. Both skills use this as their worked example. AGENTS.md Rule 6 carries the rule for this project.
 
 Affects [AGENTS.md](../../AGENTS.md) (Rule 6), [the main UI](../experience/main-ui.html) and [the spacing audit](../design/spacing-audit.md).
 
