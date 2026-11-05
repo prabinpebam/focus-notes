@@ -4305,6 +4305,33 @@
       ]
     },
     {
+      "type": "Section",
+      "tier": "layout",
+      "description": "One section of a view: an optional heading over its items, grouped by space alone (spacing SP-12). The heading sits stackItem above its items and the items stackGroup apart; a control and its own description are one item, a stackPair Stack. Sections stack stackSection apart. So pair < heading < item < section, and a heading belongs to what follows.",
+      "props": {},
+      "events": {},
+      "slots": {
+        "heading": {
+          "accepts": "any",
+          "max": 1
+        },
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.stackItem, space.stackGroup",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "with heading",
+        "without heading"
+      ]
+    },
+    {
       "type": "Inline",
       "tier": "layout",
       "description": "Children in a row, spaced by a spacing role (a relationship, never a size).",

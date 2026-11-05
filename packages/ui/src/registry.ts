@@ -38,6 +38,7 @@ import { Toast } from "./primitives/Toast/Toast.tsx";
 import { ResultList } from "./primitives/ResultList/ResultList.tsx";
 import { Tabs } from "./primitives/Tabs/Tabs.tsx";
 import { Field } from "./layouts/Field/Field.tsx";
+import { Section } from "./layouts/Section/Section.tsx";
 import { Positioner } from "./layouts/Positioner/Positioner.tsx";
 import { MorphPanel } from "./primitives/MorphPanel/MorphPanel.tsx";
 import { TextField } from "./primitives/TextField/TextField.tsx";
@@ -85,7 +86,7 @@ export const registry = defineRegistry({
   SecureKeyField,
   OpenItem,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton,
-  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
+  Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
 });
