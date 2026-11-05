@@ -11,6 +11,22 @@ import { settledMedian } from "./settle.mjs";
 const WORDS = "calm focus note write plain markdown quiet band caret typing journal draft ideas sync commit save folder link title paragraph sentence page story morning evening reading notes".split(" ");
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
+export function reopenSummary(samples) {
+  if (!samples.length || samples.some((sample) => !Number.isFinite(sample) || sample < 0)) {
+    throw new Error("Reopen diagnostics require finite, non-negative samples");
+  }
+  const sorted = [...samples].sort((a, b) => a - b);
+  const round = (n) => Math.round(n * 10) / 10;
+  return {
+    samplesMs: samples.map(round),
+    medianMs: round(median(samples)),
+    p75Ms: round(sorted[Math.ceil(sorted.length * 0.75) - 1]),
+    minMs: round(sorted[0]),
+    maxMs: round(sorted.at(-1)),
+    spreadMs: round(sorted.at(-1) - sorted[0]),
+  };
+}
+
 /** 100 folders of 100 notes (about 250 words each, with a link), plus two notes at the top to reopen. */
 export function generateWorkspace(notes = 10_000) {
   const docs = mkdtempSync(join(tmpdir(), "fn-bench-10k-"));
@@ -96,7 +112,7 @@ async function settledMemory(app, page, { settleMs = 20_000, everyMs = 2_000, ma
 /** Sums one field of every process's metrics. */
 const sum = (metrics, pick) => metrics.reduce((n, m) => n + pick(m), 0);
 
-export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRuns = 7, idleWindowMs = 10_000 }) {
+export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRuns = 7, idleWindowMs = 10_000, recordDiagnostics }) {
   const { _electron } = createRequire(join(root, "apps", "desktop", "package.json"))("@playwright/test");
   const docs = generateWorkspace(notes);
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
@@ -167,13 +183,22 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
     };
 
     // The Files panel lists all 10,000 notes, then two notes are opened, and one reopened unchanged.
-    await open("Alpha");
-    await open("Beta");
+    const initialOpenMs = { Alpha: await open("Alpha"), Beta: await open("Beta") };
     const reopen = [];
     for (let i = 0; i < reopenRuns; i++) {
       reopen.push(await open("Alpha"));
       await open("Beta");
     }
+    const diagnostics = {
+      appPid: await app.evaluate(() => process.pid),
+      notes,
+      warmupEnabled: await page.evaluate(() => new URL(location.href).searchParams.get("warmup") !== "0"),
+      cpuThrottle: throttle > 1 ? throttle : 1,
+      initialOpenMs,
+      ...reopenSummary(reopen),
+    };
+    console.log(`PRF-10 detail: ${JSON.stringify(diagnostics)}`);
+    recordDiagnostics?.(diagnostics);
     // Some writing, so memory is measured after use, not only after reading; then read once the
     // app has settled (D-120).
     await page.keyboard.press(`${mod}+End`);
