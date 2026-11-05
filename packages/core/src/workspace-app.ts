@@ -229,7 +229,13 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     if (plan?.kind !== "renamed") return;
     const moves = [{ from: path, to: plan.to }];
     let own: string | undefined;
+    let rememberedPath = false;
     try {
+      // Keep the new disk path before moving the file: a crash after the move must still reopen it.
+      if (sourceOf(plan.to) !== "private") {
+        await persistAppState({ lastNotePath: plan.to });
+        rememberedPath = true;
+      }
       if (ws.apply) {
         // Links to it in other notes change in the same batch as the name (FIL-09).
         const writes = await planLinkWrites(store.state.workspace.tree, moves, (p) => (p === path ? Promise.resolve(markdown) : bridge.readNote(p)));
@@ -237,6 +243,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
         await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text, before: w.before }))]);
       } else await ws.renameNote(path, plan.to);
     } catch {
+      if (rememberedPath) await persistAppState({ lastNotePath: path });
       toast(catalog.format("files.firstNameFailed"), { tone: "error" });
       return;
     }
@@ -250,7 +257,6 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
       setNote({ key: `${plan.to}#links-${Date.now()}`, initialMarkdown: text, markdown: text });
       loaded(plan.to, text);
     }
-    if (sourceOf(plan.to) !== "private") await persistAppState({ lastNotePath: plan.to });
   }
 
   return {
