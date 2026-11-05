@@ -676,7 +676,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
         >
           {onPin ? (
             <div className={s.head} onPointerDownCapture={pinDown}>
-              <IconButton icon={pinned ? "pinOff" : "pin"} label={pinned ? unpinLabel : pinLabel} toggle pressed={pinned} commit={commit} tone="muted" onPress={togglePin} />
+              <IconButton icon={pinned ? "pinOff" : "pin"} label={pinned ? unpinLabel : pinLabel} commit={commit} tone="muted" onPress={togglePin} />
             </div>
           ) : null}
           <ul ref={listRef} className={s.list} data-pin={onPin ? "" : undefined} onKeyDown={onListKey}>
