@@ -444,12 +444,30 @@
         "label": {
           "kind": "message",
           "description": "The open action's accessible name, when the title alone doesn't say it."
+        },
+        "repo": {
+          "kind": "text",
+          "description": "A project linked to GitHub: its owner/repo, read from the folder's own Git remote (D-346). Shown with the GitHub mark on its own line; empty, no line."
+        },
+        "repoLabel": {
+          "kind": "message",
+          "description": "The GitHub line's accessible name: Open owner/repo on GitHub."
+        },
+        "stats": {
+          "kind": "message",
+          "description": "A project's size, files, media files and folders on one quiet line (D-346); empty, no line."
+        },
+        "statsBusy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The size line is still being counted: a placeholder line holds its place."
         }
       },
       "events": {
         "press": {},
         "pin": {},
-        "reveal": {}
+        "reveal": {},
+        "openRepo": {}
       },
       "slots": {},
       "states": [
@@ -477,6 +495,111 @@
             },
             "logo": "book",
             "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project on GitHub, counted",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "leaf",
+            "accent": "green",
+            "repo": {
+              "get": "vm.gallery.repo"
+            },
+            "repoLabel": {
+              "t": "project.open.repo",
+              "args": {
+                "repo": {
+                  "get": "vm.gallery.repo"
+                }
+              }
+            },
+            "stats": {
+              "t": "project.open.stats",
+              "args": {
+                "size": {
+                  "get": "vm.gallery.size"
+                },
+                "files": 37,
+                "media": 5,
+                "folders": 6
+              }
+            },
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project local only, counted",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "stats": {
+              "t": "project.open.stats",
+              "args": {
+                "size": {
+                  "get": "vm.gallery.size"
+                },
+                "files": 1,
+                "media": 0,
+                "folders": 1
+              }
+            },
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project counting",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "leaf",
+            "accent": "green",
+            "repo": {
+              "get": "vm.gallery.repo"
+            },
+            "repoLabel": {
+              "t": "project.open.repo",
+              "args": {
+                "repo": {
+                  "get": "vm.gallery.repo"
+                }
+              }
+            },
+            "statsBusy": true,
             "pinLabel": {
               "t": "gallery.action"
             }

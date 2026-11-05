@@ -283,12 +283,30 @@
         "label": {
           "kind": "message",
           "description": "The open action's accessible name, when the title alone doesn't say it."
+        },
+        "repo": {
+          "kind": "text",
+          "description": "A project linked to GitHub: its owner/repo, read from the folder's own Git remote (D-346). Shown with the GitHub mark on its own line; empty, no line."
+        },
+        "repoLabel": {
+          "kind": "message",
+          "description": "The GitHub line's accessible name: Open owner/repo on GitHub."
+        },
+        "stats": {
+          "kind": "message",
+          "description": "A project's size, files, media files and folders on one quiet line (D-346); empty, no line."
+        },
+        "statsBusy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The size line is still being counted: a placeholder line holds its place."
         }
       },
       "events": {
         "press": {},
         "pin": {},
-        "reveal": {}
+        "reveal": {},
+        "openRepo": {}
       },
       "slots": {},
       "states": [
@@ -302,6 +320,9 @@
       },
       "fixtures": [
         "project",
+        "project on GitHub, counted",
+        "project local only, counted",
+        "project counting",
         "project pinned",
         "project uploaded logo",
         "logo book",

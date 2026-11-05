@@ -50,6 +50,8 @@ const oneLine = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whi
 export const title = style({ ...oneLine, display: "block", margin: 0, fontWeight: t.titleWeight, color: t.titleColor });
 export const titleSize = styleVariants({ project: { fontSize: t.title.card }, file: { fontSize: t.title.row } });
 export const detail = style({ ...oneLine, display: "block", fontSize: t.detail, color: t.detailColor });
+// The size line while it's counted: one detail line tall, so the count swaps in without a shift.
+export const statsSlot = style({ display: "flex", alignItems: "center", minHeight: "1lh", fontSize: t.detail });
 
 export const fileTile = style({
   flexShrink: 0, width: t.fileTile, height: t.fileTile, display: "flex", alignItems: "center", justifyContent: "center",
