@@ -29,6 +29,12 @@ The design system's components: what each one is for, its variants and key props
 
 Gallery and component checks follow design approval, not this docs-only design task. Generated implemented-inventory counts below remain unchanged.
 
+**Owner rules, 6 November (D-354 to D-356, [OFB stage](../../plan/definition-of-done.md#owner-feedback-batch-6-november-ofb)):**
+
+- **Switch for every on/off setting.** A button with `aria-pressed` or a selected state is allowed only for an editor formatting toggle or a segmented choice of three or more; `ui:check` fails on any other (D-355).
+- **Button geometry is sealed.** Every Button variant has token-driven inline padding greater than zero on both sides, and all its states (rest, hover, pressed, focus-visible, disabled, pending, selected) share one box; only colour, ink and the focus ring change, on the button itself. A design-system check measures every variant in every state (D-354).
+- **One pending variant.** Compact controls show the own-border pending arc, then a success or danger outline; overlaid spinners are not a variant of any primitive (D-356).
+
 <h2 id="inventory" data-reader-personas="design engineering">Implemented inventory</h2>
 
 The table below is generated from the registered contracts (`schemas/ui/catalog.v1.json`, which `ui:check` keeps equal to the contracts in `packages/ui`). Don't edit it by hand: run `node tools/component-inventory.mjs`. `pnpm check` runs it with `--check`, which fails when the table is stale, when the TL;DR's counts differ, when a guidance row marked *Implemented* names a component that isn't registered in that tier, when a *Composed* or *Planned* row names one that is, or when a registered component has no *Implemented* row (D-200).

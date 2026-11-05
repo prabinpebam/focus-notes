@@ -18,6 +18,25 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Owner feedback batch, 6 November (OFB)
+
+The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedback-batch-6-november-ofb). Whoever builds a row records its result here: the commit, the checks run with their counts, the CI run for runtime changes, and the Preview version that shows it. A row is *Met* only when it's on green `main` and visible in Preview.
+
+| Row | Item | Owner | Status | Evidence |
+| --- | --- | --- | --- | --- |
+| OFB.1–OFB.4 | Button padding and one geometry, with the design-system check | W1 | Open | |
+| OFB.5–OFB.7 | Switches for every on/off setting, starting with Settings → Agents; toggle-button rule | W1 | Open | |
+| OFB.8 | Project colour border Switch, on by default, 2 px | W1 | Open | |
+| OFB.9–OFB.10 | One pending pattern; overlaid pin spinner removed; variant inventory | W1 | Open | |
+| OFB.11–OFB.12 | Notification inventory and types; "Deleted" auto-dismisses | W1 | Open | |
+| OFB.13–OFB.15 | "/" block menu lists every block, keyboard and mouse, round-trip | W2 | Open | |
+| OFB.16 | Table insertion end to end | W2 | Open | |
+| OFB.17–OFB.19 | Images slice 1 | W2 | Open | |
+| OFB.20–OFB.21 | Customize toolbar wired into the app | W1 after its first landing | Open | |
+| OFB.22 | Actions, stage MACT | W3 | Open | |
+| OFB.23 | Each slice on green `main` and in Preview | Coordinator | Open | |
+| OFB.24 | Owner corrections recorded as rules and checks | W1 with this stage's commit | Open | AGENTS.md rule 6 and D-354 to D-360 added with this stage |
+
 ### Open project cards and hue-safe shimmer, 5 November
 
 The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-352, D-353) passes its focused Windows checks:

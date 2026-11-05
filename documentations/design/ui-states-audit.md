@@ -10,6 +10,21 @@
 
 ## Visual review and approval
 
+### Owner rules, 6 November
+
+The owner's 6 November feedback ([OFB stage](../plan/definition-of-done.md#owner-feedback-batch-6-november-ofb)) changes two rules on this page, and both are enforced by checks rather than per-screen fixes:
+
+- **Notifications dismiss themselves (D-357).** Auto-dismiss is the default for every notification, including confirmations that carry Undo, such as "Deleted". Must-read (manual dismiss) is only for a notification the person has to read or decide on: data at risk, or an error whose recovery needs their choice. This narrows F3's "an error that needs a choice is hard-dismissed" to exactly that case. The notification inventory below lists every notification with its type and reason; a test fails on any notification missing from it or on a must-read row without a reason.
+- **One pending pattern per need (D-356).** Compact controls (pins, icon buttons, Switches, menu buttons) show only the own-border pending arc, then the success or danger outline. The overlaid centre spinner seen on pin and unpin is removed, not hidden, and each primitive keeps one variant per state a person needs.
+
+#### Notification inventory
+
+Filled in by the OFB notification audit: one row per notification, with its message key, its type (auto-dismiss or must-read), its reason and its action, if any.
+
+| Message key | Shown when | Type | Reason | Action |
+| --- | --- | --- | --- | --- |
+| (audit pending) | | | | |
+
 ### Owner feedback queue, 5 November
 
 **"No tooltip on menu", fixed in `f892846a`:** the menu items' explanations (for example Publish… and Help and docs) were rendered as tooltips, but every React Aria popover carried an inline `z-index: 100000` from its overlay positioning. That put the menu above the tooltip layer, so it painted over its own items' tooltips. The shared `useWindowBoundary` now clears that inline value, so every popover stacks by its layer token (popover 8, below tooltip 9). Worker16's journey missed it because `toBeVisible` doesn't detect occlusion. The new native journey hit-tests the tooltip's centre and corners in the built app, on keyboard focus and on a real mouse rest, for a disabled item and a later-preview item. It also checks that an item without a reason shows none, that the explanation remains the item's accessible description, and that pressing a disabled item keeps the menu open. Forcing the old inline value back makes the journey fail on paint. A static guard (`popover-box.test.ts`) keeps every `<Popover>` on `useWindowBoundary()` and a layer token.

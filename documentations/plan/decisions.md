@@ -65,6 +65,34 @@ The gate that protects `main` is unchanged: desktop runtime changes still land o
 
 The owner wrote: "I'd already approve the UI and UX for the image insertion. Launch that demo again." This re-confirms the 3 November approval of mock 9 (`vq-project-mocks` at `4afe907f`): its Insert tab shows the drop marker, a dropped image and the refusals (a 30 MB TIFF, a batch with damaged files). D-349's images slice 1 is therefore built against that mock, with no new strict-design step. Wiring waits for the owner's separate execution go-ahead. The orchestrator assigns the number.
 
+## D-360: images go ahead in normal Git, 20 MiB each (I1 accepted)
+
+**Decided (the owner, 6 November 2026: "Image addition is still not implemented and you stop work. I've already told you all of these needs to be implemented, why stop before it's done.").** This is the separate execution go-ahead the D-pending image approval above waited for. Open question I1 takes the spec's recommended default: images stay in normal Git, each at most 20 MiB (IMG-01), with no Git LFS. Slice 1 of [Images](../experience/images.md) (D-349: paste, drop, "/" Image and Insert image) is built in production-ready against mock 9. **Affects** [Images](../experience/images.md), WP-9.7, OFB.17 to OFB.19.
+
+## D-359: "/" lists every block before anything is typed
+
+**Decided (the owner, 6 November 2026: "While typing "/" what do you mean "No blocks match. I should see the list of available blocks to pick and insert like in Notions or MS Loop. This feature is not working at all. I've no way to insert a table today.").** An empty query shows every block, grouped (Text, Lists, Media, Advanced) with its icon and name, as Notion and Microsoft Loop do; typing filters the list, and "No blocks match" appears only when a typed query matches nothing. Table is one of the blocks and inserts a 3 × 3 table with a header row. **Affects** the editor's block menu, OFB.13 to OFB.16.
+
+## D-358: the project colour border is a Switch, on by default, 2 px
+
+**Decided (the owner, 6 November 2026: "Make the Project color border, a togglable option with Switch toggle, on by default and the border thickness should be 2 px.").** Settings → Project gets a "Project colour border" Switch, on for new and existing projects. The writing window's outline width is a 2 px token. Turning it off removes only the outline; the project pill and watermark are unchanged. **Affects** [Projects](../experience/projects.md), IA-VIEW-SETTINGS, OFB.8.
+
+## D-357: notifications dismiss themselves unless the person must read them
+
+**Decided (the owner, 6 November 2026: "Most notification should auto dismiss. We make a notification a manual dismiss only if we want to force the user to read it. I just deleted a file and the confirmation of the delete is a manual dismiss. It doesn't warrant a manual dismiss. Audit all types of notifications and make sure it's the right type and fix all notifications.").** Auto-dismiss is the default for every notification, including confirmations that carry Undo ("Deleted"). A notification is must-read (manual dismiss) only when the person has to read it or decide something: data at risk, or an error whose recovery needs their choice. Every notification is listed in one inventory in the [UI states audit](../design/ui-states-audit.md) with its type and reason, and a test fails on any notification missing from it. This narrows the earlier rule that every notification with an action is hard-dismissed. **Affects** the notification host, OFB.11, OFB.12.
+
+## D-356: one pending pattern per need; no overlaid spinners
+
+**Decided (the owner, 6 November 2026: "Pin/unpin loading state has at least 2 variation, one with animation at the border and another with a circular spinner in the middle overlaid. We don't want multiple variations where the same thing would have done. So, de duplicate redundancies and minimise number of superfluous componenet variations without losing the core need and fucntionality.").** A compact control that saves (pin, icon button, Switch, menu button) shows only the own-border pending arc (dashed under reduced motion), then the success or danger outline. The overlaid centre spinner is deleted, and every primitive keeps one variant per state a person needs. **Affects** [UI states audit](../design/ui-states-audit.md), [components](../design/system/components.md), OFB.9, OFB.10.
+
+## D-355: on/off settings are Switches, never buttons
+
+**Decided (the owner, 6 November 2026: "Why do you use btns for toggles, who does that. It's so confusing. Use proper components, use the swtich toggle for AI agent connecting options. If you are using btn for toggles anywhere else, change it to Switch toggle.").** Every binary setting uses the Switch primitive (`role="switch"`). A button with a pressed or selected state is allowed only for a formatting toggle in the editor toolbar (Bold, Italic) or a segmented choice of three or more; a check fails on any other. **Affects** Settings → Agents and every Settings section, [components](../design/system/components.md), OFB.5 to OFB.7.
+
+## D-354: buttons keep one geometry and never lose their padding
+
+**Decided (the owner, 6 November 2026: "No left padding "Create new notes instead" btn. I can't be pointing thes out one by one. The design system should fix this in a robust manner." and "Hover state is different from rest state and is misaligned for "more options" btn. How can this even happen. What unnecesary complaexity you are adding here. Bts are the simplest and basic component, get these right at least.").** Every button variant has a token-driven inline padding greater than zero on both sides that no view can override. Rest, hover, pressed, focus, disabled, pending and selected share one box: same size, padding, border width and label position; only colour, ink and the focus ring change, painted on the button itself, never on an offset layer. A design-system check renders every variant in every state and fails on zero padding, a literal value or any geometry difference. **Affects** `packages/ui` buttons, [components](../design/system/components.md#switch), OFB.1 to OFB.4.
+
 ## D-353: loading placeholders are translucent, so they take any surface's hue
 
 **Decided (the owner, 5 November 2026: "loading Shimmer needs to work on different bg hues, so shimmer can't be grey. It has to get the subtleness with opacity of black and white, else the lack of hue in the shimmer area stands out. I noticed this issue in Open dialog modal in the Project card. This should be a general fix and it should get this fixed automatically.").** Every skeleton's fill and passing light are now black or white at an opacity, set once at the token level, so a placeholder on a project-tinted card, a sunken panel or any theme's surface takes that surface's hue:
