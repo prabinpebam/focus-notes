@@ -1,10 +1,20 @@
 name: codeql
 on:
+  # Weekly, by hand, and on pushes to main that change code (Batch CI): docs and agent files have
+  # nothing for CodeQL to scan.
   push:
     branches: [main]
-  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "tools/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "17 3 * * 1"
+  workflow_dispatch:
 permissions:
   contents: read
   security-events: write

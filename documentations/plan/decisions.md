@@ -1,5 +1,19 @@
 # Decisions
 
+## D-pending: GitHub Actions runs are batched on accumulated work
+
+**Status:** Accepted (owner, 5 November 2026). **Affects** [AGENTS.md](../../AGENTS.md) (Modes, gates and merges), `.github/workflows/ci.yml`, `nightly.yml`, `codeql.yml`, `pages.yml`, D-113, D-206, D-255.
+
+The owner wrote: "Do we need these many and this frequent push to actions... can be optimized with much lesser number and frequency by batching it on accumulated work." Each push to `main` started ci, nightly, codeql and Deploy app, and every work-branch push, `vq-*` included, ran the full ci. Now:
+
+- **nightly** runs once a day and by hand, never on push.
+- **codeql** runs weekly, by hand, and on pushes to `main` that change `apps/`, `packages/`, `tools/` or the root manifests and lockfile; the `pull_request` trigger is gone (only Dependabot opens pull requests here).
+- **ci** skips pushes that change only `documentations/**` (Help, the docs' manifest and index stay in, because the site build and its journeys read them), root `*.md`, `.github/skills/`, `.github/agents/` and the kit pointers. `vq-*` branches no longer run it: designs the owner hasn't approved run no tests, and review-captures stays. Concurrency still cancels an older run of the same ref, and `workflow_dispatch` gives a skipped candidate head its exact-head run.
+- **Deploy app** runs on pushes that change what it deploys: the web app, `packages/`, the docs, schemas, Slate, the product site, notes and the root manifests; its nightly schedule and dispatch stay.
+- **Working rule:** push a work branch only as a landing candidate, bundle ready branches on one `fix-merge-candidate`, send docs-only and agent-file commits to `main` without CI, and don't move `main` with follow-up docs or test-only commits while another branch's gate is in flight, because every in-flight branch then merges again and reruns.
+
+The gate that protects `main` is unchanged: desktop runtime changes still land only on a green Windows CI run of the exact commit. The orchestrator assigns the number.
+
 ## D-pending: the image insertion design is approved; slice 1 needs no new mock
 
 **Status:** Accepted (owner, 5 November 2026). **Affects** [Images → Readiness assessment](../experience/images.md#readiness-assessment-5-november), WP-9.7, D-349.

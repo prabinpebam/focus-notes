@@ -12,6 +12,25 @@ name: Deploy app
 on:
   push:
     branches: [main]
+    # Only what the site is built from (Batch CI): the web app and its packages, the docs, schemas and
+    # Slate, the product site, and the notes. Desktop-only, agent-file and kit changes don't redeploy.
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "documentations/**"
+      - "schemas/**"
+      - "site/**"
+      - "tools/site/**"
+      - "notes/**"
+      - "slate"
+      - "private"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".nvmrc"
+      - ".npmrc"
+      - ".gitmodules"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
   # Nightly, so share links that expire stop opening without a push (SHR-11).
   schedule:

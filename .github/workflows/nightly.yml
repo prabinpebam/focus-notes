@@ -1,7 +1,8 @@
 name: nightly
 on:
-  push:
-    branches: [main]
+  # Once a day, never on push: each push to main already runs ci (Batch CI).
+  schedule:
+    - cron: "41 21 * * *"
   workflow_dispatch:
 permissions:
   contents: read
