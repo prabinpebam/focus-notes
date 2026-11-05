@@ -119,6 +119,32 @@ describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every
     await type(app, "Open a project from GitHub");
     expect(vm(app).items.some((i) => i.label === "Open a project from GitHub…")).toBe(true);
   });
+  it("replaces an automatic Create selection when an action becomes runnable on an index refresh", async () => {
+    const { app } = await started(desktop(), { search: false });
+    const search = startSearch(app, localSearch());
+    running.push(search);
+    const listeners: ((s: IndexStatus) => void)[] = [];
+    const onStatus = search.onStatus.bind(search);
+    vi.spyOn(search, "onStatus").mockImplementation((listener) => {
+      listeners.push(listener);
+      return onStatus(listener);
+    });
+    app.useSearch(search);
+    await search.whenIndexed();
+    let enabled = false;
+    const describe = app.commands.describe.bind(app.commands);
+    vi.spyOn(app.commands, "describe").mockImplementation((id) => id === "focus.toggle" ? { ...describe(id), enabled } : describe(id));
+    await app.commands.run("spotlight.open");
+    await type(app, "focus mode");
+    expect(vm(app).items.find((i) => i.id === sp(app).activeId)?.label).toContain("Create note");
+    enabled = true;
+    const status = search.status();
+    for (const listener of listeners) listener({ ...status, notes: status.notes + 1, indexed: status.indexed + 1 });
+    await vi.waitFor(() => expect(vm(app).items.find((i) => i.id === sp(app).activeId)?.label).toBe("Focus mode"));
+    const before = app.store.state.focusMode;
+    await app.commands.run("spotlight.run");
+    expect(app.store.state.focusMode).not.toBe(before);
+  });
   it("binds Mod+/ to All and Mod+Shift+P to commands, on every platform; Mod+K stays the link key", async () => {
     for (const platform of ["windows", "linux", "macos", "web"] as const) {
       const { app } = await started(desktop(platform), { search: false });

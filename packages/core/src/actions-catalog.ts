@@ -89,6 +89,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   })),
 
   // ---- This note ----
+  { id: "table.insert", steps: [["table.insert"]], label: "actions.table.insert", anchor: "note", effect: "edit", leaves: "none", when: writable, alsoIn: ["slash menu", "Insert menu"], proof: "apps/desktop/e2e/ofb-insert-blocks.spec.ts: OFB.16" },
   { id: "note.share", steps: [["note.share"]], label: "actions.note.share", anchor: "note", effect: "outbound", leaves: "github", when: inProject, alsoIn: ["toolbar", "File menu"], proof: proof("note.share") },
   {
     id: "note.publish", steps: [["note.publish"]], label: "actions.note.publish", anchor: "note", effect: "outbound", leaves: "github", when: inProject,

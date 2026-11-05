@@ -139,7 +139,7 @@ describe("ACT-07, ACT-16: the catalogue's own rules", () => {
     for (const e of CATALOG) {
       expect(messages[e.label], e.id).toBeTruthy();
       expect(messages[`${e.label}.outcome`], e.id).toBeTruthy();
-      expect(e.proof, e.id).toContain("actions-proof.test.ts");
+      expect(e.proof, e.id).toMatch(/(?:actions-proof\.test|ofb-insert-blocks\.spec)\.ts/);
       expect(ANCHORS).toContain(e.anchor);
     }
     // Look-alikes (D8) are listed for review; each pair differs past its verb.

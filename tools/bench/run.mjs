@@ -229,7 +229,7 @@ async function spotlightTimes() {
     await page.getByRole("textbox", { name: "Note" }).waitFor();
     await page.waitForFunction(() => document.activeElement?.hasAttribute("data-editor"));
     await page.evaluate(() => { window.__keys = []; window.addEventListener("keydown", (e) => { if (e.key === "/") window.__keys.push(e.timeStamp); }, true); });
-    const field = page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox");
+    const field = page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("combobox");
     const times = [];
     for (let i = 0; i < 2 * Math.max(runs, 3) + 1; i++) {
       await page.keyboard.press(`${mod}+/`);
