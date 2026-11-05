@@ -1,0 +1,28 @@
+{
+  "steps": [
+    { "index": 0, "name": "Save locally" },
+    { "index": 1, "name": "Commit" },
+    { "index": 2, "name": "Push" },
+    { "index": 3, "name": "GitHub Actions build" },
+    { "index": 4, "name": "Deploy" },
+    { "index": 5, "name": "Live check" }
+  ],
+  "versions": [
+    { "id": "draft", "label": "Draft" },
+    { "id": "published", "label": "Published" },
+    { "id": "compare", "label": "Compare" }
+  ],
+  "draft": [
+    { "id": "title", "text": "On focus", "changed": false },
+    { "id": "intro", "text": "A quiet page makes room for a thought.", "changed": false },
+    { "id": "body", "text": "I close the extra tabs and leave one sentence in view.", "changed": true },
+    { "id": "added", "text": "The next thought can wait until this one has a shape.", "changed": true }
+  ],
+  "published": [
+    { "id": "title", "text": "On focus", "changed": false },
+    { "id": "intro", "text": "A quiet page makes room for a thought.", "changed": false },
+    { "id": "body", "text": "I close the extra tabs and leave one paragraph in view.", "changed": true }
+  ],
+  "successMessage": "Published.",
+  "successAction": "Open site"
+}

@@ -1,0 +1,132 @@
+{
+  "focus": "publishProcess",
+  "local": { "state": "ready", "step": 0, "open": false, "live": false, "pill": true, "revert": false, "actionPreview": "", "status": "savedLocal", "localOpen": false, "failure": "build" },
+  "root": {
+    "type": "Surface", "props": { "variant": "canvas", "scroll": true, "minimum": "view" },
+    "children": [
+      { "type": "Stack", "id": "publishProcess", "props": { "padding": "marginPage", "gap": "stackGroup" }, "children": [
+        { "type": "Heading", "props": { "level": "1", "value": { "t": "publishProcess.note" } } },
+        { "type": "Text", "props": { "value": { "t": "publishProcess.note.intro" } } },
+        { "type": "Text", "props": { "value": { "t": "publishProcess.note.body" } } }
+      ] },
+      { "type": "Layer", "props": { "position": "bottomStart", "layer": "trigger" }, "children": [
+        { "type": "Stack", "props": { "gap": "stackItem", "align": "start" }, "children": [
+        { "type": "NotificationRegion", "when": { "expr": { "and": [
+          { "==": [{ "get": "local.state" }, "success"] }, { "get": "local.pill" }
+        ] } }, "props": { "label": { "t": "publishProcess.notifications" } }, "children": [
+          { "type": "Toast", "props": { "message": { "get": "vm.mockPipeline.successMessage" }, "tone": "success", "actionLabel": { "get": "vm.mockPipeline.successAction" }, "dismissLabel": { "t": "dialog.close" } },
+            "on": { "action": { "run": "gallery.open", "args": { "id": "mock.share.preview" } }, "dismiss": { "set": "local.pill", "to": false } }
+          }
+        ] },
+        { "type": "Inline", "props": { "gap": "inlinePair" }, "children": [
+          { "type": "IconButton", "when": { "get": "local.live" }, "props": {
+            "icon": "globe", "label": { "t": "publishProcess.pageUrl" }, "tone": "muted"
+          }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.share.preview" } } } },
+          { "type": "SaveState", "when": { "expr": { "==": [{ "get": "local.state" }, "private"] } }, "props": {
+            "state": "synced", "label": { "t": "publishProcess.private" }, "interactive": false
+          } },
+          { "type": "PopoverPanel", "when": { "expr": { "!=": [{ "get": "local.state" }, "private"] } },
+            "props": { "label": { "t": "publishProcess.card" }, "open": { "get": "local.open" }, "hoverOpen": true, "scroll": true, "placement": "top start", "padding": "comfortable" },
+            "on": { "openChange": { "set": "local.open", "to": { "get": "event.open" } } },
+            "slots": {
+              "trigger": [
+                { "type": "SaveState", "props": {
+                  "icon": "upload", "state": { "get": "local.status" },
+                  "label": { "t": "publishProcess.trigger", "args": { "state": { "get": "local.state" } } }, "interactive": true
+                } }
+              ],
+              "content": [
+                { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+                  { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
+                    { "type": "Heading", "props": { "level": "2", "value": { "t": "publishProcess.title", "args": { "state": { "get": "local.state" }, "failure": { "get": "local.failure" } } } } },
+                    { "type": "Text", "props": { "tone": "muted", "value": { "t": "publishProcess.revision", "args": { "state": { "get": "local.state" }, "live": { "get": "local.live" }, "failure": { "get": "local.failure" } } } } }
+                  ] },
+                  { "type": "Text", "when": { "expr": { "in": [{ "get": "local.state" }, ["ready", "update", "ahead"]] } }, "props": {
+                    "value": { "t": "publishProcess.ready.detail", "args": { "state": { "get": "local.state" } } }
+                  } },
+                  { "type": "Text", "when": { "expr": { "in": [{ "get": "local.state" }, ["progress", "slow", "failed"]] } }, "props": {
+                    "value": { "t": "publishProcess.elapsed", "args": { "state": { "get": "local.state" }, "step": { "get": "local.step" }, "failure": { "get": "local.failure" } } }, "tone": "muted"
+                  } },
+                  { "type": "Stack", "when": { "expr": { "in": [{ "get": "local.state" }, ["progress", "slow", "failed", "success"]] } }, "props": { "gap": "stackItem" }, "children": [
+                    { "each": { "get": "vm.mockPipeline.steps" }, "as": "step", "key": "step.index", "render": {
+                      "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+                        { "type": "Icon", "when": { "expr": { "<": [{ "get": "step.index" }, { "get": "local.step" }] } }, "props": { "name": "check" } },
+                        { "type": "Icon", "when": { "expr": { ">=": [{ "get": "step.index" }, { "get": "local.step" }] } }, "props": { "name": "circle" } },
+                        { "type": "Text", "props": { "value": { "get": "step.name" } } },
+                        { "type": "Text", "when": { "expr": { "<": [{ "get": "step.index" }, { "get": "local.step" }] } }, "props": {
+                          "tone": "muted", "value": { "t": "publishProcess.step.done" }
+                        } },
+                        { "type": "Text", "when": { "expr": { ">": [{ "get": "step.index" }, { "get": "local.step" }] } }, "props": {
+                          "tone": "muted", "value": { "t": "publishProcess.step.waiting" }
+                        } },
+                        { "type": "Text", "when": { "expr": { "==": [{ "get": "step.index" }, { "get": "local.step" }] } }, "props": {
+                          "value": { "t": "publishProcess.step.current", "args": { "state": { "get": "local.state" } } }
+                        } }
+                      ]
+                    }, "empty": { "type": "Text", "props": { "value": { "t": "publishProcess.stepsUnavailable" } } } }
+                  ] },
+                  { "type": "Stack", "when": { "expr": { "==": [{ "get": "local.state" }, "failed"] } }, "props": { "gap": "stackItem" }, "children": [
+                    { "type": "Text", "props": { "value": { "t": "publishProcess.failure.cause", "args": { "failure": { "get": "local.failure" } } } } },
+                    { "type": "Text", "props": { "value": { "t": "publishProcess.failure.fix", "args": { "failure": { "get": "local.failure" } } }, "tone": "muted" } }
+                  ] },
+                  { "type": "Text", "when": { "expr": { "==": [{ "get": "local.state" }, "slow"] } }, "props": {
+                    "value": { "t": "publishProcess.slow" }
+                  } },
+                  { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+                    { "type": "Button", "when": { "expr": { "<": [{ "get": "local.step" }, 3] } }, "props": {
+                      "label": { "t": "publishProcess.run.waiting" }, "variant": "subtle", "disabled": true, "disabledReason": { "t": "publishProcess.run.notStarted" }
+                    } },
+                    { "type": "Button", "when": { "expr": { ">=": [{ "get": "local.step" }, 3] } }, "props": {
+                      "label": { "t": "publishProcess.run.open" }, "icon": "github", "variant": "subtle"
+                    }, "on": { "press": { "set": "local.actionPreview", "to": "run" } } },
+                    { "type": "Button", "when": { "get": "local.live" }, "props": {
+                      "label": { "t": "publishProcess.versions" }, "variant": "subtle"
+                    }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.publishP.compare" } } } }
+                  ] },
+                  { "type": "Text", "when": { "expr": { "!=": [{ "get": "local.actionPreview" }, ""] } }, "props": {
+                    "value": { "t": "publishProcess.simulation", "args": { "action": { "get": "local.actionPreview" } } }, "tone": "muted"
+                  } },
+                  { "type": "Stack", "when": { "get": "local.revert" }, "props": { "gap": "stackItem" }, "children": [
+                    { "type": "Heading", "props": { "level": "3", "value": { "t": "publishProcess.revert.title" } } },
+                    { "type": "Text", "props": { "value": { "t": "publishProcess.revert.detail" } } },
+                    { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+                      { "type": "Button", "props": { "label": { "t": "share.cancel" } }, "on": { "press": { "set": "local.revert", "to": false } } },
+                      { "type": "Button", "props": { "label": { "t": "publishProcess.revert.confirm" } }, "on": { "press": [
+                        { "set": "local.actionPreview", "to": "revert" }, { "set": "local.revert", "to": false }
+                      ] } }
+                    ] }
+                  ] },
+                  { "type": "Inline", "when": { "expr": { "!": { "get": "local.revert" } } }, "props": { "gap": "inlineItem", "wrap": true }, "children": [
+                    { "type": "Button", "when": { "expr": { "in": [{ "get": "local.state" }, ["ready", "update", "ahead"]] } }, "props": {
+                      "label": { "t": "publishProcess.commit", "args": { "state": { "get": "local.state" } } }, "variant": "primary"
+                    }, "on": { "press": { "set": "local.actionPreview", "to": "publish" } } },
+                    { "type": "Button", "when": { "expr": { "==": [{ "get": "local.state" }, "failed"] } }, "props": {
+                      "label": { "t": "publishProcess.retry", "args": { "failure": { "get": "local.failure" } } }
+                    }, "on": { "press": { "set": "local.actionPreview", "to": "retry" } } },
+                    { "type": "Button", "when": { "expr": { "==": [{ "get": "local.state" }, "slow"] } }, "props": {
+                      "label": { "t": "publishProcess.checkAgain" }
+                    }, "on": { "press": { "set": "local.actionPreview", "to": "check" } } },
+                    { "type": "Button", "when": { "expr": { "and": [
+                      { "==": [{ "get": "local.state" }, "failed"] }, { "get": "local.live" }
+                    ] } }, "props": { "label": { "t": "publishProcess.revert" }, "variant": "subtle" }, "on": { "press": { "set": "local.revert", "to": true } } },
+                    { "type": "Button", "props": { "label": { "t": "publishProcess.keepWriting" }, "variant": "subtle" },
+                      "on": { "press": { "set": "local.open", "to": false } } }
+                  ] }
+                ] }
+              ]
+            }
+          },
+          { "type": "PopoverPanel", "when": { "expr": { "!=": [{ "get": "local.state" }, "private"] } },
+            "props": { "label": { "t": "publishProcess.local" }, "open": { "get": "local.localOpen" }, "hoverOpen": true, "placement": "top start" },
+            "on": { "openChange": { "set": "local.localOpen", "to": { "get": "event.open" } } },
+            "slots": {
+              "trigger": [{ "type": "IconButton", "props": { "icon": "hardDrive", "label": { "t": "publishProcess.local" }, "tone": "muted" } }],
+              "content": [{ "type": "Text", "props": { "value": { "t": "publishProcess.local" } } }]
+            }
+          }
+        ] }
+        ] }
+      ] }
+    ]
+  }
+}

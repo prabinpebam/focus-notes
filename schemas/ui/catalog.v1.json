@@ -1004,6 +1004,11 @@
           "default": false,
           "description": "An accessible preview card: opens on hover without moving focus, supports entering its content by keyboard, and stays open while pointed at."
         },
+        "scroll": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Long details scroll at the panel edge within the available window; padding belongs to the inner content so focus rings remain visible."
+        },
         "padding": {
           "kind": "enum",
           "values": [
@@ -1073,6 +1078,7 @@
         "placement end",
         "padding normal",
         "padding comfortable",
+        "scrolling details",
         "width tiles"
       ]
     },
@@ -2903,6 +2909,10 @@
       "tier": "primitive",
       "description": "An always-outlined circular save indicator, with a spinning border while backing up. It can trigger the backup-details card (EDT-11, UI-12, D-132).",
       "props": {
+        "icon": {
+          "kind": "icon",
+          "description": "Optional task glyph: publishing reuses the inspectable save indicator and progress ring with upload, while cloud backup keeps its default glyph."
+        },
         "state": {
           "kind": "enum",
           "values": [
@@ -2950,6 +2960,7 @@
         "name": "label"
       },
       "fixtures": [
+        "publishing, inspectable",
         "saved here",
         "not backed up yet",
         "backing up, asked",

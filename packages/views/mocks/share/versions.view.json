@@ -1,0 +1,47 @@
+{
+  "focus": "publishVersions",
+  "local": { "version": "compare", "choices": false, "captured": false },
+  "root": {
+    "type": "Surface", "props": { "variant": "canvas", "scroll": true, "minimum": "view" },
+    "children": [
+      { "type": "Stack", "id": "publishVersions", "props": { "padding": "insetLg", "gap": "stackSection" }, "children": [
+        { "type": "Stack", "when": { "get": "local.choices" }, "props": { "gap": "stackGroup" }, "children": [
+          { "type": "Heading", "props": { "level": "1", "value": { "t": "publishProcess.review" } } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p1" } } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p2" } } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p3" } } },
+          { "type": "Text", "props": { "value": { "t": "publishProcess.designOnly" }, "tone": "muted" } },
+          { "type": "Button", "props": { "label": { "t": "publishProcess.start" } }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.publishP.ready" } } } }
+        ] },
+        { "type": "Stack", "when": { "expr": { "!": { "get": "local.choices" } } }, "props": { "gap": "stackGroup" }, "children": [
+          { "type": "Inline", "props": { "justify": "between", "gap": "inlineGroup", "wrap": true }, "children": [
+            { "type": "Heading", "props": { "level": "1", "value": { "t": "publishProcess.version.title" } } },
+            { "type": "Button", "props": { "label": { "t": "publishProcess.return" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.publishP.ahead" } } } }
+          ] },
+          { "type": "SegmentedControl", "props": { "label": { "t": "publishProcess.version.label" }, "options": { "get": "vm.mockPipeline.versions" }, "value": { "get": "local.version" } },
+            "on": { "change": { "set": "local.version", "to": { "get": "event.value" } } } },
+          { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
+            { "type": "Text", "props": { "value": { "t": "publishProcess.version.status", "args": { "view": { "get": "local.version" } } } } },
+            { "type": "Text", "props": { "value": { "t": "publishProcess.version.pinned" }, "tone": "muted" } }
+          ] },
+          { "type": "Columns", "props": { "gap": "gutter" }, "children": [
+            { "type": "VersionPane", "when": { "expr": { "!=": [{ "get": "local.version" }, "draft"] } }, "props": {
+              "label": { "t": "publishProcess.version.published" }, "blocks": { "get": "vm.mockPipeline.published" },
+              "emptyText": { "t": "publishProcess.version.empty" }, "changedLabel": { "t": "publishProcess.version.removed" }
+            } },
+            { "type": "VersionPane", "when": { "expr": { "!=": [{ "get": "local.version" }, "published"] } }, "props": {
+              "label": { "t": "publishProcess.version.draft" }, "blocks": { "get": "vm.mockPipeline.draft" },
+              "emptyText": { "t": "publishProcess.version.empty" }, "changedLabel": { "t": "publishProcess.version.added" }
+            } }
+          ] },
+          { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "publishProcess.version.refresh" } }, "on": { "press": { "set": "local.captured", "to": true } } },
+            { "type": "Button", "props": { "label": { "t": "publishProcess.version.update" }, "variant": "primary" },
+              "on": { "press": { "run": "gallery.open", "args": { "id": "mock.publishP.update" } } } }
+          ] },
+          { "type": "Text", "when": { "get": "local.captured" }, "props": { "value": { "t": "publishProcess.version.refreshed" }, "tone": "muted" } }
+        ] }
+      ] }
+    ]
+  }
+}

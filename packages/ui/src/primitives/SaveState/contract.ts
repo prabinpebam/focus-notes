@@ -7,6 +7,7 @@ export const contract = defineContract({
   tier: "primitive",
   description: "An always-outlined circular save indicator, with a spinning border while backing up. It can trigger the backup-details card (EDT-11, UI-12, D-132).",
   props: {
+    icon: { kind: "icon", description: "Optional task glyph: publishing reuses the inspectable save indicator and progress ring with upload, while cloud backup keeps its default glyph." },
     state: { kind: "enum", values: [...SAVE_STATES], required: true },
     label: { kind: "message", required: true },
     text: { kind: "text", description: "Shown beside the icon for a moment after the person asked (Backing up…, Backed up)." },
@@ -19,6 +20,7 @@ export const contract = defineContract({
   a11y: { pattern: "button", name: "label" },
   uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: [
+    { name: "publishing, inspectable", props: { icon: "upload", state: "syncing", label: { t: "publishProcess.card" }, interactive: true } },
     { name: "saved here", covers: ["rest", "savedLocal"], props: { state: "savedLocal", label: { t: "save.state.savedLocal" } } },
     { name: "not backed up yet", covers: ["pending"], props: { state: "pending", label: { t: "save.state.pending" } } },
     { name: "backing up, asked", covers: ["syncing"], props: { state: "syncing", label: { t: "save.state.syncing" }, text: { get: "vm.gallery.query" } } },

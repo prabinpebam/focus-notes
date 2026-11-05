@@ -24,10 +24,21 @@ export const popover = style({
     "&[data-padding=comfortable]": { padding: t.paddingComfortable },
     // Three theme tiles across (the theme manager's own tiles, and font tiles at their size), scrolling past the window's height.
     "&[data-width=tiles]": { width: t.tilesWidth, overflowY: "auto" },
+    "&[data-scroll]": {
+      padding: 0,
+      overflowY: "auto",
+      maxWidth: `calc(100% - ${t.edgeInset} - ${t.edgeInset})`,
+    },
     "&[data-entering]": { opacity: 0, transform: "scale(0.98)" },
     "&[data-exiting]": { opacity: 0, transitionDuration: t.exitDuration },
   },
 });
 
-export const dialog = style({ outline: "none" });
+export const dialog = style({
+  outline: "none",
+  selectors: {
+    "[data-scroll] > &": { padding: t.padding },
+    "[data-scroll][data-padding=comfortable] > &": { padding: t.paddingComfortable },
+  },
+});
 export const previewTrigger = style({ display: "inline-flex" });

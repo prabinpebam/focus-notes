@@ -12,6 +12,7 @@ const ICON: Record<SaveStateKind, IconName> = {
 
 export interface SaveStateProps {
   state: SaveStateKind;
+  icon?: IconName;
   /** The state in words: the accessible name. */
   label: string;
   /** Shown beside the icon for a moment after the person asked. */
@@ -25,10 +26,10 @@ export interface SaveStateProps {
 /**
  * The circular save indicator (UI-12, D-132). Views may use it as the backup-details trigger.
  */
-export function SaveState({ state, label, text, id, interactive = true, onPress }: SaveStateProps) {
+export function SaveState({ state, icon, label, text, id, interactive = true, onPress }: SaveStateProps) {
   const glyph = (
     <span className={s.glyph}>
-      <Icon name={ICON[state]} size="s" />
+      <Icon name={icon ?? ICON[state]} size="s" />
       {state === "pending" ? <span className={s.dot} aria-hidden="true" /> : null}
     </span>
   );

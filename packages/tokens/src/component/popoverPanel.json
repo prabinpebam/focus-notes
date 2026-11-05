@@ -9,6 +9,7 @@
   "padding": { "$type": "dimension", "$value": "{space.scale.xs}" },
   "tilesWidth": { "$type": "dimension", "$value": "{layout.tilePopover}", "$description": "Three theme tiles across (width tiles)." },
   "paddingComfortable": { "$type": "dimension", "$value": "{space.insetMd}" },
+  "edgeInset": { "$type": "dimension", "$value": "{space.marginPage}", "$description": "Clearance on both sides of a scrolling detail popover in a narrow window." },
   "offset": { "$type": "dimension", "$value": "{space.scale.s}" },
   "duration": { "$type": "duration", "$value": "{motion.enter}" },
   "exitDuration": { "$type": "duration", "$value": "{motion.exit}" },

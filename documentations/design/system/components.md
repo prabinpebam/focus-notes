@@ -58,7 +58,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
 | Divider | primitive | `rest` | 2 | None |
-| PopoverPanel | primitive | `closed`, `open` | 8 | `open` |
+| PopoverPanel | primitive | `closed`, `open` | 9 | `open` |
 | MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked`, `busy`, `pending`, `confirmed`, `failed` | 14 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
@@ -83,7 +83,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | AppMark | primitive | `rest` | 3 | None |
 | StepMark | primitive | `rest` | 9 | None |
 | ItemCard | primitive | `rest`, `selected`, `disabled` | 10 | None |
-| SaveState | primitive | `rest`, `hover`, `pressed`, `focusVisible`, `savedLocal`, `pending`, `syncing`, `synced`, `offline`, `error` | 6 | `hover`, `pressed`, `focusVisible` |
+| SaveState | primitive | `rest`, `hover`, `pressed`, `focusVisible`, `savedLocal`, `pending`, `syncing`, `synced`, `offline`, `error` | 7 | `hover`, `pressed`, `focusVisible` |
 | StepDots | primitive | `rest` | 3 | None |
 | StatusRow | primitive | `rest`, `recovering` | 7 | None |
 | CodeBlock | primitive | `rest` | 2 | None |
