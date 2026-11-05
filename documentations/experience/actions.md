@@ -3,7 +3,7 @@
 **Draft, for owner review (6 November 2026).** The feature the owner's Spotlight note asks for: one dialog, **Actions**, tagline **Find and act**, that opens any file or folder in the project and runs a curated set of actions that all work and can't be confused. The rules behind it are the [Actions framework](../architecture/actions-framework.md).
 
 > [!NOTE]
-> **TL;DR.** <kbd>Ctrl</kbd>+<kbd>/</kbd> (<kbd>⌘/</kbd>) opens **Actions**. Type to find a file or folder (Enter opens it; a folder opens in Files, focused) or an action (Enter does it, or starts its flow). With text selected, *This selection* comes first (*Bold*, *Add link…*, *Rewrite with AI…*); then *This note* (*Share this note…*, *Publish this note…*), *This project* (*Project settings…*, *Rename project…*) and *App* (*Sign in to GitHub…*, *Connect to AI…*, *Keyboard shortcuts*, *Customize toolbar…*). About 55 proven actions are listed, each with a label no other action shares; today's ~200 rows, with *Cancel*, *Retry* and two identical *Share…*, go. Nothing is added to the writing window: the dialog, its keys and the toolbar's existing trigger are what Spotlight already has.
+> **TL;DR.** <kbd>Ctrl</kbd>+<kbd>/</kbd> (<kbd>⌘/</kbd>) opens **Actions**. Type to find a file or folder (Enter opens it; a folder opens in Files, focused) or an action (Enter does it, or starts its flow). With text selected, *This selection* comes first (*Bold*, *Add link…*, *Rewrite with AI…*); then *This note* (*Share this note…*, *Publish this note…*), *This project* (*Project settings…*, *Rename project…*) and *App* (*Sign in to GitHub…*, *Connect to AI…*, *Keyboard shortcuts*, *Customize toolbar…*). About 50 actions are listed, each proven and with a label no other action shares; a few more wait as candidates until they're known to work. Today's ~200 rows, with *Cancel*, *Retry* and two identical *Share…*, go. Nothing is added to the writing window: the dialog, its keys and the toolbar's existing trigger are what Spotlight already has.
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
@@ -31,81 +31,90 @@ Each job is in [Scenarios](../product/spec/scenarios.md#actions); each capabilit
 
 ## The starter set
 
-**Owner:** "only the ones we know for sure makes sense and actually works." Each row passes the [seven tests](../architecture/actions-framework.md#what-qualifies-an-action) on paper; it's **listed** only once its proof passes (ACT-02). *Command* is the existing command it runs, so most rows are relabelling and proving, not building. *New* means a small piece of wiring to an existing surface.
+**Owner:** "only the ones we know for sure makes sense and actually works." Each row passes the [seven tests](../architecture/actions-framework.md#what-qualifies-an-action) on paper, and is **listed** only once its proof passes (ACT-02). The status column says how sure we are today:
+
+- **Ready**: an existing command runs it; the work is a label and a proof.
+- **New**: the owner asked for it; it needs a little wiring to a surface that already exists.
+- **Candidate**: not listed until the named blocker is closed and recorded in decisions.
 
 ### App (no anchor)
 
-| Action | Does | Command | Effect | Why it's in | Source |
+| Action | Does (its outcome line) | Command | Effect | Status | Source |
 | --- | --- | --- | --- | --- | --- |
-| Sign in to GitHub… | Starts sign-in; listed only while signed out | `account.signIn` (was *Sign in…*) | flow, leaves: GitHub | Owner's first example; today's label doesn't say to what | Owner |
-| Sign out of GitHub | Asks, then signs out; listed only while signed in | `account.signOut` | flow | The pair to the above; one shows at a time (D6) | Proposal |
-| Connect to AI… | Opens Settings → AI ready to add or find a connection | *New:* opens `settings` at AI and runs `ai.add` | flow | Owner's example; today needs Settings → AI → Add | Owner |
-| Keyboard shortcuts | Opens the searchable cheat sheet | `shortcuts.open`; synonyms *shortcuts mapping, keys, hotkeys, cheat sheet* | navigate | The owner asks for one; it exists (KEY-05) but isn't found by "mapping" | Owner ([question 4](#open-questions-for-the-owner)) |
-| Customize toolbar… | Opens toolbar customizing | `toolbar.customize` | flow | Owner's example | Owner |
-| Change theme… | Opens the theme picker (your theme, on this device, D-46) | `theme.manager.open` (was *Theme…*) | flow | Owner: "I can change the theme" | Owner ([question 5](#open-questions-for-the-owner)) |
-| Use light appearance / Use dark appearance / Match system appearance | Sets it at once; the current one shows *On* | `appearance.light`, `.dark`, `.system` | toggle | Replaces *Switch light and dark* and the stepping *Appearance* row: three clear outcomes (D6) | Proposal |
-| Focus mode | Turns it on or off, showing its state | `focus.toggle` | toggle | Existing capability (UC-FOCUS-01); replaces two rows (command and setting) | Proposal |
-| Settings… | Opens Settings | `settings.open` | navigate | The way to everything not listed | Proposal |
-| Open project… | Opens the project chooser | `projects.choose` | flow | Global by nature (D-309); one of two today | Proposal |
-| New project… | Starts a new project | `projects.new` | flow | Global | Proposal |
-| Open file… | Opens a single file outside any project | `projects.openFile` | flow | Global | Proposal |
-| Help and docs | Opens Help in the browser | `help.open` | navigate, leaves: browser | Help in context (H10) | Proposal |
-| Send feedback… | Opens Send feedback | `feedback.open` | flow, leaves: GitHub | Existing | Proposal |
-| Report a problem… | Opens the problem report with diagnostics | `diagnostics.reportProblem` | flow | Existing; distinct from feedback by its outcome line | Proposal |
-| Full screen | Toggles full screen | `window.fullScreen` | toggle | Existing | Proposal |
+| Sign in to GitHub… | Starts signing in to GitHub; listed only while signed out | `account.signIn` (was *Sign in…*) | flow, leaves: GitHub | Ready | Owner |
+| Sign out of GitHub | Asks, then signs out; listed only while signed in | `account.signOut` | flow | Ready | Proposal (the pair, D6) |
+| Connect to AI… | Opens Settings → AI ready to add or find a connection | opens Settings at AI, then `ai.add` | flow | New | Owner |
+| Keyboard shortcuts | Opens the searchable list of shortcuts; synonyms *shortcuts mapping, keys, hotkeys, cheat sheet* | `shortcuts.open` | navigate | Ready | Owner ([question 4](#open-questions-for-the-owner)) |
+| Customize toolbar… | Opens toolbar customizing | `toolbar.customize` | flow | Ready | Owner |
+| Change theme… | Your theme, on this device (D-46): opens the theme picker | `theme.manager.open` (was *Theme…*) | flow | Ready | Owner ([question 5](#open-questions-for-the-owner)) |
+| Use light appearance · Use dark appearance · Match system appearance | Sets it at once; the current one shows *On* | `appearance.light`, `.dark`, `.system` | toggle | Ready | Proposal: three clear outcomes replace *Switch light and dark* and the stepping *Appearance* row (D6) |
+| Focus mode | Turns it on or off; shows its state | `focus.toggle` | toggle | Ready | Proposal: one row replaces the command and the setting (UC-FOCUS-01) |
+| Settings… | Opens Settings at the last tab | `settings.open` | navigate | Ready | Proposal; paired with *Project settings…* in the look-alike review (D8) |
+| Open project… | Opens the project chooser | `projects.choose` | flow | Ready | Proposal; one of two rows today |
+| New project… | Starts a new project | `projects.new` | flow | Ready | Proposal |
+| Open file… | Opens one file outside any project | `projects.openFile` | flow | Ready | Proposal |
+| Help and docs | Opens Help in the browser | `help.open` | navigate, leaves: browser | Ready | Proposal (H10) |
+| Send feedback… | Writes an idea or comment to the developers | `feedback.open` | flow, leaves: GitHub | Ready | Proposal |
+| Report a bug with diagnostics… | Collects a diagnostic report to attach to a problem | `diagnostics.reportProblem` (was *Report a problem…*) | flow | Ready | Proposal; named so it can't be mistaken for feedback |
+| Full screen | Turns full screen on or off | `window.fullScreen` | toggle | Ready | Proposal |
 
 ### This project (implicit anchor; project windows only)
 
-| Action | Does | Command | Effect | Why it's in | Source |
+| Action | Does (its outcome line) | Command | Effect | Status | Source |
 | --- | --- | --- | --- | --- | --- |
-| Project settings… | Opens Settings → Project | `project.settings` (was *Project*) | navigate | Owner's example; today's label is one ambiguous word | Owner |
-| Rename project… | Opens Settings → Project with the name field focused | *New:* `project.settings` with a focus target | flow | Owner's example | Owner |
-| Project colour and logo… | Opens Settings → Project at its colour and logo (D-275) | *New:* `project.settings` with a focus target | flow | The project's own look, distinct from your theme | Proposal ([question 5](#open-questions-for-the-owner)) |
-| New note | A new note in the current folder | `note.new` | edit (files) | The most common action | Proposal |
-| New note in… | Choose a folder or project first (KEY-09) | `note.newIn` | flow | Owner's earlier request; the seven *New note in…* rows become one | Proposal |
-| New folder… | Asks a name, in the current folder | `files.newFolder` (was *New folder*) | flow | Existing | Proposal |
-| Show Files | Opens the Files panel | `files.open` (was *Files*) | navigate | Distinct from *Show this note in Files* (D5) | Proposal |
-| Find in all notes | Opens Find in all notes | `find.allNotes` | navigate | Exhaustive text search (D-110) | Proposal |
-| Import files into this project… | Picks files to copy in | `files.import` (was *Import files…*) | flow | Existing; names where they go | Proposal |
-| Show project folder | Opens it in Explorer or Finder | `projects.reveal` | navigate, leaves: system | Existing | Proposal |
-| Open project on GitHub | Opens the repository in the browser; hidden for a project on this computer only | `projects.openRepo` | navigate, leaves: browser | Existing | Proposal |
-| Sync with GitHub now | Saves and syncs now; hidden for a project on this computer only | `sync.now` (was *Save to cloud*) | outbound | "Cloud" isn't a word the app uses elsewhere; *Back up to GitHub* (`repoBackup.backUp`) must merge with it or be told apart before either is listed (D5) | Proposal |
-| Recently deleted | Shows deleted notes you can restore | `files.showDeleted` | navigate | The way back from Delete | Proposal |
+| Project settings… | Opens Settings → Project | `project.settings` (was *Project*) | navigate | Ready | Owner |
+| Rename project… | Opens Settings → Project with the name field focused | `project.settings` with a focus target | flow | New | Owner |
+| New note | Makes a note in the current folder | `note.new` | files | Ready | Proposal |
+| New note in… | Asks for a folder first (KEY-09) | `note.newIn` | flow | Ready | Proposal; seven rows today become one |
+| New folder… | Asks a name, in the current folder | `files.newFolder` (was *New folder*) | flow | Ready | Proposal |
+| Show Files | Opens the Files panel | `files.open` (was *Files*) | navigate | Ready | Proposal; told apart from *Show this note in Files* (D5) |
+| Find in all notes | Searches every note's text (D-110) | `find.allNotes` | navigate | Ready | Proposal |
+| Import files into this project… | Picks files to copy in | `files.import` (was *Import files…*) | flow | Ready | Proposal |
+| Show this project in Explorer | Opens the project's folder in Explorer (Finder on macOS) | `projects.reveal` (was *Show project folder*) | navigate, leaves: system | Ready | Proposal |
+| Open this project on GitHub | Opens the repository in the browser; hidden for a project on this computer only | `projects.openRepo` | navigate, leaves: browser | Ready | Proposal |
+| Sync with GitHub now | Saves and syncs now | `sync.now` (was *Save to cloud*) | outbound | Candidate: merge with or tell apart from *Back up to GitHub* (`repoBackup.backUp`) | Proposal |
+| Show recently deleted notes | Opens Files at Recently deleted | `files.showDeleted` | navigate | Candidate: today it runs only inside Files, and only when something can be restored | Proposal |
 
 ### This note (implicit anchor; a note or file is open)
 
-| Action | Does | Command | Effect | Why it's in | Source |
-| --- | --- | --- | --- | --- | --- |
-| Share this note… | Opens the share dialog for this note | `note.share` (was *Share…*) | outbound | Owner's example; today two rows say *Share…* | Owner |
-| Publish this note… / Unpublish this note | Puts it on, or takes it off, the project's website (D-349) | `note.publish` (was *Publish…*) | outbound | Owner's example; today two rows say *Publish…* | Owner |
-| Rename note… | Renames the file; the title stays the note's first heading (FIL-18) | `files.rename` (was *Rename file…*) | files | Common; the outcome line says it's the file name | Proposal |
-| Move note to… | Chooses a folder | `files.moveTo` | files | Existing | Proposal |
-| Duplicate note | Makes a copy beside it | `files.duplicate` | files | Existing | Proposal |
-| Show this note in Files | Reveals and selects it in Files | `files.reveal` | navigate | Existing | Proposal |
-| Show in Explorer (Finder on macOS) | Opens its folder in the system | `note.revealLocal` | navigate, leaves: system | Existing, label missing today | Proposal |
-| Note history | Opens this note's versions | `history.open` | navigate | Existing | Proposal |
-| Show contents | Opens the headings card | `outline.show` | navigate | Existing (UC-FIND-06) | Proposal |
-| Write with AI… | Opens the AI prompt at the caret (RWR-92); listed when nothing is selected | the rewrite command at the caret | outbound, leaves: AI | Existing capability, findable by "write", "AI" | Proposal |
-| Print… | Opens printing for this note | the print command | flow | Existing (print page) | Proposal |
-| Delete note | Moves it to Recently deleted | `files.delete` | destructive | Existing, with Files' confirmation | Proposal |
+These are also a note result's own actions behind <kbd>→</kbd>: one catalogue entry, one label, in both places, so "this note" is the open note in the list and the chosen note in its panel.
 
-**Not both, until told apart:** *Make this note public…* and *Publish this note…* may reach the same outcome now that public notes are what the website shows. Only *Publish* (the owner's word) is in the starter set; *Make public/private* returns only if the build shows a different outcome, with labels that say how (D5).
+| Action | Does (its outcome line) | Command | Effect | Status | Source |
+| --- | --- | --- | --- | --- | --- |
+| Share this note… | Opens the share dialog for this note | `note.share` (was *Share…*) | outbound | Ready | Owner |
+| Publish this note… | Puts it on the project's website (D-349) | `note.publish` (was *Publish…*) | outbound | Ready | Owner |
+| Unpublish this note | Takes it off the website | none today | outbound | Candidate: no command | Owner (the pair) |
+| Make this note public… | Moves it to public notes; always asks first | `files.makePublic` | visibility | Ready, listed as Publish's fix (below) | Proposal |
+| Rename this note… | Renames the file; the title stays its first heading (FIL-18) | `files.rename` (was *Rename file…*) | files | Ready | Proposal |
+| Move this note to… | Asks for a folder | `files.moveTo` | files | Ready | Proposal |
+| Duplicate this note | Makes a copy beside it | `files.duplicate` | files | Ready | Proposal |
+| Show this note in Files | Reveals and selects it in Files | `files.reveal` | navigate | Ready | Proposal |
+| Show this note in Explorer | Opens its folder in Explorer (Finder on macOS) | `note.revealLocal` | navigate, leaves: system | Ready | Proposal |
+| Copy link to this note | Copies a relative Markdown link (from a result: relative to the open note) | `spotlight.copyLink` | navigate | Ready | Proposal |
+| Show note history | Opens this note's versions | `history.open` (was *Note history*) | navigate | Ready | Proposal |
+| Show contents | Opens the headings card (UC-FIND-06) | `outline.show` | navigate | Ready | Proposal |
+| Write with AI… | Opens the AI prompt at the caret (RWR-92); listed when nothing is selected | the caret prompt | outbound, leaves: AI | Candidate: name its command | Proposal |
+| Print this note… | Opens printing | `note.print` | flow | Ready | Proposal |
+| Delete this note | Moves it to Recently deleted, with Files' confirmation | `files.delete` | destructive | Ready | Proposal |
+
+**Publish on a private note.** Publishing acts on public notes. On a private note *Publish this note…* is blocked with *Make this note public first*, and the next row is *Make this note public…*, which asks before moving it (CP-REACH-01: "Making a note public always asks for confirmation, even from Spotlight"). *Make this note public…* is otherwise found by typing or with `>`; it isn't in the empty list.
+
+### A folder result's own actions (<kbd>→</kbd> on a folder)
+
+Show this folder in Files · New note in this folder · New folder inside… · Rename this folder… · Move this folder to… · Share this folder… · Delete this folder. All Ready, from the Files commands that do these today. The panel's heading is the folder's name; the labels never rely on it to be told apart.
 
 ### This selection (explicit anchor)
 
-| Action | Does | Command | Effect | Source |
-| --- | --- | --- | --- | --- |
-| Bold, Italic, Strikethrough, Inline code | Formats the selection; state shows *On* where it's already applied | `format.bold` and siblings | edit, one undo step | Owner (bold); the rest proposal |
-| Add link… | Opens the link editor on the selection | `link.edit` (was *Add or edit link*) | edit | Proposal |
-| Rewrite with AI… | Opens the prompt on the selection | the rewrite command (SPT-09) | outbound, leaves: AI | Proposal |
-| One row per rewrite preset (three today), for example *Make shorter with AI…* | Opens the same prompt **pre-filled**; <kbd>Ctrl</kbd>+<kbd>Enter</kbd> sends | the rewrite command with the preset | outbound, leaves: AI | Proposal P-08 |
-| Edit image… (image selected) | Opens crop and rotate | `image.edit` | flow | Proposal |
-| Caption image with AI… (image selected, once IMG-09 is built) | Opens the caption request for this image | the caption command | outbound, leaves: AI | Proposal |
+| Action | Does (its outcome line) | Command | Effect | Status | Source |
+| --- | --- | --- | --- | --- | --- |
+| Bold · Italic · Strikethrough · Inline code | Formats the selection; shows *On* where it already applies | `format.bold` and siblings | edit, one undo step | Ready | Owner (bold); the rest proposal |
+| Add link… | Opens the link editor on the selection | `link.edit` (was *Add or edit link*) | edit | Ready | Proposal |
+| Rewrite with AI… | Opens the prompt on the selection | the rewrite command (SPT-09) | outbound, leaves: AI | Ready | Proposal |
+| One row per rewrite preset (three today), for example *Make shorter with AI…* | Opens the same prompt **pre-filled**; <kbd>Ctrl</kbd>+<kbd>Enter</kbd> sends | the rewrite command with the preset | outbound, leaves: AI | New | Proposal P-08 |
+| Edit this image… (image selected) | Opens crop and rotate | `image.edit` | flow | Ready | Proposal |
+| Caption this image with AI… (image selected) | Opens the caption request | the caption command | outbound, leaves: AI | Candidate: IMG-09 isn't built | Proposal |
 
-### A result's own actions (<kbd>→</kbd> on a note or folder row)
-
-Kept from Spotlight's quick actions, curated by the same rules: **note:** Open, Rename note…, Move to…, Share…, Publish…, Copy Markdown link, Show in Files, Delete; **folder:** Show in Files, New note here, New folder here…, Rename folder…, Move to…, Share folder…, Delete folder. The panel's heading is the item's name, so *Share…* there can't be mistaken for *Share this note…*. *Open in new window* goes (one window per project, D-309).
-
+Counted: about 50 Ready or New rows; 5 Candidates. *Open in new window* goes (one window per project, D-309).
 ### When nothing matches
 
 *Create note "…"* and *Find "…" in all notes*, as today (SPT-04).
@@ -131,15 +140,15 @@ Every flow starts with <kbd>Ctrl</kbd>+<kbd>/</kbd> or the toolbar's existing tr
 
 | Flow | Steps | Branches | Wait |
 | --- | --- | --- | --- |
-| **Open content** (UC-ACT-01) | Type part of a name → the file is the top hit → Enter → Actions closes and the note opens where you left it | A folder: Files opens, the folder revealed, expanded and focused. A match in the body: the row shows the line, Enter opens at it with the find bar ready. A standalone window: only that file and recent files | Instant |
+| **Open content** (UC-ACT-01) | Type part of a name → the file is the top hit → Enter → Actions closes and the note opens where you left it | A folder: Files opens, the folder revealed, expanded and focused. A match in the body: the row shows the line, Enter opens at it with the find bar ready. Moved or deleted since it was found: the row goes, *That note was moved or deleted* shows, the query stays. Index still building: names are found at once and *Still finding files… 1,240 / 5,000* shows in the footer. A standalone file's window: that file and recent standalone files only, never a project's (D-273) | Instant; waiting while the index builds |
 | **App action** (UC-ACT-02) | Type "sign" → *Sign in to GitHub…* → Enter → Actions closes and sign-in starts | Already signed in: the row is *Sign out of GitHub*. Offline: sign-in's own offline state | The flow's own |
 | **Selection action** (UC-ACT-03) | Select words → open Actions → *This selection* is first, *Bold · Ctrl+B* at the top → Enter → bold, Actions closes, the selection is kept | Already bold: the row shows *On* and Enter removes it. Read-only note: no selection actions. Selection changed meanwhile: refused, *Your selection changed* | Instant |
 | **AI action** (UC-ACT-04) | Select → open Actions → type "short" → *Make shorter with AI…* → Enter → the inline prompt opens on the selection, pre-filled, showing integration, model and where it runs → <kbd>Ctrl</kbd>+<kbd>Enter</kbd> → the approved stream and one-step undo | No connection: the row is blocked, *Connect to AI first*, and *Connect to AI…* follows. Esc in the prompt: nothing sent | As Rewrite (PRF-15) |
-| **Implicit anchor** (UC-ACT-05) | In a note, open Actions → type "share" → *Share this note…* (group *This note*) → Enter → the share dialog for this note | Project on this computer only: blocked, *Link this project to GitHub to share*, with *Project settings…* after it. A standalone file: share and publish hidden | The flow's own |
-| **Look-alikes** (UC-ACT-06) | Type "rename" → *Rename note…* (This note), *Rename project…* (This project); the active row's outcome line says what changes | — | — |
-| **Blocked** (UC-ACT-07) | The row says why and is unavailable; ↓ reaches its fix → Enter runs the fix | After the fix, open Actions again; the action is listed | — |
+| **Implicit anchor** (UC-ACT-05) | In a note, open Actions → type "share" → *Share this note…* (group *This note*) → Enter → the share dialog for this note | Signed out or offline: blocked, *Sign in to GitHub first*, with *Sign in to GitHub…* next. Project on this computer only: blocked, *Link this project to GitHub to share*, with *Project settings…* next. Private note and *Publish this note…*: blocked, *Make this note public first*, with *Make this note public…* next, which asks before moving it. A standalone file: share and publish hidden | The flow's own |
+| **Look-alikes** (UC-ACT-06) | Type "rename" → *Rename this note…* (This note), *Rename project…* (This project); the active row's outcome line says what changes | — | — |
+| **Blocked** (UC-ACT-07) | The row says why and is unavailable; ↓ reaches its fix → Enter runs the fix | The fix finishes: focus returns to the note with the selection restored, and the blocked action is listed next time Actions opens. The fix fails or is cancelled: its own error or nothing; the original stays blocked | — |
 | **Stale context** | Enter on an action whose note was moved or changed since Actions opened | Actions stays open with the query; the row says what changed; the list refreshes | — |
-| **Browse** | Type `>` → the whole catalogue, grouped by anchor; actions whose anchor is missing show what they need (*Select text first*) | Choosing one that needs a selection explains, it doesn't run | — |
+| **Browse** | Type `>` → the whole catalogue, grouped by anchor; actions whose anchor is missing show what they need | Enter on one that needs a selection runs nothing and says *Select text first, then open Actions.* | — |
 | **Your own action** (UC-ACT-09, later) | Type `>` → *New action…* → name, kind (prompt or text), anchor → Save → it's listed under *Yours* | Label clashes with any action: *That name is taken by …* and the field keeps your words. File unreadable: built-ins still work, *Yours* says it couldn't be read | Instant |
 
 ## The view
@@ -222,7 +231,7 @@ Following [UI states](../design/ui-states-audit.md): the dialog opens complete w
 
 ## Requirements
 
-ACT-01 to ACT-15 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-draft-for-owner-review). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-TBD, Actions](../plan/decisions.md#d-tbd-actions-lists-only-catalogued-actions).
+ACT-01 to ACT-16 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-draft-for-owner-review). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-TBD, Actions](../plan/decisions.md#d-tbd-actions-lists-only-catalogued-actions).
 
 ## Open questions for the owner
 
@@ -234,4 +243,4 @@ Only the real decisions. Each has a working default, so design can start without
 | 2 | What does an empty Actions show? | (a) Recent files, then what applies here (selection, note, project, app), with `>` for everything; (b) today's full list | **(a)**: the full list is what made today's Spotlight feel like a dump |
 | 3 | Do you want your own actions (saved AI prompts and text templates), and when? | (a) Plan them, build after the starter set has been in use for a week; (b) build with the starter set; (c) leave them out | **(a)** |
 | 4 | "View shortcuts mapping (We need one)": is the existing searchable cheat sheet (Ctrl+Shift+/) what you mean? | (a) Yes, make it findable as *Keyboard shortcuts* with "mapping", "keys", "hotkeys"; (b) you want a view where shortcuts can be changed, not only read | **(a)** now; (b) is a separate request (KEY-07 edits `keybindings.json` today) |
-| 5 | "I can change the theme" inside a project: your theme, or the project's colour and logo? | (a) Both, as two actions: *Change theme…* (yours, this device) and *Project colour and logo…*; (b) only the theme | **(a)** |
+| 5 | "I can change the theme" inside a project: your theme, or something of the project's own? | (a) Your theme (themes are yours and per device, D-46), listed as *Change theme…* with the outcome *Your theme, on this device*; (b) also a *Project colour and logo…* action for the project's own look (D-275) | **(a)**: it's what you named; (b) only if you ask, since you didn't |

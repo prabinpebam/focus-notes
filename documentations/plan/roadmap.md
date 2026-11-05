@@ -22,7 +22,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
 | **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 35 |
-| **MACT: Actions you can trust** (draft) | Spotlight becomes Actions, *Find and act*: files and folders, and only proven, distinct actions grouped by what they act on. | The owner, then desktop writers | Planned 1.x | 15 |
+| **MACT: Actions you can trust** (draft) | Spotlight becomes Actions, *Find and act*: files and folders, and only proven, distinct actions grouped by what they act on. | The owner, then desktop writers | Planned 1.x | 16 |
 | **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 14 |
 
 ## Where we are
@@ -151,7 +151,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MACT: Actions you can trust (draft, for owner review)</p>
-<p>The owner's Spotlight note of 5 November: Spotlight becomes <a href="../experience/actions.md">Actions</a>, tagline <em>Find and act</em>. It finds the project's files and folders, and lists only a curated, proven catalogue of actions, grouped by what they act on (this selection, this note, this project, the app), each with a label no other action shares; blocked actions say why and list their fix. The rules are the <a href="../architecture/actions-framework.md">Actions framework</a>. Strict design first (gallery mocks, WP-A.1), then the allow-list and the name as the first slice the owner can try. <a href="implementation-plan.md#mact">7 work packages</a>; <a href="definition-of-done.md#actions-draft-for-owner-review">Try it and GATE-MACT</a>. ACT-01 to ACT-15. Not authorized; nothing built.</p>
+<p>The owner's Spotlight note of 5 November: Spotlight becomes <a href="../experience/actions.md">Actions</a>, tagline <em>Find and act</em>. It finds the project's files and folders, and lists only a curated, proven catalogue of actions, grouped by what they act on (this selection, this note, this project, the app), each with a label no other action shares; blocked actions say why and list their fix. The rules are the <a href="../architecture/actions-framework.md">Actions framework</a>. Strict design first (gallery mocks, WP-A.1), then the allow-list and the name as the first slice the owner can try. <a href="implementation-plan.md#mact">7 work packages</a>; <a href="definition-of-done.md#actions-draft-for-owner-review">Try it and GATE-MACT</a>. ACT-01 to ACT-16. Not authorized; nothing built.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>
