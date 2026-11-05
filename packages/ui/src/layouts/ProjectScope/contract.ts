@@ -15,6 +15,7 @@ export const contract = defineContract({
   },
   events: {},
   slots: { default: { accepts: "any" } },
+  regions: "children",
   states: ["rest"],
   tokens: "cmp.projectScope.*",
   a11y: { pattern: "none" },

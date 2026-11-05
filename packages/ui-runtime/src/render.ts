@@ -140,7 +140,8 @@ export function createResolver(deps: RuntimeDeps) {
 type Resolver = ReturnType<typeof createResolver>;
 
 /** Renders a view's top node with each child as its own region (PRF-11). */
-interface RegionCtx { deps: RuntimeDeps; resolver: Resolver; local: Record<string, unknown>; setLocal: Scope["setLocal"] }
+interface RegionCtx { deps: RuntimeDeps; resolver: Resolver; local: Record<string, unknown>; setLocal: Scope["setLocal"]; items?: Scope["items"] }
+const NO_ITEMS: Scope["items"] = {};
 
 function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, key: string | number, regions?: RegionCtx): ReactNode {
   if ("when" in node && node.when !== undefined && !r.value(node.when as Value, scope)) return null;
@@ -240,8 +241,10 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
     props.commandInfo = { ...d, title: deps.app.messages.format(d.title), shortcut: d.shortcut ? formatChord(d.shortcut, deps.app.bridge.platform) : undefined };
   }
   for (const [slot, nodes] of Object.entries(node.slots ?? {})) props[slot] = nodes.map((n, i) => renderNode(n, scope, deps, r, i));
+  const childRegions = regions ?? (contract.regions === "children"
+    ? { deps, resolver: r, local: scope.local, setLocal: scope.setLocal, items: scope.items } : undefined);
   const children = (node.children ?? []).map((n, i) =>
-    regions ? createElement(RegionHost, { key: (isComponent(n) && n.id) || i, node: n, ...regions }) : renderNode(n, scope, deps, r, i));
+    childRegions ? createElement(RegionHost, { key: (isComponent(n) && n.id) || i, node: n, ...childRegions }) : renderNode(n, scope, deps, r, i));
   return createElement(Comp, props, ...children);
 }
 
@@ -284,8 +287,9 @@ interface RegionProps extends RegionCtx { node: Node; top?: boolean; viewKey?: s
  * elsewhere, re-renders nothing here (PRF-11). A region hidden by its `when` reads only what the
  * `when` needs until it first shows, so heavy, rarely shown parts cost nothing until then.
  */
-const RegionHost = memo(function RegionHost({ node, top, viewKey, deps, resolver, local, setLocal }: RegionProps): ReactNode {
-  const needs = useMemo(() => needsOf(node, top), [node, top]);
+const RegionHost = memo(function RegionHost({ node, top, viewKey, deps, resolver, local, setLocal, items = NO_ITEMS }: RegionProps): ReactNode {
+  const boundary = top || isComponent(node) && deps.contracts.get(node.type)?.regions === "children";
+  const needs = useMemo(() => needsOf(node, boundary), [node, boundary]);
   const when = "when" in node ? (node as { when?: unknown }).when : undefined;
   const gate = useMemo(() => (!top && when !== undefined ? needsOf(when) : undefined), [when, top]);
   const shown = useRef(!gate);
@@ -306,9 +310,9 @@ const RegionHost = memo(function RegionHost({ node, top, viewKey, deps, resolver
     return cache.current.version;
   };
   useSyncExternalStore(subscribe, snapshot, snapshot);
-  const scope: Scope = { state: deps.app.store.state, local, setLocal, items: {} };
+  const scope: Scope = { state: deps.app.store.state, local, setLocal, items };
   if (!shown.current && resolver.value(when as Value, scope)) shown.current = true;
-  return renderNode(node, scope, deps, resolver, viewKey ?? 0, top ? { deps, resolver, local, setLocal } : undefined);
+  return renderNode(node, scope, deps, resolver, viewKey ?? 0, boundary ? { deps, resolver, local, setLocal, items } : undefined);
 });
 
 /** Hosts one view: its local state, and its regions, each subscribed to what it shows (PRF-11). */

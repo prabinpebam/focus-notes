@@ -54,6 +54,22 @@ describe("the renderer (DSY-06)", () => {
     const { app } = setup([]);
     expect(() => render(app, doc({ type: "div" }))).toThrow(/Unknown component div/);
   });
+
+  it("keeps repeated-item values inside nested project scopes", () => {
+    const { app } = setup([{ id: "1", label: "One" }, { id: "2", label: "Two" }]);
+    const html = render(app, doc({
+      type: "Stack",
+      children: [{
+        each: { get: "vm.bench.items" }, as: "item", key: "item.id",
+        render: {
+          type: "ProjectScope",
+          children: [{ type: "ProjectScope", children: [{ type: "Text", props: { value: { get: "item.label" } } }] }],
+        },
+      }],
+    }));
+    expect(html).toContain(">One<");
+    expect(html).toContain(">Two<");
+  });
 });
 
 describe("renderer overhead (DSY-11)", () => {

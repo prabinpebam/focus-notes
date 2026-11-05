@@ -14733,6 +14733,7 @@
           "accepts": "any"
         }
       },
+      "regions": "children",
       "states": [
         "rest"
       ],

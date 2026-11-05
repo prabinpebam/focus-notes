@@ -65,6 +65,8 @@ export interface Contract {
   events: Record<string, EventSpec>;
   /** "default" is the children slot. */
   slots: Record<string, SlotSpec>;
+  /** Keeps direct children independently subscribed when a layout groups an existing view. */
+  regions?: "children";
   states: readonly string[];
   tokens: string;
   a11y: { pattern: string; name?: string };

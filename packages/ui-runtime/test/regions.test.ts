@@ -18,7 +18,7 @@ const bridge: PlatformBridge = {
 let root: Root | undefined;
 afterEach(() => { act(() => root?.unmount()); root = undefined; });
 
-function mount() {
+function mount(scoped = false) {
   const app = createApp(bridge, messages.en!);
   let heavySelected = 0;
   const schema = { type: "object" as const, properties: { label: { type: "string" as const }, show: { type: "boolean" as const } } };
@@ -29,15 +29,16 @@ function mount() {
   const renders: string[] = [];
   const Text = registry.Text as ComponentType<{ value: string }>;
   const spied = { ...registry, Text: (p: Record<string, unknown>) => { renders.push(String(p.value)); return h(Text, p as { value: string }); } };
+  const content = [
+    { type: "Text", props: { value: { get: "vm.left.label" } } },
+    { type: "Text", props: { value: { get: "vm.right.label" } } },
+    { type: "Text", when: { get: "vm.right.show" }, props: { value: { get: "vm.heavy.label" } } },
+  ];
   const view = {
     $schema: "x", id: "v", viewModels: ["vm.left", "vm.right", "vm.heavy"], focus: "f",
     root: {
       type: "Stack", props: { gap: "stackItem" },
-      children: [
-        { type: "Text", props: { value: { get: "vm.left.label" } } },
-        { type: "Text", props: { value: { get: "vm.right.label" } } },
-        { type: "Text", when: { get: "vm.right.show" }, props: { value: { get: "vm.heavy.label" } } },
-      ],
+      children: scoped ? [{ type: "ProjectScope", children: content }] : content,
     },
   };
   const deps: RuntimeDeps = { app, registry: spied, contracts: contractByType, views: { v: view } };
@@ -48,6 +49,18 @@ function mount() {
 }
 
 describe("redraw only what changed (PRF-11)", () => {
+  it("preserves independent regions and lazy hidden children inside a project scope", () => {
+    const { app, renders, heavy, el } = mount(true);
+    expect(heavy()).toBe(0);
+    renders.length = 0;
+    act(() => app.store.update((s) => ({ ...s, focusMode: !s.focusMode })));
+    expect(renders).toEqual(["left on"]);
+    expect(el.textContent).toContain("right closed");
+    renders.length = 0;
+    act(() => app.store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: true } })));
+    expect(renders.sort()).toEqual(["heavy", "right open"]);
+    expect(heavy()).toBe(1);
+  });
   it("re-renders only the parts that show the changed field", () => {
     const { app, renders, el } = mount();
     expect(renders.sort()).toEqual(["left off", "right closed"]);
