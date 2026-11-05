@@ -24,6 +24,8 @@ export interface DialogPanelProps {
   height?: keyof typeof s.height;
   id?: string;
   children?: ReactNode;
+  /** False for edge-to-edge rows; their immediate content layouts then own their own insets. */
+  contentInset?: boolean;
   onOpenChange?: (payload: { open: boolean }) => void;
 }
 
@@ -33,7 +35,7 @@ const TABBABLE = "a[href], button, input, select, textarea, [tabindex], [content
  * A modal dialog over a dimmed canvas (Foundations → Surfaces, layer 5). Focus stays inside while
  * it's open and returns where it was when it closes. Esc and clicking the scrim close it.
  */
-export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", height = "stable", id, children, onOpenChange }: DialogPanelProps) {
+export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", height = "stable", contentInset = true, id, children, onOpenChange }: DialogPanelProps) {
   const containers = useOverlayContainers();
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef, Boolean(open));
@@ -123,7 +125,9 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
           {header ? <div className={s.region} data-dialog-first="">{header}</div> : null}
           {fixed ? <div className={s.region} data-dialog-first={!header ? "" : undefined} data-dialog-after-header={header ? "" : undefined}>{fixed}</div> : null}
           {/* The body can take focus so its content can be scrolled from the keyboard, even when nothing in it is actionable. */}
-          <div className={`${s.body}${height === "navigation" ? ` ${s.fixedBody}` : ""}`} ref={bodyRef} data-dialog-body="" data-dialog-first={!header && !fixed ? "" : undefined} data-dialog-last={!footer ? "" : undefined} tabIndex={height === "navigation" ? -1 : 0} role="region" aria-label={label}>{children}</div>
+          <div className={`${s.body}${height === "navigation" ? ` ${s.fixedBody}` : ""}`} ref={bodyRef} data-dialog-body="" data-dialog-first={!header && !fixed ? "" : undefined} data-dialog-last={!footer ? "" : undefined} tabIndex={height === "navigation" ? -1 : 0} role="region" aria-label={label}>
+            <div className={height === "navigation" ? s.navigationContent : `${s.content}${contentInset ? ` ${s.contentInset}` : ""}`} data-dialog-content="">{children}</div>
+          </div>
           {footer ? <div className={s.region} data-dialog-last="">{footer}</div> : null}
         </Dialog>
       </Modal>

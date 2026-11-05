@@ -13,6 +13,7 @@ import { test, expect, type Locator } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
+import { instance } from "./instance.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const OUT = resolve("../../test-results/settings-grouping");
@@ -166,6 +167,142 @@ test("Settings: every tab groups by space, pair < item < section", async () => {
       found.push(...problems(name, m));
     }
     expect(found, "Settings groups by space (documentations/design/spacing-audit.md, SP-12)").toEqual([]);
+  } finally {
+    await quit(l);
+  }
+});
+
+/** Includes field focus shadows as well as outlines: the Name field uses a one-pixel outer shadow. */
+function clippedFocus(el: Element): string[] {
+  const out: string[] = [];
+  for (let ring: Element | null = el; ring && !ring.matches('[data-surface="dialog"], [data-surface="sheet"]'); ring = ring.parentElement) {
+    const style = getComputedStyle(ring);
+    const box = ring.getBoundingClientRect();
+    if (style.clipPath === "inset(50%)" || style.opacity === "0" || box.width <= 1 || box.height <= 1) continue;
+    let hidden = false;
+    for (let parent = ring.parentElement; parent; parent = parent.parentElement) {
+      const cs = getComputedStyle(parent);
+      if (cs.clip === "rect(0px, 0px, 0px, 0px)" || cs.clipPath === "inset(50%)" || cs.opacity === "0") { hidden = true; break; }
+    }
+    if (hidden) continue;
+    let reach = style.outlineStyle === "none" ? 0 : Math.max(0, parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset));
+    for (const shadow of style.boxShadow.matchAll(/((?:-?\d*\.?\d+px\s*){2,4})(inset)?/g)) {
+      if (shadow[2]) continue;
+      const [x = 0, y = 0, blur = 0, spread = 0] = shadow[1]!.match(/-?\d*\.?\d+/g)!.map(Number);
+      // Fields use an unblurred spread for focus; a segment's resting elevation is not a focus ring.
+      if (x === 0 && y === 0 && blur === 0) reach = Math.max(reach, spread);
+    }
+    if (reach <= 0) continue;
+    for (let clip = ring.parentElement; clip; clip = clip.parentElement) {
+      const cs = getComputedStyle(clip), r = clip.getBoundingClientRect();
+      const x = /auto|scroll|hidden|clip/.test(cs.overflowX), y = /auto|scroll|hidden|clip/.test(cs.overflowY);
+      const left = r.left + clip.clientLeft, top = r.top + clip.clientTop;
+      if (x && (box.left - reach < left - 0.5 || box.right + reach > left + clip.clientWidth + 0.5) ||
+          y && (box.top - reach < top - 0.5 || box.bottom + reach > top + clip.clientHeight + 0.5)) {
+        out.push(`${el.getAttribute("aria-label") || el.id || el.tagName}: ${reach}px focus ring on ${ring.tagName} (${Math.round(box.width)}x${Math.round(box.height)}) clipped by ${clip.getAttribute("role") || clip.outerHTML.split(">")[0]} (${clip.clientWidth}x${clip.clientHeight}): left ${Math.round(box.left - reach - left)}, right ${Math.round(left + clip.clientWidth - box.right - reach)}, top ${Math.round(box.top - reach - top)}, bottom ${Math.round(top + clip.clientHeight - box.bottom - reach)}`);
+      }
+    }
+  }
+  return out;
+}
+
+async function checkRings(scope: Locator): Promise<string[]> {
+  const problems: string[] = [];
+  await scope.page().keyboard.press("Tab");
+  for (const control of await scope.locator('a[href], button, input, select, textarea, [tabindex], [contenteditable="true"]').all()) {
+    if (!await control.evaluate(el => el instanceof HTMLElement && el.tabIndex >= 0 && !el.matches(":disabled") &&
+      el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden")) continue;
+    await control.scrollIntoViewIfNeeded();
+    await control.focus();
+    await scope.page().evaluate(() => new Promise(requestAnimationFrame));
+    problems.push(...await control.evaluate(clippedFocus));
+  }
+  return problems;
+}
+
+test("Settings: the scroll panel reaches the dialog edges and never clips a field's focus ring", async () => {
+  test.setTimeout(120_000);
+  const l = await launch(tempDirs());
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    await l.page.keyboard.press(`${mod}+,`);
+    const dialog = l.page.getByRole("dialog", { name: "Settings" });
+    const problems: string[] = [];
+    for (const compact of [false, true]) {
+      if (compact) await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
+      await dialog.getByRole("tab", { name: "Project", exact: true }).click();
+      const name = dialog.getByRole("textbox", { name: "Name", exact: true });
+      await name.focus();
+      await expect(name).toBeFocused();
+      problems.push(...await name.evaluate(clippedFocus));
+      const edges = await dialog.evaluate(el => {
+        const panel = el.querySelector('[role="tabpanel"]')!;
+        const box = el.getBoundingClientRect(), scroll = panel.getBoundingClientRect(), cs = getComputedStyle(el);
+        return { right: box.right - parseFloat(cs.borderRightWidth) - scroll.right, bottom: box.bottom - parseFloat(cs.borderBottomWidth) - scroll.bottom };
+      });
+      if (Math.abs(edges.right) > 0.5) problems.push(`scrollbar is ${edges.right}px inside the dialog edge`);
+      if (Math.abs(edges.bottom) > 0.5) problems.push(`scroll panel ends ${edges.bottom}px above the dialog bottom`);
+      for (const tab of await dialog.getByRole("tab").all()) {
+        await tab.click();
+        problems.push(...await checkRings(dialog));
+      }
+    }
+    expect(problems).toEqual([]);
+  } finally {
+    await quit(l);
+  }
+});
+
+test("Open, Share and Files keep scrollbars at their surface edges and focus rings inside their clips", async () => {
+  test.setTimeout(120_000);
+  const { dirs } = instance();
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
+    version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(dirs.docs, "private", "notes", "welcome.md"),
+  }));
+  const l = await launch(dirs);
+  const problems: string[] = [];
+  const inspect = async (surface: Locator, body: string) => {
+    await expect(surface).toBeVisible();
+    await l.page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running"));
+    problems.push(...await checkRings(surface));
+    problems.push(...await surface.evaluate((el, selector) => {
+      const scroller = el.querySelector(selector);
+      if (!scroller) return [`${el.getAttribute("aria-label")}: missing scroll region`];
+      const box = el.getBoundingClientRect(), scroll = scroller.getBoundingClientRect(), cs = getComputedStyle(el);
+      const right = box.right - parseFloat(cs.borderRightWidth) - scroll.right;
+      const footer = el.querySelector("[data-sheet-footer]");
+      const end = footer?.getBoundingClientRect().bottom ?? scroll.bottom;
+      const bottom = box.bottom - parseFloat(cs.borderBottomWidth) - end;
+      return [
+        ...(Math.abs(right) > 0.5 ? [`${el.getAttribute("aria-label")}: scrollbar ${right}px from inner edge`] : []),
+        ...(Math.abs(bottom) > 0.5 ? [`${el.getAttribute("aria-label")}: content/footer ${bottom}px from bottom edge`] : []),
+      ];
+    }, body));
+  };
+  try {
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("First line.");
+    await l.page.keyboard.press(`${mod}+Alt+o`);
+    await inspect(l.page.getByRole("dialog", { name: "Open", exact: true }), "[data-dialog-body]");
+    await l.page.keyboard.press("Escape");
+    await l.page.keyboard.press(`${mod}+.`);
+    await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    await l.page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await inspect(l.page.getByRole("dialog", { name: "Share “Welcome”", exact: true }), "[data-dialog-body]");
+    await l.page.keyboard.press("Escape");
+    await l.page.keyboard.press(`${mod}+o`);
+    const files = l.page.getByRole("complementary", { name: "Files", exact: true });
+    await inspect(files, "[data-sheet-body]");
+    await l.page.keyboard.press("Escape");
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1024, 720));
+    await l.page.keyboard.press(`${mod}+Alt+p`);
+    await expect(files).toHaveAttribute("data-docked", "");
+    await inspect(files, "[data-sheet-body]");
+    await l.page.keyboard.press(`${mod}+Alt+p`);
+    await expect(files).not.toHaveAttribute("data-pinned", "");
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
+    await expect(files).toHaveAttribute("data-short", "");
+    await inspect(files, "[data-sheet-main]");
+    expect(problems).toEqual([]);
   } finally {
     await quit(l);
   }

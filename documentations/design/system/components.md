@@ -63,14 +63,14 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible`, `pending`, `confirmed`, `failed` | 9 | `hover`, `focusVisible` |
-| DialogPanel | primitive | `open`, `entering`, `exiting` | 6 | `entering`, `exiting` |
+| DialogPanel | primitive | `open`, `entering`, `exiting` | 7 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
 | CommitMark | primitive | `rest`, `pending`, `confirmed`, `failed` | 5 | None |
 | Skeleton | primitive | `rest` | 8 | None |
 | LiveRegion | primitive | `rest` | 1 | None |
 | Toast | primitive | `rest`, `paused`, `focusVisible` | 6 | `paused`, `focusVisible` |
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
-| Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
+| Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 5 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
 | TextField | primitive | `rest`, `focused`, `invalid`, `pending`, `confirmed`, `failed` | 17 | `focused` |
 | PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 6 | `hover`, `pressed`, `focusVisible` |
@@ -108,7 +108,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | TextMenu | host component | `closed`, `open`, `itemFocused`, `itemDisabled` | 1 | None |
 | NotificationRegion | layout | `rest` | 1 | None |
 | Stack | layout | `rest` | 21 | None |
-| Section | layout | `rest` | 2 | None |
+| Section | layout | `rest` | 3 | None |
 | Inline | layout | `rest` | 22 | None |
 | Columns | layout | `rest` | 2 | None |
 | Surface | layout | `rest` | 29 | None |
@@ -118,7 +118,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ToolbarRow | layout | `rest` | 1 | None |
 | Field | layout | `rest`, `error` | 2 | None |
 | Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |
-| Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
+| Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 5 | `entering` |
 | ProjectScope | layout | `rest` | 35 | None |
 | ReaderPage | layout | `rest` | 1 | None |
 | PrintPage | layout | `rest` | 2 | None |
@@ -129,7 +129,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SecureKeyField | compound component | `empty`, `pending`, `confirmed`, `failed` | 4 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
-| Dialog | compound component | `open`, `entering`, `exiting` | 6 | `entering`, `exiting` |
+| Dialog | compound component | `open`, `entering`, `exiting` | 7 | `entering`, `exiting` |
 
 <!-- /generated:component-inventory -->
 
@@ -276,6 +276,8 @@ Primitives that wrap a library needing direct DOM access. They have contracts li
 | **NotificationRegion** | Implemented | Named region for three pills and a queued count; host owns queue, pausing and timers; `cmp.notificationRegion.*` | Region | Canvas notification layer above dialogs |
 
 Layout props accept only token names: `gap`, `padding`, and `inset` take `space.*` relationship roles, `width` takes `layout.*` sizes, and alignment takes enums. Layout props may vary by size class where the contract allows it.
+
+**Scroll-frame anatomy ([SP-13](../spacing-audit.md#scroll-frames-and-focus-clearance-sp-13)):** DialogPanel, Tabs and Sheet keep their functional scrolling wrappers unpadded and edge to edge. Their immediate content layouts own token insets and scrollable end room, at least the focus-ring width plus offset. Dialog forwards the same `contentInset` contract as DialogPanel; `contentInset: false` on any of these surfaces lets immediate child regions own their padding and leaves full-bleed rows or dividers possible. Navigation dialogs delegate the inset to Tabs' navigation and panel content rather than wrapping both in blanket padding. At compact heights, wrapped navigation scrolls independently and preserves a token minimum panel height so a whole picker tile and its ring remain visible. Sheet bands, headers and footers keep independent insets; at short heights the main region scrolls header and body together.
 
 | Component | Status | What it does | Key props |
 | --- | --- | --- | --- |

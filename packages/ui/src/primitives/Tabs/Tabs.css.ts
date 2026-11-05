@@ -11,11 +11,16 @@ const t = tokens.cmp.tabs;
 /** The narrowest vertical tabs fit in, list and panel side by side; narrower, they're laid out across (Tabs.tsx, D-111). */
 export const besideVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 export const navHeightVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
-export const scrollRoot = style({ vars: { [navHeightVar]: t.navMinHeight }, flexGrow: 1, minHeight: 0, overflow: "hidden" });
-export const scroller = style({ flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.gap });
+export const scrollRoot = style({ vars: { [navHeightVar]: t.navMinHeight }, flexGrow: 1, minHeight: 0 });
+export const scroller = style({ flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom });
 minimalScrollbar(scroller, t);
+export const navigationScroller = style({
+  flexShrink: 0, minHeight: 0, maxHeight: `calc(100% - ${t.panelMinHeight})`,
+  overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom,
+});
+minimalScrollbar(navigationScroller, t);
 
-const rootBase = style({ vars: { [besideVar]: `calc(${t.listWidth} + ${t.panelGap} + ${t.panelMinWidth})` }, display: "flex", gap: t.panelGap, fontFamily: t.font, minWidth: 0 });
+const rootBase = style({ vars: { [besideVar]: `calc(${t.listWidth} + ${t.panelGap} + ${t.panelMinWidth})` }, display: "flex", gap: t.panelGap, fontFamily: t.font, minWidth: 0, selectors: { "&[data-scroll-panel]": { gap: 0 } } });
 export const root = {
   horizontal: style([rootBase, { flexDirection: "column" }]),
   // Vertical: the list on the inline start and the panel beside it. Where there's no room for both,
@@ -82,5 +87,19 @@ const panelBase = style({ outline: "none", selectors: { "&[data-focus-visible]":
 export const panel = {
   horizontal: panelBase,
   // Its first line (a heading trimmed to its capitals) centered on the first tab's label (D-111).
-  vertical: style([panelBase, { flexGrow: 1, flexShrink: 1, flexBasis: t.panelMinWidth, minWidth: 0, paddingBlockStart: `calc((${t.height} - 1cap) / 2)` }]),
+  vertical: style([panelBase, { flexGrow: 1, flexShrink: 1, flexBasis: t.panelMinWidth, minWidth: 0, paddingBlockStart: `calc((${t.height} - 1cap) / 2)`, selectors: { "[data-scroll-panel] > &": { paddingBlockStart: 0 } } }]),
+};
+
+export const navigation = {
+  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.focusRoom }),
+  vertical: style({ boxSizing: "border-box", flexBasis: `calc(${t.listWidth} + ${t.contentInset})`, paddingInlineStart: t.contentInset, paddingInlineEnd: t.panelInset, paddingBlockStart: t.focusRoom, paddingBlockEnd: t.contentInset }),
+};
+export const content = style({
+  minWidth: 0, paddingInlineStart: t.panelInset,
+  paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`,
+  paddingBlockStart: t.focusRoom, paddingBlockEnd: t.contentInset,
+});
+export const contentOrientation = {
+  horizontal: style({}),
+  vertical: style({ paddingBlockStart: `calc(${t.focusRoom} + (${t.height} - 1cap) / 2)` }),
 };

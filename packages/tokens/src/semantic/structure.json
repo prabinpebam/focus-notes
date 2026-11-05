@@ -462,6 +462,10 @@
     "categoryPanelMin": {
       "$value": "{ref.size.240}"
     },
+    "categoryPanelMinHeight": {
+      "$value": "{ref.size.128}",
+      "$description": "A compact navigation surface reserves room for a 96 px picker tile and its focus clearance; wrapped navigation scrolls independently above it."
+    },
     "dialogMinHeight": {
       "$value": "{ref.size.400}",
       "$description": "A dialog's least height, less where the window is too short for it with its 24 px inset (D-111)."

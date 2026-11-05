@@ -1481,6 +1481,11 @@
           ],
           "default": "raised",
           "description": "frosted: the theme's frosted surface (Spotlight)."
+        },
+        "contentInset": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Inset the content layout, never the scroller. False lets edge-to-edge children supply their own immediate inset layouts; navigation always supplies its own."
         }
       },
       "events": {
@@ -1518,6 +1523,7 @@
         "name": "label"
       },
       "fixtures": [
+        "full bleed content",
         "height navigation",
         "size s",
         "height content",
@@ -1868,6 +1874,11 @@
           "kind": "boolean",
           "default": false,
           "description": "Only the selected content panel scrolls. Navigation stays fixed; short or narrow containers switch to wrapping horizontal tabs."
+        },
+        "contentInset": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Inset the scrolling panel's content layout, not its functional scroll wrapper. False supports full-bleed children with their own immediate inset layouts."
         }
       },
       "events": {
@@ -1898,6 +1909,7 @@
         "name": "label"
       },
       "fixtures": [
+        "full bleed scrolling panel",
         "fixed navigation and scrolling panel",
         "first selected",
         "orientation vertical",
@@ -4321,13 +4333,13 @@
     {
       "type": "Section",
       "tier": "layout",
-      "description": "One section of a view: an optional heading over its items, grouped by space alone (spacing SP-12). The heading sits stackItem above its items and the items stackGroup apart; a control and its own description are one item, a stackPair Stack. Sections stack stackSection apart. So pair < heading < item < section, and a heading belongs to what follows.",
+      "description": "One section of a view: an optional heading and section-wide context over its items, grouped by space alone (spacing SP-12). Heading and context sit stackPair apart, the header stackItem above its items, and the items stackGroup apart; a control and its own description are one item, a stackPair Stack. Sections stack stackSection apart. So pair < heading < item < section, and a heading belongs to what follows.",
       "props": {},
       "events": {},
       "slots": {
         "heading": {
           "accepts": "any",
-          "max": 1
+          "max": 2
         },
         "default": {
           "accepts": "any"
@@ -4336,12 +4348,13 @@
       "states": [
         "rest"
       ],
-      "tokens": "space.stackItem, space.stackGroup",
+      "tokens": "space.stackPair, space.stackItem, space.stackGroup",
       "a11y": {
         "pattern": "none"
       },
       "fixtures": [
         "with heading",
+        "with section context",
         "without heading"
       ]
     },
@@ -5150,6 +5163,11 @@
           "kind": "message",
           "required": true
         },
+        "contentInset": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Inset the content layout, never the scrolling wrapper. False lets edge-to-edge children supply their own immediate inset layouts."
+        },
         "side": {
           "kind": "enum",
           "values": [
@@ -5232,6 +5250,7 @@
         "name": "label"
       },
       "fixtures": [
+        "full bleed content",
         "start, files width",
         "end, theme width",
         "end, find width",
@@ -6372,6 +6391,11 @@
           "kind": "boolean",
           "default": false
         },
+        "contentInset": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Inset the body's content, not its scroll wrapper. False allows full-bleed children with their own immediate inset layouts."
+        },
         "height": {
           "kind": "enum",
           "values": [
@@ -6420,6 +6444,7 @@
         "name": "title"
       },
       "fixtures": [
+        "full bleed content",
         "height navigation",
         "size s",
         "height content",
@@ -6553,6 +6578,7 @@
       "versionPaneMin",
       "categoryList",
       "categoryPanelMin",
+      "categoryPanelMinHeight",
       "dialogMinHeight",
       "dialogTop",
       "findBarClearance",

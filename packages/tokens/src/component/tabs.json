@@ -2,6 +2,10 @@
   "cmp": {
     "tabs": {
       "navMinHeight": { "$type": "dimension", "$value": "{layout.dialogMinHeight}" },
+      "panelMinHeight": { "$type": "dimension", "$value": "{layout.categoryPanelMinHeight}" },
+      "contentInset": { "$type": "dimension", "$value": "{space.insetLg}", "$description": "The navigation and scroll content own their edge inset, not the functional scroll wrapper." },
+      "panelInset": { "$type": "dimension", "$value": "{space.insetMd}", "$description": "Between the navigation boundary and its panel's content." },
+      "focusRoom": { "$type": "dimension", "$value": "{space.stackPair}", "$description": "Minimum room inside a scroll clip for a two-pixel focus ring and its two-pixel offset." },
       "scrollbarSize": { "$type": "dimension", "$value": "{size.scrollbar}" },
       "scrollbarInset": { "$type": "dimension", "$value": "{border.scrollbarInset}" },
       "scrollbarThumb": { "$type": "color", "$value": "{color.scrollbar}" },

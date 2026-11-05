@@ -4041,6 +4041,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "contentInset": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -4740,6 +4753,19 @@
               ]
             },
             "scrollPanel": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentInset": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -9619,7 +9645,7 @@
     },
     "c_Section": {
       "type": "object",
-      "description": "One section of a view: an optional heading over its items, grouped by space alone (spacing SP-12). The heading sits stackItem above its items and the items stackGroup apart; a control and its own description are one item, a stackPair Stack. Sections stack stackSection apart. So pair < heading < item < section, and a heading belongs to what follows.",
+      "description": "One section of a view: an optional heading and section-wide context over its items, grouped by space alone (spacing SP-12). Heading and context sit stackPair apart, the header stackItem above its items, and the items stackGroup apart; a control and its own description are one item, a stackPair Stack. Sections stack stackSection apart. So pair < heading < item < section, and a heading belongs to what follows.",
       "required": [
         "type"
       ],
@@ -11123,6 +11149,19 @@
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentInset": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -13202,6 +13241,19 @@
               ]
             },
             "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentInset": {
               "anyOf": [
                 {
                   "type": "boolean"

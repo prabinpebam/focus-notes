@@ -20,6 +20,18 @@ export function checkDesignSource(root: string): string[] {
         }
     return undefined;
   };
+  for (const [path, names] of [
+    ["packages/ui/src/primitives/DialogPanel/DialogPanel.css.ts", ["body", "fixedBody"]],
+    ["packages/ui/src/primitives/Tabs/Tabs.css.ts", ["scroller", "scrollRoot", "navigationScroller"]],
+    ["packages/ui/src/layouts/Sheet/Sheet.css.ts", ["body", "main", "sheet"]],
+  ] as const) {
+    const file = source(path);
+    for (const name of names) {
+      const style = initializer(file, name)?.getText(file);
+      requireRule(Boolean(style && !/\bpadding(?:Inline|Block|Top|Bottom|Left|Right)?(?:Start|End)?\s*:/.test(style)), path,
+        `${name} is a functional wrapper: padding belongs on its immediate content layout, never the clipping or scrolling box (spacing SP-13)`);
+    }
+  }
   const shared = "packages/ui/src/primitives/control.css.ts";
   const file = source(shared);
   const metrics = initializer(file, "controlMetrics");
@@ -122,6 +134,9 @@ export function checkDesignSource(root: string): string[] {
   for (const name of ["base", ...readdirSync(join(root, "packages", "tokens", "src", "themes")).filter((n) => n.endsWith(".json"))]) {
     const values = new Map(base);
     if (name !== "base") for (const [key, value] of flatten(JSON.parse(read(`packages/tokens/src/themes/${name}`)))) values.set(key, value);
+    const length = (key: string) => Number.parseFloat(String(resolve(values, key)));
+    requireRule(length("space.stackPair") >= length("border.focus") + length("border.focusOffset"), name,
+      "scroll-content focus room must cover the focus-ring width plus offset (spacing SP-13)");
     for (const key of ["color.surface", "color.accent", "color.onAccent"]) {
       const color = String(resolve(values, key));
       requireRule(/^#[\da-f]{6}$/i.test(color) || /^#[\da-f]{6}ff$/i.test(color), name, `${key} must resolve to an opaque control/badge color`);
