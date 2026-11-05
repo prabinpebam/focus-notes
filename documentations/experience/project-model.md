@@ -174,7 +174,14 @@ The dialog is one shared view part (`project.delete` in `packages/views`). The m
 - **GitHub step cards come from data.** Each repository being deleted has its own card. The card offers **Open on GitHub** until GitHub stops showing the repository, then shows **I deleted it**. Only that press counts as deleted, never the 404 by itself.
 - **Already unavailable.** When the repository is already gone before the flow starts, the person can still go on. After the typed name, its card starts at **I deleted it**.
 - **Checks.** While the GitHub step is open, each waiting repository is read about every 5 seconds, one read at a time. A rate limit waits for at least the time GitHub gives. Closing the step stops the reads. A 404 counts as gone only while the signed-in account still answers; otherwise it's **Sign in again**.
-- **No stored progress.** Nothing is saved between sessions. Opening Delete project again checks GitHub afresh, so a repository already deleted there shows as unavailable and goes the way just described.
+- **Stored progress: plumbing only.** Core keeps a small resumable record through an optional `deletionRecord` port on the workspace bridge. It holds the name, the folder, whether the project is offline or linked, each target repository with whether it's deleted, whether the private repository is kept, and whether the move to the Recycle Bin started. It never holds credentials or note content.
+  - **When it's written:** only once something irreversible starts, that is, when the person confirms a repository deleted (**I deleted it**) and when the folder starts moving. A successful delete clears it.
+  - **The view model:** `vm.projectDeleteRun` exposes the run as steps (check access, each repository, the folder to the Recycle Bin, the recent and pinned lists), each waiting, working, done, paused, failed or skipped. It also holds an earlier session's unfinished delete (`resume`) and what the last delete removed (`done`).
+  - **The commands:**
+    - `project.deleteResumeCheck` reads the record at start.
+    - `project.deleteResume` checks access again. It never opens or asks about a repository the record says is deleted, and it goes straight to the Recycle Bin when nothing is left on GitHub.
+    - `project.deleteForget` (Keep the folder) drops the record and changes nothing else.
+  - **Still to come.** The desktop shell doesn't give the port yet, so nothing is saved between sessions until the main process stores the record on the profile lifecycle the crash work is landing. Until then, opening Delete project again checks GitHub afresh, so a repository already deleted there shows as unavailable and goes the way described above. The progress, restore and resume screens (mocks 11–25, 37 and 38) aren't rendered until the owner approves their design.
 - **One process per project.** Each project runs in its own process, so no other app window holds the same project. The deleted project's other windows close with it, and the "open in another window" state can't happen.
 - **This computer.** Before anything moves, the main process checks again:
   - the folder is this window's project;

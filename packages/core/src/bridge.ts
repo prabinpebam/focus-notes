@@ -555,6 +555,30 @@ export interface WorkspaceBridge {
    * recycled if that fails. Resolves `deleted` (the window then shows Open) or why not.
    */
   deleteLocal?(opts: { keepPrivate: boolean }): Promise<DeletionResult>;
+  /**
+   * The resumable record of a delete that has started to remove something (proposed, D-pending): only
+   * the targets' identities and the completed steps, never credentials or note content. Kept in the
+   * app's own data so "Finish deleting ⟨name⟩?" can show after a quit or crash.
+   */
+  deletionRecord?: {
+    load(): Promise<DeletionRecord | undefined>;
+    save(record: DeletionRecord): Promise<void>;
+    clear(): Promise<void>;
+  };
+}
+
+/** A delete that started to remove something, so it can be finished, never repeated, after a quit or crash. */
+export interface DeletionRecord {
+  version: 1;
+  name: string;
+  folder: string;
+  kind: "linked" | "offline";
+  /** Each repository being deleted on GitHub, and whether the person confirmed it's deleted. */
+  repos: { id: string; deleted: boolean }[];
+  /** The private notes' repository kept, so `private/` is moved beside the folder. */
+  keepPrivate: boolean;
+  /** The folder's move to the Recycle Bin started (it may or may not have finished). */
+  local: boolean;
 }
 
 /** What deleting the project would delete (PRJ-23). */

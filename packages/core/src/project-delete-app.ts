@@ -7,7 +7,7 @@
  * the Recycle Bin (`bridge.workspace.deleteLocal`) and the window shows Open.
  */
 import type { App } from "./app.ts";
-import type { DeletionCheck, PlatformBridge, RepoStatus } from "./bridge.ts";
+import type { DeletionCheck, DeletionRecord, PlatformBridge, RepoStatus } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { TaskTracker } from "./tasks.ts";
 
@@ -15,6 +15,9 @@ export type DeleteStep = "consequences" | "unsynced" | "confirm" | "github" | "p
 export type DeleteProblem = "" | "offline" | "signin" | "notAdmin" | "policy" | "rateLimit" | "window" | "gone" | "partialLocal";
 /** One repository on GitHub's side: not opened yet, waiting for the person, gone (asking them), or confirmed deleted. */
 type RepoPhase = "open" | "waiting" | "ask" | "deleted";
+/** A step of the run, as the progress list shows it (proposed, D-pending; not rendered until the owner approves the screen). */
+export type RunState = "waiting" | "working" | "done" | "paused" | "failed" | "skipped";
+export interface RunStep { id: string; kind: "check" | "repo" | "local" | "recent"; target: string; state: RunState }
 
 /** How often the repository is read while the person deletes it on GitHub (about every 5 s, DD-PROJ-13). */
 export const DELETE_POLL_MS = 5000;
@@ -49,6 +52,12 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const repos = new Map<string, RepoPhase>();
   let poll: unknown;
   let run = 0;
+  /** A resumed delete still blocked before GitHub: Retry resumes again rather than starting over. */
+  let resuming = false;
+  /** The record of a delete that has started to remove something; `pending` is one left by an earlier session. */
+  let pending: DeletionRecord | undefined;
+  /** What the last finished delete removed, for the final screen. */
+  let finished: { name: string; folder: string; repos: string[]; privateKept: string; steps: RunStep[] } | undefined;
   const changed = () => store.update((s) => ({ ...s }));
   const set = (patch: Partial<typeof state>) => { state = { ...state, ...patch }; changed(); };
   const name = () => check?.name ?? "";
@@ -59,6 +68,57 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const schedule = (ms = DELETE_POLL_MS) => { stopPolling(); if (state.open && state.step === "github") poll = t.set(() => void commands.run("project.deletePoll"), ms); };
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, title: string, go: (a: A) => unknown, enabled?: () => boolean) =>
     commands.register<A>({ id, title, ...(enabled ? { enabled } : {}), run: async (a) => { await go(a); } });
+
+  /** Only once something is being removed: the targets and what's done, never credentials or notes. Each write replaces the last. */
+  const persist = async (local = false) => {
+    const rec = ws?.deletionRecord;
+    if (!rec || !check) return;
+    const record: DeletionRecord = {
+      version: 1, name: name(), folder: check.folder, kind: check.kind,
+      repos: targets().map((id) => ({ id, deleted: repos.get(id) === "deleted" })),
+      keepPrivate: Boolean(check.privateRepo) && !state.private, local,
+    };
+    pending = undefined;
+    await rec.save(record).catch(() => {});
+  };
+  const forget = async () => { pending = undefined; await ws?.deletionRecord?.clear().catch(() => {}); };
+
+  /** Every step of the run, in order, with its state (DD-PROJ-14). A repository already confirmed deleted stays done. */
+  const steps = (): RunStep[] => {
+    const c = check;
+    if (!c) return [];
+    const before = state.step === "consequences" || state.step === "unsynced" || state.step === "confirm";
+    const out: RunStep[] = [];
+    if (c.kind === "offline") {
+      out.push({ id: "check", kind: "check", target: "", state: "skipped" }, { id: "repo", kind: "repo", target: "", state: "skipped" });
+    } else {
+      const failed = before && (state.problem === "offline" || state.problem === "signin" || state.problem === "notAdmin");
+      out.push({ id: "check", kind: "check", target: c.repo, state: state.checking ? "working" : failed ? "failed" : "done" });
+      for (const id of [c.repo, ...(c.privateRepo ? [c.privateRepo] : [])]) {
+        const phase = repos.get(id);
+        let s: RunState = "waiting";
+        if (id === c.privateRepo && !state.private) s = "skipped";
+        else if (phase === "deleted") s = "done";
+        else if (phase && state.step === "stopped") s = "paused";
+        else if (phase && state.step === "github") {
+          s = state.problem === "rateLimit" ? "paused" : state.problem === "offline" || state.problem === "signin" ? "failed" : phase === "open" ? "waiting" : "working";
+        }
+        out.push({ id: `repo:${id}`, kind: "repo", target: id, state: s });
+      }
+    }
+    const local: RunState = state.step !== "progress" ? "waiting" : state.problem === "partialLocal" ? "failed" : "working";
+    out.push({ id: "local", kind: "local", target: c.folder, state: local }, { id: "recent", kind: "recent", target: "", state: "waiting" });
+    return out;
+  };
+  /** Steps of a delete an earlier session left: what's done stays done; the rest waits (DD-PROJ-14). */
+  const resumeSteps = (r: DeletionRecord): RunStep[] => [
+    ...(r.kind === "offline"
+      ? [{ id: "check", kind: "check", target: "", state: "skipped" }, { id: "repo", kind: "repo", target: "", state: "skipped" }] as RunStep[]
+      : [{ id: "check", kind: "check", target: r.repos[0]?.id ?? "", state: "done" } as RunStep,
+        ...r.repos.map((x): RunStep => ({ id: `repo:${x.id}`, kind: "repo", target: x.id, state: x.deleted ? "done" : "waiting" }))]),
+    { id: "local", kind: "local", target: r.folder, state: "waiting" },
+    { id: "recent", kind: "recent", target: "", state: "waiting" },
+  ];
 
   /** What GitHub says before anything happens: offline, signed out, not an admin, or already unavailable (DD-PROJ-17). */
   const problemOf = (s: RepoStatus | undefined): { problem: DeleteProblem; owner?: string; org?: string; retryAt?: number } => {
@@ -98,6 +158,8 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     stopPolling();
     repos.clear();
     check = undefined;
+    finished = undefined;
+    resuming = false;
     state = { ...blank(), open: true, checking: true };
     store.update((s) => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open: false } } }));
     await preflight();
@@ -108,6 +170,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (state.busy || state.step === "progress") return;
     if (state.step === "github") { stopPolling(); set({ step: "stopped" }); return; }
     run++;
+    resuming = false;
     stopPolling();
     set({ open: false });
   };
@@ -117,6 +180,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg("project.deleteRetry", "commit.retry", async () => {
     if (state.step === "progress") return commands.run("project.deleteConfirm");
     if (state.step === "github") return commands.run("project.deletePoll");
+    if (resuming) return commands.run("project.deleteResume");
     await preflight();
   });
   reg("project.deleteSignIn", "project.delete.problem.signinAction", async () => {
@@ -199,6 +263,8 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (typeof id !== "string" || repos.get(id) !== "ask") return;
     repos.set(id, "deleted");
     changed();
+    // Deleted on GitHub can't be undone here, so from now on a quit or crash leaves a record to finish from.
+    await persist();
     if (targets().every((r) => repos.get(r) === "deleted")) { stopPolling(); await finish(); }
   });
 
@@ -207,12 +273,18 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     stopPolling();
     set({ step: "progress", busy: true, problem: "", lockedFile: "" });
     const keepPrivate = Boolean(check.privateRepo) && !state.private;
+    await persist(true);
     const go = () => ws.deleteLocal!({ keepPrivate });
     const r = await (tracker ? tracker.run("project.delete", "task.deleting", go, undefined, "fn:project.deleteLocal") : go()).catch(() => ({ state: "failed" as const, file: undefined, privateKept: undefined }));
     if (r.state === "deleted") {
       const n = name();
       const off = !linked();
+      const all = steps().map((s): RunStep => (s.state === "skipped" ? s : { ...s, state: "done" }));
+      finished = { name: n, folder: check.folder, repos: targets(), privateKept: r.privateKept ?? "", steps: all };
+      await forget();
       state = blank();
+      check = undefined;
+      repos.clear();
       changed();
       await deleted();
       toast(catalog.format(off ? "project.delete.doneOffline" : r.privateKept ? "project.delete.donePrivate" : "project.delete.done", { name: n, path: r.privateKept ?? "" }));
@@ -224,6 +296,52 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg("project.deleteShowFolder", "project.open.showFolder", async () => {
     await ws?.reveal?.().catch(() => {});
   });
+
+  /** A delete an earlier session started and didn't finish (quit or crash): read once at start (DD-PROJ-14). */
+  const resumeCheck = async () => {
+    if (!ws?.deletionRecord) return;
+    const r = await ws.deletionRecord.load().catch(() => undefined);
+    const next = r && r.version === 1 && r.folder ? r : undefined;
+    if (!next && !pending) return;
+    pending = next;
+    changed();
+  };
+  reg("project.deleteResumeCheck", "project.delete.entry", resumeCheck);
+  /**
+   * Finish it: check access again, then only what's left. A repository the record says is deleted is
+   * never opened or asked about again; one GitHub now shows as gone still needs the person's word (DD-PROJ-13).
+   */
+  reg("project.deleteResume", "project.delete.entry", async () => {
+    const r = pending;
+    if (!r || !ws?.deletion || !ws.deleteLocal) return;
+    stopPolling();
+    repos.clear();
+    check = undefined;
+    finished = undefined;
+    resuming = true;
+    state = { ...blank(), open: true, checking: true };
+    await preflight();
+    const c = check as DeletionCheck | undefined;
+    if (!c || c.problem) return;
+    if (c.folder !== r.folder) {
+      // Another project is open: leave the record for when that one is.
+      resuming = false;
+      set({ open: false });
+      toast(catalog.format("project.delete.unavailable"), { tone: "error" });
+      return;
+    }
+    const gone = new Set(r.repos.filter((x) => x.deleted).map((x) => x.id));
+    set({ typed: name(), private: !r.keepPrivate && Boolean(c.privateRepo) });
+    for (const id of targets()) repos.set(id, gone.has(id) ? "deleted" : state.problem === "gone" && id === c.repo ? "ask" : "open");
+    if (targets().every((id) => repos.get(id) === "deleted")) { resuming = false; await finish(); return; }
+    // Offline, signed out or not an admin: the problem shows with Retry, which resumes again.
+    if (state.problem && state.problem !== "gone" && state.problem !== "policy") return;
+    resuming = false;
+    set({ step: "github", problem: state.org ? "policy" : "" });
+  });
+  /** Keep the folder: the record goes and nothing else changes. */
+  reg("project.deleteForget", "remove.cancel", async () => { await forget(); changed(); });
+  void resumeCheck();
 
   const text = { type: "string" as const };
   const num = { type: "number" as const };
@@ -269,5 +387,30 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
         }),
       };
     },
+  });
+
+  /**
+   * The run as a list of steps, the delete an earlier session left, and what the last one removed
+   * (DD-PROJ-14). State only: the progress, restore and resume screens wait for the owner's approval.
+   */
+  const step = { type: "object" as const, properties: { id: text, kind: text, target: text, state: { type: "string" as const, enum: ["waiting", "working", "done", "paused", "failed", "skipped"] } } };
+  const repoList = { type: "array" as const, items: { type: "object" as const, properties: { id: text } } };
+  viewModels.register({
+    id: "vm.projectDeleteRun",
+    reads: "*",
+    schema: {
+      type: "object",
+      properties: {
+        steps: { type: "array", items: step },
+        resume: bool, resumeName: text, resumeSteps: { type: "array", items: step },
+        done: bool, doneName: text, doneFolder: text, doneRepos: repoList, privateKept: text,
+      },
+    },
+    select: () => ({
+      steps: steps(),
+      resume: Boolean(pending), resumeName: pending?.name ?? "", resumeSteps: pending ? resumeSteps(pending) : [],
+      done: Boolean(finished), doneName: finished?.name ?? "", doneFolder: finished?.folder ?? "",
+      doneRepos: (finished?.repos ?? []).map((id) => ({ id })), privateKept: finished?.privateKept ?? "",
+    }),
   });
 }
