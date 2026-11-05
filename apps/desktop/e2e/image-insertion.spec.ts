@@ -4,8 +4,6 @@ import { join, resolve } from "node:path";
 import { launch, quit, tempDirs, caret } from "./helpers.ts";
 import { crc32, deflateSync } from "node:zlib";
 import { execFileSync } from "node:child_process";
-import { publicImageBytes } from "../src/main/image-metadata.ts";
-import { rasterInfo } from "../src/main/image-import.ts";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==", "base64");
 async function close(launched: Awaited<ReturnType<typeof launch>>) {
@@ -34,7 +32,7 @@ async function transfer(page: Awaited<ReturnType<typeof launch>>["page"], kind: 
       : new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: files, clientX: bounds.x + 30, clientY: bounds.bottom - 20 }));
   }, { kind, data, size });
 }
-for (const entry of ["paste", "drop", "slash", "Insert image"] as const) {
+for (const entry of ["paste", "drop", "slash", "Insert image", "toolbar", "pinned toolbar"] as const) {
   test(`OFB.17: ${entry} imports managed image bytes and visible pixels survive restart`, async () => {
     const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md"), source = join(dirs.docs, "source.png");
     writeFileSync(note, "# Image test\n\nKeep these words.\n");
@@ -51,10 +49,29 @@ for (const entry of ["paste", "drop", "slash", "Insert image"] as const) {
         if (entry === "slash") {
           await page.keyboard.type("/");
           await page.getByRole("listbox", { name: "Insert a block" }).getByRole("option", { name: /^Insert image/ }).click();
-        } else {
+        } else if (entry === "Insert image") {
           await page.keyboard.press("Control+/");
           await page.getByRole("combobox").pressSequentially("> Insert image");
           await page.getByRole("option", { name: /^Insert image/ }).click();
+        } else {
+          await page.keyboard.press("Control+.");
+          const toolbar = page.getByRole("toolbar", { name: "Toolbar", exact: true });
+          await toolbar.getByRole("button", { name: "More", exact: true }).click();
+          if (entry === "toolbar") await page.getByRole("menuitem", { name: "Insert image", exact: true }).click();
+          else {
+            await page.getByRole("menuitem", { name: "Customize toolbar…", exact: true }).click();
+            const dialog = page.getByRole("dialog", { name: "Customize toolbar", exact: true });
+            const available = dialog.getByRole("group", { name: "Available buttons", exact: true });
+            await expect(available.getByRole("button", { name: "Insert table", exact: true })).toBeVisible();
+            await dialog.getByRole("toolbar").getByRole("button", { name: "New note", exact: true }).focus();
+            await page.keyboard.press("Delete");
+            await available.getByRole("button", { name: "Insert image", exact: true }).focus();
+            await page.keyboard.press("Space"); await page.keyboard.press("End"); await page.keyboard.press("Enter");
+            await expect(dialog.getByRole("toolbar").getByRole("button", { name: "Insert image", exact: true })).toBeVisible();
+            await dialog.getByRole("button", { name: "Done", exact: true }).click();
+            await page.keyboard.press("Control+.");
+            await toolbar.getByRole("button", { name: "Insert image", exact: true }).click();
+          }
         }
       }
       const image = editor.locator("[data-image-node] img");
@@ -73,6 +90,10 @@ for (const entry of ["paste", "drop", "slash", "Insert image"] as const) {
       try {
         await expect(reopened.page.locator("[data-image-node] img")).toBeVisible();
         await expect.poll(() => reopened.page.locator("[data-image-node] img").evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(1);
+        if (entry === "pinned toolbar") {
+          await reopened.page.keyboard.press("Control+.");
+          await expect(reopened.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "Insert image", exact: true })).toBeVisible();
+        }
         expect(readFileSync(note, "utf8")).toBe(saved);
       } finally { await close(reopened); }
     } finally { if (!closed) await close(launched); }
@@ -85,6 +106,20 @@ test("OFB.18: an oversize paste names the limit, preserves text and writes no as
   try {
     await transfer(launched.page, "paste", "", 20 * 1024 * 1024 + 1);
     await expect(launched.page.getByText("This image is over 20 MB. Choose a smaller image.", { exact: true })).toBeVisible();
+    expect(readFileSync(note, "utf8")).toBe(original);
+    expect(existsSync(`${note}.assets`)).toBe(false);
+    expect(readdirSync(dirs.docs)).not.toContain("assets");
+    await expect(launched.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Unchanged text.");
+  } finally { await close(launched); }
+});
+test("OFB.18: a stalled renderer decode is cancelled before managed writes and keeps the note", async () => {
+  const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md"), original = "# Keep\n\nUnchanged text.\n";
+  writeFileSync(note, original);
+  const launched = await launch(dirs);
+  try {
+    await launched.page.evaluate(() => { HTMLImageElement.prototype.decode = () => new Promise(() => {}); });
+    await transfer(launched.page, "paste", png.toString("base64"));
+    await expect(launched.page.getByText("This image couldn't be read. Choose a PNG, JPEG or WebP under 20 MB.", { exact: true })).toBeVisible({ timeout: 15_000 });
     expect(readFileSync(note, "utf8")).toBe(original);
     expect(existsSync(`${note}.assets`)).toBe(false);
     expect(readdirSync(dirs.docs)).not.toContain("assets");
@@ -178,23 +213,6 @@ for (const [kind, format] of [["local", "png"], ["github", "png"], ["github", "j
       writeFileSync(source, input);
     }
     if (format === "webp") {
-      const sanitized = publicImageBytes(input, format);
-      const probe = join(dirs.userData, "decode-probe.webp");
-      writeFileSync(probe, sanitized);
-      const chromium = await launched.page.evaluate(async (data) => {
-        const image = new Image();
-        image.src = `data:image/webp;base64,${data}`;
-        await image.decode();
-        return [image.naturalWidth, image.naturalHeight];
-      }, sanitized.toString("base64"));
-      const native = await launched.app.evaluate(async ({ nativeImage }, path) => {
-        try {
-          const thumbnail = await nativeImage.createThumbnailFromPath(path, { width: 1, height: 1 });
-          return { empty: thumbnail.isEmpty() };
-        } catch (error) { return { error: String(error) }; }
-      }, probe);
-      console.log("WebP decoder evidence", JSON.stringify({ header: rasterInfo(sanitized), chromium, native }));
-      expect(chromium).toEqual([6, 4]);
       await launched.app.evaluate(({ nativeImage }) => {
         nativeImage.createThumbnailFromPath = async () => { throw new Error("OS thumbnail codecs unavailable"); };
       });

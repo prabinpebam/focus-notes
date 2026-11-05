@@ -1282,11 +1282,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       const data = `data:image/${path.endsWith(".jpg") ? "jpeg" : path.endsWith(".webp") ? "webp" : "png"};base64,${(await readFile(path)).toString("base64")}`;
       const valid: boolean = await event.sender.executeJavaScript(`(async () => {
         const image = new Image();
+        let timer;
         try {
           image.src = ${JSON.stringify(data)};
-          await image.decode();
+          await Promise.race([
+            image.decode(),
+            new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("invalid-image")), 10000); })
+          ]);
           return image.naturalWidth === ${size.width} && image.naturalHeight === ${size.height};
-        } finally { image.src = ""; }
+        } finally { clearTimeout(timer); image.src = ""; }
       })()`);
       if (!valid) throw new Error("invalid-image");
     }, root !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note));

@@ -270,7 +270,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
       { submenu: "theme.dark", label: "menu.darkTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => `theme.dark.${t.id}`) },
     ],
   },
-  { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
+  { id: "edit", label: "menu.edit", items: ["table.insert", "image.insert", "find.open", "find.replace", "find.allNotes"] },
   { id: "note", label: "menu.note", items: ["note.share", "note.publish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },

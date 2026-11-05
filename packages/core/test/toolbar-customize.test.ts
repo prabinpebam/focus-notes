@@ -33,6 +33,22 @@ const tb = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.tool
 const cust = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.toolbarCustomize", app.store.state) as Cust;
 
 describe("UI-08: choosing the toolbar's six actions", () => {
+  it("OFB.16–17: offers table and image insertion in overflow and the composer without changing defaults", async () => {
+    const f = setup();
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    expect(tb(app).items.map(i => i.id)).toEqual([...DEFAULT_TOOLBAR]);
+    expect(tb(app).more.flatMap(g => g.items.map(i => i.id))).toEqual(expect.arrayContaining(["table.insert", "image.insert"]));
+    await app.commands.run("toolbar.customize");
+    expect(cust(app).available.map(i => i.id)).toEqual(expect.arrayContaining(["table.insert", "image.insert"]));
+    await app.commands.run("toolbar.setPinned", { ids: ["table.insert", "image.insert", ...DEFAULT_TOOLBAR.slice(2)].join(",") });
+    expect(f.saved.at(-1)?.toolbarPinned?.slice(0, 2)).toEqual(["table.insert", "image.insert"]);
+    for (const id of ["table.insert", "image.insert"]) expect(tb(app).more.flatMap(g => g.items.map(i => i.id))).not.toContain(id);
+    const restarted = createApp(setup({ pinned: f.saved.at(-1)?.toolbarPinned }).bridge, messages);
+    await restarted.start();
+    expect(tb(restarted).items.map(i => i.id).slice(0, 2)).toEqual(["table.insert", "image.insert"]);
+  });
+
   it("restores the last durable order if consecutive optimistic saves both fail", async () => {
     const f = setup();
     const app = createApp(f.bridge, messages);
