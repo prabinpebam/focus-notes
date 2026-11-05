@@ -6503,6 +6503,7 @@
       "stackItem",
       "stackGroup",
       "stackSection",
+      "stackRegion",
       "inlinePair",
       "inlineItem",
       "inlineGroup",

@@ -213,6 +213,7 @@
     "stackItem": { "$value": "{ref.size.8}", "$description": "Stacked items in one group: rows of a list, fields in a fieldset, lines of a card." },
     "stackGroup": { "$value": "{ref.size.16}", "$description": "Stacked groups within a section: at least twice stackItem." },
     "stackSection": { "$value": "{ref.size.32}", "$description": "Sections of a view, and the space above a heading: at least twice stackGroup." },
+    "stackRegion": { "$value": "{ref.size.48}", "$description": "Peer regions of one view whose sections hold labelled fields with hints (Settings → Project: who it is, where it's kept). Text leading puts such fields about 24 px apart, so stackSection wouldn't read clearly further apart (SP-12)." },
     "inlinePair": { "$value": "{ref.size.4}", "$description": "A pair in a row that reads as one thing: an icon and its label, a value and its unit. Tight, because the controls carry their own padding." },
     "inlineItem": { "$value": "{ref.size.8}", "$description": "Items in one row group: buttons in a group, chips, fields side by side." },
     "inlineGroup": { "$value": "{ref.size.16}", "$description": "Groups in a row: at least twice inlineItem (a toolbar's groups, a form's two columns)." },

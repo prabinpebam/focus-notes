@@ -107,7 +107,7 @@
                   "project": {
                     "type": "Stack",
                     "props": {
-                      "gap": "stackSection"
+                      "gap": "stackRegion"
                     },
                     "children": [
                       {
@@ -899,7 +899,7 @@
                             {
                               "type": "Heading",
                               "props": {
-                                "level": "3",
+                                "level": "2",
                                 "value": {
                                   "t": "project.home.heading"
                                 }
@@ -917,7 +917,8 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "role": "label",
+                                  "role": "secondary",
+                                  "tone": "muted",
                                   "value": {
                                     "t": "project.home.folder"
                                   }
