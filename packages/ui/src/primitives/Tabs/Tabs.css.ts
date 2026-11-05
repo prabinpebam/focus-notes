@@ -107,6 +107,6 @@ export const content = style({
   paddingBlock: t.contentInset,
 });
 export const contentOrientation = {
-  horizontal: style({ paddingInlineStart: t.contentInset }),
+  horizontal: style({}),
   vertical: style({ paddingBlockStart: `calc(${t.contentInset} + (${t.height} - 1cap) / 2)` }),
 };

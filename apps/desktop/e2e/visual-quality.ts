@@ -448,16 +448,13 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         // Scroll frames bleed to the surface; their content layout owns the inset (spacing rule 14).
         const layout = el.matches("[data-side-nav]") ? el : el.querySelector(":scope > [data-dialog-content], :scope > [data-sheet-content], :scope > [data-tab-content], :scope > [data-side-nav], :scope > [data-sheet-header], :scope > [role=tablist]");
         const cs = getComputedStyle(layout ?? el);
-        // A short sheet scrolls its header and body together; its end inset belongs to the body's content, not the header.
-        const endLayout = el.matches("[data-sheet-main]") ? el.querySelector(":scope > [data-sheet-body] > [data-sheet-content]") : null;
-        const endStyle = endLayout ? getComputedStyle(endLayout) : cs;
         const tracks = cs.display === "grid" ? cs.gridTemplateColumns.match(/[\d.]+px/g)?.map(parseFloat) : undefined;
         if (cs.direction === "rtl") tracks?.reverse();
         const start = tracks?.[0] ?? parseFloat(cs.paddingLeft);
         const end = tracks?.at(-1) ?? parseFloat(cs.paddingRight);
         const left = own.left + el.clientLeft + start;
         const top = own.top + el.clientTop + parseFloat(cs.paddingTop);
-        boxes.push({ el: layout ?? el, r: { left: Math.max(r.left, left), top: Math.max(r.top, top), right: Math.min(r.right, own.left + el.clientLeft + el.clientWidth - end), bottom: Math.min(r.bottom, own.top + el.clientTop + el.clientHeight - parseFloat(endStyle.paddingBottom)) } });
+        boxes.push({ el: layout ?? el, r: { left: Math.max(r.left, left), top: Math.max(r.top, top), right: Math.min(r.right, own.left + el.clientLeft + el.clientWidth - end), bottom: Math.min(r.bottom, own.top + el.clientTop + el.clientHeight - parseFloat(cs.paddingBottom)) } });
       } else boxes.push({ el, r });
     }
     return boxes;
