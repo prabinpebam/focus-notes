@@ -1,16 +1,14 @@
 /**
- * Proof for the Actions catalogue (ACT-02, ACT-07, ACT-16, D-361): every catalogued action runs from
- * the Actions dialog itself, in the context it's listed for, and its outcome is checked where the
- * person would see it. An action whose command can't run in this test app is checked to be shown
- * unavailable with a reason, never as a dead row. The catalogue's own rules (unique labels, objects
- * named when a verb repeats, a proof and a pointer path for each) are checked here too.
+ * Core contract evidence for the Actions catalogue (ACT-02, ACT-07, ACT-16, D-361): dispatch,
+ * view-model outcomes, blocked reasons, labels and pointer paths. These state-level checks do not
+ * replace the per-entry visible outcomes in the desktop journeys.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  ANCHORS, answerKey, CATALOG, catalogProblems, createApp, lookAlikes, titleOfMarkdown,
-  type App, type AppState, type AppStateFile, type CatalogEntry, type PlatformBridge, type WorkspaceOp,
+  ANCHORS, actionAvailability, answerKey, CATALOG, catalogProblems, createApp, lookAlikes, titleOfMarkdown,
+  type ActionScope, type App, type AppState, type AppStateFile, type CatalogEntry, type PlatformBridge, type WorkspaceOp,
 } from "../src/index.ts";
 import { checkingDisk } from "./checking-disk.ts";
 
@@ -132,6 +130,32 @@ const OUTCOMES: Record<string, (s: AppState, before: AppState) => boolean> = {
 };
 
 describe("ACT-07, ACT-16: the catalogue's own rules", () => {
+  it("ACT-12 availability at 150 entries includes actual command predicates", async () => {
+    const app = await started();
+    const scope: ActionScope = {
+      selection: true, note: true, writable: true, visibility: "private",
+      project: true, standalone: false, signedIn: false, linked: false, ai: false,
+    };
+    const entries = Array.from({ length: 150 }, (_, i) => CATALOG[i % CATALOG.length]!);
+    const describe = (id: string) => app.commands.describe(id);
+    const sample = () => {
+      const start = performance.now();
+      const result = entries.map((e) => actionAvailability(e, scope, describe, words, true));
+      const end = performance.now();
+      performance.measure("fn:actions.available", { start, end });
+      expect(result).toHaveLength(150);
+      return end - start;
+    };
+    for (let i = 0; i < 10; i++) sample();
+    performance.clearMeasures("fn:actions.available");
+    const times = Array.from({ length: 101 }, sample).sort((a, b) => a - b);
+    const median = times[50]!;
+    const p95 = times[95]!;
+    console.log(`ACT-12: availability150 median ${median.toFixed(4)} ms p95 ${p95.toFixed(4)} ms`);
+    expect(performance.getEntriesByName("fn:actions.available")).toHaveLength(101);
+    expect(p95).toBeLessThanOrEqual(2);
+    performance.clearMeasures("fn:actions.available");
+  });
   it("has unique labels, names objects when a verb repeats, and gives each action a proof and a pointer path", async () => {
     const app = await started();
     const problems = catalogProblems(CATALOG, (c) => app.commands.has(c), words, (k) => (messages[k] ?? "").split(/\s+/).filter(Boolean));
@@ -198,6 +222,26 @@ describe("ACT-02: every catalogued action runs from Actions", () => {
 });
 
 describe("ACT-05, ACT-08: anchors decide what's listed", () => {
+  it("copies a Markdown link to the anchored note, not a result, without writing or sending", async () => {
+    const d = desktop();
+    const copied = vi.fn(async (_text: string) => {});
+    d.bridge.copyText = copied;
+    const write = vi.spyOn(d.bridge, "writeNote");
+    const app = createApp(d.bridge, messages);
+    await app.start();
+    await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
+    await app.commands.run("spotlight.open");
+    await type(app, "copy link to this note");
+    const row = items(app).find((i) => i.id.endsWith(":note.copyLink"))!;
+    expect(row).toMatchObject({ label: "Copy link to this note" });
+    expect(row.disabled).not.toBe(true);
+    await app.commands.run("spotlight.choose", { id: row.id });
+    expect(copied).toHaveBeenCalledExactlyOnceWith("[Welcome](welcome.md)");
+    expect(write).not.toHaveBeenCalled();
+    expect(d.opened).toEqual([]);
+    expect(sp(app).open).toBe(false);
+    expect(app.store.state.ui.toasts.at(-1)?.message).toContain("Copied a link");
+  });
   it("hides selection actions without a selection, and shows them first with one", async () => {
     const app = await started();
     await app.commands.run("spotlight.open");

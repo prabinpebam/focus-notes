@@ -243,7 +243,8 @@ async function spotlightTimes() {
       await field.waitFor({ state: "detached" });
       await page.waitForFunction(() => document.activeElement?.hasAttribute("data-editor"));
     }
-    // The first open warms the code paths; the rest are what a person feels.
+    console.log(`SPT-07 panel samples: cold ${times[0].toFixed(1)} ms; warm ${times.slice(1).map((t) => t.toFixed(1)).join(", ")} ms`);
+    // Keep cold evidence alongside the warm budget, rather than hiding first use in the median.
     return { "SPT-07.panelOpenMs": Math.round(median(times.slice(1)) * 10) / 10 };
   } finally {
     await app.close();
@@ -254,6 +255,17 @@ async function spotlightTimes() {
 async function searchTimes() {
   const { measureSearch } = await import(pathToFileURL(join(import.meta.dirname, "search.ts")).href);
   return measureSearch(runs);
+}
+
+function actionsAvailability() {
+  const out = spawnSync("pnpm exec vitest run packages/core/test/actions-proof.test.ts -t \"availability at 150\" --silent=false", {
+    cwd: root, shell: true, encoding: "utf8", timeout: STEP_TIMEOUT_MS,
+  });
+  if (out.error) throw out.error;
+  if (out.status !== 0) throw new Error(`The Actions availability check failed:\n${out.stdout}${out.stderr}`);
+  const result = `${out.stdout}${out.stderr}`.match(/ACT-12: availability150 median ([\d.]+) ms p95 ([\d.]+) ms/);
+  if (!result) throw new Error("The Actions availability benchmark produced no result");
+  return { "ACT-12.availability150Ms": Number(result[2]) };
 }
 
 // PRF-06: publishing 1,000 public and 200 shared notes with the real publisher (publish.ts, WP-5.1).
@@ -278,6 +290,7 @@ const STEPS = [
   ["the 10,000-note workspace (PRF-04, PRF-10)", () => largeWorkspace({ root, mainEntry, recordDiagnostics: (value) => { diagnostics["PRF-10"] = value; } })],
   ["Spotlight in the app (SPT-07)", spotlightTimes],
   ["the search index (SPT-07, FND-04)", searchTimes],
+  ["Actions availability (ACT-12)", async () => actionsAvailability()],
   ["matching drafts at launch (QLT-06)", recoveryTimes],
   ["publishing (PRF-06)", publishTimes],
 ];

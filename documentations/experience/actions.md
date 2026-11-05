@@ -90,7 +90,7 @@ These are also a note result's own actions behind <kbd>→</kbd>: one catalogue 
 | Duplicate this note | Makes a copy beside it | `files.duplicate` | files | Ready | Proposal |
 | Show this note in Files | Reveals and selects it in Files | `files.reveal` | navigate | Ready | Proposal |
 | Show this note in Explorer | Opens its folder in Explorer (Finder on macOS) | `note.revealLocal` | navigate, leaves: system | Ready | Proposal |
-| Copy link to this note | Copies a relative Markdown link (from a result: relative to the open note) | `spotlight.copyLink` | navigate | Ready | Proposal |
+| Copy link to this note | Copies a relative Markdown link (from a result: relative to the open note) | `note.copyLink`; results use `spotlight.copyLink` | navigate | Ready | Native clipboard proof |
 | Show note history | Opens this note's versions | `history.open` (was *Note history*) | navigate | Ready | Proposal |
 | Show contents | Opens the headings card (UC-FIND-06) | `outline.show` | navigate | Ready | Proposal |
 | Write with AI… | Opens the AI prompt at the caret (RWR-92); listed when nothing is selected | the caret prompt | outbound, leaves: AI | Candidate: name its command | Proposal |
@@ -248,6 +248,10 @@ The combined table slice retains *Insert table* as an anchored note action, reus
 **Starter-flow slice, WP-A.5/A.6 (landing pending).** *Rename this project…* opens the existing Project settings name field focused; opening or cancelling writes nothing. The three selection presets open the existing Rewrite prompt pre-filled, with its provider, model and destination disclosure unchanged. Only explicit Generate or Ctrl+Enter sends; Escape sends nothing. Typing in Actions never contacts the provider: opening checks only cached, device-local connection settings, with a named checking state and a Connect to AI fix if no Writer is configured. Selection presence is independent of the formatting toolbar's intentional delay, so opening Actions immediately after selecting text does not hide selection actions.
 
 `pnpm check` now includes the catalogue proof tests, failing on a missing proof, command, pointer path or duplicate label. The generic catalogue tests prove listing and blocked reasons; renderer-only outcomes still need the native per-entry evidence in the MACT gate, not just a command event.
+
+*Copy link to this note* is an anchored note row, using the same relative Markdown-link builder as file-result actions. It copies a link to the captured note, not the currently highlighted search result. Copying neither writes a note nor contacts a service.
+
+The native outcome journey covers 32 entries, including formatting with Undo, actual destination surfaces, file changes and Copy link. The Actions accessibility journey checks the accessible tree and axe in light, dark, increased contrast and forced colours; manual spoken screen-reader evidence remains open. The 150-entry availability benchmark uses the same evaluator as the live catalogue, with a 2 ms p95 budget. The [MACT evidence](../plan/gate-evidence.md#actions-mact-6-november) records the remaining native rows and cold-open gap; these checks do not mark the stage accepted.
 
 The caret's *Write with AI…* row reuses `rewrite.open`, with no note context in its request. *Caption this image with AI…* remains a candidate: there is no caption command in the current app, and this slice does not invent a second AI surface or send an image.
 

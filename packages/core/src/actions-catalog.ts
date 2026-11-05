@@ -104,6 +104,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   { id: "note.move", steps: [["files.reveal", { path: "path" }], ["files.moveTo"]], label: "actions.note.move", anchor: "note", effect: "files", leaves: "none", when: (s) => inProject(s) && s.writable, alsoIn: ["Files menu"], proof: proof("note.move") },
   { id: "note.duplicate", steps: [["files.reveal", { path: "path" }], ["files.duplicate"]], label: "actions.note.duplicate", anchor: "note", effect: "files", leaves: "none", when: (s) => inProject(s) && s.writable, alsoIn: ["Files menu"], proof: proof("note.duplicate") },
   { id: "note.reveal", steps: [["files.reveal", { path: "path" }]], label: "actions.note.reveal", anchor: "note", effect: "navigate", leaves: "none", when: inProject, alsoIn: ["Files"], proof: proof("note.reveal") },
+  { id: "note.copyLink", steps: [["note.copyLink"]], label: "actions.note.copyLink", anchor: "note", effect: "navigate", leaves: "none", alsoIn: ["file result > More actions > Copy Markdown link"], proof: proof("note.copyLink") },
   { id: "note.copyPublicLink", steps: [["note.copyPublicLink"]], label: "actions.note.copyPublicLink", anchor: "note", effect: "navigate", leaves: "none", when: (s) => inProject(s) && s.visibility === "public", alsoIn: ["⋯ menu", "File menu"], proof: proof("note.copyPublicLink") },
   { id: "note.revealLocal", steps: [["note.revealLocal"]], label: "actions.note.revealLocal", anchor: "note", effect: "navigate", leaves: "system", alsoIn: ["Files menu"], proof: proof("note.revealLocal") },
   { id: "history.open", steps: [["history.open"]], label: "actions.history.open", anchor: "note", effect: "navigate", leaves: "none", when: inProject, alsoIn: ["⋯ menu"], proof: proof("history.open") },
@@ -164,6 +165,25 @@ export const NEEDS: Record<Anchor, string> = {
 
 /** Listed now (ACT-08): its anchor is present and nothing hides it. */
 export const listable = (e: CatalogEntry, s: ActionScope): boolean => anchorPresent(e.anchor, s) && (e.when?.(s) ?? true);
+
+/** Uses the real command's current enabled predicate, never a cached approximation of it. */
+export function actionAvailability(
+  e: CatalogEntry,
+  scope: ActionScope,
+  describe: (id: string) => { enabled: boolean; disabledReason?: string },
+  msg: (key: string) => string,
+  browse = false,
+): { shown: boolean; reason?: string } {
+  if (!listable(e, scope)) {
+    if (!browse) return { shown: false };
+    return { shown: true, reason: msg(anchorPresent(e.anchor, scope) ? "spotlight.unavailable" : NEEDS[e.anchor]) };
+  }
+  const blocked = e.blockedBy?.(scope);
+  if (blocked) return { shown: true, reason: msg(blocked) };
+  const d = describe(e.steps[0]![0]);
+  if (!d.enabled) return { shown: true, reason: msg(d.disabledReason ?? "spotlight.unavailable") };
+  return { shown: true };
+}
 
 /** The steps with the open note's path put in. */
 export function stepsFor(e: CatalogEntry, s: Pick<ActionScope, "path">): Step[] {

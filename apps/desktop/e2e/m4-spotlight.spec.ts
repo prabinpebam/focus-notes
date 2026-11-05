@@ -427,15 +427,29 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
   }
 });
 
-test("A11Y: Spotlight in every mode and its actions has no axe violations, in light and dark", async () => {
+test("A11Y: Actions exposes its active row and blocked reason in light, dark, more contrast and forced colours", async () => {
   const l = await started();
   const { page } = l;
   const problems: string[] = [];
-  for (const scheme of ["light", "dark"]) {
+  for (const scheme of ["light", "dark", "contrast", "forced"] as const) {
+    await l.app.evaluate(({ nativeTheme, BrowserWindow }, dark) => {
+      nativeTheme.themeSource = dark ? "dark" : "light";
+      for (const window of BrowserWindow.getAllWindows()) window.webContents.send("scheme:changed", nativeTheme.shouldUseDarkColors ? "dark" : "light");
+    }, scheme === "dark");
+    await page.emulateMedia({ contrast: scheme === "contrast" ? "more" : "no-preference", forcedColors: scheme === "forced" ? "active" : "none" });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", scheme === "dark" ? "ink" : "paper");
+    if (scheme === "contrast") await expect(page.locator("html")).toHaveAttribute("data-contrast", "more");
     for (const [key, query] of [[`${mod}+/`, ""], [`${mod}+/`, "foc"], [`${mod}+P`, "focus"], [`${mod}+Shift+P`, "focus"], [`${mod}+Shift+O`, ""], [`${mod}+/`, "?"]] as const) {
       await open(page, key);
       await field(page).fill(query);
       await expect(results(page)).toBeVisible();
+      await expect(active(page)).toBeVisible();
+      const activeId = await active(page).getAttribute("id");
+      expect(activeId).toBeTruthy();
+      await expect(field(page)).toHaveAttribute("aria-activedescendant", activeId!);
+      const tree = await spotlight(page).ariaSnapshot();
+      expect(tree).toContain("combobox");
+      expect(tree).toContain("listbox");
       await settled(page);
       problems.push(...(await axeViolations(page)).map((v) => `${scheme} ${key} "${query}": ${v}`));
       await page.keyboard.press("Escape");
@@ -456,7 +470,13 @@ test("A11Y: Spotlight in every mode and its actions has no axe violations, in li
     await page.screenshot({ path: `../../test-results/screens/spotlight-${scheme}.png` });
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
-    await page.keyboard.press(`${mod}+Shift+L`);
+    await open(page);
+    await field(page).fill("> Bold");
+    const blocked = option(page, /^Bold/);
+    await expect(blocked).toHaveAttribute("aria-disabled", "true");
+    await expect(blocked).toContainText("Select text first");
+    expect(await blocked.ariaSnapshot()).toContain("Select text first");
+    await page.keyboard.press("Escape");
   }
   expect(problems).toEqual([]);
   await quit(l);
