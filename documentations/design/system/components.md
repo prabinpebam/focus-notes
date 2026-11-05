@@ -284,7 +284,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | Component | Status | What it does | Key props |
 | --- | --- | --- | --- |
 | **Stack** | Implemented | Children in a column | `gap`, `align`, `padding` |
-| **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart. No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
+| **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart, or `stackRegion` when they hold labelled fields with hints (Settings → Project). No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
 | **Inline** | Implemented | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
 | **ToolbarRow** | Implemented | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items. A new `focusRequest` moves focus into it (<kbd>Alt+F10</kbd>) | `label` (required), `focusRequest` |
 | **Columns** | Implemented | Children side by side in equal columns while each has room (`layout.sheetMin`), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window | `gap` |
