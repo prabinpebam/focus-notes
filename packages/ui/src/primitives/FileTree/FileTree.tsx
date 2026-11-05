@@ -376,7 +376,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
                     onContextMenu={e => e.stopPropagation()}
                     onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}>
                     <IconButton icon={item.pinned ? "pinOff" : "pin"} label={item.pinLabel}
-                      toggle pressed={item.pinned} commit={item.pinCommit}
+                      commit={item.pinCommit}
                       onPress={() => onPin?.({ id: item.id, pinned: !item.pinned })} />
                   </span>
                 ) : null}

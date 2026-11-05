@@ -12,7 +12,7 @@ export const contract = defineContract({
     description: { kind: "message", description: "One line under the name about what it does." },
     disabled: { kind: "boolean", default: false },
     disabledReason: { kind: "message", requiredWhen: "disabled", description: "Why it can't change now, shown in place of the description." },
-    commit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "The commit track (F2): pending spins in the thumb and locks the switch, still focused and still the stored value; confirmed shows the tick beside the state word; failed shows the stored value, the error icon and `error` below with Retry." },
+    commit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "Own-border pending arc (dashed with reduced motion), then success or danger outline; keep the stored value and focus, with error and Retry outside the track." },
     error: { kind: "message", description: "Failed: what happened and what's safe." },
     retryLabel: { kind: "message", description: "Failed: the button that saves the change again." },
   },

@@ -290,7 +290,6 @@ export function ToolbarComposer(props: ToolbarComposerProps) {
       icon={iconOf(it.icon)}
       label={it.label}
       {...(it.shortcut ? { shortcut: it.shortcut } : {})}
-      {...(it.checked !== undefined ? { toggle: true, pressed: it.checked } : {})}
       onPress={() => {}}
     />
   );

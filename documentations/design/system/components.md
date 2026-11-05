@@ -67,8 +67,8 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 58 | `hover`, `pressed`, `focusVisible` |
-| IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy`, `pending`, `confirmed`, `failed` | 13 | `hover`, `pressed` |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 57 | `hover`, `pressed`, `focusVisible` |
+| IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy`, `pending`, `confirmed`, `failed` | 11 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
 | TriggerButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 3 | `hover`, `pressed`, `focusVisible` |
@@ -205,7 +205,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | `tokens` | The component's own tokens. It may read nothing else; the boundary check enforces this (D-197). |
 | `a11y` | The ARIA Authoring Practices pattern, and which prop provides the accessible name. |
 
-**Busy state (D-199).** Button, IconButton and ItemCard take `busy` as a boolean bound to the task tracker (`busyProps` in `packages/core/src/tasks.ts`). One shared hook, `useBusy` (`packages/ui/src/behaviors/busy.ts`), turns it into `data-busy` phases and sets `aria-busy`; it has no timer of its own. The `ack` phase is the delay in the control's style: the spinner appears after `cmp.button.busy.signDelay` or `cmp.iconButton.busy.signDelay` (both `{wait.signDelay}`, 300 ms), replacing the icon in the same cell, and `done` shows for 1.5 s. A busy control is inert but not dimmed and keeps its width; Button can show a `busyLabel`. A region being updated shows an indeterminate `ProgressBar` line placed by its view, and no component times its own waits ([Waits](../components/feedback-and-dialogs.md#waits), PRF-08). View models that set `busy` directly rather than through the tracker get the reveal delay but not the minimum display time.
+**Busy state (D-199, narrowed by D-356).** Button, IconButton and ItemCard take `busy` as a boolean bound to the task tracker (`busyProps` in `packages/core/src/tasks.ts`). One shared hook, `useBusy` (`packages/ui/src/behaviors/busy.ts`), turns it into `data-busy` phases and sets `aria-busy`; it has no timer of its own. IconButton keeps its glyph and immediately uses the same own-border arc as a pending commit, dashed with reduced motion; its centre Spinner and delay token are deleted. A roomy Button may still replace its existing icon cell after `cmp.button.busy.signDelay` (`{wait.signDelay}`, 300 ms), while compact commits use own-border feedback. Task `done` words show for 1.5 s. A busy control is inert but not dimmed and keeps its width; Button can show a `busyLabel`. A region being updated shows an indeterminate `ProgressBar` line placed by its view, and no component times its own waits ([Waits](../components/feedback-and-dialogs.md#waits), PRF-08). Direct boolean `busy` does not supply the tracker's minimum display time. See the [per-primitive inventory](../ui-states-audit.md#owner-feedback-batch-6-november-pending-pattern-inventory).
 
 <h2 id="primitives" data-reader-personas="design engineering">Primitives</h2>
 
