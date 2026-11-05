@@ -253,7 +253,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
    */
   const visiblePart = (el: Element, stop: Element | null): Box | null => {
     let r = rect(el);
-    for (let a = el.parentElement; a && a !== stop; a = a.parentElement) {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      if (a === stop && !["auto", "scroll"].includes(getComputedStyle(a).overflowY)) break;
       if (!clips(a)) continue;
       const ac = getComputedStyle(a);
       const scroller = ac.overflowY === "auto" || ac.overflowY === "scroll";
@@ -261,6 +262,7 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       const c = scroller ? { left: o.left, right: o.right, top: o.top + a.clientTop + parseFloat(ac.paddingTop), bottom: o.top + a.clientTop + a.clientHeight - parseFloat(ac.paddingBottom) } : o;
       r = { left: Math.max(r.left, c.left), top: Math.max(r.top, c.top), right: Math.min(r.right, c.right), bottom: Math.min(r.bottom, c.bottom) };
       if (r.right - r.left <= 0.5 || r.bottom - r.top <= 0.5) return null;
+      if (a === stop) break;
     }
     return r;
   };
@@ -393,10 +395,23 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   /** Boxes of what `surface` shows, each cut by the scrollers inside it; nested surfaces and tooltips aren't its own. */
   const contentOf = (surface: Element) => {
     const boxes: { el: Element; r: Box }[] = [];
+    const scrollContent = surface.querySelector(":scope > [role=menu], :scope > [role=dialog]");
+    if (scrolls(surface) && scrollContent) {
+      const cs = getComputedStyle(scrollContent), frame = rect(surface);
+      return [{ el: scrollContent, r: {
+        left: frame.left + surface.clientLeft + parseFloat(cs.paddingLeft),
+        right: frame.left + surface.clientLeft + surface.clientWidth - parseFloat(cs.paddingRight),
+        top: frame.top + surface.clientTop + parseFloat(cs.paddingTop),
+        bottom: frame.top + surface.clientTop + surface.clientHeight - parseFloat(cs.paddingBottom),
+      } }];
+    }
     const walker = document.createTreeWalker(surface, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
       acceptNode: (n) => {
         if (n === surface) return NodeFilter.FILTER_SKIP;
         if (n instanceof Element && (n.hasAttribute("data-surface") || n.matches('[role="tooltip"], [data-vq-ignore]') || !n.checkVisibility({ opacityProperty: true, visibilityProperty: true }))) return NodeFilter.FILTER_REJECT;
+        for (let p = n.parentElement; p && p !== surface; p = p.parentElement) {
+          if (scrolls(p) || p.matches("[data-side-nav]:not([data-tab-navigation])")) return NodeFilter.FILTER_REJECT;
+        }
         return NodeFilter.FILTER_ACCEPT;
       },
     });
@@ -429,12 +444,17 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       if (own.width <= 1 || own.height <= 1) continue;
       const r = visiblePart(el, surface);
       if (!r) continue;
-      if (scrolls(el)) {
-        // A scroller's content box: without its padding and its scrollbar's room.
-        const cs = getComputedStyle(el);
-        const left = own.left + el.clientLeft + parseFloat(cs.paddingLeft);
+      if (scrolls(el) || el.matches("[data-side-nav]:not([data-tab-navigation])")) {
+        // Scroll frames bleed to the surface; their content layout owns the inset (spacing rule 14).
+        const layout = el.matches("[data-side-nav]") ? el : el.querySelector(":scope > [data-dialog-content], :scope > [data-sheet-content], :scope > [data-tab-content], :scope > [data-side-nav], :scope > [data-sheet-header], :scope > [role=tablist]");
+        const cs = getComputedStyle(layout ?? el);
+        const tracks = cs.display === "grid" ? cs.gridTemplateColumns.match(/[\d.]+px/g)?.map(parseFloat) : undefined;
+        if (cs.direction === "rtl") tracks?.reverse();
+        const start = tracks?.[0] ?? parseFloat(cs.paddingLeft);
+        const end = tracks?.at(-1) ?? parseFloat(cs.paddingRight);
+        const left = own.left + el.clientLeft + start;
         const top = own.top + el.clientTop + parseFloat(cs.paddingTop);
-        boxes.push({ el, r: { left: Math.max(r.left, left), top: Math.max(r.top, top), right: Math.min(r.right, own.left + el.clientLeft + el.clientWidth - parseFloat(cs.paddingRight)), bottom: Math.min(r.bottom, own.top + el.clientTop + el.clientHeight - parseFloat(cs.paddingBottom)) } });
+        boxes.push({ el: layout ?? el, r: { left: Math.max(r.left, left), top: Math.max(r.top, top), right: Math.min(r.right, own.left + el.clientLeft + el.clientWidth - end), bottom: Math.min(r.bottom, own.top + el.clientTop + el.clientHeight - parseFloat(cs.paddingBottom)) } });
       } else boxes.push({ el, r });
     }
     return boxes;
@@ -509,7 +529,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       const header = s.querySelector("[data-sheet-header]");
       const body = s.querySelector("[data-sheet-body]");
       if (!header || !body || !shown(header) || !shown(body)) continue;
-      const gap = rect(body).top + parseFloat(getComputedStyle(body).paddingTop) - rect(header).bottom;
+      const content = body.querySelector(":scope > [data-sheet-content]") ?? body;
+      const gap = rect(content).top + body.scrollTop + parseFloat(getComputedStyle(content).paddingTop) - rect(header).bottom;
       if (gap < v.groupGap - tol / 2) out.push(`grouped and spaced: ${nameOf(s)}'s header and its content are ${px(gap)} px apart (at least ${v.groupGap})`);
     }
   }

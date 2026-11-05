@@ -260,11 +260,20 @@ test("UI-09, D-111: a dialog's scrolling body runs to the dialog's bottom edge, 
       const p = panel.getBoundingClientRect();
       const b = body.getBoundingClientRect();
       const border = parseFloat(getComputedStyle(panel).borderBottomWidth) || 0;
-      return { gap: p.bottom - border - b.bottom, last: panel.lastElementChild === body, padding: parseFloat(getComputedStyle(body).paddingBottom), scrolls: body.scrollHeight > body.clientHeight };
+      const content = body.querySelector("[data-dialog-content]")!;
+      return {
+        gap: p.bottom - border - b.bottom, last: panel.lastElementChild === body,
+        framePadding: parseFloat(getComputedStyle(body).paddingBottom),
+        padding: parseFloat(getComputedStyle(content).paddingBottom),
+        endInset: content.getBoundingClientRect().bottom - content.lastElementChild!.getBoundingClientRect().bottom,
+        scrolls: body.scrollHeight > body.clientHeight,
+      };
     });
     expect(edges.last).toBe(true);
     expect(Math.abs(edges.gap)).toBeLessThanOrEqual(1);
-    expect(edges.padding).toBeGreaterThan(0);
+    expect(edges.framePadding).toBe(0);
+    expect(edges.padding).toBe(24);
+    expect(edges.endInset).toBeCloseTo(edges.padding, 0);
     expect(edges.scrolls).toBe(true);
   } finally {
     await quit(l);

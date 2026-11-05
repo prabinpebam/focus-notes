@@ -256,8 +256,8 @@ test("SP-14: menu scroll frames, full-bleed results and navigation insets preser
       await settings.getByRole("tab", { name: "Appearance", exact: true }).click();
       expect(await settings.getByRole("tablist").evaluate(el => {
         const navigation = el.closest("[data-side-nav]")!;
-        const cs = getComputedStyle(navigation);
-        return Math.min(parseFloat(cs.paddingTop), parseFloat(cs.paddingBottom)) >= parseFloat(cs.rowGap);
+        const content = getComputedStyle(navigation.hasAttribute("data-tab-navigation") ? el : navigation);
+        return Math.min(parseFloat(content.paddingTop), parseFloat(content.paddingBottom)) >= parseFloat(getComputedStyle(el).rowGap);
       })).toBe(true);
       await reset(l.page);
     }
@@ -275,7 +275,11 @@ test("Settings: the scroll panel reaches the dialog edges and never clips a fiel
     const dialog = l.page.getByRole("dialog", { name: "Settings" });
     const problems: string[] = [];
     for (const compact of [false, true]) {
-      if (compact) await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(480, 360));
+      if (compact) expect(await l.app.evaluate(({ BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows()[0]!;
+        window.setSize(480, 360);
+        return window.getSize();
+      })).toEqual([480, 360]);
       await dialog.getByRole("tab", { name: "Project", exact: true }).click();
       const name = dialog.getByRole("textbox", { name: "Name", exact: true });
       await name.focus();

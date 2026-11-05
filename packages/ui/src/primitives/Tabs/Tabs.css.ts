@@ -14,8 +14,12 @@ export const navHeightVar = createVar({ syntax: "<length>", inherits: false, ini
 export const scrollRoot = style({ vars: { [navHeightVar]: t.navMinHeight }, flexGrow: 1, minHeight: 0 });
 export const scroller = style({ flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom });
 minimalScrollbar(scroller, t);
+export const navigationFrame = style({
+  display: "flex", flexDirection: "column", flexShrink: 0, minHeight: 0,
+  maxHeight: `calc(100% - ${t.panelMinHeight})`,
+});
 export const navigationScroller = style({
-  flexShrink: 0, minHeight: 0, maxHeight: `calc(100% - ${t.panelMinHeight})`,
+  minHeight: 0, flexShrink: 1,
   overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom,
 });
 minimalScrollbar(navigationScroller, t);
@@ -55,6 +59,9 @@ const footerBase = style({
   "@media": { "(forced-colors: active)": { backgroundImage: "none", paddingBlockStart: t.footerGap, borderBlockStartStyle: "solid", borderBlockStartWidth: t.borderWidth, borderColor: t.border } },
 });
 export const footer = { horizontal: footerBase, vertical: footerBase };
+export const fixedFooter = style({
+  flexShrink: 0, paddingInline: t.contentInset, paddingBlockEnd: t.focusRoom,
+});
 const tabBase = style({
   display: "inline-flex",
   alignItems: "center",

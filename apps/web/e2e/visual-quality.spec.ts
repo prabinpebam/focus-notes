@@ -67,6 +67,32 @@ async function reset(page: Page) {
   await settled(page);
 }
 
+test("SP-15: inset geometry follows scroll content and still rejects a missing or asymmetric inset", async ({ page }) => {
+  await page.setContent(`
+    <div data-surface="dialog" style="width: 400px; display: flex; flex-direction: column; border: 1px solid">
+      <header style="padding: 24px"><button>Header</button></header>
+      <div data-dialog-body style="height: 160px; overflow-y: auto; flex-grow: 1; scrollbar-gutter: stable">
+        <div data-dialog-content style="padding: 24px">
+          <button>First</button><div style="height: 300px"></div><button>Last</button>
+        </div>
+      </div>
+    </div>
+  `);
+  const paddingProblems = async () => (await visualProblems(page)).filter(p => p.startsWith("uniform padding:"));
+  // Match the native scrollbar reservation without padding the scroll frame.
+  await page.locator("[data-dialog-content]").evaluate(el => {
+    const frame = el.parentElement!;
+    (el as HTMLElement).style.paddingRight = `${24 - (frame.offsetWidth - frame.clientWidth)}px`;
+  });
+  expect(await paddingProblems()).toEqual([]);
+  await page.locator("[data-dialog-body]").evaluate(el => { el.scrollTop = el.scrollHeight; });
+  expect(await paddingProblems()).toEqual([]);
+  await page.locator("[data-dialog-content]").evaluate(el => { (el as HTMLElement).style.paddingBottom = "0px"; });
+  expect(await paddingProblems()).toHaveLength(1);
+  await page.locator("[data-dialog-content]").evaluate(el => { (el as HTMLElement).style.padding = "0px"; });
+  expect(await paddingProblems()).toHaveLength(1);
+});
+
 for (const size of [undefined, { width: 480, height: 360 }] as const) {
   for (const scheme of ["light", "dark"] as const) {
     const sizeName = size ? "small" : "default";
