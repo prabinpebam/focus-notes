@@ -133,6 +133,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
    * back to the open note's text as opened.
    */
   let lastWritten: { path: string; text: string } | undefined;
+  let namingDeferred: string | undefined;
   const onDisk = (path: string) => (lastWritten?.path === path ? lastWritten.text : store.state.note.path === path ? store.state.note.initialMarkdown : undefined);
   let outside = 0;
   let reconciliation = 0;
@@ -154,6 +155,14 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
       setWorkspace({ tree: applyChanges(store.state.workspace.tree, changes), listing: "error", listFailed: true });
       console.error("Workspace listing failed", opErrorCode(error));
     } finally { listing = false; }
+    const deferred = namingDeferred;
+    namingDeferred = undefined;
+    if (deferred) {
+      void ctx.afterWrites(async () => {
+        const known = lastWritten;
+        if (known?.path === deferred && store.state.note.path === deferred) await written(deferred, known.text);
+      });
+    }
   }
   commands.register({
     id: "workspace.retryList", title: "commit.retry",
@@ -217,6 +226,8 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     const next = titleOfMarkdown(markdown);
     if (queued) {
       queued.push({ path, kind: "note", exists: true, title: next ?? "" });
+      // The name needs the tree: a first save that lands while it's still listed is named once it's ready.
+      if (follows) namingDeferred = path;
       return;
     }
     setTree(applyChanges(store.state.workspace.tree, [{ path, kind: "note", exists: true, title: next ?? "" }]));
