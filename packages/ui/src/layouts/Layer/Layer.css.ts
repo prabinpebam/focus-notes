@@ -38,6 +38,8 @@ export const cornerLeft = createVar();
 export const cornerGap = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 export const avoidPinned = style({
   vars: { [cornerGap]: tokens.space.marginPage },
+  // A coordinate measured in the window's physical space; the logical start is cleared so right to left doesn't pin both edges.
+  insetInlineStart: "auto",
   left: fallbackVar(cornerLeft, tokens.space.marginPage),
   selectors: { "&[data-pinned-overflow]": { top: tokens.space.marginPage, bottom: "auto" } },
 });

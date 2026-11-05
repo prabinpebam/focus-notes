@@ -55,9 +55,17 @@ const EXCLUDED: { rule: RegExp; path?: RegExp; where?: RegExp; why: string }[] =
   { rule: /^group-separation$/, path: /MenuButton_menu/, why: "a section's runs (checkable and plain items) are one group, split only for selection" },
   { rule: /^overlap$/, path: /> svg > /, why: "an SVG's shapes overlap by design (a step mark's art)" },
 ];
+/** Surfaces the harness can't open yet, each with its reason (spacing-audit.md, "Not fixed, and why"). */
+const UNREACHED: { where: RegExp; why: string }[] = [
+  { where: /^files selection /, why: "surfaces.ts's selection helper is stale on this branch" },
+  { where: /^more › Publish… /, why: "its ⋯ item opens no surface without a signed-in account" },
+];
 const blocking = (out: (Finding & { where: string })[]) =>
   out.filter((x) => (x.severity === "S1" || x.severity === "S2") && !EXCLUDED.some((e) => e.rule.test(x.rule) && (!e.path || e.path.test(x.path)) && (!e.where || e.where.test(x.where))));
 const enforce = (out: (Finding & { where: string })[]) => {
+  // A surface that didn't open wasn't checked: that fails too, unless it's named here with its reason.
+  const unreached = out.filter((x) => x.rule === "not-reached" && !UNREACHED.some((u) => u.where.test(x.where)));
+  expect(unreached.map((x) => `${x.where}: ${x.measured}`), "every surface opened").toEqual([]);
   const b = blocking(out);
   expect(b.map((x) => `${x.severity} ${x.rule} | ${x.where} | ${x.measured} | ${x.path.split(" > ").slice(-2).join(" > ")}`), "no S1 or S2 spacing findings (documentations/design/spacing-audit.md)").toEqual([]);
 };
@@ -156,7 +164,9 @@ for (const { name: sizeName, size } of SIZES) {
         await reset(page).catch(() => {});
       }
       // Everything the More menu opens (Share, Theme, Customize toolbar, New project, Help…).
-      for (const item of ON ? await moreItems(page).catch(() => [] as string[]) : []) {
+      const more = ON ? await moreItems(page) : [];
+      if (ON) expect(more.length, "the More menu lists the surfaces it opens").toBeGreaterThan(0);
+      for (const item of more) {
         console.log(`[spacing] more item: ${item}`);
         // Items that open the system's own dialogs (a file picker, printing) are outside the app's design system.
         if (/quit|exit|close window|check for updates|open file|open project|import|export|print|save as|reveal|show in/i.test(item)) continue;
@@ -186,7 +196,6 @@ for (const { name: sizeName, size } of SIZES) {
       mkdirSync(OUT, { recursive: true });
       writeFileSync(join(OUT, `surfaces-${want}-${sizeName}.json`), JSON.stringify({ done, findings: out }, null, 1));
       await quit(l);
-      if (!ON) expect(out.filter((x) => x.rule === "not-reached").map((x) => x.where), "every core surface opened").toEqual([]);
       enforce(out);
     });
   }

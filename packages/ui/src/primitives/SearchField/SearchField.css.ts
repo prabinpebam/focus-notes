@@ -25,7 +25,8 @@ export const root = style({
   fontSize: t.fontSize,
   boxSizing: "border-box",
   selectors: {
-    "&:focus-within": { outlineColor: t.borderFocus, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
+    // The ring thickens inside as well as outside, so focus still shows in forced colours, where shadows are dropped.
+    "&:focus-within": { outlineColor: t.borderFocus, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})`, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
     "&[data-invalid]": { outlineColor: t.borderInvalid },
   },
 });

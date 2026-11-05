@@ -188,8 +188,8 @@ export const item = style({
   },
   "@media": { "(hover: hover)": { selectors: { "&:hover:not(:active)": { backgroundColor: t.itemHover } } } },
 });
-// Indented by a transparent start border its fill doesn't paint under: the item's own box, never a margin (spacing SP-9).
-const indentBy = (n: number) => ({ borderInlineStartStyle: "solid" as const, borderInlineStartColor: "transparent", borderInlineStartWidth: `calc(${n} * ${t.indent})`, backgroundClip: "padding-box" });
+// Indented by its list item's own padding: the container owns the space, never a margin, and the button's fill, corners and ring stay its own (spacing SP-9).
+const indentBy = (n: number) => ({ paddingInlineStart: `calc(${n} * ${t.indent})` });
 export const indent = styleVariants({ 0: {}, 1: indentBy(1), 2: indentBy(2), 3: indentBy(3), 4: indentBy(4), 5: indentBy(5) });
 
 /** At most two lines, then an ellipsis; the full text stays the accessible name. */

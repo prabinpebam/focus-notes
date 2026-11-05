@@ -622,10 +622,10 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   const entries = (nodes: OutlineNode[]) => nodes.map(({ i, children }) => {
     const h = headings[i]!;
     return (
-      <li key={`${h.index}:${i}`} className={s.entry}>
+      <li key={`${h.index}:${i}`} className={`${s.entry} ${s.indent[Math.min(5, depths[i] ?? 0) as 0 | 1 | 2 | 3 | 4 | 5]}`}>
         <button
           type="button"
-          className={`${s.item} ${s.indent[Math.min(5, depths[i] ?? 0) as 0 | 1 | 2 | 3 | 4 | 5]}`}
+          className={s.item}
           tabIndex={i === focusIndex ? 0 : -1}
           aria-current={i === current ? "location" : undefined}
           data-untitled={h.text ? undefined : ""}

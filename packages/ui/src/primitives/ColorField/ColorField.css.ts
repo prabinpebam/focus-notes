@@ -22,7 +22,8 @@ export const control = style({
   backgroundColor: t.background,
   boxSizing: "border-box",
   selectors: {
-    "&:focus-within": { outlineColor: t.borderFocus, boxShadow: `0 0 0 ${t.focusWidth} ${t.borderFocus}` },
+    // The ring thickens inside as well as outside, so focus still shows in forced colours, where shadows are dropped.
+    "&:focus-within": { outlineColor: t.borderFocus, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})`, boxShadow: `0 0 0 ${t.focusWidth} ${t.borderFocus}` },
     // The commit track (F2): the commit colour while it saves, the error colour when it couldn't.
     [`${root}[data-commit="pending"] &`]: { outlineColor: t.borderCommit, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderCommit}` },
     [`${root}[data-commit="failed"] &`]: { outlineColor: t.borderInvalid },

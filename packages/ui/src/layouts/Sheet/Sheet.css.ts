@@ -113,7 +113,8 @@ export const main = style({
   minHeight: 0,
   selectors: {
     // Up and down only: a close button bleeding into the padding (D-111) never makes it scroll sideways.
-    "[data-short] > &": { overflowY: "auto", overflowX: "hidden", scrollbarGutter: "stable", paddingBlock: t.bodySlack },
+    // The body's slack moves to the scroller here, so the header-to-body gap is the whole group gap again.
+      "[data-short] > &": { overflowY: "auto", overflowX: "hidden", scrollbarGutter: "stable", paddingBlock: t.bodySlack, gap: t.groupGap },
   },
 });
 minimalScrollbar(main, t);
