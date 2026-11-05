@@ -14,7 +14,7 @@ export const contract = defineContract({
     shortcut: { kind: "text" },
     busy: { kind: "boolean", default: false, description: "Locks only this menu, keeps its trigger focusable and shows a pending border on compact text variants." },
     commit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "Own-border feedback after persisting a menu choice; Retry and Revert stay outside the compact trigger." },
-    bleed: { kind: "boolean", default: false, description: "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)." },
+    bleed: { kind: "boolean", default: false, description: "Deprecated compatibility input; padding and paint always stay inside the control (D-354)." },
   },
   events: { action: { payload: { id: "text" } } },
   slots: {},
@@ -34,6 +34,6 @@ export const contract = defineContract({
     { name: "placement top start", covers: ["closed"], props: { icon: "more", label: { t: "gallery.action" }, placement: "top start", sections: { get: "vm.gallery.menu" } } },
     { name: "variant text, placement bottom start", covers: ["closed"], props: { variant: "text", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, placement: "bottom start", sections: { get: "vm.gallery.menu" } } },
     { name: "variant select", covers: ["closed"], props: { variant: "select", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, placement: "bottom start", sections: { get: "vm.gallery.menu" } } },
-    { name: "variant text, bleed", covers: ["closed"], props: { variant: "text", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, bleed: true, sections: { get: "vm.gallery.menu" } } },
+    { name: "variant text", covers: ["closed"], props: { variant: "text", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, sections: { get: "vm.gallery.menu" } } },
   ],
 });

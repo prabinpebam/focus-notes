@@ -133,6 +133,26 @@ it("keeps an icon toggle focused and blocks only its pending commit", () => {
   } finally { act(() => root.unmount()); host.remove(); }
 });
 
+it.each(["busy", "commit"] as const)("OFB.9: %s icon waits keep their glyph and render exactly one own-border sign", (source) => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const press = vi.fn();
+  try {
+    act(() => root.render(createElement(IconButton, {
+      icon: "pin", label: "Pin note", onPress: press,
+      ...(source === "busy" ? { busy: true } : { commit: "pending" as const }),
+    })));
+    const button = host.querySelector("button")!;
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    expect(button.querySelectorAll("svg")).toHaveLength(1);
+    expect(button.querySelectorAll("[data-border-progress=pending]")).toHaveLength(1);
+    expect(button.querySelectorAll("span:not([data-border-progress])")).toHaveLength(0);
+    act(() => button.click());
+    expect(press).not.toHaveBeenCalled();
+  } finally { act(() => root.unmount()); host.remove(); }
+});
+
 it("theme arrows only preview and pending tiles retain focus without accepting another choice", () => {
   const host = document.createElement("div");
   document.body.append(host);

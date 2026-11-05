@@ -1928,7 +1928,7 @@
         "bleed": {
           "kind": "boolean",
           "default": false,
-          "description": "A subtle button at the start of the content (a first-run step's Back): its label lines up with the content's edge, and its hit area reaches into the padding (D-111)."
+          "description": "Deprecated compatibility input; padding and paint always stay inside the control (D-354)."
         },
         "autoFocus": {
           "kind": "boolean",
@@ -2484,16 +2484,6 @@
           }
         },
         {
-          "name": "bleed",
-          "props": {
-            "label": {
-              "t": "gallery.action"
-            },
-            "variant": "subtle",
-            "bleed": true
-          }
-        },
-        {
           "name": "size m with icon",
           "props": {
             "label": {
@@ -2668,7 +2658,8 @@
         },
         "busy": {
           "kind": "boolean",
-          "default": false
+          "default": false,
+          "description": "Inert immediately, with the same own-border pending arc as a commit; no icon replacement."
         },
         "busyLabel": {
           "kind": "text"
@@ -2686,7 +2677,7 @@
         "bleed": {
           "kind": "boolean",
           "default": false,
-          "description": "At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding (D-111)."
+          "description": "Deprecated compatibility input; padding and paint always stay inside the control (D-354)."
         }
       },
       "events": {
@@ -2740,14 +2731,19 @@
         {
           "name": "commit pending",
           "covers": [
-            "pending"
+            "pending",
+            "busy"
           ],
           "props": {
             "icon": "save",
             "label": {
               "t": "gallery.action"
             },
-            "commit": "pending"
+            "commit": "pending",
+            "busy": true,
+            "busyLabel": {
+              "get": "vm.gallery.query"
+            }
           }
         },
         {
@@ -2832,33 +2828,6 @@
             },
             "toggle": true,
             "mixed": true
-          }
-        },
-        {
-          "name": "busy",
-          "covers": [
-            "busy"
-          ],
-          "props": {
-            "icon": "save",
-            "label": {
-              "t": "gallery.action"
-            },
-            "busy": true,
-            "busyLabel": {
-              "get": "vm.gallery.query"
-            }
-          }
-        },
-        {
-          "name": "bleed",
-          "props": {
-            "icon": "dismiss",
-            "label": {
-              "t": "gallery.action"
-            },
-            "tone": "muted",
-            "bleed": true
           }
         },
         {
@@ -3613,7 +3582,7 @@
         "bleed": {
           "kind": "boolean",
           "default": false,
-          "description": "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)."
+          "description": "Deprecated compatibility input; padding and paint always stay inside the control (D-354)."
         }
       },
       "events": {
@@ -3857,7 +3826,7 @@
           }
         },
         {
-          "name": "variant text, bleed",
+          "name": "variant text",
           "covers": [
             "closed"
           ],
@@ -3869,7 +3838,6 @@
             "label": {
               "t": "gallery.action"
             },
-            "bleed": true,
             "sections": {
               "get": "vm.gallery.menu"
             }
@@ -8317,7 +8285,7 @@
             "confirmed",
             "failed"
           ],
-          "description": "The commit track (F2): pending spins in the thumb and locks the switch, still focused and still the stored value; confirmed shows the tick beside the state word; failed shows the stored value, the error icon and `error` below with Retry."
+          "description": "Own-border pending arc (dashed with reduced motion), then success or danger outline; keep the stored value and focus, with error and Retry outside the track."
         },
         "error": {
           "kind": "message",

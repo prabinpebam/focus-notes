@@ -1476,10 +1476,19 @@ test("Open shows each pin's own-border pending arc while it saves, then confirms
     const beats = () => l.page.evaluate(() => (Reflect.get(globalThis, "fnPinBeats") as string[]).splice(0));
     for (const name of ["Book", "Draft"]) {
       for (const [from, to] of [["Pin", "Unpin"], ["Unpin", "Pin"]] as const) {
+        await l.page.emulateMedia({ reducedMotion: from === "Unpin" ? "reduce" : "no-preference" });
         const before = open.getByRole("button", { name: `${from} ${name}`, exact: true });
         await before.click();
         await expect(before).toHaveAttribute("data-commit", "pending");
         await expect(before).toHaveAttribute("aria-busy", "true");
+        const arc = before.locator('[data-border-progress="pending"]');
+        await expect(arc).toHaveCount(1);
+        await expect(before.locator("svg")).toHaveCount(1);
+        await expect(before.locator("span:not([data-border-progress])")).toHaveCount(0);
+        if (from === "Unpin") {
+          await expect(arc).toHaveCSS("animation-name", "none");
+          await expect(arc).toHaveCSS("border-top-style", "dashed");
+        }
         await expect(before.locator("xpath=ancestor::span[@data-commit][1]")).toHaveCSS("opacity", "1");
         const after = open.getByRole("button", { name: `${to} ${name}`, exact: true });
         await expect(after).toHaveAttribute("data-commit", "rest");
