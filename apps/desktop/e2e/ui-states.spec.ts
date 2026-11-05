@@ -367,7 +367,7 @@ test("First setup stops after its real clone receipt and resumes through acknowl
     const setup = card(l.page);
     await expect(setup.getByText(/^Downloading to this computer · 5 of 9/)).toBeVisible({ timeout: 60000 });
     await expect(setup.getByText("4 of 9 steps complete", { exact: true })).toBeVisible();
-    await expect(setup.getByText(/^Downloading to this computer · 5 of 9.* · [3-9]\d* s$/)).toBeVisible();
+    await expect(setup.getByText(/^Downloading to this computer · 5 of 9.* · (?:[3-9]|[1-9]\d+) s$/)).toBeVisible();
     await setup.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(setup.getByRole("button", { name: "Stopping after this step…", exact: true })).toHaveAttribute("aria-disabled", "true");
     await expect(setup.getByText(/^Setup stopped\. Completed files and settings are kept/)).toBeVisible({ timeout: 15000 });
