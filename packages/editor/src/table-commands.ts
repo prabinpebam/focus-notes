@@ -336,6 +336,7 @@ export function insertTable({ tr, state, dispatch }: CommandProps, rows = 3, col
 
 /** Every table command by ID. Handles and menus pass `table` (its position) and a row or column. */
 export const TABLE_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, unknown>) => boolean>> = {
+  "table.insert": (e) => e.chain().command(insertTable).scrollIntoView().run(),
   "table.nextCell": (e) => withTable(e, undefined, (c) => {
     if (!c.cur) return false;
     const { row, col } = c.cur;

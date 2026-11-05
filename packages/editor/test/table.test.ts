@@ -107,6 +107,18 @@ function clipboardEvent(editor: Editor, kind: "copy" | "cut") {
 const SAMPLE = "Before.\n\n| Task | Owner |\n| --- | --- |\n| Draft | Me |\n| Edit | You |\n\nAfter.\n";
 
 describe("opening and saving (TBL-06)", () => {
+  it("Insert table uses the slash menu's 3 by 3 header shape and survives Markdown reopen (OFB.16)", () => {
+    const { editor, md } = open("Before.\n");
+    expect(run(editor, "table.insert")).toBe(true);
+    expect(tableInfo(editor.state)).toMatchObject({ inTable: true, row: 0, col: 0, rows: 3, cols: 3 });
+    type(editor, "Heading");
+    for (let i = 0; i < 8; i++) expect(run(editor, "table.nextCell")).toBe(true);
+    type(editor, "Last");
+    expect(run(editor, "table.nextCell")).toBe(true);
+    type(editor, "Added");
+    expect(grid(editor)).toEqual([["Heading", "", ""], ["", "", ""], ["", "", "Last"], ["Added", "", ""]]);
+    expect(grid(open(md()).editor)).toEqual(grid(editor));
+  });
   it("opens a GFM table as a table and saves it untouched, byte for byte", () => {
     const { editor, md } = open(SAMPLE);
     expect(grid(editor)).toEqual([["Task", "Owner"], ["Draft", "Me"], ["Edit", "You"]]);
