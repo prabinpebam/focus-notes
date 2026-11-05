@@ -11,7 +11,7 @@
   "windowShadow": { "$type": "shadow", "$value": "{shadow.1}" },
   "windowBorder": { "$type": "color", "$value": "{color.border}" },
   "projectBorder": { "$type": "color", "$value": "{color.accent}", "$description": "The project's full outer window outline (D-317): the project's accent, solid (D-pending)." },
-  "projectBorderWidth": { "$type": "dimension", "$value": "{border.projectOutline}", "$description": "The project outline's width (D-pending): drawn as a shadow, so nothing inside the window moves." },
+  "projectBorderWidth": { "$type": "dimension", "$value": "{border.projectOutline}", "$description": "The project outline's width (D-pending): drawn as a CSS outline, so nothing inside the window moves." },
   "windowBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "windowOutside": { "$type": "color", "$value": "{color.none}" }
 } } }
