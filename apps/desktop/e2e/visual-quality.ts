@@ -489,7 +489,17 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       }
     }
     if (on("padding") && kind !== "toast" && content.length && s.getAttribute("data-vq-padding") !== "none") {
-      const edge = (pick: (r: Box) => number, most: (a: number, b: number) => boolean) => content.reduce((a, c) => (most(pick(c.r), pick(a.r)) ? c : a));
+      const paddingContent = [...content];
+      const toolbar = s.querySelector('[role="toolbar"]');
+      if (toolbar && getComputedStyle(toolbar).flexWrap === "wrap") {
+        const children = [...toolbar.children].filter(shown);
+        const frame = rect(toolbar);
+        // A wrapped row has a ragged end; its layout frame, not its longest run, owns the inset.
+        if (children.length && frame.bottom - frame.top > Math.max(...children.map(el => el.getBoundingClientRect().height)) + 1) {
+          paddingContent.push({ el: toolbar, r: frame });
+        }
+      }
+      const edge = (pick: (r: Box) => number, most: (a: number, b: number) => boolean) => paddingContent.reduce((a, c) => (most(pick(c.r), pick(a.r)) ? c : a));
       const by = { top: edge((r) => r.top, (a, b) => a < b), left: edge((r) => r.left, (a, b) => a < b), right: edge((r) => r.right, (a, b) => a > b), bottom: edge((r) => r.bottom, (a, b) => a > b) };
       const pad = { top: by.top.r.top - inner.top, left: by.left.r.left - inner.left, right: inner.right - by.right.r.right, bottom: inner.bottom - by.bottom.r.bottom };
       const values = Object.values(pad);

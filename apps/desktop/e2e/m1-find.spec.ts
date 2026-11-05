@@ -43,11 +43,13 @@ test("OFB.6: Find switches wrap inside a minimum writing window without hiding t
     await page.keyboard.press("Escape");
     await expect(options).toBeHidden();
     await expect.poll(async () => {
-      const b = (await bar.boundingBox())!, m = (await editor.locator(".ProseMirror-active-search-match").boundingBox())!;
-      return m.y - (b.y + b.height);
+      const b = await bar.boundingBox(), m = await editor.locator(".ProseMirror-active-search-match").boundingBox();
+      return b && m ? m.y - (b.y + b.height) : Number.NEGATIVE_INFINITY;
     }).toBeGreaterThanOrEqual(0);
-    const match = (await editor.locator(".ProseMirror-active-search-match").boundingBox())!;
-    expect(match.y + match.height).toBeLessThanOrEqual(320);
+    await expect.poll(async () => {
+      const match = await editor.locator(".ProseMirror-active-search-match").boundingBox();
+      return match ? match.y + match.height : Number.POSITIVE_INFINITY;
+    }).toBeLessThanOrEqual(320);
     await page.screenshot({ path: "../../test-results/screens/ofb-find-switches-minimum.png" });
   } finally { await quit(l); }
 });

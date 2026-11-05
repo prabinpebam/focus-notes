@@ -326,6 +326,7 @@ for (const appearance of ["light", "dark"]) test(`Close tooltip never changes di
       await l.page.getByRole("dialog", { name: "Settings", exact: true }).getByRole("button", { name: "Send feedback", exact: true }).click();
       const feedback = l.page.getByRole("dialog", { name: "Send feedback", exact: true });
       await feedback.getByRole("radiogroup", { name: "Kind" }).getByText("Idea", { exact: true }).click();
+      expect(await l.page.locator("[data-app-root]").evaluate(el => el.scrollTop)).toBe(0);
       await check(feedback, "content");
     }
     expect(readFileSync(note, "utf8")).toBe(text);

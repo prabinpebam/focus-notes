@@ -14,7 +14,6 @@ import { TaskTracker, busyProps, type Clock, type TaskView } from "@focus-notes/
 import { Button } from "../../ui/src/primitives/Button/Button.tsx";
 import { IconButton } from "../../ui/src/primitives/IconButton/IconButton.tsx";
 import { busySpinner as buttonSign } from "../../ui/src/primitives/Button/Button.css.ts";
-import { busySpinner as iconButtonSign } from "../../ui/src/primitives/IconButton/IconButton.css.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const REPO = resolve(process.cwd());
@@ -95,8 +94,7 @@ function seen(id: "b" | "i") {
     inert: el.getAttribute("aria-disabled"),
     phase: el.getAttribute("data-busy"),
     name: id === "b" ? el.textContent : el.getAttribute("aria-label"),
-    // The sign: a Spinner in the icon's cell (revealed by the style after cmp.*.busy.signDelay).
-    sign: el.getElementsByClassName(id === "b" ? buttonSign : iconButtonSign).length > 0,
+    sign: id === "b" ? el.getElementsByClassName(buttonSign).length > 0 : Boolean(el.querySelector("[data-border-progress=pending]")),
   };
 }
 const both = () => ({ button: seen("b"), iconButton: seen("i") });
@@ -184,7 +182,8 @@ describe("the busy policy, the same for Button and IconButton (D-199)", () => {
 
   it("times the sign from the wait tokens, never a component timer", () => {
     const css = readFileSync(resolve(REPO, "packages/tokens/dist/tokens.css"), "utf8");
-    for (const cmp of ["button", "icon-button"]) expect(css).toMatch(new RegExp(`--fn-cmp-${cmp}-busy-sign-delay: var\\(--fn-wait-sign-delay\\)`));
+    expect(css).toMatch(/--fn-cmp-button-busy-sign-delay: var\(--fn-wait-sign-delay\)/);
+    expect(css).not.toContain("--fn-cmp-icon-button-busy-sign-delay:");
     for (const f of ["Button/Button.tsx", "IconButton/IconButton.tsx", "ItemCard/ItemCard.tsx"]) {
       const src = readFileSync(resolve(REPO, `packages/ui/src/primitives/${f}`), "utf8");
       expect(src).toMatch(/useBusy\(/);

@@ -95,6 +95,20 @@ test("SP-15: inset geometry follows scroll content and still rejects a missing o
   expect(await paddingProblems()).toHaveLength(1);
 });
 
+test("Wrapped toolbar inset measurement allows ragged rows but rejects missing edge padding", async ({ page }) => {
+  await page.setContent(`
+    <div data-surface="panel" style="width: 260px; padding: 8px; border: 1px solid; box-sizing: border-box">
+      <div role="toolbar" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button style="width: 100px">First</button><button style="width: 100px">Second</button><button style="width: 100px">Third</button>
+      </div>
+    </div>
+  `);
+  const paddingProblems = async () => (await visualProblems(page)).filter(p => p.startsWith("uniform padding:"));
+  expect(await paddingProblems()).toEqual([]);
+  await page.locator("[data-surface]").evaluate(el => { (el as HTMLElement).style.paddingRight = "0px"; });
+  expect(await paddingProblems()).toHaveLength(1);
+});
+
 for (const size of [undefined, { width: 480, height: 360 }] as const) {
   for (const scheme of ["light", "dark"] as const) {
     const sizeName = size ? "small" : "default";

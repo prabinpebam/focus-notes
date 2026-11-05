@@ -35,7 +35,16 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.scale.xs}"
+        "$value": "{space.insetSm}"
+      },
+      "viewportInset": {
+        "$type": "dimension",
+        "$value": "{space.insetLg}",
+        "$description": "Clearance for the window's shadow and the anchored toolbar at narrow widths."
+      },
+      "viewportWidth": {
+        "$type": "dimension",
+        "$value": "{layout.viewportWidth}"
       },
       "duration": {
         "$type": "duration",

@@ -67,6 +67,7 @@ export const content = style({
   top: 0,
   left: "50%",
   width: "max-content",
+  maxWidth: `calc(${t.viewportWidth} - ${t.viewportInset} * 2)`,
   padding: t.padding,
   boxSizing: "border-box",
   opacity: 0,

@@ -354,6 +354,10 @@
   },
   "layout": {
     "$type": "dimension",
+    "viewportWidth": {
+      "$value": "{ref.viewportWidth}",
+      "$description": "The available viewport width for responsive floating surfaces."
+    },
     "topBand": {
       "$value": "{ref.size.110}"
     },
