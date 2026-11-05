@@ -38,7 +38,7 @@ export function IconButton({ icon, label, shortcut, size = "m", tone = "default"
   const className = `${s.base} ${s.tone[tone]}${size === "stretch" ? ` ${s.stretch}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
   const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
-  const common = { id, className, "aria-label": name, ...attrs, ref, "data-commit": commit, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };
+  const common = { id, className, "aria-label": name, ...attrs, ref, "data-commit": commit, preventFocusOnPress: keepNoteFocus };
   const glyph = commit && commit !== "rest" ? <><Icon name={icon} /><CommitMark variant="border" state={commit} /></> : busy ? (
     <span className={s.busyGlyph}>
       <span className={s.busyIcon}><Icon name={icon} /></span>

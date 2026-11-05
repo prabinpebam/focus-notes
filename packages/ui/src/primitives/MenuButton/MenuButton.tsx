@@ -233,7 +233,7 @@ export function MenuButton({ icon = "more", label, variant = "icon", text, place
         : variant === "select"
           ? <Button {...trigger} className={`${s.select} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : variant === "text"
-          ? <Button {...trigger} className={`${s.text} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined} data-bleed={bleed ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
+          ? <Button {...trigger} className={`${s.text} ${s.busyAnchor}${surface}`} data-floating-control={floating ? "" : undefined}>{words}<Icon name="chevronDown" size="s" /></Button>
           : <IconButton icon={icon} label={label} busy={busy} commit={commit} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">
         <CommandMenu label={label} sections={sections} onAction={onAction} />

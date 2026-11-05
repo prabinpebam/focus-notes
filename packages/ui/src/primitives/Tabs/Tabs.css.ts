@@ -20,7 +20,8 @@ export const navigationFrame = style({
 });
 export const navigationScroller = style({
   minHeight: 0, flexShrink: 1,
-  overflowY: "auto", scrollbarGutter: "stable", scrollPadding: t.focusRoom,
+  // Tabs paint their focus ring inside; an exterior allowance can exceed a one-row viewport.
+  overflowY: "auto", scrollbarGutter: "stable", scrollPadding: 0,
 });
 minimalScrollbar(navigationScroller, t);
 

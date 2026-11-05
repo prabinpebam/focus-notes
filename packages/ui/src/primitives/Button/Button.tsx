@@ -51,7 +51,6 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
     id,
     className: [s.base, s.size[size], ...(icon ? [iconPosition === "start" ? s.iconStart[size] : s.iconEnd[size]] : []), s.variant[variant], ...(floating ? [s.floating] : []), ...(borderFeedback ? [s.borderAnchor] : [])].join(" "),
     "data-floating-control": floating ? "" : undefined,
-    "data-bleed": bleed ? "" : undefined,
     ...attrs,
     ref,
     ...(expanded !== undefined ? { "aria-expanded": expanded } : {}),

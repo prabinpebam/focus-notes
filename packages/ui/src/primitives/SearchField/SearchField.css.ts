@@ -25,8 +25,8 @@ export const root = style({
   fontSize: t.fontSize,
   boxSizing: "border-box",
   selectors: {
-    // The ring thickens inside as well as outside, so focus still shows in forced colours, where shadows are dropped.
-    "&:focus-within": { outlineColor: t.borderFocus, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})`, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
+    // Keep the focus cue inside the field, including a one-control-tall scroll viewport.
+    "&:focus-within": { outlineColor: t.borderFocus, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     "&[data-invalid]": { outlineColor: t.borderInvalid },
   },
 });

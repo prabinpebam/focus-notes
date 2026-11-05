@@ -29,6 +29,10 @@ Filled in by the OFB notification audit: one row per notification, with its mess
 
 The owner's found-notes screenshots exposed a shared primitive defect, not three missing per-view insets. Legacy `bleed` removed Button's start padding and painted on a negative-inset pseudo-element; the floating hover override also painted the smaller real button. The overlapping boxes explain the offset "More options" hover. Button, MenuButton and IconButton now keep their token inset and all state paint on their own box; the compatibility input cannot opt out.
 
+The obsolete `data-bleed` marker is removed too: the visual-quality probe must measure these controls' real box, not skip it and measure the inset SVG. The first CI run revealed that stale marker as false top-padding findings across dialog and sheet headers; the positive-padding rule itself stays unchanged.
+
+The taller, correctly padded header also exposed minimum-height scroll clips. The category tabs' inset focus ring needs no exterior scroll-padding allowance (which otherwise pushes a 32 px tab beyond a 34 px viewport); SearchField uses its existing inset focus outline without a second exterior shadow, so it remains complete in a one-control-tall Files viewport.
+
 | State family | Kept | Removed | Enforcement |
 | --- | --- | --- | --- |
 | Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |
