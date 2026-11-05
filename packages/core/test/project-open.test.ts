@@ -38,7 +38,7 @@ describe("Open", () => {
     expect(writeNote).not.toHaveBeenCalled();
     expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ tone: "error", message: en["project.launch.restoreFailed"] }));
   });
-  it("queues the renamed launch path without blocking its save and updates the saved disk path", async () => {
+  it.each([false, true])("queues the renamed launch path without blocking its save and updates the saved disk path (rename fails: %s)", async (refused) => {
     const current = "/w/private/notes/untitled.md";
     const files: Record<string, string> = { [current]: "" };
     const remember = vi.fn<NonNullable<PlatformBridge["projects"]>["remember"]>(() => new Promise<void>(() => {}));
@@ -49,7 +49,12 @@ describe("Open", () => {
       workspace: {
         info: async () => ({ folder: "/w" }),
         scan: async () => ({ folder: "/w", roots: [{ id: "private", path: "/w/private/notes", readOnly: false }], entries: [{ path: current, kind: "note" }] }),
-        renameNote: async (from, to) => { files[to] = files[from]!; delete files[from]; },
+        renameNote: async (from, to) => {
+          expect(saveAppState.mock.calls).toContainEqual([expect.objectContaining({ lastNotePath: to })]);
+          if (refused) throw new Error("rename refused");
+          files[to] = files[from]!;
+          delete files[from];
+        },
         writeFormat: async () => {},
         onChange: () => () => {},
       },
@@ -57,6 +62,13 @@ describe("Open", () => {
     await app.start();
     await app.commands.run("note.setContent", { value: "# Kept title\n" });
     expect(await app.flush()).toBe(true);
+    if (refused) {
+      expect(app.store.state.note.path).toBe(current);
+      expect(files[current]).toBe("# Kept title\n");
+      expect(saveAppState.mock.calls.at(-1)).toEqual([expect.objectContaining({ lastNotePath: current })]);
+      expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ tone: "error", message: en["files.firstNameFailed"] }));
+      return;
+    }
     expect(app.store.state.note.path).toBe("/w/private/notes/kept-title.md");
     expect(remember.mock.calls.at(-1)?.[0]).toBe("/w/private/notes/kept-title.md");
     expect(files["/w/private/notes/kept-title.md"]).toBe("# Kept title\n");
