@@ -30,7 +30,8 @@ const withCard = (node: unknown): unknown => {
   const props = n.props as Node | undefined;
   return n.type === "OpenItem" && props?.kind === "project" ? { ...n, props: { ...props, ...statsLine } } : n;
 };
-const view = (model: string) => withCard(mockOf(compose(projects), model)) as Node;
+/** Other mock groups (Delete's Open after deletion) build Open with this, so they show the approved card too. */
+export const view = (model: string) => withCard(mockOf(compose(projects), model)) as Node;
 
 // One full-width group per theme keeps project names and paths legible in the gallery.
 const tintColumn = (theme: string) => ({
