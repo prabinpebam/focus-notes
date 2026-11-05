@@ -141,6 +141,8 @@ The Copilot connection always says **Cloud**, has no API key or editable endpoin
 
 The built-app `ai-discovery.spec.ts` journey drives Settings normally and observes checking, partial found counts, found, none, scoped errors and cancellation. Protocol fakes run inside the test process; the installed Copilot CLI is not found on its isolated PATH. No account login, cloud request, generation or real GitHub action is tested or implied.
 
+The renderer's scan duration is retained in local diagnostics as `fn:ai.discover.window`, with counts and percentiles only. Cancel belongs to the scan's own controls, not the native menu bar. The CLI's scan row says **On this computer**, without offering outside software.
+
 ## Models
 
 **Find models** lists what the service offers, up to 500, within 8 seconds: for a saved connection, or for the form you're filling in, with the key you typed, or the saved key only while the address is still the saved one (AIS-08). "Finding available models…", then "12 models available." or "No models are available. Install or load one, or type a model you have access to." Ollama models that run in the cloud show "· Cloud", so a local server can't quietly send text away. Azure lists none: its deployment is the model.

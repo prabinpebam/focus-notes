@@ -155,9 +155,9 @@ export function redact(text: string, o: RedactOptions = {}): string {
  */
 export const MEASURE_NAMES: readonly string[] = [
   "fn:note.open", "fn:spotlight.open",
-  "fn:ai.chooseWriter", "fn:rewrite.anchor", "fn:rewrite.deselect",
+  "fn:ai.chooseWriter", "fn:ai.discover.window", "fn:rewrite.anchor", "fn:rewrite.deselect",
   "focus-notes:settings.writer", "focus-notes:rewrite.writer",
-  "focus-notes:newNote.create",
+  "focus-notes:newNote.create", "focus-notes:ai.discover",
   ...["history.restore", "history.undo", "sharing.publishDraft", "sharing.preview", "sharing.previewSave", "sharing.invite", "sharing.change",
     "project.create", "project.open", "project.pin", "project.reveal",
     "share.item.words", "share.item.count", "share.item.addNotes", "share.item.publish", "share.item.handoff",

@@ -33,6 +33,7 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
     { command: "nope.cmd", key: "Mod+L" },
   ]));
   let l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  console.log(`toolbar-scan-owned-pid=${l.pid}`);
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toBeFocused();
@@ -64,12 +65,26 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
   await press(settings.getByRole("button", { name: "Customize toolbar…", exact: true }));
   const dialog = page.getByRole("dialog", { name: "Customize toolbar" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("6 of 6 pinned")).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Pin Find", exact: true })).toBeDisabled();
-  await press(dialog.getByRole("button", { name: "Unpin Save", exact: true }));
-  await expect(dialog.getByText("5 of 6 pinned")).toBeVisible();
-  await press(dialog.getByRole("button", { name: "Pin Find", exact: true }));
-  await press(dialog.getByRole("button", { name: "Move Find up", exact: true }));
+  const preview = dialog.getByRole("toolbar", { name: "Toolbar", exact: true });
+  const available = dialog.getByRole("group", { name: "Available buttons", exact: true });
+  const order = () => preview.locator("[data-slot] button").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label")));
+  const original = await order();
+  await expect(dialog.getByText("6 of 6 on the toolbar")).toBeVisible();
+  await press(available.getByRole("button", { name: "Find", exact: true }));
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await expect.poll(order).toEqual(original);
+  await preview.getByRole("button", { name: "Save", exact: true }).focus();
+  await page.keyboard.press("Delete");
+  await expect(dialog.getByText("5 of 6 on the toolbar")).toBeVisible();
+  await press(available.getByRole("button", { name: "Find", exact: true }));
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await expect.poll(order).toEqual([...original.filter(name => name !== "Save"), "Find"]);
+  await press(preview.getByRole("button", { name: "Find", exact: true }));
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Enter");
+  await expect.poll(order).toEqual(["Find", ...original.filter(name => name !== "Save")]);
   expect(await settledAxe(page)).toEqual([]);
   await press(dialog.getByRole("button", { name: "Done", exact: true }));
   await expect(dialog).toBeHidden();
@@ -100,6 +115,7 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
 
   // Kept on this device.
   l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  console.log(`toolbar-scan-owned-pid=${l.pid}`);
   await l.page.keyboard.press(`${mod}+.`);
   await expect(l.page.getByRole("toolbar").getByRole("button", { name: "Find", exact: true })).toBeVisible();
   await quit(l);

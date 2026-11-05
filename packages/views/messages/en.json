@@ -2727,7 +2727,7 @@
   "ai.found.hint": "Scans this PC for running AI services you can use.",
   "ai.scan.label": "Looking for AI models on this computer",
   "ai.scan.checking": "Checking…",
-  "ai.scan.installed": "Installed app",
+  "ai.scan.installed": "On this computer",
   "ai.scan.available": "Available",
   "ai.scan.unavailable": "Not available",
   "ai.scan.models": "{n, plural, one {# model} other {# models}}",
