@@ -48,7 +48,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
 | EmptyState | primitive | `rest` | 4 | None |
-| OpenItem | primitive | `rest`, `selected` | 33 | None |
+| OpenItem | primitive | `rest`, `selected` | 37 | None |
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
@@ -66,7 +66,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 7 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
 | CommitMark | primitive | `rest`, `pending`, `confirmed`, `failed` | 5 | None |
-| Skeleton | primitive | `rest` | 8 | None |
+| Skeleton | primitive | `rest` | 9 | None |
 | LiveRegion | primitive | `rest` | 1 | None |
 | Toast | primitive | `rest`, `paused`, `focusVisible` | 6 | `paused`, `focusVisible` |
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
@@ -247,7 +247,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **VersionCompare** | Implemented | `found`, `needed`, `foundLabel`, `neededLabel` (all required), `label`. The version found against the version needed, as two pills with an arrow (D-142) | Group, named by its label | Setup's tool checks |
 | **StrengthMeter** | Implemented | `value`, `label` (required), `valueText`. Four segments toned by a passphrase's strength, with a word beside them (D-142) | Meter | Passphrase fields |
 | **Spinner** | Implemented | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
-| **Skeleton** | Implemented | `shape` line, tile or avatar; `width` full, long, medium or short. A placeholder shaped like content on its way, with a light that passes three times (4.5 s) and then stands still; still with reduced motion, a plain GrayText shape in forced colours (D-208); `cmp.skeleton.*` | None: always hidden, the region beside it carries the one status | ItemCard skeletons in the first run, the spelling menu's "Checking spelling…", Settings' account, sharing, agents and About while they load, Send feedback's report, history and Recently deleted |
+| **Skeleton** | Implemented | `shape` line, text, tile, avatar, row or card; text matches one surrounding text line (`1lh`), while line keeps its existing bar height; `width` full, long, medium or short. A placeholder shaped like content on its way, with a light that passes three times (4.5 s) and then stands still; still with reduced motion, a plain GrayText shape in forced colours (D-208); `cmp.skeleton.*` | None: always hidden, the region beside it carries the one status | ItemCard skeletons in the first run, the spelling menu's "Checking spelling…", Settings' account, sharing, agents and About while they load, Send feedback's report, history and Recently deleted; Open's project stats use text (D-346) |
 | **ProgressBar** | Implemented | `value`, `max`, `label`. A determinate bar for work that reports how far it has got, read out as a percentage; the words beside it say what the work is (PRF-13, D-149) | Progress bar | Setup, publishing, long work |
 | **LiveRegion** | Implemented | `message` (required), `announceKey`. A polite announcement with nothing on screen; `cmp.liveRegion.*` | Status (live region) | Announcements that have no visible text |
 | **Divider** | Implemented | `orientation` | Separator | Menus, toolbars |

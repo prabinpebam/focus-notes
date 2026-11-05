@@ -585,6 +585,37 @@
           }
         },
         {
+          "name": "project empty",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "pen",
+            "accent": "indigo",
+            "stats": {
+              "t": "project.open.stats",
+              "args": {
+                "size": {
+                  "get": "vm.gallery.size"
+                },
+                "files": 0,
+                "media": 0,
+                "folders": 0
+              }
+            },
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
           "name": "project counting",
           "props": {
             "kind": "project",
@@ -4650,13 +4681,14 @@
           "kind": "enum",
           "values": [
             "line",
+            "text",
             "tile",
             "avatar",
             "row",
             "card"
           ],
           "default": "line",
-          "description": "What's coming: a line, picture, avatar, an ItemCard row or a picture card."
+          "description": "What's coming: a line, a text line matching the surrounding line box, picture, avatar, an ItemCard row or a picture card."
         },
         "width": {
           "kind": "enum",
@@ -4697,6 +4729,13 @@
           "props": {
             "shape": "line",
             "width": "long"
+          }
+        },
+        {
+          "name": "text line",
+          "props": {
+            "shape": "text",
+            "width": "medium"
           }
         },
         {

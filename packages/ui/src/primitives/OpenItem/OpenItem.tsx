@@ -76,7 +76,7 @@ export function OpenItem({ kind = "file", title, detail, path, pathLabel, logo =
           </button>
         ) : detail ? <span className={s.detail} data-personal="">{detail}</span> : null}
         {kind === "project" && statsBusy
-          ? <span className={s.statsSlot} aria-hidden="true"><Skeleton shape="line" width="medium" /></span>
+          ? <span className={s.statsSlot} aria-hidden="true"><Skeleton shape="text" width="medium" /></span>
           : kind === "project" && stats ? <span className={s.detail} title={stats}>{stats}</span> : null}
         {kind === "project" && repo ? (
           <button type="button" className={s.path} title={repoLabel ?? repo} aria-label={repoLabel ?? repo} onClick={onOpenRepo}>

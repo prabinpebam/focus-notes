@@ -333,6 +333,7 @@
         "project",
         "project on GitHub, counted",
         "project local only, counted",
+        "project empty",
         "project counting",
         "project pinned",
         "project uploaded logo",
@@ -1651,13 +1652,14 @@
           "kind": "enum",
           "values": [
             "line",
+            "text",
             "tile",
             "avatar",
             "row",
             "card"
           ],
           "default": "line",
-          "description": "What's coming: a line, picture, avatar, an ItemCard row or a picture card."
+          "description": "What's coming: a line, a text line matching the surrounding line box, picture, avatar, an ItemCard row or a picture card."
         },
         "width": {
           "kind": "enum",
@@ -1684,6 +1686,7 @@
         "row",
         "card",
         "line",
+        "text line",
         "medium line",
         "short line",
         "full line",

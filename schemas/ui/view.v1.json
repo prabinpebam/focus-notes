@@ -4353,6 +4353,7 @@
                 {
                   "enum": [
                     "line",
+                    "text",
                     "tile",
                     "avatar",
                     "row",
