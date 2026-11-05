@@ -49,7 +49,9 @@ export const focusProblem = (page: Page) => page.evaluate(() => {
   // Text entry shows its caret; the note and fields are checked for being visible only.
   const textEntry = el.hasAttribute("data-editor") || el.matches("input, textarea");
   const cs = getComputedStyle(el);
-  const ring = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) >= 2;
+  // The ring may be drawn on the control's own hit extension (a bleeding button's ::before, spacing SP-2).
+  const ringOn = (c: CSSStyleDeclaration) => c.outlineStyle !== "none" && parseFloat(c.outlineWidth) >= 2;
+  const ring = ringOn(cs) || (["::before", "::after"] as const).some((p) => { const c = getComputedStyle(el, p); return c.content !== "none" && c.display !== "none" && ringOn(c); });
   const shadow = cs.boxShadow !== "none" && /\d+px/.test(cs.boxShadow);
   const tinted = el.matches('[role^="menuitem"], [role="option"], [role="treeitem"]') && cs.backgroundColor !== "rgba(0, 0, 0, 0)";
   if (!textEntry && !ring && !shadow && !tinted) return `${el.getAttribute("aria-label") ?? el.tagName} has no focus indicator`;

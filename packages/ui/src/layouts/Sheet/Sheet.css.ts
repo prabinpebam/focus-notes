@@ -35,7 +35,9 @@ export const sheet = style({
   // Its inline padding stops short by the room its regions keep for a focus ring at the start and the
   // scrollbar at the end; each region (band, header, body, footer) holds that room as its own padding,
   // so the scrolling body never reaches into the sheet's padding (spacing SP-3).
-  paddingBlock: t.padding,
+  // The block end stops short by the body's slack, which the body (or the footer, when it shows) holds as its own end padding.
+  paddingBlockStart: t.padding,
+  paddingBlockEnd: `calc(${t.padding} - ${t.bodySlack})`,
   paddingInlineStart: `calc(${t.padding} - ${t.ringRoom})`,
   paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,
   boxSizing: "border-box",
@@ -67,6 +69,8 @@ export const sheet = style({
     "&[data-docked][data-side=end]": { right: 0, borderInlineStartStyle: "solid", borderInlineStartWidth: t.dock.borderWidth, borderInlineStartColor: t.dock.border },
     // Led by where the notes come from (D-188): that band starts at the top edge itself.
     "&[data-docked]:has(> [data-sheet-band])": { paddingTop: 0 },
+    // Short, the scrolling main part leads with the slack at its top: the sheet keeps it out of its own padding.
+    "&[data-short]:not(:has(> [data-sheet-band])):not([data-docked])": { paddingBlockStart: `calc(${t.padding} - ${t.bodySlack})` },
   },
 });
 
@@ -114,14 +118,14 @@ export const main = style({
   selectors: {
     // Up and down only: a close button bleeding into the padding (D-111) never makes it scroll sideways.
     // The body's slack moves to the scroller here, so the header-to-body gap is the whole group gap again.
-      "[data-short] > &": { overflowY: "auto", overflowX: "hidden", scrollbarGutter: "stable", paddingBlock: t.bodySlack, gap: t.groupGap },
+      "[data-short] > &": { overflowY: "auto", overflowX: "hidden", scrollbarGutter: "stable", paddingBlock: t.bodySlack, paddingInlineStart: t.ringRoom, gap: t.groupGap },
   },
 });
 minimalScrollbar(main, t);
 export const header = style({
   display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0, paddingInlineStart: t.ringRoom, paddingInlineEnd: t.scrollbarSize,
   // Short, the main part scrolls and its gutter is the scrollbar's room.
-  selectors: { "[data-short] > * > &": { paddingInlineEnd: 0 } },
+  selectors: { "[data-short] > * > &": { paddingInlineStart: 0, paddingInlineEnd: 0 } },
 });
 // Where the notes come from (D-188): leads the sheet above a hairline that runs edge to edge (drawn
 // past the sheet's padding, so the band's own box keeps the sheet's uniform inset, D-111). Docked, it
@@ -161,7 +165,7 @@ export const body = style({
   paddingBlock: t.bodySlack,
   outline: "none",
   selectors: {
-    "[data-short] > * > &": { flexGrow: 0, flexShrink: 0, minHeight: "auto", overflowY: "visible", scrollbarGutter: "auto", paddingBlock: 0 },
+    "[data-short] > * > &": { flexGrow: 0, flexShrink: 0, minHeight: "auto", overflowY: "visible", scrollbarGutter: "auto", paddingBlock: 0, paddingInlineStart: 0 },
   },
 });
 minimalScrollbar(body, t);
@@ -170,6 +174,7 @@ export const footer = style({
   flexShrink: 0,
   position: "relative",
   paddingBlockStart: `calc(${t.gap} + ${t.footerBorderWidth})`,
+  paddingBlockEnd: t.bodySlack,
   paddingInlineStart: t.ringRoom,
   paddingInlineEnd: t.scrollbarSize,
   // Its rule spans the content's width, not the room the footer keeps beside it.

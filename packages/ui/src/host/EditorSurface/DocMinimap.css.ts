@@ -157,7 +157,7 @@ fadingEdges(list, { scrollFade: t.cardFade });
 
 
 export const entry = style({ display: "flex", flexDirection: "column", gap: t.itemGap });
-/** A heading's subsections: indented by their buttons, so nesting adds no space of its own. */
+/** A heading's subsections: indented by their list items, relative to their parent's depth, so nesting adds no space of its own. */
 export const sublist = style({ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: t.itemGap });
 
 export const item = style({

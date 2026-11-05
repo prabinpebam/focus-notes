@@ -92,9 +92,9 @@ test("D-187: Files and the contents dock flush to the window's edges, the note's
     const band = files(page).locator("[data-sheet-band]");
     await expect(band).toContainText(dirs.docs.split(/[\\/]/).filter(Boolean).pop()!);
     await expect(band.getByRole("button", { name: "Open local folder" })).toBeVisible();
-    const bb = await band.evaluate((el) => { const r = el.getBoundingClientRect(), w = document.querySelector("[data-app-root]")!.getBoundingClientRect(); const line = getComputedStyle(el, "::after"); return { top: Math.round(r.top - w.top), height: Math.round(r.height), left: Math.round(r.left - w.left), border: line.height, lineLeft: line.left }; });
-    // Inset as the sheet's content is; its hairline runs past the padding to both edges.
-    expect(bb).toMatchObject({ top: 0, left: 16, lineLeft: "-16px" });
+    const bb = await band.evaluate((el) => { const r = el.getBoundingClientRect(), w = document.querySelector("[data-app-root]")!.getBoundingClientRect(); const line = getComputedStyle(el, "::after"); return { top: Math.round(r.top - w.top), height: Math.round(r.height), left: Math.round(r.left - w.left + parseFloat(getComputedStyle(el).paddingLeft)), border: line.height, lineLeft: Math.round(r.left - w.left + parseFloat(line.left)) }; });
+    // Its content inset as the sheet's content is (the band's own padding keeps the focus ring's room); its hairline runs past the padding to the window's edge.
+    expect(bb).toMatchObject({ top: 0, left: 16, lineLeft: 0 });
     expect(bb.height).toBeGreaterThan(44);
     expect(parseFloat(bb.border)).toBeGreaterThan(0);
     // The window's controls show at the top of the docked contents, on it (Windows and Linux draw them).

@@ -618,11 +618,12 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   if (!enough || (!railShown && !cardShown)) return null;
   const depths = depthsOf(headings);
   const focusIndex = current >= 0 ? current : 0;
-  // Nested by level: a heading's subsections are a list inside its item.
-  const entries = (nodes: OutlineNode[]) => nodes.map(({ i, children }) => {
+  // Nested by level: a heading's subsections are a list inside its item, each item indented by its depth below its parent's (the padding nests).
+  const entries = (nodes: OutlineNode[], parent = 0) => nodes.map(({ i, children }) => {
     const h = headings[i]!;
+    const depth = depths[i] ?? 0;
     return (
-      <li key={`${h.index}:${i}`} className={`${s.entry} ${s.indent[Math.min(5, depths[i] ?? 0) as 0 | 1 | 2 | 3 | 4 | 5]}`}>
+      <li key={`${h.index}:${i}`} className={`${s.entry} ${s.indent[Math.max(0, Math.min(5, depth - parent)) as 0 | 1 | 2 | 3 | 4 | 5]}`}>
         <button
           type="button"
           className={s.item}
@@ -635,7 +636,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
         >
           <span className={s.label} dir="auto">{h.text || untitled}</span>
         </button>
-        {children.length ? <ul className={s.sublist}>{entries(children)}</ul> : null}
+        {children.length ? <ul className={s.sublist}>{entries(children, depth)}</ul> : null}
       </li>
     );
   });
