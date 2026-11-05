@@ -260,6 +260,8 @@ test("FIL-10, DD-FB-01: a delete's toast offers Undo, which restores the note fr
   await expect(page.getByRole("textbox", { name: "Note" })).toContainText("First line.");
   await page.keyboard.press(`${mod}+O`);
   const sheet = page.getByRole("complementary", { name: "Files" });
+  // Undo requires Git history, which initializes independently of the first note.
+  await expect(sheet.getByRole("button", { name: "Recently deleted", exact: true })).toBeVisible();
   const hello = sheet.getByRole("treeitem", { name: "Hello, public" });
   await hello.click();
   // Delete is ⌘⌫ on macOS, as in Finder (Keyboard shortcuts → Files panel).
