@@ -181,6 +181,8 @@ MenuButton and PopoverPanel's normal padding tokens alias `space.insetSm`, not a
 
 ## SP-15: follow-up geometry and short Settings navigation
 
+**D-pending: short-window Settings nav scrolls; reachability contract.** Confirmed by main triage: all nine tabs must be reachable by keyboard and scrolling, not visible simultaneously. Send feedback stays pinned outside the independently scrolling tab list. The scroll frame bleeds to the edge, padding belongs to the tab-list content, focused tabs scroll fully into view without clipping their rings, and the panel retains 128 px clearance.
+
 The three failures reported by Windows CI run `41991717978` were reproduced on unmodified `origin/main` at `76ea8cb3`, before any fixes. The existing spacing and visual-noise rules remain the contract: an unpadded scroll frame, one inset on its content, no new enclosure, and enough room for focus paint.
 
 | Finding | Baseline evidence | Correction and regression |
