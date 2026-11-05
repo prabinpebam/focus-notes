@@ -117,6 +117,28 @@ Proposed for today's workspace (D-349, SHR-25, SHR-26), so publishing works befo
 
 Template workspaces deploy a pinned web bundle, so site theme and home changes reach them only after a web release and the Update app pull request; this repository's own site builds from source and gets them when `main` lands.
 
+## Publishing design review (5 November)
+
+The owner asked: “I need to see the review design for publishing feature.” Gallery entries **16–29**, on `vq-publish-mocks`, extend the approved sharing mocks with fake publishing states. The [local gallery](http://127.0.0.1:5242/) is a detached static build; the earlier approved gallery at port 5241 remains available. These are review designs, not runtime wiring or permission to publish.
+
+| Open the design | What it shows |
+| --- | --- |
+| [Entry points](http://127.0.0.1:5242/?f=mock.publish.entry) | Files row context menu and ⋯ → Note, plus separate, labelled review controls |
+| [First publish](http://127.0.0.1:5242/?f=mock.publish.confirm) | The approved item card, **Will be public**, GitHub-history consequence, Cancel and Publish |
+| [Saving](http://127.0.0.1:5242/?f=mock.publish.saving), [publishing](http://127.0.0.1:5242/?f=mock.publish.publishing), [live](http://127.0.0.1:5242/?f=mock.publish.live) | One bottom notification pill; Share shows **Live** with Copy public link and Open site |
+| [Slow](http://127.0.0.1:5242/?f=mock.publish.slow), [failure](http://127.0.0.1:5242/?f=mock.publish.failed), [copied early](http://127.0.0.1:5242/?f=mock.publish.copied) | The specified status words; Retry returns the fake deployment to Saving |
+| [Unpublish](http://127.0.0.1:5242/?f=mock.publish.unpublish), [removing](http://127.0.0.1:5242/?f=mock.publish.removing), [removed](http://127.0.0.1:5242/?f=mock.publish.removed) | Confirmation explains return to private notes and retained Git history/copies; removal has pending and confirmed pills |
+| [Images](http://127.0.0.1:5242/?f=mock.publish.images) | The note card says its images become public with location and camera data removed |
+| [Empty home](http://127.0.0.1:5242/?f=mock.publish.empty), [missing page](http://127.0.0.1:5242/?f=mock.publish.missing) | Public-reader empty states; Go home returns from the missing page to the empty home |
+
+Every new screen labels the **recommended, unapproved** P1–P3 answers: this repository’s Pages site; `https://<owner>.github.io/<repo>/n/<path>/`; images public with location/camera metadata removed. Append `&scheme=dark` to a direct mock link for its dark context. P4 remains a future, owner-operated publication decision.
+
+**Try it:** start at **Entry points** for the clickable flow. Choose Publish… from a note’s Files context menu or ⋯ → Note, then Publish. Use the separate review controls to show publishing, live, slow or failed; Retry returns to Saving. Open Share to see Live, Copy public link, Open site and Unpublish. Direct links that start with an already-open modal are visual snapshots: the gallery’s initial modal mount leaves its root inert, so pointer interaction there is unavailable. Opening that modal through Entry points avoids this gallery limitation; no production component is changed to work around it.
+
+Publish and Unpublish only change local mock state. Deployment steps advance with the visibly separate **Review controls**, never a timer pretending a remote task succeeded. Copy does not touch the clipboard; Open site opens the existing synthetic Preview site, including its unchanged Paper, Sepia, Ink and Dusk choices. The existing single-action notification pill exposes Copy link; Open site remains in Share. Pills are shown on the review canvas, not over an open modal; close Share to return to the current pill. No element is added to the writing window, and no private content or account is read. The new views reuse the existing layouts, item card, dialogs, menu, notification pill and empty state unchanged; scrolling belongs to the outer surface and insets to its content stack.
+
+**Review evidence:** `pnpm check`, `pnpm --filter @focus-notes/views run typecheck` and `pnpm --filter @focus-notes/desktop run gallery:build` passed. Owner-requested headless Playwright review opened all 14 states in light and dark with no page errors or document overflow, inspected the dialogs and pills, followed both Publish menu paths and the Share → Unpublish flow, and checked the confirmation, images, failure and site states at 320 px in both contexts. No test suite, journey, catalogue or CI run was started. This is design review evidence, not publication readiness or owner approval.
+
 ## Readiness assessment (5 November)
 
 The owner asked (5 November) what is done and pending for publishing notes as public web pages on GitHub Pages, and whether the spec is enough to build it. Their earlier words: publishing "plainly publishes a note in GitHub pages for anyone to visit… seen more as a website… automatically take the site theme which can be different from the theme the user uses for their own app."
