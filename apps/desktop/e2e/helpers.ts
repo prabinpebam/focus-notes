@@ -50,13 +50,17 @@ export async function writerSettingSettled(page: Page, setting: "fontSize" | "fo
   await page.keyboard.press(`${mac ? "Meta" : "Control"}+.`);
   const toolbar = page.getByRole("toolbar", { name: "Toolbar", exact: true });
   if (setting === "fontSize") {
-    await toolbar.getByRole("button", { name: "More", exact: true }).click();
+    const more = toolbar.getByRole("button", { name: "More", exact: true });
+    await more.click();
     await expect(page.getByRole("menuitem", { name: /^Reset text size/ })).not.toHaveAttribute("aria-disabled", "true");
     await page.keyboard.press("Escape");
+    // The toolbar's Escape handler only owns focus after the menu restores its trigger.
+    await expect(more).toBeFocused();
   } else {
     await expect(toolbar.getByRole("button", { name: "Focus mode", exact: true })).not.toHaveAttribute("data-commit", "pending");
   }
   await page.keyboard.press("Escape");
+  await expect(toolbar).toBeHidden();
   await page.getByRole("textbox", { name: "Note", exact: true }).focus();
 }
 
