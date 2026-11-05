@@ -24,9 +24,10 @@ async function openFromGitHub(page: Page) {
   const spot = page.getByRole("dialog", { name: "Actions", exact: true });
   await page.keyboard.press(`${mod}+/`);
   await spot.getByRole("combobox").fill("Open a project from GitHub");
-  await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");
-  await expect(spot.locator("[role=option][aria-selected=true]")).not.toHaveAttribute("aria-disabled", "true", { timeout: 15_000 });
-  await page.keyboard.press("Enter");
+  const action = spot.getByRole("option", { name: /^Open a project from GitHub…/ });
+  await expect(action).toBeVisible();
+  await expect(action).not.toHaveAttribute("aria-disabled", "true", { timeout: 15_000 });
+  await action.click();
 }
 async function openWorkspaceSettings(page: Page) {
   await press(page, `${mod}+,`);
