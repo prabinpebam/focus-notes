@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, railFrom, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
+import { execFileSync } from "node:child_process";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const shots = "../../test-results/screens";
@@ -48,6 +49,13 @@ const geometry = (page: Page) => page.evaluate(() => {
   };
 });
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+async function close(l: Launched) {
+  try { await quit(l); }
+  finally {
+    const script = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+    for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", script, "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+  }
+}
 
 test("D-187: Files and the contents dock flush to the window's edges, the note's area between them; each resizes from its inner edge and keeps its width", async () => {
   const dirs = tempDirs();
@@ -72,7 +80,7 @@ test("D-187: Files and the contents dock flush to the window's edges, the note's
     await expect(contents(page)).toBeVisible();
     // Docked, the contents keep the card's own width (the owner: docking doesn't resize it).
     const cardWidth = await contents(page).evaluate((c) => (c as HTMLElement).offsetWidth);
-    await contents(page).getByRole("button", { name: "Dock contents" }).click();
+    await contents(page).getByRole("button", { name: "Pin", exact: true }).click();
     await expect(contents(page)).toHaveAttribute("data-docked", "");
     await expect(rail(page)).toHaveCount(0);
     await settled(page);
@@ -155,13 +163,13 @@ test("D-187: Files and the contents dock flush to the window's edges, the note's
     await expect.poll(stateFile).toContain(`"outlineWidth": ${narrowed}`);
 
     // Kept across a launch.
-    await quit(l);
+    await close(l);
     l = await start(dirs, JSON.parse(stateFile()));
     page = l.page;
     await expect(files(page)).toHaveAttribute("data-docked", "");
     await expect(contents(page)).toHaveAttribute("data-docked", "");
     await expect.poll(async () => { const x = await geometry(page); return [x.files?.width, x.contents?.width]; }).toEqual([200, narrowed]);
-  } finally { await quit(l); }
+  } finally { await close(l); }
 });
 
 test("D-187: as the window narrows, Files undocks first (closing), then the contents (back to the rail); wider, both dock again", async () => {
@@ -201,7 +209,7 @@ test("D-187: as the window narrows, Files undocks first (closing), then the cont
     await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
     await settled(page);
     await page.screenshot({ path: `${shots}/docked-both-again.png` });
-  } finally { await quit(l); }
+  } finally { await close(l); }
 });
 
 test("D-207: the link editor (and every surface pinned to the selection) opens above a docked Files sheet, never under it", async () => {
@@ -236,5 +244,5 @@ test("D-207: the link editor (and every surface pinned to the selection) opens a
     expect(hit.editorZ).toBeGreaterThan(hit.sheetZ);
     if (hit.overlap) expect(hit.onTop).toBe(true);
     await page.screenshot({ path: `${shots}/link-editor-over-files.png` });
-  } finally { await quit(l); }
+  } finally { await close(l); }
 });

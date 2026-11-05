@@ -1688,13 +1688,14 @@ test("compact focus and docking controls retain stored values on failure and rec
     await toolbar.getByRole("button", { name: "More", exact: true }).click();
     await l.page.getByRole("menuitemcheckbox", { name: "Dock contents", exact: true }).click();
     await expect.poll(() => saved().outlinePinned).toBe(true);
-    const outline = l.page.getByRole("button", { name: "Undock contents", exact: true });
+    const outline = l.page.locator("[data-doc-minimap-card]").getByRole("button", { name: "Unpin", exact: true });
     await expect(outline).toBeVisible();
     await expect(outline).not.toHaveAttribute("data-commit", "pending");
     block();
     await outline.click();
     await expect(outline).toHaveAttribute("data-commit", "failed");
-    await expect(outline).toHaveAttribute("aria-pressed", "true");
+    await expect(outline).not.toHaveAttribute("aria-pressed");
+    await expect(outline).toBeVisible();
     restore();
     await retry.click();
     await expect.poll(() => saved().outlinePinned).toBeUndefined();

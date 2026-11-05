@@ -114,6 +114,32 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     }
   });
 
+  it("OFB.16–17: native Edit insertion entries use the same editor actions and availability as the toolbar", async () => {
+    const f = fakeNative();
+    const app = createApp(desktop(f.native), en);
+    const actions: string[] = [];
+    app.onEditorAction((id) => actions.push(id));
+    for (const id of ["table.insert", "image.insert"]) {
+      expect(find(menuBarModel(app.commands, app.messages, "macos"), id)?.enabled).toBe(false);
+    }
+    await app.start();
+    const edit = menuBarModel(app.commands, app.messages, "macos").menus.find((menu) => menu.id === "edit")!;
+    expect(commandsIn(edit.items)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "table.insert", label: "Insert table", enabled: true }),
+      expect.objectContaining({ id: "image.insert", label: "Insert image", enabled: true }),
+    ]));
+    actions.length = 0;
+    f.choose("table.insert");
+    f.choose("image.insert");
+    expect(actions).toEqual(["table.insert", "image.insert"]);
+    await app.commands.run("format.setState", { table: true });
+    for (const id of ["table.insert", "image.insert"]) {
+      expect(find(menuBarModel(app.commands, app.messages, "macos"), id)?.enabled).toBe(false);
+      f.choose(id);
+    }
+    expect(actions).toEqual(["table.insert", "image.insert"]);
+  });
+
   it("follows the registry's checked and enabled states", async () => {
     const app = createApp(desktop(), en);
     const before = menuBarModel(app.commands, app.messages, "macos");
