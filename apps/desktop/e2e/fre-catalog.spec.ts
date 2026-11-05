@@ -770,8 +770,8 @@ test("Settings → Workspace → Open another workspace from GitHub: the same pi
     await page.keyboard.press(`${mod}+,`);
     const settings = page.getByRole("dialog", { name: "Settings" });
     await expect(settings).toBeVisible();
-    await settings.getByRole("tab", { name: "Workspace" }).click();
-    await expect(settings.getByRole("button", { name: "Open another workspace from GitHub…" })).toBeVisible();
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Save to cloud" })).toBeVisible();
     // D-147: a dialog never takes the window's dragging, and a press on the band leaves it open.
     if (process.platform !== "darwin") {
       expect(await bandProblems(page, "Settings")).toEqual([]);
@@ -779,7 +779,14 @@ test("Settings → Workspace → Open another workspace from GitHub: the same pi
       await expect(settings).toBeVisible();
     }
     await shot(l, "settings-workspace");
-    await settings.getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    // Settings has no storage category (project model, slice 2): Spotlight opens a project from GitHub.
+    await page.keyboard.press("Escape");
+    await expect(settings).toHaveCount(0);
+    const spot = page.getByRole("dialog", { name: "Spotlight" });
+    await page.keyboard.press(`${mod}+/`);
+    await spot.getByRole("combobox").fill("Open a project from GitHub");
+    await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");
+    await page.keyboard.press("Enter");
     await heading(page, "We found your notes");
     await expect(button(page, "Open")).toBeFocused({ timeout: 15_000 });
     await shot(l, "settings-found");

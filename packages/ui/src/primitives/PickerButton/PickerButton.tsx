@@ -37,12 +37,13 @@ export function PickerButton({ label, value, font = "app", theme = "app", chevro
     const fontScope = font === "app" ? undefined : font;
     return (
       <Button className={s.tile} aria-label={`${label}: ${value}`} {...interaction}>
-        <span className={s.tileTop}><span className={controlLabel}>{label}</span><Icon name="chevronDown" size="s" /></span>
+        {/* Spaces between the tile's parts keep its visible text "Font App font", inside its name (WCAG 2.5.3). */}
+        <span className={s.tileTop}><span className={controlLabel}>{label}</span><Icon name="chevronDown" size="s" /></span>{" "}
         <span className={s.tileVisual} aria-hidden="true">
           {variant === "fontTile"
-            ? <span className={s.sample} data-font-scope={fontScope}>Aa</span>
+            ? <span className={s.sample} data-font-scope={fontScope} />
             : <span className={s.preview} data-theme-scope={theme === "app" ? undefined : theme}><span className={s.previewText}><span className={s.line} /><span className={`${s.line} ${s.lineShort}`} /></span><span className={s.accentDot} /></span>}
-        </span>
+        </span>{" "}
         <span className={`${controlLabel} ${s.tileValue}`}>{value}</span>
         {commit ? <CommitMark variant="border" state={commit} /> : null}
       </Button>

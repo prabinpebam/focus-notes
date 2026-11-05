@@ -189,10 +189,20 @@ async function workspace(): Promise<{ w: World; l: Launched }> {
   return { w, l };
 }
 const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
+
+/** Open a project from GitHub: since Settings has no storage category (project model, slice 2), Spotlight's command. */
+async function openFromGitHub(page: Page, enter = true) {
+  const spot = page.getByRole("dialog", { name: "Spotlight" });
+  await page.keyboard.press(`${mod}+/`);
+  await spot.getByRole("combobox").fill("Open a project from GitHub");
+  await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");
+  await expect(spot.locator("[role=option][aria-selected=true]")).not.toHaveAttribute("aria-disabled", "true", { timeout: 15_000 });
+  if (enter) await page.keyboard.press("Enter");
+}
 async function workspaceSettings(page: Page) {
   await press(page, `${mod}+,`);
   await expect(settings(page)).toBeVisible();
-  const tab = settings(page).getByRole("tab", { name: "Workspace" });
+  const tab = settings(page).getByRole("tab", { name: "Project", exact: true });
   await tab.click();
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
@@ -203,9 +213,9 @@ test("PRF-13: Open another workspace from GitHub shows skeleton rows while it lo
   const { page } = l;
   try {
     await slow(l, { "firstRun:repositories": 6000, "firstRun:signOut": 4500 });
-    await workspaceSettings(page);
+    await openFromGitHub(page, false);
     const t = Date.now();
-    await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    await page.keyboard.press("Enter");
     await named(page, /^Looking for your notes on GitHub…/, t, "Open another workspace");
     await expect(card(page).locator("[data-skeleton]")).toHaveCount(3);
     // Back is there, and has focus, so Esc leaves while it still looks: back to the note.
@@ -237,8 +247,8 @@ test("PRF-13: removing the workspace says Removing… on its button until the wi
   try {
     await slow(l, { "workspace:remove": 2500 });
     await workspaceSettings(page);
-    await settings(page).getByRole("button", { name: "Remove this workspace from this computer…" }).click();
-    const dialog = page.getByRole("dialog", { name: "Remove this workspace?" });
+    await settings(page).getByRole("button", { name: "Remove from this computer…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Remove this project?" });
     const remove = dialog.getByRole("button", { name: "Remove", exact: true });
     await expect(remove).toBeVisible({ timeout: 30_000 });
     const t = Date.now();

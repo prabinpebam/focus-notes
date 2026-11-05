@@ -386,8 +386,6 @@ const INTERNAL_IDS = new Set([
   "link.openEditor", "link.apply", "link.cancel", "link.dismiss", "account.signOutNow", "workspace.removeSync", "workspace.removeConfirm",
   // A Files row's own Copy public link (D-162): Spotlight has the open note's, note.copyPublicLink.
   "files.copyPublicLink",
-  // Settings → Workspace's own button (D-124): not listed, so the web's list, where it never applies, stays the same.
-  "workspace.openFromGitHub",
   "conflict.choose", "conflict.later", "files.confirm",
   // The Files panel's own selection and rows; Spotlight acts on a result through its quick actions instead.
   "files.select", "files.activate", "files.undo", "files.drop", "files.clearSelection", "files.hideDeleted", "files.toggleDeleted",
