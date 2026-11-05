@@ -455,16 +455,20 @@ async function setupWhere(instance?: string): Promise<{ folder: string; chosen: 
  * renderer forgets the recent note in state.json itself, since it owns that file.
  */
 async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> {
-  if (setupEngine) await (await setupEngine).reset().catch(() => {});
-  workspaceIdentity = undefined;
-  targetFolder = undefined;
-  pendingWorkspace = undefined;
-  firstCloneReceipt = undefined;
-  // Crash recovery's drafts of this workspace go too (QLT-06); the window asked first when there were some.
-  await drafts?.removeAll().catch(() => {});
-  await forgetLocalData(app.getPath("userData"), event);
-  await session.defaultSession.clearCache().catch(() => {});
-  await session.defaultSession.clearStorageData().catch(() => {});
+  const remove = async () => {
+    if (setupEngine) await (await setupEngine).reset().catch(() => {});
+    workspaceIdentity = undefined;
+    targetFolder = undefined;
+    pendingWorkspace = undefined;
+    firstCloneReceipt = undefined;
+    // Crash recovery's drafts of this workspace go too (QLT-06); the window asked first when there were some.
+    await drafts?.removeAll().catch(() => {});
+    await forgetLocalData(app.getPath("userData"), event, true);
+    await session.defaultSession.clearCache().catch(() => {});
+    await session.defaultSession.clearStorageData().catch(() => {});
+  };
+  if (projectMetadata) await projectMetadata.purge(remove);
+  else await remove();
 }
 /**
  * Removes the workspace's local clone (FRE-07): checked again here, with the watcher and Git
@@ -565,6 +569,7 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
     await saveFirstRun();
   }
   await saveRecord(recordFor(folder, await folderFacts(folder), record, keep));
+  await projectMetadata?.resume();
   chosenHome = folder;
   folderState = "ok";
   stopFolderWatch();
@@ -1213,7 +1218,7 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
-let rememberClosedProject: (() => Promise<void>) | undefined;
+let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume"> | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
   const imagePath = async (note: unknown, src: unknown) => {
     if (typeof src !== "string" || /^[a-z][a-z\d+.-]*:/i.test(src) || isAbsolute(src)) throw new Error("invalid-image");
@@ -1251,7 +1256,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const projects = projectWindows(notesHome, async (path, content) => {
     if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
   }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi);
-  rememberClosedProject = projects.closed;
+  projectMetadata = projects;
+  const resumeSignedInProject = async (operation: ReturnType<Account["status"]>) => {
+    const status = await operation;
+    if (status.account && !status.signedOut) await projects.resume();
+    return status;
+  };
   handle("projects:list", () => projects.list());
   handle("projects:upload", () => projects.upload());
   handle("projects:localNote", () => projects.localNote());
@@ -1937,12 +1947,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("setup:strength", async (p) => passphraseStrength(passphraseArg(p) ?? ""));
   handle("firstRun:git", () => account.gitCheck());
   handle("firstRun:account", () => account.status());
-  handle("firstRun:useExisting", () => account.useExisting());
-  handle("firstRun:signIn", (device) => account.signIn(device === true));
+  handle("firstRun:useExisting", () => resumeSignedInProject(account.useExisting()));
+  handle("firstRun:signIn", (device) => resumeSignedInProject(account.signIn(device === true)));
   handle("firstRun:cancelSignIn", async () => account.cancel());
   handle("firstRun:useToken", async (token) => {
     if (typeof token !== "string" || token.length > 255) throw new Error("Not a token");
-    return account.useToken(token);
+    return resumeSignedInProject(account.useToken(token));
   });
   handle("firstRun:signOut", async (options) => {
     const s = await account.signOut({ git: (options as { git?: unknown } | undefined)?.git !== false });
@@ -2773,7 +2783,7 @@ app.on("will-quit", (e) => {
     })
     .then(async () => {
       if (!projectRemembered) {
-        try { await rememberClosedProject?.(); }
+        try { await projectMetadata?.closed(); }
         catch { console.error("Could not remember the last project."); }
         projectRemembered = true;
       }

@@ -2,7 +2,7 @@ import { app, dialog, safeStorage } from "electron";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { access, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateStep, ProjectStats } from "@focus-notes/core";
@@ -11,6 +11,7 @@ import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi } from "@focus-notes/github";
 import { parseRecord } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
+import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts";
 import { countProject, githubRepo } from "./project-card.ts";
 
 function missing(error: unknown) {
@@ -70,24 +71,39 @@ export function candidateGitHubApi(origin: string): GitHubApi {
 }
 
 export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string) {
-  const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
+  const userData = app.getPath("userData");
+  const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? userData);
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
+  const metadata = projectMetadataStore(rootProfile);
+  let acceptingMetadata = true;
+  let ownTicket = metadata.initialize(userData).then(ticket => {
+    if (!ticket.enabled) acceptingMetadata = false;
+    return ticket;
+  });
+  void ownTicket.catch(error => { console.error("Could not initialize this project's metadata:", error instanceof Error ? error.name : "Error"); });
   const known = new Map<string, string>();
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
-  const lastNoteFile = join(app.getPath("userData"), DATA_FILES.projectLastNote);
+  const lastNoteFile = join(userData, DATA_FILES.projectLastNote);
+  let metadataEpoch = 0;
+  let purging: Promise<void> | undefined;
+  let closingWrite: Promise<void> | undefined;
   type Recent = { rank: number; pinned: boolean; notes: { path: string; rank: number; pinned: boolean }[] };
   let ownRecent: Recent | undefined;
+  let ownRecentBytes: string | undefined;
   const halfLife = 14 * 24 * 60 * 60 * 1000;
   const addScore = (rank: number, points: number) => {
     const now = Date.now();
     return now + halfLife * Math.log2((rank ? Math.pow(2, (rank - now) / halfLife) : 0) + points);
   };
-  async function recent(profile: string): Promise<Recent> {
-    // This profile has one writer. Other project processes' records are always read from disk.
-    if (profile === app.getPath("userData") && ownRecent) return structuredClone(ownRecent);
+  async function recentBytes(profile: string): Promise<string | undefined> {
+    try { return await readFile(join(profile, DATA_FILES.projectRecent), "utf8"); }
+    catch (error) { if (missing(error)) return; throw error; }
+  }
+  async function readRecent(profile: string, encrypted: string | undefined): Promise<Recent> {
+    if (encrypted === undefined) return { rank: 0, pinned: false, notes: [] };
+    if (profile === userData && ownRecent && ownRecentBytes === encrypted) return structuredClone(ownRecent);
     try {
       if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
-      const encrypted = await readFile(join(profile, DATA_FILES.projectRecent), "utf8");
       const content = encrypted.startsWith("dpapi:")
         ? Buffer.from(await windowsProtectedRecord(encrypted.slice(6), false), "base64").toString("utf8")
         : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
@@ -97,27 +113,45 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       throw error;
     }
   }
-  async function saveRecent(profile: string, record: Recent) {
+  async function recent(profile: string): Promise<Recent> { return readRecent(profile, await recentBytes(profile)); }
+  async function saveRecent(profile: string, record: Recent, epoch: number, ticket: MetadataTicket, previous: string | undefined) {
+    if (epoch !== metadataEpoch) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
     const content = JSON.stringify(record);
     const encrypted = process.platform === "win32"
       ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
       : safeStorage.encryptString(content).toString("base64");
-    await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
-    if (profile === app.getPath("userData")) ownRecent = structuredClone(record);
+    if (epoch !== metadataEpoch) return;
+    await metadata.commit(profile, ticket, async () => {
+      if (await recentBytes(profile) !== previous) throw new Error("Project ranking changed in another window. Try again.");
+      await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
+    });
+    if (epoch === metadataEpoch && profile === userData) {
+      ownRecent = structuredClone(record);
+      ownRecentBytes = encrypted;
+    }
   }
   let recentWrites = Promise.resolve();
+  function queueRecent(work: (epoch: number) => Promise<void>) {
+    if (!acceptingMetadata) return Promise.resolve();
+    const epoch = metadataEpoch;
+    const write = recentWrites.then(() => epoch === metadataEpoch ? work(epoch) : undefined);
+    recentWrites = write.catch(error => { console.error("Could not persist project ranking:", error instanceof Error ? error.name : "Error"); });
+    return write;
+  }
   function score(path: string, points: number) {
-    const write = recentWrites.then(async () => {
-      const profile = app.getPath("userData");
-      const record = await recent(profile);
+    if (!acceptingMetadata) return Promise.resolve();
+    const ticket = ownTicket;
+    void queueRecent(async epoch => {
+      const profile = userData;
+      const previous = await recentBytes(profile);
+      const record = await readRecent(profile, previous);
       const note = record.notes.find((n) => n.path === path) ?? { path, rank: 0, pinned: false };
       note.rank = addScore(note.rank, points);
       record.rank = addScore(record.rank, points);
       record.notes = [...record.notes.filter((n) => n.path !== path), note].sort((a, b) => b.rank - a.rank).filter((n, i) => n.pinned || i < 50);
-      await saveRecent(profile, record);
+      await saveRecent(profile, record, epoch, await ticket, previous);
     });
-    recentWrites = write.catch(error => { console.error("Could not persist project ranking:", error instanceof Error ? error.name : "Error"); });
     return recentWrites;
   }
   type LaunchRecord = { path: string; position?: { from: number; to: number; scroll: number } };
@@ -145,52 +179,112 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const record = await lastRecord();
     return record?.path === path ? record.position : undefined;
   }
-  type PendingLaunch = { record: LaunchRecord; previous?: Promise<LaunchRecord | undefined> };
+  type PendingLaunch = { record: LaunchRecord; epoch: number; ticket: Promise<MetadataTicket>; previous?: Promise<LaunchRecord | undefined> };
   let pendingLaunch: PendingLaunch | undefined;
-  let writingLaunch = false;
+  let writingLaunch: Promise<void> | undefined;
   async function writeLaunchRecords() {
-    try {
-      while (pendingLaunch) {
-        const pending = pendingLaunch;
-        pendingLaunch = undefined;
-        try {
-          if (pending.previous) {
-            try {
-              const previous = await pending.previous;
-              if (previous?.path === pending.record.path) pending.record.position = previous.position;
-            } catch (error) {
-              console.error("Could not restore the previous launch position:", error instanceof Error ? error.name : "Error");
-            }
+    while (pendingLaunch) {
+      const pending = pendingLaunch;
+      pendingLaunch = undefined;
+      try {
+        if (pending.previous) {
+          try {
+            const previous = await pending.previous;
+            if (previous?.path === pending.record.path) pending.record.position = previous.position;
+          } catch (error) {
+            console.error("Could not restore the previous launch position:", error instanceof Error ? error.name : "Error");
           }
-          if (pendingLaunch) continue;
-          if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-          const content = JSON.stringify(pending.record);
-          const encrypted = process.platform === "win32"
-            ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
-            : safeStorage.encryptString(content).toString("base64");
-          // Protection can finish after a newer cursor or note arrived. Never publish the stale record.
-          if (!pendingLaunch) await atomicWrite(lastNoteFile, encrypted);
-        } catch (error) {
-          console.error("Could not persist protected launch record:", error instanceof Error ? error.name : "Error");
         }
+        if (pendingLaunch || pending.epoch !== metadataEpoch) continue;
+        if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
+        const content = JSON.stringify(pending.record);
+        const encrypted = process.platform === "win32"
+          ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
+          : safeStorage.encryptString(content).toString("base64");
+        // Protection can finish after a newer cursor or note arrived. Never publish the stale record.
+        if (!pendingLaunch && pending.epoch === metadataEpoch) await metadata.commit(userData, await pending.ticket, () => atomicWrite(lastNoteFile, encrypted));
+      } catch (error) {
+        console.error("Could not persist protected launch record:", error instanceof Error ? error.name : "Error");
       }
-    } finally { writingLaunch = false; }
+    }
+  }
+  function scheduleLaunch() {
+    if (writingLaunch) return;
+    writingLaunch = new Promise<void>(resolve => setImmediate(resolve)).then(writeLaunchRecords).finally(() => {
+      writingLaunch = undefined;
+      if (pendingLaunch) scheduleLaunch();
+    });
+  }
+  async function drainMetadata() {
+    while (writingLaunch) await writingLaunch;
+    await recentWrites;
   }
   async function remember(path: string, snapshot?: { from: number; to: number; scroll: number }) {
     if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
+    // Old renderer callbacks after sign-out or shutdown must not recreate forgotten records.
+    if (!acceptingMetadata) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
     const previous = snapshot ? undefined : lastRecord();
     const record: LaunchRecord = { path, position: snapshot };
-    pendingLaunch = { record, previous };
+    pendingLaunch = { record, previous, epoch: metadataEpoch, ticket: ownTicket };
     launchRecord = Promise.resolve(record);
-    if (!writingLaunch) {
-      writingLaunch = true;
-      setImmediate(() => { void writeLaunchRecords(); });
-    }
+    scheduleLaunch();
     if (!snapshot) void score(path, 1);
   }
-  async function closed() {
-    await atomicWrite(join(rootProfile, DATA_FILES.lastProject), `${JSON.stringify({ profile: app.getPath("userData") })}\n`);
+  function closed(): Promise<void> {
+    if (closingWrite) return closingWrite;
+    if (!acceptingMetadata) return purging ?? drainMetadata();
+    acceptingMetadata = false;
+    const epoch = metadataEpoch;
+    const ticket = ownTicket;
+    closingWrite = (async () => {
+      await drainMetadata();
+      if (epoch === metadataEpoch) await metadata.commit(userData, await ticket, () => atomicWrite(join(rootProfile, DATA_FILES.lastProject), `${JSON.stringify({ profile: userData })}\n`));
+    })();
+    return closingWrite;
+  }
+  function purge(remove: () => Promise<void>): Promise<void> {
+    acceptingMetadata = false;
+    metadataEpoch++;
+    pendingLaunch = undefined;
+    launchRecord = Promise.resolve(undefined);
+    ownRecent = undefined;
+    ownRecentBytes = undefined;
+    const previous = purging;
+    purging = (async () => {
+      await previous?.catch(error => { console.error("Retrying project metadata cleanup:", error instanceof Error ? error.name : "Error"); });
+      await ownTicket;
+      await metadata.change(userData, false);
+      await drainMetadata();
+      await closingWrite?.catch(error => { console.error("Could not settle project shutdown metadata:", error instanceof Error ? error.name : "Error"); });
+      await remove();
+      await metadata.transaction(async () => {
+        const pointer = join(rootProfile, DATA_FILES.lastProject);
+        try {
+          const record = JSON.parse(await readFile(pointer, "utf8")) as { profile?: unknown };
+          if (typeof record.profile === "string" && resolve(record.profile) === resolve(userData)) await rm(pointer, { force: true });
+        } catch (error) { if (!missing(error)) throw error; }
+      });
+    })();
+    return purging;
+  }
+  async function resume(): Promise<void> {
+    const epoch = metadataEpoch;
+    const pending = purging;
+    await pending;
+    const ticket = await ownTicket;
+    if (pending !== purging || epoch !== metadataEpoch) return;
+    if (!closingWrite && (!acceptingMetadata || !ticket.enabled)) {
+      ownTicket = metadata.change(userData, true);
+      await ownTicket;
+      if (pending === purging && epoch === metadataEpoch) acceptingMetadata = true;
+    }
+  }
+  async function dispose(): Promise<void> {
+    await purging?.catch(() => {});
+    await closingWrite?.catch(() => {});
+    await drainMetadata();
+    await metadata.dispose();
   }
   async function state(profile: string): Promise<AppStateFile> {
     try {
@@ -202,9 +296,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   }
   async function list(): Promise<ProjectEntry[]> {
     known.clear();
-    known.set(await realpath(home()), app.getPath("userData"));
+    known.set(await realpath(home()), userData);
     await mkdir(profiles, { recursive: true });
-    if (app.getPath("userData") === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder))) await writeFile(join(rootProfile, DATA_FILES.projectFolder), await realpath(home()), { flag: "wx" });
+    if (userData === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder))) await writeFile(join(rootProfile, DATA_FILES.projectFolder), await realpath(home()), { flag: "wx" });
     const rootRecord = parseRecord(await readFile(join(rootProfile, DATA_FILES.workspace), "utf8").catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return "";
       throw error;
@@ -221,27 +315,36 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (existsSync(folder)) known.set(await realpath(folder), profile);
     }
     return Promise.all([...known].map(async ([folder, profile]) => {
+      await metadata.initialize(profile);
       const saved = await state(profile);
       const identity = saved.projectSettings?.[folder];
       const history = await recent(profile);
-      const lastPath = profile === app.getPath("userData") ? await lastNote() : undefined;
+      const lastPath = profile === userData ? await lastNote() : undefined;
       const github = saved.localNotes ? undefined : await githubRepo(folder);
       const last = counted.get(folder);
       return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes, ...(github ? { repo: github } : {}), ...(last ? { stats: last } : {}) };
     }));
   }
-  async function pin(folder: string, path?: string) {
-    await list();
-    const profile = known.get(await realpath(folder));
-    if (!profile) throw new Error("Unknown project");
-    await recentWrites;
-    const record = await recent(profile);
-    if (path) {
-      const note = record.notes.find(n => n.path === path);
-      if (!note) throw new Error("Unknown recent note");
-      note.pinned = !note.pinned;
-    } else record.pinned = !record.pinned;
-    await saveRecent(profile, record);
+  function pin(folder: string, path?: string) {
+    if (!acceptingMetadata) return Promise.resolve();
+    const knownProfile = known.get(folder);
+    if (!knownProfile) return Promise.reject(new Error("Project list changed. Open it again before changing its pins."));
+    const admitted = metadata.ticket(knownProfile);
+    void admitted.catch(() => {});
+    return queueRecent(async epoch => {
+      await list();
+      const profile = known.get(await realpath(folder));
+      if (!profile) throw new Error("Unknown project");
+      const ticket = await admitted;
+      const previous = await recentBytes(profile);
+      const record = await readRecent(profile, previous);
+      if (path) {
+        const note = record.notes.find(n => n.path === path);
+        if (!note) throw new Error("Unknown recent note");
+        note.pinned = !note.pinned;
+      } else record.pinned = !record.pinned;
+      await saveRecent(profile, record, epoch, ticket, previous);
+    });
   }
   /** A folder Open lists, canonical; anything else is refused. */
   async function knownFolder(folder: string): Promise<string> {
@@ -287,7 +390,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }
     if (canonical === await realpath(home()) && !target) return;
     // One process and single-instance lock per project keep all existing workspace services scoped.
-    if (profile === app.getPath("userData") && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
+    if (profile === userData && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(target ? ["--project-note", target] : [])];
     const child = spawn(process.execPath, args, {
       env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", FOCUS_NOTES_PROJECT_NOTE: target ?? "" },
@@ -441,5 +544,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed, purge, resume, dispose };
 }

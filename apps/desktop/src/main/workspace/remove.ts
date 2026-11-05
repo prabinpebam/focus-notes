@@ -8,7 +8,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { rm, rmdir } from "node:fs/promises";
 import { join, parse, resolve } from "node:path";
-import { DATA_FOLDERS, filesRemovedBy, type Removal } from "@focus-notes/core/inventory";
+import { DATA_FILES, DATA_FOLDERS, filesRemovedBy, type Removal } from "@focus-notes/core/inventory";
 import type { RemovalCheck } from "@focus-notes/core";
 import type { GitRunner } from "../git/run.ts";
 
@@ -77,9 +77,10 @@ export async function removeWorkspace(git: GitRunner, folder: string): Promise<R
  * own folders (crash recovery's drafts) go only when empty: the caller has deleted the open
  * workspace's part, and another workspace's drafts stay.
  */
-export async function forgetLocalData(userData: string, event: Removal): Promise<void> {
+export async function forgetLocalData(userData: string, event: Removal, managedProjectPointer = false): Promise<void> {
   const folders = Object.values(DATA_FOLDERS) as string[];
   for (const f of filesRemovedBy(event)) {
+    if (managedProjectPointer && f === DATA_FILES.lastProject) continue;
     if (folders.includes(f)) await rmdir(join(userData, f)).catch(() => {});
     else await rm(join(userData, f), { force: true });
   }

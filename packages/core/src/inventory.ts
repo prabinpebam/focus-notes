@@ -28,6 +28,10 @@ export const DATA_FILES = {
   projectLastNote: "last-project-note.dat",
   projectRecent: "project-recent.dat",
   lastProject: "last-project.json",
+  /** Shared lifecycle generations only: hashed profile identities, never note paths. */
+  projectMetadata: "project-metadata.sqlite",
+  projectMetadataWal: "project-metadata.sqlite-wal",
+  projectMetadataShm: "project-metadata.sqlite-shm",
   /** The workspace folder the first run opened. */
   workspace: "workspace.json",
   /** A name and email for only the notes workspace, until the workspace has them. */
@@ -96,9 +100,12 @@ export interface InventoryItem {
 export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "deviceSettings", path: DATA_FILES.state, removedBy: ["deleteDataFolder"] },
   { id: "projectFolder", path: DATA_FILES.projectFolder, removedBy: ["deleteDataFolder"] },
-  { id: "projectLastNote", path: DATA_FILES.projectLastNote, removedBy: ["deleteDataFolder"] },
-  { id: "projectRecent", path: DATA_FILES.projectRecent, removedBy: ["deleteDataFolder"] },
-  { id: "lastProject", path: DATA_FILES.lastProject, removedBy: ["deleteDataFolder"] },
+  { id: "projectLastNote", path: DATA_FILES.projectLastNote, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "projectRecent", path: DATA_FILES.projectRecent, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "lastProject", path: DATA_FILES.lastProject, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "projectMetadata", path: DATA_FILES.projectMetadata, removedBy: ["deleteDataFolder"] },
+  { id: "projectMetadataWal", path: DATA_FILES.projectMetadataWal, removedBy: ["deleteDataFolder"] },
+  { id: "projectMetadataShm", path: DATA_FILES.projectMetadataShm, removedBy: ["deleteDataFolder"] },
   { id: "projectProfiles", path: `${DATA_FOLDERS.projectProfiles}/`, removedBy: ["deleteDataFolder"] },
   { id: "recentItems", path: `${DATA_FILES.state}#lastNotePath`, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "workspaceFolder", path: DATA_FILES.workspace, removedBy: ["removeWorkspace", "deleteDataFolder"] },
