@@ -30,7 +30,11 @@ The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-
 | PID-scoped `close-test-apps.ps1`, dry-run then actual | Passed after both runs; no test instances left open. |
 | Open, card-state and shimmer-tint gallery captures in light and dark | Inspected six candidates under `focus-notes-work\review\vq-open-dialog`; placeholders retain each card's hue. |
 
-There are no approved PNG baselines in this checkout, and Open/shimmer have no registered approved baseline to replace. Following `e2e/baselines.ts`, captures remain review candidates, not silently approved images. The gallery logs existing CSP warnings about meta `frame-ancestors` and blocked inline styles; these are queued separately, not repaired in this increment. A fresh two-project candidate and exact-head CI remain pending; this is not landing or release evidence.
+There are no approved PNG baselines in this checkout, and Open/shimmer have no registered approved baseline to replace. Following `e2e/baselines.ts`, captures remain review candidates, not silently approved images. The gallery logs existing CSP warnings about meta `frame-ancestors` and blocked inline styles; these are queued separately, not repaired in this increment.
+
+The original `45eb26de` passed exact-head Windows CI `42033168821` (test job and all four journey shards). Its isolated candidate passed both Field notes/Garden notes inspections, including actual file/media/folder counts. The normal Shell launch has no E2E variables, but its window is fully covered: on-screen exposure is not claimed. The owner directed that PID 58196 remain unchanged.
+
+**Linear landing candidate:** `45eb26de` could not fast-forward main `0dc18a41`; no push to main was attempted. The four Open commits were rebased onto that main as `74393d32`, preserving upstream AI discovery, find/readiness and own-border pin feedback. After `pnpm tokens` refreshed local generated tokens, `pnpm check`, `pnpm typecheck`, `pnpm exec vitest run packages/core/test/project-open.test.ts apps/desktop/test/project-card.test.ts tools/test/shimmer.test.mjs` (42 tests), the desktop build and both journey commands above (16 + 5 tests) pass again. PID-scoped cleanup ran after the journeys. The rebased candidate still requires its own exact-head green CI before a plain fast-forward; no release is claimed.
 
 ### Native panel recovery journey transport, 5 November
 
