@@ -63,6 +63,7 @@
 <p>It's composed in the canvas view document rather than as a compound, like the find bar (D-76): a <code>Positioner</code> anchored to the selection holds a frosted <code>Surface</code> (key scope <code>formatToolbar</code>) with a <code>ToolbarRow</code> of a text <code>MenuButton</code>, <code>IconButton</code> toggles, and a toggle <code>Button</code>. The editor surface reports what the selection holds (the <code>format</code> event), and <code>vm.format</code> says what to show.</p>
 
 <h3>When it appears and disappears</h3>
+<p>A keyboard selection made immediately after focus returns to the note must survive the editor's delayed focus restoration. The existing ProseMirror patch reads a new keyboard selection before that callback can restore an older caret; pointer-selection protection and ordinary focus restoration remain unchanged. The deterministic editor regression runs the original delayed callback before <code>selectionchange</code>, and the compact light/dark journey checks <kbd>Ctrl+Shift+Right</kbd> immediately after closing Send feedback: the selected text remains and the toolbar opens, without an added wait or a new writing-window element.</p>
 <table>
   <thead><tr><th>Event</th><th>Toolbar</th></tr></thead>
   <tbody>
