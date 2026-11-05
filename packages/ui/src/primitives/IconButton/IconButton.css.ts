@@ -1,4 +1,4 @@
-import { createVar, keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.iconButton;
@@ -31,18 +31,9 @@ export const base = style({
     "&[data-selected]": { vars: { [fill]: t.color.selected } },
     '&[aria-pressed="mixed"]': { vars: { [fill]: t.color.mixed } },
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.color.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
-    // Busy is inert but not disabled: its sign is the Spinner and its words, never a dimmed look (D-199).
+    // Busy keeps the icon and uses its own-border arc, never a dimmed look.
     '&[aria-disabled="true"]:not([data-busy="on"])': { opacity: t.disabledOpacity },
   },
 });
 export const stretch = style({ height: "auto", minHeight: t.size, alignSelf: "stretch" });
 export const tone = styleVariants({ default: { color: t.color.icon }, muted: { color: t.color.iconMuted } });
-
-// The busy sign (Waits, D-199): the icon and a Spinner share one cell, so the control keeps its size.
-// The Spinner shows, and the icon hides, only after the busy delay (wait.signDelay), so quick work
-// shows nothing extra. No timer: the delay is the style's, the busy state the task tracker's.
-const hidden = keyframes({ from: { visibility: "hidden" }, to: { visibility: "hidden" } });
-const shown = keyframes({ from: { visibility: "visible" }, to: { visibility: "visible" } });
-export const busyGlyph = style({ display: "inline-grid", gridTemplateAreas: '"glyph"', alignItems: "center", justifyItems: "center" });
-export const busyIcon = style({ gridArea: "glyph", display: "inline-flex", animationName: hidden, animationDuration: t.duration, animationDelay: t.busy.signDelay, animationFillMode: "forwards" });
-export const busySpinner = style({ gridArea: "glyph", display: "inline-flex", visibility: "hidden", animationName: shown, animationDuration: t.duration, animationDelay: t.busy.signDelay, animationFillMode: "forwards" });

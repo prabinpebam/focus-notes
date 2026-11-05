@@ -765,7 +765,7 @@
         "bleed": {
           "kind": "boolean",
           "default": false,
-          "description": "A subtle button at the start of the content (a first-run step's Back): its label lines up with the content's edge, and its hit area reaches into the padding (D-111)."
+          "description": "Deprecated compatibility input; padding and paint always stay inside the control (D-354)."
         },
         "autoFocus": {
           "kind": "boolean",
@@ -840,7 +840,6 @@
         "glyph bounds danger l end",
         "glyph bounds long label",
         "size l",
-        "bleed",
         "size m with icon",
         "icon at end",
         "busy",
@@ -912,7 +911,8 @@
         },
         "busy": {
           "kind": "boolean",
-          "default": false
+          "default": false,
+          "description": "Inert immediately, with the same own-border pending arc as a commit; no icon replacement."
         },
         "busyLabel": {
           "kind": "text"
@@ -930,7 +930,7 @@
         "bleed": {
           "kind": "boolean",
           "default": false,
-          "description": "At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding (D-111)."
+          "description": "Deprecated compatibility input; padding and paint always stay inside the control (D-354)."
         }
       },
       "events": {
@@ -965,8 +965,6 @@
         "toggle off",
         "toggle on",
         "toggle mixed",
-        "busy",
-        "bleed",
         "disabled with reason",
         "field-height refresh"
       ]
@@ -1279,7 +1277,7 @@
         "bleed": {
           "kind": "boolean",
           "default": false,
-          "description": "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)."
+          "description": "Deprecated compatibility input; padding and paint always stay inside the control (D-354)."
         }
       },
       "events": {
@@ -1320,7 +1318,7 @@
         "placement top start",
         "variant text, placement bottom start",
         "variant select",
-        "variant text, bleed"
+        "variant text"
       ]
     },
     {
@@ -3399,7 +3397,7 @@
             "confirmed",
             "failed"
           ],
-          "description": "The commit track (F2): pending spins in the thumb and locks the switch, still focused and still the stored value; confirmed shows the tick beside the state word; failed shows the stored value, the error icon and `error` below with Retry."
+          "description": "Own-border pending arc (dashed with reduced motion), then success or danger outline; keep the stored value and focus, with error and Retry outside the track."
         },
         "error": {
           "kind": "message",

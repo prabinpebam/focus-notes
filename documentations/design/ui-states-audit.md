@@ -58,6 +58,39 @@ The source audit found 27 production toggle declarations (one Agents repeat rend
 
 Find now reserves its actual measured layer height, plus the semantic item gap, rather than assuming an icon-only row height. The renderer supplies and subscribes to its already-declared `env.sizeClass` using the token breakpoints; only regions that read the environment subscribe, and resizing within a class does not rerender them. The native small-window check measures the visible label, not React Aria's hidden checkbox wrapper, and checks both axes and the match's on-screen bottom.
 
+### Owner feedback batch, 6 November: pending-pattern inventory
+
+The compact `busy` and `commit` inputs share one rendered pattern, not two lookalikes. IconButton's centre Spinner import, stacked glyph wrappers, delayed hiding/reveal animations and unused delay token are deleted. The glyph stays visible. Pin/unpin is a named action, not an on/off setting: Files and the composer's drag-only previews no longer claim a pressed setting state.
+
+| Primitive | Kept pending/loading pattern | Confirmation, failure and recovery | Removed or deliberately separate |
+| --- | --- | --- | --- |
+| IconButton | Own-border arc for both `busy` and pending commit | Success/danger outline; recovery outside | Centre Spinner and icon replacement deleted |
+| Switch | Own-track-border arc, stored thumb unchanged | Success/danger outline; retained value and row Retry | Old thumb-spinner/tick contract wording removed |
+| MenuButton | Own-border arc on trigger | Success/danger outline; recovery outside | Menu-item inline mark stays only in its roomy row, not over the trigger |
+| Button | Own-border feedback for compact commits; existing delayed icon-slot sign for a roomy action | Border outcome or task words; recovery outside | Roomy text action and compact commit are distinct needs; deprecated bleed fixture removed |
+| PillButton | Own-border arc | Success/danger outline; recovery outside | No alternate spinner |
+| PickerButton | Own-border arc on trigger or chosen option | Success/danger outline; row Retry/Revert | No alternate spinner |
+| ProjectMark | Chosen mark's own-border arc | Retained choice, success/danger outline; scoped Retry/Revert | No alternate spinner |
+| FontChoice | Chosen tile's own-border arc | Retained choice, success/danger outline; scoped Retry/Revert | No alternate spinner |
+| ThemeGallery | Chosen tile's own-border arc | Retained choice, success/danger outline; scoped Retry/Revert | No alternate spinner |
+| SegmentedControl | Chosen member's own-border arc | Retained attempted choice; scoped Retry/Revert | Genuine multiple-choice controls only, not binary settings |
+| TextField | Existing trailing inline CommitMark slot | Confirmed tick, failure and Retry/Revert; input retained | Roomy field treatment, not a compact icon action |
+| ColorField | Existing trailing inline CommitMark slot | Confirmed tick, failure and Retry/Revert; input retained | Roomy field treatment |
+| Slider | Inline CommitMark beside formatted output | Confirmed tick, failure and Retry/Revert; preview retained | Output feedback, not a thumb spinner |
+| CommitMark | One inline implementation and one shared BorderProgress implementation | Pending, confirmed, failed, rest | Inline and border are distinct space budgets; compact controls never request inline |
+| FileTree | Row-level loading sign for loading a row; IconButton arc for pin/unpin | Stored pin retained until acknowledgement; Retry outside | Row loading is not a second pin spinner |
+| OpenItem | Loading skeleton for project/file content; IconButton arc for pin/unpin | Success/danger outline; exact-action Retry | Content skeleton is not a second pin variant |
+| ItemCard | Known-content skeleton or existing task-driven card state | Existing local recovery | Content placeholder, not a compact control |
+| Skeleton | One shimmer placeholder family, sized for known content | Replaced by ready content or local failure | Not a control's pending mark |
+| Spinner | One indeterminate content/operation sign | Replaced by operation outcome | Never imported by IconButton |
+| ProgressBar | Named operation progress | Task outcome and recovery | Determinate/indeterminate work, not compact commit feedback |
+| ScanRadar | Per-target connection discovery status | Found/error target state | Scan result list, not pin feedback |
+| Toast | Existing named progress tone and action's Button feedback | Outcome replaces progress; action failure keeps recovery | Operation status, not a compact control overlay |
+
+All border pending arcs become a static dashed outline with reduced motion; success and failure remain recognizable. The 85-component inventory stays at 85. Button fixtures reduce **58 → 57**, IconButton **13 → 11**, and MenuButton remains **14** with its text fixture renamed, not duplicated. Total checked view/fixture documents reduce **845 → 842**. Busy and commit pending coverage share one gallery IconButton fixture; separate real-renderer unit cases still prove each input independently.
+
+Seventeen control/geometry units pass, including both IconButton inputs with exactly one border sign, one unchanged icon and no Spinner wrapper. Three native journeys pass: slowed real Files pin/unpin in light and dark, plus Open project/file pin/unpin. They assert the pending sign, no centre-spinner element, reduced-motion dashed/no-animation treatment, stored outcomes, focus/geometry and restart behavior. This evidence is local until the exact combined head reaches green main and Preview.
+
 | State family | Kept | Removed | Enforcement |
 | --- | --- | --- | --- |
 | Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |

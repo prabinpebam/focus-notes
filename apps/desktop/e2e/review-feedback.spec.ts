@@ -113,6 +113,8 @@ for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and p
     return tree;
   };
   try {
+    await l.app.evaluate(() => { Reflect.set(globalThis, "focusNotesSlow", { "state:save": 1100 }); });
+    await l.page.emulateMedia({ reducedMotion: "no-preference" });
     const tree = await open(), target = fileRow(tree, "Pin target"), ideas = fileRow(tree, "Ideas");
     const label = target.locator('span[dir="auto"]').first();
     await pointerModality(l.page);
@@ -127,6 +129,13 @@ for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and p
     await button.hover();
     await expect(l.page.getByRole("tooltip", { name: "Pin Pin target", exact: true })).toBeVisible();
     await button.click();
+    const arc = button.locator('[data-border-progress="pending"]');
+    await expect(button).toHaveAttribute("data-commit", "pending");
+    await expect(arc).toHaveCount(1);
+    await expect(arc).not.toHaveCSS("animation-name", "none");
+    await expect(button.locator("svg")).toHaveCount(1);
+    await expect(button.locator("span:not([data-border-progress])")).toHaveCount(0);
+    await expect(button).not.toHaveAttribute("aria-pressed");
     await expect.poll(pins).toEqual([other]);
     await expect(fileRow(l.page.locator("#filesShortcuts"), "Pin target")).toBeVisible();
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:files.pin").length)).toBeGreaterThan(0);
@@ -145,7 +154,12 @@ for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and p
     await l.page.keyboard.press("Tab");
     await expect(target.getByRole("button", { name: "Unpin Pin target", exact: true })).toBeFocused();
     await expect(target.getByRole("button", { name: "Unpin Pin target", exact: true })).not.toHaveAttribute("data-commit", "pending");
+    await l.page.emulateMedia({ reducedMotion: "reduce" });
     await l.page.keyboard.press("Space");
+    const unpin = target.getByRole("button", { name: "Unpin Pin target", exact: true });
+    await expect(unpin.locator('[data-border-progress="pending"]')).toHaveCSS("animation-name", "none");
+    await expect(unpin.locator('[data-border-progress="pending"]')).toHaveCSS("border-top-style", "dashed");
+    await expect(unpin.locator("span:not([data-border-progress])")).toHaveCount(0);
     await expect.poll(pins).toEqual([]);
     await ideas.hover();
     await ideas.getByRole("button", { name: "Pin Ideas", exact: true }).click();

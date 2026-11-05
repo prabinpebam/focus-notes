@@ -3,7 +3,6 @@ import { Button as AriaButton, ToggleButton } from "react-aria-components";
 import { CompanionContext } from "../../behaviors/anchors.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
-import { Spinner } from "../Spinner/Spinner.tsx";
 import type { IconName } from "../../icon-names.ts";
 import { useBusy } from "../../behaviors/busy.ts";
 import { CommitMark, type CommitState } from "../CommitMark/CommitMark.tsx";
@@ -25,7 +24,7 @@ export interface IconButtonProps {
   mixed?: boolean;
   disabled?: boolean;
   disabledReason?: string;
-  /** A wait it started (Waits, D-199): inert at once; after the busy delay a Spinner replaces the icon, and the label says what it's doing. */
+  /** A wait it started: inert at once, with the same own-border pending arc as a commit. */
   busy?: boolean;
   busyLabel?: string;
   /** Immediate own-border commit feedback; recovery belongs beside this compact control. */
@@ -40,13 +39,9 @@ export function IconButton({ icon, label, shortcut, size = "m", tone = "default"
   const className = `${s.base} ${s.tone[tone]}${size === "stretch" ? ` ${s.stretch}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
   const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
-  const common = { id, className, "aria-label": name, "aria-expanded": expanded, ...attrs, ref, "data-commit": commit, preventFocusOnPress: keepNoteFocus };
-  const glyph = commit && commit !== "rest" ? <><Icon name={icon} /><CommitMark variant="border" state={commit} /></> : busy ? (
-    <span className={s.busyGlyph}>
-      <span className={s.busyIcon}><Icon name={icon} /></span>
-      <span className={s.busySpinner}><Spinner size="s" /></span>
-    </span>
-  ) : <Icon name={icon} />;
+  const feedback = busy ? "pending" : commit;
+  const common = { id, className, "aria-label": name, "aria-expanded": expanded, ...attrs, ref, "data-commit": feedback, preventFocusOnPress: keepNoteFocus };
+  const glyph = <><Icon name={icon} />{feedback ? <CommitMark variant="border" state={feedback} /> : null}</>;
   const button = toggle && mixed ? (
     <AriaButton {...common} aria-pressed="mixed" onPress={inert ? undefined : onPress}>
       {glyph}
