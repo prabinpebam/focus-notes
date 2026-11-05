@@ -350,12 +350,42 @@ test("Settings keeps navigation fixed and scrolls only content, with a short-win
         const selected = list.getByRole("tab", { selected: true });
         await expect(selected).toBeFocused();
         await expect(selected).toBeInViewport({ ratio: 1 });
+        expect(await selected.evaluate(el => {
+          const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+          const reach = style.outlineStyle === "none" ? 0 : Math.max(0, parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset));
+          for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+            const cs = getComputedStyle(parent), r = parent.getBoundingClientRect();
+            if (/auto|scroll|hidden|clip/.test(cs.overflowY) &&
+                (box.top - reach < r.top + parent.clientTop - 0.5 || box.bottom + reach > r.top + parent.clientTop + parent.clientHeight + 0.5)) return false;
+            if (/auto|scroll|hidden|clip/.test(cs.overflowX) &&
+                (box.left - reach < r.left + parent.clientLeft - 0.5 || box.right + reach > r.left + parent.clientLeft + parent.clientWidth + 0.5)) return false;
+          }
+          return true;
+        })).toBe(true);
         visited.add(await selected.innerText());
         await expect(feedback).toBeInViewport({ ratio: 1 });
         expect(await feedback.boundingBox()).toEqual(feedbackBox);
         await l.page.keyboard.press(height! >= 720 ? "ArrowDown" : "ArrowRight");
       }
       expect(visited.size).toBe(await list.getByRole("tab").count());
+      if (height! < 720) {
+        const scroller = settings.locator("[data-tab-list-scroller]");
+        expect(await scroller.evaluate(el => {
+          const cs = getComputedStyle(el);
+          return [cs.paddingTop, cs.paddingBottom, cs.paddingLeft, cs.paddingRight].every(value => parseFloat(value) === 0);
+        })).toBe(true);
+        for (const tab of await list.getByRole("tab").all()) {
+          await tab.evaluate(el => {
+            const frame = el.closest("[data-tab-list-scroller]")!;
+            const box = el.getBoundingClientRect(), viewport = frame.getBoundingClientRect();
+            frame.scrollTop += box.top - viewport.top;
+          });
+          await expect(tab).toBeInViewport({ ratio: 1 });
+          await expect(feedback).toBeInViewport({ ratio: 1 });
+          expect(await feedback.boundingBox()).toEqual(feedbackBox);
+        }
+        if (height === 360) expect(await scroller.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+      }
       expect(await panel.evaluate(el => el.clientHeight)).toBeGreaterThanOrEqual(128);
     }
   } finally {

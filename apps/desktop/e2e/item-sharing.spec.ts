@@ -10,6 +10,70 @@ import { SiteReader } from "../../../packages/seal/src/reader.ts";
 import type { AccessFile } from "../../../packages/seal/src/grants.ts";
 import { launch, quit } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
+import { pointerModality } from "./visual-quality.ts";
+
+test("Share New words is icon-only, aligned and keeps pending feedback on its own border", async () => {
+  const { dirs } = instance();
+  const privateDir = join(dirs.docs, "private");
+  write(join(privateDir, "notes", "trips", "rome.md"), "# Rome\n\nTrip plan.\n");
+  git(privateDir, "add", "-A");
+  git(privateDir, "commit", "-qm", "Add test folder");
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
+    await share.getByText("Passcode", { exact: true }).click();
+    const button = share.getByRole("button", { name: "New words", exact: true });
+    await expect(button).toHaveText("");
+    await expect(button.locator("svg")).toHaveCount(1);
+    const passcode = share.getByRole("textbox", { name: "Passcode", exact: true });
+    await expect(passcode).toHaveAttribute("readonly", "");
+    for (const [width, height] of [[900, 700], [480, 360]] as const) {
+      await l.app.evaluate(({ BrowserWindow }, size) => {
+        const window = BrowserWindow.getAllWindows()[0]!;
+        window.setSize(size.width, size.height);
+        return window.getSize();
+      }, { width, height });
+      await button.scrollIntoViewIfNeeded();
+      const box = await button.boundingBox(), field = await passcode.boundingBox();
+      expect(box).not.toBeNull();
+      expect(field).not.toBeNull();
+      expect(box!.y).toBe(field!.y);
+      expect(box!.height).toBe(field!.height);
+      const row = await button.evaluate(el => {
+        const box = el.parentElement!.getBoundingClientRect();
+        return { right: box.right, width: box.width };
+      });
+      expect(box!.x + box!.width).toBe(row.right);
+      expect(field!.width).toBeGreaterThan(row.width / 2);
+    }
+    const before = await button.boundingBox();
+    await pointerModality(page);
+    await button.hover();
+    await expect(page.getByRole("tooltip", { name: "New words", exact: true })).toBeVisible();
+    await l.app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler("access:words");
+      ipcMain.handle("access:words", () => new Promise(resolve => setTimeout(() => resolve({
+        id: "new-words-ui-fixture", value: "cedar-silver-meadow-stone",
+      }), 800)));
+    });
+    await button.click();
+    await expect(button).toHaveAttribute("data-commit", "pending");
+    await expect(button.locator('[data-border-progress="pending"]')).toHaveCount(1);
+    await expect(button.locator("svg")).toHaveCount(1);
+    expect(await button.boundingBox()).toEqual(before);
+    await expect(passcode).toHaveValue("cedar-silver-meadow-stone");
+    await expect(button).toHaveAttribute("data-commit", "rest");
+  } finally {
+    try { await quit(l); } finally {
+      if (process.platform === "win32") for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-File", join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1"), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
 
 test("SHR-16: first copy waits for a real deployed share; both methods work and reopening creates an independent share", async () => {
   test.setTimeout(120_000);

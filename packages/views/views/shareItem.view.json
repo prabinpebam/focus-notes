@@ -141,7 +141,7 @@
               {
                 "type": "Stack",
                 "when": { "get": "vm.shareItem.passcode" },
-                "props": { "gap": "stackItem" },
+                "props": { "gap": "stackGroup" },
                 "children": [
                   {
                     "type": "SegmentedControl",
@@ -155,14 +155,19 @@
                   {
                     "type": "Stack",
                     "when": { "expr": { "!": { "get": "vm.shareItem.ownMode" } } },
-                    "props": { "gap": "stackItem" },
+                    "props": { "gap": "stackPair" },
                     "children": [
-                      { "type": "Text", "props": { "value": { "get": "vm.shareItem.generated" } } },
-                      { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
-                        { "type": "Button", "props": { "label": { "t": "share.dialog.copyPasscode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                          "on": { "press": { "run": "share.item.action", "args": { "what": "passcode" } } } },
-                        { "type": "Button", "props": { "label": { "t": "share.dialog.newWords" }, "disabled": { "get": "vm.shareItem.controlsLocked" }, "disabledReason": { "get": "vm.shareItem.controlReason" } },
+                      { "type": "Text", "props": { "value": { "t": "share.dialog.passcode" }, "tone": "muted", "role": "secondary" } },
+                      { "type": "Inline", "props": { "gap": "inlineItem", "align": "stretch" }, "children": [
+                        { "type": "Stack", "props": { "grow": true }, "children": [
+                          { "type": "TextField", "props": { "label": { "t": "share.dialog.passcode" }, "labelHidden": true, "value": { "get": "vm.shareItem.generated" }, "readOnly": true } }
+                        ] },
+                        { "type": "IconButton", "props": { "icon": "sync", "label": { "t": "share.dialog.newWords" }, "size": "stretch", "commit": { "expr": { "if": [{ "get": "vm.shareItem.wordsBusy" }, "pending", "rest"] } }, "disabled": { "get": "vm.shareItem.controlsLocked" }, "disabledReason": { "get": "vm.shareItem.controlReason" } },
                           "on": { "press": { "run": "share.item.newWords" } } }
+                      ] },
+                      { "type": "Inline", "children": [
+                        { "type": "Button", "props": { "label": { "t": "share.dialog.copyPasscode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                          "on": { "press": { "run": "share.item.action", "args": { "what": "passcode" } } } }
                       ] }
                     ]
                   },

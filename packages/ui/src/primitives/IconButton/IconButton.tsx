@@ -14,6 +14,8 @@ export interface IconButtonProps {
   /** The accessible name and tooltip. Required: icons are never the only signal. */
   label: string;
   shortcut?: string;
+  /** stretch: match the adjacent field's block size in a stretch-aligned row. */
+  size?: "m" | "stretch";
   tone?: keyof typeof s.tone;
   toggle?: boolean;
   pressed?: boolean;
@@ -32,8 +34,8 @@ export interface IconButtonProps {
   onPress?: () => void;
 }
 
-export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, commit, bleed, id, onPress }: IconButtonProps) {
-  const className = `${s.base} ${s.tone[tone]}${bleed ? ` ${s.bleed}` : ""}`;
+export function IconButton({ icon, label, shortcut, size = "m", tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, commit, bleed, id, onPress }: IconButtonProps) {
+  const className = `${s.base} ${s.tone[tone]}${size === "stretch" ? ` ${s.stretch}` : ""}${bleed ? ` ${s.bleed}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
   const { inert, name, attrs, ref } = useBusy({ busy: busy || commit === "pending", busyLabel, label, disabled });
   const common = { id, className, "aria-label": name, ...attrs, ref, "data-commit": commit, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };

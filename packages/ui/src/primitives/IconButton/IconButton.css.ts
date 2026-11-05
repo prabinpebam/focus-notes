@@ -33,6 +33,7 @@ export const base = style({
     '&[aria-disabled="true"]:not([data-busy="on"])': { opacity: t.disabledOpacity },
   },
 });
+export const stretch = style({ height: "auto", minHeight: t.size, alignSelf: "stretch" });
 /**
  * Its icon lines up with the content's edge (a dialog's close button, D-111): the box is the icon's
  * size, in line with the content, and its hit area, fill and focus ring reach past it by an invisible

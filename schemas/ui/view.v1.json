@@ -2474,6 +2474,22 @@
                 }
               ]
             },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "m",
+                    "stretch"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "tone": {
               "anyOf": [
                 {
