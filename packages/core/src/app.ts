@@ -1387,7 +1387,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const keybindings = registerKeybindings({ store, commands, viewModels, catalog, bridge, toast });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
-  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker });
+  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker, commits });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   registerThemeManager({ store, commands, viewModels, catalog, persistAppState, project, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,

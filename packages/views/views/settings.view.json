@@ -2859,15 +2859,20 @@
                                   },
                                   "children": [
                                     {
-                                      "type": "Button",
+                                      "type": "Switch",
                                       "props": {
                                         "label": {
                                           "get": "item.label"
                                         },
-                                        "toggle": true,
-                                        "pressed": {
+                                        "checked": {
                                           "get": "item.pressed"
                                         },
+                                        "onLabel": { "t": "switch.on" },
+                                        "offLabel": { "t": "switch.off" },
+                                        "description": { "get": "item.note" },
+                                        "commit": { "get": "item.commit" },
+                                        "error": { "get": "item.error" },
+                                        "retryLabel": { "t": "commit.retry" },
                                         "disabled": {
                                           "get": "item.disabled"
                                         },
@@ -2876,23 +2881,18 @@
                                         }
                                       },
                                       "on": {
-                                        "press": {
+                                        "change": {
                                           "run": "agents.toggle",
                                           "args": {
                                             "id": {
                                               "get": "item.id"
                                             }
                                           }
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "Text",
-                                      "props": {
-                                        "value": {
-                                          "get": "item.note"
                                         },
-                                        "tone": "muted"
+                                        "retry": {
+                                          "run": "agents.toggle",
+                                          "args": { "id": { "get": "item.id" } }
+                                        }
                                       }
                                     }
                                   ]

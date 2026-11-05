@@ -168,6 +168,39 @@ describe("AGT-02: Settings → Agents", () => {
     expect(vm(app).changedOutside).toBe(true);
   });
 
+  it("holds the stored switch value through pending, confirms it, and keeps it on refusal until Retry succeeds", async () => {
+    const f = setup();
+    const app = await opened(f);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
+    const commit = () => app.store.state.commits.find(c => c.target === "agents.connect");
+    const first = app.commands.run("agents.toggle", { id: "connect" });
+    expect(commit()?.phase).toBe("pending");
+    expect(vm(app).switches[0]).toMatchObject({ pressed: false, disabled: false });
+    await vi.advanceTimersByTimeAsync(199);
+    expect(commit()?.phase).toBe("pending");
+    await vi.advanceTimersByTimeAsync(1);
+    await first;
+    expect(vm(app).switches[0]).toMatchObject({ pressed: true, disabled: false });
+    expect(commit()?.phase).toBe("confirmed");
+    await vi.advanceTimersByTimeAsync(199);
+    expect(commit()?.phase).toBe("confirmed");
+    await vi.advanceTimersByTimeAsync(1);
+    expect(commit()).toBeUndefined();
+    const write = f.bridge.agents!.setSwitches;
+    f.bridge.agents!.setSwitches = async () => { throw new Error("refused"); };
+    const refused = app.commands.run("agents.toggle", { id: "connect" }).catch(error => error);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(await refused).toBeInstanceOf(Error);
+    expect(commit()?.phase).toBe("failed");
+    expect(vm(app).switches[0]).toMatchObject({ pressed: true, disabled: false });
+    f.bridge.agents!.setSwitches = write;
+    const retry = app.commands.run("agents.toggle", { id: "connect" });
+    await vi.advanceTimersByTimeAsync(200);
+    await retry;
+    expect(vm(app).switches[0]).toMatchObject({ pressed: false, disabled: false });
+    expect(commit()?.phase).toBe("confirmed");
+  });
+
   it("offers snippets that start this app's MCP server, each with its own Copy", async () => {
     const f = setup();
     const app = await opened(f);
