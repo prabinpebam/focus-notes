@@ -6,7 +6,7 @@
 import { publicIndexModel, publicPage, publicPagePath, publicNoteUrl, PUBLIC_INDEX_VIEW_MODEL, READER_VIEW_MODEL, type PublicIndexEntry } from "@focus-notes/core";
 import { renderStaticView } from "@focus-notes/ui-runtime/static";
 import { readerContracts, readerRegistry, renderReaderDocument } from "@focus-notes/ui/reader";
-import { pages, messages } from "@focus-notes/views";
+import { pages, messages } from "@focus-notes/views/pages";
 
 export interface ReaderAssets {
   /** File names in the site's assets/ folder. */
