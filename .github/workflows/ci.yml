@@ -3,7 +3,25 @@ on:
   pull_request:
   push:
     # Work branches run the full suite on CI before they merge, so local machines stay free (D-113).
-    branches: [main, "wp-*", "fix-*", "vq-*"]
+    # Not vq-*: designs the owner hasn't approved run no tests, only review-captures.
+    branches: [main, "wp-*", "fix-*"]
+    # Batch CI: docs, agent files and kit pointers alone start no run; they're checked locally with
+    # pnpm check. Help pages, the docs' manifest and index stay in: the site build and its journeys read them.
+    paths:
+      - "**"
+      - "!documentations/**"
+      - "documentations/help/**"
+      - "documentations/docs-manifest.json"
+      - "documentations/index.html"
+      - "!*.md"
+      - "!.github/skills/**"
+      - "!.github/agents/**"
+      - "!slate"
+      - "!agentic-craft"
+      - "!agent-orchestration"
+  # A head the path filter skipped (a docs-only follow-up on a candidate) gets its exact-head run by hand:
+  # gh workflow run ci.yml --ref <branch>
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

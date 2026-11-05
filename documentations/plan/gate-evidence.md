@@ -26,6 +26,15 @@ Image candidate `c96f4a8e` passed the Windows test job and journey shards 1–3 
 
 The SHR-16 publication journey now reads the visible, readonly Passcode textbox's value, matching the generated-passcode field introduced in `88ba734b`, instead of looking for a text node that no longer exists. It retains the four-word format assertion and every publication, clipboard, reader, snapshot and withdrawal check. The complete related journey passes locally on the spacing-integrated AI candidate; this isolated fixture correction is shared with the image candidate.
 
+### CI batching landing: scoped quarantine, 5 November
+
+`fix-ci-batching` (D-pending, Batch CI) changes only workflow triggers (`ci.yml`, `nightly.yml`, `codeql.yml`, `pages.yml`), `AGENTS.md` and `decisions.md`; no app, package or test code. Its exact-head run 42011768666 on `997be000` passed `changes`, `test (windows-latest)` and journey shards 2 to 4. Shard 1 failed on two journeys only:
+
+- `e2e/item-sharing.spec.ts:78` (SHR-16, first copy waits for a real deployed share): the same failure on `main`'s own head `5e4906c9` (run 42002657080) and on every branch merged with it (`fix-ai-scan-state`, `fix-image-menu`, `fix-toolbar-focus-collapse`).
+- `e2e/fault-injection.spec.ts:35` (QLT-03, killed at random points while typing): a timing journey that passed in this change's previous run (42000651114) on the same product code.
+
+**Quarantine.** Scope: this landing only; neither journey is skipped or changed, and every other branch still needs its own green run. Owner: whoever repairs `main`'s SHR-16 red. Expiry: the first green exact-head run on `main`. The owner set a 90-minute cap on waiting for the two in-flight gates; neither landed by then, and every CI run on `main` and its branches was red on these unrelated journeys.
+
 ### UI-states merge candidate: CI alignment, 5 November
 
 The returning-writer journey fixture now supplies a real note to reopen and marks the project terminology introduction as already seen. A new install still runs the first-run path; an explicitly empty `lastNotePath` still reaches Open (D-318). Product launch behavior is unchanged. The older checks now assert the approved local location and project pills, menu accessible descriptions, row pins and pending compact-setting feedback rather than their superseded presentation.
