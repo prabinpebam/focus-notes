@@ -24,7 +24,12 @@ Public Git history retains earlier plaintext and encrypted builds. A later unpub
 <desc id="fnsite-flow__desc">A minimal top bar names Book and its public Essays section, followed by theme and focus controls. The home lists Essays with two public articles. The Essays section lists Focus with its opening lines. Opening Focus shows a read-only article with a breadcrumb. Shared-only and private notes are absent from this navigation.</desc>
 <g id="fnsite-flow__nav" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="fnsite-flow__bar" x="24" y="24" width="952" height="62" rx="12" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
-<text x="44" y="62" font-size="18" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnsite-flow__bar" data-slate-fit-padding="16">Book · Home · Essays · Theme: System · Focus: Off</text>
+<text x="44" y="62" font-size="18" fill="var(--color-neutral-fg-1)">Book · Home · Essays · Focus: Off</text>
+<g fill="none" stroke="var(--color-neutral-fg-1)" stroke-width="2">
+<g role="img" aria-label="Light"><title>Light</title><circle cx="804" cy="55" r="7"/><path d="M804 40v4m0 22v4m-15-15h4m22 0h4m-26-11 3 3m16 16 3 3m0-22-3 3m-16 16-3 3"/></g>
+<g role="img" aria-label="Dark"><title>Dark</title><path d="M851 41a14 14 0 1 0 14 20 13 13 0 0 1-14-20Z"/></g>
+<g role="img" aria-label="System"><title>System</title><rect x="888" y="43" width="28" height="19" rx="2"/><path d="M902 62v6m-8 0h16"/></g>
+</g>
 </g>
 <g id="fnsite-flow__home" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
 <rect id="fnsite-flow__homebox" x="24" y="118" width="290" height="208" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" />
@@ -69,9 +74,14 @@ Owner source, verbatim:
 | --- | --- |
 | Public home/section article entries and desktop preview | No trailing chevron on articles. Section navigation and unrelated app cards keep their existing cues. |
 | Desktop preview's article titles, excerpts and body | The selected reading font and size apply immediately, within the preview only. Article headings use the same sanitized title blocks as the published renderer. Nested size scopes rebind dependent component tokens rather than inheriting the app root's resolved sizes. |
-| Generated note/index pages and desktop preview | Light, dark and system are icon-only radio choices, each with an accessible name and tooltip. The selected choice is visible and keyboard-operable. Generated pages use native radios and CSS, keeping the existing no-script CSP, no cookies and no network additions. System follows the device on generated pages; an explicit override lasts for that page. Preview changes remain device-local and never publish. |
+| Existing desktop preview and published-site design | Light, dark and system are icon-only radio choices, each with an accessible name and tooltip. The selected choice is visible and keyboard-operable. Preview changes remain device-local and never publish. The existing share/publish mocks show the same icons without wiring publication. |
+| Generated note/index pages | There is no theme switch in the current generator. Keep its script-free CSP and device light/dark preference; do not add the planned control until approved for implementation. Its future design is icon-only. |
 
-These corrections do not make the still-planned publication pipeline functional. Persistent reader overrides and applying saved site defaults to a real publish remain part of that later wiring.
+**Implementation boundary, owner direction via main, 5 November:** "implement it in the generator only if that design is already approved for implementation — otherwise just the design change." No live-control implementation approval is recorded; the initial control addition was removed. Persistent reader overrides and applying saved site defaults to a real publish remain later wiring.
+
+**Actual generator trace:** the template's [Deploy app workflow](../../templates/workspace/.github/workflows/pages.yml) calls the release bundle's `publish/cli.mjs publish --reader .../publish`. That bundle contains [the seal publisher](../../packages/seal/src/publish.ts), which loads [the public-page renderer](../../apps/web/reader/render.ts); it renders the reader/index view documents through the app's UI runtime. This is not the product landing-page builder. Its public index already uses plain title links with no article chevrons.
+
+**Focused verification, 5 November:** the rebuilt production preview view, driven through its controls over synthetic notes, applies all three fonts at 16/18/20 px to excerpts and article bodies; entry titles scale to 32/36/40 px and article H1s to 40/45/50 px. Both preview and generated public pages use paper (`rgb(251, 250, 247)` / `rgb(31, 29, 26)`) or ink (`rgb(26, 26, 28)` / `rgb(236, 234, 230)`) and fit at 320 px. Thirty focused unit tests and the three public-page journeys pass; the live generator still has no theme switch or scripts. The unrelated stale third-party notice blocks the aggregate check; no dependency changes were made.
 
 Home names the project and lists its published top-level folders as sections and root files as article entries. Every public descendant is reachable through those sections, not flattened into a giant feed. A folder always looks like a section with a folder cue and **⟨count⟩ articles**; the count is descendant published files, not folders or private/shared-only notes.
 

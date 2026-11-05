@@ -11729,58 +11729,6 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
-            },
-            "themeLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
-            },
-            "lightLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
-            },
-            "darkLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
-            },
-            "systemLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
             }
           },
           "required": [

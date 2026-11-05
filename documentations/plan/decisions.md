@@ -2,11 +2,11 @@
 
 ## D-pending: article entries and reader controls match the public-site preview
 
-**Status:** Accepted (owner, 5 November 2026). **Affects:** [Published website](../experience/published-site.md#owner-corrections-5-november-article-entries-and-reading-controls), the public reader/index views, desktop site preview, ProjectScope and reading token scopes; SHR-06, SHR-20 to SHR-22.
+**Status:** Accepted correction; live-site control design only (owner, 5 November 2026). **Affects:** [Published website](../experience/published-site.md#owner-corrections-5-november-article-entries-and-reading-controls), desktop site preview, share/publish mocks, ProjectScope and reading token scopes; SHR-06, SHR-20 to SHR-22.
 
-The owner's three corrections are recorded verbatim on the experience page. Articles have no trailing chevron; this does not remove section or app-card navigation cues. Preview article titles, excerpts and body follow its reading font and size, without changing the writing app's appearance. Light/dark/system use icons only, with accessible names and tooltips, on both generated pages and preview.
+The owner's three corrections are recorded verbatim on the experience page. Articles have no trailing chevron; this does not remove section or app-card navigation cues. The actual generator already emits plain article links without chevrons. Preview article titles, excerpts and body follow its reading font and size, without changing the writing app's appearance. Light/dark/system use icons only, with accessible names and tooltips, in the existing preview and published-site design.
 
-Reuse SegmentedControl with an opt-in native icon-radio variant, so the generated page stays functional under its existing no-script CSP. Explicit reader choices affect that page; system follows the device. This correction adds neither persistence nor real publication. Those remain later publishing work. The orchestrator assigns the number.
+Reuse SegmentedControl's opt-in native icon-radio variant in the preview and existing share/publish mocks. Main clarified that a control absent from the generator may be added only after implementation approval. No such approval is recorded: remove the initial ReaderPage control and root theme selectors; preserve the generator's existing script-free device theme behavior. Live controls, persistence and real publication remain later work, not implementation in this correction. The orchestrator assigns the number.
 
 ## D-pending: GitHub Actions runs are batched on accumulated work
 

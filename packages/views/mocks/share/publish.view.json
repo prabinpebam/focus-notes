@@ -303,6 +303,7 @@
                    "label": {
                     "t": "site.preview.readerTheme"
                    },
+                   "iconsOnly": true,
                    "options": {
                     "get": "vm.mockShare.readerThemeOptions"
                    },
@@ -510,6 +511,7 @@
                       "detail": {
                        "get": "a.excerpt"
                       },
+                      "chevron": false,
                       "icon": "document"
                      },
                      "on": {
@@ -915,6 +917,7 @@
                    "label": {
                     "t": "site.preview.readerTheme"
                    },
+                   "iconsOnly": true,
                    "options": {
                     "get": "vm.mockShare.readerThemeOptions"
                    },
@@ -1122,6 +1125,7 @@
                       "detail": {
                        "get": "a.excerpt"
                       },
+                      "chevron": false,
                       "icon": "document"
                      },
                      "on": {
@@ -1527,6 +1531,7 @@
                    "label": {
                     "t": "site.preview.readerTheme"
                    },
+                   "iconsOnly": true,
                    "options": {
                     "get": "vm.mockShare.readerThemeOptions"
                    },
@@ -1734,6 +1739,7 @@
                       "detail": {
                        "get": "a.excerpt"
                       },
+                      "chevron": false,
                       "icon": "document"
                      },
                      "on": {
