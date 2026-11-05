@@ -395,7 +395,7 @@ const INTERNAL_IDS = new Set([
   "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix",
   // Send feedback's own buttons (D-203): Spotlight lists only Send feedback… and Report a problem….
   "feedback.send", "feedback.submit", "feedback.retry", "feedback.continue", "feedback.done", "feedback.close", "feedback.openIssue", "feedback.signIn", "feedback.toggleAttach", "feedback.togglePreview",
-  "local.copyTo", "local.importClose", "local.importRetry", "projects.newRecover", "history.retry", "files.retryDeleted", "image.retry", "image.failed",
+  "local.copyTo", "local.importClose", "local.importRetry", "projects.newRecover", "history.retry", "files.retryDeleted", "image.retry", "image.failed", "image.import", "image.imported",
   // Delete project's own steps (PRJ-23): Spotlight lists only Delete project….
   "project.deleteSetOpen", "project.deleteCancel", "project.deleteStop", "project.deleteRetry", "project.deleteSignIn", "project.deleteRemoveInstead", "project.deleteType", "project.deletePrivate",
   "project.deleteBack", "project.deleteContinue", "project.deleteExport", "project.deleteConfirm", "project.deleteOpenGitHub", "project.deletePoll", "project.deleteConfirmGitHub", "project.deleteShowFolder",

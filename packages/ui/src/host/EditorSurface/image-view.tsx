@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { syncSelection, type NodeViewRenderer } from "@focus-notes/editor";
 import { ImageFrame } from "../../primitives/ImageFrame/ImageFrame.tsx";
 import { TextMenu } from "../TextMenu/TextMenu.tsx";
-import { Spinner } from "../../primitives/Spinner/Spinner.tsx";
 import { FullAppOverlay } from "../../layouts/AppRoot/in-window.tsx";
 import * as styles from "./image-view.css.ts";
 import type { ImageSource, MenuSection } from "../../data.ts";
@@ -17,6 +16,7 @@ export interface ImageViewOptions {
   missing: string;
   retryLabel: string;
   retryBusyLabel: string;
+  loadingLabel: string;
   read?: (payload: { src: string; key: string }) => void;
   retry?: (payload: { src: string; key: string }) => void;
   failed?: (payload: { src: string; value: string; key: string }) => void;
@@ -40,12 +40,12 @@ function ImageNode({ payload, selected, options, select, capture, menu, openMenu
   const source = options.sources.find((s) => s.id === payload.src);
   const control = (target: EventTarget) => target instanceof Element && target.closest("button, [data-floating-child]");
   return <span onClick={(e) => { if (!control(e.target)) select(true); }} onMouseDown={(e) => { if (control(e.target)) return; e.preventDefault(); if (e.button === 2) e.stopPropagation(); }}>
-    {source?.failed || source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected} inSelection={!selected && payload.text && payload.count > 0}
-      broken={source.failed} error={options.missing} retryLabel={options.retryLabel} retryBusy={source.pending} retryBusyLabel={options.retryBusyLabel}
+    <ImageFrame src={source?.value ?? ""} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected} inSelection={!selected && payload.text && payload.count > 0}
+      intrinsicWidth={payload.width || undefined} intrinsicHeight={payload.height || undefined} loadingLabel={options.loadingLabel}
+      broken={source?.failed} error={options.missing} retryLabel={options.retryLabel} retryBusy={source?.pending} retryBusyLabel={options.retryBusyLabel}
       onRetry={() => options.retry?.({ src: payload.src, key: options.documentKey })}
-      onError={() => options.failed?.({ src: payload.src, value: source.value, key: options.documentKey })}
+      onError={() => options.failed?.({ src: payload.src, value: source?.value ?? "", key: options.documentKey })}
       onSize={onSize} onContextMenu={(point) => { select(); options.select?.(capture()); openMenu(point); }} />
-      : <Spinner />}
     <FullAppOverlay><TextMenu label={options.menuLabel} sections={options.menu} {...menu} onAction={options.action} /></FullAppOverlay>
   </span>;
 }
@@ -60,7 +60,7 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     let alive = true;
     let current = node;
     let selected = false;
-    let size = { width: 0, height: 0 };
+    let size = { width: Number(node.attrs.width) || 0, height: Number(node.attrs.height) || 0 };
     let menu = { request: 0, x: 0, y: 0 };
     const select = (focus = false) => {
       const pos = getPos();
@@ -113,7 +113,7 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     requestRead();
     return {
       dom,
-      update(next) { if (next.type !== current.type) return false; const changed = next.attrs.src !== current.attrs.src; current = next; if (changed) { size = { width: 0, height: 0 }; requestRead(); } render(); return true; },
+      update(next) { if (next.type !== current.type) return false; const changed = next.attrs.src !== current.attrs.src; current = next; if (changed) { size = { width: Number(next.attrs.width) || 0, height: Number(next.attrs.height) || 0 }; requestRead(); } render(); return true; },
       selectNode() { selected = true; options().select?.({ ...capture(), announce: true }); render(); },
       deselectNode() { selected = false; render(); },
       stopEvent: (e) => e.type === "contextmenu",

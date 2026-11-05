@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
-  applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
+  applyLink, cancelImageImport, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
   focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
@@ -29,6 +29,7 @@ export interface EditorSurfaceProps {
   imageMenu?: MenuSection[];
   imageMenuLabel?: string;
   imageMissing?: string;
+  imageLoadingLabel?: string;
   imageRetryLabel?: string;
   imageRetryBusyLabel?: string;
   onImageRead?: (payload: { src: string; key: string }) => void;
@@ -38,6 +39,8 @@ export interface EditorSurfaceProps {
   onImageAction?: (payload: { id: string }) => void;
   onImageEdited?: (payload: { src: string; data: string }) => void;
   onImageEditError?: () => void;
+  onImageImport?: (payload: { request: string; key: string; data: string; error: string }) => void;
+  onImageImported?: (payload: { batch: string; accepted: boolean }) => void;
   /** Changes when a different note is loaded. The editor resets only then. */
   documentKey: string;
   initialValue: string;
@@ -173,7 +176,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
-  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageRetryLabel = "", imageRetryBusyLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError,
+  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageImport, onImageImported,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
@@ -183,11 +186,13 @@ export function EditorSurface({
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const imageRenders = useRef(new Set<() => void>());
-  const imageOptions = useRef({ documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction });
-  imageOptions.current = { documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction };
+  const imageOptions = useRef({ documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction });
+  imageOptions.current = { documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction };
   const imageEditRef = useRef({ onImageEdited, onImageEditError });
   imageEditRef.current = { onImageEdited, onImageEditError };
-  useEffect(() => { for (const render of imageRenders.current) render(); }, [imageSources, imageMenu, documentKey, imageMissing, imageRetryLabel, imageRetryBusyLabel]);
+  const imageImportRef = useRef({ onImageImport, onImageImported, documentKey });
+  imageImportRef.current = { onImageImport, onImageImported, documentKey };
+  useEffect(() => { for (const render of imageRenders.current) render(); }, [imageSources, imageMenu, documentKey, imageMissing, imageLoadingLabel, imageRetryLabel, imageRetryBusyLabel]);
   const scrollerRef = useRef<HTMLElement | null>(null);
   const minimapRef = useRef<DocMinimapHandle | null>(null);
   useAutoHideScrollbar(scrollerRef);
@@ -258,6 +263,22 @@ export function EditorSurface({
       extensions: [
         ...coreExtensions(keymap ?? [], {
           imageView: imageView(() => imageOptions.current, imageRenders.current),
+          onImageImport: async ({ request, files, error: refusal }) => {
+            const target = imageImportRef.current;
+            try {
+              if (refusal) throw new Error(refusal);
+              if (files && (files.length > 20 || files.some((file) => file.size > 20 * 1024 * 1024))) throw new Error(files.length > 20 ? "image-count" : "image-too-large");
+              const inputs = files ? await Promise.all(files.map((file) => new Promise<{ data: string }>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error("invalid-image"));
+                reader.onload = () => typeof reader.result === "string" ? resolve({ data: reader.result }) : reject(new Error("invalid-image"));
+                reader.readAsDataURL(file);
+              }))) : undefined;
+              target.onImageImport?.({ request, key: target.documentKey, data: inputs ? JSON.stringify(inputs) : "", error: "" });
+            } catch (error) {
+              target.onImageImport?.({ request, key: target.documentKey, data: "", error: error instanceof Error ? error.message : "invalid-image" });
+            }
+          },
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
           findScopeClass: s.findScope,
@@ -722,6 +743,21 @@ export function EditorSurface({
         const from = Number(args.from), to = Number(args.to);
         const patch = { ...(typeof args.rounded === "boolean" ? { rounded: args.rounded } : {}), ...(typeof args.fitHeight === "boolean" ? { fitHeight: args.fitHeight } : {}), ...(typeof args.mode === "string" ? { mode: args.mode } : {}) };
         setImageOptions(editor, { pos, src: args.src, from, to }, patch);
+        return;
+      }
+      if (id === "image.insert") {
+        if (editor.isEditable) editor.commands.command(requestImageCommand);
+        return;
+      }
+      if (id === "image.cancelImport") {
+        cancelImageImport(editor, String(args.request));
+        return;
+      }
+      if (id === "image.insertAssets") {
+        const images = args.images;
+        const valid = Array.isArray(images) && images.every((image: unknown): image is ImageAsset => Boolean(image && typeof image === "object" && "src" in image && typeof image.src === "string" && "width" in image && typeof image.width === "number" && "height" in image && typeof image.height === "number"));
+        const accepted = valid && insertImageAssets(editor, String(args.request), images);
+        imageImportRef.current.onImageImported?.({ batch: String(args.batch), accepted });
         return;
       }
       if (id === "image.renderEdit") {

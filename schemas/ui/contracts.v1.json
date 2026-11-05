@@ -9352,6 +9352,23 @@
         "retryBusyLabel": {
           "kind": "message"
         },
+        "intrinsicWidth": {
+          "kind": "number",
+          "min": 1,
+          "description": "Decoded image width, reserved while loading."
+        },
+        "intrinsicHeight": {
+          "kind": "number",
+          "min": 1,
+          "description": "Decoded image height, reserved while loading."
+        },
+        "loadingLabel": {
+          "kind": "message"
+        },
+        "loading": {
+          "kind": "boolean",
+          "default": false
+        },
         "crop": {
           "kind": "boolean",
           "default": false,
@@ -9401,7 +9418,8 @@
         "rest",
         "selected",
         "broken",
-        "retrying"
+        "retrying",
+        "loading"
       ],
       "tokens": "cmp.imageFrame.*",
       "a11y": {
@@ -9409,6 +9427,23 @@
         "name": "alt"
       },
       "fixtures": [
+        {
+          "name": "sized loading image",
+          "covers": [
+            "loading"
+          ],
+          "props": {
+            "src": {
+              "get": "vm.gallery.imageSrc"
+            },
+            "loading": true,
+            "intrinsicWidth": 640,
+            "intrinsicHeight": 360,
+            "loadingLabel": {
+              "t": "image.read.loading"
+            }
+          }
+        },
         {
           "name": "broken image",
           "covers": [
@@ -16994,6 +17029,9 @@
         "imageMissing": {
           "kind": "message"
         },
+        "imageLoadingLabel": {
+          "kind": "message"
+        },
         "imageRetryLabel": {
           "kind": "message"
         },
@@ -17179,6 +17217,20 @@
           }
         },
         "imageEditError": {},
+        "imageImport": {
+          "payload": {
+            "request": "text",
+            "key": "text",
+            "data": "text",
+            "error": "text"
+          }
+        },
+        "imageImported": {
+          "payload": {
+            "batch": "text",
+            "accepted": "boolean"
+          }
+        },
         "change": {
           "payload": {
             "value": "text"

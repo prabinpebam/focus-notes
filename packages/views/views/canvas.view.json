@@ -822,6 +822,7 @@
           "imageMenu": { "get": "vm.images.menu" },
           "imageMenuLabel": { "t": "image.menu" },
           "imageMissing": { "t": "image.read.failed" },
+          "imageLoadingLabel": { "t": "image.read.loading" },
           "imageRetryLabel": { "t": "commit.retry" },
           "imageRetryBusyLabel": { "t": "uiStates.recovery.retrying" },
           "documentKey": {
@@ -974,6 +975,8 @@
           "imageAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } },
           "imageEdited": { "run": "image.edited", "args": { "src": { "get": "event.src" }, "data": { "get": "event.data" } } },
           "imageEditError": { "run": "image.edit.failed" },
+          "imageImport": { "run": "image.import", "args": { "request": { "get": "event.request" }, "key": { "get": "event.key" }, "data": { "get": "event.data" }, "error": { "get": "event.error" } } },
+          "imageImported": { "run": "image.imported", "args": { "batch": { "get": "event.batch" }, "accepted": { "get": "event.accepted" } } },
           "findScope": {
             "run": "find.setScope",
             "args": {

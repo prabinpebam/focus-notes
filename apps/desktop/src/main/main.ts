@@ -5,7 +5,8 @@
  * API for setup and sharing, configured AI integrations, and the workspace's own Pages site to
  * confirm publication without credentials or redirects (D-344).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { importImages, imageInputsFromPaths, type ImageInput } from "./image-import.ts";
 import { copyFile, lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -1253,11 +1254,51 @@ async function slowSeam(channel: string): Promise<void> {
 
 let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume"> | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
+  const imageBatches = new Map<string, string[]>();
+  const imageRoot = (note: string) => {
+    if (!isWorkspace()) return undefined;
+    if (hasPrivate() && inside(join(notesHome(), "private", "notes"), note)) return join(notesHome(), "private");
+    if (inside(join(notesHome(), "notes"), note)) return notesHome();
+    return undefined;
+  };
+  handle("image:import", async (path, inputs) => {
+    const note = notePath(path);
+    await assertWritable(note);
+    await stat(note);
+    let files: ImageInput[];
+    if (inputs === undefined) {
+      const options = { properties: ["openFile" as const, "multiSelections" as const], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp"] }] };
+      const parent = win();
+      const choice = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options);
+      if (choice.canceled) return undefined;
+      files = await imageInputsFromPaths(choice.filePaths);
+    } else {
+      if (!Array.isArray(inputs) || inputs.length > 20 || inputs.some((item) => !item || typeof item !== "object" || typeof item.data !== "string")) throw new Error("invalid-image");
+      files = inputs;
+    }
+    const result = await importImages(note, imageRoot(note), files, async (path) => {
+      const decoded = await nativeImage.createThumbnailFromPath(path, { width: 1, height: 1 });
+      if (decoded.isEmpty()) throw new Error("invalid-image");
+    });
+    const batch = randomUUID();
+    imageBatches.set(batch, result.paths);
+    return { batch, images: result.images };
+  });
+  handle("image:finishImport", async (batch, keep) => {
+    if (typeof batch !== "string" || typeof keep !== "boolean" || !imageBatches.has(batch)) throw new Error("invalid-image-batch");
+    const paths = imageBatches.get(batch)!;
+    if (!keep) for (const path of paths) await rm(path, { force: true });
+    else if (isWorkspace()) await (await gitOpening)?.commitBatch(paths.map((path) => ({ op: "import", path })));
+    imageBatches.delete(batch);
+  });
   const imagePath = async (note: unknown, src: unknown) => {
     if (typeof src !== "string" || /^[a-z][a-z\d+.-]*:/i.test(src) || isAbsolute(src)) throw new Error("invalid-image");
-    const parent = await realpath(dirname(notePath(note)));
+    const noteFile = notePath(note);
+    const parent = await realpath(dirname(noteFile));
+    const boundary = await realpath(imageRoot(noteFile) ?? parent);
     const path = await realpath(resolve(parent, src));
-    const rel = relative(parent, path);
+    if (isWorkspace() && !inside(join(notesHome(), "private"), noteFile) && inside(join(notesHome(), "private"), path)) throw new Error("invalid-image");
+    const rel = relative(boundary, path);
     if (rel.startsWith(`..${sep}`) || rel === ".." || isAbsolute(rel)) throw new Error("invalid-image");
     return path;
   };
