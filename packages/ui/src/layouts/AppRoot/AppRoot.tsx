@@ -39,6 +39,7 @@ export interface AppRootProps {
   contentFont?: string;
   /** The full outer window outline for the current project. */
   projectAccent?: ProjectAccent | "app";
+  projectBorder?: boolean;
   /** Interface scale (DSY-03). Note text is unaffected. */
   uiScale?: number;
   platform: "macos" | "windows" | "linux" | "web";
@@ -94,7 +95,7 @@ function tokenDefaults(html: HTMLElement): { size: number; chars: number } | und
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
  * scheme, platform, reduced motion, reduced transparency, and pointer type.
  */
-export function AppRoot({ scheme, motion = "system", theme, contentFont, projectAccent = "app", uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
+export function AppRoot({ scheme, motion = "system", theme, contentFont, projectAccent = "app", projectBorder = true, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const applied = useRef<string[]>([]);
@@ -201,7 +202,7 @@ export function AppRoot({ scheme, motion = "system", theme, contentFont, project
   }, [motion]);
 
   const root = (
-    <div ref={rootRef} className={`${s.root} ${s.frame[frame]}${projectAccent === "app" ? "" : ` ${s.projectFrame[frame]}`}`} data-app-root="" data-project-accent={projectAccent === "app" ? undefined : projectAccent}>
+    <div ref={rootRef} className={`${s.root} ${s.frame[frame]}${projectAccent === "app" || !projectBorder ? "" : ` ${s.projectFrame[frame]}`}`} data-app-root="" data-project-accent={projectAccent === "app" ? undefined : projectAccent}>
       {/* Every desktop window drags by its top band, in every state (D-147). */}
       {platform === "web" ? null : <div className={s.band} data-drag-band="" data-title-band="" aria-hidden="true" />}
       {children}

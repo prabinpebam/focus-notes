@@ -130,7 +130,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Surface | layout | `rest` | 29 | None |
 | Layer | layout | `rest` | 20 | None |
 | Center | layout | `rest` | 11 | None |
-| AppRoot | layout | `rest` | 43 | None |
+| AppRoot | layout | `rest` | 44 | None |
 | ToolbarRow | layout | `rest` | 1 | None |
 | Field | layout | `rest`, `error` | 2 | None |
 | Positioner | layout | `above`, `below`, `offscreen` | 6 | `offscreen` |

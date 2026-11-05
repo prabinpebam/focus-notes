@@ -54,6 +54,7 @@ The source audit found 27 production toggle declarations (one Agents repeat rend
 | Rewrite presets | Three mutually exclusive choices | Segmented choice | Preserved; checker accepts three distinct named values and rejects two or duplicated choices |
 | Gallery prototype navigation and image samples | Named screen/sample choices, not settings | Three-or-more choice buttons; smaller prototype navigation stays an ordinary action | Preserved. Image Rounded corners and Fit are Switches, not formatting buttons |
 | Theme, font, colour and project-logo selection | Named multi-option palettes, not a binary setting | Existing radio/choice primitives | Preserved unchanged |
+| Project colour border and watermark | Binary persistent settings, not segmented choices | Switch | Border defaults on even when older saved settings omit the field; 2 px token. Off removes only the outline, keeps project identity and geometry, and survives restart. Watermark now keeps the stored value on refusal and retries the exact choice |
 
 Find now reserves its actual measured layer height, plus the semantic item gap, rather than assuming an icon-only row height. The renderer supplies and subscribes to its already-declared `env.sizeClass` using the token breakpoints; only regions that read the environment subscribe, and resizing within a class does not rerender them. The native small-window check measures the visible label, not React Aria's hidden checkbox wrapper, and checks both axes and the match's on-screen bottom.
 

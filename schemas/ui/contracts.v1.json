@@ -14108,6 +14108,11 @@
           "default": "app",
           "description": "The full outer project outline (D-317)."
         },
+        "projectBorder": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Show the 2 px project outline without changing other project identity (OFB.8)."
+        },
         "uiScale": {
           "kind": "number",
           "min": 0.9,
@@ -14777,6 +14782,25 @@
             "scheme": "light",
             "platform": "windows",
             "projectAccent": "app"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "project border off",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "projectAccent": "blue",
+            "projectBorder": false
           },
           "children": [
             {
