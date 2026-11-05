@@ -54,3 +54,13 @@ it("leaves non-image files to existing paste handling and reports image paste in
   expect(requests).toHaveBeenCalledWith(expect.objectContaining({ error: "unavailable" }));
   expect(editor.getText()).toContain("code");
 });
+it("uses the drop target rather than an unrelated caret inside code", async () => {
+  const { editor, requests } = setup("```\ncode\n```\n\nDrop here\n");
+  editor.commands.setTextSelection(2);
+  const pos = editor.state.doc.content.size - 1;
+  expect(editor.commands.command(props => requestImageCommand(props, undefined, pos))).toBe(true);
+  await Promise.resolve();
+  expect(insertImageAssets(editor, requests.mock.calls[0]![0].request, [{ src: "x.png", width: 1, height: 1 }])).toBe(true);
+  expect(editor.getText()).toContain("code");
+  expect(editor.getText()).toContain("Drop here");
+});
