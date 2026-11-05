@@ -179,6 +179,17 @@ MenuButton and PopoverPanel's normal padding tokens alias `space.insetSm`, not a
 
 **Validation (5 November):** `pnpm check`, `pnpm typecheck`, the desktop build and the Slate runtime check passed. `pnpm exec vitest run packages/ui/test/popover-box.test.ts packages/ui/test/menu-keys.test.ts packages/ui/test/menu-mixed.test.tsx packages/ui-runtime/test/check.test.ts` passed **45 tests**. With `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/spacing-audit.spec.ts e2e/settings-grouping.spec.ts e2e/m3-settings.spec.ts e2e/wp74-agents-settings.spec.ts --workers=1` passed **12 journeys** (five exhaustive-audit cases remain opt-in); the added `settings-grouping.spec.ts --workers=1 -g SP-14` regression passed separately, **13 journeys total**. The baseline spacing run failed with the exact menu, Spotlight and Appearance findings above; the corrected core pass has no unexpected S1/S2. Scoped app cleanup found no remaining instances. No full suite or CI wait: low-risk UI under D-255.
 
+## SP-16: small-window Settings and Find in all
+
+**Reproduced on main `c7c81298`, 5 November:** at 480 × 360 in light and dark, VQ reported Find in all with top/left/right 16 px and bottom 0 px, and Settings with top/right/bottom 24 px and left 16 px. The image integration's shard 4 and combined gate `41999415239` reported the same geometry.
+
+- **Settings, S2:** compact horizontal tabs inherited the vertical panel's 16 px start inset. The shared Tabs horizontal content now uses its 24 px content inset on that edge too. The scroll frame remains unpadded; vertical panel spacing, pinned feedback and the 128 px panel clearance are unchanged.
+- **Find in all, measurement defect:** a short Sheet scrolls header and body together. VQ selected the header for all edges, so its intentionally zero bottom padding hid the body content's actual 16 px end inset. VQ now measures the start from the header and the end from the body content. No product padding is added, no assertion or tolerance removed, and the scroll region still bleeds to the edge.
+
+`spacing-small-window.spec.ts` reproduces both original failures without visible windows, checks Account, Workspace and Appearance in both themes, and deliberately removes the Find content's end padding or restores the wrong Settings start inset: each mutation must fail VQ. The focused run also preserves the existing Settings grouping, full-bleed scroll-frame and focus-ring journeys. Static/type/build checks and related layout units cover the shared change; no full suite or CI dispatch is needed for this low-risk UI correction.
+
+**Validation:** `pnpm check`, desktop typecheck/build and Slate runtime check passed; the two Sheet unit files passed 12 tests; the four existing Settings grouping/scroll/focus journeys and both new light/dark small-window journeys passed. Both mutation checks fail as intended before restoring the valid geometry. Every new app run uses invisible E2E mode and PID-scoped cleanup.
+
 ## SP-15: follow-up geometry and short Settings navigation
 
 **D-pending: short-window Settings nav scrolls; reachability contract.** Confirmed by main triage: all nine tabs must be reachable by keyboard and scrolling, not visible simultaneously. Send feedback stays pinned outside the independently scrolling tab list. The scroll frame bleeds to the edge, padding belongs to the tab-list content, focused tabs scroll fully into view without clipping their rings, and the panel retains 128 px clearance.

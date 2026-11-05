@@ -454,7 +454,11 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         const end = tracks?.at(-1) ?? parseFloat(cs.paddingRight);
         const left = own.left + el.clientLeft + start;
         const top = own.top + el.clientTop + parseFloat(cs.paddingTop);
-        boxes.push({ el: layout ?? el, r: { left: Math.max(r.left, left), top: Math.max(r.top, top), right: Math.min(r.right, own.left + el.clientLeft + el.clientWidth - end), bottom: Math.min(r.bottom, own.top + el.clientTop + el.clientHeight - parseFloat(cs.paddingBottom)) } });
+        // A short sheet scrolls header and body together: its end inset belongs to the body's content,
+        // not to the header that supplies the start inset.
+        const tail = el.matches("[data-sheet-main]") ? el.querySelector(":scope > [data-sheet-body] > [data-sheet-content]") : null;
+        const bottom = parseFloat(getComputedStyle(tail ?? layout ?? el).paddingBottom);
+        boxes.push({ el: layout ?? el, r: { left: Math.max(r.left, left), top: Math.max(r.top, top), right: Math.min(r.right, own.left + el.clientLeft + el.clientWidth - end), bottom: Math.min(r.bottom, own.top + el.clientTop + el.clientHeight - bottom) } });
       } else boxes.push({ el, r });
     }
     return boxes;
