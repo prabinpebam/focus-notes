@@ -94,7 +94,7 @@ The [image source/experience](../experience/images.md) is owner-requested; forma
 
 ## Actions risks and assumptions
 
-**Draft, for owner review.** From the owner's Spotlight note of 5 November and the [Actions framework's proposals](../architecture/actions-framework.md#proposals-register). Nothing is built.
+**Approved spec, 6 November (D-361 to D-364).** From the owner's Spotlight note of 5 November and the [Actions framework's proposals](../architecture/actions-framework.md#proposals-register). Nothing is built.
 
 | ID | Risk | Likelihood | Impact | Mitigation and criterion | Checked in |
 | --- | --- | --- | --- | --- | --- |

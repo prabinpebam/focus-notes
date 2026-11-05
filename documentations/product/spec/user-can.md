@@ -148,7 +148,7 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 
 <h2 id="actions" data-reader-personas="product design">Actions</h2>
 
-**Draft, for owner review.** From the owner's Spotlight note of 5 November; see [Actions](../../experience/actions.md). UC-ACT-07 and UC-ACT-09 are proposals.
+**Approved, 6 November (D-361 to D-364).** From the owner's Spotlight note of 5 November; see [Actions](../../experience/actions.md). UC-ACT-07 and UC-ACT-09 are proposals.
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |

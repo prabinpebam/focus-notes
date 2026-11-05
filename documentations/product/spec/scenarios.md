@@ -30,7 +30,7 @@ Desktop only. Built on 31 October and in the owner's review build, not yet relea
 
 ## Actions
 
-**Draft, for owner review.** From the owner's Spotlight note of 5 November; see [Actions](../../experience/actions.md) and the [Actions framework](../../architecture/actions-framework.md). SC-ACT-06 and SC-ACT-07 are proposals.
+**Approved, 6 November (D-361 to D-364).** From the owner's Spotlight note of 5 November; see [Actions](../../experience/actions.md) and the [Actions framework](../../architecture/actions-framework.md). SC-ACT-06 and SC-ACT-07 are proposals.
 
 | ID | Promise | Situation | Persona | Expected behavior | User can | Views |
 | --- | --- | --- | --- | --- | --- | --- |

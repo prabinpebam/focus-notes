@@ -1,17 +1,17 @@
 # Actions: find and act
 
-**Draft, for owner review (6 November 2026).** The feature the owner's Spotlight note asks for: one dialog, **Actions**, tagline **Find and act**, that opens any file or folder in the project and runs a curated set of actions that all work and can't be confused. The rules behind it are the [Actions framework](../architecture/actions-framework.md).
+**Approved by the owner, 6 November 2026 (D-361 to D-364), with the recommended defaults on the five open questions.** The feature the owner's Spotlight note asks for: one dialog, **Actions**, tagline **Find and act**, that opens any file or folder in the project and runs a curated set of actions that all work and can't be confused. The rules behind it are the [Actions framework](../architecture/actions-framework.md).
 
 > [!NOTE]
 > **TL;DR.** <kbd>Ctrl</kbd>+<kbd>/</kbd> (<kbd>⌘/</kbd>) opens **Actions**. Type to find a file or folder (Enter opens it; a folder opens in Files, focused) or an action (Enter does it, or starts its flow). With text selected, *This selection* comes first (*Bold*, *Add link…*, *Rewrite with AI…*); then *This note* (*Share this note…*, *Publish this note…*), *This project* (*Project settings…*, *Rename project…*) and *App* (*Sign in to GitHub…*, *Connect to AI…*, *Keyboard shortcuts*, *Customize toolbar…*). About 50 actions are listed, each proven and with a label no other action shares; a few more wait as candidates until they're known to work. Today's ~200 rows, with *Cancel*, *Retry* and two identical *Share…*, go. Nothing is added to the writing window: the dialog, its keys and the toolbar's existing trigger are what Spotlight already has.
 
 | Promise | Scenario | User can | Surface | Requirements and decisions |
 | --- | --- | --- | --- | --- |
-| CP-REACH-01 | SC-ACT-01 | UC-ACT-01 | IA-VIEW-SPOTLIGHT | ACT-03, ACT-04; D-TBD (name, content) |
-| CP-REACH-01 | SC-ACT-02, SC-ACT-05 | UC-ACT-02, UC-ACT-06, UC-ACT-08 | IA-VIEW-SPOTLIGHT | ACT-01, ACT-02, ACT-06, ACT-07, ACT-09, ACT-12; D-TBD (allow-list, distinction) |
-| CP-REACH-01 | SC-ACT-03, SC-ACT-04 | UC-ACT-03, UC-ACT-04, UC-ACT-05 | IA-VIEW-SPOTLIGHT, IA-CMP-REWRITEPROMPT | ACT-05, ACT-10, ACT-11, ACT-15; D-TBD (anchors, AI actions) |
+| CP-REACH-01 | SC-ACT-01 | UC-ACT-01 | IA-VIEW-SPOTLIGHT | ACT-03, ACT-04; D-362, D-363 |
+| CP-REACH-01 | SC-ACT-02, SC-ACT-05 | UC-ACT-02, UC-ACT-06, UC-ACT-08 | IA-VIEW-SPOTLIGHT | ACT-01, ACT-02, ACT-06, ACT-07, ACT-09, ACT-12; D-361, D-363 |
+| CP-REACH-01 | SC-ACT-03, SC-ACT-04 | UC-ACT-03, UC-ACT-04, UC-ACT-05 | IA-VIEW-SPOTLIGHT, IA-CMP-REWRITEPROMPT | ACT-05, ACT-10, ACT-11, ACT-15; D-363, D-364 |
 | CP-REACH-01 | SC-ACT-06 | UC-ACT-07 | IA-VIEW-SPOTLIGHT | ACT-08 |
-| CP-REACH-01 | SC-ACT-07 | UC-ACT-09 | IA-VIEW-SPOTLIGHT | ACT-13, ACT-14 (later, needs the owner's yes) |
+| CP-REACH-01 | SC-ACT-07 | UC-ACT-09 | IA-VIEW-SPOTLIGHT | ACT-13, ACT-14 (later: after a week of use) |
 
 ## The jobs
 
@@ -231,11 +231,11 @@ Following [UI states](../design/ui-states-audit.md): the dialog opens complete w
 
 ## Requirements
 
-ACT-01 to ACT-16 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-draft-for-owner-review). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-TBD, Actions](../plan/decisions.md#d-tbd-actions-lists-only-catalogued-actions).
+ACT-01 to ACT-16 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-draft-for-owner-review). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-361 to D-364](../plan/decisions.md#d-361-actions-lists-only-catalogued-actions).
 
-## Open questions for the owner
+## Owner decisions (approved defaults, 6 November)
 
-Only the real decisions. Each has a working default, so design can start without waiting.
+The owner approved the spec on 6 November at 02:07; the recommended default of each question below is the decision.
 
 | # | Question | Options | Default (recommended) |
 | --- | --- | --- | --- |

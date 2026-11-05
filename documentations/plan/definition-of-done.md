@@ -949,9 +949,9 @@ MP.7/WP-P.10 has no-name access-code readers, authenticated encrypted authorizat
 
 **Against the promise (5 November):** images are partly built: display, the image menu, crop and the missing-image state (WP-9.1, WP-9.4); adding images is not. The [readiness assessment](../experience/images.md#readiness-assessment-5-november) orders the rest. Highest-risk proofs are encrypted media closure, atomic/destructive saves and image-only provider payloads. Validate those in scoped work after the owner reviews JSON views; this document does not approve their UX or authorize real-note writes.
 
-## Actions (draft, for owner review)
+## Actions (MACT)
 
-**Not authorized; nothing built.** From the owner's Spotlight note of 5 November ([Actions](../experience/actions.md), [framework](../architecture/actions-framework.md), [plan](implementation-plan.md#mact)). These rows define future evidence. Before the owner approves the WP-A.1 mocks, only the build, typecheck and `ui:check` run; no tests.
+**Approved by the owner, 6 November 02:07 (D-361 to D-364); built in production-ready on `wp-mact`, validated by the owner's own use.** From the owner's Spotlight note of 5 November ([Actions](../experience/actions.md), [framework](../architecture/actions-framework.md), [plan](implementation-plan.md#mact)). These rows define future evidence.
 
 **Try it (after approval and build, about ten minutes):**
 

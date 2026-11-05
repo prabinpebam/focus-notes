@@ -1,6 +1,6 @@
 # Actions framework
 
-**Draft, for owner review (6 November 2026).** How Focus Notes decides what may appear in **Actions** (today's Spotlight), what an action is, and the rules that keep every listed action working and distinct. The feature, its starter set, flows and views are on [Actions: find and act](../experience/actions.md); the plan is the [MACT stage](../plan/implementation-plan.md#mact).
+**Approved by the owner, 6 November 2026 (D-361 to D-364), with the recommended defaults on the five open questions.** How Focus Notes decides what may appear in **Actions** (today's Spotlight), what an action is, and the rules that keep every listed action working and distinct. The feature, its starter set, flows and views are on [Actions: find and act](../experience/actions.md); the plan is the [MACT stage](../plan/implementation-plan.md#mact).
 
 > [!NOTE]
 > **TL;DR.** Today Spotlight lists **every command the app registers unless someone remembered to hide it** (a deny-list, D-111 and KEY-01), so steps like *Cancel*, *Retry* and *Next*, look-alike pairs such as *Share…* and *Share…*, and actions that can't work where you are all show up. The owner's Spotlight note asks for the opposite: **only actions we know make sense and work**, each clearly distinct. This framework flips the rule to an **allow-list catalogue**. An action gets in only if it is something a person sets out to do, starts from the dialog, names **one anchor** (the app, the project, the current note, a selection, or a chosen result), has a label no other action shares, and has a check that proves its outcome. Results are grouped by anchor (*This selection*, *This note*, *This project*, *App*), actions that can't apply here are hidden, blocked ones say why and list their fix, and anything that changes files, sends words elsewhere or uses AI goes through the flow and disclosures that already guard it. User-defined actions (saved prompts and templates) are a later, separately approved stage; there is no plugin or scripting surface.
@@ -153,7 +153,7 @@ The owner asks for "a good framework to qualify what goes as result", with "only
   </table>
 </details>
 
-**Commands don't change.** A command that isn't catalogued still runs from its key, its menu, its dialog's button, an agent or a deep link. Only listing in Actions becomes deliberate. This amends KEY-01 ("every action is a named command that can be run from Spotlight") to "every action is a named command; the catalogued ones are listed in Actions", and supersedes D-111's "lists every action the app has" (decision [D-TBD: allow-list](../plan/decisions.md#d-tbd-actions-lists-only-catalogued-actions)).
+**Commands don't change.** A command that isn't catalogued still runs from its key, its menu, its dialog's button, an agent or a deep link. Only listing in Actions becomes deliberate. This amends KEY-01 ("every action is a named command that can be run from Spotlight") to "every action is a named command; the catalogued ones are listed in Actions", and supersedes D-111's "lists every action the app has" (decision [D-361: allow-list](../plan/decisions.md#d-361-actions-lists-only-catalogued-actions)).
 
 ## Anchors and context
 
@@ -279,7 +279,7 @@ Following [UI states](../design/ui-states-audit.md), every failure keeps the per
 
 ## User-defined actions (later stage)
 
-**Proposal P-10, needs the owner's yes.** The most useful extension a writer is likely to want is **their own words, reused**: a prompt they keep typing, or a block of text they keep starting notes with. Two kinds only, both declarative:
+**Proposal P-10, planned: built after the starter set has been in use for a week (question 3, approved default).** The most useful extension a writer is likely to want is **their own words, reused**: a prompt they keep typing, or a block of text they keep starting notes with. Two kinds only, both declarative:
 
 | Kind | Anchor | Does | Leaves the device |
 | --- | --- | --- | --- |

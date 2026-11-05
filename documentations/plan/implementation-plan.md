@@ -430,11 +430,11 @@ These are independently reviewable slices; lookahead permits design without unre
 
 **GATE-MP:** every [MP done row](definition-of-done.md#projects-and-simpler-sharing) has its named future evidence after design approval. Keep cancellation/no-side-effect checks, first-share/history copy, retained-repository removal and one-click owner-draft export proportionate to the accepted plans. Spec review is not implementation or execution acceptance.
 
-<h2 id="mact" data-reader-personas="product design engineering">MACT: Actions you can trust (draft, for owner review)</h2>
+<h2 id="mact" data-reader-personas="product design engineering">MACT: Actions you can trust</h2>
 
-**Not authorized.** From the owner's Spotlight note of 5 November; the spec is [Actions](../experience/actions.md) and the [Actions framework](../architecture/actions-framework.md). Nothing here is built. The design starts as gallery mocks (WP-A.1); no wiring, no tests until the owner approves them.
+**Approved, 6 November 02:07 (D-361 to D-364): build directly to the spec; the owner validates by use, so WP-A.1's mocks are optional.** From the owner's Spotlight note of 5 November; the spec is [Actions](../experience/actions.md) and the [Actions framework](../architecture/actions-framework.md).
 
-**You can:** open any file or folder of the project from one dialog, and find and run a curated set of actions that all work, grouped by what they act on, each impossible to confuse with another; blocked actions say why and offer their fix. Delivers UC-ACT-01 to UC-ACT-08; UC-ACT-09 waits for the owner's yes.
+**You can:** open any file or folder of the project from one dialog, and find and run a curated set of actions that all work, grouped by what they act on, each impossible to confuse with another; blocked actions say why and offer their fix. Delivers UC-ACT-01 to UC-ACT-08; UC-ACT-09 follows after a week of use.
 
 **Used by:** the owner first. **Delivered as:** planned desktop 1.x.
 
@@ -454,7 +454,7 @@ These are independently reviewable slices; lookahead permits design without unre
 | WP-A.4 | **Files and folders as content.** Files' rules, folders focused in Files, text matches as reasons. | ACT-04 | WP-A.2 | code, accessibility |
 | WP-A.5 | **The starter set, proven.** New wiring for the owner-asked entries, relabels, Candidates closed or kept, each proven from Actions. | ACT-09, ACT-11, ACT-12 | WP-A.3 | code, security, accessibility |
 | WP-A.6 | **AI actions through the approved prompt.** Rewrite, Write, presets pre-filled, Caption. | ACT-10 | WP-A.3, WP-AI.14, WP-P.2 | code, security, accessibility |
-| WP-A.7 | **Your own actions (waits for the owner's yes).** Saved prompts and templates, `actions.json`, schema version 1. | ACT-13, ACT-14 | WP-A.6 | code, security, design-system, accessibility |
+| WP-A.7 | **Your own actions (after a week of use).** Saved prompts and templates, `actions.json`, schema version 1. | ACT-13, ACT-14 | WP-A.6 | code, security, design-system, accessibility |
 
 **GATE-MACT:** every [Actions done row](definition-of-done.md#actions-draft-for-owner-review) has its evidence, and the owner has run its *Try it* in a review build.
 
