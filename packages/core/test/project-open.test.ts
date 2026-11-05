@@ -25,6 +25,23 @@ const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", l
 afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it("writes only the incoming launch record when switching, but persists the current cursor on flush and same-note reload", async () => {
+    const previous = `${book.folder}\\notes\\previous.md`, target = `${book.folder}\\notes\\target.md`;
+    const remember = vi.fn(async () => {});
+    const position = { from: 6, to: 9, scroll: 120 };
+    const app = appWith({ remember, position: async () => position }, async () => "# Target", { chooseNote: async () => target });
+    app.store.update(s => ({ ...s, note: { ...s.note, key: "previous", path: previous, markdown: "# Previous", status: "ready", saveState: "saved" } }));
+    await app.commands.run("note.position", { key: "previous", ...position });
+    await app.commands.run("note.open");
+    expect(remember.mock.calls).toEqual([[target]]);
+    const key = app.store.state.note.key;
+    await app.commands.run("note.position", { key, ...position });
+    await app.flush();
+    expect(remember.mock.calls.at(-1)).toEqual([target, { key, ...position }]);
+    remember.mockClear();
+    await app.commands.run("note.open");
+    expect(remember.mock.calls).toEqual([[target, { key, ...position }], [target]]);
+  });
   it("provides an argument-free command title while keeping platform-specific folder action labels", () => {
     const app = appWith({ reveal: async () => {} });
     const catalog = new MessageCatalog("en", en);

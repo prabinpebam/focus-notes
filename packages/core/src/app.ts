@@ -614,8 +614,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   async function openNote(path: string, opts: { accept?: (markdown: string) => boolean; keepOnFailure?: boolean } = {}): Promise<boolean> {
     opening = timing.mark("fn:note.open.start");
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
-    editorAction(FLUSH_EDITOR);
-    if (!(await flush())) return false;
+    // A different note replaces the launch record; only a same-note reload needs its outgoing cursor.
+    if (!(await flush(path === store.state.note.path))) return false;
     // Switching notes commits and pushes the one being left (D-23).
     const leaving = store.state.note.path;
     if (leaving && leaving !== path) {
@@ -670,12 +670,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   }
 
   /** Writes any unsaved or previously failed change now. Resolves to whether the note is saved. */
-  async function flush(): Promise<boolean> {
+  async function flush(rememberPosition = true): Promise<boolean> {
     editorAction(FLUSH_EDITOR);
     if (saveTimer || store.state.note.saveState === "unsaved" || store.state.note.saveState === "error") saving = saving.then(writeNow);
     await saving;
     const path = store.state.note.path;
-    if (bridge.projects && path && notePosition?.key === store.state.note.key) {
+    if (rememberPosition && bridge.projects && path && notePosition?.key === store.state.note.key) {
       try { await bridge.projects.remember(path, notePosition); }
       catch { toast(catalog.format("project.launch.rememberFailed"), { tone: "error" }); }
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createApp, chordMatches, formatChord, SAVE_DELAY_MS, type PlatformBridge, type AppStateFile } from "../src/index.ts";
+import { createApp, chordMatches, formatChord, FLUSH_EDITOR, SAVE_DELAY_MS, type PlatformBridge, type AppStateFile } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 function fakeBridge(files: Record<string, string> = {}, overrides: Partial<PlatformBridge> = {}) {
@@ -76,6 +76,21 @@ describe("saving (EDT-11 write-to-disk part, QLT-03)", () => {
     await app.commands.run("note.setContent", { value: "now" });
     await app.flush();
     expect(f.files["/notes/Welcome.md"]).toBe("now");
+  });
+  it("collects the outgoing editor once before switching and saves its pending text", async () => {
+    const f = fakeBridge({ "/other.md": "Other" }, { chooseNote: async () => "/other.md" });
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    let flushes = 0;
+    app.onEditorAction(id => {
+      if (id !== FLUSH_EDITOR) return;
+      flushes++;
+      void app.commands.run("note.setContent", { value: "Pending editor text" });
+    });
+    await app.commands.run("note.open");
+    expect(flushes).toBe(1);
+    expect(f.writes).toEqual([["/notes/Welcome.md", "Pending editor text"]]);
+    expect(app.store.state.note).toMatchObject({ path: "/other.md", markdown: "Other", saveState: "saved" });
   });
   it("shows a save problem when writing fails, and keeps the text", async () => {
     const f = fakeBridge({}, { writeNote: async () => { throw new Error("disk full"); } });
