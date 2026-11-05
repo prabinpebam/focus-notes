@@ -16123,22 +16123,6 @@
           "kind": "message",
           "required": true,
           "description": "The skip link to the note."
-        },
-        "themeLabel": {
-          "kind": "message",
-          "description": "Enables the icon-only reader theme group and names it accessibly. Requires all three option labels."
-        },
-        "lightLabel": {
-          "kind": "message",
-          "description": "Light radio's accessible name and native tooltip."
-        },
-        "darkLabel": {
-          "kind": "message",
-          "description": "Dark radio's accessible name and native tooltip."
-        },
-        "systemLabel": {
-          "kind": "message",
-          "description": "System radio's accessible name and native tooltip."
         }
       },
       "events": {},
@@ -16165,18 +16149,6 @@
           "props": {
             "skipLabel": {
               "t": "reader.skip"
-            },
-            "themeLabel": {
-              "t": "site.preview.readerTheme"
-            },
-            "lightLabel": {
-              "t": "command.appearance.light"
-            },
-            "darkLabel": {
-              "t": "command.appearance.dark"
-            },
-            "systemLabel": {
-              "t": "command.appearance.system"
             }
           },
           "children": [

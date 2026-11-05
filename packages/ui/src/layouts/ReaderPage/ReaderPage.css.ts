@@ -47,7 +47,6 @@ export const main = style({
   paddingBlockEnd: t.sectionGap,
   outline: "none",
 });
-export const controls = style({ ...column, display: "flex", justifyContent: "flex-end", paddingBlockStart: t.edge });
 
 export const footer = style({
   ...column,

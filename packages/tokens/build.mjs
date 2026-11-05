@@ -173,11 +173,7 @@ const scopeBlock = (selector, keys, overrides, extra = "") => {
 };
 const darkThemeIds = THEME_IDS.filter((id) => id === "ink" || id === "dusk" || id.endsWith("-dark"));
 const themedKeys = new Set(Object.values(THEMES).flatMap((f) => [...load(f).keys()]).filter((k) => !SITE_ONLY(k)));
-for (const id of THEME_IDS) {
-  const reader = id === "paper" ? "light" : id === "ink" ? "dark" : undefined;
-  const selector = `[data-theme-scope="${id}"]${reader ? `, :root[data-page="reader"]:has([data-reader-appearance] input[value="${reader}"]:checked)` : ""}`;
-  blocks.push(scopeBlock(selector, themedKeys, overridesOf(id), `  color-scheme: ${darkThemeIds.includes(id) ? "dark" : "light"};\n`));
-}
+for (const id of THEME_IDS) blocks.push(scopeBlock(`[data-theme-scope="${id}"]`, themedKeys, overridesOf(id), `  color-scheme: ${darkThemeIds.includes(id) ? "dark" : "light"};\n`));
 const FONT_IDS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"];
 const fontFile = (id) => join(src, "modes", `content-font-${id}.json`);
 const fontKeys = new Set(FONT_IDS.filter((id) => id !== "mono").flatMap((id) => [...load(fontFile(id)).keys()]));

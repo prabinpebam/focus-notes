@@ -617,15 +617,18 @@
  "readerThemeOptions": [
   {
    "id": "light",
-   "label": "Light"
+   "label": "Light",
+   "icon": "lightTheme"
   },
   {
    "id": "dark",
-   "label": "Dark"
+   "label": "Dark",
+   "icon": "darkTheme"
   },
   {
    "id": "system",
-   "label": "System"
+   "label": "System",
+   "icon": "systemTheme"
   }
  ],
  "toasts": {
