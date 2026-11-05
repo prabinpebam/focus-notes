@@ -19,20 +19,20 @@ try {
   parentPort.postMessage({ t: "error" });
 }
 if (p) {
+  let failed = false;
+  const fail = () => { failed = true; p.kill(); };
   p.stdout.setEncoding("utf8");
   p.stdout.on("data", (d) => parentPort.postMessage({ t: "out", d }));
   p.stderr.resume();
-  p.stdin.on("error", () => parentPort.postMessage({ t: "error" }));
-  p.on("error", () => parentPort.postMessage({ t: "error" }));
-  p.on("exit", () => parentPort.postMessage({ t: "exit" }));
+  p.stdin.on("error", fail);
+  p.on("error", fail);
+  p.on("close", (code) => parentPort.postMessage({ t: failed ? "error" : "exit", code }));
   parentPort.on("message", (m) => {
     try {
       if (m.t === "in") p.stdin.write(m.d);
       else if (m.t === "end") p.stdin.end();
       else if (m.t === "kill") p.kill();
-    } catch {
-      parentPort.postMessage({ t: "error" });
-    }
+    } catch { fail(); }
   });
 }
 `;
@@ -43,17 +43,17 @@ export function spawnOffThread(exe: string, args: readonly string[]): HelperProc
   const input = new EventEmitter();
   const proc = new EventEmitter();
   let ended = false;
-  const end = (kind: "error" | "exit") => {
+  const end = (kind: "error" | "exit", code?: number | null) => {
     if (ended) return;
     ended = true;
     // An error no one listens for is no throw: the checker only stops using its helper.
     if (kind === "error" && input.listenerCount("error")) input.emit("error");
-    if (kind === "exit" || proc.listenerCount("error")) proc.emit(kind);
+    if (kind === "exit" || proc.listenerCount("error")) proc.emit(kind, code);
     void worker.terminate();
   };
-  worker.on("message", (m: { t: string; d?: string }) => {
+  worker.on("message", (m: { t: string; d?: string; code?: number | null }) => {
     if (m.t === "out" && typeof m.d === "string") out.emit("data", m.d);
-    else if (m.t === "error" || m.t === "exit") end(m.t);
+    else if (m.t === "error" || m.t === "exit") end(m.t, m.code);
   });
   worker.on("error", () => end("error"));
   worker.on("exit", () => end("exit"));
@@ -68,7 +68,7 @@ export function spawnOffThread(exe: string, args: readonly string[]): HelperProc
       end: () => send({ t: "end" }),
       on: (_e: "error", f: () => void) => input.on("error", f),
     },
-    on: (e: "error" | "exit", f: () => void) => proc.on(e, f),
+    on: (e: "error" | "exit", f: (code?: number | null) => void) => proc.on(e, f),
     kill: () => send({ t: "kill" }),
   };
 }

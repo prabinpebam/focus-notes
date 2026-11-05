@@ -13,6 +13,7 @@ import { parseRecord } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
 import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts";
 import { countProject, githubRepo } from "./project-card.ts";
+import { spawnOffThread } from "./spelling/off-thread.ts";
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
@@ -22,24 +23,25 @@ function windowsProtectedRecord(value: string, protect: boolean): Promise<string
   const operation = protect ? "Protect" : "Unprotect";
   const script = `Add-Type -AssemblyName System.Security; $bytes = [Convert]::FromBase64String([Console]::In.ReadToEnd()); $result = [Security.Cryptography.ProtectedData]::${operation}($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Write([Convert]::ToBase64String($result))`;
   return new Promise((accept, reject) => {
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawnOffThread("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script]);
     const timeout = setTimeout(() => {
       reject(new Error("OS-protected project storage timed out."));
       child.kill();
     }, 5000);
-    const failed = (error: Error) => { clearTimeout(timeout); reject(error); child.kill(); };
+    const failed = () => { clearTimeout(timeout); reject(new Error("OS-protected project storage failed.")); child.kill(); };
     let output = "";
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk: string) => { output += chunk; });
     child.stderr.resume();
-    child.once("error", failed);
-    child.stdin.once("error", failed);
-    child.once("close", (code) => {
+    child.on("error", failed);
+    child.stdin.on("error", failed);
+    child.on("exit", (code) => {
       clearTimeout(timeout);
       if (code !== 0 || !output.trim()) reject(new Error(`OS-protected project storage failed (${code}).`));
       else accept(output.trim());
     });
-    child.stdin.end(value);
+    child.stdin.write(value);
+    child.stdin.end();
   });
 }
 

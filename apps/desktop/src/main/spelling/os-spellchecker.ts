@@ -18,7 +18,7 @@ export interface HelperProcess {
   stdout: { setEncoding(encoding: "utf8"): unknown; on(event: "data", listener: (d: string) => void): unknown };
   stderr: { resume(): unknown };
   stdin: { write(d: string): unknown; end(): unknown; on(event: "error", listener: () => void): unknown };
-  on(event: "error" | "exit", listener: () => void): unknown;
+  on(event: "error" | "exit", listener: (code?: number | null) => void): unknown;
   kill(): unknown;
 }
 

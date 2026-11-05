@@ -35,23 +35,26 @@ vi.mock("electron", () => ({
 vi.mock("node:child_process", async (actual) => ({
   ...(await actual<typeof import("node:child_process")>()),
   spawn: (_file: string, args: string[], options: { env: Record<string, string | undefined> }) => {
-    if (_file === "powershell.exe") {
-      const protect = args.at(-1)!.includes("::Protect(");
-      protection.recent.push(protect ? "protect" : "unprotect");
-      const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: () => { child.emit("close", 1); return true; } });
-      let input = "";
-      child.stdin.on("data", chunk => { input += chunk.toString(); });
-      child.stdin.on("end", () => {
-        const finish = () => { child.stdout.end(input); child.emit("close", 0); };
-        if (protect && protection.hold) protection.pending.push(finish);
-        else queueMicrotask(finish);
-      });
-      return child;
-    }
+    if (_file === "powershell.exe") throw new Error("Protection must not start a process on the main thread.");
     spawned.push({ args, env: options.env });
     const child = new EventEmitter();
     queueMicrotask(() => child.emit("spawn"));
     return child;
+  },
+}));
+vi.mock("../src/main/spelling/off-thread.ts", () => ({
+  spawnOffThread: (_file: string, args: string[]) => {
+      const protect = args.at(-1)!.includes("::Protect(");
+      protection.recent.push(protect ? "protect" : "unprotect");
+      const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: () => { child.emit("exit", 1); return true; } });
+      let input = "";
+      child.stdin.on("data", chunk => { input += chunk.toString(); });
+      child.stdin.on("end", () => {
+        const finish = () => { child.stdout.end(input); child.emit("exit", 0); };
+        if (protect && protection.hold) protection.pending.push(finish);
+        else queueMicrotask(finish);
+      });
+      return child;
   },
 }));
 const roots: string[] = [];
