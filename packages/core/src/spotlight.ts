@@ -399,6 +399,8 @@ const INTERNAL_IDS = new Set([
   // Delete project's own steps (PRJ-23): Spotlight lists only Delete project….
   "project.deleteSetOpen", "project.deleteCancel", "project.deleteStop", "project.deleteRetry", "project.deleteSignIn", "project.deleteRemoveInstead", "project.deleteType", "project.deletePrivate",
   "project.deleteBack", "project.deleteContinue", "project.deleteExport", "project.deleteConfirm", "project.deleteOpenGitHub", "project.deletePoll", "project.deleteConfirmGitHub", "project.deleteShowFolder",
+  // A delete an earlier session left (DD-PROJ-14): its own screen runs these, never Spotlight.
+  "project.deleteResumeCheck", "project.deleteResume", "project.deleteForget",
 ]);
 /** Scopes where a key acts on what's in front of it, not a place a person starts from. */
 const ACTION_SCOPES = new Set(["editor", "table"]);
