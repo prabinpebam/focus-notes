@@ -58,7 +58,7 @@ Everything Focus Notes keeps, where, and what removes it. On the desktop the lis
 | Private notes | `private/notes/`, the private repository | The user and anyone they gave repository access | Deleting the note (it stays in private history) |
 | Shared notes | As private, plus sealed copies on Pages | Audiences with a link or passcode | Withdrawing, then the next deploy |
 | The vault (every private note, sealed) | The instance's Pages site only, never Git history; fresh keys every build | Whoever has the vault passphrase | Deleting the note or making it public, then the next deploy |
-| The workspace's local clone (desktop only) | The workspace folder (`Documents/Focus Notes` unless another was chosen): the notes repository with `private/` | The local user | *Remove this workspace from this computer* in Settings → Workspace, only once nothing in either repository is missing from its remote; never anything on GitHub |
+| The workspace's local clone (desktop only) | The workspace folder (`Documents/Focus Notes` unless another was chosen): the notes repository with `private/` | The local user | *Remove this workspace from this computer* in Settings → Project, only once nothing in either repository is missing from its remote; never anything on GitHub |
 | Notes written in a browser | That browser's IndexedDB (database `focus-notes`, store `notes`) | The local user, in that browser | Deleting them, or clearing the site's data in the browser |
 | Browser app state and the remembered vault key | That browser's IndexedDB (store `meta`: `workspaceFormat`, the notes' format version; `folders`, the names of folders made in the Files panel; `appState`, whose `lastNotePath` never holds a private note's path; and `vaultUnlockKey`, the non-extractable key and its salt, only with *Remember on this browser*) | The local user, and scripts on the same origin can use (not read) the key | *Lock* / *Forget this browser* (the key), or clearing the site's data |
 | Synced settings and custom themes | `private/.focus-notes/` (D-46). As built, only with *Sync appearance* on, and only where the workspace has `private/`: `settings.json` holds the appearance, the light and dark themes, and the reading settings: the content font and size, line spacing, reading width, paragraph spacing, and focus dim (D-99, D-108). Without a private repository these settings stay on the device | As above | Turning *Sync appearance* off, or deleting the files |
@@ -114,7 +114,7 @@ Everything Focus Notes keeps, where, and what removes it. On the desktop the lis
 
 - `SECURITY.md` explains how to report privately through GitHub's private vulnerability reporting. We aim to acknowledge within 7 days.
 - **A share secret leaks:** withdraw the audience. It stops opening at the next deploy.
-- **The share-link key leaks:** Settings → Workspace → *Rotate share-link key* replaces the deploy key and the secret.
+- **The share-link key leaks:** Settings → Project → *Rotate share-link key* replaces the deploy key and the secret.
 - **The vault passphrase leaks:** set a new one in the desktop app; the next deploy seals with fresh keys under it, and remembered keys stop working.
 - **A token leaks** (desktop): revoke it on GitHub, then sign in again.
 - **A bad release:** template instances, which pin the web app's version, aren't affected until they merge an update. A fixed release supersedes it, and the advisory is published on GitHub.

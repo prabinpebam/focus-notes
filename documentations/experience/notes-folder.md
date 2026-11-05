@@ -284,7 +284,7 @@ New icons go in `packages/ui`'s icon set if it doesn't have them yet.
 
   You can pick a folder that already has notes: "This folder has 12 notes. Focus Notes will use them as they are."
 
-### In Settings → Workspace
+### In Settings → Project
 
 A folder card shows:
 
@@ -335,7 +335,7 @@ Some people already trust a sync service with their files. A folder that service
 - **GitHub's history is kept out of synced folders (R-22).** If its internal files are synced, the service can make conflict copies of them, take them offline, or hold them locked in the middle of a save. Two computers can also end up writing the same history. So:
   - **A GitHub folder never goes in a synced place by default.** When Documents itself is synced (OneDrive's Known Folder Move), new GitHub folders go in `%USERPROFILE%\Focus Notes\<name>` instead. Offline mode keeps Documents, where it becomes *synced*.
   - **Choosing a synced place for a GitHub folder warns first:** "OneDrive keeps this folder in sync, and that can damage your notes' history on GitHub. Choose a folder OneDrive doesn't sync." [Choose another folder…] [Use it anyway].
-  - **A GitHub folder already in a synced place opens as usual.** Its `.git` is pinned to the device (`attrib +P`), and Settings → Workspace says "OneDrive also syncs this folder", with *Move…*.
+  - **A GitHub folder already in a synced place opens as usual.** Its `.git` is pinned to the device (`attrib +P`), and Settings → Project says "OneDrive also syncs this folder", with *Move…*.
 - **Online-only notes stay online (R-23).**
   - **Listing and searching:** the app reads a file's attributes before its contents, and never reads an online-only note to list or search it. Files and Spotlight show it by its file name, with a cloud badge, and search counts them ("12 notes are only on OneDrive").
   - **Opening one** shows "Getting this note from OneDrive…".
@@ -364,7 +364,7 @@ These rows are in [the wait inventory](../architecture/perceived-performance.md#
 | Checking the account for recovery | Responsive | A skeleton in the *Download your notes again* card's line, 10 s at most | "Checking your GitHub account…" after 1 s |
 | Downloading your notes again | Long | Setup's *Opening* parts, with Git's percentage | "Downloading your notes · 45%" |
 | Syncing a folder that isn't connected | Long | Steps in the alert's card, and the ring on the icon | "Syncing your notes · 2 of 5" |
-| Moving the notes folder | Long | The count and percentage in Settings → Workspace, with *Cancel* until the switch | "Moving your notes · 120 of 480" |
+| Moving the notes folder | Long | The count and percentage in Settings → Project, with *Cancel* until the switch | "Moving your notes · 120 of 480" |
 | Getting a note from another service | Waiting | The note's skeleton, with a name | "Getting this note from OneDrive…" |
 
 ## Words

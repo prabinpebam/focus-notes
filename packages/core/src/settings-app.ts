@@ -21,9 +21,9 @@ import { UI_SCALES, themeById } from "./themes.ts";
 import { customOf } from "./theme-manager-app.ts";
 import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
 
-/** Settings' categories, in order, as built so far. */
+/** Settings' categories, in order, as built so far. Where the project is kept is part of Project: one concept (owner, 5 November). */
 // Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
-export const SETTINGS_SECTIONS = ["account", "project", "workspace", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
+export const SETTINGS_SECTIONS = ["account", "project", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -53,7 +53,7 @@ interface S {
   ui: { settings: SettingsState; toolbarOpen: boolean };
   account: AccountState;
   sync: SyncState;
-  workspace: { folder?: string };
+  workspace: { folder?: string; repo?: string };
   firstRun: { active: boolean };
   appearance: { mode: "system" | "light" | "dark"; lightTheme: string; darkTheme: string; fontSize: number; contentFont: string; uiScale: number; customThemes?: import("./custom-themes.ts").CustomTheme[] };
   settingsSync: "unavailable" | "off" | "on";
@@ -76,7 +76,7 @@ interface Ctx<St extends S> {
   again: (scope: "setup" | "account" | "workspace", opts?: { other?: boolean }) => Promise<boolean>;
   /** Signing out and removing the workspace are named waits (PRF-13, D-149). */
   tracker?: TaskTracker;
-  /** Prefetch on intent: Workspace is open, so Open another workspace from GitHub… is likely (PRF-13). */
+  /** Prefetch on intent: Project is open, so opening another project from GitHub is likely (PRF-13). */
   prefetchRepos?: () => void;
 }
 
@@ -142,7 +142,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     if (v === "about") await commands.run("diagnostics.load");
     if (v === "agents") await commands.run("agents.load");
     if (v === "ai") await commands.run("ai.load");
-    if (v === "workspace") prefetchRepos?.();
+    if (v === "project") prefetchRepos?.();
   });
   registerDiagnostics({ store, bridge, catalog, commands, viewModels, toast });
 
@@ -256,6 +256,8 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           properties: {
             folder: { type: "string" }, folderText: { type: "string" }, git: { type: "boolean" }, canRemove: { type: "boolean" }, canRunSetup: { type: "boolean" }, gitNote: { type: "string" },
             setupLabel: { type: "string" }, canOpenOther: { type: "boolean" },
+            linked: { type: "boolean" }, offline: { type: "boolean" }, repo: { type: "string" }, offlineDetail: { type: "string" },
+            canLink: { type: "boolean" }, removeBlocked: { type: "boolean" },
           },
         },
         appearance: {
@@ -266,7 +268,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     },
     setters: { section: "settings.setSection", "appearance.scale": "ui.setScale" },
     commits: ["appearance.scale"],
-    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "appearance", "settingsSync"],
+    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "workspace.repo", "appearance", "settingsSync"],
     select: (s) => {
       const st = s.ui.settings;
       const a = st.account;
@@ -274,6 +276,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       const astate = signedIn ? "signedIn" : st.checking && !a ? "checking" : "signedOut";
       const via = a?.via ?? (a?.gcm ? "gcm" : "helper");
       const folder = s.workspace.folder ?? "";
+      const repo = s.workspace.repo ?? "";
+      // Linked: a Git project whose origin is on GitHub. Anything else is kept on this computer only.
+      const linked = s.sync.git && Boolean(repo);
       return {
         open: st.open, title: catalog.format("settings.title"), section: st.section,
         focusTabs: st.focus !== "feedback", focusFeedback: st.focus === "feedback",
@@ -287,7 +292,10 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         },
         workspace: {
           folder, folderText: catalog.format("settings.workspace.folder", { folder }), git: s.sync.git,
-          canRemove: s.sync.git && Boolean(ws?.remove), canRunSetup: Boolean(bridge.setup),
+          canRemove: linked && Boolean(ws?.remove), canRunSetup: Boolean(bridge.setup),
+          linked, offline: !linked, repo,
+          offlineDetail: catalog.format(s.sync.git ? "project.home.offline.detail" : "project.home.offline.noGit"),
+          canLink: !linked && Boolean(bridge.setup), removeBlocked: !linked && Boolean(ws?.remove),
           gitNote: catalog.format(s.sync.git ? "settings.workspace.git" : "settings.workspace.local"),
           // A folder used on this computer only connects to GitHub through the same setup (D-124).
           setupLabel: catalog.format(s.sync.git ? "command.setup.runAgain" : "settings.workspace.connect"),
