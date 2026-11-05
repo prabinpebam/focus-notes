@@ -150,4 +150,45 @@ describe("a Positioner when the note scrolls in a frame's callback (DEF-25)", ()
     act(() => content.dispatchEvent(new Event("transitionend", { bubbles: true })));
     expect(document.activeElement).toBe(area);
   });
+
+  it("D-266: accepts the removed modal's focus handoff instead of restoring the note during a return scroll", () => {
+    let fragmentBottom = 200;
+    const reveal = vi.fn(() => { fragmentBottom = 200; });
+    const read = () => ({
+      left: 100, right: 250, top: fragmentBottom - 20, bottom: fragmentBottom,
+      fragments: [{ left: 100, right: 250, top: fragmentBottom - 20, bottom: fragmentBottom }],
+      viewport: { left: 0, right: 480, top: 0, bottom: 800 }, reveal,
+    });
+    anchors.set("rewrite", read(), read);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => new DOMRect(0, 0, 360, 100));
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    const render = (focusRequest: number) => act(() => root!.render(createElement(Positioner, {
+      anchor: "rewrite", focusRequest, returnAboveLabel: "Return above", returnBelowLabel: "Return below",
+    }, createElement("textarea", { defaultValue: "Retained draft" }))));
+    render(1);
+    const el = host.querySelector<HTMLElement>("[data-selection-popover]")!;
+    const area = el.querySelector("textarea")!;
+    fragmentBottom = -100;
+    act(() => anchors.moved());
+    expect(el.dataset.edge).toBe("top");
+    (document.activeElement as HTMLElement).blur();
+
+    // The modal DOM is already gone, but containment still rejects outside focus until its
+    // queued restoration hands ownership back. No frame or timeout is needed to reproduce it.
+    const focus = HTMLElement.prototype.focus;
+    const blocked = vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(() => {});
+    render(2);
+    expect(document.activeElement).not.toBe(area);
+    blocked.mockImplementation(function (this: HTMLElement, options) { focus.call(this, options); });
+    const handoff = new CustomEvent("react-aria-focus-scope-restore", { bubbles: true, cancelable: true });
+    act(() => { document.body.dispatchEvent(handoff); });
+    expect(handoff.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(area);
+    expect(area.value).toBe("Retained draft");
+    const later = new CustomEvent("react-aria-focus-scope-restore", { bubbles: true, cancelable: true });
+    document.body.dispatchEvent(later);
+    expect(later.defaultPrevented).toBe(false);
+  });
 });

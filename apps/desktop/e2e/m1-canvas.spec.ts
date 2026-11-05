@@ -381,6 +381,25 @@ test("D-121: in software compositing the note's edges fade in the canvas's color
   await quit(l);
 });
 
+test("D-130: writer setting acknowledgement closes the toolbar after deferred menu focus restoration", async () => {
+  const l = await launch(tempDirs());
+  try {
+    await l.page.evaluate(() => {
+      const frame = window.requestAnimationFrame.bind(window);
+      let restoringMenu = false;
+      window.addEventListener("keydown", event => {
+        if (event.key === "Escape" && event.target instanceof Element && event.target.closest('[role="menu"]')) restoringMenu = true;
+      }, true);
+      window.requestAnimationFrame = callback => restoringMenu
+        ? frame(time => { setTimeout(() => callback(time), 250); })
+        : frame(callback);
+    });
+    await writerSettingSettled(l.page, "fontSize");
+    await expect(l.page.getByRole("toolbar", { name: "Toolbar", exact: true })).toBeHidden();
+    await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toBeFocused();
+  } finally { await quit(l); }
+});
+
 test("D-130: Ctrl and the wheel change the text size one step a notch, as Mod+= and Mod+- do, and Mod+0 resets", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

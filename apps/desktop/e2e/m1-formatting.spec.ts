@@ -248,6 +248,7 @@ test("EDT-13: Mod+K edits links in place; the hover card opens, copies, edits, a
 
   // Mod+K with a selection: the link editor, focused, never covering the words.
   await dragSelect(page, "docs");
+  expect(await selectionText(page)).toBe("docs");
   await page.keyboard.press(`${mod}+k`);
   const linkEditor = page.getByRole("region", { name: "Link editor" });
   await expect(linkEditor).toBeVisible();
@@ -267,6 +268,7 @@ test("EDT-13: Mod+K edits links in place; the hover card opens, copies, edits, a
   await expect(editor).toBeFocused();
   expect(await selectionText(page)).toBe("");
   await dragSelect(page, "docs");
+  expect(await selectionText(page)).toBe("docs");
   await page.keyboard.press(`${mod}+k`);
   await expect(url).toBeFocused();
 

@@ -3,7 +3,7 @@
  * EDT-03, EDT-12, EDT-13: inline marks (shortcuts' commands, input rules, Markdown output), what the
  * formatting toolbar shows for a selection, and creating, editing, opening, and removing links.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { Slice } from "@tiptap/pm/model";
@@ -14,6 +14,7 @@ let editors: Editor[] = [];
 afterEach(() => {
   for (const e of editors) e.destroy();
   editors = [];
+  vi.restoreAllMocks();
 });
 
 function open(markdown: string, opts: Parameters<typeof coreExtensions>[1] = {}) {
@@ -42,6 +43,45 @@ it("refreshes the observed native selection after a focus-independent restore (D
   syncSelection(editor, true);
   expect(observer.currentSelection.eq(selection)).toBe(true);
   element.remove();
+});
+
+it.each([true, false])("focus restoration yields to an active pointer (%s), but still restores keyboard focus (EDT-13)", (pointer) => {
+  const restore: (() => void)[] = [];
+  const setTimer = globalThis.setTimeout;
+  vi.spyOn(globalThis, "setTimeout").mockImplementation((handler, timeout, ...args) => {
+    if (timeout === 20 && typeof handler === "function") {
+      restore.push(() => handler(...args));
+      return setTimer(() => {}, 0);
+    }
+    return setTimer(handler, timeout, ...args);
+  });
+  const { editor } = open("Read the docs.\n\nMore text.\n");
+  const view = editor.view;
+  document.body.append(view.dom);
+  editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+  view.dom.focus();
+  const focusRestore = restore.at(-1)!;
+  expect(view.hasFocus()).toBe(true);
+  const node = view.dom.querySelector("p")!.firstChild!;
+  vi.spyOn(view, "posAtCoords").mockReturnValue({ pos: 10, inside: 0 });
+  if (pointer) view.dom.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 10, clientY: 10 }));
+  const observer = Reflect.get(view, "domObserver");
+  // Chromium can run the focus callback before delivering the new native selectionchange.
+  observer.disconnectSelection();
+  document.getSelection()!.collapse(node, 9);
+  expect(observer.currentSelection.eq(document.getSelection())).toBe(false);
+  expect(Boolean(Reflect.get(view, "input").mouseDown)).toBe(pointer);
+  expect(restore.length).toBeGreaterThan(0);
+  focusRestore();
+  if (pointer) {
+    expect(document.getSelection()!.anchorNode).toBe(node);
+    expect(document.getSelection()!.anchorOffset).toBe(9);
+    view.dom.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  } else {
+    expect(document.getSelection()!.anchorNode).toBe(view.dom.querySelector("p:last-child")!.firstChild);
+    expect(document.getSelection()!.anchorOffset).toBe("More text.".length);
+  }
+  view.dom.remove();
 });
 
 /** Selects the first occurrence of `text` in the document. */
