@@ -1371,6 +1371,7 @@
   "command.table.fitToColumn": "Fit table to column",
   "command.table.bleedToEdge": "Bleed table to edge",
   "command.table.setState": "Follow the table controls",
+  "command.table.insert": "Insert table",
   "command.table.action": "Run a table action",
   "command.table.closeMenu": "Close the table menu",
   "command.table.changed": "Announce a table change",

@@ -9,6 +9,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { PlatformBridge } from "./bridge.ts";
 import type { AppState } from "./app.ts";
 import type { Store } from "./store.ts";
+import { noteReadOnly } from "./workspace-app.ts";
 
 export type TableSelectionKind = "none" | "cells" | "row" | "column" | "table";
 export interface TableUiState {
@@ -71,6 +72,11 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
   const set = (patch: Partial<TableUiState>) => store.update((s) => ({ ...s, ui: { ...s.ui, format: { ...s.ui.format, table: { ...s.ui.format.table, ...patch } } } }));
   const writable = (s: AppState) => s.note.status === "ready";
 
+  commands.register({
+    id: "table.insert", title: "command.table.insert", icon: "table", group: "formatting", layer: "writer",
+    enabled: (s) => writable(s) && !noteReadOnly(s) && !s.ui.format.inTable && !s.ui.format.codeBlock,
+    run: () => editorAction("table.insert"),
+  });
   commands.register<Record<string, unknown>>({
     id: "table.setState", title: "command.table.setState",
     run: (a) => {

@@ -30,7 +30,7 @@ The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedbac
 | OFB.9–OFB.10 | One pending pattern; overlaid pin spinner removed; variant inventory | W1 | Open | |
 | OFB.11–OFB.12 | Notification inventory and types; "Deleted" auto-dismisses | W1 | Open | |
 | OFB.13–OFB.15 | "/" block menu lists every block, keyboard and mouse, round-trip | W2 | Open | Boot regression reproduced: first-run and recovery held the internal block registry handover on a newly mounted, already-started project. The exact registration is now allowed in both states; empty-query groups reuse ResultList, and only typed queries report no matches. Focused core/editor/first-run/recovery units: 87 passed; Markdown corpus: 39 passed; core typecheck, desktop build and `pnpm check` pass. Built EDT-06 keyboard/mouse journey passes, including visible groups, every current block, active descendant, filtering, Escape and Backspace. Image/Media joins with the ingestion slice. Awaiting exact-head CI, main and Preview. |
-| OFB.16 | Table insertion end to end | W2 | Open | |
+| OFB.16 | Table insertion end to end | W2 | Open | Added `table.insert` writer command over the existing 3 × 3 insertion (same engine as slash). Core/editor table and Markdown corpus: 94 units passed; editor/core typechecks and desktop build passed. Two built journeys use slash and Spotlight, fill every cell, Tab from the end to add a row, save, restart, and assert cell text and GFM bytes. Toolbar entry awaits W1 integration; exact-head CI, main and Preview pending. |
 | OFB.17–OFB.19 | Images slice 1 | W2 | Open | |
 | OFB.20–OFB.21 | Customize toolbar wired into the app | W1 after its first landing | Open | |
 | OFB.22 | Actions, stage MACT | W3 | Open | |
