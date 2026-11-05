@@ -8,13 +8,10 @@ export const list = style({
   display: "flex",
   flexDirection: "column",
   gap: t.gap,
-  // Its scrollbar's room is kept at both edges, so its items keep the same inset on both sides,
-  // scrolling or not (UI-09), and that room sits in its surface's padding, so its rows line up with
-  // the field and the text above it (D-111).
+  // The dialog content's full-bleed tracks own its inset; the list never pulls into padding.
   maxHeight: t.maxHeight,
   overflowY: "auto",
   scrollbarGutter: "stable both-edges",
-  marginInline: `calc(-1 * ${t.scrollbarSize})`,
   fontFamily: t.font,
   fontSize: t.fontSize,
   color: t.text,
@@ -31,9 +28,9 @@ minimalScrollbar(list, t);
  * as a menu does, with the wheel and the arrow keys and its fading edges, no scrollbar taking room
  * from its items (D-111).
  */
-export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%", scrollbarWidth: "none", scrollbarGutter: "auto", marginInline: 0 } });
+export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%", scrollbarWidth: "none", scrollbarGutter: "auto" } });
 /** As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it. */
-export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexShrink: 0, overflowY: "visible", scrollbarGutter: "auto", marginInline: 0 } });
+export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexShrink: 0, overflowY: "visible", scrollbarGutter: "auto" } });
 
 export const item = style({
   display: "flex",

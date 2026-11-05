@@ -1,4 +1,4 @@
-import { createVar, fallbackVar, style } from "@vanilla-extract/css";
+import { createVar, fallbackVar, globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
@@ -139,12 +139,19 @@ export const content = style({
   display: "flex", flexDirection: "column", flexGrow: 1, flexShrink: 0, minWidth: 0,
 });
 export const contentInset = style({
-  paddingBlock: t.bodySlack, paddingInlineStart: t.padding,
-  paddingInlineEnd: `max(${t.bodySlack}, calc(${t.padding} - ${t.scrollbarSize}))`,
+  display: "grid",
+  gridTemplateColumns: `[full-start] ${t.padding} [content-start] minmax(0, 1fr) [content-end] max(${t.bodySlack}, calc(${t.padding} - ${t.scrollbarSize})) [full-end]`,
+  paddingBlock: t.bodySlack,
   selectors: {
     "[data-dialog-first] > &": { paddingBlockStart: t.padding },
     "[data-dialog-last] > &": { paddingBlockEnd: t.padding },
   },
+});
+globalStyle(`${contentInset} > :not([data-full-bleed])`, { gridColumn: "content" });
+globalStyle(`${contentInset} > [data-full-bleed]`, {
+  gridColumn: "full",
+  paddingInlineStart: `max(${t.bodySlack}, calc(${t.padding} - ${t.scrollbarSize}))`,
+  paddingInlineEnd: `max(${t.bodySlack}, calc(${t.padding} - 2 * ${t.scrollbarSize}))`,
 });
 // Navigation supplies independently inset regions (the tab list and the scrolling panel).
 export const navigationContent = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0, minWidth: 0 });

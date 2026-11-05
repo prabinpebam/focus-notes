@@ -91,15 +91,15 @@ export const panel = {
 };
 
 export const navigation = {
-  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.focusRoom }),
-  vertical: style({ boxSizing: "border-box", flexBasis: `calc(${t.listWidth} + ${t.contentInset})`, paddingInlineStart: t.contentInset, paddingInlineEnd: t.panelInset, paddingBlockStart: t.focusRoom, paddingBlockEnd: t.contentInset }),
+  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.contentInset }),
+  vertical: style({ boxSizing: "border-box", flexBasis: `calc(${t.listWidth} + ${t.contentInset})`, paddingInlineStart: t.contentInset, paddingInlineEnd: t.panelInset, paddingBlock: t.contentInset }),
 };
 export const content = style({
   minWidth: 0, paddingInlineStart: t.panelInset,
   paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`,
-  paddingBlockStart: t.focusRoom, paddingBlockEnd: t.contentInset,
+  paddingBlock: t.contentInset,
 });
 export const contentOrientation = {
   horizontal: style({}),
-  vertical: style({ paddingBlockStart: `calc(${t.focusRoom} + (${t.height} - 1cap) / 2)` }),
+  vertical: style({ paddingBlockStart: `calc(${t.contentInset} + (${t.height} - 1cap) / 2)` }),
 };

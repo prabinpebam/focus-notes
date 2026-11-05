@@ -6,7 +6,7 @@
   "shadow": { "$type": "shadow", "$value": "{shadow.2}" },
   "opacity": { "$type": "number", "$value": "{frost.opacity}" },
   "blur": { "$type": "dimension", "$value": "{frost.blur}" },
-  "padding": { "$type": "dimension", "$value": "{space.scale.xs}" },
+  "padding": { "$type": "dimension", "$value": "{space.insetSm}" },
   "tilesWidth": { "$type": "dimension", "$value": "{layout.tilePopover}", "$description": "Three theme tiles across (width tiles)." },
   "paddingComfortable": { "$type": "dimension", "$value": "{space.insetMd}" },
   "offset": { "$type": "dimension", "$value": "{space.scale.s}" },

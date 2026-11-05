@@ -163,6 +163,22 @@ All in place on branch `spacing-audit`:
 - The UI schema: layout `gap`, `padding` and `offset` accept role names only, so `ui:check` rejects a step name in any view. Covers SP-7, ST-1. Branches with older views run `node tools/spacing/to-roles.mjs`.
 - `apps/desktop/e2e/spacing-audit.spec.ts`, enforcing: with `SPACING_AUDIT=1`, every surface in light and dark at the default and 480 × 360 window, the Open view and New project, and the first run fail on any S1 or S2 from `analyze`, `perturb` + `compare` and forced hover, focus and press, outside the named exclusions below. Without it, a core pass (ten surfaces, light, default size) runs with the other journeys. Each snapshot waits for settled geometry (no finite animation or transition running or pending, every box unchanged over 2 frames), so a fade still under way isn't read as a clip; the forced-state checks stay per frame. Covers SP-1 to SP-8.
 
+## Shared menu, result and navigation spacing (SP-14)
+
+**S1 Broken / S2 Misgrouped; focused journey, 5 November:** the post-SP-13 built app reproduced all three remaining defects before edits.
+
+| Surface | Measured before | Shared correction |
+| --- | --- | --- |
+| More menu | Scroll region inset 4 px from the surface's right and bottom edges | The popover is the unpadded scroll frame; the menu content owns `insetSm` (8 px), clearing focus paint without moving the scroll edge |
+| Spotlight and Spotlight commands | Results intrude through the content inset on both sides by a negative margin | DialogPanel's content layout has named full-bleed and inset grid tracks; ResultList opts into the full-bleed track, with its gutter clearance owned by that layout, never a negative margin |
+| Settings → Appearance | Navigation's 12 px footer gap inside a 4 px top inset | Navigation and panel content use the same `insetLg` region inset; focus clearance is a minimum, not the spacing role for a section |
+
+MenuButton and PopoverPanel's normal padding tokens alias `space.insetSm`, not a bare 4 px scale step. No view-specific styling, new enclosure, resting fill or border is added. ResultList's former negative-margin lint exemption is removed. DialogPanel's existing `contentInset: false` remains the explicit opt-out for regions that supply their own content insets.
+
+**Regression coverage:** the unchanged spacing probe reproduces and then enforces the three findings. `settings-grouping.spec.ts` additionally checks the actual 8 px menu content inset, zero scroll-frame inset, Home/End focus paint, full-width grid placement and zero ResultList margins, and navigation gap ≤ inset at normal and 480 × 360 sizes. Existing Settings journeys continue to check pair < item < section, edge-to-edge scrolling and every focused control.
+
+**Validation (5 November):** `pnpm check`, `pnpm typecheck`, the desktop build and the Slate runtime check passed. `pnpm exec vitest run packages/ui/test/popover-box.test.ts packages/ui/test/menu-keys.test.ts packages/ui/test/menu-mixed.test.tsx packages/ui-runtime/test/check.test.ts` passed **45 tests**. With `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/spacing-audit.spec.ts e2e/settings-grouping.spec.ts e2e/m3-settings.spec.ts e2e/wp74-agents-settings.spec.ts --workers=1` passed **12 journeys** (five exhaustive-audit cases remain opt-in); the added `settings-grouping.spec.ts --workers=1 -g SP-14` regression passed separately, **13 journeys total**. The baseline spacing run failed with the exact menu, Spotlight and Appearance findings above; the corrected core pass has no unexpected S1/S2. Scoped app cleanup found no remaining instances. No full suite or CI wait: low-risk UI under D-255.
+
 ## Not fixed, and why
 
 Each is excluded by name in the enforcing journey (`EXCLUDED`) or the lint (`EXEMPT`), with its reason:
@@ -171,7 +187,7 @@ Each is excluded by name in the enforcing journey (`EXCLUDED`) or the lint (`EXE
 - **Prose re-rendering:** forcing a state in Find and replace or the table cell menu re-renders or scrolls the note; the note is prose and follows its own rules.
 - **A menu section's runs:** checkable and plain items of one section render as two `MenuSection`s (React Aria needs one selection mode per section); they're one group, 2 px apart like any two items.
 - **SVG shapes:** a step mark's art overlaps by design.
-- **ResultList's scrollbar gutter** (lint exemption, kept by decision): a scrolling list keeps its gutter on both edges by reaching into its surface's padding, so its rows line up with the field above. The alternatives are a 10 px misaligned end edge or a hidden scrollbar, neither asked for.
+- **ResultList's scrollbar gutter:** resolved by SP-14's structural full-bleed tracks; there is no remaining negative-margin exemption.
 - **Customize toolbar** (OPEN, for `vq-toolbar-design`): its rows overflow by 54 to 291 px and its buttons sit 28 px tall; ToolbarComposer is redesigned on that branch, which runs `to-roles.mjs` and takes `hitReach` when it lands.
 - **Off-scale compensations** (S3, reported, not enforced): see SP-10.
 
