@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, railFrom, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
+import { execFileSync } from "node:child_process";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const shots = "../../test-results/screens";
@@ -273,7 +274,7 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
     await page.keyboard.press("Home");
     // Shift+Tab: the pin, at the card's top, then out of the card, which closes.
     await page.keyboard.press("Shift+Tab");
-    await expect(card(page).getByRole("button", { name: "Dock contents" })).toBeFocused();
+    await expect(card(page).getByRole("button", { name: "Pin", exact: true })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(card(page)).toBeHidden();
     // Hovered open, then tabbed into: it's the keyboard's now, and stays as the pointer leaves.
@@ -300,6 +301,50 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
   } finally { await quit(l); }
 });
 
+test("D-355: minimap Pin and Unpin are named actions with border feedback and survive a real restart", async () => {
+  const dirs = tempDirs();
+  const cleanup = async (l: Launched) => {
+    try { await quit(l); }
+    finally {
+      const script = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", script, "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  };
+  let l = await start(NOTE, {}, dirs);
+  try {
+    await hoverRail(l.page);
+    const pin = card(l.page).getByRole("button", { name: "Pin", exact: true });
+    await expect(pin).toBeVisible();
+    await expect(pin).not.toHaveAttribute("aria-pressed");
+    await pin.hover();
+    await expect(l.page.getByRole("tooltip")).toHaveText("Pin");
+    await l.app.evaluate(() => { (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow = { "state:save": 1000 }; });
+    await pin.click();
+    await expect(pin).toHaveAttribute("data-commit", "pending");
+    await expect(pin.locator('[data-border-progress="pending"]')).toBeVisible();
+    const unpin = card(l.page).getByRole("button", { name: "Unpin", exact: true });
+    await expect(unpin).toBeVisible();
+    await expect(unpin).not.toHaveAttribute("aria-pressed");
+    await expect.poll(() => JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).outlinePinned).toBe(true);
+    await cleanup(l);
+    l = await launch(dirs);
+    await expect(card(l.page)).toHaveAttribute("data-pinned", "");
+    const restored = card(l.page).getByRole("button", { name: "Unpin", exact: true });
+    await expect(restored).toBeVisible();
+    await expect(restored).not.toHaveAttribute("aria-pressed");
+    await l.page.mouse.move(500, 400);
+    await restored.hover();
+    await expect(l.page.getByRole("tooltip")).toHaveText("Unpin");
+    await restored.click();
+    await expect.poll(() => JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).outlinePinned).toBeUndefined();
+    await cleanup(l);
+    l = await launch(dirs);
+    await hoverRail(l.page);
+    await expect(card(l.page).getByRole("button", { name: "Pin", exact: true })).toBeVisible();
+    await expect(card(l.page)).not.toHaveAttribute("data-pinned");
+  } finally { await cleanup(l); }
+});
+
 test("D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back", async () => {
   test.fixme(new Date() < new Date("2026-11-11T00:00:00Z"), "Scoped focus quarantine: gate-evidence.md; implementation coordinator; expires 10 November 2026; CI 41654808341 / 41656910779");
   const dirs = tempDirs();
@@ -310,7 +355,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
   await laptop(l);
   let page = l.page;
   const editor = () => page.getByRole("textbox", { name: "Note" });
-  const pin = () => card(page).getByRole("button", { name: /^(Dock contents|Undock contents)$/ });
+  const pin = () => card(page).getByRole("button", { name: /^(Pin|Unpin)$/ });
   const stateFile = () => readFileSync(join(dirs.userData, "state.json"), "utf8");
   const textRight = () => page.evaluate(() => Math.round(document.querySelector(".ProseMirror")!.getBoundingClientRect().right));
   const gap = () => page.evaluate(() => {
@@ -325,22 +370,22 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     await page.mouse.move(500, 400);
     await hoverRail(page);
     await expect(card(page)).toBeVisible();
-    await expect(pin()).toHaveAccessibleName("Dock contents");
-    await expect(pin()).toHaveAttribute("aria-pressed", "false");
+    await expect(pin()).toHaveAccessibleName("Pin");
+    await expect(pin()).not.toHaveAttribute("aria-pressed");
     // The pin is on the first heading's row, at its end, and the heading's text stays clear of it.
     const row = await page.evaluate(() => {
       const b = document.querySelector("[data-doc-minimap-card] li > button")!;
       const label = b.querySelector("span")!.getBoundingClientRect();
       const r = b.getBoundingClientRect();
-      const p = document.querySelector("[data-doc-minimap-card] [aria-pressed]")!.getBoundingClientRect();
+      const p = document.querySelector('[data-doc-minimap-card] button[aria-label="Pin"]')!.getBoundingClientRect();
       return { rowMid: r.top + r.height / 2, pinMid: p.top + p.height / 2, labelRight: label.right, pinLeft: p.left };
     });
     expect(Math.abs(row.rowMid - row.pinMid)).toBeLessThan(2);
     expect(row.labelRight).toBeLessThanOrEqual(row.pinLeft);
     const widthBefore = await card(page).evaluate((c) => (c as HTMLElement).offsetWidth);
     await pin().click();
-    await expect(pin()).toHaveAttribute("aria-pressed", "true");
-    await expect(pin()).toHaveAccessibleName("Undock contents");
+    await expect(pin()).not.toHaveAttribute("aria-pressed");
+    await expect(pin()).toHaveAccessibleName("Unpin");
     await expect(editor()).toBeFocused();
     await expect.poll(stateFile).toContain('"outlinePinned": true');
     // It stays as the pointer leaves, docked in the rail's place (D-187): no rail, flush to the window's
@@ -404,7 +449,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
       await expect(card(page)).toBeHidden();
       await page.mouse.move(300, 300);
       await hoverRail(page);
-      await expect(pin()).toHaveAttribute("aria-pressed", "true");
+      await expect(pin()).toHaveAccessibleName("Unpin");
       await page.mouse.move(300, 300);
       await expect(card(page)).toBeHidden();
     } else test.info().annotations.push({ type: "skipped step", description: `the rail needs a ${narrowest} px window, where the card docks` });
@@ -419,7 +464,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     await expect(editor()).toBeFocused();
     // Unpinned from the card: a hover card again, closing as the pointer leaves; the rail is back.
     await pin().click();
-    await expect(pin()).toHaveAttribute("aria-pressed", "false");
+    await expect(pin()).toHaveAccessibleName("Pin");
     await expect(editor()).toBeFocused();
     await expect(card(page)).toBeVisible();
     await page.mouse.move(500, 400, { steps: 4 });

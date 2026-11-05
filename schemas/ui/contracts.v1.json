@@ -17140,7 +17140,7 @@
         },
         "outlinePinLabel": {
           "kind": "message",
-          "description": "The contents card's pin button, unpinned: Keep contents open."
+          "description": "The contents card's action while unpinned: Pin."
         },
         "outlineUnpinLabel": {
           "kind": "message",
