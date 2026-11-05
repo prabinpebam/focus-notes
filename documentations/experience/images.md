@@ -245,7 +245,7 @@ The owner asked (5 November) what is done and pending for adding images, and whe
 
 **Slices, smallest visible first (D-349):**
 
-1. **Add an image** (WP-9.7 with WP-9.3's storage core): paste, drop, Insert image…, /image, Spotlight into `assets/images/`. Gallery mock of the insertion marker and refusals first. About a day.
+1. **Add an image** (WP-9.7 with WP-9.3's storage core): paste, drop, Insert image…, /image, Spotlight into `assets/images/`. The insertion design is already approved (mock 9's **Insert** tab: the drop marker, a dropped image, a refused 30 MB TIFF and a batch with damaged files), so no new mock is needed. About a day.
 2. **Describe it:** Edit description… and Add caption (WP-9.1). Small.
 3. **The rest of the menu:** Cut, Copy, Replace image…, Save image…, remembered defaults (WP-9.1). About a day.
 4. **Print** (WP-9.8, D-348). Small.
@@ -253,6 +253,8 @@ The owner asked (5 November) what is done and pending for adding images, and whe
 6. **AI caption** (WP-9.5). About a day.
 7. **Moves, copies and standalone sidecars** (the rest of WP-9.3). About a day.
 8. **Encrypted images in shares** (WP-9.6). Several days.
+
+**Owner approval (5 November):** "I'd already approve the UI and UX for the image insertion. Launch that demo again." The owner re-confirmed the 3 November approval of mock 9 (D-pending). The demo is the approved gallery build of `vq-project-mocks` at `4afe907f`, served at <http://127.0.0.1:5211> → **9 · Images**. Building slice 1 still waits for the owner's separate go-ahead.
 
 **Owner questions:**
 

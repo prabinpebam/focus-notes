@@ -1,5 +1,11 @@
 # Decisions
 
+## D-pending: the image insertion design is approved; slice 1 needs no new mock
+
+**Status:** Accepted (owner, 5 November 2026). **Affects** [Images → Readiness assessment](../experience/images.md#readiness-assessment-5-november), WP-9.7, D-349.
+
+The owner wrote: "I'd already approve the UI and UX for the image insertion. Launch that demo again." This re-confirms the 3 November approval of mock 9 (`vq-project-mocks` at `4afe907f`): its Insert tab shows the drop marker, a dropped image and the refusals (a 30 MB TIFF, a batch with damaged files). D-349's images slice 1 is therefore built against that mock, with no new strict-design step. Wiring waits for the owner's separate execution go-ahead. The orchestrator assigns the number.
+
 ## D-351: publishing a note shows its deploy as one honest wait
 
 **Proposed (worker, readiness review of 5 November 2026; ordinary behaviour, reversible).** When a note is published or unpublished, the app reports the GitHub Pages deploy the same way a share's readiness is already reported (R-53, D-344):

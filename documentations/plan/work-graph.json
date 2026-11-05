@@ -2738,7 +2738,7 @@
     },
     {
       "id": "WP-9.7", "stage": "Later", "title": "Add an image: paste, drop and Insert image",
-      "summary": "D-349 images slice 1, built together with WP-9.3's storage core: paste (Ctrl+V), drop with the insertion marker, Insert image..., /image and Spotlight copy validated PNG/JPEG/WebP files into assets/images/<random-id> and insert relative standard Markdown images as one undoable edit; all-or-none batches, Adding N images... wait, read-only and unsaved-note branches. Mock the insertion marker and refusal states in the gallery first.",
+      "summary": "D-349 images slice 1, built together with WP-9.3's storage core: paste (Ctrl+V), drop with the insertion marker, Insert image..., /image and Spotlight copy validated PNG/JPEG/WebP files into assets/images/<random-id> and insert relative standard Markdown images as one undoable edit; all-or-none batches, Adding N images... wait, read-only and unsaved-note branches. The insertion design is approved (mock 9, owner 3 and 5 November); build against it, no new mock.",
       "requirements": ["IMG-01"], "dependsOn": ["WP-9.3"],
       "touches": ["editor", "core", "desktop", "markdown", "views"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/images.md", "experience/editing.md"], "lookahead": true, "status": "planned"
