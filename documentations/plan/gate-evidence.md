@@ -18,6 +18,20 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Open project cards and hue-safe shimmer, 5 November
+
+The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-352, D-353) passes its focused Windows checks:
+
+| Check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run build` | Passed. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1 -g 'Open\|Files initial scan\|Recently deleted never\|Sharing settings distinguish\|Share item delays\|History delays\|section loading uses'` | Passed, 16 journeys: Open, scoped recovery and section skeletons. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/prf13-no-silent-wait.spec.ts --workers=1` | Passed, 5 journeys: setup, GitHub Open and named waits. |
+| PID-scoped `close-test-apps.ps1`, dry-run then actual | Passed after both runs; no test instances left open. |
+| Open, card-state and shimmer-tint gallery captures in light and dark | Inspected six candidates under `focus-notes-work\review\vq-open-dialog`; placeholders retain each card's hue. |
+
+There are no approved PNG baselines in this checkout, and Open/shimmer have no registered approved baseline to replace. Following `e2e/baselines.ts`, captures remain review candidates, not silently approved images. The gallery logs existing CSP warnings about meta `frame-ancestors` and blocked inline styles; these are queued separately, not repaired in this increment. A fresh two-project candidate and exact-head CI remain pending; this is not landing or release evidence.
+
 ### Native panel recovery journey transport, 5 November
 
 Image candidate `c96f4a8e` passed the Windows test job and journey shards 1–3 in run `42012099831`. Shard 4 passed the recovery journey's panel, feedback, editor identity, unchanged note bytes and time-origin assertions, then failed while Playwright transported the synchronous native window count: `electronApplication.evaluate: Resulting promise was garbage collected`. The unchanged focused journey reproduced that error once in five local software-rendered runs. The window-count check now retrieves the same `BrowserWindow.getAllWindows().length` through `evaluateHandle`, asserts its JSON value is exactly one, and disposes the handle. All 20 focused software-rendered repetitions pass; no wait, retry, fallback, assertion, app behavior or budget changed. Exact-head combined Windows CI remains required before landing.
