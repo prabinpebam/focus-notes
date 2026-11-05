@@ -12,6 +12,7 @@ import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { instance, write } from "./instance.ts";
 import { fixtureNotes } from "../../../tools/bench/fixtures.ts";
+import { execFileSync } from "node:child_process";
 
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
@@ -304,61 +305,77 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
 test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make public, and open in a new window", async () => {
   const l = await started();
   const { page } = l;
-  await open(page);
-  await search(page, "focus sessions", "Focus sessions");
-  // → at the end of the text, or Mod+K, shows the selected result's actions; ← or Esc goes back.
-  await page.keyboard.press("ArrowRight");
-  await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
-  await expect(results(page).getByRole("option")).toHaveText([
-    /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Rename/, /^Move to…/, /^Make public/, /^Show in Files/, /^Delete/,
-  ]);
-  // Open in new window is built (WP-8.5): offered, not disabled.
-  await expect(option(page, /^Open in new window/)).not.toHaveAttribute("aria-disabled", "true");
-  await page.keyboard.press("ArrowLeft");
-  await expect(spotlight(page)).not.toContainText("Actions for");
-  await page.keyboard.press(`${mod}+K`);
-  await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
+  const chooseAction = async (label: string) => {
+    await expect(option(page, new RegExp(`^${label}`))).toBeVisible();
+    const count = await results(page).getByRole("option").count();
+    for (let i = 0; i < count; i++) {
+      if ((await active(page).textContent())?.startsWith(label)) break;
+      const previous = await active(page).getAttribute("id");
+      await page.keyboard.press("ArrowDown");
+      await expect(active(page)).not.toHaveAttribute("id", previous!);
+    }
+    await expect(active(page)).toContainText(label);
+    await page.keyboard.press("Enter");
+  };
+  try {
+    await open(page);
+    await search(page, "focus sessions", "Focus sessions");
+    // → at the end of the text, or Mod+K, shows the selected result's actions; ← or Esc goes back.
+    await page.keyboard.press("ArrowRight");
+    await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
+    await expect(results(page).getByRole("option")).toHaveText([
+      /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Rename/, /^Move to…/, /^Make public/, /^Show in Files/, /^Delete/,
+    ]);
+    // Open in new window is built (WP-8.5): offered, not disabled.
+    await expect(option(page, /^Open in new window/)).not.toHaveAttribute("aria-disabled", "true");
+    await page.keyboard.press("ArrowLeft");
+    await expect(spotlight(page)).not.toContainText("Actions for");
+    await page.keyboard.press(`${mod}+K`);
+    await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
 
-  // Copy link: a Markdown link from the open note. The shell's side (`clipboard:write`) is recorded
-  // instead of touching the real clipboard, which other programs on the machine can change meanwhile
-  // (as EDT-13's journey does).
-  type Spy = { copied: string[] };
-  await l.app.evaluate(({ clipboard }) => {
-    const spy = globalThis as unknown as Spy;
-    spy.copied = [];
-    clipboard.writeText = (text: string) => { spy.copied.push(text); };
-  });
-  const copied = () => l.app.evaluate(() => (globalThis as unknown as Spy).copied);
-  while (!(await active(page).textContent())?.startsWith("Copy Markdown link")) await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await expect(spotlight(page)).toBeHidden();
-  await expect.poll(copied).toEqual(["[Focus sessions](journal/focus-sessions.md)"]);
+    // Copy link: a Markdown link from the open note. The shell's side (`clipboard:write`) is recorded
+    // instead of touching the real clipboard, which other programs on the machine can change meanwhile
+    // (as EDT-13's journey does).
+    type Spy = { copied: string[] };
+    await l.app.evaluate(({ clipboard }) => {
+      const spy = globalThis as unknown as Spy;
+      spy.copied = [];
+      clipboard.writeText = (text: string) => { spy.copied.push(text); };
+    });
+    const copied = () => l.app.evaluate(() => (globalThis as unknown as Spy).copied);
+    await chooseAction("Copy Markdown link");
+    await expect(spotlight(page)).toBeHidden();
+    await expect.poll(copied).toEqual(["[Focus sessions](journal/focus-sessions.md)"]);
 
-  // Move to…: through Files' own dialog, as one batch.
-  await open(page);
-  await search(page, "ideas", "Ideas");
-  await page.keyboard.press(`${mod}+K`);
-  while (!(await active(page).textContent())?.startsWith("Move to…")) await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  const move = page.getByRole("dialog", { name: /Move/ });
-  await expect(move.getByRole("combobox")).toBeFocused();
-  await move.getByRole("combobox").fill("archive");
-  await page.keyboard.press("Enter");
-  await expect.poll(() => existsSync(join(l.docs, "private", "notes", "archive", "ideas.md")), { timeout: 10_000 }).toBe(true);
-  await page.keyboard.press("Escape");
+    // Move to…: through Files' own dialog, as one batch.
+    await open(page);
+    await search(page, "ideas", "Ideas");
+    await page.keyboard.press(`${mod}+K`);
+    await chooseAction("Move to…");
+    const move = page.getByRole("dialog", { name: /Move/ });
+    await expect(move.getByRole("combobox")).toBeFocused();
+    await move.getByRole("combobox").fill("archive");
+    await page.keyboard.press("Enter");
+    await expect.poll(() => existsSync(join(l.docs, "private", "notes", "archive", "ideas.md")), { timeout: 10_000 }).toBe(true);
+    await page.keyboard.press("Escape");
 
-  // Make public asks first, then moves the note.
-  await open(page);
-  await search(page, "focus sessions", "Focus sessions");
-  await page.keyboard.press(`${mod}+K`);
-  while (!(await active(page).textContent())?.startsWith("Make public")) await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  const confirm = page.getByRole("dialog", { name: "Make public?" });
-  await expect(confirm).toBeVisible();
-  await confirm.getByRole("button", { name: "Make public" }).click();
-  await expect.poll(() => existsSync(join(l.docs, "notes", "journal", "focus-sessions.md")), { timeout: 15_000 }).toBe(true);
-  expect(readFileSync(join(l.docs, "notes", "journal", "focus-sessions.md"), "utf8")).toContain("Morning blocks.");
-  await quit(l);
+    // Make public asks first, then moves the note.
+    await open(page);
+    await search(page, "focus sessions", "Focus sessions");
+    await page.keyboard.press(`${mod}+K`);
+    await chooseAction("Make public");
+    const confirm = page.getByRole("dialog", { name: "Make public?" });
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole("button", { name: "Make public" }).click();
+    await expect.poll(() => existsSync(join(l.docs, "notes", "journal", "focus-sessions.md")), { timeout: 15_000 }).toBe(true);
+    expect(readFileSync(join(l.docs, "notes", "journal", "focus-sessions.md"), "utf8")).toContain("Morning blocks.");
+  } finally {
+    try { await quit(l); }
+    finally {
+      const script = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", script, "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
 });
 
 test("A11Y: Spotlight in every mode and its actions has no axe violations, in light and dark", async () => {
