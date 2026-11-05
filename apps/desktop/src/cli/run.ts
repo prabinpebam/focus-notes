@@ -55,7 +55,7 @@ export async function runCli(argv: readonly string[], host: CliHost): Promise<nu
     // The server is for agents: nothing it receives can ever stand for the person (D-145 (9c)).
     sealTerminal();
     if (!dataDir || !workspace) {
-      host.stderr.write("Usage: focus-notes mcp --workspace <folder> --data <app data folder>\n");
+      host.stderr.write("Usage: focus-notes mcp --project <folder> --data <app data folder>\n");
       return 1;
     }
     if (!(await readAgentPermissions(dataDir)).permissions.connect) {

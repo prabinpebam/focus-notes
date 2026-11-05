@@ -1,5 +1,13 @@
 # Decisions
 
+## D-pending: Project replaces workspace everywhere
+
+**Status:** Accepted (owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."). **Affects** [Projects → terminology slice](../experience/projects.md#what-a-project-is-for), [Foundations → Words](../design/foundations.md#words), [information architecture](../design/information-architecture.html), [command-line tool](../architecture/agents.md#command-line-tool), PRJ-11, WP-P.17.
+
+One user-facing noun, **project**, for the notes folder and its identity. The [approved design and full inventory](http://127.0.0.1:5243/documentations/#experience/project-model.md) are on `vq-project-not-workspace`. Build in four slices: words; merged Project tab; Git for every project plus Link to GitHub; standalone-file Settings. Deleting a project is a separate proposed flow and waits for approval.
+
+Slice 1 changes text only except the necessary `--project` CLI spelling, mapped to the existing `workspace` argument key with `--workspace` retained as a silent alias. No data, repository, IPC, message-key or on-disk rename. Before slice 2, the existing storage category is called **Where it's kept** and sharing recovery links name that actual location, avoiding two Project tabs or directions to an unwired control. Migration copy can name the old word once. The orchestrator assigns the number.
+
 ## D-pending: GitHub Actions runs are batched on accumulated work
 
 **Status:** Accepted (owner, 5 November 2026). **Affects** [AGENTS.md](../../AGENTS.md) (Modes, gates and merges), `.github/workflows/ci.yml`, `nightly.yml`, `codeql.yml`, `pages.yml`, D-113, D-206, D-255.

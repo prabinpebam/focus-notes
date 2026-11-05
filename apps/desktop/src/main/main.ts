@@ -1927,7 +1927,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Where Create my notes will put them, for the name typed (D-155).
   handle("firstRun:folder", async (instance) => (await setupWhere(typeof instance === "string" ? instance : undefined)).folder);
   handle("firstRun:chooseFolder", async () => {
-    const folder = await chooseFolder("Choose a folder for your workspace");
+    const folder = await chooseFolder("Choose a folder for your project");
     if (folder) targetFolder = folder;
     return folder;
   });
@@ -1960,7 +1960,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     } finally { activeFirstClone = undefined; }
   });
   handle("firstRun:openFolder", async (): Promise<WorkspaceResult | undefined> => {
-    const folder = await chooseFolder("Open a workspace folder");
+    const folder = await chooseFolder("Open a project folder");
     if (!folder) return undefined;
     const r = await checkWorkspace(setupRunner, folder, isTemplateRemote);
     if (r.ok) pendingWorkspace = folder;

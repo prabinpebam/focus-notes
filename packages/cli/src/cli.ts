@@ -34,7 +34,7 @@ export interface CliDeps {
   openUrl?: (url: string) => Promise<void>;
 }
 
-export const USAGE = `Usage: focus-notes <command> [arguments] [--json] [--workspace <folder>]
+export const USAGE = `Usage: focus-notes <command> [arguments] [--json] [--project <folder>]
 
   ls [folder]                        List notes and folders
   cat <path>                         Print a note's Markdown
@@ -49,7 +49,7 @@ export const USAGE = `Usage: focus-notes <command> [arguments] [--json] [--works
 
 Exit codes: 0 done, 1 error, 2 conflict, 3 not permitted.`;
 
-const FLAGS = new Set(["json", "workspace", "data", "folder", "title", "limit", "expected-version", "heading"]);
+const FLAGS = new Set(["json", "project", "workspace", "data", "folder", "title", "limit", "expected-version", "heading"]);
 const BOOLEAN = new Set(["json"]);
 class Usage extends Error {}
 
@@ -69,15 +69,16 @@ export function parseArgs(argv: readonly string[]): { positional: string[]; flag
     }
     const eq = a.indexOf("=");
     const name = a.slice(2, eq < 0 ? undefined : eq);
-    if (!FLAGS.has(name) || flags.has(name)) throw new Usage(`Unknown or repeated option: --${name}`);
+    const key = name === "project" ? "workspace" : name;
+    if (!FLAGS.has(name) || flags.has(key)) throw new Usage(`Unknown or repeated option: --${name}`);
     if (BOOLEAN.has(name)) {
       if (eq >= 0) throw new Usage(`--${name} takes no value`);
-      flags.set(name, true);
-    } else if (eq >= 0) flags.set(name, a.slice(eq + 1));
+      flags.set(key, true);
+    } else if (eq >= 0) flags.set(key, a.slice(eq + 1));
     else {
       const v = argv[++i];
       if (v === undefined) throw new Usage(`--${name} needs a value`);
-      flags.set(name, v);
+      flags.set(key, v);
     }
   }
   return { positional, flags };
@@ -134,7 +135,7 @@ export async function runCommand(argv: readonly string[], deps: CliDeps, io: Cli
     if (command === "status" || command === "sync") {
       args(0);
       const run = command === "status" ? deps.status : deps.sync;
-      if (!deps.workspace) return fail("noWorkspace", "No workspace: pass --workspace <folder>.");
+      if (!deps.workspace) return fail("noWorkspace", "No project: pass --project <folder>.");
       if (!run) return fail("noRepository", MESSAGES.noRepository!);
       const s = await run();
       if (s.problem === "locked") return fail("appRunning", MESSAGES.appRunning!);
@@ -222,7 +223,7 @@ export async function runCommand(argv: readonly string[], deps: CliDeps, io: Cli
   } catch (e) {
     if (e instanceof Usage) return fail("usage", `${e.message}\n\n${USAGE}`, EXIT.error);
     const code = (e as { cli?: string }).cli;
-    if (code === "noWorkspace") return fail("noWorkspace", "No workspace: pass --workspace <folder>.");
+    if (code === "noWorkspace") return fail("noWorkspace", "No project: pass --project <folder>.");
     if (code) return fail(code, MESSAGES[code] ?? MESSAGES.failed!);
     return fail("failed", MESSAGES.failed!);
   }

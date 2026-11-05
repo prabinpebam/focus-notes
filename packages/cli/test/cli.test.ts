@@ -21,6 +21,18 @@ describe("the command-line tool", () => {
     for (const bad of [["--bogus"], ["--json=1"], ["--title"], ["--json", "--json"]]) expect(() => parseArgs(bad)).toThrow();
   });
 
+  it("accepts project spelling without changing the workspace key or legacy option", () => {
+    const expected = parseArgs(["cat", "notes/a.md", "--workspace", "/w"]);
+    expect(parseArgs(["cat", "notes/a.md", "--project", "/w"])).toEqual(expected);
+    expect(parseArgs(["cat", "notes/a.md", "--project=/w"])).toEqual(expected);
+    for (const bad of [
+      ["--project", "/a", "--workspace", "/b"],
+      ["--workspace=/a", "--project=/b"],
+      ["--project", "/a", "--project", "/b"],
+      ["--project"],
+    ]) expect(() => parseArgs(bad)).toThrow();
+  });
+
   it("maps every refusal to its exit code", () => {
     expect(EXIT).toEqual({ ok: 0, error: 1, conflict: 2, notPermitted: 3 });
     for (const c of ["changed", "exists"]) expect(exitFor(c)).toBe(2);
@@ -32,7 +44,7 @@ describe("the command-line tool", () => {
     const a = io();
     expect(await runCommand(["cat", "notes/a.md", "--json"], { principal, workspace: undefined, dataDir: "" }, a.i)).toBe(1);
     expect(a.out).toHaveLength(1);
-    expect(JSON.parse(a.out[0]!)).toEqual({ ok: false, error: "noWorkspace", message: "No workspace: pass --workspace <folder>." });
+    expect(JSON.parse(a.out[0]!)).toEqual({ ok: false, error: "noWorkspace", message: "No project: pass --project <folder>." });
     const b = io();
     expect(await runCommand(["append", "notes/a.md", "--json"], { principal, workspace: "/nowhere", dataDir: "" }, b.i)).toBe(1);
     expect(JSON.parse(b.out[0]!)).toMatchObject({ ok: false, error: "usage" });
