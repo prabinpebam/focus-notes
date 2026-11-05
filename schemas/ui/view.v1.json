@@ -8563,6 +8563,54 @@
                 }
               ]
             },
+            "intrinsicWidth": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "intrinsicHeight": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "loadingLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "loading": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "crop": {
               "anyOf": [
                 {
@@ -12179,6 +12227,19 @@
                 }
               ]
             },
+            "imageLoadingLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "imageRetryLabel": {
               "anyOf": [
                 {
@@ -12562,6 +12623,12 @@
               "$ref": "#/$defs/actions"
             },
             "imageEditError": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageImport": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageImported": {
               "$ref": "#/$defs/actions"
             },
             "change": {

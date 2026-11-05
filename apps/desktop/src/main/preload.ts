@@ -102,6 +102,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   platform,
   readImage: (note: string, src: string) => ipcRenderer.invoke("image:read", note, src),
   writeImage: (note: string, src: string, data: string, expected: string) => ipcRenderer.invoke("image:write", note, src, data, expected),
+  importImages: (note: string, inputs?: readonly { data: string }[]) => ipcRenderer.invoke("image:import", note, inputs),
+  finishImageImport: (batch: string, keep: boolean) => ipcRenderer.invoke("image:finishImport", batch, keep),
   // GPU or software compositing (D-121): the main process reads it, and tells of changes after a GPU crash.
   compositing: {
     initial: params.get("compositing") === "software" ? "software" : "gpu",

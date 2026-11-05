@@ -107,7 +107,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ProgressBar | primitive | `rest` | 3 | None |
 | DatePicker | primitive | `rest`, `focused`, `open`, `invalid`, `readOnly` | 4 | `focused`, `open` |
 | ProjectMark | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 43 | None |
-| ImageFrame | primitive | `rest`, `selected`, `broken`, `retrying` | 13 | None |
+| ImageFrame | primitive | `rest`, `selected`, `broken`, `retrying`, `loading` | 14 | None |
 | FontChoice | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 11 | None |
 | ProjectPill | primitive | `rest` | 27 | None |
 | PickerButton | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 26 | None |

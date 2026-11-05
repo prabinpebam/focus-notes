@@ -8,17 +8,46 @@ const NOTE = "/notes/current.md";
 const DATA = "data:image/png;base64,aW1hZ2U=";
 const NEXT = "data:image/png;base64,bmV4dA==";
 afterEach(() => vi.useRealTimers());
-async function setup(readImage: NonNullable<PlatformBridge["readImage"]>) {
+async function setup(readImage: NonNullable<PlatformBridge["readImage"]>, overrides: Partial<PlatformBridge> = {}) {
   const bridge: PlatformBridge = {
     platform: "windows", readNote: async () => "# Current\n", writeNote: async () => {},
     chooseNote: async () => NOTE, newNotePath: async () => NOTE, defaultNotePath: async () => NOTE,
     loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: NOTE }), saveAppState: async () => {},
-    systemScheme: () => "light", onSystemSchemeChange: () => () => {}, readImage,
+    systemScheme: () => "light", onSystemSchemeChange: () => () => {}, readImage, ...overrides,
   };
   const app = createApp(bridge, messages);
   await app.start();
   return app;
 }
+
+describe("image import handoff", () => {
+  it("reports the named limit even through Electron's remote-method prefix, without leaking the path", async () => {
+    const app = await setup(async () => DATA, { importImages: async () => { throw new Error("Error invoking remote method 'image:import': Error: image-too-large"); } });
+    await app.commands.run("image.import", { request: "one", key: app.store.state.note.key });
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe(messages["image.import.image-too-large"]);
+    expect(app.store.state.note.markdown).toBe("# Current\n");
+  });
+  it("cleans copied assets when the note changes before import finishes", async () => {
+    let done!: (value: { batch: string; images: { src: string; width: number; height: number }[] }) => void;
+    const finish = vi.fn(async () => {});
+    const app = await setup(async () => DATA, { importImages: () => new Promise(resolve => { done = resolve; }), finishImageImport: finish });
+    const importing = app.commands.run("image.import", { request: "one", key: app.store.state.note.key });
+    app.store.update(s => ({ ...s, note: { ...s.note, key: `${s.note.key}-new` } }));
+    done({ batch: "batch-one", images: [{ src: "asset.png", width: 640, height: 360 }] });
+    await importing;
+    expect(finish).toHaveBeenCalledWith("batch-one", false);
+    expect(app.store.state.note.markdown).toBe("# Current\n");
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe(messages["image.import.image-target-changed"]);
+  });
+  it("canceling a native picker changes neither the note nor the assets", async () => {
+    const finish = vi.fn(async () => {});
+    const app = await setup(async () => DATA, { importImages: async () => undefined, finishImageImport: finish });
+    await app.commands.run("image.import", { request: "one", key: app.store.state.note.key });
+    expect(finish).not.toHaveBeenCalled();
+    expect(app.store.state.ui.toasts).toEqual([]);
+    expect(app.store.state.note.markdown).toBe("# Current\n");
+  });
+});
 
 describe("image read recovery", () => {
   it("uses the 300 ms task delay and holds a visible retry for 500 ms", async () => {

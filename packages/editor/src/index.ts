@@ -19,6 +19,7 @@ export type { NodeViewRenderer } from "@tiptap/core";
 export * from "./find.ts";
 export * from "./format.ts";
 export * from "./slash.ts";
+export * from "./images.ts";
 export * from "./paste.ts";
 export * from "./sanitize.ts";
 export * from "./table.ts";
@@ -34,6 +35,7 @@ import { Find, FIND_ACTIONS } from "./find.ts";
 import { atBlock, BLOCK_ACTIONS, BLOCK_MENU, BLOCK_MOVE_TO, BlockKit } from "./blocks.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
 import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
+import { ImageInsertion, requestImageCommand, type ImageImportRequest } from "./images.ts";
 import { SmartPaste } from "./paste.ts";
 import { isSafeHref } from "./sanitize.ts";
 import { TABLE_ACTIONS, insertTable, tableExtensions, type TableChange, type TableHooks } from "./table.ts";
@@ -110,11 +112,13 @@ registerBlock({ name: "tableRow", title: "block.tableRow", markdown: "native", i
 registerBlock({ name: "tableHeader", title: "block.tableHeader", markdown: "native", insertable: false });
 registerBlock({ name: "tableCell", title: "block.tableCell", markdown: "native", insertable: false });
 registerBlock({ name: "rawMarkdown", title: "block.rawMarkdown", markdown: "verbatim", insertable: false });
-registerBlock({ name: "image", title: "block.image", markdown: "native", insertable: false });
+registerBlock({ name: "image", title: "block.image", markdown: "native", insertable: true,
+  slash: [{ id: "block.image", title: "command.image.insert", group: "media", icon: "image", insert: requestImageCommand }],
+});
 
 const InlineImage = Node.create<{ view?: NodeViewRenderer }>({
   name: "image", group: "block", atom: true, selectable: true,
-  addAttributes: () => ({ src: { default: "" }, alt: { default: "" }, title: { default: null }, rounded: { default: false }, fitHeight: { default: true }, mode: { default: "column" } }),
+  addAttributes: () => ({ src: { default: "" }, alt: { default: "" }, title: { default: null }, rounded: { default: false }, fitHeight: { default: true }, mode: { default: "column" }, width: { default: null }, height: { default: null } }),
   parseHTML: () => [{ tag: "img[src]" }],
   renderHTML: ({ HTMLAttributes }) => ["img", HTMLAttributes],
   addNodeView() { return this.options.view ?? null; },
@@ -353,6 +357,7 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
 });
 
 export interface CoreOptions {
+  onImageImport?: (request: ImageImportRequest) => void;
   imageView?: NodeViewRenderer;
   /** Opens a link through the shell (Mod+click). */
   openLink?: (href: string) => void;
@@ -418,6 +423,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
     AutoDirection,
     FenceOnEnter,
     SlashMenu,
+    ImageInsertion.configure({ onRequest: options.onImageImport }),
     RewriteDecoration,
     SmartPaste.configure(options.onPasteNotice ? { onNotice: options.onPasteNotice } : {}),
     ...tableExtensions({

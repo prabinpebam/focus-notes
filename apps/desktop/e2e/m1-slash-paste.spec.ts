@@ -141,11 +141,11 @@ test("EDT-06: / opens the block menu under the caret; typing filters, arrows and
   expect(box.y).toBeGreaterThanOrEqual(slash.bottom);
   expect(Math.abs(box.x - slash.left)).toBeLessThan(24);
   // OFB.13: an empty query shows the registry's blocks and named groups, never an empty-result message.
-  await expect(menu.getByRole("group")).toHaveCount(3);
-  for (const name of ["Text", "Lists", "Advanced"]) await expect(menu.getByRole("group", { name, exact: true })).toBeVisible();
+  await expect(menu.getByRole("group")).toHaveCount(4);
+  for (const name of ["Text", "Lists", "Media", "Advanced"]) await expect(menu.getByRole("group", { name, exact: true })).toBeVisible();
   await expect(page.getByText(/No blocks match/)).toBeHidden();
   await expect(menu.getByRole("option")).toHaveText([
-    /^Text/, /^Heading 1/, /^Heading 2/, /^Heading 3/, /^Quote/, /^Bulleted list/, /^Numbered list/, /^To-do list/, /^Code block/, /^Divider/, /^Table/,
+    /^Text/, /^Heading 1/, /^Heading 2/, /^Heading 3/, /^Quote/, /^Bulleted list/, /^Numbered list/, /^To-do list/, /^Insert image/, /^Code block/, /^Divider/, /^Table/,
   ]);
   const first = menu.getByRole("option").first();
   await expect(first).toHaveAttribute("aria-selected", "true");

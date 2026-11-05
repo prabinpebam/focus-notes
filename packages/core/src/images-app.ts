@@ -41,6 +41,56 @@ export function registerImages(ctx: {
     set(IMAGES_CLOSED);
   });
   const writable = () => (state().selected?.count ?? 0) > 0 && !noteReadOnly(store.state);
+  commands.register({
+    id: "image.insert", title: "command.image.insert", icon: "image", group: "formatting", layer: "writer",
+    enabled: (s) => s.note.status === "ready" && !noteReadOnly(s) && !s.ui.format.inTable && !s.ui.format.codeBlock,
+    run: () => ctx.editorAction("image.insert"),
+  });
+  commands.register<{ request: string; key: string; data?: string; error?: string }>({
+    id: "image.import", title: "command.image.insert",
+    run: async ({ request, key, data, error }) => {
+      const note = store.state.note.path;
+      if (key !== store.state.note.key || !note || noteReadOnly(store.state)) {
+        ctx.editorAction("image.cancelImport", { request });
+        ctx.toast(catalog.format("image.import.unavailable"), { tone: "error" });
+        return;
+      }
+      let batch: string | undefined;
+      try {
+        if (error) throw new Error(error);
+        const importImages = bridge.importImages;
+        if (!importImages) throw new Error("image-import-unavailable");
+        const parsed: unknown = data ? JSON.parse(data) : undefined;
+        const isInput = (item: unknown): item is { data: string } => Boolean(item && typeof item === "object" && "data" in item && typeof item.data === "string");
+        let inputs: { data: string }[] | undefined;
+        if (parsed !== undefined) {
+          if (!Array.isArray(parsed) || !parsed.every(isInput)) throw new Error("invalid-image");
+          inputs = parsed;
+        }
+        const imported = await ctx.tracker.section("image.import", "image.import.loading", () => importImages(note, inputs), "fn:image.import");
+        if (!imported) { ctx.editorAction("image.cancelImport", { request }); return; }
+        batch = imported.batch;
+        if (store.state.note.path !== note || store.state.note.key !== key || noteReadOnly(store.state)) throw new Error("image-target-changed");
+        ctx.editorAction("image.insertAssets", { request, batch, images: imported.images });
+        batch = undefined;
+      } catch (problem) {
+        if (batch) await bridge.finishImageImport?.(batch, false);
+        ctx.editorAction("image.cancelImport", { request });
+        const reason = /(?:^|:\s)(image-too-large|image-pixels|animated-image|image-count|invalid-image|image-target-changed|unavailable)\s*$/.exec(problem instanceof Error ? problem.message : "")?.[1] ?? "failed";
+        console.error("Image import failed", reason);
+        const message = catalog.has(`image.import.${reason}`) ? `image.import.${reason}` : "image.import.failed";
+        ctx.toast(catalog.format(message), { tone: "error" });
+      }
+    },
+  });
+  commands.register<{ batch: string; accepted: boolean }>({
+    id: "image.imported", title: "command.image.insert",
+    run: async ({ batch, accepted }) => {
+      if (!bridge.finishImageImport) throw new Error("Image importer unavailable");
+      await bridge.finishImageImport(batch, accepted);
+      if (!accepted) ctx.toast(catalog.format("image.import.image-target-changed"), { tone: "error" });
+    },
+  });
   const failed = (src: string, error: unknown) => {
     console.error("Image read failed", opErrorCode(error));
     const previous = state().sources.find(s => s.id === src);

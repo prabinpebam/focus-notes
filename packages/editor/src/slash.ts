@@ -7,7 +7,7 @@ import { Extension, type CommandProps, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey, TextSelection, type EditorState } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
 
-export type SlashGroup = "text" | "lists" | "insert";
+export type SlashGroup = "text" | "lists" | "media" | "insert";
 
 /** One row of the slash menu, declared by a block registration (Editor engine → Block registry contract). */
 export interface SlashEntry {
