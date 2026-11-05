@@ -53,6 +53,18 @@ The final focused repair gate passes 149 units across importer/metadata, image/c
 
 **W2c closure, 6 November 05:22:** `3601bff9b78ae4ab283c5b259ac9d4dc70e77a30` passed exact Windows CI [42129619876](https://github.com/prabinpebam/focus-notes/actions/runs/42129619876): 3,007 units passed (7 skipped), 46 web journeys passed, and desktop shards passed 98 + 109 + 91 + 87 journeys (385 total). It fast-forwarded `main` non-force at 05:19 under the coordinator's landing lock. The scheduled Preview log reports `ready: 3601bff` at 05:22 and `current.txt` agrees; no updater or owner instance was touched. This closes the earlier main/Preview waits above, including the D-355 minimap Pin/Unpin restart proof. **Try it:** close and reopen Focus Notes Preview; paste/drop an image or choose Insert image, use toolbar More → Insert table / Insert image (or pin either in Customize toolbar), then Pin/Unpin the minimap and reopen to check persistence.
 
+### Actions (MACT), 6 November
+
+**WP-A.2/A.3 landing candidate, not yet Met.** The owner approved D-361 to D-364 at 02:07. `pnpm check` and `pnpm typecheck` pass; `pnpm test` passes 3,023 tests (240 files, 14 tests skipped). The rebuilt desktop passes the Shift+Enter → Enter journey after waiting for the acknowledged toggle write to enable its row. Pending-save units also preserve the selected row and query. Exact-head Windows CI and Preview evidence remain required before marking any row Met.
+
+| Row | Current evidence | Remaining |
+| --- | --- | --- |
+| MACT.1, MACT.2, MACT.10 | `actions-proof.test.ts`: catalogue integrity rejects duplicate labels, absent commands/proof/pointer paths and bare shared verbs; allow-list excludes dialog steps. | Native outcome proof for every entry; exact-head CI and Preview |
+| MACT.3 | Dialog/toolbar/message words changed to Actions; existing folder and note navigation retained. | Files/text merging slice WP-A.4; complete word inventory |
+| MACT.4, MACT.5 | Units cover captured note context, stale refusal with query retained, selection/anchor groups, empty list, browse, private Publish and its confirmation fix. | Native selection/undo and remaining contexts |
+| MACT.6, MACT.7, MACT.8 | Initial starter catalogue reuses existing command flows. | Remaining starter/AI wiring, native per-effect proofs and privacy/performance checks |
+| MACT.9 | Deferred by approved D-364, after a week of starter-set use. | Owner's later go-ahead |
+
 ### Open project cards and hue-safe shimmer, 5 November
 
 The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-352, D-353) passes its focused Windows checks:
