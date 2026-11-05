@@ -46,6 +46,7 @@ export * from "./snapshot.ts";
 export * from "./warmup.ts";
 export * from "./spotlight.ts";
 export * from "./spotlight-app.ts";
+export * from "./actions-catalog.ts";
 export * from "./public-page.ts";
 export * from "./share-reader.ts";
 export * from "./site.ts";

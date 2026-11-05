@@ -9,16 +9,16 @@ import { formatChord, type CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import { innerPath, isReadOnlyPath, sourceOf, titleOfPath } from "./notes.ts";
 import type { Store } from "./store.ts";
-import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { dirOf, findNode, rootOf, titleOfMarkdown, visibilityOf, walk } from "./workspace.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import { extractNote } from "./search/extract.ts";
 import type { IndexStatus, SearchHit, SearchItem, SearchKind, SearchQuery, SearchResults } from "./search/types.ts";
 import {
-  actionsFor, Frecency, HELP_ENTRIES, isInternalCommand, itemKey, mergeResults, parseFilters, prefixMode, rankLocal, rowId,
+  actionsFor, Frecency, HELP_ENTRIES, itemKey, mergeResults, parseFilters, prefixMode, rankLocal, rowId,
   type ActionContext, type ActionId, type GroupId, type QuickAction, type SpotlightMode, type SpotlightRow,
 } from "./spotlight.ts";
+import { ANCHORS, anchorPresent, CATALOG, catalogEntry, listable, NEEDS, stepsFor, type ActionScope, type CatalogEntry } from "./actions-catalog.ts";
 
 export interface SpotlightState {
   open: boolean;
@@ -62,8 +62,6 @@ export const SPOTLIGHT_MEASURE = "fn:spotlight.open";
 export const FIND_ALL_NOTES = "find.allNotes";
 /** A group's header item in the list: its ID is this and the group's (row IDs are `group:key`). */
 export const GROUP_HEADER = "group/";
-/** The empty field's suggestions (Spotlight → Empty and no-result states). */
-export const SUGGESTIONS = ["note.new", "focus.toggle", "appearance.toggle"] as const;
 /** While the index reads, an open Spotlight with a query asks again at most this often. */
 const REFRESH_MS = 250;
 
@@ -103,87 +101,89 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   let seq = 0;
   let opening: number | undefined;
 
-  // ---- what it lists: commands (KEY-01) and settings ----
+  // ---- what it lists: the catalogue's actions only (D-361, ACT-01) ----
   const run = (id: string, args?: Record<string, unknown>) => commands.run(id, args);
-  const appearanceModes = ["system", "light", "dark"] as const;
-  const lightThemes = BUILT_IN_THEMES.filter((t) => t.kind === "light").map((t) => t.id);
-  const darkThemes = BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => t.id);
-  const onOff = (on: boolean) => msg(on ? "spotlight.on" : "spotlight.off");
-  const themeTitle = (id: string) => msg(BUILT_IN_THEMES.find((t) => t.id === id)?.title ?? id);
-  const SETTINGS: SettingDef[] = [
-    {
-      id: "setting.appearance", title: "spotlight.setting.appearance",
-      value: (s) => msg(`command.appearance.${s.appearance.mode}`),
-      step: () => run(`appearance.${next(appearanceModes, store.state.appearance.mode)}`),
-      atDefault: (s) => s.appearance.mode === "system", reset: () => run("appearance.system"),
-    },
-    {
-      id: "setting.lightTheme", title: "spotlight.setting.lightTheme",
-      value: (s) => themeTitle(s.appearance.lightTheme),
-      step: () => run(`theme.light.${next(lightThemes, store.state.appearance.lightTheme)}`),
-      atDefault: (s) => s.appearance.lightTheme === DEFAULT_THEMES.light, reset: () => run(`theme.light.${DEFAULT_THEMES.light}`),
-    },
-    {
-      id: "setting.darkTheme", title: "spotlight.setting.darkTheme",
-      value: (s) => themeTitle(s.appearance.darkTheme),
-      step: () => run(`theme.dark.${next(darkThemes, store.state.appearance.darkTheme)}`),
-      atDefault: (s) => s.appearance.darkTheme === DEFAULT_THEMES.dark, reset: () => run(`theme.dark.${DEFAULT_THEMES.dark}`),
-    },
-    {
-      id: "setting.contentFont", title: "spotlight.setting.contentFont",
-      value: (s) => msg(`font.${s.appearance.contentFont}`),
-      step: () => run(`font.content.${next(CONTENT_FONTS, store.state.appearance.contentFont)}`),
-      atDefault: (s) => s.appearance.contentFont === CONTENT_FONTS[0], reset: () => run(`font.content.${CONTENT_FONTS[0]}`),
-    },
-    {
-      id: "setting.fontSize", title: "spotlight.setting.fontSize",
-      value: (s) => msg("spotlight.value.px", { size: s.appearance.fontSize }),
-      step: () => run(commands.describe("font.larger").enabled ? "font.larger" : "font.reset"),
-      atDefault: (s) => s.appearance.fontSize === 16, reset: () => run("font.reset"),
-    },
-    {
-      id: "setting.uiScale", title: "spotlight.setting.uiScale",
-      value: (s) => msg("spotlight.value.percent", { value: Math.round(s.appearance.uiScale * 100) }),
-      step: () => run(store.state.appearance.uiScale < UI_SCALES[UI_SCALES.length - 1]! ? "ui.scaleUp" : "ui.scaleReset"),
-      atDefault: (s) => s.appearance.uiScale === 1, reset: () => run("ui.scaleReset"),
-    },
-    {
-      id: "setting.focusMode", title: "spotlight.setting.focusMode",
-      value: (s) => onOff(s.focusMode),
-      step: () => run("focus.toggle"),
-      // Focus mode is on for new installs (D-04).
-      atDefault: (s) => s.focusMode, reset: async () => { if (!store.state.focusMode) await run("focus.toggle"); },
-    },
-    {
-      id: "setting.syncAppearance", title: "spotlight.setting.syncAppearance",
-      available: (s) => s.settingsSync !== "unavailable",
-      value: (s) => onOff(s.settingsSync === "on"),
-      step: () => run("settings.sync"),
-      atDefault: (s) => s.settingsSync !== "on", reset: async () => { if (store.state.settingsSync === "on") await run("settings.sync"); },
-    },
-  ];
-  const settingById = (id: string) => SETTINGS.find((x) => x.id === id && (x.available?.(store.state) ?? true));
-
-  /** A command's name in Spotlight: theme and font choices say what they choose ("Dark theme: Dusk"). */
-  const commandLabel = (id: string) => {
-    const title = msg(commands.describe(id).title);
-    const m = /^(theme\.light|theme\.dark|font\.content|appearance)\.(\w[\w-]*)$/.exec(id);
-    if (m && m[2] !== "toggle") return msg(`spotlight.command.${m[1]!.replace(".", "-")}`, { name: title });
-    return title;
+  const standalone = () => Boolean((bridge as { projects?: { local?: unknown } }).projects?.local);
+  /** What was true when Actions opened (ACT-05): actions are listed and run against it. */
+  const scopeNow = (): ActionScope => {
+    const s = store.state;
+    const t = tree();
+    const path = s.note.status === "ready" ? s.note.path : undefined;
+    const root = path ? rootOf(t, path) : undefined;
+    const vis = path ? visibilityOf(t, path) : undefined;
+    const writable = Boolean(path) && (root ? !root.readOnly : !isReadOnlyPath(path)) && s.workspace.access === "write";
+    return {
+      selection: Boolean(path) && s.ui.format.toolbar,
+      note: Boolean(path),
+      writable,
+      ...(vis ? { visibility: vis } : {}),
+      project: !standalone() && s.workspace.folder !== undefined && Boolean(bridge.workspace),
+      standalone: standalone(),
+      signedIn: Boolean(s.account.login),
+      linked: Boolean(s.workspace.repo),
+      ...(path ? { path } : {}),
+    };
   };
-  let listed: string[] | undefined;
-  /** Every command Spotlight can run: all but setters, components' events, and keys of a field (KEY-01). */
-  const listedCommands = () => (listed ??= commands.ids().filter((id) => !isInternalCommand(id, commands.describe(id).handledBy)));
+  let scope: ActionScope = { selection: false, note: false, writable: false, project: false, standalone: false, signedIn: false, linked: false };
+  const platformArgs = { platform: bridge.platform };
+  const onOff = (on: boolean) => msg(on ? "spotlight.on" : "spotlight.off");
+  const actionLabel = (e: CatalogEntry) => msg(e.label, platformArgs);
+  /** Every step's command is in this app (the web app has fewer). */
+  const runnable = (e: CatalogEntry) => e.steps.every(([id]) => commands.has(id));
+  const entries = () => CATALOG.filter(runnable);
   const keywords = (key: string) => (catalog.has(key) ? catalog.format(key).split(/\s+/).filter(Boolean) : []);
-  const commandItems = (): SearchItem[] => listedCommands().map((id) => {
-    const k = keywords(`${commands.describe(id).title}.keywords`);
-    return { id, title: commandLabel(id), ...(k.length ? { keywords: k } : {}) };
+  const commandItems = (): SearchItem[] => entries().map((e) => {
+    const k = keywords(`${e.label}.keywords`);
+    return { id: e.id, title: actionLabel(e), ...(k.length ? { keywords: k } : {}) };
   });
-  const settingItems = (): SearchItem[] => SETTINGS.map((x) => {
-    const k = keywords(`${x.title}.keywords`);
-    return { id: x.id, title: msg(x.title), ...(k.length ? { keywords: k } : {}) };
-  });
-
+  /** Listed, unavailable with a reason, or hidden (ACT-08). `browse`: `>` shows hidden ones with what they need. */
+  const availability = (e: CatalogEntry, browse = false): { shown: boolean; reason?: string } => {
+    if (!listable(e, scope)) {
+      if (!browse) return { shown: false };
+      return { shown: true, reason: msg(anchorPresent(e.anchor, scope) ? "spotlight.unavailable" : NEEDS[e.anchor]) };
+    }
+    const blocked = e.blockedBy?.(scope);
+    if (blocked) return { shown: true, reason: msg(blocked) };
+    const d = commands.describe(e.steps[0]![0]);
+    if (!d.enabled) return { shown: true, reason: d.disabledReason ? msg(d.disabledReason) : msg("spotlight.unavailable") };
+    return { shown: true };
+  };
+  const actionRow = (e: CatalogEntry, group: GroupId = e.anchor, highlights: SpotlightRow["highlights"] = []): SpotlightRow =>
+    ({ id: rowId(group, e.id), group, kind: "command", key: e.id, label: actionLabel(e), highlights });
+  /**
+   * Actions as the list shows them: each in its anchor's group (the top hit stays on top), hidden ones
+   * out, and a blocked action's fix right after it (ACT-08).
+   */
+  const placeActions = (rows: readonly SpotlightRow[], browse: boolean): SpotlightRow[] => {
+    const groups = new Map<GroupId, SpotlightRow[]>();
+    // A fix listed after the action it unblocks is that action's only row: no second copy elsewhere.
+    const fixes = new Map<string, string>();
+    const add = (g: GroupId, r: SpotlightRow) => {
+      const list = groups.get(g) ?? [];
+      if (!groups.has(g)) groups.set(g, list);
+      if (!list.some((x) => x.id === r.id)) list.push(r);
+    };
+    for (const r of rows) {
+      if (r.kind !== "command") { add(r.group, r); continue; }
+      const e = catalogEntry(r.key);
+      if (!e || !runnable(e)) continue;
+      const a = availability(e, browse);
+      if (!a.shown) continue;
+      const group = r.group === "top" ? "top" : e.anchor;
+      add(group, { ...r, group, id: rowId(group, e.id) });
+      const fix = e.fix ? catalogEntry(e.fix) : undefined;
+      if (!browse && a.reason && fix && runnable(fix) && !availability(fix).reason && availability(fix).shown && !fixes.has(fix.id)) {
+        const row = actionRow(fix, group);
+        fixes.set(fix.id, row.id);
+        add(group, row);
+      }
+    }
+    return [...groups.values()].flat().filter((r) => r.kind !== "command" || !fixes.has(r.key) || fixes.get(r.key) === r.id);
+  };
+  const byUse = (list: CatalogEntry[]) => {
+    const used = frecency.scores(ctx.now());
+    return list.map((e, i) => ({ e, i, n: used[itemKey("command", e.id)] ?? 0 })).sort((a, b) => b.n - a.n || a.i - b.i).map((x) => x.e);
+  };
   // ---- results ----
   const tree = () => store.state.workspace.tree;
   const noteRow = (path: string, group: GroupId): SpotlightRow | undefined => {
@@ -193,8 +193,6 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const label = found.node.title ?? found.node.name.replace(/\.(md|markdown)$/i, "");
     return { id: rowId(group, path), group, kind: "note", key: path, label, highlights: [], path, rel, root: found.root.id };
   };
-  const commandRow = (id: string, group: GroupId, highlights: SpotlightRow["highlights"] = []): SpotlightRow =>
-    ({ id: rowId(group, id), group, kind: id.startsWith("setting.") ? "setting" : "command", key: id, label: id.startsWith("setting.") ? msg(settingById(id)?.title ?? id) : commandLabel(id), highlights });
   const recentNotes = () => frecency.recent((k) => k !== store.state.note.path && findNode(tree(), k)?.node.kind === "note");
 
   /** The current note's headings, from its text as it is now (`#`). */
@@ -212,27 +210,16 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     rankLocal(HELP_ENTRIES.map((h) => ({ ...h, label: `${h.key} ${msg(h.title)}` })), query)
       .map((h) => ({ id: rowId("help", h.key), group: "help", kind: "help", key: h.insert, label: h.label, highlights: h.highlights }));
 
-  /** Every command and setting Spotlight can run, each by name: the commands list, and the action center (D-111). */
-  const everyAction = (): SpotlightRow[] => {
-    const byLabel = (a: SpotlightRow, b: SpotlightRow) => a.label.localeCompare(b.label);
-    return [
-      ...listedCommands().map((id) => commandRow(id, "commands")).sort(byLabel),
-      ...SETTINGS.filter((x) => x.available?.(store.state) ?? true).map((x) => commandRow(x.id, "settings")).sort(byLabel),
-    ];
-  };
-
+  /** Every catalogued action, by group (D-363): `>`'s list, with what each needs when it can't run here (ACT-06). */
+  const everyAction = (): SpotlightRow[] => placeActions(ANCHORS.flatMap((g) => entries().filter((e) => e.anchor === g).map((e) => actionRow(e))), true);
+  /** The empty field's short list: up to four actions for each anchor that's present and that can run now, most used first (ACT-06). */
+  const shortList = (): SpotlightRow[] => placeActions(ANCHORS.flatMap((g) => byUse(entries().filter((e) => e.anchor === g && !e.quiet && listable(e, scope) && !availability(e).reason)).slice(0, 4).map((e) => actionRow(e))), false);
   /** What the field shows before anything is typed. */
   const emptyRows = (mode: SpotlightMode): SpotlightRow[] => {
     if (mode === "all") {
-      // After recent notes and suggestions, every action the app has (SPT-04, D-111): Spotlight is the
-      // action center, where the arrow keys reach any action and Enter runs it.
-      return [
-        ...recentNotes().slice(0, 5).map((p) => noteRow(p, "recent")!),
-        ...SUGGESTIONS.filter((id) => commands.has(id)).map((id) => commandRow(id, "suggestions")),
-        ...everyAction(),
-      ];
-    }
-    if (mode === "notes") {
+      // Recent files, then what applies here (ACT-06); `>` browses everything (D-361 supersedes D-111's full list).
+      return [...recentNotes().slice(0, 5).map((p) => noteRow(p, "recent")!), ...shortList()];
+    }    if (mode === "notes") {
       const recent = recentNotes().slice(0, 10);
       const rest: SpotlightRow[] = [];
       for (const { node, path } of walk(tree())) {
@@ -260,15 +247,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     return [...recent.map((p) => row(p, byPath.get(p) ?? "", "recent")), ...notes.filter((n) => !recent.includes(n.path)).slice(0, 200).map((n) => row(n.path, n.title ?? "", "notes"))];
   };
 
-  /** Before the index has started (or where there's none): commands and settings matched here. */
+  /** Before the index has started (or where there's none): the catalogue matched here. */
   const localCommandHits = (text: string, kinds?: readonly string[]): SearchHit[] => {
-    const items = [
-      ...(!kinds || kinds.includes("command") ? listedCommands().map((id) => ({ id, label: commandLabel(id), kind: "command" as const })) : []),
-      ...(!kinds || kinds.includes("setting") ? SETTINGS.map((x) => ({ id: x.id, label: msg(x.title), kind: "setting" as const })) : []),
-    ];
+    const items = !kinds || kinds.includes("command") ? entries().map((e) => ({ id: e.id, label: actionLabel(e), kind: "command" as const })) : [];
     return rankLocal(items, text).slice(0, 40).map((h) => ({ kind: h.kind, key: h.id, label: h.label, highlights: h.highlights, tier: h.tier, score: h.score }));
   };
-
   const firstActive = (rows: readonly SpotlightRow[]) => rows.find((r) => rowEnabled(r))?.id ?? "";
   const setRows = (rows: SpotlightRow[], busy: boolean, keep: boolean) => {
     const active = keep && rows.some((r) => r.id === sp().activeId) ? sp().activeId : firstActive(rows);
@@ -286,6 +269,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
    */
   async function refresh(follow = false): Promise<void> {
     const s = sp();
+    const placed = (...a: Parameters<typeof mergeResults>) => placeActions(mergeResults(...a), s.mode === "commands");
     const keep = follow && s.activeId !== firstActive(s.rows);
     if (!s.open) return;
     const my = ++seq;
@@ -305,7 +289,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const actions = (s.mode === "all" || s.mode === "notes") && !s.fromLink;
     if (!search) {
       const titles = s.mode === "notes" || s.mode === "headings" ? [] : localCommandHits(text, kinds);
-      return setRows(mergeResults(titles, [], { query: text, top, actions }), false, false);
+      return setRows(placed(titles, [], { query: text, top, actions }), false, false);
     }
     const folder = currentFolder();
     const base = {
@@ -318,11 +302,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     try {
       if (!filters.phrase) titles = (await search.query({ ...base, scope: "titles" })).hits;
       if (my !== seq) return;
-      setRows(mergeResults(titles, [], { query: text, top, actions }), wantsText, keep);
+      setRows(placed(titles, [], { query: text, top, actions }), wantsText, keep);
       if (!wantsText) return;
       const found = (await search.query({ ...base, scope: "text", limit: 10, ...(filters.phrase ? { phrase: true } : {}) })).hits;
       if (my !== seq) return;
-      setRows(mergeResults(titles, found, { query: text, top, actions }), false, true);
+      setRows(placed(titles, found, { query: text, top, actions }), false, true);
     } catch {
       if (my === seq) set({ busy: false });
     }
@@ -336,6 +320,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     if (s.open && s.mode === mode && !s.everywhere) return close();
     if (!s.open) {
       opening = now();
+      // What the person was in when they asked (ACT-05): taken before the field takes focus.
+      scope = scopeNow();
       dismissDialogs();
     }
     store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
@@ -429,31 +415,32 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const i = list.findIndex((r) => r.id === s.activeId);
     set({ activeId: list[Math.min(list.length - 1, Math.max(0, (i < 0 ? 0 : i) + dir))]!.id });
   };
-  const scope = "spotlightField";
+  const field = "spotlightField";
   const isOpen = (s: AppState) => s.ui.spotlight.open;
-  commands.register({ id: "spotlight.next", title: "command.spotlight.next", shortcut: { default: "Down", handledBy: scope }, layer: "basic", group: "spotlight", run: step(1) });
-  commands.register({ id: "spotlight.prev", title: "command.spotlight.prev", shortcut: { default: "Up", handledBy: scope }, layer: "basic", group: "spotlight", run: step(-1) });
-  commands.register({ id: "spotlight.run", title: "command.spotlight.run", shortcut: { default: "Enter", handledBy: scope }, layer: "basic", group: "spotlight", run: () => runActive(false) });
-  commands.register({ id: "spotlight.runKeep", title: "command.spotlight.runKeep", shortcut: { default: "Shift+Enter", handledBy: scope }, layer: "power", group: "spotlight", run: async () => {
+  commands.register({ id: "spotlight.next", title: "command.spotlight.next", shortcut: { default: "Down", handledBy: field }, layer: "basic", group: "spotlight", run: step(1) });
+  commands.register({ id: "spotlight.prev", title: "command.spotlight.prev", shortcut: { default: "Up", handledBy: field }, layer: "basic", group: "spotlight", run: step(-1) });
+  commands.register({ id: "spotlight.run", title: "command.spotlight.run", shortcut: { default: "Enter", handledBy: field }, layer: "basic", group: "spotlight", run: () => runActive(false) });
+  commands.register({ id: "spotlight.runKeep", title: "command.spotlight.runKeep", shortcut: { default: "Shift+Enter", handledBy: field }, layer: "power", group: "spotlight", run: async () => {
     const row = activeRow();
-    if (row && rowEnabled(row) && (row.kind === "setting" || (row.kind === "command" && commands.describe(row.key).checked !== undefined))) await perform(row, "run", true);
+    const toggle = row?.kind === "command" ? catalogEntry(row.key) : undefined;
+    if (row && toggle && rowEnabled(row) && commands.describe(toggle.steps[0]![0]).checked !== undefined) await perform(row, "run", true);
   } });
-  commands.register({ id: "spotlight.runAlt", title: "command.spotlight.runAlt", shortcut: { default: "Mod+Enter", handledBy: scope }, layer: "power", group: "spotlight", run: () => runActive(true) });
+  commands.register({ id: "spotlight.runAlt", title: "command.spotlight.runAlt", shortcut: { default: "Mod+Enter", handledBy: field }, layer: "power", group: "spotlight", run: () => runActive(true) });
   const canShowActions = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && !s.ui.spotlight.fromLink && Boolean(s.ui.spotlight.rows.find((r) => r.id === s.ui.spotlight.activeId && actionsOf(r.kind)));
   const showActions = () => {
     const row = activeRow();
     if (!row || !actionsOf(row.kind) || sp().fromLink) return;
     set({ actions: { row: row.id, activeId: actionList(row).find((a) => a.available)?.id ?? "" } });
   };
-  commands.register({ id: "spotlight.actions", title: "command.spotlight.actions", shortcut: { default: "Mod+K", handledBy: scope, whenEnabled: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
+  commands.register({ id: "spotlight.actions", title: "command.spotlight.actions", shortcut: { default: "Mod+K", handledBy: field, whenEnabled: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
   // → does the same at the end of the field's text; elsewhere it still moves the caret (D-109).
-  commands.register({ id: "spotlight.actionsRight", title: "command.spotlight.actionsRight", shortcut: { default: "Right", handledBy: scope, whenEnabled: true, atFieldEnd: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
+  commands.register({ id: "spotlight.actionsRight", title: "command.spotlight.actionsRight", shortcut: { default: "Right", handledBy: field, whenEnabled: true, atFieldEnd: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
   commands.register({
-    id: "spotlight.back", title: "command.spotlight.back", shortcut: { default: "Left", alternates: { default: ["Escape"] }, handledBy: scope, whenEnabled: true }, layer: "power", group: "spotlight",
+    id: "spotlight.back", title: "command.spotlight.back", shortcut: { default: "Left", alternates: { default: ["Escape"] }, handledBy: field, whenEnabled: true }, layer: "power", group: "spotlight",
     enabled: (s) => Boolean(s.ui.spotlight.actions), run: () => set({ actions: undefined }),
   });
   commands.register({
-    id: "spotlight.all", title: "command.spotlight.all", shortcut: { default: "Backspace", handledBy: scope, whenEnabled: true }, layer: "power", group: "spotlight",
+    id: "spotlight.all", title: "command.spotlight.all", shortcut: { default: "Backspace", handledBy: field, whenEnabled: true }, layer: "power", group: "spotlight",
     enabled: (s) => isOpen(s) && s.ui.spotlight.query === "" && s.ui.spotlight.mode !== "all",
     run: () => { set({ mode: "all", everywhere: false, actions: undefined }); void refresh(); },
   });
@@ -462,7 +449,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   for (let n = 1; n <= 9; n++) {
     commands.register({
       id: `spotlight.run${n}`, title: `command.spotlight.run${n}`,
-      shortcut: { default: `Mod+${n}`, handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight",
+      shortcut: { default: `Mod+${n}`, handledBy: field, whenEnabled: true }, layer: "pro", group: "spotlight",
       enabled: (s) => isOpen(s) && !s.ui.spotlight.actions && s.ui.spotlight.rows.filter(rowEnabled).length >= n,
       run: () => {
         const row = shown()[n - 1];
@@ -478,7 +465,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   };
   commands.register({
     id: "spotlight.copyLink", title: "command.spotlight.copyLink",
-    shortcut: { default: "Mod+Shift+C", handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight",
+    shortcut: { default: "Mod+Shift+C", handledBy: field, whenEnabled: true }, layer: "pro", group: "spotlight",
     enabled: linkable,
     run: () => { const row = activeRow(); return row ? perform(row, "copyLink") : undefined; },
   });
@@ -498,8 +485,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     if (prev) set({ activeId: list.find((r) => r.group === prev.group)!.id });
   };
   const hasRows = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && s.ui.spotlight.rows.length > 0;
-  commands.register({ id: "spotlight.nextGroup", title: "command.spotlight.nextGroup", shortcut: { default: "Alt+Down", handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(1) });
-  commands.register({ id: "spotlight.prevGroup", title: "command.spotlight.prevGroup", shortcut: { default: "Alt+Up", handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(-1) });
+  commands.register({ id: "spotlight.nextGroup", title: "command.spotlight.nextGroup", shortcut: { default: "Alt+Down", handledBy: field, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(1) });
+  commands.register({ id: "spotlight.prevGroup", title: "command.spotlight.prevGroup", shortcut: { default: "Alt+Up", handledBy: field, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(-1) });
   commands.register<{ id: string }>({
     id: "spotlight.setActive", title: "command.spotlight.next",
     run: ({ id }) => {
@@ -521,7 +508,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   });
 
   // ---- what results do ----
-  const actionsOf = (kind: SpotlightRow["kind"]) => kind !== "create" && kind !== "find" && kind !== "help";
+  // An action's row has no More actions of its own: it does one thing (Actions → Deliberately out: Copy command ID).
+  const actionsOf = (kind: SpotlightRow["kind"]) => kind !== "create" && kind !== "find" && kind !== "help" && kind !== "command" && kind !== "setting";
   /** Why Find in all notes can't run now: its own reason, as a command's row shows it. */
   function findAllReason(): string {
     const reason = commands.has(FIND_ALL_NOTES) ? commands.describe(FIND_ALL_NOTES).disabledReason : undefined;
@@ -530,6 +518,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   function rowEnabled(r: SpotlightRow): boolean {
     if (r.kind === "find") return commands.has(FIND_ALL_NOTES) && commands.describe(FIND_ALL_NOTES).enabled;
     if (r.kind === "create") return commands.describe("note.new").enabled;
+    if (r.kind === "command") {
+      const e = catalogEntry(r.key);
+      return Boolean(e) && !availability(e!, true).reason;
+    }
     return true;
   }
   function actionContext(row: SpotlightRow): ActionContext {
@@ -542,7 +534,6 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const current = s.note.path;
     // A public note never links to a private one (Files and sharing).
     const linkRefused = !current ? "spotlight.reason.noNote" : rootOf(t, current)?.id === "public" && root?.id === "private" ? "spotlight.reason.privateLink" : undefined;
-    const setting = row.kind === "setting" ? settingById(row.key) : undefined;
     // A public note's page address needs the site's (SHR-03, D-139).
     const publicLink = visibility === "public" ? publicLinkReason(s, path) : undefined;
     return {
@@ -555,7 +546,6 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       copyToLocal: Boolean(path) && isReadOnlyPath(path) && commands.has("note.copyToLocal"),
       ...(linkRefused ? { linkRefused } : {}),
       ...(publicLink ? { publicLink } : {}),
-      resettable: setting ? !setting.atDefault(s) : false,
     };
   }
 
@@ -604,20 +594,30 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
 
   async function perform(row: SpotlightRow, id: ActionId, keepOpen = false): Promise<void> {
     const path = row.path ?? "";
-    if (id === "run" && (row.kind === "setting" || row.kind === "command")) {
-      frecency.record(itemKey(row.kind, row.key), ctx.now());
+    if (id === "run" && row.kind === "command") {
+      const e = catalogEntry(row.key);
+      if (!e) return;
+      // The note changed since Actions opened (ACT-05): refuse, keep the query, and say what changed.
+      if ((e.anchor === "note" || e.anchor === "selection") && (store.state.note.path !== scope.path || store.state.note.status !== "ready")) {
+        ctx.toast(msg("actions.stale"), { tone: "error" });
+        scope = scopeNow();
+        return refresh();
+      }
+      frecency.record(itemKey("command", e.id), ctx.now());
       const previous = sp();
       if (!keepOpen) close();
       try {
-        if (row.kind === "setting") await settingById(row.key)?.step();
-        else await run(row.key);
+        for (const [command, args] of stepsFor(e, scope)) await run(command, args);
       } catch (error) {
         if (!keepOpen) set({ ...previous, focus: sp().focus + 1, busy: false });
         throw error;
       }
+      if (keepOpen) {
+        scope = scopeNow();
+        await refresh(true);
+      }
       return;
     }
-    if (id === "reset") return settingById(row.key)?.reset();
     close();
     if (id === "copyId") return copy(row.key, msg("spotlight.copiedId", { id: row.key }));
     if (id === "copyLink") return copy(linkTo(row), msg("spotlight.copiedLink", { name: row.label }));
@@ -673,7 +673,6 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         close();
         return run("shortcuts.open").then(() => run("shortcuts.setQuery", { value: row.label }));
       }
-      if (row.kind === "setting") return perform(row, "reset");
       return;
     }
     switch (row.kind) {
@@ -729,17 +728,18 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       case "folder":
         return { ...base, icon: "folder", ...(r.rel ? { description: r.rel } : {}) };
       case "command": {
-        const d = commands.describe(r.key);
+        const e = catalogEntry(r.key);
+        if (!e) return { ...base, icon: "chevronRight", disabled: true };
+        const d = commands.describe(e.steps[0]![0]);
+        const a = availability(e, true);
+        // The active row says what will happen (ACT-07); an unavailable one says why (ACT-08).
+        const outcome = r.id === s.ui.spotlight.activeId && catalog.has(`${e.label}.outcome`) ? msg(`${e.label}.outcome`) : undefined;
         return {
           ...base, icon: d.icon ?? "chevronRight",
           ...(d.shortcut ? { shortcut: formatChord(d.shortcut, bridge.platform) } : {}),
           ...(d.checked !== undefined ? { state: onOff(d.checked) } : {}),
-          ...(!d.enabled ? { disabled: true, description: d.disabledReason ? msg(d.disabledReason) : msg("spotlight.unavailable") } : {}),
+          ...(a.reason ? { disabled: true, description: a.reason } : outcome ? { description: outcome } : {}),
         };
-      }
-      case "setting": {
-        const x = settingById(r.key);
-        return { ...base, icon: "settings", ...(x ? { state: x.value(s) } : {}) };
       }
       case "create":
         return { ...base, label: msg("spotlight.create", { query: r.label }), highlights: [], icon: "add", shortcut: formatChord("Mod+N", bridge.platform), ...(!rowEnabled(r) ? { disabled: true, description: msg("command.note.new.readOnly") } : {}) };
@@ -836,7 +836,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     attach(s: SpotlightSearch): void {
       search = s;
       s.setItems("command", commandItems());
-      s.setItems("setting", settingItems());
+      s.setItems("setting", []);
       // "Indexing 1,240 / 5,000" while it reads, in the footer of an open Spotlight. What it shows
       // follows the index too: a note listed or read since the query was answered appears, without
       // moving the active row while it's still there.

@@ -246,7 +246,7 @@ test("SP-14: menu scroll frames, full-bleed results and navigation insets preser
       }
       await reset(l.page);
       await spotlight(l.page, `${mod}+p`);
-      const results = l.page.getByRole("dialog", { name: "Spotlight", exact: true }).getByRole("listbox");
+      const results = l.page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("listbox");
       expect(await results.evaluate(el => {
         const cs = getComputedStyle(el), parent = el.parentElement!, box = el.getBoundingClientRect(), region = parent.getBoundingClientRect();
         return {

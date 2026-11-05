@@ -16,7 +16,7 @@ import { fixtureNotes } from "../../../tools/bench/fixtures.ts";
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
-const spotlight = (page: Page) => page.getByRole("dialog", { name: "Spotlight" });
+const spotlight = (page: Page) => page.getByRole("dialog", { name: "Actions", exact: true });
 const field = (page: Page) => spotlight(page).getByRole("combobox");
 const results = (page: Page) => spotlight(page).getByRole("listbox");
 const option = (page: Page, name: string | RegExp) => results(page).getByRole("option", { name });
@@ -101,7 +101,7 @@ test("SPT-01, SPT-07 (M4 demo 1): in the 5,000-note fixture Mod+/ opens Spotligh
   await editor(page).click();
   // Mod+K is the link key in the note, never Spotlight.
   await page.keyboard.press(`${mod}+K`);
-  await expect(page.getByRole("dialog", { name: "Spotlight" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Actions", exact: true })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Link editor" })).toBeVisible();
   await page.keyboard.press("Escape");
   await quit(l);
@@ -182,27 +182,26 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   await expect(editor(page)).toContainText("Deep work");
   await open(page);
   await expect(results(page).getByRole("group", { name: "Recent" }).getByRole("option")).toHaveText([/Welcome/]);
-  await expect(results(page).getByRole("group", { name: "Suggestions" }).getByRole("option")).toHaveText([/New note/, /Focus mode/, /Switch light and dark/]);
-  await expect(spotlight(page)).toContainText("Type ? for help");
-  // After them, every action the app has: the action center on Mod+/ (SPT-04, D-111), where the
-  // arrow keys reach any action and Enter runs it.
-  await expect(results(page).getByRole("group", { name: "Commands" }).getByRole("option", { name: /^Search commands and settings/ })).toBeAttached();
-  await expect(results(page).getByRole("group", { name: "Commands" }).getByRole("option", { name: /^Find in all notes/ })).toBeAttached();
-  expect(await results(page).getByRole("group", { name: "Commands" }).getByRole("option").count()).toBeGreaterThan(100);
-  const textSize = results(page).getByRole("group", { name: "Settings" }).getByRole("option", { name: /^Text size/ });
-  await expect(textSize).toContainText("16 px");
-  const count = await results(page).getByRole("option").count();
-  for (let i = 0; i < count && !(await active(page).textContent())?.startsWith("Text size"); i++) await page.keyboard.press("ArrowDown");
-  await expect(active(page)).toContainText("Text size");
-  await expect(active(page)).toBeInViewport();
-  await page.keyboard.press("Shift+Enter");
-  await expect(textSize).toContainText("17 px");
-  await expect(field(page)).toBeFocused();
-
+  // Then what applies here, a few per group, and a hint for browsing everything (ACT-06, D-361).
+  await expect(spotlight(page)).toContainText("Type > to browse all actions");
+  for (const g of ["This note", "This project", "App"]) {
+    const n = await results(page).getByRole("group", { name: g, exact: true }).getByRole("option").count();
+    expect(n, g).toBeGreaterThan(0);
+    expect(n, g).toBeLessThanOrEqual(4);
+  }
+  await expect(results(page).getByRole("group", { name: "This selection", exact: true })).toHaveCount(0);
+  // None of the old dump: no steps from inside a dialog, no Commands or Settings groups.
+  await expect(results(page).getByRole("group", { name: "Commands", exact: true })).toHaveCount(0);
+  await expect(results(page).getByRole("group", { name: "Settings", exact: true })).toHaveCount(0);
+  await expect(results(page).getByRole("option", { name: /^Retry$|^Cancel$/ })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(spotlight(page)).toBeHidden();
+  await open(page);
   // "foc": a command with its state and shortcut, notes with their paths, a snippet, and create and find.
   await search(page, "foc");
   await expect(results(page).getByRole("group", { name: "Top hit" })).toBeVisible();
-  const command = results(page).getByRole("group", { name: "Commands" }).getByRole("option", { name: /^Focus mode/ });
+  const command = option(page, /^Focus mode/);
+  await expect(command).toHaveCount(1);
   await expect(command).toContainText("On");
   await expect(command).toContainText(mac ? "⇧⌘D" : "Ctrl+Shift+D");
   await expect(option(page, /On focus/)).toContainText("essays/on-focus.md · Public");
@@ -242,12 +241,13 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
 
-  // KEY-01: Mod+Shift+P lists every command, each with its shortcut.
+  // KEY-01 (D-361): Mod+Shift+P browses every catalogued action by group, each with its shortcut.
   await open(page, `${mod}+Shift+P`);
-  await expect(field(page)).toHaveAttribute("placeholder", "Run a command or change a setting");
+  await expect(field(page)).toHaveAttribute("placeholder", "Find an action");
+  await expect(option(page, /^Bold/)).toContainText("Select text first");
   await expect(option(page, /^Keyboard shortcuts/)).toContainText(mac ? "⇧⌘/" : "Ctrl+Shift+/");
   await expect(option(page, /^Bold/)).toContainText(mac ? "⌘B" : "Ctrl+B");
-  expect(await results(page).getByRole("option").count()).toBeGreaterThan(100);
+  expect(await results(page).getByRole("option").count()).toBeGreaterThan(30);
   await quit(l);
 });
 
@@ -268,25 +268,21 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
   await expect(results(page).getByRole("option")).toHaveText([/On focus/, /Deep work/]);
   await page.keyboard.press("Escape");
 
-  // > runs a command and shows each command's state; Backspace in the empty field goes back to All.
+  // > browses actions and runs one; Backspace in the empty field goes back to All.
   await open(page);
   await page.keyboard.type(">");
   await expect(field(page)).toHaveValue("");
-  await expect(field(page)).toHaveAttribute("placeholder", "Run a command or change a setting");
-  await page.keyboard.type("light theme");
-  await expect(option(page, /^Light theme/).first()).toBeVisible();
-  await search(page, "switch light", "Switch light and dark");
-  await expect(active(page)).toContainText("Off");
+  await expect(field(page)).toHaveAttribute("placeholder", "Find an action");
+  await search(page, "dark appearance", "Use dark appearance");
   await page.keyboard.press("Shift+Enter");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe("ink");
-  await expect(active(page)).toContainText("On");
+  await expect(spotlight(page)).toBeVisible();
   await field(page).fill("");
   await page.keyboard.press("Backspace");
-  await expect(field(page)).toHaveAttribute("placeholder", "Search notes, commands, and settings");
-
+  await expect(field(page)).toHaveAttribute("placeholder", "Find and act");
   // ? is help: the prefixes and filters, each a row that puts itself into the field.
   await page.keyboard.type("?");
-  await expect(results(page).getByRole("group", { name: "Prefixes and filters" }).getByRole("option").first()).toContainText("Commands and settings");
+  await expect(results(page).getByRole("group", { name: "Prefixes and filters" }).getByRole("option").first()).toContainText("All actions");
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
 
@@ -308,7 +304,7 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
   await search(page, "focus sessions", "Focus sessions");
   // → at the end of the text, or Mod+K, shows the selected result's actions; ← or Esc goes back.
   await page.keyboard.press("ArrowRight");
-  await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
+  await expect(spotlight(page)).toContainText("More actions for “Focus sessions”");
   await expect(results(page).getByRole("option")).toHaveText([
     /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Rename/, /^Move to…/, /^Make public/, /^Show in Files/, /^Delete/,
   ]);
@@ -317,7 +313,7 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
   await page.keyboard.press("ArrowLeft");
   await expect(spotlight(page)).not.toContainText("Actions for");
   await page.keyboard.press(`${mod}+K`);
-  await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
+  await expect(spotlight(page)).toContainText("More actions for “Focus sessions”");
 
   // Copy link: a Markdown link from the open note. The shell's side (`clipboard:write`) is recorded
   // instead of touching the real clipboard, which other programs on the machine can change meanwhile

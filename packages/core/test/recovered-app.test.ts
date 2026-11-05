@@ -123,7 +123,7 @@ describe("QLT-06: Files → Recovered", () => {
     expect(vm(app).available).toBe(false);
   });
 
-  it("the launch toast's Review opens Recovered; its steps stay out of Spotlight", async () => {
+  it("the launch toast's Review opens Recovered; its steps stay out of Actions", async () => {
     const app = await started(setup({ drafts: [IDEAS] }));
     expect(lastToast(app)).toMatchObject({ message: "Kept 1 draft that couldn't go back in its note.", action: { command: "recovery.review" } });
     await app.commands.run("recovery.review");
@@ -134,8 +134,8 @@ describe("QLT-06: Files → Recovered", () => {
     await app.commands.run("spotlight.setQuery", { value: "recovered" });
     const s = app.viewModels.select("vm.spotlight", app.store.state) as { groups?: { items: { id: string }[] }[]; items?: { id: string }[] };
     const ids = JSON.stringify(s);
-    expect(ids).toContain("files.showRecovered");
-    expect(ids).not.toMatch(/files\.(open|save|copy|discard|hide|toggle|close)Recovered/);
+    // Recovered drafts are reached from the launch toast and Files, not listed in Actions (D-361).
+    expect(ids).not.toMatch(/files\.(show|open|save|copy|discard|hide|toggle|close)Recovered/);
   });
 
   it("opens a draft read-only, without its front matter's note ID; back leads to the list with it focused", async () => {
