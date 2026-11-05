@@ -1,0 +1,130 @@
+{
+  "focus": "publishReview",
+  "local": { "open": "", "state": "private", "target": "focus", "images": false, "showPill": true },
+  "root": {
+    "type": "Surface",
+    "props": { "variant": "canvas", "scroll": true },
+    "children": [{
+      "type": "Stack", "id": "publishReview",
+      "props": { "padding": "insetLg", "gap": "stackSection" },
+      "children": [
+        { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+          { "type": "Heading", "props": { "level": "1", "value": { "t": "publishing.mock.title" } } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.safety" }, "tone": "muted" } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p1" }, "tone": "muted" } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p2" }, "tone": "muted" } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p3" }, "tone": "muted" } }
+        ] },
+        { "type": "Inline", "props": { "gap": "inlineGroup", "wrap": true }, "children": [
+          { "type": "Button", "props": { "label": { "t": "publishing.mock.back" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "index" } } } },
+          { "type": "Button", "props": { "label": { "t": "publishing.mock.share" } }, "on": { "press": { "set": "local.open", "to": "share" } } },
+          { "type": "Button", "props": { "label": { "t": "site.preview.title" }, "variant": "subtle" }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.share.preview" } } } },
+          { "type": "MenuButton", "props": { "icon": "more", "label": { "t": "share.mock.more" }, "sections": { "get": "vm.mockPublishing.moreMenu" } }, "on": { "action": { "set": "local.open", "to": { "get": "event.id" } } } }
+        ] },
+        { "type": "FileTree", "id": "publishFiles", "props": {
+          "label": { "t": "share.mock.files" }, "items": { "get": "vm.mockPublishing.tree" }, "focusId": { "get": "local.target" },
+          "menu": { "get": "vm.mockPublishing.rowMenu" }, "menuLabel": { "get": "vm.mockShare.rowMenuLabel" }
+        }, "on": {
+          "select": { "set": "local.target", "to": { "get": "event.id" } },
+          "menuAction": { "set": "local.open", "to": { "get": "event.id" } }
+        } },
+        { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+          { "type": "Heading", "props": { "level": "2", "value": { "t": "publishing.mock.steps" } } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.stepHint" }, "tone": "muted" } },
+          { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "publishing.mock.saved" }, "variant": "subtle" }, "on": { "press": [{ "set": "local.state", "to": "publishing" }, { "set": "local.showPill", "to": true }] } },
+            { "type": "Button", "props": { "label": { "t": "publishing.mock.live" }, "variant": "subtle" }, "on": { "press": [{ "set": "local.state", "to": "live" }, { "set": "local.showPill", "to": true }] } },
+            { "type": "Button", "props": { "label": { "t": "publishing.mock.slow" }, "variant": "subtle" }, "on": { "press": [{ "set": "local.state", "to": "slow" }, { "set": "local.showPill", "to": true }] } },
+            { "type": "Button", "props": { "label": { "t": "publishing.mock.fail" }, "variant": "subtle" }, "on": { "press": [{ "set": "local.state", "to": "failed" }, { "set": "local.showPill", "to": true }] } },
+            { "type": "Button", "props": { "label": { "t": "publishing.mock.removed" }, "variant": "subtle" }, "on": { "press": [{ "set": "local.state", "to": "removed" }, { "set": "local.showPill", "to": true }] } }
+          ] }
+        ] },
+        { "type": "Dialog", "id": "publishConfirmation", "when": { "expr": { "==": [{ "get": "local.open" }, "publish"] } }, "props": {
+          "title": { "t": "publish.title", "args": { "target": { "get": "local.target" } } }, "closeLabel": { "t": "dialog.close" },
+          "open": { "expr": { "==": [{ "get": "local.open" }, "publish"] } }, "size": "s", "height": "content"
+        }, "on": { "openChange": { "set": "local.open", "to": "" } }, "children": [
+          { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+            { "type": "ItemCard", "props": {
+              "title": { "t": "share.mock.name", "args": { "target": { "get": "local.target" } } },
+              "detail": { "t": "publishing.note.detail", "args": { "images": { "get": "local.images" } } },
+              "badge": { "t": "publish.badge" }, "icon": "document"
+            } },
+            { "type": "Text", "props": { "value": { "t": "publish.text", "args": { "target": { "get": "local.target" } } } } },
+            { "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "share.cancel" }, "autoFocus": true }, "on": { "press": { "set": "local.open", "to": "" } } },
+              { "type": "Button", "props": { "label": { "t": "publish.confirm" }, "variant": "primary" }, "on": { "press": [
+                { "set": "local.open", "to": "" }, { "set": "local.state", "to": "saving" }, { "set": "local.showPill", "to": true }
+              ] } }
+            ] }
+          ] }
+        ] },
+        { "type": "Dialog", "id": "publishShare", "when": { "expr": { "==": [{ "get": "local.open" }, "share"] } }, "props": {
+          "title": { "t": "share.dialog.title", "args": { "target": { "get": "local.target" } } }, "closeLabel": { "t": "dialog.close" },
+          "open": { "expr": { "==": [{ "get": "local.open" }, "share"] } }, "size": "s", "height": "content"
+        }, "on": { "openChange": { "set": "local.open", "to": "" } }, "children": [
+          { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+            { "type": "ItemCard", "props": {
+              "title": { "t": "share.mock.name", "args": { "target": { "get": "local.target" } } },
+              "detail": { "t": "publishing.note.detail", "args": { "images": { "get": "local.images" } } },
+              "badge": { "t": "publishing.share.status", "args": { "state": { "get": "local.state" } } }, "icon": "document"
+            } },
+            { "type": "Text", "props": { "value": { "t": "publishing.url", "args": { "target": { "get": "local.target" } } }, "tone": "muted" } },
+            { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+              { "type": "Button", "props": { "label": { "t": "publishing.copy" } }, "on": { "press": [
+                { "set": "local.open", "to": "" },
+                { "set": "local.state", "to": { "expr": { "if": [{ "==": [{ "get": "local.state" }, "live"] }, "copiedLive", "copied"] } } },
+                { "set": "local.showPill", "to": true }
+              ] } },
+              { "type": "Button", "when": { "expr": { "in": [{ "get": "local.state" }, ["live", "copiedLive"]] } },
+                "props": { "label": { "t": "publishing.open" } }, "on": { "press": { "run": "gallery.open", "args": { "id": "mock.share.preview" } } } },
+              { "type": "Button", "when": { "expr": { "==": [{ "get": "local.state" }, "failed"] } },
+                "props": { "label": { "t": "publishing.retry" } }, "on": { "press": [{ "set": "local.state", "to": "saving" }, { "set": "local.showPill", "to": true }] } },
+              { "type": "Button", "props": { "label": { "t": "publishing.unpublish" }, "variant": "subtle" }, "on": { "press": { "set": "local.open", "to": "unpublish" } } }
+            ] }
+          ] }
+        ] },
+        { "type": "Dialog", "id": "unpublishConfirmation", "when": { "expr": { "==": [{ "get": "local.open" }, "unpublish"] } }, "props": {
+          "title": { "t": "publishing.unpublish.title", "args": { "target": { "get": "local.target" } } }, "closeLabel": { "t": "dialog.close" },
+          "open": { "expr": { "==": [{ "get": "local.open" }, "unpublish"] } }, "size": "s", "height": "content"
+        }, "on": { "openChange": { "set": "local.open", "to": "" } }, "children": [
+          { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+            { "type": "ItemCard", "props": {
+              "title": { "t": "share.mock.name", "args": { "target": { "get": "local.target" } } },
+              "detail": { "t": "publishing.note.detail", "args": { "images": false } }, "badge": { "t": "publishing.live" }, "icon": "document"
+            } },
+            { "type": "Text", "props": { "value": { "t": "publishing.unpublish.detail" } } },
+            { "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
+              { "type": "Button", "props": { "label": { "t": "share.cancel" }, "autoFocus": true }, "on": { "press": { "set": "local.open", "to": "" } } },
+              { "type": "Button", "props": { "label": { "t": "publishing.unpublish" }, "variant": "primary" }, "on": { "press": [
+                { "set": "local.open", "to": "" }, { "set": "local.state", "to": "removing" }, { "set": "local.showPill", "to": true }
+              ] } }
+            ] }
+          ] }
+        ] },
+        { "type": "Layer", "props": { "layer": "toast", "position": "bottomCenter" },
+          "when": { "expr": { "and": [{ "get": "local.showPill" }, { "!=": [{ "get": "local.state" }, "private"] }, { "==": [{ "get": "local.open" }, ""] }] } },
+          "children": [{ "type": "NotificationRegion",
+          "props": { "label": { "t": "publishing.notifications" } }, "children": [
+            { "type": "Stack", "children": [{
+              "each": { "get": "vm.mockPublishing.pills" }, "as": "pill", "key": "pill.id",
+              "render": { "type": "Toast", "when": { "expr": { "==": [{ "get": "local.state" }, { "get": "pill.id" }] } }, "props": {
+              "message": { "get": "pill.message" },
+              "tone": { "get": "pill.tone" }, "sticky": true, "dismissLabel": { "t": "toast.dismiss" },
+              "actionLabel": { "get": "pill.action" }
+            }, "on": {
+              "dismiss": { "set": "local.showPill", "to": false },
+              "action": { "set": "local.state", "to": { "expr": { "if": [
+                { "==": [{ "get": "local.state" }, "failed"] }, "saving",
+                { "==": [{ "get": "local.state" }, "live"] }, "copiedLive",
+                { "get": "local.state" }
+              ] } } }
+            } },
+              "empty": { "type": "Text", "props": { "value": { "t": "publishing.mock.safety" } } }
+            }] }
+          ]
+          }]
+        }
+      ]
+    }]
+  }
+}

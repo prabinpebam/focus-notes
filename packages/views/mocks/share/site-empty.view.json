@@ -1,0 +1,27 @@
+{
+  "focus": "siteHome",
+  "local": { "missing": false },
+  "root": {
+    "type": "Surface", "props": { "variant": "canvas", "scroll": true },
+    "children": [{
+      "type": "Stack", "id": "siteHome", "props": { "gap": "stackSection", "padding": "insetLg" },
+      "children": [
+        { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.safety" }, "tone": "muted" } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p1" }, "tone": "muted" } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p2" }, "tone": "muted" } },
+          { "type": "Text", "props": { "value": { "t": "publishing.mock.p3" }, "tone": "muted" } }
+        ] },
+        { "type": "Inline", "props": { "justify": "between", "align": "center", "wrap": true }, "children": [
+          { "type": "Heading", "props": { "level": "1", "value": { "t": "publishing.site.name" } } },
+          { "type": "Button", "props": { "label": { "t": "publishing.home" }, "variant": "subtle" }, "on": { "press": { "set": "local.missing", "to": false } } }
+        ] },
+        { "type": "EmptyState", "when": { "expr": { "!": { "get": "local.missing" } } },
+          "props": { "title": { "t": "publishing.site.empty" }, "detail": { "t": "publishing.site.empty.detail" }, "icon": "document", "size": "view" } },
+        { "type": "EmptyState", "when": { "get": "local.missing" },
+          "props": { "title": { "t": "publishing.site.missing" }, "detail": { "t": "publishing.site.missing.detail" }, "icon": "document", "size": "view", "actionLabel": { "t": "publishing.home" } },
+          "on": { "action": { "set": "local.missing", "to": false } } }
+      ]
+    }]
+  }
+}

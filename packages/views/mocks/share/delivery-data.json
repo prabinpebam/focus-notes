@@ -1,0 +1,26 @@
+{
+  "tree": [
+    { "id": "root", "kind": "section", "level": 1, "label": "Book", "expanded": true, "hasChildren": true },
+    { "id": "focus", "kind": "note", "level": 2, "label": "On focus", "parent": "root", "title": "On focus.md", "current": true },
+    { "id": "ideas", "kind": "note", "level": 2, "label": "Ideas", "parent": "root", "title": "Ideas.md" }
+  ],
+  "pills": [
+    { "id": "saving", "message": "Saving to GitHub…", "action": "", "tone": "progress" },
+    { "id": "publishing", "message": "Publishing… usually about a minute", "action": "", "tone": "progress" },
+    { "id": "live", "message": "Published.", "action": "Copy link", "tone": "success" },
+    { "id": "slow", "message": "Still publishing. GitHub is taking longer than usual.", "action": "", "tone": "warning" },
+    { "id": "failed", "message": "Not live yet.", "action": "Retry", "tone": "error" },
+    { "id": "copied", "message": "Copied. The page will open once publishing finishes.", "action": "", "tone": "info" },
+    { "id": "copiedLive", "message": "Copied.", "action": "", "tone": "success" },
+    { "id": "removing", "message": "Removing from your site…", "action": "", "tone": "progress" },
+    { "id": "removed", "message": "Removed from your site.", "action": "", "tone": "success" }
+  ],
+  "rowMenu": [
+    { "id": "create", "items": [{ "id": "newNote", "label": "New note", "icon": "newNote" }, { "id": "newFolder", "label": "New folder", "icon": "newFolder" }] },
+    { "id": "share", "items": [{ "id": "share", "label": "Share…", "icon": "share" }, { "id": "publish", "label": "Publish…", "icon": "globe" }, { "id": "unpublish", "label": "Unpublish", "icon": "globe" }] },
+    { "id": "edit", "items": [{ "id": "rename", "label": "Rename", "icon": "rename" }, { "id": "delete", "label": "Delete", "icon": "delete" }] }
+  ],
+  "moreMenu": [
+    { "id": "note", "label": "Note", "items": [{ "id": "share", "label": "Share…", "icon": "share" }, { "id": "publish", "label": "Publish…", "icon": "globe" }, { "id": "unpublish", "label": "Unpublish", "icon": "globe" }, { "id": "history", "label": "Version history", "icon": "history" }, { "id": "print", "label": "Print…", "icon": "print" }] }
+  ]
+}
