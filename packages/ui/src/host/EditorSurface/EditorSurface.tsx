@@ -687,6 +687,11 @@ export function EditorSurface({
         return;
       }
       // Rewrite holds its own range while the document scrolls and prompt controls take focus.
+      if (id === "actions.capture") {
+        syncSelection(editor);
+        tracker.current?.refresh();
+        return;
+      }
       if (id === "rewrite.capture") {
         syncSelection(editor);
         const { from, to, empty } = editor.state.selection;

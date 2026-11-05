@@ -357,6 +357,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     if (!s.open) {
       opening = now();
       // What the person was in when they asked (ACT-05): taken before the field takes focus.
+      ctx.editorAction("actions.capture");
       scope = scopeNow();
       scope.aiChecking = Boolean(bridge.ai);
       const captured = ++contextId;

@@ -212,7 +212,12 @@ test("RWR-91, RWR-92: prompt keys never send during IME; write at caret sends no
     await select(page, "Change this part.");
     await page.keyboard.press("ArrowLeft");
     await expect.poll(() => page.evaluate(() => getSelection()?.isCollapsed)).toBe(true);
-    await page.keyboard.press(`${mod}+Shift+R`);
+    await page.keyboard.press(`${mod}+/`);
+    const actions = page.getByRole("dialog", { name: "Actions", exact: true });
+    await actions.getByRole("combobox").fill("write with ai");
+    const write = actions.getByRole("option", { name: /^Write with AI/ });
+    await expect(write).not.toHaveAttribute("aria-disabled", "true");
+    await write.click();
     const dialog = page.getByRole("region", { name: "Write with AI", exact: true });
     await expect(dialog).toBeVisible();
     const prompt = dialog.getByRole("textbox", { name: "Prompt" });

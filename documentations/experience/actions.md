@@ -247,6 +247,8 @@ Shift+Enter retains a toggle's row and query while its acknowledged settings wri
 
 `pnpm check` now includes the catalogue proof tests, failing on a missing proof, command, pointer path or duplicate label. The generic catalogue tests prove listing and blocked reasons; renderer-only outcomes still need the native per-entry evidence in the MACT gate, not just a command event.
 
+The caret's *Write with AI…* row reuses `rewrite.open`, with no note context in its request. *Caption this image with AI…* remains a candidate: there is no caption command in the current app, and this slice does not invent a second AI surface or send an image.
+
 ## Owner decisions (approved defaults, 6 November)
 
 The owner approved the spec on 6 November at 02:07; the recommended default of each question below is the decision.

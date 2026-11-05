@@ -106,6 +106,13 @@ const key = (key: string, mods: Partial<KeyEventLike> = {}): KeyEventLike => ({ 
 const labels = (app: App) => vm(app).items.map((i) => `${i.group}: ${i.label}`);
 
 describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every layout (D-16)", () => {
+  it("finds the caret AI action through the search index when no text is selected", async () => {
+    const { app } = await started();
+    await app.commands.run("format.setState", { selection: false, toolbar: false });
+    await app.commands.run("spotlight.open");
+    await type(app, "write with ai");
+    expect(vm(app).items.some((i) => i.label === "Write with AI…")).toBe(true);
+  });
   it("finds the GitHub project opener by its full label through the search index", async () => {
     const { app } = await started();
     await app.commands.run("spotlight.open");
