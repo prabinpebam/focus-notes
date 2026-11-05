@@ -69,12 +69,15 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
   const lastNoteFile = join(app.getPath("userData"), DATA_FILES.projectLastNote);
   type Recent = { rank: number; pinned: boolean; notes: { path: string; rank: number; pinned: boolean }[] };
+  let ownRecent: Recent | undefined;
   const halfLife = 14 * 24 * 60 * 60 * 1000;
   const addScore = (rank: number, points: number) => {
     const now = Date.now();
     return now + halfLife * Math.log2((rank ? Math.pow(2, (rank - now) / halfLife) : 0) + points);
   };
   async function recent(profile: string): Promise<Recent> {
+    // This profile has one writer. Other project processes' records are always read from disk.
+    if (profile === app.getPath("userData") && ownRecent) return structuredClone(ownRecent);
     try {
       if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
       const encrypted = await readFile(join(profile, DATA_FILES.projectRecent), "utf8");
@@ -94,6 +97,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       ? `dpapi:${await windowsProtectedRecent(Buffer.from(content, "utf8").toString("base64"), true)}`
       : safeStorage.encryptString(content).toString("base64");
     await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
+    if (profile === app.getPath("userData")) ownRecent = structuredClone(record);
   }
   let recentWrites = Promise.resolve();
   function score(path: string, points: number) {
@@ -109,13 +113,23 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     recentWrites = write.catch(error => { console.error("Could not persist project ranking:", error instanceof Error ? error.name : "Error"); });
     return write;
   }
-  async function lastRecord(): Promise<{ path: string; position?: { from: number; to: number; scroll: number } } | undefined> {
+  type LaunchRecord = { path: string; position?: { from: number; to: number; scroll: number } };
+  let launchRecord: Promise<LaunchRecord | undefined> | undefined;
+  async function readLastRecord(): Promise<LaunchRecord | undefined> {
     let encrypted: string;
     try { encrypted = await readFile(lastNoteFile, "utf8"); }
     catch (error) { if (missing(error)) return; throw error; }
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
     const value = safeStorage.decryptString(Buffer.from(encrypted, "base64"));
     return value.startsWith("{") ? JSON.parse(value) : { path: value };
+  }
+  function lastRecord(): Promise<LaunchRecord | undefined> {
+    if (launchRecord) return launchRecord;
+    const reading = readLastRecord();
+    launchRecord = reading;
+    // The returned read still rejects; only its cache is cleared so a Retry can read again.
+    void reading.catch(() => { if (launchRecord === reading) launchRecord = undefined; });
+    return reading;
   }
   async function lastNote() { return (await lastRecord())?.path; }
   async function position(path: string) {
@@ -126,7 +140,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
     const savedPosition = snapshot ?? await position(path);
-    await atomicWrite(lastNoteFile, safeStorage.encryptString(JSON.stringify({ path, position: savedPosition })).toString("base64"));
+    const record = { path, position: savedPosition };
+    await atomicWrite(lastNoteFile, safeStorage.encryptString(JSON.stringify(record)).toString("base64"));
+    launchRecord = Promise.resolve(record);
     if (!snapshot) await score(path, 1);
   }
   async function closed() {
