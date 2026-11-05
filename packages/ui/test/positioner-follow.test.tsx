@@ -99,4 +99,55 @@ describe("a Positioner when the note scrolls in a frame's callback (DEF-25)", ()
     expect(el.firstElementChild?.getAttribute("aria-hidden")).toBeNull();
     expect(parseFloat(el.style.getPropertyValue(name(s.yVar))) + 210).toBeLessThanOrEqual(bottom);
   });
+
+  it("D-266: a renewed focus request reveals the retained fragment before restoring prompt focus", () => {
+    let fragmentBottom = 200;
+    const reveal = vi.fn(() => { fragmentBottom = 200; });
+    const read = () => ({
+      left: 100, right: 250, top: fragmentBottom - 20, bottom: fragmentBottom,
+      fragments: [{ left: 100, right: 250, top: fragmentBottom - 20, bottom: fragmentBottom }],
+      viewport: { left: 0, right: 480, top: 0, bottom: 800 }, reveal,
+    });
+    anchors.set("rewrite", read(), read);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => new DOMRect(0, 0, 360, 100));
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    const render = (focusRequest: number) => act(() => root!.render(createElement(Positioner, {
+      anchor: "rewrite", focusRequest, returnAboveLabel: "Return above", returnBelowLabel: "Return below",
+    }, createElement("textarea", { defaultValue: "Retained draft" }))));
+    render(1);
+    expect(reveal).not.toHaveBeenCalled();
+    const el = host.querySelector<HTMLElement>("[data-selection-popover]")!;
+    const area = el.querySelector("textarea")!;
+    act(() => area.focus());
+    fragmentBottom = -100;
+    act(() => anchors.moved());
+    expect(el.dataset.edge).toBe("top");
+    expect(document.activeElement).not.toBe(area);
+
+    render(2);
+    expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ fragment: 0 }));
+    expect(el.dataset.edge).toBeUndefined();
+    expect(el.firstElementChild?.getAttribute("aria-hidden")).toBeNull();
+    expect(document.activeElement).toBe(area);
+    expect(area.value).toBe("Retained draft");
+    render(2);
+    expect(reveal).toHaveBeenCalledOnce();
+    fragmentBottom = -100;
+    render(3);
+    expect(reveal).toHaveBeenCalledTimes(2);
+    expect(el.dataset.edge).toBeUndefined();
+    expect(document.activeElement).toBe(area);
+
+    fragmentBottom = -100;
+    act(() => anchors.moved());
+    const content = el.firstElementChild as HTMLElement;
+    content.style.visibility = "hidden";
+    render(4);
+    expect(document.activeElement).not.toBe(area);
+    content.style.visibility = "visible";
+    act(() => content.dispatchEvent(new Event("transitionend", { bubbles: true })));
+    expect(document.activeElement).toBe(area);
+  });
 });

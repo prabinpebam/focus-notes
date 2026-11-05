@@ -15,6 +15,7 @@ export const contract = defineContract({
     label: { kind: "message", requiredWhen: "landmark" },
     returnAboveLabel: { kind: "message", description: "Return to the selection above the viewport (Rewrite)." },
     returnBelowLabel: { kind: "message", description: "Return to the selection below the viewport (Rewrite)." },
+    focusRequest: { kind: "number", description: "Each new value reveals Rewrite's retained fragment before its field receives focus." },
   },
   events: { dismiss: {} },
   slots: { default: { accepts: "any", max: 1 } },

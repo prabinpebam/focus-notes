@@ -182,6 +182,7 @@ test("D-265, D-266: inline Rewrite follows visible selection, confirms draft los
         await expect(loss.getByRole("button", { name: "Keep editing", exact: true }).last()).toBeFocused();
         await expect(loss.getByText("Deselecting this text will lose your written prompt.")).toBeVisible();
         if (captureDir) await loss.screenshot({ path: join(captureDir, `popover-loss-${theme}.png`), animations: "disabled" });
+        await page.locator("[data-editor-scroller]").evaluate(el => { el.scrollTop = el.scrollHeight; });
         await page.keyboard.press("Escape");
         await expect(loss).toBeHidden();
         await expect(prompt.getByRole("textbox", { name: "Prompt" })).toBeFocused();

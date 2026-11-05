@@ -9,7 +9,7 @@
     "children": [
       {
         "type": "Positioner", "id": "rewrite", "when": { "get": "vm.rewrite.open" },
-        "props": { "anchor": "rewrite", "placement": "below", "align": "start", "landmark": "region", "label": { "get": "vm.rewrite.title" }, "returnAboveLabel": { "t": "rewrite.returnAbove" }, "returnBelowLabel": { "t": "rewrite.returnBelow" } },
+        "props": { "anchor": "rewrite", "placement": "below", "align": "start", "landmark": "region", "label": { "get": "vm.rewrite.title" }, "returnAboveLabel": { "t": "rewrite.returnAbove" }, "returnBelowLabel": { "t": "rewrite.returnBelow" }, "focusRequest": { "get": "vm.rewrite.focusRequest" } },
         "on": { "dismiss": { "run": "rewrite.dismiss" } },
         "children": [{
           "type": "Surface", "props": { "variant": "frost", "shape": "popover", "elevation": "2", "padding": "m", "keyScope": "rewritePrompt" },

@@ -24,6 +24,8 @@ export interface PositionerProps {
   /** Names the single edge-pinned return action in each direction. */
   returnAboveLabel?: string;
   returnBelowLabel?: string;
+  /** Each new value reveals Rewrite's retained fragment before its field receives focus. */
+  focusRequest?: number;
   /** Escape inside this non-modal task dismisses it; document clicks are handled by the editor. */
   onDismiss?: () => void;
   children?: ReactNode;
@@ -35,14 +37,20 @@ const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
  * Anchors floating content to a range in the note (Components → Positioner): centered on it, never
  * covering it, kept on screen, following it as it scrolls, and hidden while it's out of view.
  */
-export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "s", landmark = "none", label, id, children, onDismiss, returnAboveLabel, returnBelowLabel }: PositionerProps) {
+export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "s", landmark = "none", label, id, children, onDismiss, returnAboveLabel, returnBelowLabel, focusRequest }: PositionerProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const edgeRef = useRef<HTMLDivElement | null>(null);
   const [edge, setEdge] = useState<"top" | "bottom" | undefined>();
   const retainedFocus = useRef<HTMLElement | null>(null);
   const returning = useRef(false);
+  const lastFocusRequest = useRef(focusRequest);
   const returnPosition = useRef({ fragment: 0, side: "below" as "above" | "below", edge: 0, gap: 0, viewportTop: 0, viewportBottom: 0 });
+  const returnToSelection = () => {
+    returning.current = true;
+    anchors.get("rewrite")?.reveal?.(returnPosition.current);
+    anchors.moved();
+  };
   useLayoutEffect(() => {
     if (edge) {
       const active = document.activeElement;
@@ -51,8 +59,21 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
         edgeRef.current?.querySelector("button")?.focus({ preventScroll: true });
       }
     } else if (returning.current || edgeRef.current?.contains(document.activeElement)) {
-      (retainedFocus.current ?? contentRef.current?.querySelector("textarea"))?.focus({ preventScroll: true });
+      const target = retainedFocus.current ?? contentRef.current?.querySelector("textarea");
       returning.current = false;
+      // Visibility transitions start hidden; focus only once the revealed content can take it.
+      const content = contentRef.current;
+      if (content && getComputedStyle(content).visibility === "hidden") {
+        const revealed = (event: TransitionEvent) => {
+          if (event.target === content && getComputedStyle(content).visibility === "visible") {
+            target?.focus({ preventScroll: true });
+            content.removeEventListener("transitionend", revealed);
+          }
+        };
+        content.addEventListener("transitionend", revealed);
+        return () => content.removeEventListener("transitionend", revealed);
+      }
+      target?.focus({ preventScroll: true });
     }
   }, [edge]);
   useLayoutEffect(() => {
@@ -205,6 +226,34 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       }
     };
   }, [anchor, placement, align]);
+  useLayoutEffect(() => {
+    const changed = lastFocusRequest.current !== focusRequest;
+    lastFocusRequest.current = focusRequest;
+    if (anchor !== "rewrite" || !focusRequest || !changed) return;
+    const el = ref.current;
+    if (!el) return;
+    const restore = () => {
+      retainedFocus.current = contentRef.current?.querySelector("textarea") ?? null;
+      // A modal can close before the scroll event has placed the retained fragment again.
+      anchors.moved();
+      if (el.dataset.edge) returnToSelection();
+      else retainedFocus.current?.focus({ preventScroll: true });
+    };
+    const modal = el.ownerDocument.querySelector("[data-dialog-modal]");
+    if (!modal) return void restore();
+    let frame = 0;
+    // The exiting modal owns focus until it unmounts; its FocusScope restores on the next frame.
+    const observer = new MutationObserver(() => {
+      if (modal.isConnected) return;
+      observer.disconnect();
+      frame = requestAnimationFrame(restore);
+    });
+    observer.observe(el.ownerDocument.body, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [anchor, focusRequest]);
 
   const leave = () => window.dispatchEvent(new Event(COMPANION_LEAVE_EVENT));
   return (
@@ -241,11 +290,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
           <div ref={edgeRef} className={s.returnAction} inert={!edge} aria-hidden={!edge}>
             <Button label={(edge === "top" ? returnAboveLabel : returnBelowLabel) ?? label ?? ""}
               icon={edge === "top" ? "arrowUp" : "arrowDown"}
-              onPress={() => {
-                returning.current = true;
-                anchors.get("rewrite")?.reveal?.(returnPosition.current);
-                anchors.moved();
-              }} />
+              onPress={returnToSelection} />
           </div>
         </> : children}
       </div>

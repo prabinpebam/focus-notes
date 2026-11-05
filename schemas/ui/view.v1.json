@@ -10957,6 +10957,16 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": []
