@@ -1438,6 +1438,52 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "repo": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "repoLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "stats": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "statsBusy": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -1455,6 +1501,9 @@
               "$ref": "#/$defs/actions"
             },
             "reveal": {
+              "$ref": "#/$defs/actions"
+            },
+            "openRepo": {
               "$ref": "#/$defs/actions"
             }
           }
