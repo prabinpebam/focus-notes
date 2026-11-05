@@ -39,18 +39,21 @@ function fakeOllama(answer: string[]) {
 }
 
 async function select(page: Page, text: string) {
-  await page.getByRole("textbox", { name: "Note" }).focus();
   await page.evaluate((text) => {
-    const root = document.querySelector("[data-editor]")!;
+    const root = document.querySelector<HTMLElement & {
+      editor?: {
+        view: { posAtDOM: (node: Node, offset: number) => number; focus: () => void };
+        commands: { setTextSelection: (range: { from: number; to: number }) => boolean };
+      };
+    }>("[data-editor]");
+    const editor = root?.editor;
+    if (!root || !editor) throw new Error("The note editor is not mounted");
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const i = n.textContent!.indexOf(text);
       if (i < 0) continue;
-      const r = document.createRange();
-      r.setStart(n, i);
-      r.setEnd(n, i + text.length);
-      getSelection()!.removeAllRanges();
-      getSelection()!.addRange(r);
+      editor.commands.setTextSelection({ from: editor.view.posAtDOM(n, i), to: editor.view.posAtDOM(n, i + text.length) });
+      editor.view.focus();
       return;
     }
     throw new Error(`"${text}" isn't in the note`);

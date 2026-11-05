@@ -236,11 +236,29 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       retainedFocus.current = contentRef.current?.querySelector("textarea") ?? null;
       // A modal can close before the scroll event has placed the retained fragment again.
       anchors.moved();
-      if (el.dataset.edge) returnToSelection();
-      else retainedFocus.current?.focus({ preventScroll: true });
+      if (el.dataset.edge) {
+        // Own focus while the retained field is off screen; otherwise the closing modal restores
+        // the note and its caret scroll interrupts the return to this fragment.
+        edgeRef.current?.querySelector("button")?.focus({ preventScroll: true });
+        returnToSelection();
+      } else retainedFocus.current?.focus({ preventScroll: true });
     };
-    const modal = el.ownerDocument.querySelector("[data-dialog-modal]");
-    if (!modal) return void restore();
+    const doc = el.ownerDocument;
+    const modal = doc.querySelector("[data-dialog-modal]");
+    // A conditionally removed modal can already be absent here while its FocusScope still owns
+    // restoration. Use its cancellable handoff instead of racing its pending frame to the note.
+    const restoreEvent = "react-aria-focus-scope-restore";
+    const onRestore = (event: Event) => {
+      event.preventDefault();
+      restore();
+    };
+    const offRestore = () => doc.removeEventListener(restoreEvent, onRestore, true);
+    doc.addEventListener(restoreEvent, onRestore, { capture: true, once: true });
+    if (!modal) {
+      restore();
+      if (el.contains(doc.activeElement)) offRestore();
+      return offRestore;
+    }
     let frame = 0;
     // The exiting modal owns focus until it unmounts; its FocusScope restores on the next frame.
     const observer = new MutationObserver(() => {
@@ -252,6 +270,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
+      offRestore();
     };
   }, [anchor, focusRequest]);
 
