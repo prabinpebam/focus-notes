@@ -6,17 +6,19 @@ import { fileURLToPath } from "node:url";
 import { test, expect } from "./fixtures.ts";
 import { fileRow, launch, quit, tempDirs } from "./helpers.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
-import { pointerModality, settled } from "./visual-quality.ts";
+import { pointerModality, scrollbarClearOfCorners, settled } from "./visual-quality.ts";
+import { LONG_NOTE } from "./surfaces.ts";
 import type { Locator } from "@playwright/test";
 import { configure, git, instance } from "./instance.ts";
 
 for (const appearance of ["light", "dark"]) test(`Project outline is solid and 3 px without moving the writing surface in ${appearance}`, async () => {
   const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), LONG_NOTE);
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
     version: 1, appearance,
     projectSettings: { [dirs.docs]: { name: "Sample project", accent: "blue", logo: "rocket", watermark: "off", font: "app", theme: appearance === "light" ? "paper" : "ink" } },
   }));
-  const l = await launch(dirs);
+  const l = await launch(dirs, { FOCUS_NOTES_DISABLE_GPU: "1" });
   try {
     await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
     const root = l.page.locator("[data-app-root]");
@@ -24,12 +26,15 @@ for (const appearance of ["light", "dark"]) test(`Project outline is solid and 3
     const drawn = await root.evaluate((el) => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
-      return { shadow: cs.boxShadow, border: cs.borderTopWidth, left: r.left, top: r.top };
+      return { outline: cs.outlineWidth, color: cs.outlineColor, style: cs.outlineStyle, border: cs.borderTopWidth, left: r.left, top: r.top };
     });
-    expect(drawn.shadow).toMatch(/rgb\(\d+, \d+, \d+\) 0px 0px 0px 3px/);
+    expect(drawn).toMatchObject({ outline: "3px", style: "solid" });
+    expect(drawn.color).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
     expect(drawn.border).toBe("0px");
     if (process.platform !== "darwin") expect({ left: drawn.left, top: drawn.top }).toEqual({ left: 16, top: 16 });
+    await l.page.waitForFunction(() => !document.querySelector("[data-editor-scroller]")!.hasAttribute("data-scrolling"));
     await l.page.screenshot({ path: `../../test-results/screens/project-outline-${appearance}.png` });
+    expect(await scrollbarClearOfCorners(l.page)).toEqual([]);
   } finally {
     try { await quit(l); }
     finally {
