@@ -1,0 +1,927 @@
+{
+  "restore": {
+    "heading": "Changed your mind?",
+    "body": "GitHub keeps a deleted repository for 90 days. Restore it from your GitHub settings, then restore the folder from the Recycle Bin and open it again.",
+    "limits": "It can take up to an hour to appear there. A repository that still has forks can't be restored, and team access doesn't come back.",
+    "github": "Restore on GitHub",
+    "bin": "Open Recycle Bin"
+  },
+  "states": {
+    "check": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Nothing is deleted yet.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Asking GitHub…",
+          "state": "Working",
+          "icon": "github",
+          "tone": "accent",
+          "busy": true
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Stop",
+          "label": "Stop",
+          "variant": "secondary"
+        }
+      ]
+    },
+    "github": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "prabin/garden-notes is deleted. Delete the private repository on GitHub to go on.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Waiting for you on GitHub",
+          "state": "Working",
+          "icon": "github",
+          "tone": "accent",
+          "busy": true
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Stop",
+          "label": "Stop",
+          "variant": "subtle"
+        },
+        {
+          "id": "Open on GitHub",
+          "label": "Open on GitHub",
+          "variant": "secondary",
+          "icon": "github"
+        }
+      ]
+    },
+    "local": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Both repositories are deleted on GitHub.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "Moving 248 files…",
+          "state": "Working",
+          "icon": "folder",
+          "tone": "accent",
+          "busy": true
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": []
+    },
+    "offline": {
+      "problem": "You're offline. Connect to the internet, then try again.",
+      "problemTone": "danger",
+      "problemIcon": "cloudOff",
+      "problemAction": "Try again",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Nothing is deleted yet.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "No connection",
+          "state": "Failed",
+          "icon": "error",
+          "tone": "danger",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Close",
+          "label": "Close",
+          "variant": "subtle"
+        }
+      ]
+    },
+    "rights": {
+      "problem": "GitHub only lets an admin delete prabin/garden-notes-private, and @prabin isn't one. Ask its owner for admin access, or keep the private notes.",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "Try again",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Nothing is deleted yet.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "@prabin can't delete prabin/garden-notes-private",
+          "state": "Failed",
+          "icon": "error",
+          "tone": "danger",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Close",
+          "label": "Close",
+          "variant": "subtle"
+        },
+        {
+          "id": "Keep private notes",
+          "label": "Keep private notes",
+          "variant": "secondary"
+        }
+      ]
+    },
+    "gone": {
+      "problem": "",
+      "problemTone": "info",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "prabin/garden-notes was already gone from GitHub, so there was nothing to delete there.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Already gone from GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Waiting for you on GitHub",
+          "state": "Working",
+          "icon": "github",
+          "tone": "accent",
+          "busy": true
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Stop",
+          "label": "Stop",
+          "variant": "subtle"
+        },
+        {
+          "id": "Open on GitHub",
+          "label": "Open on GitHub",
+          "variant": "secondary",
+          "icon": "github"
+        }
+      ]
+    },
+    "busy": {
+      "problem": "GitHub isn't answering right now. Focus Notes checks again at 16:42 and deletes nothing more until it can.",
+      "problemTone": "warning",
+      "problemIcon": "warning",
+      "problemAction": "Check now",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "prabin/garden-notes is deleted. Everything else is still here.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "GitHub is busy. Checking again at 16:42",
+          "state": "Paused",
+          "icon": "github",
+          "tone": "warning",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Stop",
+          "label": "Stop",
+          "variant": "subtle"
+        }
+      ]
+    },
+    "locked": {
+      "problem": "north-beds.md is open in another app. Close it there, then try again.",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "Try again",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Both repositories are deleted on GitHub. The folder is still on this computer.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "north-beds.md is in use",
+          "state": "Failed",
+          "icon": "error",
+          "tone": "danger",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Close",
+          "label": "Close",
+          "variant": "subtle"
+        },
+        {
+          "id": "Keep the folder",
+          "label": "Keep the folder",
+          "variant": "secondary"
+        },
+        {
+          "id": "Show folder",
+          "label": "Show folder",
+          "variant": "secondary",
+          "icon": "folder"
+        }
+      ]
+    },
+    "noBin": {
+      "problem": "This drive has no Recycle Bin, and Focus Notes never deletes a folder for good. Delete it yourself, or keep it.",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Both repositories are deleted on GitHub. The folder is still on this computer.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "No Recycle Bin on drive E:",
+          "state": "Failed",
+          "icon": "error",
+          "tone": "danger",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Close",
+          "label": "Close",
+          "variant": "subtle"
+        },
+        {
+          "id": "Keep the folder",
+          "label": "Keep the folder",
+          "variant": "secondary"
+        },
+        {
+          "id": "Show folder",
+          "label": "Show folder",
+          "variant": "secondary",
+          "icon": "folder"
+        }
+      ]
+    },
+    "partial": {
+      "problem": "prabin/garden-notes-private is still on GitHub. Try again there, or keep the private notes.",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "Open on GitHub",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "prabin/garden-notes is deleted, and that can't be undone here. The private notes and the folder are still here.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Still on GitHub",
+          "state": "Failed",
+          "icon": "error",
+          "tone": "danger",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Close",
+          "label": "Close",
+          "variant": "subtle"
+        },
+        {
+          "id": "Keep private notes",
+          "label": "Keep private notes",
+          "variant": "secondary"
+        }
+      ]
+    },
+    "resume": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Finish deleting Garden notes?",
+      "summary": "Focus Notes closed before it finished. Both repositories are deleted on GitHub. The folder is still on this computer.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "E:\\Notes\\Garden notes",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Not now",
+          "label": "Not now",
+          "variant": "subtle"
+        },
+        {
+          "id": "Keep the folder",
+          "label": "Keep the folder",
+          "variant": "secondary"
+        },
+        {
+          "id": "Finish deleting",
+          "label": "Finish deleting",
+          "variant": "danger",
+          "icon": "delete"
+        }
+      ]
+    },
+    "keptPrivate": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": true,
+      "title": "Garden notes is deleted",
+      "summary": "prabin/garden-notes is deleted on GitHub, and the folder is in the Recycle Bin. The private notes are kept.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Kept, in E:\\Notes\\Garden notes (private notes)",
+          "state": "Skipped",
+          "icon": "minimize",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "In the Recycle Bin",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Done",
+          "label": "Done",
+          "variant": "primary"
+        }
+      ]
+    },
+    "localOnly": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": false,
+      "title": "Deleting Garden notes",
+      "summary": "Garden notes is only on this computer, so nothing changes on GitHub.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Not on GitHub",
+          "state": "Skipped",
+          "icon": "minimize",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete it on GitHub",
+          "detail": "Not on GitHub",
+          "state": "Skipped",
+          "icon": "minimize",
+          "tone": "neutral",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "Moving 248 files…",
+          "state": "Working",
+          "icon": "folder",
+          "tone": "accent",
+          "busy": true
+        },
+        {
+          "id": "s3",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Waiting",
+          "icon": "circle",
+          "tone": "neutral",
+          "busy": false
+        }
+      ],
+      "actions": []
+    },
+    "done": {
+      "problem": "",
+      "problemTone": "danger",
+      "problemIcon": "error",
+      "problemAction": "",
+      "restore": true,
+      "title": "Garden notes is deleted",
+      "summary": "prabin/garden-notes and prabin/garden-notes-private are deleted on GitHub, and the folder is in the Recycle Bin.",
+      "steps": [
+        {
+          "id": "s0",
+          "label": "Check you can delete it",
+          "detail": "Signed in as @prabin, an admin of both repositories",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s1",
+          "label": "Delete prabin/garden-notes on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s2",
+          "label": "Delete prabin/garden-notes-private on GitHub",
+          "detail": "Deleted on GitHub",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s3",
+          "label": "Move the folder to the Recycle Bin",
+          "detail": "In the Recycle Bin",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        },
+        {
+          "id": "s4",
+          "label": "Remove it from Recent and pinned",
+          "detail": "",
+          "state": "Done",
+          "icon": "check",
+          "tone": "success",
+          "busy": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "Done",
+          "label": "Done",
+          "variant": "primary"
+        }
+      ]
+    }
+  }
+}

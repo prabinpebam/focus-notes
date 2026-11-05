@@ -209,6 +209,109 @@ The dialog is one shared view part (`project.delete` in `packages/views`). The m
 | Private deletion incomplete | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.deleteErrPartialGithub&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.deleteErrPartialGithub&scheme=dark) |
 | Stopped | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.deleteCancelled&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.deleteCancelled&scheme=dark) |
 
+### Progress, failures, recovery
+
+**Strict design, waiting for the owner's review** (asked for 5 November 2026, 21:10). Mocks only: nothing here is wired. The approved dialog's wiring and the offline Recycle Bin path go ahead without it. The owner's words, verbatim:
+
+```text
+the screen that shows the deletion in progress with the steps indicated and each step being processed. Different failure modes, edge cases, what happens if the process gets interrupted etc. What are the various recovery modes and paths on error. What would be the final msg after successful deletion? I believe we should also show the option to recover that GitHub allows and the process to do that. I would want to review that screen.
+```
+
+After the typed confirmation, the dialog becomes one list of every step in the run, from the access check to the Recent and pinned lists. Each step shows its own state, and one line under the list says what's already gone. It replaces the approved dialog's separate GitHub cards and local progress with a single list, while keeping the approved hand-off: Focus Notes never deletes a repository itself (DD-PROJ-12). A "Delete … on GitHub" step works while the person is on GitHub's Danger Zone, and it's done only after they confirm it (DD-PROJ-13).
+
+#### Steps and their states
+
+| Step | What it does | How it stays safe to repeat |
+| --- | --- | --- |
+| Check you can delete it | Reads each chosen repository and the signed-in account's rights (`GET /repos/{owner}/{repo}`, its `permissions.admin`), with the scopes the app already has. | Read-only. |
+| Delete ⟨owner/repo⟩ on GitHub | Opens Danger Zone for that repository, checks about every 5 seconds, and is done after the person presses **I deleted it** once GitHub stops showing the repository. | A repository already recorded as deleted is never opened or asked about again. |
+| Delete ⟨owner/repo-private⟩ on GitHub | The same, only when the person chose to delete the private notes. Otherwise it's **Skipped** and names where the kept copy now lives. | The same. |
+| Move the folder to the Recycle Bin | Re-checks the folder's identity, finishes writes, stops the watcher and Git, then recycles the folder. | When the folder is already gone from its path, the step is done; a different folder at that path is never touched. |
+| Remove it from Recent and pinned | Forgets the project's rows and setup. | Removing a row that isn't there is a no-op. |
+
+| State | Mark | Meaning |
+| --- | --- | --- |
+| Waiting | Empty circle, neutral | Not started. |
+| Working | Accent spinner | Running now. Only one step at a time, and no percentage (DD-PROJ-14). |
+| Done | Check, success | Finished; its detail says what happened ("Deleted on GitHub", "In the Recycle Bin"). |
+| Paused | Warning | Waiting on something outside, with the time of the next check. |
+| Failed | Error, danger | Stopped here; the line under the list names the cause and one recovery. |
+| Skipped | Minus, neutral | Not needed: a project only on this computer, or private notes kept. |
+
+The StepMark's accessible name is the state, read before the step's label. Every state change keeps the previous frame until the next one is drawn, and a step that finishes in under 200 ms still shows Done (the ui-states and perceived-performance rules). The access check is a *responsive* wait; the GitHub steps are *waiting*, held by the person, with Stop always available.
+
+#### Failures and how to recover
+
+Every failure says what's already gone, and keeps everything else. **Close** never undoes a finished step, and never starts a new one.
+
+| Failure | What's already gone | Recovery | Mock |
+| --- | --- | --- | --- |
+| Offline | Nothing. | **Try again** once connected, or Close. | `runOffline` |
+| Not an admin, or an organisation's policy | Nothing. | Ask the repository's owner for admin access, then **Try again**; or **Keep private notes** when only the private repository is blocked. | `runRights` |
+| Repository already gone | Nothing yet from this run. | Counted as done (below), and the run goes on. **Open on GitHub** stays available to check. | `runGone` |
+| Rate limit or a GitHub error (5xx) | Whatever is already done. | Pauses until the time GitHub gives, then checks by itself; **Check now** or Stop. Nothing more is deleted while it waits. | `runBusy` |
+| A file in the folder is in use | Both repositories, if they were chosen. | Close the named file in the other app, then **Try again**; **Keep the folder**; **Show folder**. | `runLocked` |
+| No Recycle Bin on that drive | Both repositories, if they were chosen. | Focus Notes never deletes a folder for good. **Keep the folder** (the project leaves Focus Notes, and the folder stays), or **Show folder** to delete it by hand. | `runNoBin` |
+| Partial: one repository deleted, the other still there | The first repository, which can't be undone here. | **Open on GitHub** to try the other again, or **Keep private notes** and finish. The deleted repository is never recreated as a rollback. | `runPartial` |
+
+The owner asked for "the GitHub token lacks the delete_repo scope". With the approved hand-off the app never needs `delete_repo`, so that case can't happen; the same need is met by "not an admin, or an organisation's policy", which GitHub enforces in Danger Zone.
+
+#### Interrupted
+
+If Focus Notes quits or crashes mid-way, the next start shows **Finish deleting Garden notes?** with the same list: what's done, what's left, **Finish deleting** (danger), **Keep the folder** and **Not now**. It shows in the project's window when the folder is still there, otherwise over Open. A small record in the app's data holds only:
+
+- the targets' identities: the folder's path and identity, each repository's ID and name, and the private-notes choice;
+- the completed steps.
+
+There are no credentials and no note content. Every step re-checks before it acts, so finishing never repeats a destructive step on something already deleted. After finishing, or **Keep the folder**, the record is removed. **Not now** asks again at the next start. (`runResume`)
+
+#### When it's done
+
+The final screen, written with the ui-copy rules:
+
+- **Title:** Garden notes is deleted
+- **Line:** prabin/garden-notes and prabin/garden-notes-private are deleted on GitHub, and the folder is in the Recycle Bin. (When private notes were kept: "…The private notes are kept.")
+- **Changed your mind?** GitHub keeps a deleted repository for 90 days. Restore it from your GitHub settings, then restore the folder from the Recycle Bin and open it again.
+- **Caption:** It can take up to an hour to appear there. A repository that still has forks can't be restored, and team access doesn't come back.
+- **Restore on GitHub** · **Open Recycle Bin** · **Done**
+
+**Done** goes to Open, full size, with no second pill: the final screen is the confirmation (`runDone`, `runKeptPrivate`). A project only on this computer has no GitHub steps (each one is Skipped) and no "Restore on GitHub" (`runLocalOnly`).
+
+#### Restoring, from GitHub's documentation
+
+- **How long:** a deleted repository can be restored within 90 days, unless it was part of a fork network that isn't empty now. It can take up to an hour after deletion before it shows up to restore. Restoring doesn't bring back team permissions. ([Restoring a deleted repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/restoring-a-deleted-repository))
+- **Where:** a personal repository is under profile picture → Settings → Repositories → Deleted repositories (`https://github.com/settings/deleted_repositories`); an organisation's is under the organisation's Settings → Deleted repositories (`https://github.com/organizations/<org>/settings/deleted_repositories`). There, **Restore**, then **I understand, restore this repository**.
+- **Forks:** deleting a private repository deletes its forks; a public repository's forks stay. ([Deleting a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/deleting-a-repository))
+- **Restore on GitHub** opens the right page for the repository's owner through the safe external-link route. **Open Recycle Bin** opens the Windows Recycle Bin; that's a new, small main-process capability, built only once the owner approves this screen.
+
+**Re-linking (proposed).** Focus Notes doesn't watch GitHub or re-link by itself. After restoring on GitHub, the person restores the folder from the Recycle Bin and opens it: its Git remote still points at the same repository, so it shows as on GitHub again. Without the folder, **Open from GitHub** clones the restored repository. No new state, and nothing that could quietly re-create a project the person deleted.
+
+#### What this changes in the approved design (D-pending, for the owner)
+
+1. **A resumable record.** It replaces "No stored progress" in As built: identities and completed steps only.
+2. **Already gone counts as done.** This is the owner's request. It narrows DD-PROJ-13: the typed confirmation already named that repository, so a 404 while the account still answers marks it done with "Already gone from GitHub". The folder only goes to the Recycle Bin, which can be undone. When the account doesn't answer, it's still **Sign in again**.
+3. **A final screen with restore.** It replaces DD-PROJ-16's success pill: the dialog ends on "⟨name⟩ is deleted", then Open with no pill.
+4. **No automatic re-link.** As above.
+
+#### Progress mock links
+
+| State | Light | Dark |
+| --- | --- | --- |
+| Checking access | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runCheck&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runCheck&scheme=dark) |
+| One deleted, waiting on GitHub | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runGithub&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runGithub&scheme=dark) |
+| Moving to the Recycle Bin | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runLocal&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runLocal&scheme=dark) |
+| Only on this computer | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runLocalOnly&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runLocalOnly&scheme=dark) |
+| Offline | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runOffline&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runOffline&scheme=dark) |
+| Not an admin | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runRights&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runRights&scheme=dark) |
+| Already gone | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runGone&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runGone&scheme=dark) |
+| Rate limit or GitHub error | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runBusy&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runBusy&scheme=dark) |
+| File in use | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runLocked&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runLocked&scheme=dark) |
+| No Recycle Bin | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runNoBin&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runNoBin&scheme=dark) |
+| Partial | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runPartial&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runPartial&scheme=dark) |
+| Finish deleting? (next start) | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runResume&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runResume&scheme=dark) |
+| Deleted, with restore | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runDone&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runDone&scheme=dark) |
+| Deleted, private notes kept | [light](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runKeptPrivate&scheme=light) | [dark](http://127.0.0.1:5243/apps/desktop/out/gallery/index.html?f=mock.pnw.runKeptPrivate&scheme=dark) |
+
 ## Every "workspace" a person can see
 
 This inventory covers every place the word reaches a person, plus the internal names they can see on disk or on GitHub. "Internal, keep" means no person reads it, so renaming it would add risk with no benefit. The message keys whose *name* contains `workspace` but whose *text* doesn't (56 keys, for example `settings.workspace.heading`) are internal: keep them. A later code rename can tidy them.

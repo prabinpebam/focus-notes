@@ -31,6 +31,18 @@ Reject **(a)** in-app step-up: GitHub supports deletion, but GCM, gh and pasted 
 
 **Safety:** a 404, even with `GET /user` returning 200, can mean lost repository access rather than deletion. It triggers verification and explicit confirmation that the person deleted the repository on GitHub, not automatic local deletion. Retained private notes must be preserved outside a parent folder before it is recycled. The build keeps both safeguards: the 404 asks for that confirmation before the Recycle Bin step, and a retained private repository is moved out before its parent folder is recycled. The orchestrator assigns the number.
 
+## D-pending: Delete progress: one step list, a resumable record, and restore guidance
+
+**Status:** Proposed, waiting for the owner's review of the mocks (asked for 5 November 2026, 21:10: "I would want to review that screen."). Not wired. **Affects** [Progress, failures, recovery](../experience/project-model.md#progress-failures-recovery), SC-PROJ-08, UC-PROJ-13, DD-PROJ-13, DD-PROJ-14, DD-PROJ-16, PRJ-23.
+
+- **One step list** for the whole run: check access, each repository on GitHub, the Recycle Bin, Recent and pinned. Each step is waiting, working, done, paused, failed or skipped, and one line says what's already gone. The approved hand-off stays: the app never calls GitHub's DELETE.
+- **A resumable record** of the targets' identities and completed steps only (no credentials, no note content), so "Finish deleting ⟨name⟩?" can show on the next start. Every step re-checks before it acts and never repeats a destructive step. This replaces "No stored progress".
+- **Already gone counts as done** when the signed-in account still answers. This narrows DD-PROJ-13, because the typed confirmation already named that repository and the folder only goes to the Recycle Bin.
+- **The success screen carries the restore guidance**, citing GitHub: restorable within 90 days, except a repository in a non-empty fork network; it can take up to an hour to show; team permissions don't come back. It shows **Restore on GitHub** (the deleted-repositories settings page) and **Open Recycle Bin**, then Open with no pill. This replaces DD-PROJ-16's pill.
+- **No automatic re-link:** a restored repository comes back by restoring the folder and opening it (its remote is unchanged), or with **Open from GitHub**.
+
+The orchestrator assigns the number.
+
 ## D-pending: Destructive actions use the danger button, from semantic tokens
 
 **Status:** Accepted (the owner, 5 November 2026: "Delete project should be semantic danger/critical, red color btn. Use proper token implementation for this."). **Affects** [Deleting a project](../experience/project-model.md#deleting-a-project), [Components → Button](../design/system/components.md), `packages/tokens` (`color.danger`, `color.onDanger`, `cmp.button.danger`), `packages/core/src/contrast.ts`, DD-PROJ-09 to DD-PROJ-17.
