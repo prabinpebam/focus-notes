@@ -39,6 +39,6 @@ export function ProjectPill({ name, logo = "none", src, accent = "app", icon, pa
   const cls = `${s.base}${icon ? ` ${s.neutral}` : ""}${!icon && logo === "none" ? ` ${s.textOnly}` : ""}`;
   const title = path ? name : (label ?? name);
   return onPress
-    ? <button type="button" className={`${cls} ${s.pressable}`} data-project-accent={accentAttr} aria-label={label ?? name} title={title} onClick={onPress}>{inner}</button>
-    : <span className={cls} data-project-accent={accentAttr} title={title}>{inner}</span>;
+    ? <button type="button" className={`${cls} ${s.pressable}`} data-project-pill="" data-project-accent={accentAttr} aria-label={label ?? name} title={title} onClick={onPress}>{inner}</button>
+    : <span className={cls} data-project-pill="" data-project-accent={accentAttr} title={title}>{inner}</span>;
 }

@@ -48,11 +48,13 @@ const IGNORE = '[data-editor], [class*="prose"]';
  * What the probe measures but the rules don't mean, each by name with its reason (spacing-audit.md,
  * "Not fixed, and why"). Anything else at S1 or S2 fails the journey.
  */
-const EXCLUDED: { rule: RegExp; path?: RegExp; where?: RegExp; why: string }[] = [
-  { rule: /^below-target$/, path: /ProjectPill_|WindowControls_zone|OpenItem_path/, why: "the written dense-surface list: at least 24 px (size.hitMin)" },
-  { rule: /^(moved|spacing-changed)$/, path: /EditorSurface_column|^document$/, why: "the note re-renders or scrolls under a forced state: prose, and the count of what an origin pushed" },
+// Parts are named by a selector, never a class name: a production build (CI) hashes class names.
+const EXCLUDED: { rule: RegExp; path?: RegExp; sel?: string; where?: RegExp; why: string }[] = [
+  { rule: /^below-target$/, sel: "[data-project-pill], [data-zone], [data-open-item] button[title]", why: "the written dense-surface list: at least 24 px (size.hitMin)" },
+  { rule: /^(moved|spacing-changed)$/, sel: "[data-editor-scroller] > div", why: "the note re-renders or scrolls under a forced state: prose" },
+  { rule: /^(moved|spacing-changed)$/, path: /^document$/, why: "the count of what an origin pushed" },
   { rule: /./, where: /Customize toolbar/, why: "OPEN for vq-toolbar-design: ToolbarComposer is redesigned there" },
-  { rule: /^group-separation$/, path: /MenuButton_menu/, why: "a section's runs (checkable and plain items) are one group, split only for selection" },
+  { rule: /^group-separation$/, sel: '[role="menu"]', why: "a section's runs (checkable and plain items) are one group, split only for selection" },
   { rule: /^overlap$/, path: /> svg > /, why: "an SVG's shapes overlap by design (a step mark's art)" },
 ];
 /** Surfaces the harness can't open yet, each with its reason (spacing-audit.md, "Not fixed, and why"). */
@@ -60,8 +62,16 @@ const UNREACHED: { where: RegExp; why: string }[] = [
   { where: /^files selection /, why: "surfaces.ts's selection helper is stale on this branch" },
   { where: /^more › Publish… /, why: "its ⋯ item opens no surface without a signed-in account" },
 ];
+/** The probe's paths of the elements each selector-named exclusion matched, gathered as each surface is measured. */
+const MATCHED = EXCLUDED.map(() => new Set<string>());
 const blocking = (out: (Finding & { where: string })[]) =>
-  out.filter((x) => (x.severity === "S1" || x.severity === "S2") && !EXCLUDED.some((e) => e.rule.test(x.rule) && (!e.path || e.path.test(x.path)) && (!e.where || e.where.test(x.where))));
+  out.filter((x) => (x.severity === "S1" || x.severity === "S2") && !EXCLUDED.some((e, i) => e.rule.test(x.rule) && (!e.path || e.path.test(x.path)) && (!e.sel || MATCHED[i]!.has(x.path)) && (!e.where || e.where.test(x.where))));
+/** Records the probe path of every element the selector-named exclusions match in a snapshot. */
+async function matchExcluded(page: Page, snapshot: unknown) {
+  const ids = await page.evaluate((sels) => sels.map((sel) => sel ? [...document.querySelectorAll(sel)].map((e) => e.getAttribute("data-spacing-id")).filter((v): v is string => Boolean(v)) : []), EXCLUDED.map((e) => e.sel ?? ""));
+  const byId = new Map((snapshot as { elements: { id: string; path: string }[] }).elements.map((e) => [e.id, e.path]));
+  ids.forEach((list, i) => { for (const id of list) { const p = byId.get(id); if (p) MATCHED[i]!.add(p); } });
+}
 const enforce = (out: (Finding & { where: string })[]) => {
   // A surface that didn't open wasn't checked: that fails too, unless it's named here with its reason.
   const unreached = out.filter((x) => x.rule === "not-reached" && !UNREACHED.some((u) => u.where.test(x.where)));
@@ -128,6 +138,7 @@ async function audit(page: Page, p: Probe, where: string, out: (Finding & { wher
   await geometrySettled(page);
   await page.evaluate(() => document.fonts.ready);
   const base = await page.evaluate(p.collect, { root: ROOT, ignore: IGNORE });
+  await matchExcluded(page, base);
   // The probe exempts prose (`ignore`) and skips visually hidden wrappers; this also drops any finding on a 1 px box.
   type Box = { path: string; ignored: boolean; rect: { w: number; h: number } };
   const skip = new Set((base as { elements: Box[] }).elements.filter((e) => e.ignored || (e.rect.w <= 1 && e.rect.h <= 1)).map((e) => e.path));
