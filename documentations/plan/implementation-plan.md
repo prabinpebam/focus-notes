@@ -412,6 +412,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.10 | Shares without names or revealing identifiers | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |
 | WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
 | WP-P.12 | A website with its own theme | SHR-20 | WP-5.1, WP-P.4, WP-P.13 | code, security, design-system, accessibility |
+| WP-P.22 | Publish and unpublish on today's workspace, with the deploy as one honest wait (D-349, D-351) | SHR-25, SHR-26 | WP-5.1 | code, security, design-system, accessibility |
 | WP-P.14 | Public home, sections and reading controls | SHR-21 | WP-P.12, WP-P.5, WP-P.9 | code, security, design-system, accessibility |
 | WP-P.15 | Preview site appearance locally | SHR-22 | WP-P.14 | code, security, design-system, accessibility |
 | WP-P.13 | Retire browser writing safely | WEB-01 | WP-5.1 | code, security, accessibility |
@@ -442,13 +443,17 @@ These are independently reviewable slices; lookahead permits design without unre
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-9.3 | **Managed image assets.** Relative/root-owned files, local sidecars, atomic copy/move/recovery. | IMG-05 | WP-2.3 | code, security |
-| WP-9.1 | **Inline image block and actions.** Drop/picker, three modes, remembered/bulk switches, clipboard/replace/export and portable shared renderer. | EXT-03, IMG-01, IMG-02, IMG-03, IMG-04, IMG-10, IMG-11 | WP-1.1, WP-9.3 | code, design-system, accessibility |
+| WP-9.7 | **Add an image.** Paste, drop, Insert image…, /image and Spotlight into managed assets, with WP-9.3's storage core (D-349 slice 1). | IMG-01 | WP-9.3 | code, security, design-system, accessibility |
+| WP-9.1 | **Inline image block and actions.** Three modes, remembered/bulk switches, description and caption, clipboard/replace/save and portable shared renderer. Display, menu and missing state built (building). | EXT-03, IMG-02, IMG-03, IMG-04, IMG-10, IMG-11 | WP-1.1, WP-9.3 | code, design-system, accessibility |
 | WP-9.4 | **Crop and rotate.** Preview dialog, keyboard crop, explicit destructive atomic save and conditional Git recovery. | IMG-07, IMG-08 | WP-9.1 | code, security, design-system, accessibility |
 | WP-9.5 | **Optional captions.** Existing image-capable integration, image-only payload and reviewed plain-text caption. | IMG-09 | WP-9.1, WP-AI.14 | code, security, design-system, accessibility |
 | WP-9.2 | **Gallery block**. A gallery block registration. | EXT-04 | WP-9.1 | code, design-system, accessibility |
+| WP-9.8 | **Print images.** Print and Save as PDF with images inside the page (D-348). | IMG-12 | WP-9.7, WP-8.12 | code, accessibility |
+| WP-9.9 | **Images in published notes.** Referenced images published with the note, metadata stripped; needs the owner's yes. | IMG-13 | WP-9.7, WP-P.22 | code, security |
 | WP-9.6 | **Encrypted image sharing.** The exact referenced media of a shared note, encrypted with opaque names; metadata stripped from published images. Until it lands, sharing a note with images says so and stops (D-314). | IMG-06 | WP-9.3, WP-P.10, WP-5.1 | code, security |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
 - Round-trip and the block registry contract hold for both components.
-- [IMG.1 to IMG.8](definition-of-done.md#inline-images-planned) supply scoped future evidence. Highest-risk proofs: encrypted media closure, atomic/destructive saves and image-only provider payloads. Stage stays planned; design lookahead permits JSON views/figures only, not implementation/tests/packages before approval.
+- [IMG.1 to IMG.13](definition-of-done.md#inline-images-planned) supply scoped future evidence; [the readiness assessment](../experience/images.md#readiness-assessment-5-november) gives the slice order (D-349).
+- Highest-risk proofs: encrypted media closure, atomic/destructive saves and image-only provider payloads. Stage stays planned; design lookahead permits JSON views/figures only, not implementation/tests/packages before approval.

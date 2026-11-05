@@ -3,7 +3,7 @@
 Inline images that stay with the note, fit the writing canvas and remain private when the note is shared.
 
 > [!NOTE]
-> **TL;DR.** Drop an image into the note, choose Column / Wide / Actual size, and act on it where it sits. Images are managed local assets, not remote embeds or floating objects. Rounded corners and Limit height are checked menu options; bulk selection changes images, not text. Crop/rotate uses a focused dialog and an explicit destructive save. Optional captions use a chosen existing AI integration, never a model inside Focus Notes. Private shared media is encrypted with opaque public identifiers. The candidate slice below is working; the remaining image features are planned.
+> **TL;DR.** Drop an image into the note, choose Column / Wide / Actual size, and act on it where it sits. Images are managed local assets, not remote embeds or floating objects. Rounded corners and Limit height are checked menu options; bulk selection changes images, not text. Crop/rotate uses a focused dialog and an explicit destructive save. Optional captions use a chosen existing AI integration, never a model inside Focus Notes. Private shared media is encrypted with opaque public identifiers. The candidate slice below is working; the remaining image features are planned. **Status, 5 November:** showing, the image menu and crop are built; adding images (paste, drop, Insert image…) is not, and is the first of eight slices in the [readiness assessment](#readiness-assessment-5-november).
 
 > [!NOTE]
 > **Design approved (owner, 3 November 2026, 19:39).** Exact words are in the branch's `packages/views/messages/en.json` (`image.` keys; `image.mock.*` is gallery chrome). Mock 9 in the gallery at <http://127.0.0.1:5211>, branch `vq-project-mocks`, is the approved design for inserting, the three display modes, the right-click image menu with Rounded corners and Limit height (one image and a selection), Edit description…, Edit image… (one row of controls), Auto caption with AI… and a writer that can't read images. Not covered and still specification only: [Assets, Markdown and encrypted sharing](#assets-markdown-and-encrypted-sharing), View image history…, and the preparing, missing, saving and read-only states in [States, accessibility and Help](#states-accessibility-and-help).
@@ -182,17 +182,26 @@ With nothing selected, the same Ctrl+Enter prompt writes at the caret (**Write w
 
 The folder is a media area at its owning repository/local root, not an `assets` folder created beside every nested note. Use at least 128 random bits for managed asset IDs, collision-check and regenerate; extensions follow validated raster type, not source names. References are relative from the note; moves rebase them transactionally. Existing asset paths continue to resolve, with no mass relocation. Renaming a standalone note may retain its existing sidecar name/references; Save as/copy carries referenced media into the destination sidecar, never deletes the original. Copying/importing a note between roots copies referenced authorized media first, updates only destination references and keeps the original; Private → Public still needs the ordinary visibility confirmation. A reference shared by notes is not permission to publish those other notes.
 
-Images are written as **standard Markdown images** (D-310), so GitHub and every other viewer still show the picture. The description is the alt text, the caption is the image title, and only non-default display options follow in an attribute block:
+Images are written as **standard Markdown images** (D-310), so GitHub and every other viewer still show the picture. The description is the alt text, the caption is the image title, and only non-default display options go in a hidden comment line just before it (D-347, the same convention as `<!-- table: -->`):
 
 ```markdown
-![A desk beside a window](../../assets/images/q7m4k2.png "Morning light"){display=wide rounded fitHeight=false}
+<!-- image: wide rounded unlimited -->
+![A desk beside a window](../../assets/images/q7m4k2.png "Morning light")
 ```
 
-A default image (Column, square corners, Limit height on) is plain `![description](path "caption")` with no block. Existing images are preserved byte-for-byte until edited; an explicit change rewrites only that image. The earlier `::image{…}` leaf directive is not written, because a plain viewer shows it as text, not a picture (CP-OWN-01); an existing one is still read. Unknown attributes, directives or unsupported structures remain verbatim/read-only rather than being dropped. Plain viewers show the image and its caption on hover, and any options as short text after it; they don't apply the display options. Structured editor data is a projection, never a second source of truth. No arbitrary HTML/CSS or remote URL attribute.
+A default image (Column, square corners, Limit height on) is plain `![description](path "caption")` with no comment. GitHub and other viewers hide the comment and show the picture. Existing images are preserved byte-for-byte until edited; an explicit change rewrites only that image. The earlier `::image{…}` leaf directive is not written, because a plain viewer shows it as text, not a picture (CP-OWN-01); an existing one is still read. Unknown attributes, directives or unsupported structures remain verbatim/read-only rather than being dropped. Plain viewers show the image and its caption on hover; they don't apply the display options or show the comment. Structured editor data is a projection, never a second source of truth. No arbitrary HTML/CSS or remote URL attribute.
 
 **Sharing images is part of sharing the note.** Compute the exact authorized note → media reference closure, deduplicate within that grant, authenticate/encrypt every selected private image and its media lookup/alt/caption before public staging. Public asset names, grant code, encrypted manifest paths and image URLs are opaque random identifiers (SHR-23), never original names/hashes/paths. No private plaintext thumbnail, source metadata or EXIF sidecar in public Git, artifacts, indexes or logs. Seal before copying into public checkout; reader decrypts authorized images into memory/blob URLs, releases them on close/sign-out and makes no plaintext service-worker cache. Missing/forbidden media blocks that publication with an explicit repair action; never “share ready” with dropped images.
 
 Published plaintext images are deliberately public. Strip ancillary location/source metadata from the managed public copy **before public source-asset commit as well as deployment**, preserving visual orientation/colour and leaving the external/private original unchanged. Do not copy all of `assets/`: publish only referenced permitted media, keep app fonts/styles in their separate allowlisted runtime asset set. Withdrawal/Turn off removes current shared/published media on next successful publication, not past Git history or downloaded copies (owner-accepted D-274/D-299). No automatic orphan deletion or image optimizer rewriting unrelated assets.
+
+### Print and Save as PDF
+
+Printing a note prints its images (D-348, IMG-12), which amends D-230's earlier exclusion. Each image keeps its display mode but is capped to the text width and the page height, is never split across pages, and has its caption below it. A missing image prints its description in muted italic. Before the system's print dialog opens, the bottom pill shows *Preparing images for print…* until every image is decoded, so no page prints with a blank space.
+
+### Size and Git
+
+Images are kept in normal Git, each at most 20 MiB (IMG-01), well under GitHub's 50 MiB warning and 100 MiB block for one file. Git LFS isn't used: it adds a separate storage and bandwidth quota on the owner's account and extra steps for GitHub Pages. Whether to keep it that way is owner question I1 in the [readiness assessment](#readiness-assessment-5-november).
 
 ## States, accessibility and Help
 
@@ -213,11 +222,48 @@ The ImageBlock, image menu, edit dialog and caption surface use sealed primitive
 
 New waits are in the [wait inventory](../architecture/perceived-performance.md#image-waits-planned); thresholds are feedback targets, not measured speed claims. [Risks](../plan/risks.md#image-risks-and-assumptions) and [image done rows](../plan/definition-of-done.md#inline-images-planned) name future evidence, not tests run now.
 
+## Readiness assessment (5 November)
+
+The owner asked (5 November) what is done and pending for adding images, and whether the spec is enough to build it. This is the answer; the owner gives the go-ahead before any slice starts.
+
+**Built on `main`** (candidate slices from 3 November, WP-9.1 and WP-9.4 now *building*):
+
+| What | Where | Requirements | Tests |
+| --- | --- | --- | --- |
+| Show a local PNG, JPEG, WebP or GIF in the note, confined to the note's folder, 20 MiB read limit | `packages/editor/src/image-view.tsx`, the ImageFrame primitive, `apps/desktop/src/main/main.ts` (image read and atomic write) | IMG-02, IMG-11 | `packages/core/test/images-app.test.ts` (partial) |
+| Column, Wide and Actual size, Rounded corners, Limit height, mixed selection, Edit image… in the right-click menu | `packages/core/src/images-app.ts` | IMG-02, IMG-03, IMG-04 | `images-app.test.ts` |
+| Hidden `<!-- image: … -->` options read and written | `packages/markdown/src/index.ts`, editor node attributes in `packages/editor/src/index.ts` | IMG-10 (D-347) | none for images yet |
+| Crop and rotate preview, save with an original-bytes guard | the Edit image dialog | IMG-07, IMG-08 | none |
+| Missing or broken image placeholder with Retry | `image-view.tsx` | IMG-11 | none |
+| Relative image links resolve | `packages/core` links | IMG-05 | `links.test.ts` |
+
+**Pending:** paste, drop, Insert image…, /image and Spotlight (`packages/editor/src/paste.ts` deliberately leaves images out); managed `assets/images/` storage with random names and link rebasing on move or copy; remembered defaults; Cut, Copy, Replace image…, Save image…; Edit description… and Add caption; AI caption; print with images; images in published notes with metadata stripped; encrypted images in shares; the image round-trip corpus and a journey.
+
+**Gaps found and filled here:** the written format contradicted the code (fixed in favour of the code, D-347); print excluded images with no plan (D-348, IMG-12); published images had no requirement of their own (IMG-13); adding images sat inside WP-9.1 with no smallest slice (WP-9.7, D-349); the size and Git policy was unstated ([Size and Git](#size-and-git)); WP-9.1 and WP-9.4 were marked planned though partly built. Risks R-40 to R-55 in [risks](../plan/risks.md#image-risks-and-assumptions) still stand, the highest being encrypted media closure and destructive saves; slice 1 touches neither.
+
+**Verdict: specified enough to build slices 1 to 4** (each has observable [Definition of Done rows](../plan/definition-of-done.md#inline-images-planned) with evidence and a Try it: IMG.11, IMG.9, IMG.3, IMG.12). Slice 5 waits for the publishing answers; slices 6 to 8 are specified but carry the open risks.
+
+**Slices, smallest visible first (D-349):**
+
+1. **Add an image** (WP-9.7 with WP-9.3's storage core): paste, drop, Insert image…, /image, Spotlight into `assets/images/`. Gallery mock of the insertion marker and refusals first. About a day.
+2. **Describe it:** Edit description… and Add caption (WP-9.1). Small.
+3. **The rest of the menu:** Cut, Copy, Replace image…, Save image…, remembered defaults (WP-9.1). About a day.
+4. **Print** (WP-9.8, D-348). Small.
+5. **Published images** (WP-9.9, IMG-13), after publishing slice 2. About a day.
+6. **AI caption** (WP-9.5). About a day.
+7. **Moves, copies and standalone sidecars** (the rest of WP-9.3). About a day.
+8. **Encrypted images in shares** (WP-9.6). Several days.
+
+**Owner questions:**
+
+- **I1.** Keep images in normal Git with the 20 MiB per-image cap and no Git LFS? Recommended: yes.
+- **P3** (shared with publishing). When a note with images is published, publish its images as public files with location and camera metadata removed? Or can such notes not be published yet? See [Published website → Readiness](published-site.md#readiness-assessment-5-november).
+
 ## Design decisions and source map
 
 | Decision | Choice and rationale | User can | Requirement |
 | --- | --- | --- | --- |
-| DD-IMG-07 / D-310 | Standard Markdown image with title caption and an options block, never a leaf directive | UC-IMG-06 | IMG-10 |
+| DD-IMG-07 / D-310, D-347 | Standard Markdown image with title caption; non-default options in a hidden `<!-- image: -->` comment line before it, never a leaf directive | UC-IMG-06 | IMG-10 |
 | DD-IMG-01 / D-300 | Inline media block, three bounded proportional modes; no floats or image crop as layout. Positive Limit height resolves contradictory wording; defaults are reversible. | UC-IMG-01, UC-IMG-02 | EXT-03, IMG-01, IMG-02, IMG-03 |
 | DD-IMG-02 / D-301 | Root-owned managed assets, relative references, exact encrypted closure with opaque public names; reuse the repository model instead of a media server. | UC-IMG-04, UC-IMG-06 | IMG-05, IMG-06, IMG-10, SHR-23 |
 | DD-IMG-03 / D-302 | Contextual actions and mixed-selection checkable options (`menuitemcheckbox`, with a Mixed state); text and original source files stay untouched. | UC-IMG-01, UC-IMG-02 | IMG-03, IMG-04 |

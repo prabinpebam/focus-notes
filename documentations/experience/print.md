@@ -72,7 +72,7 @@ To start a new page at a place, put one of these on a line of its own:
 
 - Headers and footers with the note's title, the date or the path.
 - A print preview of the app's own; the system's dialog shows one where it has one.
-- Images, which notes don't show yet.
+- Images: print with images is specified in D-348 and IMG-12 (WP-9.8, after adding images lands); see [Images → Print and Save as PDF](images.md#print-and-save-as-pdf).
 - PDF export with its own paper and margin settings (the system's *Save as PDF* covers most of it).
 - Printing several notes or a folder at once.
 - A break before every top heading (Typora's option).

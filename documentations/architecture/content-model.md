@@ -105,10 +105,11 @@ Writing happens one line at a time.
 
 ## Components
 
-The seed calls for special components such as image and gallery in the future. An **image** is a standard Markdown image, so every viewer shows it (D-310): the description is its alt text, the caption its title, and non-default display options a trailing attribute block. Containers such as a gallery are written as [generic directives](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444), a widely used extension proposal for CommonMark:
+The seed calls for special components such as image and gallery in the future. An **image** is a standard Markdown image, so every viewer shows it (D-310): the description is its alt text, the caption its title, and non-default display options a hidden `<!-- image: … -->` comment line before it (D-347). Containers such as a gallery are written as [generic directives](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444), a widely used extension proposal for CommonMark:
 
 ```markdown
-![A quiet desk at dawn](../assets/images/q7m4k2.png "Morning light"){display=wide rounded}
+<!-- image: wide rounded -->
+![A quiet desk at dawn](../assets/images/q7m4k2.png "Morning light")
 
 :::gallery{columns="3"}
 ![First](assets/a.jpg)
@@ -125,9 +126,9 @@ The seed calls for special components such as image and gallery in the future. A
 
 ### Planned image attributes and asset transactions
 
-The [image experience](../experience/images.md#assets-markdown-and-encrypted-sharing) resolves the earlier image stub. The path is a validated relative path inside the note's trusted media boundary; the alt text and optional title (the caption) are plain text. The attribute block appears only for non-default values: `display` is `wide` or `actual` (Column is the default), `rounded` is present or absent, and `fitHeight=false` turns the height cap off. New image asset identifiers are random, never note-derived. Persist explicit per-image values so another device uses the same layout; only insertion defaults are device-local. Numeric layout bounds belong to tokens, not arbitrary width/height styles in notes.
+The [image experience](../experience/images.md#assets-markdown-and-encrypted-sharing) resolves the earlier image stub. The path is a validated relative path inside the note's trusted media boundary; the alt text and optional title (the caption) are plain text. The `<!-- image: … -->` comment line before the image appears only for non-default values (D-347, as built in `packages/markdown`): `wide` or `actual` (Column is the default), `rounded` when corners are rounded, and `unlimited` when the height cap is off. New image asset identifiers are random, never note-derived. Persist explicit per-image values so another device uses the same layout; only insertion defaults are device-local. Numeric layout bounds belong to tokens, not arbitrary width/height styles in notes.
 
-Keep untouched images, `::image{…}` directives from earlier drafts and unknown attributes verbatim; only an explicit edit to an image rewrites it, in the standard form. Unsupported attributes/structures remain read-only rather than silently discarded. A plain Markdown viewer shows the picture, its caption on hover, and any options as short text after it (CP-OWN-01).
+Keep untouched images, `::image{…}` directives from earlier drafts and unknown attributes verbatim; only an explicit edit to an image rewrites it, in the standard form. Unsupported attributes/structures remain read-only rather than silently discarded. A plain Markdown viewer shows the picture and its caption on hover, and hides the options comment (CP-OWN-01).
 
 Import/copy is asset-before-reference with an existing recovery/journal transaction: validate the whole batch, stage collision-safe destination files, persist note references, then declare Saved. Failure/crash must not leave a durable reference to a missing asset; never remove external sources. Renaming/moving notes rebases relative media paths in the same operation as note links; crossing visibility roots copies only the referenced permitted media after the usual confirmation. No directory-wide export or automatic orphan purge.
 
