@@ -23,7 +23,7 @@ async function openAgents(page: Page) {
   await page.keyboard.press(`${mod}+,`);
   const settings = page.getByRole("dialog", { name: "Settings" });
   await settings.getByRole("tab", { name: "Agents" }).click();
-  await expect(settings.getByRole("button", { name: "Agents can connect" })).toBeVisible();
+  await expect(settings.getByRole("switch", { name: /^Agents can connect/ })).toBeVisible();
   return settings;
 }
 const permissions = (userData: string) => {
@@ -42,18 +42,21 @@ test("AGT-02: Settings → Agents writes agents.json, copies a working snippet, 
   expect(git(priv, "log", "-1", "--format=%s")).toBe("Agent edit: notes/Agent plan.md");
 
   let l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
+  console.log(`ofb-switch-owned-pid=${l.pid}`);
+  try {
   let settings = await openAgents(l.page);
-  const connect = settings.getByRole("button", { name: "Agents can connect" });
-  const readPrivate = settings.getByRole("button", { name: "Read private and shared notes" });
-  await expect(connect).toHaveAttribute("aria-pressed", "false");
+  const connect = settings.getByRole("switch", { name: /^Agents can connect/ });
+  const readPrivate = settings.getByRole("switch", { name: /^Read private and shared notes/ });
+  await expect(connect).not.toBeChecked();
   await expect(readPrivate).toBeDisabled();
   expect(await settledAxe(l.page)).toEqual([]);
+  await l.page.screenshot({ path: join(test.info().outputDir, "agents-switches.png") });
 
-  await connect.click();
-  await expect(connect).toHaveAttribute("aria-pressed", "true");
+  await settings.getByText("Agents can connect", { exact: true }).click();
+  await expect(connect).toBeChecked();
   await expect.poll(() => permissions(dirs.userData).connect).toBe(true);
   await expect(readPrivate).toBeEnabled();
-  await readPrivate.click();
+  await settings.getByText("Read private and shared notes", { exact: true }).click();
   await expect.poll(() => permissions(dirs.userData).readPrivate).toBe(true);
 
   // A snippet that starts this app's MCP server, through the app's own executable.
@@ -77,8 +80,60 @@ test("AGT-02: Settings → Agents writes agents.json, copies a working snippet, 
 
   // The switches persist across starts.
   l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
+  console.log(`ofb-switch-owned-pid=${l.pid}`);
   settings = await openAgents(l.page);
-  await expect(settings.getByRole("button", { name: "Agents can connect" })).toHaveAttribute("aria-pressed", "true");
-  await expect(settings.getByRole("button", { name: "Read private and shared notes" })).toHaveAttribute("aria-pressed", "true");
-  await quit(l);
+  await expect(settings.getByRole("switch", { name: /^Agents can connect/ })).toBeChecked();
+  await expect(settings.getByRole("switch", { name: /^Read private and shared notes/ })).toBeChecked();
+  } finally { await quit(l); }
+});
+
+test("OFB.5: an agent Switch keeps its focus and geometry through a refused save and Retry", async () => {
+  const { dirs } = instance();
+  const l = await launch(dirs);
+  try {
+    await l.app.evaluate(({ ipcMain }) => {
+      const page = {
+        permissions: { connect: false, readPublic: true, readPrivate: false, edit: false, createPublic: false, folders: "all" },
+        changedOutside: false, snippets: [], recent: [], cli: { available: false, installed: false, onPath: false },
+      };
+      ipcMain.removeHandler("agents:load");
+      ipcMain.handle("agents:load", () => page);
+      ipcMain.removeHandler("agents:set");
+      ipcMain.handle("agents:set", async () => {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        throw new Error("Synthetic refusal");
+      });
+    });
+    const settings = await openAgents(l.page);
+    await l.page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running"));
+    const connect = settings.getByRole("switch", { name: /^Agents can connect/ });
+    const phase = () => connect.evaluate(el => el.closest("[data-commit]")?.getAttribute("data-commit"));
+    const box = () => connect.evaluate(el => {
+      const r = el.closest("label")!.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+    await connect.focus();
+    const before = await box();
+    await l.page.keyboard.press("Space");
+    await expect.poll(phase).toBe("pending");
+    await expect(connect).not.toBeChecked();
+    await expect(connect).toBeFocused();
+    expect(await box()).toEqual(before);
+    await expect.poll(phase).toBe("failed");
+    await expect(connect).not.toBeChecked();
+    await expect(connect).toBeFocused();
+    await expect(settings.getByText("Couldn't change agent settings. Try again.")).toBeVisible();
+    await l.app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler("agents:set");
+      ipcMain.handle("agents:set", async (_event, permissions) => {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { permissions: { ...permissions, folders: "all" }, changedOutside: false, snippets: [], recent: [], cli: { available: false, installed: false, onPath: false } };
+      });
+    });
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect.poll(phase).toBe("pending");
+    await expect.poll(phase, { intervals: [25, 50, 100] }).toBe("confirmed");
+    await expect(connect).toBeChecked();
+    expect(await box()).toEqual(before);
+  } finally { await quit(l); }
 });

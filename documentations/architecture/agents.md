@@ -113,6 +113,8 @@ The switches in Settings → Agents and the list of Recent agent changes are WP-
 
 **As built (WP-7.4, D-166).** The page reads and writes `agents.json` through the main process. Each switch is written at once and read back:
 
+**6 November correction (D-355, OFB.5).** These are the shared Switch primitive, not pressed buttons. Space changes the focused switch. Its own border shows pending, then confirmation; the stored thumb position stays until the write is acknowledged. A refusal keeps the stored value and offers Retry on that row. The focused switch stays mounted and focusable. The other permission switches wait during that write because the bridge commits the complete permission set; simultaneous writes could overwrite each other.
+
 | Part | Shows | Does |
 | --- | --- | --- |
 | Switches | *Agents can connect*, then *Read public notes*, *Read private and shared notes*, *Create and edit notes*, and *Create public notes*, each with one line on what it allows | Writes `agents.json`. The others are disabled while agents can't connect |
