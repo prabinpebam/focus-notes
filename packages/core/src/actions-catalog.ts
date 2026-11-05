@@ -107,6 +107,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   { id: "note.revealLocal", steps: [["note.revealLocal"]], label: "actions.note.revealLocal", anchor: "note", effect: "navigate", leaves: "system", alsoIn: ["Files menu"], proof: proof("note.revealLocal") },
   { id: "history.open", steps: [["history.open"]], label: "actions.history.open", anchor: "note", effect: "navigate", leaves: "none", when: inProject, alsoIn: ["⋯ menu"], proof: proof("history.open") },
   { id: "outline.show", steps: [["outline.show"]], label: "actions.outline.show", anchor: "note", effect: "navigate", leaves: "none", alsoIn: ["contents rail"], proof: proof("outline.show") },
+  { id: "rewrite.write", steps: [["rewrite.open"]], label: "actions.rewrite.write", anchor: "note", effect: "outbound", leaves: "ai", when: (s) => s.writable && !s.selection, blockedBy: needsAi, fix: "ai.connect", alsoIn: ["Edit menu", "Ctrl+Shift+R at the caret"], proof: proof("rewrite.write") },
   { id: "note.print", steps: [["note.print"]], label: "actions.note.print", anchor: "note", effect: "flow", leaves: "system", alsoIn: ["File menu"], proof: proof("note.print") },
   { id: "note.delete", steps: [["files.reveal", { path: "path" }], ["files.delete"]], label: "actions.note.delete", anchor: "note", effect: "destructive", leaves: "none", when: (s) => inProject(s) && s.writable, alsoIn: ["Files menu"], proof: proof("note.delete") },
 
