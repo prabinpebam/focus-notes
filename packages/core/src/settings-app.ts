@@ -259,7 +259,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
             folder: { type: "string" }, folderText: { type: "string" }, git: { type: "boolean" }, canRemove: { type: "boolean" }, canRunSetup: { type: "boolean" }, gitNote: { type: "string" },
             setupLabel: { type: "string" }, canOpenOther: { type: "boolean" },
             linked: { type: "boolean" }, offline: { type: "boolean" }, repo: { type: "string" }, offlineDetail: { type: "string" },
-            canLink: { type: "boolean" }, removeBlocked: { type: "boolean" },
+            canLink: { type: "boolean" }, removeBlocked: { type: "boolean" }, canDelete: { type: "boolean" }, deleteNote: { type: "string" },
           },
         },
         file: { type: "object", properties: { path: { type: "string" } } },
@@ -299,6 +299,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           linked, offline: !linked, repo,
           offlineDetail: catalog.format(s.sync.git ? "project.home.offline.detail" : "project.home.offline.noGit"),
           canLink: !linked && Boolean(ws?.link), removeBlocked: !linked && Boolean(ws?.remove),
+          // Delete project (PRJ-23): a Git project, linked or on this computer only (DD-PROJ-09).
+          canDelete: s.sync.git && Boolean(folder && ws?.deletion && ws.deleteLocal),
+          deleteNote: catalog.format(linked ? "project.delete.entryNote" : "project.delete.entryNoteOffline"),
           gitNote: catalog.format(s.sync.git ? "settings.workspace.git" : "settings.workspace.local"),
           // A folder used on this computer only connects to GitHub through the same setup (D-124).
           setupLabel: catalog.format(s.sync.git ? "command.setup.runAgain" : "settings.workspace.connect"),

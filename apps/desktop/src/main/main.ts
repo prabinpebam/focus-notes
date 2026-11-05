@@ -6,7 +6,7 @@
  * confirm publication without credentials or redirects (D-344).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
-import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
+import { copyFile, lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
 import type { ResolvedDeepLink } from "@focus-notes/core";
@@ -54,9 +54,10 @@ import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
 import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, mapLimit, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
-import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
+import type { ConflictChoice, DeletionResult, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
+import { deletionCheck, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
@@ -454,7 +455,7 @@ async function setupWhere(instance?: string): Promise<{ folder: string; chosen: 
  * removing, the workspace folder's name; Chromium's caches and web storage are emptied too. The
  * renderer forgets the recent note in state.json itself, since it owns that file.
  */
-async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> {
+async function forgetLocal(event: "signOut" | "removeWorkspace" | "deleteProject"): Promise<void> {
   if (setupEngine) await (await setupEngine).reset().catch(() => {});
   workspaceIdentity = undefined;
   targetFolder = undefined;
@@ -494,6 +495,36 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
   await forgetLocal("removeWorkspace");
   process.stdout.write("[focus-notes] workspace-removed\n");
   restartInPlace();
+  return r;
+}
+/**
+ * Delete project (PRJ-23, DD-PROJ-15): the open project's folder goes to the Recycle Bin, checked here
+ * again (the renderer's word isn't enough), with writes finished and the watcher and Git stopped first.
+ * GitHub's side is already done by the person. The window then shows Open; this process writes
+ * nothing more into the folder, and quits once another project opens.
+ */
+let projectDeleted = false;
+async function deleteLocalProject(keepPrivate: boolean): Promise<DeletionResult> {
+  const folder = notesHome();
+  const places = { home: app.getPath("home"), userData: app.getPath("userData"), documents: app.getPath("documents"), desktop: app.getPath("desktop") };
+  if (projectDeleted || !isWorkspace() || recycleRefusal(folder, places)) return { state: "refused" };
+  await Promise.allSettled([...writeQueues.values()]);
+  watcher?.close();
+  watcher = undefined;
+  const old = gitSync;
+  armGit();
+  await old?.dispose();
+  const r = await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p) });
+  if (r.state !== "deleted") {
+    watcher = watchWorkspace(() => windows);
+    startGit();
+    return r;
+  }
+  projectDeleted = true;
+  await forgetLocal("deleteProject");
+  process.stdout.write("[focus-notes] project-deleted\n");
+  // Windows opened for one of its notes close: their notes are gone.
+  for (const w of [...windows]) if (w !== mainWindow && !w.isDestroyed()) w.destroy();
   return r;
 }
 /**
@@ -742,6 +773,8 @@ const readFormat = () => readFile(formatFile(), "utf8").catch((e: NodeJS.ErrnoEx
 /** This app never writes into a workspace whose format it mustn't write (DST-05). */
 async function assertWritable(p: string): Promise<void> {
   if (!inside(notesHome(), p)) return;
+  // A deleted project's folder is never made again by a late write (PRJ-23).
+  if (projectDeleted) throw new Error("This project was deleted");
   // A missing notes folder is never made again by a write (FRE-11).
   if (folderState !== "ok") throw new Error("The notes folder is missing");
   // The format file itself is written only by workspace:writeFormat, which checks what it writes.
@@ -1250,7 +1283,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   const projects = projectWindows(notesHome, async (path, content) => {
     if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
-  }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi, setupRunner);
+  }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi, setupRunner, () => {
+    // A deleted project's window has nothing left to show once another project opens (PRJ-23).
+    if (projectDeleted) setTimeout(() => app.quit(), 500);
+  });
   rememberClosedProject = projects.closed;
   handle("projects:list", () => projects.list());
   handle("projects:upload", () => projects.upload());
@@ -1940,6 +1976,56 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("firstRun:endSwitch", () => account.endSwitch());
   handle("workspace:removal", () => removal());
   handle("workspace:remove", () => removeLocalWorkspace());
+  // Delete project (PRJ-23): reads only, until deleteLocal; GitHub's side is the person's, on GitHub's page (DD-PROJ-12).
+  const privateRepo = async () => {
+    const priv = join(notesHome(), "private");
+    if (!existsSync(join(priv, ".git"))) return undefined;
+    const r = await setupRunner({ cwd: priv, args: ["remote", "get-url", "origin"], read: true });
+    const ref = r.code === 0 ? remoteRepo(r.stdout.trim(), localRemotes) : undefined;
+    return ref ? `${ref.owner}/${ref.name}` : undefined;
+  };
+  const deletion = async () => {
+    if (projectDeleted || !isWorkspace()) return { kind: "offline" as const, problem: "notProject" as const, name: basename(notesHome()), folder: notesHome(), repo: "", privateRepo: "", privateCount: 0, siteNotes: 0, unsynced: [] };
+    const [repo, priv] = await Promise.all([notesRepo().catch(() => undefined), privateRepo().catch(() => undefined)]);
+    return deletionCheck(setupRunner, notesHome(), { repo, privateRepo: priv });
+  };
+  handle("workspace:deletion", () => deletion());
+  handle("workspace:repoStatus", async (repo: unknown) => {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const c = await deletion();
+    // Only this project's own repositories are read.
+    if (repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
+    return repoStatus(await projectGitHub().catch(() => undefined), repo);
+  });
+  handle("workspace:openRepoSettings", async (repo: unknown) => {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const c = await deletion();
+    if (repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
+    const url = `https://github.com/${repo}/settings`;
+    // Journeys log it instead of opening a browser over the owner's screen (D-141).
+    if (journey) return void process.stdout.write(`[focus-notes] open-external ${url}\n`);
+    await shell.openExternal(url);
+  });
+  handle("workspace:exportUnsynced", async () => {
+    const c = await deletion();
+    if (c.problem || !c.unsynced.length) return undefined;
+    const w = mainWindow;
+    const opts = { title: c.name, defaultPath: app.getPath("documents"), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
+    const picked = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+    if (picked.canceled || !picked.filePaths[0]) return undefined;
+    const parent = resolve(picked.filePaths[0]);
+    // A copy inside the project would go to the Recycle Bin with it.
+    if (inside(notesHome(), parent) || inside(parent, notesHome())) throw new Error("Choose a folder outside the project");
+    const to = join(parent, nextFree(`${c.name} (not on GitHub)`, (n) => existsSync(join(parent, n))));
+    for (const rel of c.unsynced) {
+      const from = join(notesHome(), rel);
+      if (!inside(notesHome(), from)) continue;
+      await mkdir(dirname(join(to, rel)), { recursive: true });
+      await copyFile(from, join(to, rel));
+    }
+    return to;
+  });
+  handle("workspace:deleteLocal", (opts: unknown) => deleteLocalProject(Boolean(opts && typeof opts === "object" && "keepPrivate" in opts && opts.keepPrivate === true)));
   handle("firstRun:identity", () => account.identity());
   handle("firstRun:setIdentity", async (i, scope) => {
     const id = { name: String(i?.name ?? "").trim(), email: String(i?.email ?? "").trim() };

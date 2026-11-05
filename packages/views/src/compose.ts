@@ -5,8 +5,9 @@
  */
 import openBody from "../views/open-body.json" with { type: "json" };
 import sharingProgress from "../views/sharing-progress.json" with { type: "json" };
+import projectDelete from "../views/project-delete.json" with { type: "json" };
 
-const PARTS: Record<string, unknown> = { "open.body": openBody, "sharing.progress": sharingProgress };
+const PARTS: Record<string, unknown> = { "open.body": openBody, "sharing.progress": sharingProgress, "project.delete": projectDelete };
 
 export function compose<T>(node: T): T {
   if (Array.isArray(node)) return node.map(compose) as T;

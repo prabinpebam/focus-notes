@@ -63,7 +63,7 @@ export function candidateGitHubApi(origin: string): GitHubApi {
   });
 }
 
-export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner) {
+export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner, spawned?: () => void) {
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
   const known = new Map<string, string>();
@@ -157,11 +157,14 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       throw error;
     }
   }
+  /** This window's own folder, canonical; undefined once it was deleted (PRJ-23). */
+  const here = async () => (existsSync(home()) ? realpath(home()) : undefined);
   async function list(): Promise<ProjectEntry[]> {
     known.clear();
-    known.set(await realpath(home()), app.getPath("userData"));
+    const own = await here();
+    if (own) known.set(own, app.getPath("userData"));
     await mkdir(profiles, { recursive: true });
-    if (app.getPath("userData") === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder))) await writeFile(join(rootProfile, DATA_FILES.projectFolder), await realpath(home()), { flag: "wx" });
+    if (app.getPath("userData") === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder)) && own) await writeFile(join(rootProfile, DATA_FILES.projectFolder), own, { flag: "wx" });
     const rootRecord = parseRecord(await readFile(join(rootProfile, DATA_FILES.workspace), "utf8").catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return "";
       throw error;
@@ -221,15 +224,16 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (!isAbsolute(path) || within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("That note isn't in this project");
       target = path;
     }
-    if (canonical === await realpath(home()) && !target) return;
+    if (canonical === await here() && !target) return;
     // One process and single-instance lock per project keep all existing workspace services scoped.
-    if (profile === app.getPath("userData") && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
+    if (profile === app.getPath("userData") && canonical !== await here()) throw new Error("That project profile is already in use");
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(target ? ["--project-note", target] : [])];
     const child = spawn(process.execPath, args, {
       env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", FOCUS_NOTES_PROJECT_NOTE: target ?? "" },
       stdio: "ignore",
     });
     await new Promise<void>((accept, reject) => { child.once("spawn", accept); child.once("error", reject); });
+    spawned?.();
   }
   async function choose(): Promise<string | undefined> {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"], defaultPath: dirname(home()) });
@@ -383,7 +387,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const owner = [...known.keys()].filter((f) => { const r = relative(f, file); return r && !r.startsWith("..") && !isAbsolute(r); }).sort((a, b) => b.length - a.length)[0];
     const folder = owner ?? dirname(file);
     // A file in this window's own project opens here (the window asks for it).
-    if (owner && owner === await realpath(home())) return { file, here: true };
+    if (owner && owner === await here()) return { file, here: true };
     if (!owner) await adopt(folder, undefined, true);
     await open(folder, file);
     return { file, here: false };

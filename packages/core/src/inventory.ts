@@ -16,8 +16,10 @@
 /**
  * What deletes local data. `signIn` is signing Focus Notes in again after signing it out alone;
  * `deleteDataFolder` is deleting the app's data folder, which uninstallers keep for a reinstall.
+ * `deleteProject` is Delete project (PRJ-23): what removing does, plus the project's recent notes. Its
+ * folder pointer stays, since other project windows read it; the folder it names is gone.
  */
-export type Removal = "signOut" | "removeWorkspace" | "runSetupAgain" | "signIn" | "quit" | "deleteDataFolder";
+export type Removal = "signOut" | "removeWorkspace" | "deleteProject" | "runSetupAgain" | "signIn" | "quit" | "deleteDataFolder";
 
 /** The files the desktop app keeps in its data folder (Electron's `userData`). */
 export const DATA_FILES = {
@@ -96,27 +98,27 @@ export interface InventoryItem {
 export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "deviceSettings", path: DATA_FILES.state, removedBy: ["deleteDataFolder"] },
   { id: "projectFolder", path: DATA_FILES.projectFolder, removedBy: ["deleteDataFolder"] },
-  { id: "projectLastNote", path: DATA_FILES.projectLastNote, removedBy: ["deleteDataFolder"] },
-  { id: "projectRecent", path: DATA_FILES.projectRecent, removedBy: ["deleteDataFolder"] },
+  { id: "projectLastNote", path: DATA_FILES.projectLastNote, removedBy: ["deleteProject", "deleteDataFolder"] },
+  { id: "projectRecent", path: DATA_FILES.projectRecent, removedBy: ["deleteProject", "deleteDataFolder"] },
   { id: "lastProject", path: DATA_FILES.lastProject, removedBy: ["deleteDataFolder"] },
   { id: "projectProfiles", path: `${DATA_FOLDERS.projectProfiles}/`, removedBy: ["deleteDataFolder"] },
-  { id: "recentItems", path: `${DATA_FILES.state}#lastNotePath`, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
-  { id: "workspaceFolder", path: DATA_FILES.workspace, removedBy: ["removeWorkspace", "deleteDataFolder"] },
-  { id: "firstRunIdentity", path: DATA_FILES.firstRun, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
-  { id: "setupProgress", path: DATA_FILES.setup, removedBy: ["runSetupAgain", "signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "recentItems", path: `${DATA_FILES.state}#lastNotePath`, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
+  { id: "workspaceFolder", path: DATA_FILES.workspace, removedBy: ["removeWorkspace", "deleteProject", "deleteDataFolder"] },
+  { id: "firstRunIdentity", path: DATA_FILES.firstRun, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
+  { id: "setupProgress", path: DATA_FILES.setup, removedBy: ["runSetupAgain", "signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   { id: "signedOut", path: DATA_FILES.account, removedBy: ["signIn", "deleteDataFolder"] },
   { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
   { id: "trayChoice", path: DATA_FILES.tray, removedBy: ["deleteDataFolder"] },
   { id: "aiService", path: DATA_FILES.ai, removedBy: ["deleteDataFolder"] },
   { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
   { id: "keybindings", path: DATA_FILES.keybindings, removedBy: ["deleteDataFolder"] },
-  { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
-  { id: "agentLimits", path: DATA_FILES.agentLimits, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
-  { id: "agentLimitsLock", path: DATA_FILES.agentLimitsLock, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
+  { id: "agentLimits", path: DATA_FILES.agentLimits, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
+  { id: "agentLimitsLock", path: DATA_FILES.agentLimitsLock, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   // Signing out and removing the workspace delete the open workspace's drafts, then the folder once nothing else is in it: another workspace's drafts stay.
-  { id: "drafts", path: `${DATA_FOLDERS.drafts}/`, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "drafts", path: `${DATA_FOLDERS.drafts}/`, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   // Migrated once into the drafts, then deleted; only an older version's leftover is ever here.
-  { id: "recoveryJournal", path: DATA_FILES.journal, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "recoveryJournal", path: DATA_FILES.journal, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   { id: "chromium", path: `${CHROMIUM_FOLDERS.session}/`, removedBy: ["deleteDataFolder"] },
   { id: "codeCache", path: `${CHROMIUM_FOLDERS.codeCache}/`, removedBy: ["deleteDataFolder"] },
   ...LOCK_FILES.map((f) => ({ id: `lock.${f}`, path: f, removedBy: ["quit"] as const })),

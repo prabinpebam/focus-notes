@@ -527,6 +527,60 @@ export interface WorkspaceBridge {
    * yet, so Settings offers Link to GitHub only once a shell provides it.
    */
   link?(): Promise<void>;
+  /**
+   * Deleting the project (PRJ-23, DD-PROJ-09 to 17): what it would delete, read once the dialog opens.
+   * Never deletes anything, and never calls GitHub except to read.
+   */
+  deletion?(): Promise<DeletionCheck>;
+  /** Whether a repository is still on GitHub, read while the person deletes it there (DD-PROJ-13). */
+  repoStatus?(repo: string): Promise<RepoStatus>;
+  /** Opens the repository's own Settings page on GitHub, where its Danger Zone is (DD-PROJ-12). */
+  openRepoSettings?(repo: string): Promise<void>;
+  /** Copies the notes not on GitHub yet to a folder the person picks, outside the project. Undefined when they cancel. */
+  exportUnsynced?(): Promise<string | undefined>;
+  /**
+   * Moves the project's folder and history to the Recycle Bin and forgets it on this computer
+   * (DD-PROJ-15). With `keepPrivate`, `private/` is moved beside the folder first, and nothing is
+   * recycled if that fails. Resolves `deleted` (the window then shows Open) or why not.
+   */
+  deleteLocal?(opts: { keepPrivate: boolean }): Promise<DeletionResult>;
+}
+
+/** What deleting the project would delete (PRJ-23). */
+export interface DeletionCheck {
+  /** `linked`: its notes repository is on GitHub. `offline`: on this computer only. */
+  kind: "linked" | "offline";
+  /** `notProject`: the folder isn't a Focus Notes project, so nothing is deleted. */
+  problem?: "notProject";
+  name: string;
+  folder: string;
+  /** owner/name, or "" when offline. */
+  repo: string;
+  /** The private notes' own repository as owner/name, or "" without one. */
+  privateRepo: string;
+  /** How many private notes `private/` holds. */
+  privateCount: number;
+  /** How many public notes the site publishes. */
+  siteNotes: number;
+  /** Notes changed since the last save to GitHub, relative to the folder. */
+  unsynced: string[];
+}
+
+/** A repository on GitHub, as the person deletes it there. A 404 is `gone` only once the account still works (DD-PROJ-13). */
+export type RepoStatus =
+  | { state: "exists"; admin: boolean; owner: string; organization: boolean }
+  | { state: "gone" }
+  | { state: "offline" }
+  | { state: "signin" }
+  | { state: "rateLimit"; retryAt: number };
+
+/** Deleting the project on this computer: done, a file another app holds, refused (not this project's folder), or failed. */
+export interface DeletionResult {
+  state: "deleted" | "locked" | "refused" | "failed";
+  /** The file another app holds, for `locked`. */
+  file?: string;
+  /** Where the private notes were kept, with `keepPrivate`. */
+  privateKept?: string;
 }
 
 /**

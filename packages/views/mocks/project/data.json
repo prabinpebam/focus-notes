@@ -387,6 +387,10 @@
     "peopleCount": 2,
     "peopleNames": "@meera and @arjun",
     "privateCount": 12,
+    "repos": [
+      { "id": "prabin/garden-notes", "label": "prabin/garden-notes", "detail": "Deleted on GitHub", "icon": "check", "waiting": false, "canOpen": false, "ask": false },
+      { "id": "prabin/garden-notes-private", "label": "prabin/garden-notes-private", "detail": "Waiting for you to delete it…", "icon": "github", "waiting": true, "canOpen": true, "ask": false }
+    ],
     "unsyncedCount": 3,
     "unsynced": [
       {

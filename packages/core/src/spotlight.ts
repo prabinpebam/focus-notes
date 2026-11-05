@@ -396,6 +396,9 @@ const INTERNAL_IDS = new Set([
   // Send feedback's own buttons (D-203): Spotlight lists only Send feedback… and Report a problem….
   "feedback.send", "feedback.submit", "feedback.retry", "feedback.continue", "feedback.done", "feedback.close", "feedback.openIssue", "feedback.signIn", "feedback.toggleAttach", "feedback.togglePreview",
   "local.copyTo", "local.importClose", "local.importRetry", "projects.newRecover", "history.retry", "files.retryDeleted", "image.retry", "image.failed",
+  // Delete project's own steps (PRJ-23): Spotlight lists only Delete project….
+  "project.deleteSetOpen", "project.deleteCancel", "project.deleteStop", "project.deleteRetry", "project.deleteSignIn", "project.deleteRemoveInstead", "project.deleteType", "project.deletePrivate",
+  "project.deleteBack", "project.deleteContinue", "project.deleteExport", "project.deleteConfirm", "project.deleteOpenGitHub", "project.deletePoll", "project.deleteConfirmGitHub", "project.deleteShowFolder",
 ]);
 /** Scopes where a key acts on what's in front of it, not a place a person starts from. */
 const ACTION_SCOPES = new Set(["editor", "table"]);

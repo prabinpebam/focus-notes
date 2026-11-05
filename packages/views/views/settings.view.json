@@ -19,7 +19,8 @@
     "vm.project",
     "vm.sharingSettings",
     "vm.sharingPeople",
-    "vm.sharingPreview"
+    "vm.sharingPreview",
+    "vm.projectDelete"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -1148,6 +1149,49 @@
                                 "props": {
                                   "value": {
                                     "t": "project.home.removeOffline"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.canDelete"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "inlineItem"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "project.delete.entry"
+                                      },
+                                      "icon": "delete",
+                                      "variant": "danger"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "project.delete"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.settings.workspace.deleteNote"
                                   },
                                   "tone": "muted"
                                 }
@@ -3804,6 +3848,7 @@
           }
         ]
       },
+      { "use": "project.delete" },
       {
         "type": "Dialog",
         "id": "removeWorkspace",

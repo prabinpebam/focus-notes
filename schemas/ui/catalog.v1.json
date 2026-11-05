@@ -6977,7 +6977,8 @@
         "vm.project",
         "vm.sharingSettings",
         "vm.sharingPeople",
-        "vm.sharingPreview"
+        "vm.sharingPreview",
+        "vm.projectDelete"
       ]
     },
     {

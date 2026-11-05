@@ -7,7 +7,7 @@
 import settings from "../../views/settings.view.json" with { type: "json" };
 import data from "./data.json" with { type: "json" };
 import home from "./home.json" with { type: "json" };
-import del from "./delete.json" with { type: "json" };
+import projectDelete from "../../views/project-delete.json" with { type: "json" };
 import projects from "../../views/projects.view.json" with { type: "json" };
 import openData from "../open/data.json" with { type: "json" };
 import { compose } from "../../src/compose.ts";
@@ -64,6 +64,14 @@ const withPill = (root: unknown, layer: unknown): unknown => {
   const first = r.children.findIndex((c) => c.type === "Dialog");
   return { ...r, children: r.children.map((c, i) => (i === first ? { ...c, children: [...c.children, layer] } : c)) };
 };
+/** Delete (approved 5 November): the built dialog itself, its state in the mock's locals and its facts in fake data, actions left out. */
+const STATE = /^vm\.projectDelete\.(open|step|kind|problem|typed|private|exported|busy)\b/;
+const delOf = (node: unknown): unknown => {
+  if (Array.isArray(node)) return node.map(delOf);
+  if (!node || typeof node !== "object") return typeof node === "string" ? (STATE.test(node) ? node.replace(/^vm\.projectDelete\./, "local.") : node.replace(/^vm\.projectDelete\b/, "vm.pnwDel")) : node;
+  return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "on").map(([k, v]) => [k, delOf(v)]));
+};
+const del = delOf(projectDelete);
 const gone = new Set(["p2", "r3"]);
 const afterDelete = { ...openData, entries: openData.entries.filter((e) => !gone.has(e.id)), recent: openData.recent.filter((e) => !gone.has(e.id)) };
 
@@ -98,7 +106,7 @@ export const projectMocks = {
       local: { section: "file", kind: "md" },
       root: dialog("vm.pnw.fileSections", { ...others, file: home.file }),
     },
-    delete: { id: "gallery.mock.pnw.delete", focus: "projectDelete", local: { step: "consequences", kind: "linked", problem: "", typed: "", private: true, exported: false }, root: del },
+    delete: { id: "gallery.mock.pnw.delete", focus: "projectDelete", local: { open: true, step: "consequences", kind: "linked", problem: "", typed: "", private: true, exported: false, busy: false }, root: del },
     deleted: {
       ...openView,
       id: "gallery.mock.pnw.deleted",

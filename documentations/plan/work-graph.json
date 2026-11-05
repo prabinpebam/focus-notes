@@ -255,10 +255,10 @@
     },
     {
       "id": "WP-P.23", "stage": "MP", "title": "Delete a project with GitHub handoff",
-      "summary": "Proposed, waiting for the owner's separate deletion-design approval. PRJ-23: consequences, preservation, typed confirmation, GitHub settings Danger Zone handoff, status checks that never treat 404 as deletion proof, explicit remote-deletion confirmation, recoverable local recycling, precise partial failures and Open with an in-dialog success pill. Finish missing safety/error mocks before wiring; no real deletion during design.",
+      "summary": "Approved by the owner on 5 November 2026 and built with fakes only. PRJ-23: consequences, a copy of the notes not on GitHub, typed confirmation, the GitHub settings Danger Zone handoff, status checks that never treat a 404 as proof, the person's explicit I deleted it, recoverable recycling to the Recycle Bin with private notes kept beside it, a precise locked-file failure, then Open with one success pill. No real repository is deleted by an agent.",
       "requirements": ["PRJ-23"], "dependsOn": ["WP-P.17", "WP-P.20"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/project-model.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
