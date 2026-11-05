@@ -240,6 +240,13 @@
       "specs": ["experience/projects.md", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "planned"
     },
     {
+      "id": "WP-P.21", "stage": "MP", "title": "A project card's GitHub link and size",
+      "summary": "Open's project cards show the linked GitHub repository (GitHub mark and owner/repo, read from the local remote) as its own button that opens it in the default browser, and the project's size, files, media files and folders on one line counted asynchronously and cached (owner, 5 November; D-346).",
+      "requirements": ["PRJ-20", "PRJ-21", "PRJ-22"], "dependsOn": ["WP-P.20"],
+      "touches": ["core", "views", "ui", "desktop"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
+    },
+    {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
       "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Built after POP release over 86631980: native ItemCard radio area, shared Writer bridge/tracker and explicit save failure/default deletion. UX-LIST evidence checked; integration and owner acceptance pending. D-264/D-265/D-266 preserved.",
       "requirements": ["AIS-16"],

@@ -3,7 +3,7 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 128 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
+> **TL;DR.** 132 capabilities trace [scenarios](scenarios.md) to [views/components](../../design/information-architecture.html), [requirements](../requirements.md) and observable acceptance. Historical browser-writing/vault capabilities retain IDs for traceability only; D-292 retires their promises and acceptance, not the read-only share reader.
 
 ## Inline images (planned)
 
@@ -53,6 +53,7 @@ The browser-writing capabilities UC-SETUP-04, UC-SETUP-06 to UC-SETUP-08 and UC-
 | UC-PROJ-09 | pick up the last note I was editing as soon as the app starts | SC-PROJ-06 | P1 | IA-VIEW-PROJECTS | PRJ-14 | The last window closed decides; caret and scroll restored; deleted note shows recovery; nothing to reopen shows Open. |
 | UC-PROJ-10 | find and open any project, recent file or Local note from one view | SC-PROJ-07 | P1 | IA-VIEW-PROJECTS | PRJ-15, PRJ-16 | Ctrl+Alt+O opens it; two columns ranked by frecency; a file opens in its project's window, never this one; New project… is the deliberate flow. |
 | UC-PROJ-11 | pin files in Open without pinning them in their project | SC-PROJ-07 | P2 | IA-VIEW-PROJECTS | PRJ-17 | Pinned in Open and Pinned in Files are separate; unpinning either leaves the other and the file intact. |
+| UC-PROJ-12 | see which GitHub repository a project is linked to, open it in my browser, and see how big the project is, from its card in Open | SC-PROJ-07 | P1 | IA-VIEW-PROJECTS | PRJ-20, PRJ-21, PRJ-22 | A linked card shows the GitHub mark and owner/repo, and pressing it opens that repository in the default browser while the card's own press still opens the project; a local-only card has no GitHub line; size, files, media files and folders fill in without delaying the card, `.git` not counted. |
 | UC-FILE-12 | choose a folder in this project before creating a note | SC-FILE-07 | P1 | IA-CMP-PLACEPICKER | FIL-17, KEY-09 | Ctrl+Shift+N opens the folder picker with the current folder chosen; Enter creates there; Cancel writes nothing; it never lists or makes projects; plain New note remains immediate. |
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |

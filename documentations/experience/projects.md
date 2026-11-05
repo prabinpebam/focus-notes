@@ -119,6 +119,23 @@ The owner keeps the word **Recent** even though it's ranked by more than recency
 - **Type ramp:** the dialog title is 24 px bold, a project's name 20 px semibold, the section labels (**Recent**, **Projects**) 16 px semibold and muted, a file's name 14 px semibold, and details 13 px muted.
 - **Ctrl+Alt+O** opens Open even on keyboard layouts where left Ctrl+Alt+O types a character (ō); only the AltGr key's characters win over the shortcut.
 
+### A project card's GitHub link and size
+
+The owner, 5 November, word for word:
+
+> - The open dialog
+>     - Project cards should show the GitHub logo and the name of the github repo if it's linked to a github repo. Clicking it opens the repo in the default browser.
+>     - It should show total size, number of files, media files and folders in the project.
+>
+> Add this in the execution track.
+
+Planned (PRJ-20 to PRJ-22, D-346; design first, in the gallery's **Mocks: Open** before any wiring):
+
+- **The linked repository.** When the project's folder has a GitHub remote, its card shows a line under the folder path: the GitHub mark and **owner/repo**, in the path line's quiet text and icon style. A local-only project has no such line. Nothing new encloses it: no border, fill or badge.
+- **Opening it.** That line is its own button, beside the card's open action and never inside it, named **Open owner/repo on GitHub**. Pressing it opens `https://github.com/owner/repo` in the default browser through the app's existing safe link path. The address comes only from the remote in the folder's own Git config; nothing is asked of GitHub.
+- **The project's size** shows on one compact line under that: **2.4 MB · 37 files · 5 media files · 6 folders**. Files counts every file, media files counts the images among them that the app recognises, and folders counts the folders inside the project. Hidden folders such as `.git` are left out.
+- **Never a wait to open.** The card is there at once; its size line fills in when counted, from a cache when the project was counted before. A count still running shows a short placeholder line in that place (after 300 ms), and a count that can't finish leaves the line out without an error: the card still opens.
+
 ### How Recent and Projects are ranked
 
 Files and projects rank by **exponential-decay frecency** (D-321): each open adds 1 point and each editing session 2, and every score halves every **14 days**, so a note opened daily outranks one opened often months ago, and a burst of use fades smoothly rather than at a bucket edge. It's stored as one number per item (the date its score would decay to 1), so no visit history is kept and nothing is recomputed. Pinned items sit above the ranking in the order they were pinned. Removing a row from Recent forgets its score; it never deletes a file.
@@ -319,6 +336,7 @@ Project selection/pin feedback answers within 100 ms. Prepare/open/create/invite
 | Invalid/taken name | Field error and a suggested available name; retain input, no remote side effects |
 | Pending invite | Named account and Pending; Cancel invite when authorized, not a success badge |
 | Loading from GitHub | Skeleton rows in **Open from GitHub…**; local projects stay listed and usable |
+| Counting a project's size | The card shows and opens at once; a short placeholder line stands where the size goes until it's counted; a failed count leaves the line out (D-346) |
 | GitHub unreachable or rate-limited | **“Couldn't reach GitHub. Check your connection, then try again.”** Retry; local projects stay listed |
 | Sign-in expired | **“Sign in to GitHub again to continue.”** Sign in; the name, choices and draft are kept and the same operation resumes afterwards |
 | Sign-in can't do this | **“Your GitHub sign-in can't create repositories here.”** Manage on GitHub; nothing is created (R-52) |
@@ -337,5 +355,6 @@ Projects/Recent rows have text names and location, keyboard arrows and Enter; Pi
 | DD-PROJ-05 | Fixed destination picker, private-first creation | UC-FILE-12, UC-SHARE-08 | Cancel has no effect; first share explains public footprint |
 | DD-PROJ-06 | Actual GitHub roles and full-project warning | UC-SHARE-09 | Never imply folder-only or personal-account Read-only access |
 | DD-PROJ-07 | Explain Project at upgrade/first run; leave files and repositories in place | UC-PROJ-01 | A naming change needs consistent words and a mental-model figure, not a storage migration (PRJ-11) |
+| DD-PROJ-08 | A card shows its linked GitHub repository as its own quiet link line, and its size on one line that fills in after the card | UC-PROJ-12 | The owner asked for both (D-346); quiet lines in the path's style add no enclosure, and counting never delays opening. A badge or a second card row of chips was rejected as noise |
 
 **Evidence still required:** [MP done rows](../plan/definition-of-done.md#projects-and-simpler-sharing). These flow/figure specs do not substitute for approved JSON view documents or working runtime.

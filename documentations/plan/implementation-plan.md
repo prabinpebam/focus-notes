@@ -420,6 +420,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.18 | Turn sharing on and off | PRJ-10 | WP-P.4, WP-P.9, WP-P.12, WP-5.1 | code, security, design-system, accessibility |
 | WP-P.19 | Launch where I left off | PRJ-14 | WP-P.4 | code |
 | WP-P.20 | The Open view | PRJ-15, PRJ-16, PRJ-17 | WP-P.6, WP-P.8 | code, design-system, accessibility |
+| WP-P.21 | A project card's GitHub link and size | PRJ-20, PRJ-21, PRJ-22 | WP-P.20 | code, security, design-system, accessibility |
 
 These are independently reviewable slices; lookahead permits design without unrelated stage gates. **Order (D-314):** the smallest owner-visible slices go first and don't wait for projects: WP-P.16 (Switch) and WP-P.9 (the owner's three share-dialog fixes on today's sharing), WP-P.1 to WP-P.3 (keys, write at caret, file names) and WP-P.17 (the [terminology move](../experience/projects.md#meeting-project-for-the-first-time), mostly words). Then WP-P.4 (windows and scope), WP-P.5 to WP-P.8, and the site work (WP-P.12 to WP-P.15, WP-P.18). Each slice gives the owner a view or behaviour to try within about an hour of work; larger ones are reviewed as JSON views first. WP-P.10 includes opaque link/code/path/file identifiers and the extended leak checks (MP.14). Accepted choices are recorded in [Next direction](next-direction.md#what-needs-the-owner); none of the six remain open.
 
