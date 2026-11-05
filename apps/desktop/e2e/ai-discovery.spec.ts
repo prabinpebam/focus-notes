@@ -48,6 +48,11 @@ test(`DD-RWR-12: ${appearance} scans progressively to found, none and error, and
     await settings.getByRole("tab", { name: "AI", exact: true }).click();
     const find = settings.getByRole("button", { name: "Find on this PC", exact: true });
     const radar = settings.getByRole("group", { name: "Looking for AI models on this computer", exact: true });
+    // Fixture releases, not assertion round trips, control these probes. Protocol units cover deadlines.
+    await l.app.evaluate(() => {
+      const { mock } = process.getBuiltinModule("node:test");
+      mock.timers.enable({ apis: ["setTimeout"] });
+    });
     await fake("found");
     await find.click();
     await expect(radar).toHaveAttribute("aria-busy", "true");
@@ -110,6 +115,9 @@ test(`DD-RWR-12: ${appearance} scans progressively to found, none and error, and
     await expect(settings.getByText("Scan stopped. Completed results are kept.", { exact: true }).first()).toBeVisible();
     await expect(radar.locator('li[data-status="checking"]')).toHaveCount(0);
     await expect.poll(() => l.app.evaluate(() => performance.getEntriesByName("fn:ai.discover").length)).toBeGreaterThanOrEqual(3);
-  } finally { await quit(l); }
+  } finally {
+    try { await l.app.evaluate(() => { const { mock } = process.getBuiltinModule("node:test"); mock.timers.reset(); }); }
+    finally { await quit(l); }
+  }
 });
 }
