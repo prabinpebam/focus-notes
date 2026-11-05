@@ -1,5 +1,24 @@
 # Decisions
 
+## D-pending: Project replaces workspace everywhere
+
+**Status:** Proposed (worker, 5 November 2026; strict design, waiting for the owner's approval). **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).
+
+The owner wrote: "Project and workspace are the same thing. Why have two separate concepts. It's confusing. … eliminate the term workspace completely from the app. all projects have version control with git. Projects can be completely offline or linked to a GitHub repo." The full words are on [One concept: Project](../experience/project-model.md#the-owners-direction).
+
+- **One noun.** "Workspace" leaves every message, menu, dialog title, Help page, CLI message and accessible name; **Project** is used instead. The inventory with its proposed wording is on the spec page. `migrate.notice` keeps the one sentence that explains the rename.
+- **Every project has Git.** A project is either **on this computer only** (local Git) or **linked to GitHub**. Linking is a later, optional step; offline is a complete state.
+- **Settings loses the Workspace tab.** Its contents become **Where it's kept** at the end of Settings → Project (mocks `pnw.linked` and `pnw.offline`).
+- **Standalone files are the only thing outside a project:** edited in place, no version history, no images for types such as .txt, and an image insert creates a folder beside the file (mocks `pnw.fileMd` and `pnw.fileTxt`).
+- **For the owner to decide separately:**
+  - (a) Local notes becomes an offline project, as recommended, or is removed;
+  - (b) flatten standalone images to `<file>.assets/<id>.<ext>`;
+  - (c) rename `.focus-notes/workspace.json` to `project.json` and the template repository `focus-notes-workspace` to `focus-notes-project`, with a migration that reads both.
+
+  Nothing on disk is renamed until then.
+
+Rejected: keeping "workspace" as the word for the folder and "project" for its identity (two words for one thing is the confusion the owner named), and a silent alias in the UI. The orchestrator assigns the number.
+
 ## D-pending: the image insertion design is approved; slice 1 needs no new mock
 
 **Status:** Accepted (owner, 5 November 2026). **Affects** [Images → Readiness assessment](../experience/images.md#readiness-assessment-5-november), WP-9.7, D-349.

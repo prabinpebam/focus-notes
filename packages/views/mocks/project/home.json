@@ -1,0 +1,156 @@
+{
+  "linked": {
+    "type": "Section",
+    "slots": { "heading": [{ "type": "Heading", "props": { "level": "3", "value": { "t": "project.home.heading" } } }] },
+    "children": [
+      {
+        "type": "Stack",
+        "props": { "gap": "stackPair" },
+        "children": [
+          { "type": "Text", "props": { "role": "label", "value": { "t": "project.home.folder" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.pnw.folder" }, "personal": true } }
+        ]
+      },
+      {
+        "type": "ItemCard",
+        "props": {
+          "icon": "github",
+          "title": { "t": "project.home.linked.title" },
+          "detail": { "t": "project.home.linked.detail",           "args": { "repo": { "get": "vm.pnw.repo" } } }
+                  }
+      },
+      {
+        "type": "Stack",
+        "props": { "gap": "stackPair" },
+        "children": [
+          {
+            "type": "Inline",
+            "props": { "gap": "inlineItem", "wrap": true },
+            "children": [
+              { "type": "Button", "props": { "label": { "t": "command.sync.now" } } },
+              { "type": "Button", "props": { "label": { "t": "command.setup.runAgain" } } }
+            ]
+          },
+          { "type": "Text", "props": { "value": { "t": "settings.workspace.setupNote" }, "tone": "muted" } }
+        ]
+      },
+      {
+        "type": "Stack",
+        "props": { "gap": "stackPair" },
+        "children": [
+          { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [{ "type": "Button", "props": { "label": { "t": "project.home.remove" } } }] },
+          { "type": "Text", "props": { "value": { "t": "project.home.removeNote" }, "tone": "muted" } }
+        ]
+      }
+    ]
+  },
+  "offline": {
+    "type": "Section",
+    "slots": { "heading": [{ "type": "Heading", "props": { "level": "3", "value": { "t": "project.home.heading" } } }] },
+    "children": [
+      {
+        "type": "Stack",
+        "props": { "gap": "stackPair" },
+        "children": [
+          { "type": "Text", "props": { "role": "label", "value": { "t": "project.home.folder" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.pnw.folder" }, "personal": true } }
+        ]
+      },
+      {
+        "type": "ItemCard",
+        "props": {
+          "icon": "hardDrive",
+          "title": { "t": "project.home.offline.title" },
+          "detail": { "t": "project.home.offline.detail" }
+        }
+      },
+      {
+        "type": "Stack",
+        "props": { "gap": "stackPair" },
+        "children": [
+          { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [{ "type": "Button", "props": { "label": { "t": "project.home.link" }, "icon": "github" } }] },
+          { "type": "Text", "props": { "value": { "t": "project.home.linkNote" }, "tone": "muted" } }
+        ]
+      },
+      {
+        "type": "Stack",
+        "props": { "gap": "stackPair" },
+        "children": [
+          {
+            "type": "Inline",
+            "props": { "gap": "inlineItem" },
+            "children": [{ "type": "Button", "props": { "label": { "t": "project.home.remove" }, "disabled": true, "disabledReason": { "t": "project.home.removeOffline" } } }]
+          },
+          { "type": "Text", "props": { "value": { "t": "project.home.removeOffline" }, "tone": "muted" } }
+        ]
+      }
+    ]
+  },
+  "file": {
+    "type": "Stack",
+    "props": { "gap": "stackSection" },
+    "children": [
+      {
+        "type": "Section",
+        "slots": { "heading": [{ "type": "Heading", "props": { "level": "2", "value": { "t": "file.settings.title" } } }] },
+        "children": [
+          {
+            "type": "ItemCard",
+            "props": { "icon": "documentText", "title": { "t": "file.settings.outside" }, "detail": { "t": "file.settings.outsideDetail" } }
+          },
+          {
+            "type": "Stack",
+            "props": { "gap": "stackPair" },
+            "children": [
+              { "type": "Text", "props": { "role": "label", "value": { "t": "file.settings.location" } } },
+              {
+                "switch": { "get": "local.kind" },
+                "cases": {
+                  "md": { "type": "Text", "props": { "value": { "get": "vm.pnw.file.path" }, "personal": true } },
+                  "txt": { "type": "Text", "props": { "value": { "get": "vm.pnw.file.txtPath" }, "personal": true } }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Section",
+        "slots": { "heading": [{ "type": "Heading", "props": { "level": "3", "value": { "t": "file.settings.images" } } }] },
+        "children": [
+          {
+            "switch": { "get": "local.kind" },
+            "cases": {
+              "md": {
+                "type": "Stack",
+                "props": { "gap": "stackPair" },
+                "children": [
+                  { "type": "Text", "props": { "value": { "t": "file.settings.imagesBeside" } } },
+                  { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+                    { "type": "Icon", "props": { "name": "folder", "size": "m" } },
+                    { "type": "Text", "props": { "value": { "get": "vm.pnw.file.assets" }, "personal": true } }
+                  ] }
+                ]
+              },
+              "txt": {
+                "type": "Stack",
+                "props": { "gap": "stackPair" },
+                "children": [
+                  {
+                    "type": "Inline",
+                    "props": { "gap": "inlineItem", "wrap": true },
+                    "children": [
+                      { "type": "Button", "props": { "label": { "t": "file.settings.insertImage" }, "icon": "imageAdd", "disabled": true, "disabledReason": { "t": "file.settings.imagesTxt" } } },
+                      { "type": "Button", "props": { "label": { "t": "file.settings.saveAsMarkdown" } } }
+                    ]
+                  },
+                  { "type": "Text", "props": { "value": { "t": "file.settings.imagesTxt" }, "tone": "muted" } }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

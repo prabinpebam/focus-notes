@@ -40,7 +40,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 
 | Field | Value |
 | --- | --- |
-| Customer promise | Each project has its own place, history and window, so I never mix one part of my life with another; I can still jot a local note or open a file without choosing a project. |
+| Customer promise | Each project has its own place, Git history and window, kept on this computer only or linked to GitHub, so I never mix one part of my life with another; I can still jot a quick note or open a single file on its own without choosing a project. |
 | Why it matters | A book, a job and a club should not share search results, commits or permissions by accident. |
 | Breaks when | A project window searches or changes another project's notes; opening another project loses a draft; a local file is imported or uploaded without asking; window identity depends on colour alone. |
 | Signals | Two-project scope checks, exact saved-draft recovery, distinct labelled windows and local-only capture tried by the owner. |

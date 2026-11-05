@@ -20,6 +20,15 @@
       "group": "Experience"
     },
     {
+      "path": "experience/project-model.md",
+      "title": "One concept: Project",
+      "order": 263,
+      "icon": "folder_special",
+      "status": "draft",
+      "updated": "2026-11-05",
+      "group": "Experience"
+    },
+    {
       "path": "experience/projects.md",
       "title": "Projects",
       "order": 262,
