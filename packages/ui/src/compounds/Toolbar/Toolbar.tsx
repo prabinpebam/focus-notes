@@ -2,6 +2,7 @@ import { ToolbarRow } from "../../layouts/ToolbarRow/ToolbarRow.tsx";
 import { IconButton } from "../../primitives/IconButton/IconButton.tsx";
 import { MenuButton } from "../../primitives/MenuButton/MenuButton.tsx";
 import { Divider } from "../../primitives/Divider/Divider.tsx";
+import { Switch } from "../../primitives/Switch/Switch.tsx";
 import type { CommandItem, MenuSection } from "../../data.ts";
 import type { IconName } from "../../icon-names.ts";
 
@@ -13,23 +14,29 @@ export interface ToolbarProps {
   items: CommandItem[];
   more: MenuSection[];
   moreLabel: string;
+  onLabel: string;
+  offLabel: string;
   onAction?: (payload: { id: string }) => void;
 }
 
 /** The minimal toolbar (IA-CMP-TOOLBAR, IA-CMP-OVERFLOW): at most six actions, then ⋯. */
-export function Toolbar({ label, items, more, moreLabel, onAction }: ToolbarProps) {
+export function Toolbar({ label, items, more, moreLabel, onLabel, offLabel, onAction }: ToolbarProps) {
   const shown = items.slice(0, MAX_ACTIONS);
   const overflow = items.slice(MAX_ACTIONS);
   const sections = overflow.length ? [{ id: "pinned-overflow", items: overflow }, ...more] : more;
   return (
     <ToolbarRow label={label}>
-      {shown.map((item) => (
+      {shown.map((item) => item.checked !== undefined ? (
+        <Switch key={item.id} label={item.label} checked={item.checked} onLabel={onLabel} offLabel={offLabel}
+          {...(item.disabled ? { disabled: true, disabledReason: item.reason } : {})}
+          {...(item.commit ? { commit: item.commit } : {})}
+          onChange={() => onAction?.({ id: item.id })} />
+      ) : (
         <IconButton
           key={item.id}
           icon={(item.icon ?? "info") as IconName}
           label={item.label}
           {...(item.shortcut ? { shortcut: item.shortcut } : {})}
-          {...(item.checked !== undefined ? { toggle: true, pressed: item.checked } : {})}
           {...(item.disabled ? { disabled: true, ...(item.reason ? { disabledReason: item.reason } : {}) } : {})}
           {...(item.busy ? { busy: true } : {})}
           {...(item.busyLabel ? { busyLabel: item.busyLabel } : {})}

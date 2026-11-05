@@ -6,6 +6,7 @@ import { Component, createElement, Fragment, memo, useCallback, useMemo, useRef,
 import type { App, AppState } from "@focus-notes/core";
 // From its own module, so a page that renders without the app (the share reader) doesn't load the app.
 import { formatChord } from "@focus-notes/core/commands";
+import { breakpoints } from "@focus-notes/tokens";
 import type { Contract, Registry } from "@focus-notes/ui/contracts";
 import { evaluate } from "./expr.ts";
 import {
@@ -38,6 +39,14 @@ interface Scope {
 }
 
 const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
+export const sizeClassOf = (width: number): "compact" | "medium" | "wide" =>
+  width < breakpoints.medium ? "compact" : width < breakpoints.wide ? "medium" : "wide";
+const viewportClass = () => typeof window === "undefined" ? "wide" : sizeClassOf(window.innerWidth);
+const subscribeViewport = (changed: () => void) => {
+  window.addEventListener("resize", changed);
+  return () => window.removeEventListener("resize", changed);
+};
+const noSubscription = () => () => {};
 
 /** Per-contract event wiring, computed once (the renderer's hot path stays allocation-light). */
 const eventPlans = new WeakMap<Contract, { event: string; prop: string; binds?: string }[]>();
@@ -71,6 +80,7 @@ function pathGet(obj: unknown, parts: string[]): unknown {
 export function createResolver(deps: RuntimeDeps) {
   const { app } = deps;
   const env = () => ({
+    sizeClass: viewportClass(),
     platform: app.bridge.platform,
     colorScheme: app.store.state.appearance.mode === "system" ? app.store.state.appearance.system : app.store.state.appearance.mode,
     locale: "en",
@@ -310,6 +320,7 @@ const RegionHost = memo(function RegionHost({ node, top, viewKey, deps, resolver
     return cache.current.version;
   };
   useSyncExternalStore(subscribe, snapshot, snapshot);
+  useSyncExternalStore(needs.all ? subscribeViewport : noSubscription, viewportClass, viewportClass);
   const scope: Scope = { state: deps.app.store.state, local, setLocal, items };
   if (!shown.current && resolver.value(when as Value, scope)) shown.current = true;
   return renderNode(node, scope, deps, resolver, viewKey ?? 0, boundary ? { deps, resolver, local, setLocal, items } : undefined);

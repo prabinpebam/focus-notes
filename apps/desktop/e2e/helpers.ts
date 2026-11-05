@@ -58,7 +58,7 @@ export async function writerSettingSettled(page: Page, setting: "fontSize" | "fo
     // The toolbar's Escape handler only owns focus after the menu restores its trigger.
     await expect(more).toBeFocused();
   } else {
-    await expect(toolbar.getByRole("button", { name: "Focus mode", exact: true })).not.toHaveAttribute("data-commit", "pending");
+    await expect(toolbar.getByRole("switch", { name: "Focus mode", exact: true })).not.toHaveAttribute("data-commit", "pending");
   }
   await page.keyboard.press("Escape");
   await expect(toolbar).toBeHidden();

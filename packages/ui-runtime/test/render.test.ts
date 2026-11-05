@@ -4,7 +4,8 @@ import { renderToString } from "react-dom/server";
 import { registry, contractByType } from "@focus-notes/ui";
 import { createApp, type PlatformBridge } from "@focus-notes/core";
 import { messages } from "@focus-notes/views";
-import { ViewHost, type RuntimeDeps } from "../src/render.ts";
+import { ViewHost, sizeClassOf, type RuntimeDeps } from "../src/render.ts";
+import { breakpoints } from "@focus-notes/tokens";
 
 const bridge: PlatformBridge = {
   platform: "macos", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
@@ -31,6 +32,12 @@ const render = (app: ReturnType<typeof setup>["app"], view: unknown) => {
 };
 
 describe("the renderer (DSY-06)", () => {
+  it("OFB.6: resolves all responsive classes at the token boundaries", () => {
+    expect(sizeClassOf(breakpoints.medium - 1)).toBe("compact");
+    expect(sizeClassOf(breakpoints.medium)).toBe("medium");
+    expect(sizeClassOf(breakpoints.wide - 1)).toBe("medium");
+    expect(sizeClassOf(breakpoints.wide)).toBe("wide");
+  });
   it("resolves messages, reads, repeats, choices, and conditions", () => {
     const { app } = setup([{ id: "1", label: "One" }, { id: "2", label: "Two" }]);
     const html = render(app, doc({

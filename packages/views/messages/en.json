@@ -985,6 +985,7 @@
   "command.findAll.open": "Open the match",
   "find.label": "Find in note",
   "find.field": "Find",
+  "find.options": "Search options",
   "find.replaceField": "Replace with",
   "find.count": "{current, plural, =0 {{count, plural, one {# match} other {# matches}}} other {{current} of {count}}}",
   "find.none": "No results",

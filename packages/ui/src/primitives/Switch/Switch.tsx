@@ -37,6 +37,7 @@ export function Switch({ label, checked, onLabel, offLabel, description, disable
   const note = disabled && disabledReason ? disabledReason : description;
   return (
     <AriaSwitch
+      aria-label={label}
       className={s.root}
       isSelected={Boolean(checked)}
       isDisabled={Boolean(disabled)}

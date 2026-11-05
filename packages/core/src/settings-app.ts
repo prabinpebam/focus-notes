@@ -16,7 +16,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { SyncState } from "./sync-app.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import type { TaskTracker, TaskView } from "./tasks.ts";
+import type { TaskTracker, TaskView, CommitView } from "./tasks.ts";
 import { UI_SCALES, themeById } from "./themes.ts";
 import { customOf } from "./theme-manager-app.ts";
 import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
@@ -58,6 +58,7 @@ interface S {
   appearance: { mode: "system" | "light" | "dark"; lightTheme: string; darkTheme: string; fontSize: number; contentFont: string; uiScale: number; customThemes?: import("./custom-themes.ts").CustomTheme[] };
   settingsSync: "unavailable" | "off" | "on";
   tasks: TaskView[];
+  commits: CommitView[];
 }
 
 interface Ctx<St extends S> {
@@ -265,13 +266,13 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         file: { type: "object", properties: { path: { type: "string" } } },
         appearance: {
           type: "object",
-          properties: { summary: { type: "string" }, scale: { type: "string" }, scales: { type: "array", items: OPTION }, canSync: { type: "boolean" }, syncOn: { type: "boolean" } },
+          properties: { summary: { type: "string" }, scale: { type: "string" }, scales: { type: "array", items: OPTION }, canSync: { type: "boolean" }, syncOn: { type: "boolean" }, syncCommit: { type: "string", enum: ["rest", "pending", "confirmed", "failed"] } },
         },
       },
     },
     setters: { section: "settings.setSection", "appearance.scale": "ui.setScale" },
     commits: ["appearance.scale"],
-    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "workspace.repo", "note.path", "appearance", "settingsSync"],
+    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "workspace.repo", "note.path", "appearance", "settingsSync", "commits"],
     select: (s) => {
       const st = s.ui.settings;
       const a = st.account;
@@ -319,6 +320,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           scale: String(s.appearance.uiScale),
           scales: UI_SCALES.map((v) => ({ id: String(v), label: catalog.format("settings.appearance.percent", { value: Math.round(v * 100) }) })),
           canSync: s.settingsSync !== "unavailable", syncOn: s.settingsSync === "on",
+          syncCommit: s.commits.find(c => c.target === "settings.sync")?.phase ?? "rest",
         },
       };
     },

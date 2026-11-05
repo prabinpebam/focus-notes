@@ -172,16 +172,19 @@
                     },
                     "children": [
                       {
-                        "type": "Button",
+                        "type": "Switch",
                         "props": {
                           "label": {
                             "t": "command.feedback.toggleAttach"
                           },
-                          "variant": "subtle",
-                          "icon": "document",
-                          "toggle": true,
-                          "pressed": {
+                          "checked": {
                             "get": "vm.sendFeedback.attach"
+                          },
+                          "onLabel": {
+                            "t": "switch.on"
+                          },
+                          "offLabel": {
+                            "t": "switch.off"
                           },
                           "disabled": {
                             "get": "vm.sendFeedback.sending"
@@ -191,7 +194,7 @@
                           }
                         },
                         "on": {
-                          "press": {
+                          "change": {
                             "run": "feedback.toggleAttach"
                           }
                         }

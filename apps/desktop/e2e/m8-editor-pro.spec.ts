@@ -98,8 +98,8 @@ test("FND-03 by keyboard: Alt+L finds only inside the selection, steps inside it
   const field = bar.getByRole("searchbox", { name: "Find" });
   await expect(field).toBeFocused();
   await expect(field).toHaveValue("");
-  const toggle = bar.getByRole("button", { name: "Find in selection" });
-  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  const toggle = bar.getByRole("switch", { name: "Find in selection" });
+  await expect(toggle).toBeChecked();
   await field.fill("note");
   const status = bar.getByRole("status").first();
   await expect(status).toHaveText(/of 2$/);
@@ -111,7 +111,7 @@ test("FND-03 by keyboard: Alt+L finds only inside the selection, steps inside it
   await expect(status).toHaveText(/of 2$/);
   // Off: the whole note; on again: back to the selection.
   await page.keyboard.press(mac ? "Meta+Alt+l" : "Alt+l");
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await expect(toggle).not.toBeChecked();
   // The heading "Notes" counts too: plain find matches inside words.
   await expect(status).toHaveText(/of 5$/);
   await page.keyboard.press(mac ? "Meta+Alt+l" : "Alt+l");
@@ -131,7 +131,7 @@ test("FND-03 by keyboard: Alt+L finds only inside the selection, steps inside it
   // With nothing selected the toggle is disabled and says why.
   await page.keyboard.press(caret.docEnd);
   await page.keyboard.press(`${mod}+f`);
-  await expect(toggle).toHaveAttribute("aria-disabled", "true");
+  await expect(toggle).toBeDisabled();
   await quit(l);
 });
 

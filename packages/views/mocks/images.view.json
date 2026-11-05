@@ -3091,60 +3091,66 @@
                   },
                   "children": [
                    {
-                    "type": "Button",
-                    "on": {
-                     "press": {
-                      "set": "local.rounded",
-                      "to": {
-                       "expr": {
-                        "!": [
-                         {
-                          "get": "local.rounded"
+                     "type": "Switch",
+                     "on": {
+                       "change": {
+                         "set": "local.rounded",
+                         "to": {
+                           "expr": {
+                             "!": [
+                               {
+                                 "get": "local.rounded"
+                               }
+                             ]
+                           }
                          }
-                        ]
                        }
-                      }
-                     }
-                    },
-                    "props": {
-                     "label": {
-                      "t": "image.rounded"
                      },
-                     "variant": "subtle",
-                     "size": "s",
-                     "toggle": true,
-                     "pressed": {
-                      "get": "local.rounded"
+                     "props": {
+                       "label": {
+                         "t": "image.rounded"
+                       },
+                       "checked": {
+                         "get": "local.rounded"
+                       },
+                       "onLabel": {
+                         "t": "switch.on"
+                       },
+                       "offLabel": {
+                         "t": "switch.off"
+                       }
                      }
-                    }
                    },
                    {
-                    "type": "Button",
-                    "on": {
-                     "press": {
-                      "set": "local.fit",
-                      "to": {
-                       "expr": {
-                        "!": [
-                         {
-                          "get": "local.fit"
+                     "type": "Switch",
+                     "on": {
+                       "change": {
+                         "set": "local.fit",
+                         "to": {
+                           "expr": {
+                             "!": [
+                               {
+                                 "get": "local.fit"
+                               }
+                             ]
+                           }
                          }
-                        ]
                        }
-                      }
-                     }
-                    },
-                    "props": {
-                     "label": {
-                      "t": "image.limit"
                      },
-                     "variant": "subtle",
-                     "size": "s",
-                     "toggle": true,
-                     "pressed": {
-                      "get": "local.fit"
+                     "props": {
+                       "label": {
+                         "t": "image.limit"
+                       },
+                       "checked": {
+                         "get": "local.fit"
+                       },
+                       "onLabel": {
+                         "t": "switch.on"
+                       },
+                       "offLabel": {
+                         "t": "switch.off"
+                       }
                      }
-                    }
                    },
                    {
                     "type": "Button",

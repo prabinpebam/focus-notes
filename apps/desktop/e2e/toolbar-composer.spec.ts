@@ -88,7 +88,7 @@ test("UI-08: drag reorder, remove/add, hold replace and full refusal survive res
     const page = await start();
     await page.getByRole("button", { name: "Focus Notes menu", exact: true }).click();
     const real = page.getByRole("toolbar", { name: "Toolbar", exact: true });
-    await expect.poll(() => real.getByRole("button").evaluateAll(els => els.map(el => el.getAttribute("aria-label")))).toEqual([...expected, "More"]);
+    await expect.poll(() => real.locator('button, input[role="switch"]').evaluateAll(els => els.map(el => el.getAttribute("aria-label")))).toEqual([...expected, "More"]);
     await page.keyboard.press("Escape");
     await settled(page);
     return page;
@@ -185,7 +185,7 @@ test("UI-08: keyboard reorder, remove/add, replace and full refusal persist with
     l = await launch(dirs); console.log(`toolbar-scan-owned-pid=${l.pid}`);
     await l.page.keyboard.press(`${mod}+.`);
     const real = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
-    await expect.poll(() => real.getByRole("button").evaluateAll(els => els.map(el => el.getAttribute("aria-label")))).toEqual([...expected, "More"]);
+    await expect.poll(() => real.locator('button, input[role="switch"]').evaluateAll(els => els.map(el => el.getAttribute("aria-label")))).toEqual([...expected, "More"]);
     await l.page.keyboard.press("Escape");
     const reset = await composer(l.page);
     await reset.dialog.getByRole("button", { name: "Reset toolbar to default", exact: true }).click();
@@ -195,6 +195,6 @@ test("UI-08: keyboard reorder, remove/add, replace and full refusal persist with
     l = await launch(dirs); console.log(`toolbar-scan-owned-pid=${l.pid}`);
     await l.page.keyboard.press(`${mod}+.`);
     const restored = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
-    await expect.poll(() => restored.getByRole("button").evaluateAll(els => els.map(el => el.getAttribute("aria-label")))).toEqual([...defaults, "More"]);
+    await expect.poll(() => restored.locator('button, input[role="switch"]').evaluateAll(els => els.map(el => el.getAttribute("aria-label")))).toEqual([...defaults, "More"]);
   } finally { if (l) await quit(l); }
 });

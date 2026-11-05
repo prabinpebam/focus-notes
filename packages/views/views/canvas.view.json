@@ -276,7 +276,9 @@
               },
               "moreLabel": {
                 "t": "toolbar.more"
-              }
+              },
+              "onLabel": { "t": "switch.on" },
+              "offLabel": { "t": "switch.off" }
             },
             "on": {
               "openChange": {
@@ -416,8 +418,7 @@
                             "get": "vm.find.actions.toggleReplace.shortcut"
                           },
                           "tone": "muted",
-                          "toggle": true,
-                          "pressed": true
+                          "expanded": true
                         },
                         "on": {
                           "press": {
@@ -436,8 +437,7 @@
                             "get": "vm.find.actions.toggleReplace.shortcut"
                           },
                           "tone": "muted",
-                          "toggle": true,
-                          "pressed": false
+                          "expanded": false
                         },
                         "on": {
                           "press": {
@@ -554,110 +554,254 @@
                             ]
                           },
                           {
-                            "type": "Inline",
-                            "props": {
-                              "gap": "inlinePair"
+                            "switch": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "env.sizeClass"
+                                  },
+                                  "compact"
+                                ]
+                              }
                             },
-                            "children": [
-                              {
-                                "type": "IconButton",
+                            "cases": {
+                              "true": {
+                                "type": "PopoverPanel",
                                 "props": {
-                                  "icon": "matchCase",
                                   "label": {
-                                    "get": "vm.find.actions.case.label"
-                                  },
-                                  "shortcut": {
-                                    "get": "vm.find.actions.case.shortcut"
-                                  },
-                                  "tone": "muted",
-                                  "toggle": true,
-                                  "pressed": {
-                                    "get": "vm.find.caseSensitive"
+                                    "t": "find.options"
                                   }
                                 },
-                                "on": {
-                                  "press": {
-                                    "run": "find.toggle.caseSensitive"
-                                  }
+                                "slots": {
+                                  "trigger": [
+                                    {
+                                      "type": "IconButton",
+                                      "props": {
+                                        "icon": "settings",
+                                        "label": {
+                                          "t": "find.options"
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "content": [
+                                    {
+                                      "type": "Stack",
+                                      "props": {
+                                        "gap": "stackItem"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "Switch",
+                                          "props": {
+                                            "label": {
+                                              "get": "vm.find.actions.case.label"
+                                            },
+                                            "checked": {
+                                              "get": "vm.find.caseSensitive"
+                                            },
+                                            "onLabel": {
+                                              "t": "switch.on"
+                                            },
+                                            "offLabel": {
+                                              "t": "switch.off"
+                                            }
+                                          },
+                                          "on": {
+                                            "change": {
+                                              "run": "find.toggle.caseSensitive"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "Switch",
+                                          "props": {
+                                            "label": {
+                                              "get": "vm.find.actions.word.label"
+                                            },
+                                            "checked": {
+                                              "get": "vm.find.wholeWord"
+                                            },
+                                            "onLabel": {
+                                              "t": "switch.on"
+                                            },
+                                            "offLabel": {
+                                              "t": "switch.off"
+                                            }
+                                          },
+                                          "on": {
+                                            "change": {
+                                              "run": "find.toggle.wholeWord"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "Switch",
+                                          "props": {
+                                            "label": {
+                                              "get": "vm.find.actions.regex.label"
+                                            },
+                                            "checked": {
+                                              "get": "vm.find.regex"
+                                            },
+                                            "onLabel": {
+                                              "t": "switch.on"
+                                            },
+                                            "offLabel": {
+                                              "t": "switch.off"
+                                            }
+                                          },
+                                          "on": {
+                                            "change": {
+                                              "run": "find.toggle.regex"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "Switch",
+                                          "props": {
+                                            "label": {
+                                              "get": "vm.find.actions.inSelection.label"
+                                            },
+                                            "checked": {
+                                              "get": "vm.find.inSelection"
+                                            },
+                                            "onLabel": {
+                                              "t": "switch.on"
+                                            },
+                                            "offLabel": {
+                                              "t": "switch.off"
+                                            },
+                                            "disabled": {
+                                              "expr": {
+                                                "!": {
+                                                  "get": "vm.find.scoped"
+                                                }
+                                              }
+                                            },
+                                            "disabledReason": {
+                                              "t": "find.noScope"
+                                            }
+                                          },
+                                          "on": {
+                                            "change": {
+                                              "run": "find.toggle.inSelection"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               },
-                              {
-                                "type": "IconButton",
+                              "false": {
+                                "type": "Inline",
                                 "props": {
-                                  "icon": "wholeWord",
-                                  "label": {
-                                    "get": "vm.find.actions.word.label"
-                                  },
-                                  "shortcut": {
-                                    "get": "vm.find.actions.word.shortcut"
-                                  },
-                                  "tone": "muted",
-                                  "toggle": true,
-                                  "pressed": {
-                                    "get": "vm.find.wholeWord"
-                                  }
+                                  "gap": "inlinePair",
+                                  "wrap": true
                                 },
-                                "on": {
-                                  "press": {
-                                    "run": "find.toggle.wholeWord"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "IconButton",
-                                "props": {
-                                  "icon": "regex",
-                                  "label": {
-                                    "get": "vm.find.actions.regex.label"
-                                  },
-                                  "shortcut": {
-                                    "get": "vm.find.actions.regex.shortcut"
-                                  },
-                                  "tone": "muted",
-                                  "toggle": true,
-                                  "pressed": {
-                                    "get": "vm.find.regex"
-                                  }
-                                },
-                                "on": {
-                                  "press": {
-                                    "run": "find.toggle.regex"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "IconButton",
-                                "props": {
-                                  "icon": "inSelection",
-                                  "label": {
-                                    "get": "vm.find.actions.inSelection.label"
-                                  },
-                                  "shortcut": {
-                                    "get": "vm.find.actions.inSelection.shortcut"
-                                  },
-                                  "tone": "muted",
-                                  "toggle": true,
-                                  "pressed": {
-                                    "get": "vm.find.inSelection"
-                                  },
-                                  "disabled": {
-                                    "expr": {
-                                      "!": {
-                                        "get": "vm.find.scoped"
+                                "children": [
+                                  {
+                                    "type": "Switch",
+                                    "props": {
+                                      "label": {
+                                        "get": "vm.find.actions.case.label"
+                                      },
+                                      "checked": {
+                                        "get": "vm.find.caseSensitive"
+                                      },
+                                      "onLabel": {
+                                        "t": "switch.on"
+                                      },
+                                      "offLabel": {
+                                        "t": "switch.off"
+                                      }
+                                    },
+                                    "on": {
+                                      "change": {
+                                        "run": "find.toggle.caseSensitive"
                                       }
                                     }
                                   },
-                                  "disabledReason": {
-                                    "t": "find.noScope"
+                                  {
+                                    "type": "Switch",
+                                    "props": {
+                                      "label": {
+                                        "get": "vm.find.actions.word.label"
+                                      },
+                                      "checked": {
+                                        "get": "vm.find.wholeWord"
+                                      },
+                                      "onLabel": {
+                                        "t": "switch.on"
+                                      },
+                                      "offLabel": {
+                                        "t": "switch.off"
+                                      }
+                                    },
+                                    "on": {
+                                      "change": {
+                                        "run": "find.toggle.wholeWord"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Switch",
+                                    "props": {
+                                      "label": {
+                                        "get": "vm.find.actions.regex.label"
+                                      },
+                                      "checked": {
+                                        "get": "vm.find.regex"
+                                      },
+                                      "onLabel": {
+                                        "t": "switch.on"
+                                      },
+                                      "offLabel": {
+                                        "t": "switch.off"
+                                      }
+                                    },
+                                    "on": {
+                                      "change": {
+                                        "run": "find.toggle.regex"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Switch",
+                                    "props": {
+                                      "label": {
+                                        "get": "vm.find.actions.inSelection.label"
+                                      },
+                                      "checked": {
+                                        "get": "vm.find.inSelection"
+                                      },
+                                      "onLabel": {
+                                        "t": "switch.on"
+                                      },
+                                      "offLabel": {
+                                        "t": "switch.off"
+                                      },
+                                      "disabled": {
+                                        "expr": {
+                                          "!": {
+                                            "get": "vm.find.scoped"
+                                          }
+                                        }
+                                      },
+                                      "disabledReason": {
+                                        "t": "find.noScope"
+                                      }
+                                    },
+                                    "on": {
+                                      "change": {
+                                        "run": "find.toggle.inSelection"
+                                      }
+                                    }
                                   }
-                                },
-                                "on": {
-                                  "press": {
-                                    "run": "find.toggle.inSelection"
-                                  }
-                                }
+                                ]
                               }
-                            ]
+                            }
                           },
                           {
                             "type": "IconButton",
@@ -4169,11 +4313,9 @@
                     "shortcut": {
                       "get": "vm.files.pinShortcut"
                     },
-                    "toggle": true,
-                    "pressed": {
-                      "get": "vm.files.pinned"
+                    "commit": {
+                      "get": "vm.files.pinCommit"
                     },
-                    "commit": { "get": "vm.files.pinCommit" },
                     "tone": "muted",
                     "bleed": true
                   },
@@ -4380,11 +4522,9 @@
                             "shortcut": {
                               "get": "vm.files.pinShortcut"
                             },
-                            "toggle": true,
-                            "pressed": {
-                              "get": "vm.files.pinned"
+                            "commit": {
+                              "get": "vm.files.pinCommit"
                             },
-                            "commit": { "get": "vm.files.pinCommit" },
                             "tone": "muted",
                             "bleed": true
                           },
@@ -5625,74 +5765,72 @@
                 {
                   "type": "Inline",
                   "props": {
-                    "gap": "inlineItem"
+                    "gap": "inlineItem",
+                    "wrap": true
                   },
                   "children": [
                     {
-                      "type": "IconButton",
+                      "type": "Switch",
                       "props": {
-                        "icon": "matchCase",
                         "label": {
                           "get": "vm.findAll.actions.case.label"
                         },
-                        "shortcut": {
-                          "get": "vm.findAll.actions.case.shortcut"
-                        },
-                        "tone": "muted",
-                        "toggle": true,
-                        "pressed": {
+                        "checked": {
                           "get": "vm.findAll.caseSensitive"
                         },
-                        "bleed": true
+                        "onLabel": {
+                          "t": "switch.on"
+                        },
+                        "offLabel": {
+                          "t": "switch.off"
+                        }
                       },
                       "on": {
-                        "press": {
+                        "change": {
                           "run": "findAll.toggle.caseSensitive"
                         }
                       }
                     },
                     {
-                      "type": "IconButton",
+                      "type": "Switch",
                       "props": {
-                        "icon": "wholeWord",
                         "label": {
                           "get": "vm.findAll.actions.word.label"
                         },
-                        "shortcut": {
-                          "get": "vm.findAll.actions.word.shortcut"
-                        },
-                        "tone": "muted",
-                        "toggle": true,
-                        "pressed": {
+                        "checked": {
                           "get": "vm.findAll.wholeWord"
                         },
-                        "bleed": true
+                        "onLabel": {
+                          "t": "switch.on"
+                        },
+                        "offLabel": {
+                          "t": "switch.off"
+                        }
                       },
                       "on": {
-                        "press": {
+                        "change": {
                           "run": "findAll.toggle.wholeWord"
                         }
                       }
                     },
                     {
-                      "type": "IconButton",
+                      "type": "Switch",
                       "props": {
-                        "icon": "regex",
                         "label": {
                           "get": "vm.findAll.actions.regex.label"
                         },
-                        "shortcut": {
-                          "get": "vm.findAll.actions.regex.shortcut"
-                        },
-                        "tone": "muted",
-                        "toggle": true,
-                        "pressed": {
+                        "checked": {
                           "get": "vm.findAll.regex"
                         },
-                        "bleed": true
+                        "onLabel": {
+                          "t": "switch.on"
+                        },
+                        "offLabel": {
+                          "t": "switch.off"
+                        }
                       },
                       "on": {
-                        "press": {
+                        "change": {
                           "run": "findAll.toggle.regex"
                         }
                       }

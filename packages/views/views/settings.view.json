@@ -3189,20 +3189,30 @@
                             },
                             "children": [
                               {
-                                "type": "Button",
+                                "type": "Switch",
                                 "props": {
                                   "label": {
                                     "t": "command.settings.sync"
                                   },
-                                  "toggle": true,
-                                  "pressed": {
+                                  "checked": {
                                     "get": "vm.settings.appearance.syncOn"
+                                  },
+                                  "commit": { "get": "vm.settings.appearance.syncCommit" },
+                                  "error": { "t": "commit.choiceFailed" },
+                                  "retryLabel": { "t": "commit.retry" },
+                                  "onLabel": {
+                                    "t": "switch.on"
+                                  },
+                                  "offLabel": {
+                                    "t": "switch.off"
                                   }
                                 },
                                 "on": {
-                                  "press": {
-                                    "run": "settings.sync"
-                                  }
+                                  "change": {
+                                    "run": "settings.sync",
+                                    "args": { "value": { "get": "event.value" } }
+                                  },
+                                  "retry": { "run": "settings.sync" }
                                 }
                               },
                               {
@@ -4100,37 +4110,45 @@
                     },
                     "children": [
                       {
-                        "type": "Button",
+                        "type": "Switch",
                         "props": {
                           "label": {
                             "t": "share.manage.editor.link"
                           },
-                          "icon": "link",
-                          "toggle": true,
-                          "pressed": {
+                          "checked": {
                             "get": "vm.shareEditor.link"
+                          },
+                          "onLabel": {
+                            "t": "switch.on"
+                          },
+                          "offLabel": {
+                            "t": "switch.off"
                           }
                         },
                         "on": {
-                          "press": {
+                          "change": {
                             "run": "share.manage.toggleLink"
                           }
                         }
                       },
                       {
-                        "type": "Button",
+                        "type": "Switch",
                         "props": {
                           "label": {
                             "t": "share.manage.editor.passcode"
                           },
-                          "icon": "lock",
-                          "toggle": true,
-                          "pressed": {
+                          "checked": {
                             "get": "vm.shareEditor.passcode"
+                          },
+                          "onLabel": {
+                            "t": "switch.on"
+                          },
+                          "offLabel": {
+                            "t": "switch.off"
                           }
                         },
                         "on": {
-                          "press": {
+                          "change": {
                             "run": "share.manage.togglePasscode"
                           }
                         }
@@ -4183,21 +4201,23 @@
                         }
                       },
                       {
-                        "type": "Button",
+                        "type": "Switch",
                         "props": {
                           "label": {
                             "t": "share.manage.passcode.newWords"
                           },
-                          "variant": "subtle",
-                          "icon": "sync",
-                          "size": "s",
-                          "toggle": true,
-                          "pressed": {
+                          "checked": {
                             "get": "vm.shareEditor.renew"
+                          },
+                          "onLabel": {
+                            "t": "switch.on"
+                          },
+                          "offLabel": {
+                            "t": "switch.off"
                           }
                         },
                         "on": {
-                          "press": {
+                          "change": {
                             "run": "share.manage.newWords"
                           }
                         },
@@ -4294,22 +4314,23 @@
                         "as": "item",
                         "key": "item.id",
                         "render": {
-                          "type": "Button",
+                          "type": "Switch",
                           "props": {
                             "label": {
                               "get": "item.label"
                             },
-                            "size": "s",
-                            "icon": {
-                              "get": "item.icon"
-                            },
-                            "toggle": true,
-                            "pressed": {
+                            "checked": {
                               "get": "item.pressed"
+                            },
+                            "onLabel": {
+                              "t": "switch.on"
+                            },
+                            "offLabel": {
+                              "t": "switch.off"
                             }
                           },
                           "on": {
-                            "press": {
+                            "change": {
                               "run": "share.manage.toggleItem",
                               "args": {
                                 "id": {

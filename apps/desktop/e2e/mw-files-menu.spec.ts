@@ -246,14 +246,16 @@ test("D-161: pinned, Files stays open while notes open; the text moves clear of 
   };
   await page.keyboard.press(`${mod}+O`);
   const pin = files.getByRole("button", { name: "Dock Files" });
-  await expect(pin).toHaveAttribute("aria-pressed", "false");
+  await expect(pin).toBeVisible();
+  await expect(pin).not.toHaveAttribute("aria-pressed");
   // The auto-scroll to the end is a script, not an animation: wait for the note to be still.
   await expect.poll(async () => { const a = (await where()).line; await page.waitForTimeout(150); return a === (await where()).line; }).toBe(true);
   const before = await where();
   await sample();
   await pin.click();
   const unpin = files.getByRole("button", { name: "Undock Files" });
-  await expect(unpin).toHaveAttribute("aria-pressed", "true");
+  await expect(unpin).toBeVisible();
+  await expect(unpin).not.toHaveAttribute("aria-pressed");
   const tops = await sampled();
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   // The caret's line never moved while the text reflowed, and the text starts a gap after the sheet.
@@ -291,7 +293,7 @@ test("D-161: pinned, Files stays open while notes open; the text moves clear of 
   await row("Welcome to Focus Notes").dblclick();
   await expect(editor).toContainText("Paragraph 30");
   await unpin.click();
-  await expect(pin).toHaveAttribute("aria-pressed", "false");
+  await expect(pin).toBeVisible();
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   await expect.poll(async () => Math.round((await where()).left)).toBe(Math.round(before.left));
   await page.keyboard.press("Escape");

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { cornerClearance, pinnedSheet } from "../../behaviors/pinned-sheet.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
+import { topClearance } from "./clearance.css.ts";
 import { FloatingContext, LayerContext } from "./floating.ts";
 import { FullAppOverlay } from "../AppRoot/in-window.tsx";
 import * as s from "./Layer.css.ts";
@@ -24,6 +25,17 @@ const ROLE = { none: undefined, banner: "banner", main: "main", complementary: "
 /** Puts content on a layer with the right order. Content in a layer may use frost. */
 export function Layer({ layer = "panel", position = "center", dragBand, avoidPinned = false, landmark = "none", label, id, children }: LayerProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const root = el?.closest<HTMLElement>("[data-app-root]");
+    if (!el || !root || position !== "belowTopBand") return;
+    const name = topClearance.slice(4, -1);
+    const measure = () => root.style.setProperty(name, `${el.getBoundingClientRect().bottom - fixedBox(el).top}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => { observer.disconnect(); root.style.removeProperty(name); };
+  }, [position]);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || !avoidPinned || position !== "bottomStart") return;

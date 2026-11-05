@@ -177,7 +177,7 @@ test("A crashed native panel reloads locally and opens safe Feedback without los
     await expect(feedback).toBeVisible();
     await expect(feedback).not.toContainText("synthetic-panel-private-path-and-token");
     await expect(feedback.getByRole("textbox", { name: "Title", exact: true })).toHaveValue("A panel couldn't load");
-    await expect(feedback.getByRole("button", { name: "Attach diagnostic report", exact: true })).toHaveAttribute("aria-pressed", "false");
+    await expect(feedback.getByRole("switch", { name: "Attach diagnostic report", exact: true })).not.toBeChecked();
     await feedback.getByRole("button", { name: "Close", exact: true }).click();
     await expect(failure).toBeVisible();
     await failure.getByRole("button", { name: "Reload panel", exact: true }).click();
@@ -1661,17 +1661,17 @@ test("compact focus and docking controls retain stored values on failure and rec
   try {
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
     const toolbar = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
-    const focus = toolbar.getByRole("button", { name: "Focus mode", exact: true });
+    const focus = toolbar.getByRole("switch", { name: "Focus mode", exact: true });
     block();
-    await focus.click();
-    await expect(focus).toHaveAttribute("data-commit", "failed");
-    await expect(focus).toHaveAttribute("aria-pressed", "false");
+    await focus.press("Space");
+    await expect(focus.locator("xpath=ancestor::label")).toHaveAttribute("data-commit", "failed");
+    await expect(focus).not.toBeChecked();
     await expect(toolbar).toBeVisible();
     restore();
     await retry.click();
     await expect.poll(() => saved().focusMode).toBe(true);
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
-    await expect(focus).toHaveAttribute("aria-pressed", "true");
+    await expect(focus).toBeChecked();
     await l.page.keyboard.press("Escape");
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+o" : "Control+o");
     const files = l.page.getByRole("complementary", { name: "Files", exact: true });
@@ -1679,11 +1679,11 @@ test("compact focus and docking controls retain stored values on failure and rec
     block();
     await pin.click();
     await expect(pin).toHaveAttribute("data-commit", "failed");
-    await expect(pin).toHaveAttribute("aria-pressed", "false");
+    await expect(pin).toHaveAccessibleName("Dock Files");
     restore();
     await retry.click();
     await expect.poll(() => saved().filesPinned).toBe(true);
-    await expect(files.getByRole("button", { name: "Undock Files", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(files.getByRole("button", { name: "Undock Files", exact: true })).toBeVisible();
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
     await toolbar.getByRole("button", { name: "More", exact: true }).click();
     await l.page.getByRole("menuitemcheckbox", { name: "Dock contents", exact: true }).click();
