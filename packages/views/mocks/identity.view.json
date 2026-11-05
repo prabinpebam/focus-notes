@@ -11,7 +11,7 @@
   "name": "Book",
   "accent": "teal",
   "logo": "book",
-  "watermark": "off",
+  "watermark": false,
   "theme": "app",
   "font": "app",
   "fontHover": "",
@@ -728,17 +728,16 @@
                   ]
                  },
                  {
-                  "type": "SegmentedControl",
+                  "type": "Switch",
                   "props": {
                    "label": {
                     "t": "project.settings.watermark"
                    },
-                   "options": {
-                    "get": "vm.mocks.watermarkOptions"
-                   },
-                   "value": {
+                   "checked": {
                     "bind": "local.watermark"
-                   }
+                   },
+                   "onLabel": { "t": "switch.on" },
+                   "offLabel": { "t": "switch.off" }
                   }
                  },
                  {
@@ -1536,7 +1535,7 @@
                      {
                       "get": "local.watermark"
                      },
-                     "on"
+                     true
                     ]
                    }
                   }

@@ -9,6 +9,7 @@ export const PROJECT_LOGOS = ["book", "briefcase", "beaker", "heart", "star", "l
 export interface ProjectSettings {
   name: string;
   accent: string;
+  border?: boolean;
   logo: string;
   logoSrc?: string;
   watermark: "off" | "on";
@@ -27,7 +28,7 @@ export function registerProject(ctx: {
   const folder = () => store.state.workspace.folder ?? "";
   const settings = (): ProjectSettings => ctx.appState().projectSettings?.[folder()] ?? {
     name: folder().split(/[\\/]/).filter(Boolean).at(-1) ?? catalog.format("project.settings.title"),
-    accent: "teal", logo: "book", watermark: "off", font: "app", theme: "app",
+    accent: "teal", border: true, logo: "book", watermark: "off", font: "app", theme: "app",
   };
   const changed = () => store.update((state) => ({ ...state }));
   let writing = Promise.resolve();
@@ -51,6 +52,13 @@ export function registerProject(ctx: {
         return;
       }
       if (!folder()) throw new Error("No project is open");
+      if (field === "border" || field === "watermarkOn") {
+        if (typeof value !== "boolean") throw new Error("Invalid project setting");
+        try {
+          await save(field === "border" ? { border: value } : { watermark: value ? "on" : "off" });
+        } finally { changed(); }
+        return;
+      }
       if (typeof value !== "string") throw new Error("Invalid project setting");
       const allowed: Record<string, readonly string[]> = {
         accent: PROJECT_ACCENTS, logo: PROJECT_LOGOS, watermark: ["off", "on"], font: ["app", ...CONTENT_FONTS], theme: ["app", ...BUILT_IN_THEMES.map((theme) => theme.id)],
@@ -64,7 +72,7 @@ export function registerProject(ctx: {
       }
     },
   });
-  for (const field of ["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)]) reg(field);
+  for (const field of ["name", "accent", "border", "logo", "watermark", "watermarkOn", "font", "theme", ...Object.keys(transient)]) reg(field);
   const logoCommit = () => store.state.commits.find((item) => item.target === "vm.project.logo");
   const uploadSource = (value: unknown) => {
     if (!value || typeof value !== "object" || !("logoSrc" in value) || typeof value.logoSrc !== "string"
@@ -123,10 +131,10 @@ export function registerProject(ctx: {
   const choiceFields = ["accent", "logo", "font", "theme"] as const;
   viewModels.register({
     id: "vm.project", reads: "*",
-    setters: Object.fromEntries(["name", "accent", "logo", "watermark", "font", "theme", ...Object.keys(transient)].map((field) => [field, `project.${field}`])),
-    commits: ["name", "accent", "logo", "watermark", "font", "theme"],
+    setters: Object.fromEntries(["name", "accent", "border", "logo", "watermark", "watermarkOn", "font", "theme", ...Object.keys(transient)].map((field) => [field, `project.${field}`])),
+    commits: ["name", "accent", "border", "logo", "watermark", "watermarkOn", "font", "theme"],
     schema: { type: "object", properties: {
-      available: { type: "boolean" }, local: { type: "boolean" }, watermarkOn: { type: "boolean" },
+      available: { type: "boolean" }, local: { type: "boolean" }, watermarkOn: { type: "boolean" }, border: { type: "boolean" },
       uploadChoosing: { type: "boolean" }, uploadFailed: { type: "boolean" },
       uploadCommit: { type: "string", enum: ["rest", "pending", "confirmed", "failed"] },
       uploadSrc: text, logoError: text,
@@ -164,7 +172,7 @@ export function registerProject(ctx: {
       const uploaded = logo?.command === "project.logoUpload";
       const source = uploaded && logo.value && typeof logo.value === "object" && "logoSrc" in logo.value && typeof logo.value.logoSrc === "string" ? logo.value.logoSrc : current.logoSrc ?? "";
       return {
-        ...current, ...transient, ...choices, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
+        ...current, ...transient, ...choices, border: current.border !== false, local: Boolean(ctx.bridge.projects?.local), available: Boolean(folder()) && !ctx.bridge.projects?.local, watermarkOn: current.watermark === "on" && !ctx.bridge.projects?.local,
         uploadChoosing: selectingLogo, uploadFailed: Boolean(transient.uploadError),
         uploadCommit: selectingLogo || logo?.phase === "pending" && uploaded ? "pending" : uploaded ? logo.phase : "rest",
         uploadSrc: source, logoError: catalog.format(uploaded ? "project.settings.uploadSaveFailed" : "commit.choiceFailed"),

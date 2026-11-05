@@ -11188,6 +11188,19 @@
                 }
               ]
             },
+            "projectBorder": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "uiScale": {
               "anyOf": [
                 {

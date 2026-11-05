@@ -31,6 +31,44 @@ it("uses the project's resolved theme for the window and overlays, including cha
   expect(app.viewModels.select("vm.app", app.store.state)).toMatchObject({ theme: "ink", scheme: "dark" });
 });
 
+it("OFB.8: the project border defaults on and persists independently without accepting string booleans", async () => {
+  let saved: AppStateFile = { version: 1 };
+  const app = setup(async state => { saved = state; });
+  const project = () => app.viewModels.select("vm.project", app.store.state);
+  expect(project()).toMatchObject({ border: true, accent: "teal" });
+  await app.commands.run("project.accent", { value: "blue" });
+  await app.commands.run("project.border", { value: false });
+  expect(project()).toMatchObject({ border: false, accent: "blue", watermarkOn: false });
+  expect(saved.projectSettings?.["C:\\Project"]).toMatchObject({ border: false, accent: "blue", logo: "book", theme: "app" });
+  app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: "C:\\Garden" } }));
+  expect(project()).toMatchObject({ border: true });
+  app.store.update(s => ({ ...s, workspace: { ...s.workspace, folder: "C:\\Project" } }));
+  expect(project()).toMatchObject({ border: false, accent: "blue" });
+  await expect(app.commands.run("project.border", { value: "false" })).rejects.toThrow("Invalid project setting");
+});
+
+it("OFB.8: a refused border Switch holds its saved value and exact-choice Retry confirms after acknowledgement", async () => {
+  vi.useFakeTimers();
+  try {
+    const save = vi.fn().mockRejectedValue(new Error("disk full"));
+    const app = setup(save);
+    const args = { target: "vm.project.border", command: "project.border", value: false, label: "Colour border" };
+    const failed = expect(app.commands.run("commit.run", args)).rejects.toThrow("disk full");
+    expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({ border: true });
+    await vi.advanceTimersByTimeAsync(200);
+    await failed;
+    expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({ border: true });
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: args.target, phase: "failed", value: false }));
+    save.mockResolvedValue(undefined);
+    const retry = app.commands.run("commit.run", args);
+    await vi.advanceTimersByTimeAsync(200);
+    await retry;
+    expect(app.viewModels.select("vm.project", app.store.state)).toMatchObject({ border: false });
+    expect(save.mock.calls.at(-1)?.[0].projectSettings?.["C:\\Project"]?.border).toBe(false);
+    expect(app.store.state.commits).toContainEqual(expect.objectContaining({ target: args.target, phase: "confirmed" }));
+  } finally { vi.useRealTimers(); }
+});
+
 it("Themes changes the fixed project's theme, previews real window tokens, and reverts without changing app defaults or another project", async () => {
   let saved: AppStateFile = { version: 1 };
   let refuse = false;

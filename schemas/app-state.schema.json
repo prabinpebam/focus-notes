@@ -175,6 +175,9 @@
           "accent": {
             "type": "string"
           },
+          "border": {
+            "type": "boolean"
+          },
           "logo": {
             "type": "string"
           },
