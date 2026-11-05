@@ -100,10 +100,11 @@
                 "type": "Text",
                 "when": { "get": "vm.shareItem.never" },
                 "props": { "value": { "t": "share.dialog.never" }, "tone": "muted", "role": "secondary" }
-              },
+              }
+              ] },
               {
                 "type": "Columns",
-                "props": { "gap": "inlineGroup" },
+                "props": { "gap": "inlineItem" },
                 "children": [
                   {
                     "type": "Switch",
@@ -191,8 +192,7 @@
                     ]
                   }
                 ]
-              }
-              ] },
+              },
               {
                 "type": "Text",
                 "when": { "get": "vm.shareItem.deleted" },

@@ -61,7 +61,7 @@ export const thumb = style({
 
 export const text = style({ display: "flex", flexDirection: "column", minWidth: 0 });
 // The name line is as tall as the row and centres its words on the track, so label, state word and track share one middle (DSY-15).
-export const name = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", columnGap: t.gap, minHeight: t.hit, lineHeight: t.lineHeight });
+export const name = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", columnGap: t.nameGap, minHeight: t.hit, lineHeight: t.lineHeight });
 // Like every form label: body size, semibold (D-111).
 export const label = style({ color: t.label, fontSize: t.labelSize, fontWeight: t.labelWeight, selectors: { [`${root}[data-disabled] &`]: { color: t.disabledText } } });
 export const state = style({ color: t.state, fontSize: t.stateSize, fontVariantNumeric: "tabular-nums" });

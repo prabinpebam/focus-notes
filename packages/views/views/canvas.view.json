@@ -457,7 +457,8 @@
                       {
                         "type": "Inline",
                         "props": {
-                          "gap": "inlineItem"
+                          "gap": "inlineItem",
+                          "wrap": true
                         },
                         "children": [
                           {
@@ -2165,7 +2166,8 @@
                         "type": "Inline",
                         "props": {
                           "justify": "between",
-                          "gap": "inlineGroup"
+                          "gap": "inlineGroup",
+                          "wrap": true
                         },
                         "children": [
                           {
@@ -2192,7 +2194,8 @@
                                 "render": {
                                   "type": "Inline",
                                   "props": {
-                                    "gap": "inlinePair"
+                                    "gap": "inlinePair",
+                                    "wrap": true
                                   },
                                   "children": [
                                     {
@@ -6574,9 +6577,9 @@
                           "welcome": {
                             "type": "Stack",
                             "props": {
-                              "gap": "stackSection",
+                              "gap": "stackGroup",
                               "align": "center",
-                              "shortGap": "stackGroup"
+                              "shortGap": "stackItem"
                             },
                             "children": [
                               {

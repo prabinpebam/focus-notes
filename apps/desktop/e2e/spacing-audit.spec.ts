@@ -53,6 +53,7 @@ const EXCLUDED: { rule: RegExp; path?: RegExp; where?: RegExp; why: string }[] =
   { rule: /^(moved|spacing-changed)$/, path: /EditorSurface_column|^document$/, why: "the note re-renders or scrolls under a forced state: prose, and the count of what an origin pushed" },
   { rule: /./, where: /Customize toolbar/, why: "OPEN for vq-toolbar-design: ToolbarComposer is redesigned there" },
   { rule: /^group-separation$/, path: /MenuButton_menu/, why: "a section's runs (checkable and plain items) are one group, split only for selection" },
+  { rule: /^overlap$/, path: /> svg > /, why: "an SVG's shapes overlap by design (a step mark's art)" },
 ];
 const blocking = (out: (Finding & { where: string })[]) =>
   out.filter((x) => (x.severity === "S1" || x.severity === "S2") && !EXCLUDED.some((e) => e.rule.test(x.rule) && (!e.path || e.path.test(x.path)) && (!e.where || e.where.test(x.where))));
