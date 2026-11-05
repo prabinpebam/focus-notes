@@ -49,6 +49,7 @@ interface Ctx {
   bridge: PlatformBridge;
   /** A polite announcement (the suggestions that came after the menu opened). */
   announce: (text: string) => void;
+  extra?: (s: AppState) => { id: string; label?: string; items: Record<string, unknown>[] }[];
 }
 
 /** The model's items as the menu's sections, split at its separators, in the app's words. */
@@ -88,7 +89,7 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
   return sections;
 }
 
-export function registerTextMenu({ store, commands, viewModels, catalog, bridge, announce }: Ctx) {
+export function registerTextMenu({ store, commands, viewModels, catalog, bridge, announce, extra }: Ctx) {
   const set = (t: TextMenuState) => store.update((s) => ({ ...s, textMenu: t }));
   commands.register<{ id?: unknown }>({
     id: "textMenu.choose", title: "command.textMenu.choose",
@@ -96,6 +97,11 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge,
       const t = store.state.textMenu;
       const model = t.model;
       if (!model || !t.open || typeof id !== "string") return;
+      if (extra?.(store.state).some((section) => section.items.some((item) => item.id === id))) {
+        set({ ...t, open: false });
+        bridge.textMenu?.closed?.(model.id);
+        return commands.run(id);
+      }
       // Only what the menu offers; the shell checks again.
       if (!model.entries.some((_e, i) => textMenuItemId(model.entries, i) === id)) return;
       set({ ...t, open: false });
@@ -118,9 +124,9 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge,
     },
   });
 
-  const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, shortcut: { type: "string" as const }, disabled: { type: "boolean" as const } } };
-  const SECTIONS = { type: "array" as const, items: { type: "object" as const, properties: { id: { type: "string" as const }, items: { type: "array" as const, items: ITEM } } } };
-  let memo: { key: TextMenuState; undo: boolean; redo: boolean; value: Record<string, unknown> } | undefined;
+  const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, shortcut: { type: "string" as const }, disabled: { type: "boolean" as const }, checked: { type: "boolean" as const }, mixed: { type: "boolean" as const } } };
+  const SECTIONS = { type: "array" as const, items: { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, items: { type: "array" as const, items: ITEM } } } };
+  let memo: { key: TextMenuState; images: AppState["ui"]["images"]; undo: boolean; redo: boolean; value: Record<string, unknown> } | undefined;
   viewModels.register({
     id: "vm.textMenu",
     reads: ["textMenu", "ui"],
@@ -138,9 +144,9 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge,
       const t = s.textMenu;
       const undo = s.ui.format.canUndo;
       const redo = s.ui.format.canRedo;
-      if (memo?.key === t && memo.undo === undo && memo.redo === redo) return memo.value;
-      const value = { available: Boolean(bridge.textMenu?.drawn), sections: textMenuSections(t.model, catalog, bridge.platform, commands, { undo, redo }), request: t.request, x: t.model?.x ?? 0, y: t.model?.y ?? 0 };
-      memo = { key: t, undo, redo, value };
+      if (memo?.key === t && memo.images === s.ui.images && memo.undo === undo && memo.redo === redo) return memo.value;
+      const value = { available: Boolean(bridge.textMenu?.drawn), sections: [...textMenuSections(t.model, catalog, bridge.platform, commands, { undo, redo }), ...(extra?.(s) ?? [])], request: t.request, x: t.model?.x ?? 0, y: t.model?.y ?? 0 };
+      memo = { key: t, images: s.ui.images, undo, redo, value };
       return value;
     },
   });

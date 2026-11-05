@@ -112,6 +112,28 @@ describe("Copilot CLI through the official SDK and a stdio protocol fake", () =>
     expect(await new CopilotIntegration({ binary: async () => undefined }).discover()).toBeUndefined();
   });
 
+  it("cancels a discovery waiting for authentication and closes only its owned runtime", async () => {
+    const f = await fixture("auth-stall");
+    const controller = new AbortController();
+    const discovery = f.cli.discover(controller.signal);
+    await expect.poll(async () => (await f.seen()).some(s => s.method === "auth.getStatus"), { timeout: 5000 }).toBe(true);
+    const reason = new Error("Synthetic scan stopped");
+    controller.abort(reason);
+    await expect(discovery).rejects.toBe(reason);
+    const seen = await f.seen();
+    expect(seen.some(s => s.method === "session.create" || s.method === "session.send")).toBe(false);
+    expect(() => process.kill(seen[0]!.pid, 0)).toThrow();
+    expect(() => process.kill(process.pid, 0)).not.toThrow();
+  });
+
+  it("does not start a CLI for an already-cancelled discovery", async () => {
+    const f = await fixture();
+    const controller = new AbortController();
+    controller.abort();
+    await expect(f.cli.discover(controller.signal)).rejects.toMatchObject({ name: "AbortError" });
+    expect(await f.seen()).toEqual([]);
+  });
+
   it("validates input before contacting CLI but does not require first-send consent (D-266)", async () => {
     const f = await fixture();
     await expect(f.ai.stream({ text: "", instruction: "Shorter" }, new AbortController().signal).next()).rejects.toThrow("invalid-text");

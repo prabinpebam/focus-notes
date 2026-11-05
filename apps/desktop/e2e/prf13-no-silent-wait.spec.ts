@@ -103,7 +103,9 @@ test("PRF-13: creating the notes always shows its parts in plain words and the o
     await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
     await heading(page, "Create your notes");
-    await expect(page.getByRole("button", { name: "Create my notes" })).toBeFocused({ timeout: 15_000 });
+    const create = page.getByRole("button", { name: "Create my notes" });
+    await expect(create).toBeFocused({ timeout: 15_000 });
+    await expect(create).not.toHaveAttribute("aria-disabled", "true");
     await press(page, "Enter");
 
     // The parts, without Show details, and the one it's on in words with its number, then the seconds.

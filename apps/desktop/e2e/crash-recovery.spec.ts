@@ -278,7 +278,7 @@ async function stable(ws: string): Promise<string[]> {
 /** A note's title line as typed: the heading's markdown, unescaped. */
 const titleOf = (text: string) => (text.split("\n")[0] ?? "").replace(/&#x20;/g, " ").replace(/^\\#/, "#");
 
-test(`QLT-06: a title typed so every key renames the file survives a crash at any key, ${stormRounds} rounds`, async () => {
+test(`QLT-06: a title typed so every key renames the file survives a crash at any key, ${stormRounds} rounds`, async ({}, testInfo) => {
   console.log(`[rename-storm] seed=${seed} (replay with FOCUS_NOTES_FAULT_SEED=${seed})`);
   test.setTimeout(60_000 + stormRounds * 30_000);
   const rnd = random(seed);
@@ -357,7 +357,21 @@ test(`QLT-06: a title typed so every key renames the file survives a crash at an
     await quit(l);
     l = undefined;
   } finally {
-    if (l) await crash(l, dirs.userData).catch(() => {});
+    if (l) {
+      try {
+        const pageLog = testInfo.outputPath("crash-recovery-page.log");
+        writeFileSync(pageLog, JSON.stringify({
+          round: report.length + 1, losses: report, files: notes(ws),
+          page: l.page.isClosed() ? "closed" : await l.page.locator("body").ariaSnapshot(),
+        }, null, 2));
+        const processLog = testInfo.outputPath("crash-recovery-process.log");
+        writeFileSync(processLog, l.log.join("\n"));
+        await testInfo.attach("crash-recovery-process.log", { path: processLog, contentType: "text/plain" });
+        await testInfo.attach("crash-recovery-page.log", { path: pageLog, contentType: "text/plain" });
+      } finally {
+        await crash(l, dirs.userData).catch(() => {});
+      }
+    }
   }
   const lost = [...report].sort((a, b) => a - b);
   console.log(`[rename-storm] seed=${seed} rounds=${stormRounds} took=${Math.round((Date.now() - started) / 1000)}s lost-ms p50=${lost[Math.floor(lost.length / 2)]} worst=${lost.at(-1)}`);

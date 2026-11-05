@@ -3,10 +3,10 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
-import { imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
+import { captureImageSelection, imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { keepClearOfPinned } from "./pinned-column.ts";
@@ -351,6 +351,31 @@ export function EditorSurface({
   editorRef.current = editor;
 
   useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom;
+    const contextMenu = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest("[data-image-node]")) return;
+      syncSelection(editor);
+      const selection = editor.state.selection;
+      if (event.button !== 2 && selection.toJSON().type === "node" && editor.state.doc.nodeAt(selection.from)?.type.name === "image") {
+        event.preventDefault();
+        editor.view.nodeDOM(selection.from)?.dispatchEvent(new Event("image-contextmenu"));
+        return;
+      }
+      imageOptions.current.select?.(captureImageSelection(editor));
+    };
+    const outsideMenu = (event: MouseEvent) => {
+      if (event.target instanceof Node && !dom.contains(event.target)) imageOptions.current.select?.({ ...captureImageSelection(editor), text: false, count: 0 });
+    };
+    dom.addEventListener("contextmenu", contextMenu);
+    document.addEventListener("contextmenu", outsideMenu, true);
+    return () => {
+      dom.removeEventListener("contextmenu", contextMenu);
+      document.removeEventListener("contextmenu", outsideMenu, true);
+    };
+  }, [editor]);
+
+  useEffect(() => {
     last.current = initialValue;
   }, [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -360,7 +385,19 @@ export function EditorSurface({
   useEffect(() => {
     if (!editor) return;
     const dom = editor.view.dom;
-    const onDown = () => setTimeout(() => { if (!editor.isDestroyed) syncSelection(editor); }, 0);
+    const onDown = (event: MouseEvent) => {
+      if (event.button === 0) {
+        for (const image of dom.querySelectorAll<HTMLElement>("[data-image-text-selection]")) {
+          const r = image.getBoundingClientRect();
+          if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) continue;
+          event.preventDefault();
+          event.stopPropagation();
+          image.dispatchEvent(new Event("image-select"));
+          return;
+        }
+      }
+      setTimeout(() => { if (!editor.isDestroyed) syncSelection(editor); }, 0);
+    };
     dom.addEventListener("mousedown", onDown, true);
     return () => dom.removeEventListener("mousedown", onDown, true);
   }, [editor]);
@@ -390,10 +427,6 @@ export function EditorSurface({
     if (open && slashActive) dom.setAttribute("aria-activedescendant", resultItemId(slashList!, slashActive));
     else dom.removeAttribute("aria-activedescendant");
   }, [editor, slashOpen, slashActive, slashList]);
-
-  useEffect(() => {
-    if (editor) onReady?.();
-  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The find query lives in the app; the editor highlights it and jumps to the first match at the caret.
   // Searching waits for a short pause in typing (FND-01: 60 ms), so long notes stay responsive.
@@ -686,15 +719,9 @@ export function EditorSurface({
       }
       if (id === "image.set") {
         const pos = Number(args.pos);
-        const node = editor.state.doc.nodeAt(pos);
-        if (!editor.isEditable || node?.type.name !== "image" || node.attrs.src !== args.src) return;
-        const transaction = editor.state.tr;
         const from = Number(args.from), to = Number(args.to);
         const patch = { ...(typeof args.rounded === "boolean" ? { rounded: args.rounded } : {}), ...(typeof args.fitHeight === "boolean" ? { fitHeight: args.fitHeight } : {}), ...(typeof args.mode === "string" ? { mode: args.mode } : {}) };
-        if (Number.isInteger(from) && Number.isInteger(to) && from >= 0 && to <= editor.state.doc.content.size && to > from) {
-          editor.state.doc.nodesBetween(from, to, (image, at) => { if (image.type.name === "image") transaction.setNodeMarkup(at, undefined, { ...image.attrs, ...patch }); });
-        } else transaction.setNodeMarkup(pos, undefined, { ...node.attrs, ...patch });
-        editor.view.dispatch(transaction);
+        setImageOptions(editor, { pos, src: args.src, from, to }, patch);
         return;
       }
       if (id === "image.renderEdit") {
@@ -870,9 +897,12 @@ export function EditorSurface({
 
   // The caret starts at the note's end, once every tracker above is listening (the reading zone
   // places it). At once rather than through Tiptap's autofocus, which focuses a frame later.
+  // Only then may readiness deliver a restored cursor or a find target.
   useEffect(() => {
-    if (editor) focusAtEnd(editor);
-  }, [editor]);
+    if (!editor) return;
+    focusAtEnd(editor);
+    onReady?.();
+  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={s.frame}>

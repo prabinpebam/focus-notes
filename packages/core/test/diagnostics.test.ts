@@ -191,6 +191,7 @@ describe("QLT-04: timings, settings, the preview, and the log", () => {
   it("allow-lists every measure the app makes: the task tracker's targets are fixed IDs, never a note's name", () => {
     expect(MEASURE_NAMES).toContain(OPEN_MEASURE);
     expect(MEASURE_NAMES).toContain(SPOTLIGHT_MEASURE);
+    expect(summarizeTimings([{ name: "fn:ai.discover.window", duration: 120 }])).toEqual([{ name: "fn:ai.discover.window", count: 1, p50: 120, p95: 120 }]);
     const src = join(import.meta.dirname, "..", "src");
     const targets: string[] = [];
     for (const f of readdirSync(src).filter((f) => f.endsWith(".ts"))) {

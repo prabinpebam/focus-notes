@@ -55,6 +55,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   let pointerDown = false;
   /** A press on the scrollbar is scrolling: it moves no caret. */
   let scrollPress = false;
+  let contextPress = false;
   let frame = 0;
   /** Whether the person's key, input, or pointer release came since the last check (D-156). */
   let intent = false;
@@ -140,7 +141,9 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
 
   const keep = () => {
     frame = 0;
-    if (pointerDown || editor.isDestroyed || !editor.view.hasFocus()) return;
+    if (pointerDown || contextPress || editor.isDestroyed || !editor.view.hasFocus()) return;
+    const selection = editor.state.selection;
+    if (selection.toJSON().type === "node" && editor.state.doc.nodeAt(selection.from)?.type.name === "image") return;
     // Only a scroll the person's own key, input, or click caused animates; opening a note, focus coming
     // back, and other programmatic moves place it at once, as before (a long note's jump to its end
     // would otherwise paint every page on the way, PRF-01).
@@ -184,6 +187,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   };
   const onDown = (e: PointerEvent) => {
     pointerDown = true;
+    contextPress = e.button !== 0;
     scrollPress = onScrollbar(e);
     // A press stops a running auto-scroll where the note is: the person is pointing at what they see,
     // and the text mustn't slide out from under the pointer (the release checks the band again).
@@ -201,7 +205,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const onUp = () => {
     if (!pointerDown) return;
     pointerDown = false;
-    if (scrollPress) return;
+    if (scrollPress || contextPress) return;
     intent = true;
     releasedAt = performance.now();
     schedule();
@@ -212,6 +216,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   };
   const onKey = () => {
     scrollPress = false;
+    contextPress = false;
   };
   /**
    * A caret or typing key in the note itself (CARET_KEYS): Escape in Spotlight, a key

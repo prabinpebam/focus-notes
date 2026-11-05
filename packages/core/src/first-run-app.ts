@@ -262,8 +262,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     set({ step, trouble: false, focus: state().focus + 1 });
     // An error belongs to the step that made it (D-154).
     setWs({ error: "", field: "" });
-    await persistAppState({ firstRun: step });
-    await arrive[step]?.();
+    // Arrival holds the new step's actions before persistence yields to its first render.
+    await Promise.all([persistAppState({ firstRun: step }), arrive[step]?.()]);
   };
   /**
    * The card closes and writing carries on: the note put away comes back (Run setup again, Sign in,

@@ -27,18 +27,23 @@ const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
 interface Saved {
   el: HTMLElement | null;
   ranges: Range[];
+  scroll: Map<Element, { top: number; left: number }>;
   field?: { start: number; end: number; direction: "forward" | "backward" | "none" };
 }
 type Field = HTMLInputElement | HTMLTextAreaElement;
 const isField = (el: Element | null): el is Field => el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
 function save(): Saved {
   const el = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const scroll = new Map<Element, { top: number; left: number }>();
+  for (let ancestor = el; ancestor; ancestor = ancestor.parentElement) {
+    scroll.set(ancestor, { top: ancestor.scrollTop, left: ancestor.scrollLeft });
+  }
   if (isField(el) && el.selectionStart !== null && el.selectionEnd !== null) {
-    return { el, ranges: [], field: { start: el.selectionStart, end: el.selectionEnd, direction: el.selectionDirection ?? "none" } };
+    return { el, ranges: [], scroll, field: { start: el.selectionStart, end: el.selectionEnd, direction: el.selectionDirection ?? "none" } };
   }
   const sel = typeof getSelection === "function" ? getSelection() : null;
   const ranges = sel ? Array.from({ length: sel.rangeCount }, (_, i) => sel.getRangeAt(i).cloneRange()) : [];
-  return { el, ranges };
+  return { el, ranges, scroll };
 }
 function restore(saved: Saved | undefined) {
   if (!saved?.el?.isConnected) return;
@@ -164,6 +169,11 @@ export function TextMenu({ label, sections, request = 0, x = 0, y = 0, open: ope
     if (!open) return;
     const scroll = (e: Event) => {
       if (e.target instanceof Node && popoverRef.current?.contains(e.target)) return;
+      if (e.type === "scroll" && e.target instanceof Element) {
+        const before = saved.current?.scroll.get(e.target);
+        // A caret reveal before opening can deliver its queued scroll event after the menu mounts.
+        if (before && e.target.scrollTop === before.top && e.target.scrollLeft === before.left) return;
+      }
       closeRef.current();
     };
     const away = () => closeRef.current();

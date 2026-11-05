@@ -225,7 +225,9 @@ export interface AiBridge {
   /** One short synthetic request to the saved connection; never note text. Rejects with a reason code. */
   test(id: string): Promise<AiSettingsView>;
   /** Local servers answering on this computer's usual ports, with their models. */
-  discover(): Promise<import("./ai-providers.ts").AiFound[]>;
+  discover(input?: { id: string }): Promise<import("./ai-providers.ts").AiFound[]>;
+  discoverCancel?(id: string): Promise<void>;
+  onDiscoverEvent?(listener: (event: unknown) => void): () => void;
   /** The models a connection (saved, or the draft with its typed endpoint) lists. */
   models(input: AiConnectionInput): Promise<{ id: string; cloud: boolean }[]>;
   /**

@@ -1302,8 +1302,49 @@
                                       "role": "caption",
                                       "tone": "muted"
                                     }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "when": {
+                                      "get": "vm.ai.discovering"
+                                    },
+                                    "props": {
+                                      "label": {
+                                        "t": "ai.scan.cancel"
+                                      },
+                                      "variant": "subtle"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "ai.discoverCancel"
+                                      }
+                                    }
                                   }
                                 ]
+                              },
+                              {
+                                "type": "ScanRadar",
+                                "when": {
+                                  "get": "vm.ai.discoverStarted"
+                                },
+                                "props": {
+                                  "announceResult": false,
+                                  "label": {
+                                    "t": "ai.scan.label"
+                                  },
+                                  "checkingLabel": {
+                                    "t": "ai.scan.checking"
+                                  },
+                                  "phase": {
+                                    "get": "vm.ai.discoverPhase"
+                                  },
+                                  "targets": {
+                                    "get": "vm.ai.scanTargets"
+                                  },
+                                  "count": {
+                                    "get": "vm.ai.scanCount"
+                                  }
+                                }
                               },
                               {
                                 "type": "Text",
@@ -1321,8 +1362,7 @@
                                   "value": {
                                     "get": "vm.ai.discoverStatus"
                                   },
-                                  "role": "caption",
-                                  "announce": true
+                                  "role": "caption"
                                 }
                               },
                               {
@@ -1331,14 +1371,6 @@
                                 },
                                 "as": "f",
                                 "key": "f.id",
-                                "empty": {
-                                  "type": "LiveRegion",
-                                  "props": {
-                                    "message": {
-                                      "get": "vm.ai.discoverStatus"
-                                    }
-                                  }
-                                },
                                 "render": {
                                   "type": "ItemCard",
                                   "props": {
@@ -1371,6 +1403,10 @@
                                       }
                                     }
                                   ]
+                                },
+                                "empty": {
+                                  "type": "Stack",
+                                  "children": []
                                 }
                               }
                             ]

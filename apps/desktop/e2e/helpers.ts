@@ -189,6 +189,7 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     // Never the computer's focus (D-104 (7)): the windows open inactive, and the app keeps its own "active".
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },
   });
+  app.process().stderr?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
   app.process().stdout?.on("data", (d: Buffer) => {
     const lines = d.toString().split("\n").filter(Boolean);
     log.push(...lines);

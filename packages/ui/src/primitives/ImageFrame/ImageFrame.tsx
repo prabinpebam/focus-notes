@@ -13,6 +13,8 @@ export interface ImageFrameProps {
   fitHeight?: boolean;
   rounded?: boolean;
   selected?: boolean;
+  /** Included in a text selection, rather than selected as a single image. */
+  inSelection?: boolean;
   /** Explicit visual state supplied by the image reader; never inferred as an empty image. */
   broken?: boolean;
   error?: string;
@@ -34,7 +36,7 @@ export interface ImageFrameProps {
 }
 
 /** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
+export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, inSelection = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
   const safe = src.startsWith("data:image/") ? src : undefined;
   const menu = onContextMenu ? {
     onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu({ x: e.clientX, y: e.clientY }); },
@@ -49,7 +51,7 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
   } : {};
   return (
     <span className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
-      <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
+      <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${inSelection ? ` ${s.inSelection}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
         {broken ? <span className={s.broken} role="group" aria-label={alt}>
           <Icon name="image" />
           {alt ? <span>{alt}</span> : null}

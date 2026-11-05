@@ -1,15 +1,14 @@
-import { useRef, useState } from "react";
+import type { Editor } from "@tiptap/react";
 import { createRoot } from "react-dom/client";
 import { syncSelection, type NodeViewRenderer } from "@focus-notes/editor";
-import { Popover } from "react-aria-components";
 import { ImageFrame } from "../../primitives/ImageFrame/ImageFrame.tsx";
-import { CommandMenu } from "../../primitives/MenuButton/MenuButton.tsx";
+import { TextMenu } from "../TextMenu/TextMenu.tsx";
 import { Spinner } from "../../primitives/Spinner/Spinner.tsx";
-import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
-import * as menuStyles from "../../primitives/MenuButton/MenuButton.css.ts";
+import { FullAppOverlay } from "../../layouts/AppRoot/in-window.tsx";
+import * as styles from "./image-view.css.ts";
 import type { ImageSource, MenuSection } from "../../data.ts";
 
-export interface ImagePayload { pos: number; src: string; alt?: string; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean }
+export interface ImagePayload { pos: number; src: string; alt?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean }
 export interface ImageViewOptions {
   documentKey: string;
   sources: ImageSource[];
@@ -25,22 +24,29 @@ export interface ImageViewOptions {
   action?: (payload: { id: string }) => void;
 }
 
-function ImageNode({ payload, selected, options, select, capture }: { payload: ImagePayload; selected: boolean; options: ImageViewOptions; select: (focus?: boolean, all?: boolean) => void; capture: () => ImagePayload }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-  const boundary = useWindowBoundary();
+export function captureImageSelection(editor: Editor): ImagePayload {
+  const { from, to } = editor.state.selection;
+  const images: { pos: number; src: string; alt: string; rounded: boolean; fitHeight: boolean; mode: string }[] = [];
+  editor.state.doc.nodesBetween(from, to, (node, pos) => {
+    if (node.type.name === "image") images.push({ pos, src: String(node.attrs.src), alt: String(node.attrs.alt ?? ""), rounded: node.attrs.rounded === true, fitHeight: node.attrs.fitHeight !== false, mode: String(node.attrs.mode) });
+  });
+  const rounded = images.length > 0 && images.every((i) => i.rounded);
+  const fitHeight = images.length > 0 && images.every((i) => i.fitHeight);
+  return { pos: -1, src: "", mode: "column", ...images[0], rounded, fitHeight, width: 0, height: 0, from, to, count: images.length,
+    text: editor.state.selection.toJSON().type !== "node", roundMixed: !rounded && images.some((i) => i.rounded), limitMixed: !fitHeight && images.some((i) => i.fitHeight) };
+}
+
+function ImageNode({ payload, selected, options, select, capture, menu, openMenu, onSize }: { payload: ImagePayload; selected: boolean; options: ImageViewOptions; select: (focus?: boolean) => void; capture: () => ImagePayload; menu: { request: number; x: number; y: number }; openMenu: (point: { x: number; y: number }) => void; onSize: (size: { width: number; height: number }) => void; }) {
   const source = options.sources.find((s) => s.id === payload.src);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  return <span ref={ref} onClick={(e) => { if (!(e.target instanceof Element && e.target.closest("button"))) select(true); }} onKeyDown={(e) => { if (!(e.target instanceof Element && e.target.closest("button")) && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") { e.preventDefault(); e.stopPropagation(); select(false, true); } }} onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); } }}>
-    {source?.failed || source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected}
+  const control = (target: EventTarget) => target instanceof Element && target.closest("button, [data-floating-child]");
+  return <span onClick={(e) => { if (!control(e.target)) select(true); }} onMouseDown={(e) => { if (control(e.target)) return; e.preventDefault(); if (e.button === 2) e.stopPropagation(); }}>
+    {source?.failed || source?.value ? <ImageFrame src={source.value} alt={payload.alt} mode={payload.mode === "wide" || payload.mode === "actual" ? payload.mode : "column"} rounded={payload.rounded} fitHeight={payload.fitHeight} selected={selected} inSelection={!selected && payload.text && payload.count > 0}
       broken={source.failed} error={options.missing} retryLabel={options.retryLabel} retryBusy={source.pending} retryBusyLabel={options.retryBusyLabel}
       onRetry={() => options.retry?.({ src: payload.src, key: options.documentKey })}
       onError={() => options.failed?.({ src: payload.src, value: source.value, key: options.documentKey })}
-      onSize={setSize} onContextMenu={() => { select(); options.select?.({ ...capture(), ...size }); setOpen(true); }} />
+      onSize={onSize} onContextMenu={(point) => { select(); options.select?.(capture()); openMenu(point); }} />
       : <Spinner />}
-    <Popover isOpen={open} onOpenChange={setOpen} triggerRef={ref} placement="bottom start" className={menuStyles.popover} {...boundary} data-floating-child="">
-      <CommandMenu label={options.menuLabel} sections={options.menu} onAction={(p) => { setOpen(false); options.action?.(p); }} />
-    </Popover>
+    <FullAppOverlay><TextMenu label={options.menuLabel} sections={options.menu} {...menu} onAction={options.action} /></FullAppOverlay>
   </span>;
 }
 
@@ -54,35 +60,46 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     let alive = true;
     let current = node;
     let selected = false;
-    const select = (focus = false, all = false) => {
+    let size = { width: 0, height: 0 };
+    let menu = { request: 0, x: 0, y: 0 };
+    const select = (focus = false) => {
       const pos = getPos();
       if (typeof pos !== "number") return;
       syncSelection(editor);
-      if (all) { editor.commands.selectAll(); return; }
       const selection = editor.state.selection;
       if (!focus && !selection.empty && pos >= selection.from && pos < selection.to) return;
       editor.commands.setNodeSelection(pos);
-      if (focus) requestAnimationFrame(() => dom.querySelector<HTMLElement>("[data-selected]")?.focus({ preventScroll: true }));
+      editor.view.focus();
     };
     const capture = (): ImagePayload => {
       const pos = getPos();
       const selection = editor.state.selection;
       const inRange = typeof pos === "number" && !selection.empty && pos >= selection.from && pos < selection.to;
-      const images: { rounded: boolean; fitHeight: boolean }[] = [];
-      if (inRange) editor.state.doc.nodesBetween(selection.from, selection.to, (node) => { if (node.type.name === "image") images.push({ rounded: node.attrs.rounded === true, fitHeight: node.attrs.fitHeight !== false }); });
-      const roundAll = images.length ? images.every((i) => i.rounded) : current.attrs.rounded === true;
-      const limitAll = images.length ? images.every((i) => i.fitHeight) : current.attrs.fitHeight !== false;
-      return { pos: typeof pos === "number" ? pos : -1, src: String(current.attrs.src), alt: String(current.attrs.alt ?? ""), rounded: roundAll, fitHeight: limitAll, mode: String(current.attrs.mode), width: 0, height: 0,
-        from: inRange ? selection.from : typeof pos === "number" ? pos : 0, to: inRange ? selection.to : typeof pos === "number" ? pos + current.nodeSize : 0, count: images.length || 1,
-        roundMixed: !roundAll && images.some((i) => i.rounded), limitMixed: !limitAll && images.some((i) => i.fitHeight) };
+      if (inRange) return { ...captureImageSelection(editor), ...size };
+      const roundAll = current.attrs.rounded === true;
+      const limitAll = current.attrs.fitHeight !== false;
+      return { pos: typeof pos === "number" ? pos : -1, src: String(current.attrs.src), alt: String(current.attrs.alt ?? ""), rounded: roundAll, fitHeight: limitAll, mode: String(current.attrs.mode), ...size,
+        from: typeof pos === "number" ? pos : 0, to: typeof pos === "number" ? pos + current.nodeSize : 0, count: 1,
+        roundMixed: false, limitMixed: false };
     };
     const render = () => {
       if (!alive || options().documentKey !== key) return;
       const payload = capture();
       const selection = editor.state.selection;
       const inRange = !selection.empty && payload.pos >= selection.from && payload.pos < selection.to;
-      root.render(<ImageNode payload={payload} selected={selected || inRange} options={options()} select={select} capture={capture} />);
+      dom.className = inRange && payload.text ? styles.textSelection : "";
+      dom.toggleAttribute("data-image-text-selection", Boolean(inRange && payload.text));
+      root.render(<ImageNode payload={{ ...payload, src: String(current.attrs.src), alt: String(current.attrs.alt ?? ""), rounded: current.attrs.rounded === true, fitHeight: current.attrs.fitHeight !== false, mode: String(current.attrs.mode) }} selected={selected} options={options()} select={select} capture={capture} menu={menu} onSize={(value) => { size = value; }} openMenu={(point) => { menu = { request: menu.request + 1, ...point }; render(); }} />);
     };
+    const openMenu = () => {
+      const r = dom.getBoundingClientRect();
+      menu = { request: menu.request + 1, x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      options().select?.(capture());
+      render();
+    };
+    dom.addEventListener("image-contextmenu", openMenu);
+    const selectImage = () => select(true);
+    dom.addEventListener("image-select", selectImage);
     editor.on("selectionUpdate", render);
     renders.add(render);
     const requestRead = () => {
@@ -96,12 +113,12 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
     requestRead();
     return {
       dom,
-      update(next) { if (next.type !== current.type) return false; const changed = next.attrs.src !== current.attrs.src; current = next; if (changed) requestRead(); render(); return true; },
-      selectNode() { selected = true; render(); },
+      update(next) { if (next.type !== current.type) return false; const changed = next.attrs.src !== current.attrs.src; current = next; if (changed) { size = { width: 0, height: 0 }; requestRead(); } render(); return true; },
+      selectNode() { selected = true; options().select?.({ ...capture(), announce: true }); render(); },
       deselectNode() { selected = false; render(); },
-      stopEvent: (e) => e.type === "contextmenu" || e.type === "keydown",
+      stopEvent: (e) => e.type === "contextmenu",
       ignoreMutation: () => true,
-      destroy() { alive = false; renders.delete(render); editor.off("selectionUpdate", render); queueMicrotask(() => root.unmount()); },
+      destroy() { alive = false; renders.delete(render); editor.off("selectionUpdate", render); dom.removeEventListener("image-contextmenu", openMenu); dom.removeEventListener("image-select", selectImage); queueMicrotask(() => root.unmount()); },
     };
   };
 }

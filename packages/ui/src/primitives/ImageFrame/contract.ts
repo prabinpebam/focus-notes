@@ -3,14 +3,15 @@ import { defineContract } from "../../contract.ts";
 export const contract = defineContract({
   type: "ImageFrame",
   tier: "primitive",
-  description: "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Fit height and Rounded corners as saved choices. No border, frame or backdrop: transparent images are drawn as they are. Selected, it takes the editor's selection tint, as text does. Its menu opens only on right-click (or the context-menu key or Shift+F10 while selected), never from a button on the image (owner, 3 November). In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
+  description: "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Limit height and Rounded corners as saved choices. No resting border, frame or backdrop: transparent images are drawn as they are. A single selected image has an inset outline; inside a text selection it takes the selection tint. Its menu opens only on right-click (or the context-menu key or Shift+F10 while selected), never from a button on the image. In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
   props: {
     src: { kind: "text", required: true, description: "A data URL the shell made from the managed asset (data:image/…), never an address." },
     alt: { kind: "message", description: "The image description. Without one the image is decorative; nothing is shown in its place (owner, 3 November)." },
     mode: { kind: "enum", values: ["column", "wide", "actual", "thumb"], default: "column", description: "column: fits the reading column. wide: the column plus imageWideExtra, centred, never past the canvas. actual: its own pixels, no upscaling. thumb: a dialog's thumbnail." },
     fitHeight: { kind: "boolean", default: true, description: "Fit height (D-300): no taller than imageFitMax or imageFitViewport, whichever is smaller." },
     rounded: { kind: "boolean", default: false },
-    selected: { kind: "boolean", default: false, description: "Selected on its own or within a text selection: the editor's selection tint over it, never a ring." },
+    selected: { kind: "boolean", default: false, description: "Selected on its own: a full inset accent outline (owner, 5 November)." },
+    inSelection: { kind: "boolean", default: false, description: "Part of a text selection: the editor's selection tint, not the single-image outline." },
     broken: { kind: "boolean", default: false, description: "The image failed to load; show its alt text and a scoped recovery action." },
     error: { kind: "message" },
     retryLabel: { kind: "message" },
@@ -31,6 +32,7 @@ export const contract = defineContract({
     ...(["column", "wide", "actual", "thumb"] as const).map((mode) => ({ name: `mode ${mode}`, props: { src: { get: "vm.gallery.imageSrc" }, mode, alt: { t: "gallery.sample" } } })),
     { name: "rounded, no fit height", props: { src: { get: "vm.gallery.imageSrc" }, rounded: true, fitHeight: false } },
     { name: "selected", props: { src: { get: "vm.gallery.imageSrc" }, selected: true }, covers: ["selected"] },
+    { name: "in text selection", props: { src: { get: "vm.gallery.imageSrc" }, inSelection: true } },
     ...(["0", "90", "180", "270"] as const).map((rotation) => ({ name: `crop, rotation ${rotation}`, props: { src: { get: "vm.gallery.imageSrc" }, crop: true, rotation, mode: "actual" } })),
   ],
 });

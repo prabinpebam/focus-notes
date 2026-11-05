@@ -8825,7 +8825,7 @@
     {
       "type": "ImageFrame",
       "tier": "primitive",
-      "description": "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Fit height and Rounded corners as saved choices. No border, frame or backdrop: transparent images are drawn as they are. Selected, it takes the editor's selection tint, as text does. Its menu opens only on right-click (or the context-menu key or Shift+F10 while selected), never from a button on the image (owner, 3 November). In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
+      "description": "An inline image in a note (IMG, D-300): Column, Wide or Actual size, with Limit height and Rounded corners as saved choices. No resting border, frame or backdrop: transparent images are drawn as they are. A single selected image has an inset outline; inside a text selection it takes the selection tint. Its menu opens only on right-click (or the context-menu key or Shift+F10 while selected), never from a button on the image. In Edit image it shows the crop frame and the rotation. Not for decoration or icons.",
       "props": {
         "src": {
           "kind": "text",
@@ -8859,7 +8859,12 @@
         "selected": {
           "kind": "boolean",
           "default": false,
-          "description": "Selected on its own or within a text selection: the editor's selection tint over it, never a ring."
+          "description": "Selected on its own: a full inset accent outline (owner, 5 November)."
+        },
+        "inSelection": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Part of a text selection: the editor's selection tint, not the single-image outline."
         },
         "broken": {
           "kind": "boolean",
@@ -9051,6 +9056,15 @@
           "covers": [
             "selected"
           ]
+        },
+        {
+          "name": "in text selection",
+          "props": {
+            "src": {
+              "get": "vm.gallery.imageSrc"
+            },
+            "inSelection": true
+          }
         },
         {
           "name": "crop, rotation 0",
@@ -10076,6 +10090,131 @@
               "t": "gallery.sample"
             },
             "theme": "app"
+          }
+        }
+      ]
+    },
+    {
+      "type": "ScanRadar",
+      "tier": "primitive",
+      "description": "The scan for AI models on this computer (IA-CMP-AIDISCOVER, DD-RWR-12): a radar that sweeps while the app asks, a blip for each place that answers, one row per place asked with what it answered, and a live count. Rows settle the moment their answer arrives. Reduced motion: no sweep or pulse.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "phase": {
+          "kind": "enum",
+          "values": [
+            "scanning",
+            "found",
+            "none",
+            "error"
+          ],
+          "default": "scanning"
+        },
+        "targets": {
+          "kind": "list",
+          "of": "scanTargets",
+          "required": true
+        },
+        "count": {
+          "kind": "message",
+          "required": true,
+          "description": "Beside the radar and announced at the end: \"Found 2 so far\", \"Found 3 apps\", \"Nothing running\"."
+        },
+        "checkingLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "A row that's still waiting for its answer: \"Checking\"."
+        },
+        "announceResult": {
+          "kind": "boolean",
+          "default": true,
+          "description": "Disable when the host announces the complete result and recovery reason."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.scanRadar.*",
+      "a11y": {
+        "pattern": "group with a status: the count is announced when the scan ends",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "phase scanning",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "phase": "scanning",
+            "targets": {
+              "get": "vm.gallery.scanTargets"
+            },
+            "count": {
+              "t": "gallery.sample"
+            },
+            "checkingLabel": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "phase found",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "phase": "found",
+            "targets": {
+              "get": "vm.gallery.scanTargets"
+            },
+            "count": {
+              "t": "gallery.sample"
+            },
+            "checkingLabel": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "phase none",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "phase": "none",
+            "targets": {
+              "get": "vm.gallery.scanTargets"
+            },
+            "count": {
+              "t": "gallery.sample"
+            },
+            "checkingLabel": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "phase error",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "phase": "error",
+            "targets": {
+              "get": "vm.gallery.scanTargets"
+            },
+            "count": {
+              "t": "gallery.sample"
+            },
+            "checkingLabel": {
+              "t": "gallery.sample"
+            }
           }
         }
       ]
@@ -16545,6 +16684,9 @@
           "payload": {
             "pos": "number",
             "src": "text",
+            "alt": "text",
+            "text": "boolean",
+            "announce": "boolean",
             "rounded": "boolean",
             "fitHeight": "boolean",
             "mode": "text",

@@ -13,7 +13,7 @@ let off: (() => void) | undefined;
 let mounted: HTMLElement | undefined;
 afterEach(() => { off?.(); off = undefined; mounted?.remove(); mounted = undefined; vi.restoreAllMocks(); });
 
-function setup(empty = true) {
+function setup(empty = true, image = false) {
   const scroller = document.createElement("div");
   const column = document.createElement("div");
   const dom = document.createElement("div");
@@ -28,11 +28,11 @@ function setup(empty = true) {
   scroller.getBoundingClientRect = () => ({ top: 0, bottom: 600, left: 0, right: 800, width: 800, height: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
   let caretTop = 900; // below the band: the caret was moved down by a key
   let props: Record<string, unknown> = {};
-  const selection = { empty };
+  const selection = { empty, from: 1, toJSON: () => ({ type: image ? "node" : "text" }) };
   const handlers = new Map<string, Array<() => void>>();
   const editor = {
     isDestroyed: false,
-    state: { selection },
+    state: { selection, doc: { nodeAt: () => image ? { type: { name: "image" } } : null } },
     view: {
       dom,
       hasFocus: () => true,
@@ -51,6 +51,30 @@ function setup(empty = true) {
   };
   return { scroller, dom, props: () => props, moveCaret: (t: number) => (caretTop = t), selection, select };
 }
+
+describe("image context menus (IMG-11)", () => {
+  it("does not scroll a selected image to the following text's reading band", () => {
+    let frame: FrameRequestCallback | undefined;
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => { frame = callback; return 1; });
+    const { scroller, select } = setup(false, true);
+    select(false);
+    expect(frame).toBeDefined();
+    frame!(0);
+    expect(scroller.scrollTop).toBe(0);
+  });
+
+  it("a right-click leaves a mixed selection and its menu at the pointer", () => {
+    let frame: FrameRequestCallback | undefined;
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => { frame = callback; return 1; });
+    const { scroller, dom, select } = setup(false);
+    dom.dispatchEvent(new PointerEvent("pointerdown", { button: 2, clientX: 100, clientY: 100, bubbles: true }));
+    select(false);
+    dom.dispatchEvent(new PointerEvent("pointerup", { button: 2, bubbles: true }));
+    expect(frame).toBeDefined();
+    frame!(0);
+    expect(scroller.scrollTop).toBe(0);
+  });
+});
 
 describe("an anchored surface opening (DEF-25)", () => {
   it("finishes the selection scroll started by the pending band check before Rewrite is placed", () => {

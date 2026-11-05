@@ -1112,10 +1112,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const openMatch = async (path: string, jump: FindJump) => {
     if (store.state.note.path === path && store.state.note.status === "ready") return showJump(jump);
-    pendingJump = { path, jump };
+    const request = { path, jump };
+    pendingJump = request;
     await load(path);
-    // The note couldn't be opened, or another one was asked for meanwhile.
-    if (pendingJump?.path === path && store.state.note.path !== path) pendingJump = undefined;
+    // A previous open of this path must not clear a newer request while it is still loading.
+    if (pendingJump === request && store.state.note.path !== path) pendingJump = undefined;
   };
   commands.register<{ count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }>({
     id: "find.setResult", title: "command.find.setResult",
@@ -1242,8 +1243,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
-        // Once the new editor has finished setting up (its caret placed, its listeners on).
-        afterPaint(() => showJump(jump.jump));
+        const key = store.state.note.key;
+        // A newer note may open before these frames; its editor must not receive the old match.
+        afterPaint(() => {
+          if (store.state.note.key === key && store.state.note.status === "ready") showJump(jump.jump);
+        });
       }
     },
   });
@@ -1273,7 +1277,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     type: "object" as const,
     properties: {
       id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const },
-      shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const },
+      shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, mixed: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const },
       busy: { type: "boolean" as const }, busyLabel: { type: "string" as const },
       commit: { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] },
     },
@@ -1282,7 +1286,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m),
     announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
   });
-  registerImages({ store, bridge, catalog, commands, viewModels, editorAction, toast, tracker, itemSchema: ITEM_SCHEMA, describeItem });
+  const images = registerImages({ store, bridge, catalog, commands, viewModels, editorAction, toast, announce, tracker, itemSchema: ITEM_SCHEMA, describeItem });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
     loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), holds: (path) => conflicts.holds(path),
@@ -1343,7 +1347,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
   void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
-  const textMenuApp = registerTextMenu({ store, commands, viewModels, catalog, bridge, announce });
+  const textMenuApp = registerTextMenu({ store, commands, viewModels, catalog, bridge, announce, extra: images.textSections });
   // The compositing can change while the app runs: the GPU process crashed and came back in software (D-121).
   bridge.compositing?.onChange((c) => {
     if ((c === "gpu" || c === "software") && c !== store.state.compositing) store.update((s) => ({ ...s, compositing: c }));

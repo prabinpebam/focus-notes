@@ -106,11 +106,18 @@ The proposed tokenized **Limit height** cap is the smaller of **36 rem** and **7
 
 ## Image menu and selection
 
-**This is a text editor, not app UI** (owner, 3 November 2026; D-326): "Don't show 3 dots menu above the image. This is a text editor not app UI. You right click on the image to get that menu." The image menu opens only as a context menu at the pointer: **right-click** the image, or press the keyboard's context-menu key or **Shift+F10** while the image is selected. Nothing is drawn on, above or around an image: no ⋯ button, hover toolbar, overlay button, border or frame.
+**This is a text editor, not app UI** (owner, 3 November 2026; D-326): "Don't show 3 dots menu above the image. This is a text editor not app UI. You right click on the image to get that menu." The image menu opens only as a context menu at the pointer: **right-click** the image, or press the keyboard's context-menu key or **Shift+F10** while the image is selected. No ⋯ button, hover toolbar or overlay button. At rest and on hover, no border or frame; selection is the exception below.
+
+**Owner correction, 5 November 2026 (supersedes D-326's selection-only tint for a single image):** "For adding image there was a version where I asked for 2 toggles to be added to the image menu. - Rounded corners: on/off - Limit height: on/off. We need to add these. These are there in the several images selected menu but even this one gets it wrong. The right click menu when text and images are selected together should show the normal text options and the additional image options, provided images are part of the selection. So the menu shows the options available for the selection. I should be able to select an image by clicking on it to select it showing the slection border and should be able to delete it by pressing the delete key."
+
+The approved reference is **9 · Images**, 3 November, `vq-project-mocks` at `4afe907f` (review at <http://127.0.0.1:5211>). A single image's menu has **Edit image**, a **Display** group with **Column / Wide / Actual size**, then a separate group with **Rounded corners / Limit height**. Several images expose only those two toggles under **Images · 2 selected** (with the actual count). A mixed selection retains its normal text actions and appends that image section, whether right-clicked over text or image pixels.
+
+Selecting an image or right-clicking a selection does not scroll it into the following text's reading band. The menu stays at the requested pointer location; scrolling intentionally dismisses it as it does the normal text menu.
 
 - **No placeholder** (owner): "Why is there 'No description' text under the image? If it's not there don't show it." With no description or caption, nothing shows under the image; a caption line shows only when the Markdown has one.
-- **No border** (owner): "Do not add border around the image." None at rest, on hover or when selected.
-- **Selection is the editor's** (D-326): a selected image, on its own or inside a text selection, takes the editor's normal selection tint over its pixels (`cmp.imageFrame.selectedTint` → `color.selection`), the way selected text does, never a ring, outline or frame.
+- **No resting border** (owner): "Do not add border around the image." None at rest or on hover.
+- **Click selects the image** (owner, 5 November): a single image gets a full inset accent outline (`cmp.imageFrame.selectedOutline` / `selectedOutlineWidth`), never clipped by the frame. Focus stays in the editor: **Delete** or **Backspace** removes the reference, not the asset; **Ctrl+Z** restores it. **Escape** returns to the adjacent text. The selection is politely announced with the description, if present.
+- **Text selection is the editor's** (D-326): an image inside a text selection takes the normal selection tint over its pixels (`cmp.imageFrame.selectedTint` → `color.selection`), the way selected text does. It does not get the single-image outline.
 - **Transparent images as they are** (owner): "Leave transparent images as is without border and bg color." No backdrop, fill or checkerboard behind transparent pixels, in light or dark.
 
 | Group | Action | Contract |
@@ -123,11 +130,13 @@ The proposed tokenized **Limit height** cap is the smaller of **36 rem** and **7
 | Assistance | **Auto caption with AI…** | With the AI (sparkle) icon used by Rewrite. Opens the caption flow below for this image only. No sending from menu open or hover. |
 | Pixels | **Edit image…** | Crop/rotate dialog; separate destructive save, not a display mode. |
 | Display | **Column**, **Wide**, **Actual size** | Single-choice checked/radio menu; one normal undoable note transaction. |
-| Display | **Rounded corners**, **Limit height** | Check items in the image's right-click menu (owner, 3 November 19:28; D-334: "We need this in the right click menu, else how will the user control these parameters."), drawn by the menu's own check column, not colour alone. Rounded corners starts from the last used setting; Limit height is on by default and caps the image at the common viewport height, off shows a tall image at full height. Toggling one changes the image at once. Both are remembered device-locally for the next image added; each existing image keeps its saved values. |
+| Look (separate group) | **Rounded corners**, **Limit height** | Check items in the image's right-click menu (owner, 3 November 19:28; D-334: "We need this in the right click menu, else how will the user control these parameters."), drawn by the menu's own check column, not colour alone. Rounded corners starts from the last used setting; Limit height is on by default and caps the image at the common viewport height, off shows a tall image at full height. Toggling one changes the image at once. Both are remembered device-locally for the next image added; each existing image keeps its saved values. |
 
 A text selection containing images (for example Ctrl+A) exposes an **Images** group in its right-click menu with the same two check items. Rounded corners / Limit height act on every fully selected image, leaving text, captions and unselected images untouched. When the images disagree the item shows the mixed state (a dash in the check column, announced **Mixed**); first activation sets all on, next sets all off. One undo step restores all prior values. Bulk changes also update the remembered insertion default after a successful save; failed persistence keeps the saved default and says so. With no selected images these controls are absent. Crop, Replace, Save image and AI caption require exactly one image; no arbitrary first-image fallback.
 
 Selection-only, insertion Undo, replacement Undo and display Undo remain ordinary editor behaviour. The crop/rotate pixel save below deliberately has no pixel Undo.
+
+**Commit feedback:** the toggles edit the note in one undoable editor transaction, like text formatting. The image changes in the same frame and a polite announcement says **Rounded corners on/off** or **Limit height on/off**; note saving keeps its existing status and recoverable error handling. These document edits never lock continuous writing and do not invent a separate settings-save spinner.
 
 ## Crop and rotate dialog
 

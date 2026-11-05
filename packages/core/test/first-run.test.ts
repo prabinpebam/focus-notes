@@ -432,6 +432,25 @@ describe("FRE-02, FRE-04, FRE-05: connecting", () => {
 });
 
 describe("FRE-06, FRE-08: Your notes", () => {
+  it("does not offer Create my notes while entering the step still has persistence and arrival work", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { account: ADA, gcm: true, gh: false }, repos: [] });
+    await t.app.start();
+    await settle();
+    const saved = deferred(), folder = deferred();
+    t.bridge.saveAppState = async () => saved.promise;
+    t.bridge.firstRun!.folder = async () => { await folder.promise; return "/home/ada/Documents/notes"; };
+    const entering = t.run("firstRun.next");
+    await settle();
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "checking", busy: true });
+    saved.resolve();
+    await settle();
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "checking", busy: true });
+    folder.resolve();
+    await entering;
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "create", busy: false, canCreateNow: true });
+    await t.run("firstRun.create");
+    expect(t.passphrases).toEqual([undefined]);
+  });
   const atNotes = async (opts: Omit<Parameters<typeof shell>[0] & object, "state" | "account"> = {}) => {
     const t = shell({ state: { version: 1, firstRun: "notes" }, account: { account: ADA, gcm: true, gh: false }, ...opts });
     await t.app.start();

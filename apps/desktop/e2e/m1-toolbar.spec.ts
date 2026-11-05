@@ -85,43 +85,53 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   await quit(l);
 });
 
-test("UI-07: ⋯ holds the rest: text size steps and the theme mode, each showing its state", async () => {
+test("UI-07: ⋯ holds the rest: text size steps and the theme mode, each showing its state", async ({}, testInfo) => {
   const l = await launch(tempDirs());
   const { page } = l;
-  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
-  const size = () => page.evaluate(() => getComputedStyle(document.querySelector("[data-editor]")!).fontSize);
-  expect(await size()).toBe("16px");
-
-  await page.keyboard.press(`${mod}+.`);
-  await page.getByRole("button", { name: "More" }).click();
-  const menu = page.getByRole("menu", { name: "More" });
-  await expect(menu).toBeVisible();
-  await expect(menu.getByRole("menuitemcheckbox", { name: "System" })).toHaveAttribute("aria-checked", "true");
-  await menu.getByRole("menuitem", { name: /Larger text/ }).click();
-  await expect.poll(size).toBe("17px");
-
-  // The shortcuts work too, and reset returns to 16 px (THM-06, D-78).
-  const readyForSizeKey = async () => {
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
-    await page.getByRole("textbox", { name: "Note" }).focus();
-    await page.keyboard.press(`${mod}+.`);
-    await page.getByRole("button", { name: "More", exact: true }).click();
-    await expect(menu.getByRole("menuitem", { name: /^Smaller text/ })).not.toHaveAttribute("aria-disabled", "true");
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
+  await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
+  let passed = false;
+  try {
     await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
-  };
-  await readyForSizeKey();
-  await page.keyboard.press(`${mod}+-`);
-  await expect.poll(size).toBe("16px");
-  await readyForSizeKey();
-  await page.keyboard.press(`${mod}+-`);
-  await expect.poll(size).toBe("15px");
-  await readyForSizeKey();
-  await page.keyboard.press(`${mod}+0`);
-  await expect.poll(size).toBe("16px");
-  await quit(l);
+    const size = () => page.evaluate(() => getComputedStyle(document.querySelector("[data-editor]")!).fontSize);
+    expect(await size()).toBe("16px");
+
+    await page.keyboard.press(`${mod}+.`);
+    await page.getByRole("button", { name: "More" }).click();
+    const menu = page.getByRole("menu", { name: "More" });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("menuitemcheckbox", { name: "System" })).toHaveAttribute("aria-checked", "true");
+    await menu.getByRole("menuitem", { name: /Larger text/ }).click();
+    await expect.poll(size).toBe("17px");
+
+    // The shortcuts work too, and reset returns to 16 px (THM-06, D-78).
+    const readyForSizeKey = async () => {
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await page.getByRole("textbox", { name: "Note" }).focus();
+      await page.keyboard.press(`${mod}+.`);
+      await page.getByRole("button", { name: "More", exact: true }).click();
+      await expect(menu.getByRole("menuitem", { name: /^Smaller text/ })).not.toHaveAttribute("aria-disabled", "true");
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    };
+    await readyForSizeKey();
+    await page.keyboard.press(`${mod}+-`);
+    await expect.poll(size).toBe("16px");
+    await readyForSizeKey();
+    await page.keyboard.press(`${mod}+-`);
+    await expect.poll(size).toBe("15px");
+    await readyForSizeKey();
+    await page.keyboard.press(`${mod}+0`);
+    await expect.poll(size).toBe("16px");
+    passed = true;
+  } finally {
+    try {
+      await page.context().tracing.stop(passed ? {} : { path: testInfo.outputPath("trace.zip") });
+    } finally {
+      await quit(l);
+    }
+  }
 });
 
 test("New note creates an untitled note next to the current one and puts the caret in it", async () => {
