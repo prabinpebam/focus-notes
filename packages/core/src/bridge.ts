@@ -14,7 +14,7 @@ import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
 
-export type ProjectCreateStep = "check" | "folder" | "repository" | "profile";
+export type ProjectCreateStep = "check" | "folder" | "history" | "repository" | "profile";
 export interface ProjectCreateProgress {
   request: string;
   steps: ProjectCreateStep[];
@@ -520,6 +520,11 @@ export interface WorkspaceBridge {
    * or why not.
    */
   remove?(): Promise<RemovalCheck>;
+  /**
+   * Links an offline project to a new private GitHub repository (project model, slice 3b): not built
+   * yet, so Settings offers Link to GitHub only once a shell provides it.
+   */
+  link?(): Promise<void>;
 }
 
 /**

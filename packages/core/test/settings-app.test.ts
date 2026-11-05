@@ -16,7 +16,7 @@ const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
 const GRACE = { login: "grace", id: 99, name: "Grace Hopper" };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number } = {}) {
+function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number; standalone?: boolean } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   let account: AccountStatus = opts.account ?? { account: ADA, gcm: true, gh: false, via: "gcm" };
@@ -59,6 +59,7 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
     saveAppState: async (s) => void saved.push(s),
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
+    ...(opts.standalone ? { projects: { local: true } as PlatformBridge["projects"] } : {}),
     ...(opts.desktop === false ? {} : {
       firstRun: fr,
       ...(opts.drafts === undefined ? {} : {
@@ -122,13 +123,26 @@ describe("IA-VIEW-SETTINGS: opening Settings", () => {
     await t.run("settings.setOpen", { open: false });
     expect(t.vm().open).toBe(false);
   });
+  it("a standalone file's window has This file instead of Project, Sharing and Agents, and names the file", async () => {
+    const t = shell({ standalone: true });
+    await t.app.start();
+    await settle();
+    expect(t.vm().sections.map((s: { id: string }) => s.id)).not.toContain("project");
+    expect(t.vm().sections.find((s: { id: string }) => s.id === "file")).toMatchObject({ label: "This file" });
+    expect(t.vm().sections.map((s: { id: string }) => s.id)).not.toContain("sharing");
+    await t.run("settings.setSection", { value: "project" });
+    expect(t.vm().section).not.toBe("project");
+    await t.run("settings.setSection", { value: "file" });
+    expect(t.vm()).toMatchObject({ section: "file", file: { path: "/n/a.md" } });
+    expect(shell().vm().sections.map((s: { id: string }) => s.id)).not.toContain("file");
+  });
   it("Project says where it's kept: saved to GitHub, or on this computer only with Link to GitHub and no Remove", async () => {
     const t = shell();
     await t.app.start();
     await settle();
     expect(t.vm().workspace).toMatchObject({ linked: true, offline: false, repo: "ada/notes", canRemove: true, canLink: false, removeBlocked: false });
     t.app.store.update((s) => ({ ...s, workspace: { ...s.workspace, repo: undefined } }));
-    expect(t.vm().workspace).toMatchObject({ linked: false, offline: true, canRemove: false, canLink: true, removeBlocked: true, offlineDetail: "History kept with Git. Not on GitHub." });
+    expect(t.vm().workspace).toMatchObject({ linked: false, offline: true, canRemove: false, canLink: false, removeBlocked: true, offlineDetail: "History kept with Git. Not on GitHub." });
     t.app.store.update((s) => ({ ...s, sync: { ...s.sync, git: false } }));
     expect(t.vm().workspace).toMatchObject({ offline: true, offlineDetail: "Not on GitHub, and no history kept yet." });
   });

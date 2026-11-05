@@ -141,6 +141,20 @@ it("reports actual local steps and preserves a completed profile receipt when ca
   expect((await projects.list()).find(project => project.folder === folder)).toMatchObject({ name: "New book" });
 });
 
+it("starts every new project's history with Git as its own named step, and stops when Git can't start it", async () => {
+  const { root } = await setup();
+  const calls: string[] = [];
+  const git = async (call: { cwd: string; args: string[] }) => { calls.push(`${call.cwd.split(sep).pop()}: ${call.args.join(" ")}`); return { code: 0, stdout: "", stderr: "" }; };
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git);
+  const events: Omit<ProjectCreateProgress, "request">[] = [];
+  await projects.create({ parent: root, name: "Kept", accent: "teal", logo: "book" }, { signal: new AbortController().signal, progress: event => events.push(event) });
+  expect(events[0]?.steps).toEqual(["check", "folder", "history", "profile"]);
+  expect(calls).toEqual(["Kept: init --quiet", "Kept: symbolic-ref HEAD refs/heads/main", "Kept: commit --allow-empty --quiet -m Start the project"]);
+  const failing = projectWindows(() => join(root, "existing"), writeFile, undefined, async () => ({ code: 1, stdout: "", stderr: "" }));
+  await expect(failing.create({ parent: root, name: "No git", accent: "teal", logo: "book" })).rejects.toThrow("history");
+  expect((await failing.list()).some(project => project.name === "No git")).toBe(false);
+});
+
 it("stops at a safe boundary without deleting a completed folder or overwriting its notes on another Create", async () => {
   const { root, projects } = await setup();
   const controller = new AbortController();

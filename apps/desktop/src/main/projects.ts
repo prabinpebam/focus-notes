@@ -11,6 +11,7 @@ import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi } from "@focus-notes/github";
 import { parseRecord } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
+import type { GitRunner } from "./git/run.ts";
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
@@ -62,7 +63,7 @@ export function candidateGitHubApi(origin: string): GitHubApi {
   });
 }
 
-export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string) {
+export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner) {
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? app.getPath("userData"));
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
   const known = new Map<string, string>();
@@ -313,7 +314,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   async function create(input: { parent: string; name: string; accent: string; logo: string }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
     if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
-    const steps: ProjectCreateStep[] = ["check", "folder", ...(candidateApi ? ["repository" as const] : []), "profile"];
+    const steps: ProjectCreateStep[] = ["check", "folder", ...(git ? ["history" as const] : []), ...(candidateApi ? ["repository" as const] : []), "profile"];
     const step = async <T>(id: ProjectCreateStep, work: () => Promise<T>): Promise<T> => {
       operation?.signal.throwIfAborted();
       operation?.progress({ steps, step: id, done: false });
@@ -331,6 +332,17 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await mkdir(result.folder);
       await mkdir(join(result.folder, "notes"));
     });
+    if (git) {
+      // Every project keeps its history with Git, offline or on GitHub (project model, the owner 5 November).
+      await step("history", async () => {
+        for (const args of [["init", "--quiet"], ["symbolic-ref", "HEAD", "refs/heads/main"]]) {
+          const r = await git({ cwd: result.folder, args });
+          if (r.code !== 0) throw new Error(`Couldn't start the project's history: git ${args[0]} failed.`);
+        }
+        // The first commit needs the person's Git identity; without one, the history starts at their first save.
+        await git({ cwd: result.folder, args: ["commit", "--allow-empty", "--quiet", "-m", "Start the project"] });
+      });
+    }
     if (candidateApi) {
       await step("repository", async () => {
         const api = candidateGitHubApi(candidateApi);

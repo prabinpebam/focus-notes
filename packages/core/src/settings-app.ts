@@ -21,9 +21,9 @@ import { UI_SCALES, themeById } from "./themes.ts";
 import { customOf } from "./theme-manager-app.ts";
 import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
 
-/** Settings' categories, in order, as built so far. Where the project is kept is part of Project: one concept (owner, 5 November). */
+/** Settings' categories, in order, as built so far. Where the project is kept is part of Project: one concept (owner, 5 November). A standalone file's window shows This file instead. */
 // Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
-export const SETTINGS_SECTIONS = ["account", "project", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
+export const SETTINGS_SECTIONS = ["account", "project", "file", "sharing", "agents", "ai", "appearance", "keyboard", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -119,7 +119,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     disabledReason: "command.settings.open.reason",
     run: async (args?: { focus?: "feedback" }) => {
       const focus = args?.focus === "feedback" ? "feedback" as const : undefined;
-      store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: true, focus } } }));
+      store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: true, focus, section: sections().includes(s.ui.settings.section) ? s.ui.settings.section : "account" } } }));
       await checkAccount();
     },
   });
@@ -133,7 +133,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       await commands.run("share.item.open");
     },
   });
-  const sections = () => SETTINGS_SECTIONS.filter((id) => (id !== "sharing" || bridge.access) && (id !== "agents" || bridge.agents) && (id !== "keyboard" || bridge.keybindings) && (id !== "about" || bridge.diagnostics));
+  // A standalone file's window (bridge.projects.local) has This file instead of Project, and nothing a project shares.
+  const standalone = () => Boolean(bridge.projects?.local);
+  const sections = () => SETTINGS_SECTIONS.filter((id) => (standalone() ? !["project", "sharing", "agents"].includes(id) : id !== "file") && (id !== "sharing" || bridge.access) && (id !== "agents" || bridge.agents) && (id !== "keyboard" || bridge.keybindings) && (id !== "about" || bridge.diagnostics));
   reg<{ value: string }>("settings.setSection", async (a) => {
     const v = value(a);
     if (!sections().includes(v as SettingsSection)) return;
@@ -260,6 +262,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
             canLink: { type: "boolean" }, removeBlocked: { type: "boolean" },
           },
         },
+        file: { type: "object", properties: { path: { type: "string" } } },
         appearance: {
           type: "object",
           properties: { summary: { type: "string" }, scale: { type: "string" }, scales: { type: "array", items: OPTION }, canSync: { type: "boolean" }, syncOn: { type: "boolean" } },
@@ -268,7 +271,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     },
     setters: { section: "settings.setSection", "appearance.scale": "ui.setScale" },
     commits: ["appearance.scale"],
-    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "workspace.repo", "appearance", "settingsSync"],
+    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "workspace.repo", "note.path", "appearance", "settingsSync"],
     select: (s) => {
       const st = s.ui.settings;
       const a = st.account;
@@ -295,12 +298,13 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           canRemove: linked && Boolean(ws?.remove), canRunSetup: Boolean(bridge.setup),
           linked, offline: !linked, repo,
           offlineDetail: catalog.format(s.sync.git ? "project.home.offline.detail" : "project.home.offline.noGit"),
-          canLink: !linked && Boolean(bridge.setup), removeBlocked: !linked && Boolean(ws?.remove),
+          canLink: !linked && Boolean(ws?.link), removeBlocked: !linked && Boolean(ws?.remove),
           gitNote: catalog.format(s.sync.git ? "settings.workspace.git" : "settings.workspace.local"),
           // A folder used on this computer only connects to GitHub through the same setup (D-124).
           setupLabel: catalog.format(s.sync.git ? "command.setup.runAgain" : "settings.workspace.connect"),
           canOpenOther: available() && Boolean(s.account.login),
         },
+        file: { path: s.note.path ?? "" },
         // A summary that opens the theme manager: theme choice has one home (DD-SET-02).
         appearance: {
           summary: catalog.format("settings.appearance.summary", {

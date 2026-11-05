@@ -1157,6 +1157,70 @@
                       }
                     ]
                   },
+                  "file": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackSection"
+                    },
+                    "children": [
+                      {
+                        "type": "Section",
+                        "slots": {
+                          "heading": [
+                            {
+                              "type": "Heading",
+                              "props": {
+                                "level": "3",
+                                "value": {
+                                  "t": "file.settings.title"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "icon": "documentText",
+                              "title": {
+                                "t": "file.settings.outside"
+                              },
+                              "detail": {
+                                "t": "file.settings.outsideDetail"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "role": "label",
+                                  "value": {
+                                    "t": "file.settings.location"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.settings.file.path"
+                                  },
+                                  "personal": true
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   "ai": {
                     "type": "Stack",
                     "props": {
