@@ -233,6 +233,14 @@ Following [UI states](../design/ui-states-audit.md): the dialog opens complete w
 
 ACT-01 to ACT-16 in [Requirements → Actions](../product/requirements.md#actions-act), planned as [stage MACT](../plan/implementation-plan.md#mact) with its [Definition of Done](../plan/definition-of-done.md#actions-draft-for-owner-review). Assumptions and risks: [Risks → Actions](../plan/risks.md#actions-risks-and-assumptions). Decisions: [D-361 to D-364](../plan/decisions.md#d-361-actions-lists-only-catalogued-actions).
 
+## As built
+
+**First slice, WP-A.2/A.3 (6 November, landing pending).** The catalogue replaces command discovery by deny-list; Actions lists only its entries, grouped by the captured anchor, with blocked reasons and next-row fixes. The empty field is recent files and four runnable actions per anchor; `>` browses the catalogue. Command rows have no More actions panel.
+
+The initial catalogue also proves *Open a project from GitHub…*, *Copy public link to this note* and *Save diagnostic report…*, reusing their existing flows. *Show this project in Explorer* and *Open this project on GitHub* remain unlisted candidates until their project-ID arguments are wired and proven. Content merging, project renaming and AI preset prompts are subsequent slices; this slice does not claim their acceptance.
+
+Shift+Enter retains a toggle's row and query while its acknowledged settings write completes. The row is temporarily unavailable during that write; its enabled state, not just its On/Off text, is the signal that a second Enter can run it.
+
 ## Owner decisions (approved defaults, 6 November)
 
 The owner approved the spec on 6 November at 02:07; the recommended default of each question below is the decision.
