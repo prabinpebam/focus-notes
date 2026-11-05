@@ -112,7 +112,9 @@ test("UI-07: ⋯ holds the rest: text size steps and the theme mode, each showin
       await page.getByRole("button", { name: "More", exact: true }).click();
       await expect(menu.getByRole("menuitem", { name: /^Smaller text/ })).not.toHaveAttribute("aria-disabled", "true");
       await page.keyboard.press("Escape");
+      await expect(page.getByRole("button", { name: "More", exact: true })).toBeFocused();
       await page.keyboard.press("Escape");
+      await expect(page.getByRole("toolbar", { name: "Toolbar", exact: true })).toBeHidden();
       await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
     };
     await readyForSizeKey();
