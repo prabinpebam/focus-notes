@@ -307,17 +307,13 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const sc = scroller.current;
     if (!sc) return;
     const arbitrate = () => {
-      let allowed = false, fits = true;
-      if (filesDock || outlineAsk) {
-        const l = dockLengths();
-        if (!l.max) return;
-        const files = filesDock ? clampWidth(filesWidth || l.files, l) : undefined;
-        const outline = outlineAsk ? clampWidth(dockWidth || l.def, l) : undefined;
-        const a = allocateDocks({ width: fixedBox(sc).width, files, outline, contentMin: l.content });
-        allowed = a.outline;
-        fits = filesDock ? a.files : true;
-      }
-      setDockAllowed(allowed);
+      const l = dockLengths();
+      if (!l.max) return;
+      const files = filesDock ? clampWidth(filesWidth || l.files, l) : undefined;
+      const outline = outlineAsk ? clampWidth(dockWidth || l.def, l) : undefined;
+      const a = allocateDocks({ width: fixedBox(sc).width, files, outline, contentMin: l.content });
+      setDockAllowed(a.outline);
+      const fits = filesDock ? a.files : true;
       if (filesFit.current !== fits) {
         filesFit.current = fits;
         onFilesFitRef.current?.(fits);
@@ -328,7 +324,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     return () => removeEventListener("resize", arbitrate);
   }, [scroller, filesDock, filesWidth, outlineAsk, dockWidth]); // eslint-disable-line react-hooks/exhaustive-deps
   const docked = outlineAsk && dockAllowed;
-  const dockedWidth = outlineAsk ? live ?? (lengths.current ? clampWidth(dockWidth || px(t.dock.width), dockLengths()) : 0) : 0;
+  const dockedWidth = live ?? (lengths.current ? clampWidth(dockWidth || px(t.dock.width), dockLengths()) : 0);
   // The note's area keeps clear of the docked contents, and gets the room back when they go.
   useEffect(() => {
     pinnedRight.set(docked && dockedWidth ? dockedWidth : 0);
@@ -347,8 +343,8 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   const pinnedShown = docked;
   const handle = useResizeHandle({
     width: dockedWidth,
-    min: docked ? px(t.dock.min) : 0,
-    max: () => docked ? dockMaxWidth({ window: scroller.current ? fixedBox(scroller.current).width : innerWidth, other: dockLeft.get(), contentMin: px(t.dock.contentMin), min: px(t.dock.min), max: px(t.dock.max) }) : 0,
+    min: px(t.dock.min),
+    max: () => dockMaxWidth({ window: scroller.current ? fixedBox(scroller.current).width : innerWidth, other: dockLeft.get(), contentMin: px(t.dock.contentMin), min: px(t.dock.min), max: px(t.dock.max) }),
     edge: "start",
     onResize: (w) => setLive(w),
     onCommit: (w) => {
