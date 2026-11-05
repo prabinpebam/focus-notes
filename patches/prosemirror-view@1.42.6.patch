@@ -1,0 +1,40 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index d52a5260a7b9924b2865053ea1e8c6484225277b..d15eb2e3b5add1bd5c52c7c724e0eb475a927478 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -3682,7 +3682,7 @@ handlers.focus = function (view) {
+     view.domObserver.start();
+     view.focused = true;
+     setTimeout(function () {
+-      if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange())) selectionToDOM(view);
++      if (view.docView && view.hasFocus() && !view.input.mouseDown && !view.domObserver.currentSelection.eq(view.domSelectionRange())) selectionToDOM(view);
+     }, 20);
+   }
+ };
+diff --git a/dist/index.js b/dist/index.js
+index dc0d117b85e1da3eae915b4d8ff8e5e604683861..6f3edf94dcf615419dc997ad275eca880e7105b2 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -3928,7 +3928,7 @@ handlers.focus = view => {
+         view.domObserver.start();
+         view.focused = true;
+         setTimeout(() => {
+-            if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
++            if (view.docView && view.hasFocus() && !view.input.mouseDown && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
+                 selectionToDOM(view);
+         }, 20);
+     }
+diff --git a/src/input.ts b/src/input.ts
+index b385cc19d572f49ce00b3335c9a5c9b35da3fab5..f61b2c7c1ed370285c82bfaa6dd7f7a2b28d01dc 100644
+--- a/src/input.ts
++++ b/src/input.ts
+@@ -840,7 +840,8 @@ handlers.focus = view => {
+     view.domObserver.start()
+     view.focused = true
+     setTimeout(() => {
+-      if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
++      if (view.docView && view.hasFocus() && !view.input.mouseDown &&
++          !view.domObserver.currentSelection.eq(view.domSelectionRange()))
+         selectionToDOM(view)
+     }, 20)
+   }
