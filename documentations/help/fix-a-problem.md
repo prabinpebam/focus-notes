@@ -11,7 +11,7 @@ Tell us about a problem or an idea from inside the app. Open it from any of thes
 
 - **Settings:** *Send feedback*, at the bottom of the list of categories.
 - **⋯ menu:** *Send feedback…*, next to *Settings…*.
-- **Spotlight:** type *feedback*, *bug*, or *idea*.
+- **Actions:** type *feedback*, *bug*, or *idea*.
 - **macOS:** Help → *Send Feedback…*.
 
 Choose *Problem* or *Idea*, give it a title, and add the details. For a problem, *Attach diagnostic report* is on, and the report shows below it exactly as it will be posted. It never includes your notes, their names, paths, emails, passwords, keys, or tokens.
