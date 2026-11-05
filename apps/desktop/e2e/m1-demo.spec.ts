@@ -156,7 +156,8 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
   await expect(editor).toBeFocused();
   const type = (s: string) => page.keyboard.type(s);
   const enter = () => page.keyboard.press("Enter");
-  await type("# A demo of calm writing"); await enter();
+  // First-save naming must see the complete title, even if autosave runs between input events.
+  await paste(page, { text: "# A demo of calm writing" }); await enter();
   for (let i = 0; i < 10; i++) {
     if (i === 2) { await type("## A list"); await enter(); await type("- first point"); await enter(); await type("second point"); await enter(); await enter(); }
     if (i === 4) { await type("[ ] a task to finish"); await enter(); await enter(); }

@@ -1,6 +1,8 @@
 {
   "color": {
     "$type": "color",
+    "skeleton": { "$value": "{ref.color.glow.a20}" },
+    "skeletonHighlight": { "$value": "{ref.color.glow.a14}" },
     "findMatch": { "$value": "{ref.color.amber.a20}" },
     "findMatchActive": { "$value": "{ref.color.amber.a35}" },
     "canvas": {

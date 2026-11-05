@@ -251,7 +251,7 @@
       "summary": "Open's project cards show the linked GitHub repository (GitHub mark and owner/repo, read from the local remote) as its own button that opens it in the default browser, and the project's size, files, media files and folders on one line counted asynchronously and cached (owner, 5 November; D-346).",
       "requirements": ["PRJ-20", "PRJ-21", "PRJ-22"], "dependsOn": ["WP-P.20"],
       "touches": ["core", "views", "ui", "desktop"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.23", "stage": "MP", "title": "Delete a project with GitHub handoff",

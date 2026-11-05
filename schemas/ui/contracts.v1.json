@@ -455,12 +455,30 @@
         "label": {
           "kind": "message",
           "description": "The open action's accessible name, when the title alone doesn't say it."
+        },
+        "repo": {
+          "kind": "text",
+          "description": "A project linked to GitHub: its owner/repo, read from the folder's own Git remote (D-346). Shown with the GitHub mark on its own line; empty, no line."
+        },
+        "repoLabel": {
+          "kind": "message",
+          "description": "The GitHub line's accessible name: Open owner/repo on GitHub."
+        },
+        "stats": {
+          "kind": "message",
+          "description": "A project's size, files, media files and folders on one quiet line (D-346); empty, no line."
+        },
+        "statsBusy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The size line is still being counted: a placeholder line holds its place."
         }
       },
       "events": {
         "press": {},
         "pin": {},
-        "reveal": {}
+        "reveal": {},
+        "openRepo": {}
       },
       "slots": {},
       "states": [
@@ -488,6 +506,142 @@
             },
             "logo": "book",
             "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project on GitHub, counted",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "leaf",
+            "accent": "green",
+            "repo": {
+              "get": "vm.gallery.repo"
+            },
+            "repoLabel": {
+              "t": "project.open.repo",
+              "args": {
+                "repo": {
+                  "get": "vm.gallery.repo"
+                }
+              }
+            },
+            "stats": {
+              "t": "project.open.stats",
+              "args": {
+                "size": {
+                  "get": "vm.gallery.size"
+                },
+                "files": 37,
+                "media": 5,
+                "folders": 6
+              }
+            },
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project local only, counted",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "stats": {
+              "t": "project.open.stats",
+              "args": {
+                "size": {
+                  "get": "vm.gallery.size"
+                },
+                "files": 1,
+                "media": 0,
+                "folders": 1
+              }
+            },
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project empty",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "pen",
+            "accent": "indigo",
+            "stats": {
+              "t": "project.open.stats",
+              "args": {
+                "size": {
+                  "get": "vm.gallery.size"
+                },
+                "files": 0,
+                "media": 0,
+                "folders": 0
+              }
+            },
+            "pinLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "project counting",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "pathLabel": {
+              "t": "gallery.action"
+            },
+            "logo": "leaf",
+            "accent": "green",
+            "repo": {
+              "get": "vm.gallery.repo"
+            },
+            "repoLabel": {
+              "t": "project.open.repo",
+              "args": {
+                "repo": {
+                  "get": "vm.gallery.repo"
+                }
+              }
+            },
+            "statsBusy": true,
             "pinLabel": {
               "t": "gallery.action"
             }
@@ -3903,6 +4057,11 @@
           "default": false,
           "description": "A group of related actions, not a choice: segments are buttons (a toolbar), value is unused and label names the toolbar without being shown (owner, 3 November)."
         },
+        "iconsOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Native icon-only radios with accessible names and native tooltips; usable without JavaScript on public pages. Options without an icon retain their label."
+        },
         "readOnly": {
           "kind": "boolean",
           "default": false,
@@ -4550,13 +4709,14 @@
           "kind": "enum",
           "values": [
             "line",
+            "text",
             "tile",
             "avatar",
             "row",
             "card"
           ],
           "default": "line",
-          "description": "What's coming: a line, picture, avatar, an ItemCard row or a picture card."
+          "description": "What's coming: a line, a text line matching the surrounding line box, picture, avatar, an ItemCard row or a picture card."
         },
         "width": {
           "kind": "enum",
@@ -4597,6 +4757,13 @@
           "props": {
             "shape": "line",
             "width": "long"
+          }
+        },
+        {
+          "name": "text line",
+          "props": {
+            "shape": "text",
+            "width": "medium"
           }
         },
         {
@@ -7041,6 +7208,16 @@
           "default": "none",
           "description": "Which of its words are the person's own data (their name and @login, a workspace's name), not the interface's: the visual score doesn't count them (D-127)."
         },
+        "reading": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Published article text uses the scoped reading font and size. Other cards keep interface typography."
+        },
+        "chevron": {
+          "kind": "boolean",
+          "default": true,
+          "description": "A trailing navigation cue; false for published article entries."
+        },
         "label": {
           "kind": "message",
           "description": "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)."
@@ -7090,6 +7267,19 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "published article",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "reading": true,
+            "chevron": false
+          }
+        },
         {
           "name": "selected radio with independent action",
           "covers": [

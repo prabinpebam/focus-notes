@@ -1,8 +1,8 @@
 import * as s from "./Skeleton.css.ts";
 
 export interface SkeletonProps {
-  /** What's coming: a line of words, a card's picture, or a person's photo. */
-  shape?: "line" | "tile" | "avatar" | "row" | "card";
+  /** What's coming: a line of words (text matches the surrounding line box), a picture, or a photo. */
+  shape?: "line" | "text" | "tile" | "avatar" | "row" | "card";
   /** A line's length. */
   width?: keyof typeof s.width;
 }
@@ -18,5 +18,5 @@ export function Skeleton({ shape = "line", width = "full" }: SkeletonProps) {
     <span className={`${s.base} ${shape === "card" ? s.tile : s.avatar}`} data-shimmer="" />
     <span className={s.words}><span className={`${s.base} ${s.line} ${s.width.long}`} data-shimmer="" /><span className={`${s.base} ${s.line} ${s.width.medium}`} data-shimmer="" /></span>
   </span>;
-  return <span className={`${s.base} ${shape === "line" ? `${s.line} ${s.width[width]}` : s[shape]}`} aria-hidden="true" data-shimmer="" />;
+  return <span className={`${s.base} ${shape === "line" || shape === "text" ? `${s[shape]} ${s.width[width]}` : s[shape]}`} aria-hidden="true" data-shimmer="" />;
 }

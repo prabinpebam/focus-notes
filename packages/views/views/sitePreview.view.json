@@ -299,6 +299,7 @@
                                           "label": {
                                             "t": "site.preview.readerTheme"
                                           },
+                                          "iconsOnly": true,
                                           "options": {
                                             "get": "vm.sharingPreview.readerThemes"
                                           },
@@ -429,6 +430,8 @@
                                                 "detail": {
                                                   "get": "a.excerpt"
                                                 },
+                                                "chevron": false,
+                                                "reading": true,
                                                 "icon": "document"
                                               },
                                               "on": {
@@ -539,6 +542,8 @@
                                                 "detail": {
                                                   "get": "a.excerpt"
                                                 },
+                                                "chevron": false,
+                                                "reading": true,
                                                 "icon": "document"
                                               },
                                               "on": {
@@ -625,11 +630,10 @@
                                         },
                                         "children": [
                                           {
-                                            "type": "Heading",
+                                            "type": "NoteContent",
                                             "props": {
-                                              "level": "1",
-                                              "value": {
-                                                "get": "vm.sharingPreview.articleTitle"
+                                              "blocks": {
+                                                "get": "vm.sharingPreview.titleBlocks"
                                               }
                                             }
                                           },

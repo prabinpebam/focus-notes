@@ -177,6 +177,8 @@ for (const id of THEME_IDS) blocks.push(scopeBlock(`[data-theme-scope="${id}"]`,
 const FONT_IDS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"];
 const fontFile = (id) => join(src, "modes", `content-font-${id}.json`);
 const fontKeys = new Set(FONT_IDS.filter((id) => id !== "mono").flatMap((id) => [...load(fontFile(id)).keys()]));
+// An inline semantic size on a subtree must also rebind its root-resolved component aliases.
+blocks.push(scopeBlock("[data-content-size]", new Set(["font.size"]), new Map()));
 for (const id of FONT_IDS) blocks.push(scopeBlock(`[data-font-scope="${id}"]`, fontKeys, id === "mono" ? new Map() : load(fontFile(id))));// Project accents (D-313): a modifier on the semantic accent roles, never per-component overrides. A role
 // takes the preset's strong shade in a light context and its soft one in a dark context (a dark theme, or a
 // project whose own Appearance is dark), and the component tokens reading those roles are re-declared on the

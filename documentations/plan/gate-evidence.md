@@ -18,7 +18,31 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Open project cards and hue-safe shimmer, 5 November
+
+The approved Open cards and translucent shimmer implementation at `3f7172fc` (D-352, D-353) passes its focused Windows checks:
+
+| Check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run build` | Passed. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/ui-states.spec.ts --workers=1 -g 'Open\|Files initial scan\|Recently deleted never\|Sharing settings distinguish\|Share item delays\|History delays\|section loading uses'` | Passed, 16 journeys: Open, scoped recovery and section skeletons. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/prf13-no-silent-wait.spec.ts --workers=1` | Passed, 5 journeys: setup, GitHub Open and named waits. |
+| PID-scoped `close-test-apps.ps1`, dry-run then actual | Passed after both runs; no test instances left open. |
+| Open, card-state and shimmer-tint gallery captures in light and dark | Inspected six candidates under `focus-notes-work\review\vq-open-dialog`; placeholders retain each card's hue. |
+
+There are no approved PNG baselines in this checkout, and Open/shimmer have no registered approved baseline to replace. Following `e2e/baselines.ts`, captures remain review candidates, not silently approved images. The gallery logs existing CSP warnings about meta `frame-ancestors` and blocked inline styles; these are queued separately, not repaired in this increment.
+
+The original `45eb26de` passed exact-head Windows CI `42033168821` (test job and all four journey shards). Its isolated candidate passed both Field notes/Garden notes inspections, including actual file/media/folder counts. The normal Shell launch has no E2E variables, but its window is fully covered: on-screen exposure is not claimed. The owner directed that PID 58196 remain unchanged.
+
+**Linear landing candidate:** `45eb26de` could not fast-forward main `0dc18a41`; no push to main was attempted. The four Open commits were rebased onto that main as `74393d32`, preserving upstream AI discovery, find/readiness and own-border pin feedback. After `pnpm tokens` refreshed local generated tokens, `pnpm check`, `pnpm typecheck`, `pnpm exec vitest run packages/core/test/project-open.test.ts apps/desktop/test/project-card.test.ts tools/test/shimmer.test.mjs` (42 tests), the desktop build and both journey commands above (16 + 5 tests) pass again. PID-scoped cleanup ran after the journeys. The rebased candidate still requires its own exact-head green CI before a plain fast-forward; no release is claimed.
+
 ### Native panel recovery journey transport, 5 November
+
+**Milestone B follow-up, 5 November.** The site-preview candidate `716891e1` passed the Windows test job and journey shards 1–3 in exact-head run `42033333975`, but shard 4 reproduced `electronApplication.evaluateHandle: Resulting promise was garbage collected` at `ui-states.spec.ts:190`. The window count is a plain number, not an object needing a remote handle: retrieve it with `evaluate` and assert that number is exactly one. Remove only the handle conversion/disposal; retain every panel, feedback, editor identity, note-byte and time-origin expectation. No wait, retry, fallback, app behavior, budget or quarantine changes. This supersedes the earlier handle-transport workaround below; the milestone still requires focused verification and its own green exact-head CI before a fast-forward landing.
+
+Focused verification: the desktop build and desktop typecheck pass; the unchanged recovery journey's expectations pass in five consecutive invisible local repetitions with the plain-number count. PID-scoped cleanup reports no remaining test apps. The changed evidence page renders headlessly in light and dark. Open dialog and its gallery story are excluded from this milestone; it lands independently when its own exact-head gate is green.
+
+**Integration after Open landed.** Run `42041951548` on `3d241150` passed the Windows test job and shards 1, 2 and 4, including panel recovery; only the unchanged Spotlight journeys at `m4-spotlight.spec.ts:175` and `:254` timed out in shard 3. Nothing landed on that red gate. Milestone B is now rebased onto green Open/main `fa2764cd`, inheriting its gallery story without another cherry-pick. The combined source passes tokens, full typecheck, 30 focused units, generated/spacing/UI checks, desktop build, and the recovery journey plus both previously timed-out Spotlight journeys in one invisible run. No Spotlight code, expectation or timeout changed. A new exact-head gate is required for this combined head; landing remains a non-force fast-forward only.
 
 Image candidate `c96f4a8e` passed the Windows test job and journey shards 1–3 in run `42012099831`. Shard 4 passed the recovery journey's panel, feedback, editor identity, unchanged note bytes and time-origin assertions, then failed while Playwright transported the synchronous native window count: `electronApplication.evaluate: Resulting promise was garbage collected`. The unchanged focused journey reproduced that error once in five local software-rendered runs. The window-count check now retrieves the same `BrowserWindow.getAllWindows().length` through `evaluateHandle`, asserts its JSON value is exactly one, and disposes the handle. All 20 focused software-rendered repetitions pass; no wait, retry, fallback, assertion, app behavior or budget changed. Exact-head combined Windows CI remains required before landing.
 

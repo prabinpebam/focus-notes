@@ -49,10 +49,12 @@ const dialog = (sections: string, panels: Record<string, unknown>) => ({
 });
 
 /** Delete (owner, 5 November; strict design): the Open view after a project is deleted, with one notification pill. */
+/** The Open mock's fake entries carry the counts, so the card's stats line is formatted from them, as in the Open mock. */
+const statsLine = { t: "project.open.stats", args: { size: { get: "entry.size" }, files: { get: "entry.files" }, media: { get: "entry.media" }, folders: { get: "entry.folders" } } };
 const openOf = (node: unknown): unknown => {
   if (Array.isArray(node)) return node.map(openOf);
   if (!node || typeof node !== "object") return typeof node === "string" ? node.replace(/^vm\.projects\b/, "vm.pnwOpen") : node;
-  return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "on").map(([k, v]) => [k === "bind" ? "get" : k, openOf(v)]));
+  return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "on").map(([k, v]) => [k === "bind" ? "get" : k, k === "stats" && (v as { get?: string })?.get === "entry.stats" ? statsLine : openOf(v)]));
 };
 const openView = openOf(compose(projects)) as { root: unknown; local?: Record<string, unknown> };
 const pill = (message: string, tone: string, action?: string) => ({

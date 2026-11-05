@@ -62,3 +62,6 @@ export const chevron = style({ width: t.markSize, height: t.markSize, flexShrink
 // The step's main action (D-142): its tile in the accent and its title large, so it outweighs the step's title.
 export const tileAction = style({ backgroundColor: t.action.tileBackground, color: t.action.tileColor });
 export const titleAction = style({ fontSize: t.action.title });
+export const reading = style({ fontFamily: t.readingFont, lineHeight: t.readingLineHeight });
+export const readingTitle = style({ fontFamily: t.readingHeadingFont, fontSize: `calc(${t.readingSize} * ${t.readingTitleRatio})` });
+export const readingDetail = style({ fontSize: t.readingSize });

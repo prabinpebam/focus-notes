@@ -1367,6 +1367,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const problem = await shell.openPath(canonical);
     if (problem) throw new Error(problem);
   });
+  // A project card's GitHub line (D-346): the address is rebuilt here from the folder's own Git remote, never
+  // taken from the window, and opens through the safe link path. Journeys log it instead of opening a browser.
+  handle("projects:stats", (folder: unknown) => {
+    if (typeof folder !== "string") throw new Error("Invalid project folder");
+    return projects.stats(folder);
+  });
+  handle("projects:openRepo", async (folder: unknown) => {
+    if (typeof folder !== "string") throw new Error("Invalid project folder");
+    const url = `https://github.com/${await projects.repo(folder)}`;
+    if (journey) return void process.stdout.write(`[focus-notes] open-repo ${url}\n`);
+    if (!isWebLink(url)) throw new Error("Invalid repository address");
+    await shell.openExternal(url);
+  });
   // Open file… (owner, 4 November): the platform picker; a file in a known project opens in its window, else on its own.
   handle("projects:openFile", () => projects.openFile());
   // Open from GitHub… (owner, 4 November): the account's own repositories, then the first run's clone into

@@ -129,6 +129,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
     edited: (path: string) => ipcRenderer.invoke("projects:edited", path),
     pin: (folder: string, path?: string) => ipcRenderer.invoke("projects:pin", folder, path),
     reveal: (folder: string) => ipcRenderer.invoke("projects:reveal", folder),
+    stats: (folder: string) => ipcRenderer.invoke("projects:stats", folder),
+    openRepo: (folder: string) => ipcRenderer.invoke("projects:openRepo", folder),
     openFile: () => ipcRenderer.invoke("projects:openFile"),
     githubRepos: () => ipcRenderer.invoke("projects:githubRepos"),
     openGitHub: (owner: string, name: string) => ipcRenderer.invoke("projects:openGitHub", owner, name),

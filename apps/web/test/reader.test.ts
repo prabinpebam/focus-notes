@@ -75,4 +75,14 @@ describe("public notes index (D-139)", () => {
     expect(html.match(/What grew/g)).toHaveLength(1);
     expect(html).toContain("2 public notes");
   });
+
+  it("does not wire the unapproved live-site theme control into articles or the index", () => {
+    for (const html of [page("# T\n\nBody.\n").html, index().html]) {
+      expect(html).not.toContain('type="radio"');
+      expect(html).not.toContain('data-reader-appearance');
+      expect(html).not.toContain('style="');
+      expect(html).not.toContain("<script");
+      expect(html).not.toContain("<svg");
+    }
+  });
 });

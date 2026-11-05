@@ -34,6 +34,7 @@ export const base = style({
   },
 });
 export const line = style({ height: t.line, borderRadius: t.lineRadius, maxWidth: "100%" });
+export const text = style({ height: "1lh", borderRadius: t.lineRadius, maxWidth: "100%" });
 export const width = styleVariants({ full: { width: "100%" }, long: { width: t.width.long }, medium: { width: t.width.medium }, short: { width: t.width.short } });
 export const tile = style({ width: t.tile, height: t.tile, borderRadius: t.tileRadius });
 export const avatar = style({ width: t.avatar, height: t.avatar, borderRadius: t.avatarRadius });

@@ -294,12 +294,30 @@
         "label": {
           "kind": "message",
           "description": "The open action's accessible name, when the title alone doesn't say it."
+        },
+        "repo": {
+          "kind": "text",
+          "description": "A project linked to GitHub: its owner/repo, read from the folder's own Git remote (D-346). Shown with the GitHub mark on its own line; empty, no line."
+        },
+        "repoLabel": {
+          "kind": "message",
+          "description": "The GitHub line's accessible name: Open owner/repo on GitHub."
+        },
+        "stats": {
+          "kind": "message",
+          "description": "A project's size, files, media files and folders on one quiet line (D-346); empty, no line."
+        },
+        "statsBusy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The size line is still being counted: a placeholder line holds its place."
         }
       },
       "events": {
         "press": {},
         "pin": {},
-        "reveal": {}
+        "reveal": {},
+        "openRepo": {}
       },
       "slots": {},
       "states": [
@@ -313,6 +331,10 @@
       },
       "fixtures": [
         "project",
+        "project on GitHub, counted",
+        "project local only, counted",
+        "project empty",
+        "project counting",
         "project pinned",
         "project uploaded logo",
         "logo book",
@@ -1375,6 +1397,11 @@
           "default": false,
           "description": "A group of related actions, not a choice: segments are buttons (a toolbar), value is unused and label names the toolbar without being shown (owner, 3 November)."
         },
+        "iconsOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Native icon-only radios with accessible names and native tooltips; usable without JavaScript on public pages. Options without an icon retain their label."
+        },
         "readOnly": {
           "kind": "boolean",
           "default": false,
@@ -1632,13 +1659,14 @@
           "kind": "enum",
           "values": [
             "line",
+            "text",
             "tile",
             "avatar",
             "row",
             "card"
           ],
           "default": "line",
-          "description": "What's coming: a line, picture, avatar, an ItemCard row or a picture card."
+          "description": "What's coming: a line, a text line matching the surrounding line box, picture, avatar, an ItemCard row or a picture card."
         },
         "width": {
           "kind": "enum",
@@ -1665,6 +1693,7 @@
         "row",
         "card",
         "line",
+        "text line",
         "medium line",
         "short line",
         "full line",
@@ -2849,6 +2878,16 @@
           "default": "none",
           "description": "Which of its words are the person's own data (their name and @login, a workspace's name), not the interface's: the visual score doesn't count them (D-127)."
         },
+        "reading": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Published article text uses the scoped reading font and size. Other cards keep interface typography."
+        },
+        "chevron": {
+          "kind": "boolean",
+          "default": true,
+          "description": "A trailing navigation cue; false for published article entries."
+        },
         "label": {
           "kind": "message",
           "description": "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)."
@@ -2898,6 +2937,7 @@
         "name": "label"
       },
       "fixtures": [
+        "published article",
         "selected radio with independent action",
         "pending radio",
         "workspace",
@@ -6733,6 +6773,7 @@
     "save",
     "darkTheme",
     "lightTheme",
+    "systemTheme",
     "more",
     "search",
     "add",

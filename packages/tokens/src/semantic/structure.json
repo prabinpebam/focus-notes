@@ -589,6 +589,10 @@
     },
     "scrollbarInset": {
       "$value": "{ref.size.2}"
+    },
+    "projectOutline": {
+      "$value": "{ref.size.3}",
+      "$description": "The project's colour outline around the whole window: 3 px so it's noticed (D-pending)."
     }
   },
   "shadow": {

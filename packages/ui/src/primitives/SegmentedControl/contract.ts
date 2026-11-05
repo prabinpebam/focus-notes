@@ -10,6 +10,7 @@ export const contract = defineContract({
     value: { kind: "text", bindable: true },
     orientation: { kind: "enum", values: ["horizontal", "vertical"], default: "horizontal", description: "vertical: one full-width row per choice, for choices whose labels don't fit side by side (the first run's Workspace, D-123)." },
     actions: { kind: "boolean", default: false, description: "A group of related actions, not a choice: segments are buttons (a toolbar), value is unused and label names the toolbar without being shown (owner, 3 November)." },
+    iconsOnly: { kind: "boolean", default: false, description: "Native icon-only radios with accessible names and native tooltips; usable without JavaScript on public pages. Options without an icon retain their label." },
     readOnly: { kind: "boolean", default: false, description: "Shown and focusable, but the choice can't change: while what it chose is being sent (Send feedback's Kind, D-203)." },
     commit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], description: "State on the chosen segment; only this group locks while pending." },
     error: { kind: "message" }, retryLabel: { kind: "message" }, revertLabel: { kind: "message" },

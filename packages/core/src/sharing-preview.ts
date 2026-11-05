@@ -7,7 +7,7 @@ import { findNode, joinPath, rootOf, type NoteNode, type TreeNode } from "./work
 import type { SharingDraft } from "./sharing-people.ts";
 import type { PMNode } from "@focus-notes/markdown";
 
-interface Article { id: string; title: string; section: string; excerpt: string; updated: string; blocks: PMNode[] }
+interface Article { id: string; title: string; titleBlocks: PMNode[]; section: string; excerpt: string; updated: string; blocks: PMNode[] }
 
 export const SHARING_WAITS = {
   publish: "sharing.publishDraft",
@@ -143,7 +143,7 @@ export function registerSharingPreview(ctx: {
         const page = publicPage(markdown, relative, updated, paths);
         next.push({ id: path, title: page.title || node.title || node.name, section: relative.includes("/") ? relative.split("/")[0]! : "",
           excerpt: page.excerpt ?? page.description, updated: updated ? new Intl.DateTimeFormat(catalog.locale, { dateStyle: "medium" }).format(new Date(updated)) : "",
-          blocks: page.model.body });
+          titleBlocks: page.model.title, blocks: page.model.body });
         completed(index);
       }
       start(notes.length);
@@ -189,7 +189,7 @@ export function registerSharingPreview(ctx: {
     set({ page: "article", article: id, section: article.section });
   });
   const str = { type: "string" as const }, bool = { type: "boolean" as const };
-  const option = { type: "object" as const, properties: { id: str, label: str } };
+  const option = { type: "object" as const, properties: { id: str, label: str, icon: str } };
   const card = { type: "object" as const, properties: { id: str, title: str, count: str, icon: str, excerpt: str } };
   viewModels.register({
     id: "vm.sharingPreview", reads: "*",
@@ -202,7 +202,7 @@ export function registerSharingPreview(ctx: {
       theme: str, scopeTheme: str, font: str, size: str, contentSize: { type: "number" }, scheme: str, readerTheme: str, readerFocus: bool, page: str,
       themes: { type: "array", items: option }, fonts: { type: "array", items: option }, sizes: { type: "array", items: option }, readerThemes: { type: "array", items: option },
       sections: { type: "array", items: card }, articles: { type: "array", items: card }, homeArticles: { type: "array", items: card },
-      section: str, sectionTitle: str, count: str, articleTitle: str, updated: str, blocks: BLOCK_LIST_SCHEMA,
+      section: str, sectionTitle: str, count: str, articleTitle: str, titleBlocks: BLOCK_LIST_SCHEMA, updated: str, blocks: BLOCK_LIST_SCHEMA,
     } },
     select: () => {
       const article = articles.find(a => a.id === state.article);
@@ -233,11 +233,11 @@ export function registerSharingPreview(ctx: {
         scopeTheme: dark ? warm ? "dusk" : "ink" : warm ? "sepia" : "paper",
         contentSize: Number(state.size), sections, articles: list, homeArticles: articles.filter(a => !a.section),
         sectionTitle: state.section, count: catalog.format("site.preview.count", { count: list.length }),
-        articleTitle: article?.title ?? "", updated: article?.updated ? catalog.format("sharing.preview.updated", { date: article.updated }) : "", blocks: article?.blocks ?? [],
+        articleTitle: article?.title ?? "", titleBlocks: article?.titleBlocks ?? [], updated: article?.updated ? catalog.format("sharing.preview.updated", { date: article.updated }) : "", blocks: article?.blocks ?? [],
         themes: choices.theme.map(id => ({ id, label: catalog.format(`sharing.theme.${id}`) })),
         fonts: choices.font.map(id => ({ id, label: catalog.format(`sharing.font.${id}`) })),
         sizes: choices.size.map(id => ({ id, label: catalog.format(`sharing.size.${id}`) })),
-        readerThemes: choices.readerTheme.map(id => ({ id, label: catalog.format(`command.appearance.${id}`) })),
+        readerThemes: choices.readerTheme.map(id => ({ id, label: catalog.format(`command.appearance.${id}`), icon: `${id}Theme` })),
       };
     },
   });

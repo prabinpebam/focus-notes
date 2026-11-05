@@ -322,6 +322,23 @@
            "pinCommit": {
             "get": "entry.pinCommit"
            },
+           "repo": {
+            "get": "entry.repo"
+           },
+           "repoLabel": {
+            "t": "project.open.repo",
+            "args": {
+             "repo": {
+              "get": "entry.repo"
+             }
+            }
+           },
+           "stats": {
+            "get": "entry.stats"
+           },
+           "statsBusy": {
+            "get": "entry.statsBusy"
+           },
            "pathLabel": {
             "t": "project.open.reveal",
             "args": {
@@ -374,6 +391,14 @@
            },
            "reveal": {
             "run": "projects.reveal",
+            "args": {
+             "id": {
+              "get": "entry.id"
+             }
+            }
+           },
+           "openRepo": {
+            "run": "projects.openRepo",
             "args": {
              "id": {
               "get": "entry.id"

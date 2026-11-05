@@ -17,6 +17,8 @@ export const contract = defineContract({
     mark: { kind: "boolean", default: false, description: "GitHub's mark beside the detail: an account on GitHub." },
     size: { kind: "enum", values: ["m", "l"], default: "m", description: "l: an account's profile card, its name large." },
     personal: { kind: "enum", values: ["none", "title", "all"], default: "none", description: "Which of its words are the person's own data (their name and @login, a workspace's name), not the interface's: the visual score doesn't count them (D-127)." },
+    reading: { kind: "boolean", default: false, description: "Published article text uses the scoped reading font and size. Other cards keep interface typography." },
+    chevron: { kind: "boolean", default: true, description: "A trailing navigation cue; false for published article entries." },
     label: { kind: "message", description: "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)." },
     busy: { kind: "boolean", default: false, description: "An action is running. Radio choices remain mounted and focusable, aria-disabled suppresses activation without resetting scroll or native focus." },
     disabled: { kind: "boolean", default: false, description: "A pressable card that can't run now (offline): it stays focusable, and its detail says why (D-135)." },
@@ -30,6 +32,7 @@ export const contract = defineContract({
   tokens: "cmp.itemCard.*",
   a11y: { pattern: "group", name: "label" },
   fixtures: [
+    { name: "published article", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, reading: true, chevron: false } },
     { name: "selected radio with independent action", covers: ["rest", "selected"], props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, badge: { t: "ai.badge.writer" }, icon: "cloud", choiceGroup: { get: "vm.gallery.optionFirst" }, choiceValue: { get: "vm.gallery.optionFirst" }, selected: true }, children: [{ type: "Button", props: { label: { t: "ai.change" } } }] },
     { name: "pending radio", covers: ["selected", "disabled"], props: { title: { t: "gallery.sample" }, choiceGroup: { get: "vm.gallery.optionFirst" }, choiceValue: { get: "vm.gallery.optionFirst" }, selected: true, busy: true } },
     { name: "workspace", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.sample" }, badge: { t: "gallery.sample" }, icon: "folder", personal: "title" }, children: [{ type: "Button", props: { label: { t: "gallery.action" }, variant: "primary" } }] },
