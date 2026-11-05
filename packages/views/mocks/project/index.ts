@@ -7,6 +7,9 @@
 import settings from "../../views/settings.view.json" with { type: "json" };
 import data from "./data.json" with { type: "json" };
 import home from "./home.json" with { type: "json" };
+import del from "./delete.json" with { type: "json" };
+import projects from "../../views/projects.view.json" with { type: "json" };
+import openData from "../open/data.json" with { type: "json" };
 import { compose } from "../../src/compose.ts";
 
 type Entry = { id: string; label: string; view: string; local?: Record<string, string | number | boolean> };
@@ -44,6 +47,25 @@ const dialog = (sections: string, panels: Record<string, unknown>) => ({
   }],
 });
 
+/** Delete (owner, 5 November; strict design): the Open view after a project is deleted, with one notification pill. */
+const openOf = (node: unknown): unknown => {
+  if (Array.isArray(node)) return node.map(openOf);
+  if (!node || typeof node !== "object") return typeof node === "string" ? node.replace(/^vm\.projects\b/, "vm.pnwOpen") : node;
+  return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "on").map(([k, v]) => [k === "bind" ? "get" : k, openOf(v)]));
+};
+const openView = openOf(compose(projects)) as { root: unknown; local?: Record<string, unknown> };
+const pill = (message: string, tone: string, action?: string) => ({
+  type: "Toast",
+  props: { message: { get: `vm.pnwDel.${message}` }, tone, dismissLabel: { t: "toast.dismiss" }, ...(action ? { actionLabel: { get: `vm.pnwDel.${action}` }, sticky: true } : {}) },
+});
+const withPill = (root: unknown, layer: unknown): unknown => {
+  const r = root as { children: { type: string; children: unknown[] }[] };
+  const first = r.children.findIndex((c) => c.type === "Dialog");
+  return { ...r, children: r.children.map((c, i) => (i === first ? { ...c, children: [...c.children, layer] } : c)) };
+};
+const gone = new Set(["p2", "r3"]);
+const afterDelete = { ...openData, entries: openData.entries.filter((e) => !gone.has(e.id)), recent: openData.recent.filter((e) => !gone.has(e.id)) };
+
 const others = Object.fromEntries(["account", "sharing", "agents", "ai", "appearance", "keyboard", "about"].map((id) => [id, unchanged]));
 const projectView = (variant: "linked" | "offline") => ({
   id: `gallery.mock.pnw.${variant}`,
@@ -63,6 +85,8 @@ export const projectMocks = {
     pnwProject: data.project,
     pnwPeople: { ...data.people, available: true },
     pnwPeopleOff: data.people,
+    pnwDel: data.del,
+    pnwOpen: afterDelete,
   },
   views: {
     linked: projectView("linked"),
@@ -73,11 +97,45 @@ export const projectMocks = {
       local: { section: "file", kind: "md" },
       root: dialog("vm.pnw.fileSections", { ...others, file: home.file }),
     },
+    delete: { id: "gallery.mock.pnw.delete", focus: "projectDelete", local: { step: "consequences", kind: "linked", problem: "", typed: "", private: true, exported: false }, root: del },
+    deleted: {
+      ...openView,
+      id: "gallery.mock.pnw.deleted",
+      local: { ...(openView.local ?? {}), toast: "done" },
+      // The design system drops a toast under an open dialog, so the pill rides in the Open dialog it belongs to.
+      root: withPill(openView.root, {
+        type: "Layer",
+        id: "toasts",
+        props: { layer: "toast", position: "bottomCenter" },
+        children: [{ switch: { get: "local.toast" }, cases: { done: pill("toastDone", "success"), offline: pill("toastOffline", "success"), kept: pill("toastKept", "warning", "toastKeptAction") } }],
+      }),
+    },
   },
   entries: [
     { id: "pnw.linked", label: "1. Settings → Project, linked to GitHub (no Workspace tab)", view: "linked" },
     { id: "pnw.offline", label: "2. Settings → Project, offline (Git on this computer only)", view: "offline" },
     { id: "pnw.fileMd", label: "3. Standalone .md file: Settings → This file, images go beside it", view: "file" },
     { id: "pnw.fileTxt", label: "4. Standalone .txt file: Insert image… unavailable, with the reason", view: "file", local: { kind: "txt" } },
+    { id: "pnw.deleteEntry", label: "5. Delete: Settings → Project → Delete project…", view: "linked" },
+    { id: "pnw.deleteConsequences", label: "6. Delete: what's deleted (site, share links, people, private notes, this computer)", view: "delete" },
+    { id: "pnw.deleteUnsynced", label: "7. Delete: notes not on GitHub yet, save a copy first", view: "delete", local: { step: "unsynced" } },
+    { id: "pnw.deleteUnsyncedSaved", label: "8. Delete: copy saved, continue", view: "delete", local: { step: "unsynced", exported: true } },
+    { id: "pnw.deleteConfirm", label: "9. Delete: type the project's name", view: "delete", local: { step: "confirm" } },
+    { id: "pnw.deleteGithub", label: "10. Delete: delete it on GitHub (hand-off), the app notices", view: "delete", local: { step: "github" } },
+    { id: "pnw.deleteProgress", label: "11. Delete: progress with named steps", view: "delete", local: { step: "progress" } },
+    { id: "pnw.deleteDone", label: "12. Delete: done, Open with one notification pill", view: "deleted" },
+    { id: "pnw.deleteOffline", label: "13. Delete an offline project: Recycle Bin only, type the name", view: "delete", local: { kind: "offline" } },
+    { id: "pnw.deleteOfflineDone", label: "14. Delete an offline project: done", view: "deleted", local: { toast: "offline" } },
+    { id: "pnw.deleteErrOffline", label: "15. Delete fails: offline", view: "delete", local: { problem: "offline" } },
+    { id: "pnw.deleteErrSignin", label: "16. Delete fails: sign in again", view: "delete", local: { problem: "signin" } },
+    { id: "pnw.deleteErrNotAdmin", label: "17. Delete fails: not an owner of the repository", view: "delete", local: { problem: "notAdmin" } },
+    { id: "pnw.deleteErrWindow", label: "18. Delete fails: open in another window", view: "delete", local: { problem: "window" } },
+    { id: "pnw.deleteErrGone", label: "19. Delete: already gone from GitHub", view: "delete", local: { problem: "gone" } },
+    { id: "pnw.deleteErrPolicy", label: "20. Delete fails: the organization blocks deleting", view: "delete", local: { step: "github", problem: "policy" } },
+    { id: "pnw.deleteErrRateLimit", label: "21. Delete waits: GitHub rate limit", view: "delete", local: { step: "github", problem: "rateLimit" } },
+    { id: "pnw.deleteErrExpired", label: "22. Delete fails: sign-in expired while waiting", view: "delete", local: { step: "github", problem: "signin" } },
+    { id: "pnw.deleteErrPartialLocal", label: "23. Partial: deleted on GitHub, folder still here", view: "delete", local: { step: "progress", problem: "partialLocal" } },
+    { id: "pnw.deleteErrPartialGithub", label: "24. Partial: removed here, still on GitHub", view: "deleted", local: { toast: "kept" } },
+    { id: "pnw.deleteCancelled", label: "25. Delete stopped midway", view: "delete", local: { step: "stopped" } },
   ] as Entry[],
 };

@@ -2,7 +2,7 @@
 
 ## D-pending: Project replaces workspace everywhere
 
-**Status:** Proposed (worker, 5 November 2026; strict design, waiting for the owner's approval). **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).
+**Status:** Accepted (the owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."). The on-disk and template renames in (c) stay a separate owner decision; implementation changes user-facing words only. **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).
 
 The owner wrote: "Project and workspace are the same thing. Why have two separate concepts. It's confusing. … eliminate the term workspace completely from the app. all projects have version control with git. Projects can be completely offline or linked to a GitHub repo." The full words are on [One concept: Project](../experience/project-model.md#the-owners-direction).
 

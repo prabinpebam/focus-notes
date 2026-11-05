@@ -1,0 +1,1381 @@
+{
+ "type": "Dialog",
+ "id": "projectDelete",
+ "props": {
+  "title": {
+   "t": "project.delete.title",
+   "args": {
+    "name": {
+     "get": "vm.pnwDel.name"
+    }
+   }
+  },
+  "closeLabel": {
+   "t": "dialog.close"
+  },
+  "open": true,
+  "size": "m",
+  "height": "content"
+ },
+ "children": [
+  {
+   "switch": {
+    "get": "local.step"
+   },
+   "cases": {
+    "consequences": {
+     "type": "Stack",
+     "props": {
+      "gap": "stackGroup"
+     },
+     "children": [
+      {
+       "switch": {
+        "get": "local.kind"
+       },
+       "cases": {
+        "linked": {
+         "type": "Text",
+         "props": {
+          "value": {
+           "t": "project.delete.intro"
+          }
+         }
+        },
+        "offline": {
+         "type": "Text",
+         "props": {
+          "value": {
+           "t": "project.delete.introOffline"
+          }
+         }
+        }
+       }
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.offline"
+        },
+        "tone": "warning",
+        "icon": "cloudOff",
+        "actionLabel": {
+         "t": "commit.retry"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "offline"
+         ]
+        }
+       }
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.signin"
+        },
+        "tone": "warning",
+        "icon": "lock",
+        "actionLabel": {
+         "t": "project.delete.problem.signinAction"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "signin"
+         ]
+        }
+       }
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.notAdmin",
+         "args": {
+          "repo": {
+           "get": "vm.pnwDel.otherRepo"
+          },
+          "owner": {
+           "get": "vm.pnwDel.otherOwner"
+          }
+         }
+        },
+        "tone": "warning",
+        "icon": "lock",
+        "actionLabel": {
+         "t": "project.home.remove"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "notAdmin"
+         ]
+        }
+       }
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.window",
+         "args": {
+          "name": {
+           "get": "vm.pnwDel.name"
+          }
+         }
+        },
+        "tone": "warning",
+        "icon": "openWindow",
+        "actionLabel": {
+         "t": "project.delete.problem.windowAction"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "window"
+         ]
+        }
+       }
+      },
+      {
+       "type": "Section",
+       "slots": {
+        "heading": [
+         {
+          "type": "Heading",
+          "props": {
+           "level": "3",
+           "value": {
+            "t": "project.delete.lost"
+           }
+          }
+         }
+        ]
+       },
+       "children": [
+        {
+         "switch": {
+          "get": "local.kind"
+         },
+         "cases": {
+          "linked": {
+           "type": "Stack",
+           "props": {
+            "gap": "stackItem"
+           },
+           "children": [
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "github",
+              "title": {
+               "t": "project.delete.repoGone.title"
+              },
+              "detail": {
+               "t": "project.delete.repoGone.detail",
+               "args": {
+                "repo": {
+                 "get": "vm.pnwDel.repo"
+                }
+               }
+              }
+             },
+             "when": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.problem"
+                },
+                "gone"
+               ]
+              }
+             }
+            },
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "github",
+              "title": {
+               "t": "project.delete.repo.title",
+               "args": {
+                "repo": {
+                 "get": "vm.pnwDel.otherRepo"
+                }
+               }
+              },
+              "detail": {
+               "t": "project.delete.repo.detail"
+              },
+              "personal": "title"
+             },
+             "when": {
+              "expr": {
+               "==": [
+                {
+                 "get": "local.problem"
+                },
+                "notAdmin"
+               ]
+              }
+             }
+            },
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "github",
+              "title": {
+               "t": "project.delete.repo.title",
+               "args": {
+                "repo": {
+                 "get": "vm.pnwDel.repo"
+                }
+               }
+              },
+              "detail": {
+               "t": "project.delete.repo.detail"
+              },
+              "personal": "title"
+             },
+             "when": {
+              "expr": {
+               "and": [
+                {
+                 "!=": [
+                  {
+                   "get": "local.problem"
+                  },
+                  "gone"
+                 ]
+                },
+                {
+                 "!=": [
+                  {
+                   "get": "local.problem"
+                  },
+                  "notAdmin"
+                 ]
+                }
+               ]
+              }
+             }
+            },
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "globe",
+              "title": {
+               "t": "project.delete.site.title"
+              },
+              "detail": {
+               "t": "project.delete.site.detail",
+               "args": {
+                "site": {
+                 "get": "vm.pnwDel.site"
+                },
+                "count": {
+                 "get": "vm.pnwDel.siteNotes"
+                }
+               }
+              }
+             }
+            },
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "link",
+              "title": {
+               "t": "project.delete.links.title",
+               "args": {
+                "count": {
+                 "get": "vm.pnwDel.links"
+                }
+               }
+              },
+              "detail": {
+               "t": "project.delete.links.detail"
+              }
+             }
+            },
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "share",
+              "title": {
+               "t": "project.delete.people.title",
+               "args": {
+                "count": {
+                 "get": "vm.pnwDel.peopleCount"
+                }
+               }
+              },
+              "detail": {
+               "get": "vm.pnwDel.peopleNames"
+              }
+             }
+            },
+            {
+             "type": "Stack",
+             "props": {
+              "gap": "stackPair"
+             },
+             "children": [
+              {
+               "type": "ItemCard",
+               "props": {
+                "icon": "lock",
+                "title": {
+                 "t": "project.delete.private.title",
+                 "args": {
+                  "repo": {
+                   "get": "vm.pnwDel.privateRepo"
+                  }
+                 }
+                },
+                "detail": {
+                 "t": "project.delete.private.detail",
+                 "args": {
+                  "count": {
+                   "get": "vm.pnwDel.privateCount"
+                  }
+                 }
+                },
+                "personal": "title"
+               },
+               "children": [
+                {
+                 "type": "Switch",
+                 "props": {
+                  "label": {
+                   "t": "project.delete.private.switch"
+                  },
+                  "checked": {
+                   "bind": "local.private"
+                  },
+                  "onLabel": {
+                   "t": "switch.on"
+                  },
+                  "offLabel": {
+                   "t": "switch.off"
+                  }
+                 }
+                }
+               ]
+              },
+              {
+               "type": "Text",
+               "props": {
+                "value": {
+                 "t": "project.delete.private.keep"
+                },
+                "tone": "muted"
+               },
+               "when": {
+                "expr": {
+                 "!": {
+                  "get": "local.private"
+                 }
+                }
+               }
+              }
+             ]
+            },
+            {
+             "type": "ItemCard",
+             "props": {
+              "icon": "hardDrive",
+              "title": {
+               "t": "project.delete.local.title"
+              },
+              "detail": {
+               "t": "project.delete.local.detail"
+              }
+             }
+            }
+           ]
+          },
+          "offline": {
+           "type": "ItemCard",
+           "props": {
+            "icon": "hardDrive",
+            "title": {
+             "t": "project.delete.local.title"
+            },
+            "detail": {
+             "t": "project.delete.local.detail"
+            }
+           }
+          }
+         }
+        }
+       ]
+      },
+      {
+       "switch": {
+        "get": "local.kind"
+       },
+       "cases": {
+        "linked": {
+         "type": "Inline",
+         "props": {
+          "gap": "inlineItem",
+          "justify": "end",
+          "wrap": true
+         },
+         "children": [
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "t": "remove.cancel"
+            },
+            "variant": "secondary"
+           }
+          },
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "t": "project.delete.continue"
+            },
+            "variant": "primary",
+            "disabled": {
+             "expr": {
+              "or": [
+               {
+                "==": [
+                 {
+                  "get": "local.problem"
+                 },
+                 "offline"
+                ]
+               },
+               {
+                "==": [
+                 {
+                  "get": "local.problem"
+                 },
+                 "signin"
+                ]
+               },
+               {
+                "==": [
+                 {
+                  "get": "local.problem"
+                 },
+                 "notAdmin"
+                ]
+               },
+               {
+                "==": [
+                 {
+                  "get": "local.problem"
+                 },
+                 "window"
+                ]
+               }
+              ]
+             }
+            },
+            "disabledReason": {
+             "t": "project.delete.problem.continueReason"
+            }
+           }
+          }
+         ]
+        },
+        "offline": {
+         "type": "Stack",
+         "props": {
+          "gap": "stackGroup"
+         },
+         "children": [
+          {
+           "type": "TextField",
+           "props": {
+            "label": {
+             "t": "project.delete.confirm.label",
+             "args": {
+              "name": {
+               "get": "vm.pnwDel.name"
+              }
+             }
+            },
+            "value": {
+             "bind": "local.typed"
+            }
+           }
+          },
+          {
+           "type": "Inline",
+           "props": {
+            "gap": "inlineItem",
+            "justify": "end",
+            "wrap": true
+           },
+           "children": [
+            {
+             "type": "Button",
+             "props": {
+              "label": {
+               "t": "remove.cancel"
+              },
+              "variant": "secondary"
+             }
+            },
+            {
+             "type": "Button",
+             "props": {
+              "label": {
+               "t": "project.delete.confirm.button"
+              },
+              "variant": "danger",
+              "disabled": {
+               "expr": {
+                "!=": [
+                 {
+                  "get": "local.typed"
+                 },
+                 {
+                  "get": "vm.pnwDel.name"
+                 }
+                ]
+               }
+              },
+              "disabledReason": {
+               "t": "project.delete.confirm.mismatch"
+              }
+             }
+            }
+           ]
+          }
+         ]
+        }
+       }
+      }
+     ]
+    },
+    "unsynced": {
+     "type": "Stack",
+     "props": {
+      "gap": "stackGroup"
+     },
+     "children": [
+      {
+       "type": "Stack",
+       "props": {
+        "gap": "stackPair"
+       },
+       "children": [
+        {
+         "type": "Heading",
+         "props": {
+          "level": "3",
+          "value": {
+           "t": "project.delete.unsynced.title",
+           "args": {
+            "count": {
+             "get": "vm.pnwDel.unsyncedCount"
+            }
+           }
+          }
+         }
+        },
+        {
+         "type": "Text",
+         "props": {
+          "value": {
+           "t": "project.delete.unsynced.detail"
+          },
+          "tone": "muted"
+         }
+        }
+       ]
+      },
+      {
+       "type": "Stack",
+       "props": {
+        "gap": "stackItem"
+       },
+       "children": [
+        {
+         "each": {
+          "get": "vm.pnwDel.unsynced"
+         },
+         "as": "note",
+         "key": "note.id",
+         "empty": {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "project.delete.unsynced.none"
+           },
+           "tone": "muted"
+          }
+         },
+         "render": {
+          "type": "Inline",
+          "props": {
+           "gap": "inlineItem",
+           "align": "center"
+          },
+          "children": [
+           {
+            "type": "Icon",
+            "props": {
+             "name": "documentText",
+             "size": "m"
+            }
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "get": "note.label"
+             },
+             "personal": true
+            }
+           },
+           {
+            "type": "Text",
+            "props": {
+             "value": {
+              "get": "note.description"
+             },
+             "tone": "muted",
+             "role": "secondary",
+             "personal": true
+            }
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.unsynced.saved",
+         "args": {
+          "path": {
+           "get": "vm.pnwDel.exportPath"
+          }
+         }
+        },
+        "tone": "success",
+        "icon": "check"
+       },
+       "when": {
+        "get": "local.exported"
+       }
+      },
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.back"
+          },
+          "variant": "secondary"
+         }
+        },
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.delete.unsynced.export"
+          },
+          "variant": "secondary",
+          "icon": "export"
+         },
+         "when": {
+          "expr": {
+           "!": {
+            "get": "local.exported"
+           }
+          }
+         }
+        },
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.delete.continue"
+          },
+          "variant": "primary"
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "confirm": {
+     "type": "Stack",
+     "props": {
+      "gap": "stackGroup"
+     },
+     "children": [
+      {
+       "type": "Text",
+       "props": {
+        "value": {
+         "t": "project.delete.confirm.summary",
+         "args": {
+          "repo": {
+           "get": "vm.pnwDel.repo"
+          },
+          "privateRepo": {
+           "get": "vm.pnwDel.privateRepo"
+          },
+          "private": {
+           "expr": {
+            "if": [
+             {
+              "get": "local.private"
+             },
+             "yes",
+             "no"
+            ]
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "type": "TextField",
+       "props": {
+        "label": {
+         "t": "project.delete.confirm.label",
+         "args": {
+          "name": {
+           "get": "vm.pnwDel.name"
+          }
+         }
+        },
+        "value": {
+         "bind": "local.typed"
+        },
+        "autoFocus": true
+       }
+      },
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.back"
+          },
+          "variant": "secondary"
+         }
+        },
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.delete.confirm.button"
+          },
+          "variant": "danger",
+          "disabled": {
+           "expr": {
+            "!=": [
+             {
+              "get": "local.typed"
+             },
+             {
+              "get": "vm.pnwDel.name"
+             }
+            ]
+           }
+          },
+          "disabledReason": {
+           "t": "project.delete.confirm.mismatch"
+          }
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "github": {
+     "type": "Stack",
+     "props": {
+      "gap": "stackGroup"
+     },
+     "children": [
+      {
+       "type": "Stack",
+       "props": {
+        "gap": "stackPair"
+       },
+       "children": [
+        {
+         "type": "Text",
+         "props": {
+          "value": {
+           "t": "project.delete.github.intro"
+          }
+         }
+        },
+        {
+         "type": "Text",
+         "props": {
+          "value": {
+           "t": "project.delete.github.where"
+          },
+          "tone": "muted"
+         }
+        }
+       ]
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.rateLimit",
+         "args": {
+          "time": {
+           "get": "vm.pnwDel.retryAt"
+          }
+         }
+        },
+        "tone": "warning",
+        "icon": "history"
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "rateLimit"
+         ]
+        }
+       }
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.policy",
+         "args": {
+          "org": {
+           "get": "vm.pnwDel.org"
+          }
+         }
+        },
+        "tone": "warning",
+        "icon": "info",
+        "actionLabel": {
+         "t": "project.home.remove"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "policy"
+         ]
+        }
+       }
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.signin"
+        },
+        "tone": "warning",
+        "icon": "lock",
+        "actionLabel": {
+         "t": "project.delete.problem.signinAction"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "signin"
+         ]
+        }
+       }
+      },
+      {
+       "type": "Stack",
+       "props": {
+        "gap": "stackItem"
+       },
+       "children": [
+        {
+         "type": "ItemCard",
+         "props": {
+          "icon": "github",
+          "title": {
+           "get": "vm.pnwDel.orgRepo"
+          },
+          "detail": {
+           "t": "project.delete.github.waiting"
+          },
+          "personal": "title",
+          "busy": true
+         },
+         "children": [
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "t": "project.delete.github.open"
+            },
+            "variant": "secondary",
+            "icon": "openWindow"
+           }
+          }
+         ],
+         "when": {
+          "expr": {
+           "==": [
+            {
+             "get": "local.problem"
+            },
+            "policy"
+           ]
+          }
+         }
+        },
+        {
+         "type": "ItemCard",
+         "props": {
+          "icon": "check",
+          "title": {
+           "get": "vm.pnwDel.repo"
+          },
+          "detail": {
+           "t": "project.delete.github.deleted"
+          },
+          "personal": "title"
+         },
+         "when": {
+          "expr": {
+           "!=": [
+            {
+             "get": "local.problem"
+            },
+            "policy"
+           ]
+          }
+         }
+        },
+        {
+         "type": "ItemCard",
+         "props": {
+          "icon": "github",
+          "title": {
+           "get": "vm.pnwDel.privateRepo"
+          },
+          "detail": {
+           "t": "project.delete.github.waiting"
+          },
+          "personal": "title",
+          "busy": true
+         },
+         "children": [
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "t": "project.delete.github.open"
+            },
+            "variant": "secondary",
+            "icon": "openWindow"
+           }
+          }
+         ],
+         "when": {
+          "expr": {
+           "!=": [
+            {
+             "get": "local.problem"
+            },
+            "policy"
+           ]
+          }
+         }
+        }
+       ]
+      },
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.delete.github.stop"
+          },
+          "variant": "secondary"
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "progress": {
+     "type": "Stack",
+     "props": {
+      "gap": "stackGroup"
+     },
+     "children": [
+      {
+       "type": "Stack",
+       "props": {
+        "gap": "stackItem"
+       },
+       "children": [
+        {
+         "type": "Inline",
+         "props": {
+          "gap": "inlineItem",
+          "align": "center"
+         },
+         "children": [
+          {
+           "type": "StepMark",
+           "props": {
+            "size": "compact",
+            "icon": "check",
+            "tone": "success",
+            "busy": false
+           }
+          },
+          {
+           "type": "Text",
+           "props": {
+            "value": {
+             "t": "project.delete.step.repo",
+             "args": {
+              "repo": {
+               "get": "vm.pnwDel.repo"
+              }
+             }
+            }
+           }
+          }
+         ]
+        },
+        {
+         "type": "Inline",
+         "props": {
+          "gap": "inlineItem",
+          "align": "center"
+         },
+         "children": [
+          {
+           "type": "StepMark",
+           "props": {
+            "size": "compact",
+            "icon": "check",
+            "tone": "success",
+            "busy": false
+           }
+          },
+          {
+           "type": "Text",
+           "props": {
+            "value": {
+             "t": "project.delete.step.repo",
+             "args": {
+              "repo": {
+               "get": "vm.pnwDel.privateRepo"
+              }
+             }
+            }
+           }
+          }
+         ]
+        },
+        {
+         "type": "Inline",
+         "props": {
+          "gap": "inlineItem",
+          "align": "center"
+         },
+         "children": [
+          {
+           "type": "StepMark",
+           "props": {
+            "size": "compact",
+            "icon": "warning",
+            "tone": "danger",
+            "busy": false
+           }
+          },
+          {
+           "type": "Text",
+           "props": {
+            "value": {
+             "t": "project.delete.step.folderFailed"
+            }
+           }
+          }
+         ],
+         "when": {
+          "expr": {
+           "==": [
+            {
+             "get": "local.problem"
+            },
+            "partialLocal"
+           ]
+          }
+         }
+        },
+        {
+         "type": "Inline",
+         "props": {
+          "gap": "inlineItem",
+          "align": "center"
+         },
+         "children": [
+          {
+           "type": "StepMark",
+           "props": {
+            "size": "compact",
+            "icon": "folder",
+            "tone": "accent",
+            "busy": true
+           }
+          },
+          {
+           "type": "Text",
+           "props": {
+            "value": {
+             "t": "project.delete.step.folder"
+            }
+           }
+          }
+         ],
+         "when": {
+          "expr": {
+           "!=": [
+            {
+             "get": "local.problem"
+            },
+            "partialLocal"
+           ]
+          }
+         }
+        },
+        {
+         "type": "Inline",
+         "props": {
+          "gap": "inlineItem",
+          "align": "center"
+         },
+         "children": [
+          {
+           "type": "StepMark",
+           "props": {
+            "size": "compact",
+            "icon": "circle",
+            "tone": "neutral",
+            "busy": false
+           }
+          },
+          {
+           "type": "Text",
+           "props": {
+            "value": {
+             "t": "project.delete.step.list"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.problem.partialLocal",
+         "args": {
+          "file": {
+           "get": "vm.pnwDel.lockedFile"
+          }
+         }
+        },
+        "tone": "danger",
+        "icon": "error",
+        "actionLabel": {
+         "t": "commit.retry"
+        }
+       },
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "partialLocal"
+         ]
+        }
+       }
+      },
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.open.showFolder"
+          },
+          "variant": "secondary",
+          "icon": "folder"
+         }
+        }
+       ],
+       "when": {
+        "expr": {
+         "==": [
+          {
+           "get": "local.problem"
+          },
+          "partialLocal"
+         ]
+        }
+       }
+      },
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "project.delete.github.stop"
+          },
+          "variant": "secondary",
+          "disabled": true,
+          "disabledReason": {
+           "t": "project.delete.progress.cantStop"
+          }
+         }
+        }
+       ],
+       "when": {
+        "expr": {
+         "!=": [
+          {
+           "get": "local.problem"
+          },
+          "partialLocal"
+         ]
+        }
+       }
+      }
+     ]
+    },
+    "stopped": {
+     "type": "Stack",
+     "props": {
+      "gap": "stackGroup"
+     },
+     "children": [
+      {
+       "type": "StatusRow",
+       "props": {
+        "message": {
+         "t": "project.delete.stopped"
+        },
+        "tone": "info",
+        "icon": "info"
+       }
+      },
+      {
+       "type": "Text",
+       "props": {
+        "value": {
+         "t": "project.delete.stoppedDetail"
+        },
+        "tone": "muted"
+       }
+      },
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "dialog.close"
+          },
+          "variant": "primary"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

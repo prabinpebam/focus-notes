@@ -372,5 +372,45 @@
         "initials": "PP"
       }
     ]
+  },
+  "del": {
+    "name": "Garden notes",
+    "repo": "prabin/garden-notes",
+    "privateRepo": "prabin/garden-notes-private",
+    "otherRepo": "meera/garden-notes",
+    "otherOwner": "@meera",
+    "org": "green-thumbs",
+    "orgRepo": "green-thumbs/garden-notes",
+    "site": "prabin.github.io/garden-notes",
+    "siteNotes": 3,
+    "links": 4,
+    "peopleCount": 2,
+    "peopleNames": "@meera and @arjun",
+    "privateCount": 12,
+    "unsyncedCount": 3,
+    "unsynced": [
+      {
+        "id": "u1",
+        "label": "Spring planting plan",
+        "description": "beds / north"
+      },
+      {
+        "id": "u2",
+        "label": "Seed order",
+        "description": "shopping"
+      },
+      {
+        "id": "u3",
+        "label": "Compost log",
+        "description": "notes"
+      }
+    ],
+    "exportPath": "Documents\\Garden notes (copy)",
+    "lockedFile": "north-beds.md",
+    "retryAt": "16:42",
+    "toastDone": "Garden notes is deleted. Its folder is in the Recycle Bin.",
+    "toastOffline": "Garden notes is in the Recycle Bin.",
+    "toastKept": "Garden notes is removed from this computer. It's still on GitHub.",
+    "toastKeptAction": "Open on GitHub"
   }
 }

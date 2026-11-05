@@ -3,7 +3,7 @@
 A project is the only place notes live together. "Workspace" leaves the app.
 
 > [!NOTE]
-> **TL;DR.** Project and workspace are one thing, so the app says **Project** everywhere and never "workspace". Every project is a folder whose history is kept with Git. A project is either **on this computer only** (local Git) or **linked to GitHub** (the same Git history, also on GitHub). The only thing outside a project is a **standalone file**: a compatible file opened once and edited in place, with no version history. Some file types, such as .txt, can't take images. Where images are allowed, they go in a folder beside the file. Settings loses its Workspace tab; the Project tab gains a "Where it's kept" section. This is **strict design, waiting for the owner's approval**: spec and gallery mocks only, no wiring. Decision: D-pending in [Decisions](../plan/decisions.md#d-pending-project-replaces-workspace-everywhere).
+> **TL;DR.** Project and workspace are one thing, so the app says **Project** everywhere and never "workspace". Every project is a folder whose history is kept with Git. A project is either **on this computer only** (local Git) or **linked to GitHub** (the same Git history, also on GitHub). The only thing outside a project is a **standalone file**: a compatible file opened once and edited in place, with no version history. Some file types, such as .txt, can't take images. Where images are allowed, they go in a folder beside the file. Settings loses its Workspace tab; the Project tab gains a "Where it's kept" section. **Approved by the owner on 5 November 2026:** "The project + Workspace design is approved. We can implement this design." Implementation changes user-facing words only; on-disk names stay until the owner decides. **Deleting a project** (also from GitHub) is a new strict design on top, waiting for the owner's approval (mocks `pnw.delete*`). Decision: D-pending in [Decisions](../plan/decisions.md#d-pending-project-replaces-workspace-everywhere).
 
 ## The owner's direction
 
@@ -147,7 +147,7 @@ This inventory covers every place the word reaches a person, plus the internal n
 
 ## What's next
 
-After the owner approves:
+Approved on 5 November 2026. Built in this order, on `wp-project-not-workspace`:
 
 1. The word change in messages, Help and the information architecture. This is low risk: words only.
 2. The merged Project tab, wired in Settings.
