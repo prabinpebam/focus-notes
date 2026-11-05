@@ -4,7 +4,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
-const defaults = ["New note", "Open…", "Search", "Save", "Focus mode", "Switch light and dark"];
+const defaults = ["New note", "Open…", "Actions", "Save", "Focus mode", "Switch light and dark"];
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running"));
 const names = (toolbar: Locator) => toolbar.locator("[data-slot] button").evaluateAll(els => els.map(el => el.getAttribute("aria-label")!));
 

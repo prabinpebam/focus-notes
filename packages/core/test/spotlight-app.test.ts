@@ -145,6 +145,34 @@ describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every
     await app.commands.run("spotlight.run");
     expect(app.store.state.focusMode).not.toBe(before);
   });
+  it("replaces an automatic Create selection when availability changes without an index update", async () => {
+    const { app } = await started();
+    let enabled = false;
+    const describe = app.commands.describe.bind(app.commands);
+    vi.spyOn(app.commands, "describe").mockImplementation((id) => id === "focus.toggle" ? { ...describe(id), enabled } : describe(id));
+    await app.commands.run("spotlight.open");
+    await type(app, "focus mode");
+    expect(vm(app).items.find((i) => i.id === sp(app).activeId)?.label).toContain("Create note");
+    enabled = true;
+    app.store.update((s) => ({ ...s }));
+    expect(vm(app).items.find((i) => i.id === sp(app).activeId)?.label).toBe("Focus mode");
+    const before = app.store.state.focusMode;
+    await app.commands.run("spotlight.run");
+    expect(app.store.state.focusMode).not.toBe(before);
+  });
+  it("keeps a deliberately selected Create row when another action becomes runnable", async () => {
+    const { app } = await started();
+    let enabled = false;
+    const describe = app.commands.describe.bind(app.commands);
+    vi.spyOn(app.commands, "describe").mockImplementation((id) => id === "focus.toggle" ? { ...describe(id), enabled } : describe(id));
+    await app.commands.run("spotlight.open");
+    await type(app, "focus mode");
+    const chosen = sp(app).activeId;
+    await app.commands.run("spotlight.setActive", { id: chosen });
+    enabled = true;
+    app.store.update((s) => ({ ...s }));
+    expect(sp(app).activeId).toBe(chosen);
+  });
   it("binds Mod+/ to All and Mod+Shift+P to commands, on every platform; Mod+K stays the link key", async () => {
     for (const platform of ["windows", "linux", "macos", "web"] as const) {
       const { app } = await started(desktop(platform), { search: false });
@@ -264,6 +292,19 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
 });
 
 describe("SPT-04: states, the empty field, and no match", () => {
+  it("opens a shell-listed newly unlocked note before the workspace tree catches up", async () => {
+    const d = desktop();
+    const path = `${PRIV}/unlocked.md`;
+    d.bridge.listNotes = async () => [{ path, title: "Unlocked", updated: 1 }];
+    const { app } = await started(d);
+    d.files[path] = "# Unlocked\n\nAvailable now.\n";
+    await app.commands.run("spotlight.quickOpen");
+    await vi.waitFor(() => expect(sp(app).rows.some((r) => r.path === path)).toBe(true));
+    const row = sp(app).rows.find((r) => r.path === path)!;
+    await app.commands.run("spotlight.choose", { id: row.id });
+    expect(app.store.state.note).toMatchObject({ path, status: "ready" });
+    expect(app.store.state.note.markdown).toContain("Available now.");
+  });
   it("SPT-10: dismisses before a command opens and focuses its destination", async () => {
     const app = createApp(desktop().bridge, messages);
     let openDuringRun: boolean | undefined;

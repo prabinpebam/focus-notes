@@ -69,6 +69,17 @@ The real availability evaluator runs against 150 catalogue entries and real comm
 
 After stacking on toolbar `b78ef2ed`, regenerated local tokens, `pnpm check`, `pnpm typecheck`, 104 focused Actions/search units and the desktop build pass. The availability p95 is 0.153 ms. The visible-word inventory finds no Spotlight wording in shipped locale messages; Help's Write and Fix a problem pages now say Actions, preserving the old Write deep-link anchor. Changed-page headless checks pass in light and dark, including both GATE-MACT anchors.
 
+**W3d gate repair, still not landed.** Exact-head run `42129699097` at `234bc877` failed the Windows job and journey shards 1, 3 and 4. All failures are accounted for:
+
+| Failure | Repair and local proof |
+| --- | --- |
+| GitHub/History action becomes enabled without an index event, leaving automatic Create selected | Re-evaluate only automatic selection on state changes; deliberate selection stays put. Regression failed before the repair and passes after it; History remains keyboard-only. FRE also targets the exact enabled GitHub option. |
+| Newly unlocked browser note is listed before the workspace tree catches up | Verify a missing tree node against the shell's fresh authoritative note list before refusing it. Regression failed before the repair and passes after it; genuinely stale desktop results remain refused. |
+| Diagnostic timing and menu inventories omit new Actions entries | Allow-list the fixed AI wait/span and document Copy Markdown link's existing result-menu path. |
+| Toolbar and web journeys expect old Search/Notes labels | Assert Actions and Files without changing their behavior. |
+
+Both builds, 59 focused units, all five failed desktop journeys and both failed web journeys now pass. Desktop launches were invisible and cleanup scoped to the run. `pnpm check`, desktop typecheck and headless light/dark documentation checks also pass before the final runtime fixes; the combined rebased head still needs its fast checks and exact-head gate. Additional native proofs remain parked separately at `90ea1b46`.
+
 | Row | Current evidence | Remaining |
 | --- | --- | --- |
 | MACT.1, MACT.2, MACT.10 | `actions-proof.test.ts`: catalogue integrity rejects duplicate labels, absent commands/proof/pointer paths and bare shared verbs; allow-list excludes dialog steps. `actions-outcomes.spec.ts` adds 32 native visible outcomes. | Native outcome proof for remaining entries; exact-head CI and Preview |

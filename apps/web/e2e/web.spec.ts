@@ -95,7 +95,7 @@ test("your notes stay in this browser: written with no account, kept across relo
   const open = page.getByRole("dialog", { name: "Actions", exact: true });
   await expect(open.getByRole("option")).toHaveCount(2);
   await open.getByRole("combobox", { name: "Find a note by title or path" }).fill("welc");
-  await expect(open.getByRole("group", { name: "Notes" }).getByRole("option")).toHaveCount(1);
+  await expect(open.getByRole("group", { name: "Files", exact: true }).getByRole("option")).toHaveCount(1);
   expect(await settledAxe(page)).toEqual([]);
   await page.keyboard.press("Enter");
   await expect(editor(page)).toContainText("Written in the browser.");

@@ -645,10 +645,14 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   async function perform(row: SpotlightRow, id: ActionId, keepOpen = false): Promise<void> {
     const path = row.path ?? "";
     if (path && scope.project && rootOf(tree(), path) && !findNode(tree(), path)) {
-      ctx.toast(msg("actions.contentMissing"), { tone: "error" });
-      await refresh();
-      setRows(sp().rows.filter((r) => r.path !== path), false, false);
-      return;
+      // The browser's freshly unlocked list can be newer than its workspace scan.
+      const listed = bridge.listNotes && (await bridge.listNotes()).some((n) => n.path === path);
+      if (!listed) {
+        ctx.toast(msg("actions.contentMissing"), { tone: "error" });
+        await refresh();
+        setRows(sp().rows.filter((r) => r.path !== path), false, false);
+        return;
+      }
     }
     if (id === "run" && row.kind === "command") {
       const e = catalogEntry(row.key);
@@ -763,6 +767,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   // Frecency: every note opened, however it was opened (Spotlight → Ranking).
   let lastPath: string | undefined;
   store.subscribe(() => {
+    const s = sp();
+    if (s.open && !s.actions && !selectedByUser && !s.busy && s.answered === answerKey(s)) {
+      const activeId = firstActive(s.rows);
+      if (activeId !== s.activeId) set({ activeId });
+    }
     const n = store.state.note;
     if (n.status === "ready" && n.path && n.path !== lastPath) {
       lastPath = n.path;

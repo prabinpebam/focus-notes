@@ -154,11 +154,11 @@ export function redact(text: string, o: RedactOptions = {}): string {
  * the task tracker's waits, whose targets are fixed command IDs, never a note's name).
  */
 export const MEASURE_NAMES: readonly string[] = [
-  "fn:note.open", "fn:spotlight.open",
+  "fn:note.open", "fn:spotlight.open", "fn:actions.ai",
   // Deleting a project (PRJ-23): the copy of the notes not on GitHub, and the Recycle Bin.
   "fn:project.deletePreserve", "fn:project.deleteLocal",
   "fn:ai.chooseWriter", "fn:ai.discover.window", "fn:rewrite.anchor", "fn:rewrite.deselect",
-  "focus-notes:settings.writer", "focus-notes:rewrite.writer",
+  "focus-notes:settings.writer", "focus-notes:rewrite.writer", "focus-notes:actions.ai",
   "focus-notes:newNote.create", "focus-notes:ai.discover",
   ...["history.restore", "history.undo", "sharing.publishDraft", "sharing.preview", "sharing.previewSave", "sharing.invite", "sharing.change",
     "project.create", "project.open", "project.pin", "project.reveal", "project.delete", "project.deleteExport",
