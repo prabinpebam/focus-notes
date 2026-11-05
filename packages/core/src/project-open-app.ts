@@ -31,7 +31,7 @@ export function registerProjectOpen(ctx: {
     recovery = { command, args };
     console.error("Project action failed", command, code);
   };
-  const close = () => { listing++; action++; clearFailure(); state.open = false; state.loading = false; state.pending = false; github.open = false; changed(); };
+  const close = () => { listing++; action++; clearFailure(); clearPinFailures(); state.open = false; state.loading = false; state.pending = false; github.open = false; changed(); };
   async function refresh(full = false) {
     // The last list stays on screen while the new one loads (no blank frame); a first load shows placeholders.
     const request = ++listing;
@@ -39,7 +39,7 @@ export function registerProjectOpen(ctx: {
     try {
       const entries = await ctx.tracker.section("project.list", "project.open.listing", () => bridge.projects!.list(), "fn:project.list");
       if (request !== listing || operation !== action || !state.open) return;
-      state.entries = entries; clearFailure();
+      state.entries = entries; clearFailure(); clearPinFailures();
     }
     catch (error) { if (request === listing && operation === action && state.open) fail("project.open.listFailed", "projects.refresh", error); }
     finally { if (request === listing) { state.loading = false; changed(); } }
@@ -147,28 +147,49 @@ export function registerProjectOpen(ctx: {
       finally { if (request === action) { state.pending = false; changed(); } }
     },
   });
-  commands.register<{id: string}>({
-    id: "projects.pin", title: "recent.pinned",
-    run: async ({id}) => {
+  // Pin and unpin are commits on the pin button itself (ui-states; owner, 5 November): its own border is the pending arc,
+  // then a success or danger outline for at least the confirm minimum; Retry stays in the dialog's status row.
+  const pinTarget = (id: string) => `vm.projects.pin:${id}`;
+  const pinPending = (s: AppState, id: string) => s.commits.some((c) => c.target === pinTarget(id) && c.phase === "pending");
+  class PinListFailed extends Error { readonly reason: unknown; constructor(reason: unknown) { super("Pin list failed"); this.reason = reason; } }
+  commands.register<{value: {id: string; request: number}}>({
+    id: "projects.savePin", title: "recent.pinned",
+    run: async ({value}) => {
+      const { id, request } = value;
       const [folder, path] = id.split("|");
       if (!folder) throw new Error("Unknown project");
-      const request = begin();
-      try {
-        await ctx.tracker.run("project.pin", "project.open.pinning", () => bridge.projects!.pin(folder, path), undefined, "fn:project.pin");
-      } catch (error) {
-        if (request === action) { fail("project.open.pinFailed", "projects.pin", error, { id }); changed(); }
-        return;
-      }
+      await ctx.tracker.run("project.pin", "project.open.pinning", () => bridge.projects!.pin(folder, path), undefined, "fn:project.pin");
+      // The pin is stored; it's confirmed only once the list shows it. A failed list never repeats the toggle.
       if (request !== action) return;
       try {
         const entries = await ctx.tracker.section("project.list", "project.open.listing", () => bridge.projects!.list(), "fn:project.list");
         if (request !== action) return;
-        state.entries = entries; clearFailure();
+        state.entries = entries; changed();
+      } catch (error) { if (request === action) throw new PinListFailed(error); }
+    },
+  });
+  commands.register<{id: string}>({
+    id: "projects.pin", title: "recent.pinned",
+    run: async ({id}) => {
+      if (!id.split("|")[0]) throw new Error("Unknown project");
+      if (pinPending(store.state, id)) return;
+      const request = begin();
+      try {
+        await commands.run("commit.run", { target: pinTarget(id), command: "projects.savePin", value: { id, request } });
+        if (request === action) clearFailure();
+      } catch (error) {
+        if (request === action) {
+          if (error instanceof PinListFailed) fail("project.open.pinRefreshFailed", "projects.refresh", error.reason);
+          else fail("project.open.pinFailed", "projects.pin", error, { id });
+        }
       }
-      catch (error) { if (request === action) fail("project.open.pinRefreshFailed", "projects.refresh", error); }
       changed();
     },
   });
+  /** A failed pin's outline stays until it's resolved: a Retry, a refreshed list, or Open closing. */
+  const clearPinFailures = () => {
+    for (const c of store.state.commits) if (c.target.startsWith("vm.projects.pin:") && c.phase === "failed") void commands.run("commit.revert", { target: c.target });
+  };
   commands.register<{id: string}>({
     id: "projects.reveal", title: "project.open.showFolder", enabled: () => Boolean(bridge.projects?.reveal),
     run: async ({id}) => {
@@ -237,7 +258,8 @@ export function registerProjectOpen(ctx: {
     select: () => ({...localImport, recoveryAction: importRecovery ? ctx.catalog.format("commit.retry") : ""}),
   });
   const menu = { type: "array" as const, items: { type: "object" as const, properties: { id: text, items: { type: "array" as const, items: { type: "object" as const, properties: { id: text, label: text, icon: text } } } } } };
-  const item = { type: "object" as const, properties: { id: text, label: text, description: text, icon: text, pinned: { type: "boolean" as const }, menu } };
+  const pinCommit = { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] };
+  const item = { type: "object" as const, properties: { id: text, label: text, description: text, icon: text, pinned: { type: "boolean" as const }, pinCommit, menu } };
   const pinMenu = (id: string, pinned: boolean) => [{ id: "pin", items: [{ id, label: ctx.catalog.format(pinned ? "project.open.unpin" : "project.open.pin"), icon: "pin" }] }];
   viewModels.register({
     id: "vm.projects", reads: "*", setters: { query: "projects.query" },
@@ -248,20 +270,21 @@ export function registerProjectOpen(ctx: {
       githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
       repos: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
       recent: { type: "array", items: item },
-      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, pinned: { type: "boolean" }, menu } } },
+      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, pinned: { type: "boolean" }, pinCommit, menu } } },
     } },
     select: (_s: AppState) => {
       const query = state.query.toLowerCase();
+      const commitOf = (id: string) => _s.commits.find((c) => c.target === pinTarget(id))?.phase ?? "rest";
       const entries = state.entries.filter((e) => !e.localNotes && `${e.name} ${e.folder}`.toLowerCase().includes(query))
         .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || (b.rank ?? 0) - (a.rank ?? 0));
       const recent = state.entries.flatMap(e => (e.recent?.length ? e.recent : e.lastNote ? [{path: e.lastNote, rank: 0, pinned: false}] : []).map(n => {
         const parts = n.path.slice(e.folder.length).split(/[\\/]/).filter(Boolean);
         const label = parts.pop()!.replace(/\.(md|markdown)$/i, "");
         const id = `${e.folder}|${n.path}`;
-        return {...n, id, label, description: `${e.name}${e.localNotes ? " · " + ctx.catalog.format("project.localOnly") : ""} · ${parts.join(" / ") || ctx.catalog.format("project.root")}`, icon: "newNote", menu: pinMenu(id, n.pinned)};
+        return {...n, id, label, description: `${e.name}${e.localNotes ? " · " + ctx.catalog.format("project.localOnly") : ""} · ${parts.join(" / ") || ctx.catalog.format("project.root")}`, icon: "newNote", pinCommit: commitOf(id), menu: pinMenu(id, n.pinned)};
       })).filter(n => `${n.label} ${n.description}`.toLowerCase().includes(query))
         .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.rank - a.rank).slice(0, 50);
-      return { ...state, recoveryAction: recovery ? ctx.catalog.format("commit.retry") : "", pendingLabel: busyProps(_s.tasks, "project.open", (key, args) => ctx.catalog.format(key, args)).busyLabel ?? ctx.catalog.format("project.open.preparing"), dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, menu: pinMenu(e.folder, Boolean(e.pinned)) })),
+      return { ...state, recoveryAction: recovery ? ctx.catalog.format("commit.retry") : "", pendingLabel: busyProps(_s.tasks, "project.open", (key, args) => ctx.catalog.format(key, args)).busyLabel ?? ctx.catalog.format("project.open.preparing"), dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, pinCommit: commitOf(e.folder), menu: pinMenu(e.folder, Boolean(e.pinned)) })),
         recent,
         recentWaiting: state.loading && _s.tasks.findLast(t => t.target === "project.list")?.phase === "on" && recent.length === 0,
         entriesWaiting: state.loading && _s.tasks.findLast(t => t.target === "project.list")?.phase === "on" && entries.length === 0,

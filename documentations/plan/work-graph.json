@@ -184,6 +184,13 @@
       "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
     },
     {
+      "id": "WP-P.22", "stage": "MP", "title": "Publish and unpublish on today's workspace",
+      "summary": "D-349 publishing slice 2: the approved Publish... dialog does the real visibility move and save to GitHub on today's workspace (no projects needed), Unpublish moves the note back, and the deploy is one honest long task (D-351): Publishing... until GitHub reports the Pages deployment for that commit succeeded, Copy link, Retry, Removing from your site.... Publishing slice 1 (gallery mocks for these states and the site's empty, missing and failure pages) goes first. Waits for the owner's yes to publishing on today's workspace; agents test against protocol fakes only (D-343).",
+      "requirements": ["SHR-25", "SHR-26"], "dependsOn": ["WP-5.1"],
+      "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/published-site.md", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
+    },
+    {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
       "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched.",
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
@@ -2671,14 +2678,14 @@
       "id": "WP-9.4",
       "stage": "Later",
       "title": "Crop and rotate images",
-      "summary": "Preview-only accessible crop/rotate dialog, explicit destructive/no-pixel-Undo save, guarded atomic encode and shared-reference isolation. Conditional existing Git recovery only.",
+      "summary": "Preview-only accessible crop/rotate dialog, explicit destructive/no-pixel-Undo save, guarded atomic encode and shared-reference isolation. Conditional existing Git recovery only. Built on main (candidate slice, 3 November): the Edit image dialog, preview and PNG/JPEG/WebP save with an original-bytes guard. Remaining: shared-reference isolation, crop and save tests (IMG.4).",
       "requirements": ["IMG-07", "IMG-08"],
       "dependsOn": ["WP-9.1"],
       "touches": ["editor", "core", "desktop", "ui", "views"],
       "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/images.md", "architecture/editor-engine.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-9.5",
@@ -2704,9 +2711,9 @@
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",
-      "summary": "Registered inline-flow image insertion, Column/Wide/Actual geometry, remembered and mixed-selection switches, safe menu/clipboard/replace/export, lossless attributes and shared accessible rendering. JSON design review before runtime.",
+      "summary": "Registered inline-flow image block, Column/Wide/Actual geometry, remembered and mixed-selection switches, safe menu/clipboard/replace/export, lossless attributes and shared accessible rendering. Built on main (candidate slice, 3 November): rendering, the context menu with display modes, Rounded corners and Limit height (mixed selection), the missing-image state with Retry and the hidden-comment format (D-347). Remaining (D-349 slices 2 and 3): Edit description and Add caption, Cut, Copy, Replace image, Save image, remembered defaults, and the image round-trip corpus and journeys.",
       "requirements": [
-        "EXT-03", "IMG-01", "IMG-02", "IMG-03", "IMG-04", "IMG-10", "IMG-11"
+        "EXT-03", "IMG-02", "IMG-03", "IMG-04", "IMG-10", "IMG-11"
       ],
       "dependsOn": [
         "WP-1.1", "WP-9.3"
@@ -2727,7 +2734,28 @@
         "experience/images.md"
       ],
       "lookahead": true,
-      "status": "planned"
+      "status": "building"
+    },
+    {
+      "id": "WP-9.7", "stage": "Later", "title": "Add an image: paste, drop and Insert image",
+      "summary": "D-349 images slice 1, built together with WP-9.3's storage core: paste (Ctrl+V), drop with the insertion marker, Insert image..., /image and Spotlight copy validated PNG/JPEG/WebP files into assets/images/<random-id> and insert relative standard Markdown images as one undoable edit; all-or-none batches, Adding N images... wait, read-only and unsaved-note branches. The insertion design is approved (mock 9, owner 3 and 5 November); build against it, no new mock.",
+      "requirements": ["IMG-01"], "dependsOn": ["WP-9.3"],
+      "touches": ["editor", "core", "desktop", "markdown", "views"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/images.md", "experience/editing.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-9.8", "stage": "Later", "title": "Print images",
+      "summary": "D-349 images slice 4 (D-348): print and Save as PDF include local images capped to the page, never split, captions below, descriptions for missing images, and the print dialog waits for images to decode.",
+      "requirements": ["IMG-12"], "dependsOn": ["WP-9.7", "WP-8.12"],
+      "touches": ["core", "desktop", "ui"], "reviews": ["code", "accessibility"],
+      "specs": ["experience/print.md", "experience/images.md"], "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-9.9", "stage": "Later", "title": "Images in published notes",
+      "summary": "D-349 images slice 5 and publishing slice 5: publishing a note copies exactly its referenced images, metadata stripped, into the published site's assets/images under their opaque names; unpublish removes unused copies; a missing image stops the publish with Locate image. Waits for the owner's yes to publishing images.",
+      "requirements": ["IMG-13"], "dependsOn": ["WP-9.7", "WP-P.22"],
+      "touches": ["core", "desktop", "seal", "web"], "reviews": ["code", "security"],
+      "specs": ["experience/images.md", "experience/published-site.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-9.2",

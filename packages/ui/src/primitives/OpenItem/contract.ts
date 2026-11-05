@@ -4,7 +4,7 @@ import { PROJECT_ACCENTS, PROJECT_LOGOS } from "../ProjectMark/presets.ts";
 export const contract = defineContract({
   type: "OpenItem",
   tier: "primitive",
-  description: "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+  description: "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned. While a pin or unpin saves, the pin's own border is the pending arc, then a success or danger outline (ui-states); Retry stays in Open's status row.",
   props: {
     kind: { kind: "enum", values: ["project", "file"], default: "file" },
     title: { kind: "message", required: true, description: "The project's or file's name: the person's own words." },
@@ -19,6 +19,7 @@ export const contract = defineContract({
     pinned: { kind: "boolean", default: false },
     pinLabel: { kind: "message", description: "Pin's accessible name: Pin, with the item's name." },
     unpinLabel: { kind: "message", description: "Pin's accessible name while pinned: Unpin, with the item's name." },
+    pinCommit: { kind: "enum", values: ["rest", "pending", "confirmed", "failed"], default: "rest", description: "Pin or unpin saving: the pin's own-border commit feedback." },
     label: { kind: "message", description: "The open action's accessible name, when the title alone doesn't say it." },
     repo: { kind: "text", description: "A project linked to GitHub: its owner/repo, read from the folder's own Git remote (D-346). Shown with the GitHub mark on its own line; empty, no line." },
     repoLabel: { kind: "message", description: "The GitHub line's accessible name: Open owner/repo on GitHub." },
@@ -39,6 +40,7 @@ export const contract = defineContract({
     { name: "project uploaded logo", props: { kind: "project", title: { t: "gallery.long" }, path: { get: "vm.gallery.localPath" }, logo: "upload", src: { get: "vm.gallery.logoSrc" }, accent: "indigo", pinLabel: { t: "gallery.action" } } },
     ...PROJECT_LOGOS.map((logo, i) => ({ name: `logo ${logo}`, props: { kind: "project", title: { t: "gallery.sample" }, path: { get: "vm.gallery.localPath" }, logo, accent: PROJECT_ACCENTS[i % PROJECT_ACCENTS.length]! } })),
     { name: "initials, app accent", props: { kind: "project", title: { t: "gallery.sample" }, initials: { get: "vm.gallery.initials" }, logo: "none", accent: "app" } },
+    ...(["pending", "confirmed", "failed"] as const).map((pinCommit) => ({ name: `project pin ${pinCommit}`, props: { kind: "project", title: { t: "gallery.sample" }, path: { get: "vm.gallery.localPath" }, logo: "book", accent: "teal", pinLabel: { t: "gallery.action" }, pinCommit } })),
     { name: "file", props: { kind: "file", title: { t: "gallery.sample" }, detail: { t: "gallery.sample" }, icon: "documentText", pinLabel: { t: "gallery.action" } } },
     { name: "file pinned", covers: ["selected"], props: { kind: "file", title: { t: "gallery.long" }, detail: { t: "gallery.long" }, icon: "documentText", pinned: true, pinLabel: { t: "gallery.action" } } },
   ],

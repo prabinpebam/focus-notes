@@ -85,12 +85,12 @@ export const pathWrap = style({ display: "inline-flex", minWidth: 0 });
 export const pathHead = style({ minWidth: 0, flexShrink: 1, overflow: "hidden", textOverflow: "ellipsis" });
 export const pathTail = style({ flexShrink: 0 });
 
-// Pin: top right, shown on hover or focus, and always while pinned.
+// Pin: top right, shown on hover or focus, always while pinned, and while a pin or unpin is saving or just saved.
 export const pin = style({
   position: "absolute", zIndex: t.controlLayer, top: t.pinInset, insetInlineEnd: t.pinInset, display: "flex", opacity: 0,
   transitionProperty: "opacity", transitionDuration: t.duration, transitionTimingFunction: t.easing,
   selectors: {
-    [`${base}:focus-within &, &[data-pinned]`]: { opacity: t.visible },
+    [`${base}:focus-within &, &[data-pinned], &[data-commit]`]: { opacity: t.visible },
   },
   "@media": {
     "(hover: hover)": { selectors: { [`${base}:hover &`]: { opacity: t.visible } } },

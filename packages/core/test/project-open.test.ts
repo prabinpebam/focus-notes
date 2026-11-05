@@ -278,6 +278,43 @@ describe("Open", () => {
     expect(vm(app).entries).toHaveLength(1);
   });
 
+  it("shows a pin's own commit feedback: pending at once, confirmed with the new icon, then rest; a refused pin fails with Retry in Open", async () => {
+    vi.useFakeTimers();
+    let pinned = false, refuse = false, finish!: () => void;
+    const app = appWith({
+      list: async () => [{ ...book, pinned }],
+      pin: () => new Promise<void>((resolve, reject) => { finish = () => { if (refuse) reject(new Error("readOnly")); else { pinned = !pinned; resolve(); } }; }),
+    });
+    await app.commands.run("projects.open");
+    const entry = () => (vm(app).entries as { pinned?: boolean; pinCommit: string }[])[0]!;
+    expect(entry().pinCommit).toBe("rest");
+    const run = app.commands.run("projects.pin", { id: book.folder });
+    await vi.waitFor(() => expect(entry().pinCommit).toBe("pending"));
+    await app.commands.run("projects.pin", { id: book.folder });
+    finish();
+    await vi.waitFor(() => expect(entry().pinned).toBe(true));
+    expect(entry().pinCommit).toBe("pending");
+    await vi.advanceTimersByTimeAsync(200); await run;
+    expect(entry()).toMatchObject({ pinned: true, pinCommit: "confirmed" });
+    await vi.advanceTimersByTimeAsync(200);
+    expect(entry().pinCommit).toBe("rest");
+
+    refuse = true;
+    const refused = app.commands.run("projects.pin", { id: book.folder });
+    await vi.waitFor(() => expect(entry().pinCommit).toBe("pending"));
+    finish();
+    await vi.advanceTimersByTimeAsync(200); await refused;
+    expect(entry()).toMatchObject({ pinned: true, pinCommit: "failed" });
+    expect(vm(app)).toMatchObject({ error: en["project.open.pinFailed"], recoveryAction: "Retry" });
+    refuse = false;
+    const retry = app.commands.run("projects.retry");
+    await vi.waitFor(() => expect(entry().pinCommit).toBe("pending"));
+    finish();
+    await vi.advanceTimersByTimeAsync(200); await retry;
+    expect(entry()).toMatchObject({ pinned: false, pinCommit: "confirmed" });
+    expect(vm(app).error).toBe("");
+  });
+
   it("refreshes after a successful pin instead of repeating its toggle when only the following list failed", async () => {
     let reads = 0, pins = 0;
     const app = appWith({

@@ -340,7 +340,7 @@
     {
       "type": "OpenItem",
       "tier": "primitive",
-      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned.",
+      "description": "One thing to open in Open (owner, 4 November): a project as a card washed in its accent with its logo large and its name on the title step of the type ramp, or a recent file as a quiet row with its file type's icon. The whole item is the button that opens it; no Open buttons. A project's folder shows on one line, ellipsized in the middle with the full path as its tooltip, and pressing it shows the folder in File Explorer or Finder. Pin shows as an icon at the top right on hover or focus, and stays while pinned. While a pin or unpin saves, the pin's own border is the pending arc, then a success or danger outline (ui-states); Retry stays in Open's status row.",
       "props": {
         "kind": {
           "kind": "enum",
@@ -440,6 +440,17 @@
         "unpinLabel": {
           "kind": "message",
           "description": "Pin's accessible name while pinned: Unpin, with the item's name."
+        },
+        "pinCommit": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "pending",
+            "confirmed",
+            "failed"
+          ],
+          "default": "rest",
+          "description": "Pin or unpin saving: the pin's own-border commit feedback."
         },
         "label": {
           "kind": "message",
@@ -994,6 +1005,60 @@
             },
             "logo": "none",
             "accent": "app"
+          }
+        },
+        {
+          "name": "project pin pending",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            },
+            "pinCommit": "pending"
+          }
+        },
+        {
+          "name": "project pin confirmed",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            },
+            "pinCommit": "confirmed"
+          }
+        },
+        {
+          "name": "project pin failed",
+          "props": {
+            "kind": "project",
+            "title": {
+              "t": "gallery.sample"
+            },
+            "path": {
+              "get": "vm.gallery.localPath"
+            },
+            "logo": "book",
+            "accent": "teal",
+            "pinLabel": {
+              "t": "gallery.action"
+            },
+            "pinCommit": "failed"
           }
         },
         {

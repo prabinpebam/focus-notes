@@ -1,5 +1,6 @@
 import { ICONS } from "../../icons.ts";
 import type { IconName } from "../../icon-names.ts";
+import type { CommitState } from "../CommitMark/CommitMark.tsx";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { ProjectMark } from "../ProjectMark/ProjectMark.tsx";
 import type { ProjectAccent, ProjectLogo } from "../ProjectMark/presets.ts";
@@ -24,6 +25,8 @@ export interface OpenItemProps {
   pinned?: boolean;
   pinLabel?: string;
   unpinLabel?: string;
+  /** Pin or unpin saving (ui-states): the pin's own border is the pending arc, then a success or danger outline. */
+  pinCommit?: CommitState;
   /** The open action's accessible name, when the title alone doesn't say it. */
   label?: string;
   /** A project linked to GitHub: its owner/repo, from the folder's own Git remote (D-346). Empty: no GitHub line. */
@@ -48,7 +51,7 @@ const SEP = /[\\/](?=[^\\/]+[\\/]?$)/;
  * A project may add its size line and its GitHub line under the path (D-346), quiet like the path, never enclosed; the
  * size line sits between the two links so their targets never overlap (spacing SP-6).
  */
-export function OpenItem({ kind = "file", title, detail, path, pathLabel, logo = "none", src, initials, accent = "app", icon = "documentText", pinned = false, pinLabel, unpinLabel, label, repo, repoLabel, stats, statsBusy = false, id, onPress, onPin, onReveal, onOpenRepo }: OpenItemProps) {
+export function OpenItem({ kind = "file", title, detail, path, pathLabel, logo = "none", src, initials, accent = "app", icon = "documentText", pinned = false, pinLabel, unpinLabel, pinCommit, label, repo, repoLabel, stats, statsBusy = false, id, onPress, onPin, onReveal, onOpenRepo }: OpenItemProps) {
   const Glyph = ICONS[icon];
   const PathIcon = ICONS.folder;
   const RepoIcon = ICONS.github;
@@ -83,8 +86,8 @@ export function OpenItem({ kind = "file", title, detail, path, pathLabel, logo =
         ) : null}
       </span>
       {pinText ? (
-        <span className={s.pin} data-pinned={pinned ? "" : undefined}>
-          <IconButton icon={pinned ? "pinFilled" : "pin"} label={pinText} tone="muted" {...(onPin ? { onPress: onPin } : {})} />
+        <span className={s.pin} data-pinned={pinned ? "" : undefined} data-commit={pinCommit && pinCommit !== "rest" ? pinCommit : undefined}>
+          <IconButton icon={pinned ? "pinFilled" : "pin"} label={pinText} tone="muted" {...(pinCommit ? { commit: pinCommit } : {})} {...(onPin ? { onPress: onPin } : {})} />
         </span>
       ) : null}
     </div>

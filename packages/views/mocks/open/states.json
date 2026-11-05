@@ -1,7 +1,7 @@
 {
   "entries": [
-    { "id": "s1", "name": "Field notes", "folder": "E:\\Projects\\side-projects\\field-notes", "accent": "teal", "logo": "book", "logoSrc": "", "pinned": true, "repo": "prabinpebam/field-notes", "size": "2.4 MB", "files": 37, "media": 5, "folders": 6, "statsBusy": false },
-    { "id": "s2", "name": "Garden notes", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden notes", "accent": "green", "logo": "leaf", "logoSrc": "", "pinned": false, "repo": "", "size": "860 KB", "files": 12, "media": 1, "folders": 2, "statsBusy": false },
-    { "id": "s3", "name": "Club newsletter", "folder": "D:\\Shared\\Community\\Running club\\newsletter-2026", "accent": "pink", "logo": "chat", "logoSrc": "", "pinned": false, "repo": "running-club-of-the-north/newsletter-archive-2026", "size": "", "files": 0, "media": 0, "folders": 0, "statsBusy": true }
+    { "id": "s1", "name": "Field notes", "folder": "E:\\Projects\\side-projects\\field-notes", "accent": "teal", "logo": "book", "logoSrc": "", "pinned": true, "pinCommit": "rest", "repo": "prabinpebam/field-notes", "size": "2.4 MB", "files": 37, "media": 5, "folders": 6, "statsBusy": false },
+    { "id": "s2", "name": "Garden notes", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden notes", "accent": "green", "logo": "leaf", "logoSrc": "", "pinned": false, "pinCommit": "rest", "repo": "", "size": "860 KB", "files": 12, "media": 1, "folders": 2, "statsBusy": false },
+    { "id": "s3", "name": "Club newsletter", "folder": "D:\\Shared\\Community\\Running club\\newsletter-2026", "accent": "pink", "logo": "chat", "logoSrc": "", "pinned": false, "pinCommit": "rest", "repo": "running-club-of-the-north/newsletter-archive-2026", "size": "", "files": 0, "media": 0, "folders": 0, "statsBusy": true }
   ]
 }

@@ -21,8 +21,8 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
-| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 33 |
-| **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 12 |
+| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 35 |
+| **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 14 |
 
 ## Where we are
 
@@ -36,9 +36,9 @@ The projects, Files, Local notes, images, sharing and publishing UX is approved 
 2. **WP-P.9** item-first share dialog, in parallel with the general fixes **WP-P.1**, **WP-P.2**, **WP-P.7** (D-338, today's workspace) and **WP-P.3**.
 3. **WP-P.17**, **WP-P.4**, **WP-P.5**, **WP-P.19**, **WP-P.20**, **WP-P.6**.
 4. Files type ramp (FIL-19, D-332), then **WP-P.8** Local notes and the location pill.
-5. Images: **WP-9.1**, **WP-9.3**, **WP-9.4**.
+5. Images: **WP-9.1**, **WP-9.3**, **WP-9.4** (display, menu and crop built); next, by [the 5 November readiness assessment](../experience/images.md#readiness-assessment-5-november) (D-349): **WP-9.7** with WP-9.3's storage core, then WP-9.1's rest, **WP-9.8**, **WP-9.9**, **WP-9.5**, **WP-9.6**.
 
-Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, then **WP-P.12**, **WP-P.14** and **WP-P.15**.
+Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, then **WP-P.12**, **WP-P.14** and **WP-P.15**. Publishing (5 November readiness, D-349): gallery mocks for the missing publish states, then **WP-P.22** on today's workspace, once the owner answers [the publishing questions](../experience/published-site.md#readiness-assessment-5-november).
 
 ### Current state (16 October, evening)
 
@@ -146,11 +146,11 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MP: Projects and simpler sharing (planned)</p>
-<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">21 work packages</a>, smallest visible slices first: the share-dialog fixes and the terminology move don't wait for projects (D-314); <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-22, FIL-17 to FIL-19, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-24, DSY-15, WEB-01. <strong>Sharing and publishing UX approved, 3 November 19:39 (D-335):</strong> WP-P.9 to WP-P.12, WP-P.15, WP-P.16 and WP-P.18 build to the gallery mocks on <code>vq-share-mocks</code>; nothing is added to the writing window (D-336).</p>
+<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">21 work packages</a>, smallest visible slices first: the share-dialog fixes and the terminology move don't wait for projects (D-314); <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-22, FIL-17 to FIL-19, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-26, DSY-15, WEB-01. Publishing on today's workspace (WP-P.22, SHR-25, SHR-26) is ready to build once the owner answers [the publishing questions](../experience/published-site.md#readiness-assessment-5-november) (D-349). <strong>Sharing and publishing UX approved, 3 November 19:39 (D-335):</strong> WP-P.9 to WP-P.12, WP-P.15, WP-P.16 and WP-P.18 build to the gallery mocks on <code>vq-share-mocks</code>; nothing is added to the writing window (D-336).</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>
-<p><a href="../experience/images.md">Inline images</a>: managed local assets first (WP-9.3), then insertion/display/menu/bulk options (WP-9.1), encrypted image sharing once shares have opaque names (WP-9.6, D-314), explicit destructive crop/rotate (WP-9.4) and optional chosen-integration captions (WP-9.5). Gallery remains separate (WP-9.2). Five new scenarios and six capabilities trace the source to IMG-01 to IMG-11, EXT-03 and EXT-04. <a href="implementation-plan.md#later">Plan</a>; <a href="definition-of-done.md#inline-images-planned">Try it and evidence</a>. Specification only; no implementation or release date is claimed.</p>
+<p><a href="../experience/images.md">Inline images</a>: managed local assets first (WP-9.3), then insertion/display/menu/bulk options (WP-9.1), encrypted image sharing once shares have opaque names (WP-9.6, D-314), explicit destructive crop/rotate (WP-9.4) and optional chosen-integration captions (WP-9.5). Gallery remains separate (WP-9.2). Five new scenarios and six capabilities trace the source to IMG-01 to IMG-13, EXT-03 and EXT-04. Part of WP-9.1 and WP-9.4 is built; the [readiness assessment](../experience/images.md#readiness-assessment-5-november) orders the rest in eight slices, starting with paste, drop and Insert image… (WP-9.7, D-349), then print (WP-9.8) and published images (WP-9.9). <a href="implementation-plan.md#later">Plan</a>; <a href="definition-of-done.md#inline-images-planned">Try it and evidence</a>. Specification only; no implementation or release date is claimed.</p>
 </li>
 </ol>
 

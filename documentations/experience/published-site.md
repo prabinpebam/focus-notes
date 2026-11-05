@@ -3,7 +3,7 @@
 A public home, sections and articles, not the writing app on the web.
 
 > [!NOTE]
-> **TL;DR.** Published notes are discoverable plaintext pages; shared notes remain encrypted and absent from the public index. Folders become sections, files become articles. A minimal top bar offers sections, optional project logo, theme and paragraph focus. **Preview site…** in the desktop app shows that same website and changes its theme, fonts and default size without publishing. This is planned, not built: D-295 to D-297 / D-299, UC-SHARE-10 / UC-SHARE-11, SHR-20 to SHR-22.
+> **TL;DR.** Published notes are discoverable plaintext pages; shared notes remain encrypted and absent from the public index. Folders become sections, files become articles. A minimal top bar offers sections, optional project logo, theme and paragraph focus. **Preview site…** in the desktop app shows that same website and changes its theme, fonts and default size without publishing. This is planned, not built: D-295 to D-297 / D-299, UC-SHARE-10 / UC-SHARE-11, SHR-20 to SHR-22. **Status, 5 November:** Make public, the `/n/<path>/` page renderer, Pages setup and the local Preview site are built; real Publish, unpublish, the site theme on the live site and the deploy status are not. [Publishing a note](#publishing-a-note) and the [readiness assessment](#readiness-assessment-5-november) bring it to execution readiness, pending four owner answers.
 
 ## What belongs on the site
 
@@ -93,6 +93,65 @@ Settings → Project → **Preview site…**, ⋯ → Preview site… and Spotli
 5. Saving/render failure keeps the last good preview and controls/draft with Retry. Missing/invalid fonts show the named bundled fallback, not an invisible page. Theme/size controls answer within a frame; slow rendering has one named wait and cannot eat input.
 
 Initial focus is the preview heading, then controls, navigation, content and Return to notes in ordinary Tab order. Escape returns when clean, or opens the dirty-settings choice. Pending save retains focus and the previous persisted values. Preview has no live credential-bearing navigation; Markdown links stay within the local public preview or open as explicit normal external links through the desktop's existing allowlist.
+
+## Publishing a note
+
+Proposed for today's workspace (D-349, SHR-25, SHR-26), so publishing works before projects exist. It needs the owner's yes to P1 below. Nothing is added to the writing window (Rule 7); the status shows in the bottom pill and in the Share dialog.
+
+1. ⋯ → Note → **Publish…** or Files → **Publish…** opens the approved confirmation. Notes are private by default; the first publish states *Anyone with the link will be able to read {what} once it's published. It moves to your public notes.* **Publish** is the only commit; Cancel changes nothing.
+2. Publish moves the note into the public notes (the built Make public move), saves it to GitHub, and starts one task in the bottom pill: *Saving to GitHub…* → *Publishing… usually about a minute* → **Published.** with **Copy link** (D-351). The person can keep writing or close the window; the task carries on.
+3. The page is `https://<owner>.github.io/<repository>/n/<path>/` (the root holds the product site, so notes sit under `/n/`; P2). It takes the site theme, not the app's (WP-P.12, slice 3); until then it uses the built reader style.
+4. Links to notes that aren't published show as plain text on the site (D-350); nothing private is uploaded, and the dialog adds no warning. Help gets that line.
+5. **Copy public link** before the page is live copies it and says *Copied. The page will open once publishing finishes.*
+6. **Unpublish** (⋯ → Note, or the Share dialog) asks once, moves the note back to private, and shows *Removing from your site…* → *Removed from your site.* Past Git history and copies people saved remain (D-274).
+
+| State | What the person sees |
+| --- | --- |
+| Publishing | Bottom pill: *Publishing… usually about a minute*; Share status *Publishing…* |
+| Live | *Published.* with Copy link; Share status *Live* |
+| Failed | *Not live yet.* with **Retry**; the note stays in the public notes and nothing is lost |
+| Slow (over 10 minutes) | *Still publishing. GitHub is taking longer than usual.* |
+| Signed out or no Pages | The ordinary sign-in or Pages setup step (built, `packages/github`), then the publish continues |
+| Site with nothing published | The site's empty home (designed in slice 1) |
+| A page that was unpublished | The site's missing page with a link home (designed in slice 1) |
+
+Template workspaces deploy a pinned web bundle, so site theme and home changes reach them only after a web release and the Update app pull request; this repository's own site builds from source and gets them when `main` lands.
+
+## Readiness assessment (5 November)
+
+The owner asked (5 November) what is done and pending for publishing notes as public web pages on GitHub Pages, and whether the spec is enough to build it. Their earlier words: publishing "plainly publishes a note in GitHub pages for anyone to visit… seen more as a website… automatically take the site theme which can be different from the theme the user uses for their own app."
+
+**Built on `main`** (the instance model: a public repository with `notes/` and a `private/` submodule):
+
+| What | Where | Requirements | Tests |
+| --- | --- | --- | --- |
+| Make public / Make private with the first-publish confirmation; private by default | `packages/core` visibility move, `packages/views` confirmation | SHR-01, SHR-02 | core units, `m5-public-link.spec.ts` |
+| A page per public note at `/n/<path>/`; links to private or missing notes become plain text | `apps/web` `public-page.ts`, `packages/seal/src/publish.ts` (with an index at `/n/`, D-139) | SHR-03 | seal and web units |
+| Pages setup through the GitHub API | `packages/github/src/api.ts` | PKG-02 | `setup.test.ts` |
+| Copy public link | Share dialog | SHR-03 | `m5-public-link.spec.ts` |
+| Preview site and a local Publish… draft (*Saved to the local site preview.*, nothing sent to GitHub) | `vq-share-rest` review slice | SHR-20, SHR-21 | local review only |
+| This repository's Pages workflow builds from source; templates deploy a pinned web bundle | `.github/workflows/pages.yml`, `templates/workspace/.github/workflows/pages.yml` | PKG-02 | CI |
+
+**Pending:** real Publish and Unpublish from the approved dialog; the deploy status (UC-SHARE-02's *Live / Publishing… / Not published yet* has no strings yet); the site theme on the live site (WP-P.12); the home with sections and counts (WP-P.14); the site's empty, missing-page and failure states; published images (IMG-13).
+
+**Gaps found and filled here:** the approved project model (D-312, a separate `notes-site` repository per project, WP-P.4) conflicts with the built instance model, so nothing could ship until projects land; this page now proposes publishing on today's workspace first (D-349, SHR-25, P1). There was no deploy status (D-351, SHR-26), no unpublish flow, no rule for links to unpublished notes (D-350) and no Definition of Done rows with a Try it (MP.32, MP.33). The risk that matters is real accounts: an agent never publishes to the owner's real site (D-343); every agent test uses GitHub protocol fakes.
+
+**Verdict: specified enough to build once the owner answers P1 to P4.** Before this review it was not: the model conflict and the missing status and unpublish flow blocked any build.
+
+**Slices, smallest visible first (D-349):**
+
+1. **Mocks** in the gallery for the publish states, Unpublish, and the site's empty and missing pages. Small.
+2. **Publish and Unpublish on today's workspace** with the deploy status (WP-P.22, MP.32, MP.33). About two days.
+3. **The site theme** on the live site (WP-P.12). About a day.
+4. **The public home with sections and counts** (WP-P.14). About a day.
+5. **Images in published notes** (WP-9.9, IMG-13). About a day.
+
+**Owner questions:**
+
+- **P1.** Publish on today's workspace now (this repository's Pages site, through the built Make public move), rather than wait for projects and a separate `notes-site` repository? Recommended: yes. If yes, WP-P.12 and WP-P.14 no longer wait for WP-P.4.
+- **P2.** Published notes live under `/n/` (the product site keeps the root), or should the notes take the root? Recommended: `/n/`.
+- **P3.** A note with images publishes its images as public files with location and camera metadata removed (yes), or such notes can't be published yet (no)? Recommended: yes.
+- **P4.** For the first live publish, which you do by hand (D-343): (a) this repository's real site, or (b) a throwaway test repository?
 
 ## Site components
 

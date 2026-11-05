@@ -186,6 +186,9 @@
            "pinned": {
             "get": "recent.pinned"
            },
+           "pinCommit": {
+            "get": "recent.pinCommit"
+           },
            "label": {
             "t": "project.open.openItem",
             "args": {
@@ -315,6 +318,9 @@
            },
            "pinned": {
             "get": "entry.pinned"
+           },
+           "pinCommit": {
+            "get": "entry.pinCommit"
            },
            "pathLabel": {
             "t": "project.open.reveal",

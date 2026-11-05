@@ -28,18 +28,18 @@
   "query": "",
   "active": "",
   "recent": [
-    { "id": "r1", "label": "Chapter 3 — The exile", "description": "Ramayana · drafts", "icon": "documentText", "pinned": true },
-    { "id": "r2", "label": "welcome", "description": "Ramayana · notes", "icon": "documentText", "pinned": false },
-    { "id": "r3", "label": "Spring planting plan", "description": "Garden · beds / north", "icon": "documentText", "pinned": false },
-    { "id": "r4", "label": "Issue 14 outline", "description": "Club newsletter · issues", "icon": "documentText", "pinned": false },
-    { "id": "r5", "label": "Pitch deck notes", "description": "Startup plan · notes", "icon": "documentText", "pinned": false },
-    { "id": "r6", "label": "Grandma's dal", "description": "Recipes · lentils", "icon": "documentText", "pinned": false }
+    { "id": "r1", "label": "Chapter 3 — The exile", "description": "Ramayana · drafts", "icon": "documentText", "pinned": true, "pinCommit": "rest" },
+    { "id": "r2", "label": "welcome", "description": "Ramayana · notes", "icon": "documentText", "pinned": false, "pinCommit": "rest" },
+    { "id": "r3", "label": "Spring planting plan", "description": "Garden · beds / north", "icon": "documentText", "pinned": false, "pinCommit": "rest" },
+    { "id": "r4", "label": "Issue 14 outline", "description": "Club newsletter · issues", "icon": "documentText", "pinned": false, "pinCommit": "rest" },
+    { "id": "r5", "label": "Pitch deck notes", "description": "Startup plan · notes", "icon": "documentText", "pinned": false, "pinCommit": "rest" },
+    { "id": "r6", "label": "Grandma's dal", "description": "Recipes · lentils", "icon": "documentText", "pinned": false, "pinCommit": "rest" }
   ],
   "entries": [
-    { "id": "p1", "name": "Ramayana", "folder": "E:\\Projects\\writing\\books\\retellings\\ramayana-modern-prose", "accent": "teal", "logo": "book", "logoSrc": "", "pinned": true, "repo": "prabinpebam/ramayana-modern-prose", "size": "2.4 MB", "files": 37, "media": 5, "folders": 6, "statsBusy": false },
-    { "id": "p2", "name": "Garden", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden", "accent": "green", "logo": "leaf", "logoSrc": "", "pinned": false, "repo": "", "size": "860 KB", "files": 12, "media": 1, "folders": 2, "statsBusy": false },
-    { "id": "p3", "name": "Club newsletter", "folder": "D:\\Shared\\Community\\Running club\\newsletter-2026", "accent": "pink", "logo": "chat", "logoSrc": "", "pinned": false, "repo": "running-club/newsletter", "size": "", "files": 0, "media": 0, "folders": 0, "statsBusy": true },
-    { "id": "p4", "name": "Startup plan", "folder": "C:\\Users\\Prabin\\OneDrive - Personal\\Ventures\\startup-plan", "accent": "indigo", "logo": "rocket", "logoSrc": "", "pinned": false, "repo": "prabinpebam/startup-plan", "size": "14 MB", "files": 128, "media": 41, "folders": 17, "statsBusy": false },
-    { "id": "p5", "name": "Recipes", "folder": "C:\\Users\\Prabin\\Documents\\Recipes", "accent": "amber", "logo": "food", "logoSrc": "", "pinned": false, "repo": "", "size": "1.1 MB", "files": 1, "media": 0, "folders": 1, "statsBusy": false }
+    { "id": "p1", "name": "Ramayana", "folder": "E:\\Projects\\writing\\books\\retellings\\ramayana-modern-prose", "accent": "teal", "logo": "book", "logoSrc": "", "pinned": true, "pinCommit": "rest", "repo": "prabinpebam/ramayana-modern-prose", "size": "2.4 MB", "files": 37, "media": 5, "folders": 6, "statsBusy": false },
+    { "id": "p2", "name": "Garden", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden", "accent": "green", "logo": "leaf", "logoSrc": "", "pinned": false, "pinCommit": "rest", "repo": "", "size": "860 KB", "files": 12, "media": 1, "folders": 2, "statsBusy": false },
+    { "id": "p3", "name": "Club newsletter", "folder": "D:\\Shared\\Community\\Running club\\newsletter-2026", "accent": "pink", "logo": "chat", "logoSrc": "", "pinned": false, "pinCommit": "rest", "repo": "running-club/newsletter", "size": "", "files": 0, "media": 0, "folders": 0, "statsBusy": true },
+    { "id": "p4", "name": "Startup plan", "folder": "C:\\Users\\Prabin\\OneDrive - Personal\\Ventures\\startup-plan", "accent": "indigo", "logo": "rocket", "logoSrc": "", "pinned": false, "pinCommit": "rest", "repo": "prabinpebam/startup-plan", "size": "14 MB", "files": 128, "media": 41, "folders": 17, "statsBusy": false },
+    { "id": "p5", "name": "Recipes", "folder": "C:\\Users\\Prabin\\Documents\\Recipes", "accent": "amber", "logo": "food", "logoSrc": "", "pinned": false, "pinCommit": "rest", "repo": "", "size": "1.1 MB", "files": 1, "media": 0, "folders": 1, "statsBusy": false }
   ]
 }
