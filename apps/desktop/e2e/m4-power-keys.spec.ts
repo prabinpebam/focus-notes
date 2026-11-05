@@ -73,11 +73,6 @@ test("Back and forward step between the notes opened, and the cheat sheet's Powe
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
 
-  // Spotlight lists them as commands, with their keys.
-  await page.keyboard.press(`${mod}+Shift+p`);
-  const spotlight = page.getByRole("dialog", { name: "Spotlight" });
-  await spotlight.getByRole("combobox").fill("duplicate block");
-  await expect(spotlight.getByRole("listbox").getByRole("option", { name: /Duplicate block/ }).first()).toBeVisible();
-  await page.keyboard.press("Escape");
+  // Block keys belong to the editor and the cheat sheet; Actions lists only catalogued actions (D-361).
   await quit(l);
 });

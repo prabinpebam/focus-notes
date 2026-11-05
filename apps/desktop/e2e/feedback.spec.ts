@@ -222,7 +222,7 @@ test("QLT-07: from Spotlight, GitHub refusing this sign-in leads to Continue on 
   const { w, l, page } = await launchWorld();
   try {
     await page.keyboard.press(`${mod}+/`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await expect(spotlight).toBeVisible();
     await page.keyboard.type("bug");
     const option = spotlight.getByRole("option", { name: /^Send feedback…/ });
@@ -265,7 +265,7 @@ test("QLT-07: signed out, it continues on GitHub only, by keyboard alone from st
   const { w, l, page } = await launchWorld({ signedIn: false });
   try {
     await page.keyboard.press(`${mod}+/`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await expect(spotlight).toBeVisible();
     await page.keyboard.type("send feedback");
     await expect(spotlight.getByRole("option", { name: /^Send feedback…/ })).toBeVisible();

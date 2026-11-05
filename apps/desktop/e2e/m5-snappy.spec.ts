@@ -104,10 +104,10 @@ async function useRounds(page: Page, rounds: number): Promise<{ results: Record<
     }],
     ["Spotlight", async () => {
       await page.keyboard.press(`${mod}+/`);
-      await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
+      await page.getByRole("dialog", { name: "Actions", exact: true }).waitFor();
       await page.keyboard.type("note");
       // The first Esc clears the query, the second closes it.
-      const panel = page.getByRole("dialog", { name: "Spotlight" });
+      const panel = page.getByRole("dialog", { name: "Actions", exact: true });
       for (let i = 0; i < 3 && (await panel.count()); i++) {
         await page.keyboard.press("Escape");
         await panel.waitFor({ state: "detached", timeout: 1000 }).catch(() => {});
@@ -336,7 +336,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     await editor.focus();
     console.log(`[D-151] Spotlight opening, traced (ms): ${await traceParts(page, async () => {
       await page.keyboard.press(`${mod}+/`);
-      await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
+      await page.getByRole("dialog", { name: "Actions", exact: true }).waitFor();
       await page.waitForTimeout(100);
     })}`);
     // Gated (D-151 (12), (13)): Spotlight measured 56 to 88 ms on CI's software compositing until its

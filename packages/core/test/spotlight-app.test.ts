@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  answerKey, createApp, formatChord, isInternalCommand, titleOfMarkdown, type App, type AppStateFile, type KeyEventLike, type PlatformBridge, type WorkspaceOp,
+  answerKey, CATALOG, createApp, formatChord, titleOfMarkdown, type App, type AppStateFile, type KeyEventLike, type PlatformBridge, type WorkspaceOp,
 } from "../src/index.ts";
 import { startSearch, type SearchService } from "../src/search/feed.ts";
 import { localSearch } from "../src/search/serve.ts";
@@ -127,9 +127,9 @@ describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every
       await app.commands.run("spotlight.open");
       return (vm(app) as unknown as { hints: string }).hints;
     };
-    expect(await hints("windows")).toBe("Enter to open · Ctrl+Enter for the alternative · Ctrl+K for actions · Esc to close");
+    expect(await hints("windows")).toBe("Enter to open or run · Ctrl+Enter for the alternative · Ctrl+K for more actions · Esc to close");
     expect(await hints("linux")).toBe(await hints("windows"));
-    expect(await hints("macos")).toBe("↩ to open · ⌘↩ for the alternative · ⌘K for actions · Esc to close");
+    expect(await hints("macos")).toBe("↩ to open or run · ⌘↩ for the alternative · ⌘K for more actions · Esc to close");
   });
 
   it("opens in All with the field focused, from the toolbar's Search too", async () => {
@@ -153,7 +153,10 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
     expect(items[0]).toMatchObject({ group: "Top hit" });
     const focus = items.find((i) => i.label === "Focus mode");
     expect(focus).toMatchObject({ state: "On", shortcut: formatChord("Mod+Shift+D", "windows") });
-    expect(labels(app)).toEqual(expect.arrayContaining(["Notes: On focus", "Commands: Focus mode", "Settings: Focus mode", "In notes: Ideas"]));
+    expect(labels(app)).toEqual(expect.arrayContaining(["Notes: On focus", "In notes: Ideas"]));
+    // One Focus mode, in App (or as the top hit): no second row for the setting (ACT-07).
+    expect(labels(app).filter((l) => l.endsWith(": Focus mode"))).toHaveLength(1);
+    expect(["App: Focus mode", "Top hit: Focus mode"]).toContain(labels(app).find((l) => l.endsWith(": Focus mode")));
     expect(labels(app)).toContain(items[0]!.label === "Focus sessions" ? "Top hit: Focus sessions" : "Notes: Focus sessions");
     const ideas = items.find((i) => i.group === "In notes")!;
     expect(ideas.description).toContain("foc");
@@ -167,7 +170,7 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
     expect(raw[0]).toMatchObject({ header: true, label: "Top hit" });
     const headers = raw.filter((i) => i.header).map((i) => i.label);
     expect(new Set(headers).size).toBe(headers.length);
-    expect(headers).toEqual(expect.arrayContaining(["Notes", "Commands", "Settings", "In notes", "Actions"]));
+    expect(headers).toEqual(expect.arrayContaining(["Notes", "In notes", "Actions"]));
     expect(raw.filter((i) => i.header).every((i) => !i.highlights?.length && !i.disabled)).toBe(true);
   });
 
@@ -188,11 +191,12 @@ describe("SPT-04: states, the empty field, and no match", () => {
   it("SPT-10: dismisses before a command opens and focuses its destination", async () => {
     const app = createApp(desktop().bridge, messages);
     let openDuringRun: boolean | undefined;
-    app.commands.register({ id: "test.destination", title: "command.focus.toggle", run: () => { openDuringRun = sp(app).open; } });
     await app.start();
+    // Keyboard shortcuts opens the cheat sheet: Actions is already closed when it does.
+    app.store.subscribe(() => { if (app.store.state.ui.shortcuts.open && openDuringRun === undefined) openDuringRun = sp(app).open; });
     await app.commands.run("spotlight.commands");
-    await type(app, "focus mode");
-    const row = sp(app).rows.find((r) => r.key === "test.destination")!;
+    await type(app, "keyboard shortcuts");
+    const row = sp(app).rows.find((r) => r.key === "shortcuts.open")!;
     await app.commands.run("spotlight.setActive", { id: row.id });
     await app.commands.run("spotlight.run");
     expect(openDuringRun).toBe(false);
@@ -201,24 +205,23 @@ describe("SPT-04: states, the empty field, and no match", () => {
 
   it("SPT-10: a failed command retains the query and reports its error", async () => {
     const app = createApp(desktop().bridge, messages);
-    app.commands.register({ id: "test.failure", title: "command.focus.toggle", run: () => { throw new Error("refused"); } });
     await app.start();
-    const reported: unknown[] = [];
-    const off = app.commands.onRun((id, error) => { if (id === "test.failure" && error) reported.push(error); });
+    // The action's command refuses (as a shell might): Actions comes back with the query.
+    const real = app.commands.run.bind(app.commands);
+    const spy = vi.spyOn(app.commands, "run").mockImplementation(async (id, args) => { if (id === "shortcuts.open") throw new Error("refused"); return real(id, args); });
     await app.commands.run("spotlight.commands");
-    await type(app, "focus mode");
-    const row = sp(app).rows.find((r) => r.key === "test.failure")!;
+    await type(app, "keyboard shortcuts");
+    const row = sp(app).rows.find((r) => r.key === "shortcuts.open")!;
     await app.commands.run("spotlight.setActive", { id: row.id });
     await expect(app.commands.run("spotlight.run")).rejects.toThrow("refused");
-    expect(sp(app)).toMatchObject({ open: true, query: "focus mode" });
-    expect(reported).toHaveLength(1);
-    off();
+    expect(sp(app)).toMatchObject({ open: true, query: "keyboard shortcuts" });
+    spy.mockRestore();
   });
   it("SPT-10: Enter dismisses toggles; Shift+Enter retains query and live state", async () => {
     const { app } = await started();
     await app.commands.run("spotlight.commands");
     await type(app, "focus mode");
-    const row = vm(app).items.find((i) => i.label === "Focus mode" && i.group === "Commands")!;
+    const row = vm(app).items.find((i) => i.label === "Focus mode")!;
     await app.commands.run("spotlight.setActive", { id: row.id });
     await app.commands.run("spotlight.run");
     expect(app.store.state.focusMode).toBe(false);
@@ -231,46 +234,35 @@ describe("SPT-04: states, the empty field, and no match", () => {
     expect(sp(app).open).toBe(true);
     expect(sp(app).query).toBe("focus mode");
     expect(vm(app).items.find((i) => i.id === row.id)?.state).toBe("On");
-    // Settings show their value and step it, staying open too.
-    await type(app, "text size");
-    const size = vm(app).items.find((i) => i.label === "Text size")!;
-    expect(size.state).toBe("16 px");
-    await app.commands.run("spotlight.setActive", { id: size.id });
+    // Appearance is three plain actions, one of them On (D6): Shift+Enter keeps Actions open on it.
+    await type(app, "dark appearance");
+    const dark = vm(app).items.find((i) => i.label === "Use dark appearance")!;
+    await app.commands.run("spotlight.setActive", { id: dark.id });
     await app.commands.run("spotlight.runKeep");
-    expect(vm(app).items.find((i) => i.id === size.id)?.state).toBe("17 px");
+    expect(app.store.state.appearance.mode).toBe("dark");
+    expect(sp(app).open).toBe(true);
   });
 
-  it("the empty field shows recent notes, then suggestions, then every action the app has (the action center, D-111), then a hint", async () => {
+  it("the empty field shows recent notes, then what applies here, a few per group; > lists every action (ACT-06, D-361)", async () => {
     const { app } = await started();
     for (const p of [`${PRIV}/ideas.md`, `${PUB}/essays/on-focus.md`, `${PRIV}/welcome.md`]) await app.commands.run("files.reveal", { path: p }).then(() => app.commands.run("files.openItem"));
     await app.commands.run("spotlight.open");
     const empty = labels(app);
-    expect(empty.slice(0, 5)).toEqual(["Recent: On focus", "Recent: Ideas", "Suggestions: New note", "Suggestions: Focus mode", "Suggestions: Switch light and dark"]);
-    expect(vm(app).status).toBe("Type ? for help");
-    // After them, every command and setting Spotlight can run, as `>` lists them: the action center.
-    const actions = empty.slice(5);
-    expect(actions.length).toBeGreaterThan(100);
-    expect(actions).toEqual(expect.arrayContaining(["Commands: New note", "Commands: Find in all notes", "Settings: Text size"]));
-    const centre = vm(app).items.slice(5);
-
-    // The arrow keys reach any of them and Enter runs it, as from the commands list.
-    const size = centre.find((i) => i.label === "Text size")!;
-    expect(size.state).toBe("16 px");
-    expect(sp(app).activeId).toBe(vm(app).items[0]!.id);
-    for (let i = 0; i < centre.length + 5 && sp(app).activeId !== size.id; i++) await app.commands.run("spotlight.next");
-    expect(sp(app).activeId).toBe(size.id);
-    await app.commands.run("spotlight.prev");
-    expect(sp(app).activeId).not.toBe(size.id);
-    await app.commands.run("spotlight.next");
-    await app.commands.run("spotlight.run");
-    expect(app.store.state.appearance.fontSize).toBe(17);
-    expect(sp(app).open).toBe(false);
-
-    await app.commands.run("spotlight.open");
+    expect(empty.slice(0, 2)).toEqual(["Recent: On focus", "Recent: Ideas"]);
+    expect(vm(app).status).toBe("Type > to browse all actions · ? for help");
+    // Then the groups for what's here (no selection: no This selection), at most four each.
+    const groups = [...new Set(vm(app).items.slice(2).map((i) => i.group))];
+    expect(groups).toEqual(["This note", "This project", "App"]);
+    for (const g of groups) expect(vm(app).items.filter((i) => i.group === g).length).toBeLessThanOrEqual(4);
+    // The arrow keys reach any of them and Enter runs it.
+    const target = vm(app).items.find((i) => i.group === "App" && !i.disabled)!;
+    for (let i = 0; i < 20 && sp(app).activeId !== target.id; i++) await app.commands.run("spotlight.next");
+    expect(sp(app).activeId).toBe(target.id);
+    // `>` lists the whole catalogue, by group.
     await type(app, ">");
-    expect(labels(app)).toEqual(actions);
+    expect(vm(app).items.length).toBeGreaterThan(30);
+    expect([...new Set(vm(app).items.map((i) => i.group))]).toEqual(["This selection", "This note", "This project", "App"]);
   });
-
   it("an open Spotlight's answer follows the index as it reads: a note listed after the query was answered appears", async () => {
     const { app } = await started(desktop(), { search: false });
     let hits: SearchHit[] = [];
@@ -341,8 +333,8 @@ describe("SPT-05: modes and prefixes", () => {
     await app.commands.run("spotlight.open");
     await type(app, ">");
     expect(sp(app)).toMatchObject({ mode: "commands", query: "" });
-    // The empty commands list is every command it can run.
-    expect(vm(app).items.length).toBeGreaterThan(100);
+    // The empty actions list is the whole catalogue.
+    expect(vm(app).items.length).toBeGreaterThan(30);
     expect(app.commands.match(key("Backspace"), ["spotlightField"])).toBe("spotlight.all");
     await app.commands.run("spotlight.all");
     expect(sp(app).mode).toBe("all");
@@ -359,7 +351,7 @@ describe("SPT-05: modes and prefixes", () => {
     await app.commands.run("spotlight.open");
     await type(app, "?");
     expect(sp(app).mode).toBe("help");
-    expect(labels(app)[0]).toBe("Prefixes and filters: > Commands and settings");
+    expect(labels(app)[0]).toBe("Prefixes and filters: > All actions");
   });
 
   it("a mode's key switches mode and keeps the query; the same key again closes", async () => {
@@ -369,7 +361,7 @@ describe("SPT-05: modes and prefixes", () => {
     await app.commands.run("spotlight.commands");
     expect(sp(app)).toMatchObject({ open: true, mode: "commands", query: "focus" });
     await vi.waitFor(() => expect(sp(app).answered).toBe(answerKey(sp(app))));
-    expect(vm(app).items.every((i) => i.group === "Commands" || i.group === "Settings")).toBe(true);
+    expect(vm(app).items.every((i) => ["This selection", "This note", "This project", "App"].includes(i.group))).toBe(true);
     await app.commands.run("spotlight.commands");
     expect(sp(app).open).toBe(false);
   });
@@ -418,7 +410,7 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     // In the middle of the text, → moves the caret.
     expect(app.commands.match(key("ArrowRight", { caretAtEnd: false }), ["spotlightField"])).toBeUndefined();
     await app.commands.run("spotlight.actions");
-    expect(vm(app).actionsTitle).toBe("Actions for “Ideas”");
+    expect(vm(app).actionsTitle).toBe("More actions for “Ideas”");
     expect(vm(app).items.map((i) => `${i.label}${i.disabled ? " (unavailable)" : ""}`)).toEqual([
       "Open", "Open in new window (unavailable)", "Copy Markdown link", "Rename", "Move to…", "Make public", "Show in Files", "Delete",
     ]);
@@ -467,25 +459,15 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     await vi.waitFor(() => expect(app.store.state.workspace.tree.roots[0]!.children.some((c) => c.name === "ideas.md")).toBe(false));
   });
 
-  it("a command's actions run it or copy its ID; a setting resets to its default", async () => {
-    const { app, copied } = await started();
+  it("an action does one thing: it has no More actions of its own (Copy command ID is out)", async () => {
+    const { app } = await started();
     await app.commands.run("spotlight.commands");
-    await type(app, "larger text");
+    await type(app, "keyboard shortcuts");
+    expect(app.commands.describe("spotlight.actions").enabled).toBe(false);
     await app.commands.run("spotlight.actions");
-    expect(vm(app).items.map((i) => i.label)).toEqual(["Run", "Copy command ID"]);
-    await app.commands.run("spotlight.setActive", { id: "copyId" });
-    await app.commands.run("spotlight.run");
-    expect(copied).toEqual(["font.larger"]);
-    await app.commands.run("font.larger");
-    await app.commands.run("spotlight.commands");
-    await type(app, "text size");
-    await app.commands.run("spotlight.actions");
-    await app.commands.run("spotlight.setActive", { id: "reset" });
-    await app.commands.run("spotlight.run");
-    expect(app.store.state.appearance.fontSize).toBe(16);
+    expect(sp(app).actions).toBeUndefined();
   });
 });
-
 describe("DSK-06 (D-179): a note in a new window from Spotlight", () => {
   const withWindows = () => {
     const d = desktop();
@@ -564,8 +546,8 @@ describe("KEY-04: the Spotlight Pro keys (D-160)", () => {
     expect(sp(app).open).toBe(false);
     // Mod+3 runs the third result: here, a command.
     await app.commands.run("spotlight.commands");
-    await type(app, "font");
-    const third = vm(app).items[2]!;
+    await type(app, "show");
+    const third = vm(app).items.filter((i) => !i.disabled)[2]!;
     expect(app.commands.describe("spotlight.run3").enabled).toBe(true);
     expect(app.commands.describe("spotlight.run9").enabled).toBe(vm(app).items.length >= 9);
     await app.commands.run("spotlight.run3");
@@ -573,23 +555,24 @@ describe("KEY-04: the Spotlight Pro keys (D-160)", () => {
   });
 });
 
-describe("KEY-01: every action is a command Spotlight can run, showing its shortcut", () => {
-  it("lists every registered command but internal steps, each with its shortcut", async () => {
+describe("KEY-01 (amended by D-361): every catalogued action runs from Actions, showing its shortcut", () => {
+  it("lists the catalogue's actions, each with its command's shortcut, found by name", async () => {
     const { app } = await started();
     await app.commands.run("spotlight.commands");
     const rows = vm(app).items;
-    const ids = app.commands.ids().filter((id) => !isInternalCommand(id, app.commands.describe(id).handledBy));
-    expect(ids.length).toBeGreaterThan(100);
-    for (const id of ids) {
-      const row = rows.find((r) => r.id === `commands:${id}`);
-      expect(row, id).toBeDefined();
-      const d = app.commands.describe(id);
-      if (d.shortcut) expect(row!.shortcut, id).toBe(formatChord(d.shortcut, "windows"));
+    for (const e of CATALOG) {
+      const row = rows.find((r) => r.id === `${e.anchor}:${e.id}`);
+      expect(row, e.id).toBeDefined();
+      const d = app.commands.describe(e.steps[0]![0]);
+      if (d.shortcut) expect(row!.shortcut, e.id).toBe(formatChord(d.shortcut, "windows"));
     }
-    // And each is found by its name through the index.
-    for (const id of ["focus.toggle", "files.makePublic", "window.snap.left", "theme.dark.dusk", "spotlight.quickOpen"]) {
-      await type(app, app.commands.describe(id).title === "Dusk" ? "dark theme dusk" : messages[app.commands.describe(id).title]!);
-      expect(vm(app).items.map((r) => r.id), id).toContain(`commands:${id}`);
+    // A registered command that isn't catalogued still runs, but isn't listed.
+    expect(app.commands.has("window.snap.left")).toBe(true);
+    await type(app, "snap");
+    expect(vm(app).items.map((r) => r.id).some((id) => id.endsWith(":window.snap.left"))).toBe(false);
+    for (const label of ["Focus mode", "Keyboard shortcuts", "Find in all notes"]) {
+      await type(app, label);
+      expect(vm(app).items.map((r) => r.label), label).toContain(label);
     }
   });
 });

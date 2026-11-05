@@ -94,7 +94,7 @@ export async function startDemo(opts: { size: Size; theme: "light" | "dark"; sta
 /** Opens a note by title through quick open. */
 export async function openNote(page: Page, title: string) {
   await page.keyboard.press(`${mod}+p`);
-  const dialog = page.getByRole("dialog", { name: "Spotlight" });
+  const dialog = page.getByRole("dialog", { name: "Actions", exact: true });
   await dialog.getByRole("combobox").fill(title);
   await dialog.getByRole("option", { name: new RegExp(title) }).first().click();
   await expect(page.getByRole("textbox", { name: "Note" })).toContainText(title);

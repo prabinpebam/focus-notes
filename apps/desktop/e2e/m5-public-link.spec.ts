@@ -82,7 +82,7 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
 
     // A public note: quick open it, then ⋯ → Copy public link.
     await page.keyboard.press(`${mod}+P`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await spotlight.getByRole("combobox").fill("launch plan");
     await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Launch plan");
     await page.keyboard.press("Enter");
@@ -102,7 +102,7 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
     await spotlight.getByRole("combobox").fill("launch plan");
     await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Launch plan");
     await page.keyboard.press("ArrowRight");
-    await expect(spotlight).toContainText("Actions for “Launch plan”");
+    await expect(spotlight).toContainText("More actions for “Launch plan”");
     const action = spotlight.getByRole("option", { name: /^Copy public link/ });
     await expect(action).not.toHaveAttribute("aria-disabled", "true");
     await capture(page, "copy-public-link-spotlight");

@@ -17,7 +17,7 @@ const custom = process.platform !== "darwin";
 
 async function openInNewWindow(page: Page, query: string) {
   await page.keyboard.press(`${mod}+/`);
-  const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+  const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
   await spotlight.waitFor();
   await page.keyboard.type(query);
   await expect(spotlight.getByRole("option").first()).toContainText(query);

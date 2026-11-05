@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  actionsFor, Frecency, FRECENCY_HALF_LIFE_MS, isInternalCommand, matchLabel, mergeResults, parseFilters, prefixMode, rankLocal,
+  actionsFor, Frecency, FRECENCY_HALF_LIFE_MS, matchLabel, mergeResults, parseFilters, prefixMode, rankLocal,
   type ActionContext,
 } from "../src/spotlight.ts";
 import type { SearchHit } from "../src/search/types.ts";
@@ -144,19 +144,3 @@ describe("frecency: recent and frequent, halving every week, in memory only", ()
   });
 });
 
-describe("KEY-01: which commands Spotlight lists", () => {
-  it("leaves out setters, components' events, dialog steps, and keys of a field; lists actions", () => {
-    for (const id of ["find.setQuery", "app.ready", "toast.dismiss", "firstRun.next", "move.choose", "files.select", "spotlight.setQuery"]) expect(isInternalCommand(id)).toBe(true);
-    expect(isInternalCommand("find.nextInField", "findField")).toBe(true);
-    expect(isInternalCommand("files.delete", "filesTree")).toBe(true);
-    // Steps inside Find in all notes' sheet and the theme manager, which their own controls run (D-110, D-108).
-    for (const id of ["findAll.choose", "findAll.close", "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix"]) expect(isInternalCommand(id), id).toBe(true);
-    for (const id of ["find.allNotes", "theme.manager.open", "reading.reset"]) expect(isInternalCommand(id), id).toBe(false);
-    // Settings no longer has its own button (project model, slice 2): Spotlight is where it's found.
-    expect(isInternalCommand("workspace.openFromGitHub")).toBe(false);
-    // Editor and table keys act on what's in front of them, from anywhere: they're listed.
-    expect(isInternalCommand("format.bold", "editor")).toBe(false);
-    expect(isInternalCommand("table.addRowBelow", "table")).toBe(false);
-    for (const id of ["focus.toggle", "note.new", "files.makePublic", "window.snap.left", "theme.dark.dusk"]) expect(isInternalCommand(id)).toBe(false);
-  });
-});

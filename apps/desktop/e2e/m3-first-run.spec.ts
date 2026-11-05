@@ -403,7 +403,7 @@ test("D-126: nothing outside setup is there or works until it's done: no trigger
     await expect(page.getByRole("button", { name: "Focus Notes menu" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
     await press(page, `${mod}+/`);
-    await expect(page.getByRole("dialog", { name: "Spotlight" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Actions", exact: true })).toBeVisible();
   } finally {
     await quit(l);
     w.server.close();
