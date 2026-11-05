@@ -26,6 +26,29 @@ const write = async (p: string, c: string) => writeFileSync(p, c);
 const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
 const REWRITE = { text: "The quick brown fox.", instruction: "Make it warmer" };
 
+it("reports each real discovery probe as it completes and aborts in-flight probes", async () => {
+  const progress: import("@focus-notes/core/ai-providers").AiDiscoveryProgress[] = [];
+  let released!: () => void;
+  const gate = new Promise<void>(resolve => { released = resolve; });
+  let aborted = 0;
+  const ai = new AiService(file(), crypt, write, async (input, init) => {
+    if (String(input).includes(":11434")) return new Response(JSON.stringify({ models: [{ name: "local" }] }));
+    await new Promise<void>((resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => { aborted++; reject(init.signal!.reason); }, { once: true });
+      void gate.then(resolve);
+    });
+    return new Response(JSON.stringify({ data: [] }));
+  });
+  const controller = new AbortController();
+  const pending = ai.discover({ signal: controller.signal, progress: event => progress.push(event) });
+  await expect.poll(() => progress.some(x => x.provider === "ollama" && x.status === "found")).toBe(true);
+  expect(progress.some(x => x.provider === "lm-studio")).toBe(false);
+  controller.abort();
+  await expect(pending).rejects.toThrow();
+  expect(aborted).toBe(6);
+  released();
+});
+
 type Auth = "bearer" | "none" | "x-api-key" | "x-goog-api-key" | "api-key";
 interface Kind { doc: string; generate: string; models?: string; auth: Auth; extra?: Record<string, string> }
 /** Each kind's documented chat request and model list, as the service's own docs give them. */

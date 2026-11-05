@@ -18,6 +18,75 @@ import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
+it("shows real per-probe discovery results and counts while other probes are still pending", async () => {
+  const t = setup();
+  let event: ((e: unknown) => void) | undefined, id = "";
+  let finish!: (found: import("../src/ai-providers.ts").AiFound[]) => void;
+  t.ai.onDiscoverEvent = listener => { event = listener; return () => { event = undefined; }; };
+  t.ai.discover = input => { id = input!.id; return new Promise(resolve => { finish = resolve; }); };
+  const pending = t.commands.run("ai.discover");
+  await settle();
+  expect(t.settingsVm()).toMatchObject({ discovering: true, discoverPhase: "scanning", scanCount: "Found 0 apps so far" });
+  const found = { provider: "ollama", endpoint: "http://127.0.0.1:11434", models: [{ id: "local", cloud: false }] };
+  event?.({ id, provider: "ollama", status: "found", found });
+  expect(t.settingsVm()).toMatchObject({ scanCount: "Found 1 app so far", scanTargets: expect.arrayContaining([expect.objectContaining({ id: "ollama", status: "found", result: "1 model" }), expect.objectContaining({ id: "lm-studio", status: "checking" })]) });
+  finish([found]);
+  await pending;
+  expect(t.settingsVm()).toMatchObject({ discovering: false, discoverPhase: "found", scanCount: "Found 1 app" });
+});
+
+it("settles discovery at none or error and ignores late results after cancellation", async () => {
+  const t = setup();
+  await t.commands.run("ai.discover");
+  expect(t.settingsVm()).toMatchObject({ discovering: false, discoverPhase: "none", scanCount: "0 apps found" });
+  t.ai.discover = async () => { throw new Error("network"); };
+  await t.commands.run("ai.discover");
+  expect(t.settingsVm()).toMatchObject({ discovering: false, discoverPhase: "error", discoverStatus: expect.stringContaining("Try again") });
+  let finish!: (found: import("../src/ai-providers.ts").AiFound[]) => void;
+  let cancelled = "";
+  t.ai.discover = () => new Promise(resolve => { finish = resolve; });
+  t.ai.discoverCancel = async id => { cancelled = id; };
+  const pending = t.commands.run("ai.discover");
+  await settle();
+  await t.commands.run("ai.discoverCancel");
+  expect(cancelled).toMatch(/^scan-/);
+  expect(t.settingsVm()).toMatchObject({ discovering: false, discoverStatus: "Scan stopped. Completed results are kept." });
+  finish([{ provider: "ollama", endpoint: "", models: [] }]);
+  await pending;
+  expect(t.settingsVm()).toMatchObject({ discoverStatus: "Scan stopped. Completed results are kept.", found: [] });
+});
+
+it("keeps completed scan results on Cancel and isolates an immediate retry from old events and completion", async () => {
+  const t = setup();
+  type Found = import("../src/ai-providers.ts").AiFound;
+  const scans: { id: string; finish: (found: Found[]) => void }[] = [];
+  const listeners: ((event: unknown) => void)[] = [];
+  t.ai.onDiscoverEvent = listener => { listeners.push(listener); return () => {}; };
+  t.ai.discover = input => new Promise(resolve => { scans.push({ id: input!.id, finish: resolve }); });
+  t.ai.discoverCancel = async () => {};
+  const ollama: Found = { provider: "ollama", endpoint: "http://127.0.0.1:11434", models: [{ id: "local", cloud: false }] };
+  const studio: Found = { provider: "lm-studio", endpoint: "http://127.0.0.1:1234", models: [{ id: "other", cloud: false }] };
+  const first = t.commands.run("ai.discover");
+  await settle();
+  listeners[0]!({ id: scans[0]!.id, provider: ollama.provider, status: "found", found: ollama });
+  await t.commands.run("ai.discoverCancel");
+  expect(t.settingsVm()).toMatchObject({
+    discovering: false, scanCount: "Found 1 app",
+    found: [expect.objectContaining({ name: "Ollama" })],
+    scanTargets: expect.arrayContaining([expect.objectContaining({ id: "ollama", status: "found" }), expect.objectContaining({ id: "lm-studio", result: "Not checked" })]),
+  });
+  const second = t.commands.run("ai.discover");
+  await settle();
+  listeners[0]!({ id: scans[0]!.id, provider: ollama.provider, status: "found", found: ollama });
+  scans[0]!.finish([ollama]);
+  await first;
+  expect(t.settingsVm()).toMatchObject({ discovering: true, scanCount: "Found 0 apps so far" });
+  listeners[1]!({ id: scans[1]!.id, provider: studio.provider, status: "found", found: studio });
+  scans[1]!.finish([studio]);
+  await second;
+  expect(t.settingsVm()).toMatchObject({ discovering: false, scanCount: "Found 1 app", found: [expect.objectContaining({ name: "LM Studio" })] });
+});
+
 it("shows AI's known-empty state only after its list loads and replaces its first action with the connection form", async () => {
   const t = setup({ connections: [] });
   expect(t.settingsVm()).toMatchObject({ empty: false, addVisible: false });

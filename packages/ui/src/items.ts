@@ -4,7 +4,7 @@
  * added, removed, made optional, or retyped there fails typecheck here. ui:check compares a list
  * prop's read against these: a view can't pass a string[] where command items belong.
  */
-import type { ColorValue, CommandItem, ImageSource, KeyBinding, MenuSection, Option, ResultItem, ThemeTile, TreeItem, VersionBlock } from "./data.ts";
+import type { ColorValue, CommandItem, ImageSource, KeyBinding, MenuSection, Option, ResultItem, ScanTarget, ThemeTile, TreeItem, VersionBlock } from "./data.ts";
 import type { SiteTheme } from "./primitives/SiteThemeShowcase/SiteThemeShowcase.tsx";
 import type { BlockNode } from "./blocks/NoteContent/NoteContent.tsx";
 import type { ListOf } from "./contract.ts";
@@ -29,7 +29,7 @@ const shape = <T>(fields: Fields<T>, lists?: Partial<Record<keyof T & string, Li
 export interface ListItemTypes {
   commandItems: CommandItem; menuSections: MenuSection; options: Option; keyCaps: string; keyBindings: KeyBinding;
   resultItems: ResultItem; treeItems: TreeItem; versionBlocks: VersionBlock; themeTiles: ThemeTile; colorValues: ColorValue;
-  noteBlocks: BlockNode; siteThemes: SiteTheme; imageSources: ImageSource;
+  noteBlocks: BlockNode; siteThemes: SiteTheme; imageSources: ImageSource; scanTargets: ScanTarget;
 }
 export type ListItemOf<L extends ListOf> = ListItemTypes[L];
 
@@ -60,6 +60,7 @@ export const ITEM_SHAPES: Readonly<Record<ListOf, ItemShape | typeof STRING_ITEM
   }, { colors: "colorValues" }),
   colorValues: shape<ColorValue>({ id: "string", value: "string" }),
   imageSources: shape<ImageSource>({ id: "string", value: "string", pending: "boolean", failed: "boolean" }),
+  scanTargets: shape<ScanTarget>({ id: "string", label: "string", detail: "string?", icon: "string?", status: "string", result: "string?" }),
   // A block's content holds blocks again, to any depth: checked at the top level only.
   noteBlocks: shape<BlockNode>({ type: "string", attrs: "object?", content: "array?", marks: "array?", text: "string?" }),
   siteThemes: shape<SiteTheme>({

@@ -677,6 +677,10 @@
       "$value": "{ref.duration.1500}",
       "$description": "One pass of a skeleton's shimmer, the light moving across a placeholder while its content is on its way (D-208)."
     },
+    "sweep": {
+      "$value": "{ref.duration.3000}",
+      "$description": "One turn of the scan's radar sweep while the app asks this computer for AI models (DD-RWR-12). Reduced motion keeps the rows without the sweep."
+    },
     "shimmerPasses": {
       "$type": "number",
       "$value": 3,

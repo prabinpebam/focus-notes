@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **83 registered contracts**: **54 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **19 layouts** (AppRoot, Stack, Section, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **84 registered contracts**: **55 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **19 layouts** (AppRoot, Stack, Section, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="switch" data-reader-personas="design engineering">Switch</h2>
 
@@ -43,7 +43,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**83 registered contracts:** 54 primitives, 5 host components, 19 layouts, 1 block component, 4 compound components.
+**84 registered contracts:** 55 primitives, 5 host components, 19 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -97,6 +97,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | FontChoice | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 11 | None |
 | ProjectPill | primitive | `rest` | 27 | None |
 | PickerButton | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 26 | None |
+| ScanRadar | primitive | `rest` | 4 | None |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -235,6 +236,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **AppMark** | Implemented | `size` m or l, `label`. The app icon drawn from the brand tokens, a dark tile in a dark theme (D-126, D-135); decorative unless labelled | Image | The full-window setup's hero |
 | **FontChoice** | Implemented | `font` mono, sans, serif, hyperlegible, dyslexic or system; `label`; `selected`; a toggle button drawing a large Aa and the font's name in that font, so a writing font is chosen by eye (D-316) | Toggle button | Settings → Project (mocks, awaiting approval) |
 | **PickerButton** | Implemented | `label`, `value`, `font`, `theme`, `chevron`, `selected`; a compact button, or (`variant` fontTile/themeTile) a fixed-size tile with its label small on top and the value drawn (an Aa in the font, the theme rendered small) and named, showing only a setting's current value (a font's name in that font, or a theme's name with its swatch) that opens its choices in a PopoverPanel; without the chevron, an option in the popover's grid (D-323) | Button | Settings → Project's Font and Theme (mocks, awaiting approval) |
+| **ScanRadar** | Implemented | `label`, `phase` (scanning, found, none, error), `targets` (name, address, icon, status, result), `count`, `checkingLabel`, `announceResult`. Real results settle each row immediately; reduced motion removes sweep and pulse (DD-RWR-12) | Named group; one completion announcement from its host, or its own polite live region | Settings → AI, Find on this computer |
 | **ProjectPill** | Implemented | `name`, `logo`, `src`, `accent`, `label`; pressable. A window's project at the end of its status row, after Backed up and exactly as tall as it (`size.iconL`), with equal padding at both ends and its words centred on the line (the shared control metrics): the logo and name on a soft fill of the accent, the name in the text colour, truncated with an ellipsis; pressing it opens Settings → Project (D-317) | Button | Every project window's status row (mocks, awaiting approval) |
 | **ImageFrame** | Implemented | `src` (a data URL the shell made), `alt`, `mode` column, wide, actual or thumb, `fitHeight` (on by default), `rounded`, `selected`, `hint` (No description), `crop` and `rotation` for Edit image. An inline image in the note's flow with a token backdrop behind transparency (IMG, D-300) | Image | Images in notes, Edit image, Auto caption (mocks, awaiting approval) |
 | **ProjectMark** | Implemented | `logo` one of 24 presets (Fluent geometry), `upload` (a sanitized SVG data URL in `src`) or `none` (`initials`); `accent` one of 12 presets or `app`; `plate` tint, neutral or solid; `size` s, m, l, xl or watermark; `selected`; pressable as a toggle in the logo and colour pickers. A project's identity (D-313); the watermark hides in more contrast, forced colours and reduced transparency; decorative unless labelled | Image, or toggle button | The title band, the Files heading, Projects, Settings → Project (mocks, awaiting approval) |
