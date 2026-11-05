@@ -1,5 +1,5 @@
 import {
-  FolderOpen20Regular, HardDrive20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, MoreHorizontal20Regular, MoreVertical20Regular,
+  FolderOpen20Regular, HardDrive20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, Desktop20Regular, MoreHorizontal20Regular, MoreVertical20Regular,
   Search20Regular, Add20Regular, Dismiss20Regular, Checkmark20Regular, DocumentAdd20Regular, TextBold20Regular,
   TextItalic20Regular, Link20Regular, Subtract20Regular, SquareMultiple20Regular, Square20Regular,
   FullScreenMaximize20Regular, FullScreenMinimize20Regular, CenterVertical20Regular, TextFont20Regular,
@@ -23,7 +23,7 @@ import { AI_BRAND_ICONS } from "./ai-brand-icons.tsx";
 
 export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
   ...AI_BRAND_ICONS,
-  open: FolderOpen20Regular, save: Save20Regular, darkTheme: WeatherMoon20Regular, lightTheme: WeatherSunny20Regular,
+  open: FolderOpen20Regular, save: Save20Regular, darkTheme: WeatherMoon20Regular, lightTheme: WeatherSunny20Regular, systemTheme: Desktop20Regular,
   more: MoreHorizontal20Regular, moreVertical: MoreVertical20Regular, search: Search20Regular, add: Add20Regular, dismiss: Dismiss20Regular,
   check: Checkmark20Regular, newNote: DocumentAdd20Regular, newFolder: FolderAdd20Regular, bold: TextBold20Regular, italic: TextItalic20Regular,
   link: Link20Regular, minimize: Subtract20Regular, restore: SquareMultiple20Regular, maximize: Square20Regular,

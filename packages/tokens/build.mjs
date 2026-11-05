@@ -173,10 +173,16 @@ const scopeBlock = (selector, keys, overrides, extra = "") => {
 };
 const darkThemeIds = THEME_IDS.filter((id) => id === "ink" || id === "dusk" || id.endsWith("-dark"));
 const themedKeys = new Set(Object.values(THEMES).flatMap((f) => [...load(f).keys()]).filter((k) => !SITE_ONLY(k)));
-for (const id of THEME_IDS) blocks.push(scopeBlock(`[data-theme-scope="${id}"]`, themedKeys, overridesOf(id), `  color-scheme: ${darkThemeIds.includes(id) ? "dark" : "light"};\n`));
+for (const id of THEME_IDS) {
+  const reader = id === "paper" ? "light" : id === "ink" ? "dark" : undefined;
+  const selector = `[data-theme-scope="${id}"]${reader ? `, :root[data-page="reader"]:has([data-reader-appearance] input[value="${reader}"]:checked)` : ""}`;
+  blocks.push(scopeBlock(selector, themedKeys, overridesOf(id), `  color-scheme: ${darkThemeIds.includes(id) ? "dark" : "light"};\n`));
+}
 const FONT_IDS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"];
 const fontFile = (id) => join(src, "modes", `content-font-${id}.json`);
 const fontKeys = new Set(FONT_IDS.filter((id) => id !== "mono").flatMap((id) => [...load(fontFile(id)).keys()]));
+// An inline semantic size on a subtree must also rebind its root-resolved component aliases.
+blocks.push(scopeBlock("[data-content-size]", new Set(["font.size"]), new Map()));
 for (const id of FONT_IDS) blocks.push(scopeBlock(`[data-font-scope="${id}"]`, fontKeys, id === "mono" ? new Map() : load(fontFile(id))));// Project accents (D-313): a modifier on the semantic accent roles, never per-component overrides. A role
 // takes the preset's strong shade in a light context and its soft one in a dark context (a dark theme, or a
 // project whose own Appearance is dark), and the component tokens reading those roles are re-declared on the

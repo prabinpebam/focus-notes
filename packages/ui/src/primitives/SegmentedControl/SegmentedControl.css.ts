@@ -86,3 +86,14 @@ export const segment = {
 export const actionSegment = style({ ...controlMetrics, borderStyle: "none", backgroundColor: "transparent", fontFamily: t.font, fontSize: t.fontSize });
 // An icon-only action segment: square, as wide as the track is tall inside its padding.
 export const iconSegment = style({ flex: "0 0 auto", aspectRatio: "1", paddingInline: 0 });
+export const nativeRoot = style([rootBase, { borderStyle: "none", margin: 0, padding: 0 }]);
+export const nativeSegment = style({
+  position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center",
+  borderRadius: t.segmentRadius, color: t.text, cursor: "default",
+  selectors: {
+    "&:has(input:checked)": { backgroundColor: t.selected, color: t.selectedText, boxShadow: t.shadow },
+    "&:has(input:focus-visible)": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
+    '&:has(input[aria-disabled="true"])': { cursor: "default" },
+  },
+});
+export const nativeInput = style({ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, margin: 0, cursor: "inherit" });

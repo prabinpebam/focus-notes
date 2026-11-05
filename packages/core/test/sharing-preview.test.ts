@@ -31,6 +31,25 @@ async function fixture() {
   return { app, bridge, vm, run, saved: () => saved };
 }
 
+it("applies reading choices to preview data without changing app settings or publishing", async () => {
+  const t = await fixture();
+  await t.run("sharing.preview");
+  const before = t.saved();
+  await t.run("sharing.preview.font", { value: "sans" });
+  await t.run("sharing.preview.size", { value: "20" });
+  await t.run("sharing.preview.readerTheme", { value: "dark" });
+  await t.run("sharing.previewArticle", { id: "/w/notes/a.md" });
+  expect(t.vm()).toMatchObject({ font: "sans", size: "20", contentSize: 20, scopeTheme: "ink" });
+  expect(t.vm().titleBlocks).toEqual([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "A" }] }]);
+  expect(t.vm().readerThemes).toEqual(expect.arrayContaining([
+    expect.objectContaining({ id: "light", icon: "lightTheme" }),
+    expect.objectContaining({ id: "dark", icon: "darkTheme" }),
+    expect.objectContaining({ id: "system", icon: "systemTheme" }),
+  ]));
+  expect(t.saved()).toEqual(before);
+  expect(t.app.store.state.note.markdown).toBe("# A\n");
+});
+
 it("counts actual preview reads, stops before acceptance, and keeps the previous preview and note", async () => {
   const t = await fixture();
   await t.run("sharing.preview");

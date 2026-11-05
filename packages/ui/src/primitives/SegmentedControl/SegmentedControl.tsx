@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { waits } from "@focus-notes/tokens";
 import { Button, Label, Radio, RadioGroup, Toolbar } from "react-aria-components";
 import type { Option } from "../../data.ts";
@@ -25,6 +25,8 @@ export interface SegmentedControlProps {
   onRevert?: () => void;
   /** A group of related actions in one track (Rotate left, Rotate right, Reset): buttons, not a choice. */
   actions?: boolean;
+  /** Native icon radios, named and titled without visible labels; also work on script-free pages. */
+  iconsOnly?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onAction?: (payload: { id: string }) => void;
@@ -36,7 +38,8 @@ export interface SegmentedControlProps {
  * of buttons (arrow keys move, Enter or Space acts), an option with an icon drawn icon-only with its
  * label as accessible name and tooltip; the group's label names the toolbar and isn't shown.
  */
-export function SegmentedControl({ label, options, value, orientation = "horizontal", readOnly, commit, error, retryLabel, revertLabel, onRetry, onRevert, actions = false, id, onChange, onAction }: SegmentedControlProps) {
+export function SegmentedControl({ label, options, value, orientation = "horizontal", readOnly, commit, error, retryLabel, revertLabel, onRetry, onRevert, actions = false, iconsOnly = false, id, onChange, onAction }: SegmentedControlProps) {
+  const group = useId();
   const [draft, setDraft] = useState(value);
   const keyboard = useRef(false);
   const queued = useRef<string | undefined>(undefined);
@@ -58,6 +61,31 @@ export function SegmentedControl({ label, options, value, orientation = "horizon
     else flush();
   };
   const chosen = commit ? draft : value;
+  if (iconsOnly && !actions) {
+    return (
+      <div className={s.wrapper} aria-busy={commit === "pending" || undefined} data-commit={commit}
+        onKeyDownCapture={(e) => { keyboard.current = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key); }}
+        onPointerDownCapture={() => { keyboard.current = false; }}
+        onBlurCapture={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) flush(); }}>
+        <fieldset id={id} className={s.nativeRoot} role="radiogroup" aria-label={label}>
+          <span className={s.track.horizontal}>
+            {options.map((o) => (
+              <label key={o.id} className={`${s.nativeSegment} ${s.iconSegment}`} title={o.label}>
+                <input className={s.nativeInput} type="radio" name={group} value={o.id} checked={o.id === chosen}
+                  aria-label={o.label} aria-disabled={readOnly || commit === "pending" || undefined}
+                  onClick={(e) => { if (readOnly || commit === "pending") e.preventDefault(); }}
+                  onKeyDown={(e) => { if ((readOnly || commit === "pending") && [" ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault(); }}
+                  onChange={() => { if (!readOnly && commit !== "pending") change(o.id); }} />
+                {o.icon ? <Icon name={o.icon as IconName} /> : <span className={controlLabel}>{o.label}</span>}
+                {commit && o.id === chosen ? <CommitMark variant="border" state={commit} /> : null}
+              </label>
+            ))}
+          </span>
+        </fieldset>
+        {commit === "failed" && error ? <CommitFailure message={error} {...(retryLabel ? { retryLabel } : {})} {...(revertLabel ? { revertLabel } : {})} {...(onRetry ? { onRetry } : {})} {...(onRevert ? { onRevert } : {})} /> : null}
+      </div>
+    );
+  }
   if (actions) {
     return (
       <Toolbar aria-label={label} orientation="horizontal" className={s.track.horizontal} {...(id ? { id } : {})}>

@@ -26,6 +26,7 @@ export function ProjectScope({ accent = "app", theme = "app", font = "app", part
       data-project-accent={accent === "app" ? undefined : accent}
       data-theme-scope={theme === "app" ? undefined : theme}
       data-font-scope={font === "app" ? undefined : font}
+      data-content-size={Object.keys(size).length ? "" : undefined}
       data-project-part={part}
       style={size}
     >
