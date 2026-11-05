@@ -21,7 +21,7 @@ test("UI-04, UI-05: the trigger opens the toolbar: six actions, then ⋯, one ta
   const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
   await expect(toolbar).toBeVisible();
   const names = await toolbar.getByRole("button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
-  expect(names).toEqual(["New note", "Open…", "Search", "Save", "Focus mode", "Switch light and dark", "More"]);
+  expect(names).toEqual(["New note", "Open…", "Actions", "Save", "Focus mode", "Switch light and dark", "More"]);
   await expect(page.getByRole("button", { name: "Focus Notes menu" })).toHaveAttribute("aria-expanded", "true");
   expect(await axeViolations(page)).toEqual([]);
 
@@ -73,14 +73,14 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   await page.keyboard.press("Escape");
   await expect(toolbar).toBeHidden();
 
-  // Search opens Spotlight (WP-4.2), with its field focused; Esc gives the caret back to the note.
+  // Actions opens the Actions dialog (WP-4.2, D-362), with its field focused; Esc gives the caret back to the note.
   await page.keyboard.press(`${mod}+.`);
-  await expect(toolbar.getByRole("button", { name: "Search" })).not.toHaveAttribute("aria-disabled", "true");
-  await toolbar.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox")).toBeFocused();
+  await expect(toolbar.getByRole("button", { name: "Actions" })).not.toHaveAttribute("aria-disabled", "true");
+  await toolbar.getByRole("button", { name: "Actions" }).click();
+  await expect(page.getByRole("dialog", { name: "Actions", exact: true }).getByRole("combobox")).toBeFocused();
   await expect(toolbar).toBeHidden();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "Spotlight" })).toBeHidden();
+  await expect(page.getByRole("dialog", { name: "Actions", exact: true })).toBeHidden();
   await expect(editor).toBeFocused();
   await quit(l);
 });

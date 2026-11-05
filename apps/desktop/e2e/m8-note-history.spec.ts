@@ -32,9 +32,9 @@ test("FIL-13: Note history lists the note's versions, shows one against the note
   await expect(editor).toContainText("An agent's paragraph.");
   // Spotlight → Note history.
   await page.keyboard.press(`${mod}+/`);
-  const spotlight = page.getByRole("dialog", { name: "Spotlight" });
-  await spotlight.getByRole("combobox").fill("Note history");
-  await expect(spotlight.getByRole("option", { name: /^Note history/, selected: true, disabled: false })).toBeVisible();
+  const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
+  await spotlight.getByRole("combobox").fill("Show note history");
+  await expect(spotlight.getByRole("option", { name: /^Show note history/, selected: true, disabled: false })).toBeVisible();
   await page.keyboard.press("Enter");
   const sheet = page.getByRole("complementary", { name: "Note history" });
   await expect(sheet).toBeVisible();
@@ -74,8 +74,8 @@ test("FIL-13: Note history lists the note's versions, shows one against the note
   await expect.poll(() => readFileSync(note, "utf8")).toBe("# Welcome\n\nFirst line, edited.\n\nAn agent's paragraph.\n");
   // Esc closes the sheet.
   await page.keyboard.press(`${mod}+/`);
-  await spotlight.getByRole("combobox").fill("Note history");
-  await expect(spotlight.getByRole("option", { name: /^Note history/, selected: true, disabled: false })).toBeVisible();
+  await spotlight.getByRole("combobox").fill("Show note history");
+  await expect(spotlight.getByRole("option", { name: /^Show note history/, selected: true, disabled: false })).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(sheet).toBeVisible();
   await page.keyboard.press("Escape");

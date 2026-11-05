@@ -119,7 +119,7 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
       }) as typeof dialog.showSaveDialog;
     }, [inside, file] as const);
     await page.keyboard.press(`${mod}+/`);
-    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    const spotlight = page.getByRole("dialog", { name: "Actions", exact: true });
     await spotlight.getByRole("combobox").fill("Save diagnostic report");
     await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Save diagnostic report");
     await page.keyboard.press("Enter");
