@@ -145,6 +145,10 @@ export interface PlatformBridge {
     pin(folder: string, path?: string): Promise<void>;
     /** Shows a folder Open lists in File Explorer or Finder. */
     reveal?(folder: string): Promise<void>;
+    /** A listed project's size line (D-346): counted in the main process, cached per folder. */
+    stats?(folder: string): Promise<ProjectStats>;
+    /** Opens a listed project's GitHub repository, rebuilt from its own Git remote; never a URL from the window (D-346). */
+    openRepo?(folder: string): Promise<void>;
     /** Open file…: the platform picker; a file in this window's project comes back to open here. */
     openFile?(): Promise<{ file: string; here: boolean } | undefined>;
     /** Open from GitHub…: the account's own repositories (never templates). */
@@ -206,7 +210,14 @@ export interface ProjectEntry {
   rank?: number;
   recent?: { path: string; rank: number; pinned: boolean }[];
   localNotes?: boolean;
+  /** owner/repo of the folder's GitHub remote, read from its own Git config (D-346). */
+  repo?: string;
+  /** The last count of the folder, when there is one: the card shows it at once while it's recounted. */
+  stats?: ProjectStats;
 }
+
+/** A project's size line (D-346): hidden files and folders left out. */
+export interface ProjectStats { bytes: number; files: number; media: number; folders: number }
 
 /** Settings → AI as the window sees it: its connections and the Writer, never a key. */
 export interface AiSettingsView { writer: string; connections: import("./ai-providers.ts").AiConnectionView[] }

@@ -36,7 +36,9 @@
     "scrollbar": { "$value": "{ref.color.paper.a30}" },
     "scrollbarHover": { "$value": "{ref.color.paper.a55}" },
     "findMatch": { "$value": "{ref.color.amber.a35}" },
-    "findMatchActive": { "$value": "{ref.color.amber.a70}" }
+    "findMatchActive": { "$value": "{ref.color.amber.a70}" },
+    "skeleton": { "$value": "{ref.color.shade.a08}", "$description": "A loading placeholder: black at an opacity in a light theme, white in a dark one, so it takes the hue of any surface it sits on (D-353)." },
+    "skeletonHighlight": { "$value": "{ref.color.glow.a55}", "$description": "The shimmer's light passing over a placeholder: white at an opacity, so it brightens the surface's own hue, never grey (D-353)." }
   },
   "trigger": {
     "dot": { "$type": "color", "$value": "{ref.color.red.500}" },

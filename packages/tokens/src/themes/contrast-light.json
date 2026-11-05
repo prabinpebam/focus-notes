@@ -1,6 +1,8 @@
 {
   "color": {
     "$type": "color",
+    "skeleton": { "$value": "{ref.color.shade.a16}" },
+    "skeletonHighlight": { "$value": "{ref.color.glow.a55}" },
     "canvas": {
       "$value": "{ref.color.hcLight.0}"
     },

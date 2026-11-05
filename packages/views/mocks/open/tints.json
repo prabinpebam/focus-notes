@@ -1,0 +1,20 @@
+{
+  "themes": {
+    "app": "This window's theme",
+    "paper": "Paper (light)",
+    "ink": "Ink (dark)",
+    "sepia": "Sepia (light)",
+    "contrastLight": "High contrast light",
+    "contrastDark": "High contrast dark"
+  },
+  "empty": "No projects to show.",
+  "entries": [
+    { "id": "t1", "name": "Club newsletter", "folder": "D:\\Shared\\Community\\Running club\\newsletter-2026", "accent": "pink", "logo": "chat" },
+    { "id": "t2", "name": "Field notes", "folder": "E:\\Projects\\side-projects\\field-notes", "accent": "teal", "logo": "book" },
+    { "id": "t3", "name": "Recipes", "folder": "C:\\Users\\Prabin\\Documents\\Recipes", "accent": "amber", "logo": "food" },
+    { "id": "t4", "name": "Garden notes", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden notes", "accent": "green", "logo": "leaf" },
+    { "id": "t5", "name": "Poems", "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Poems", "accent": "violet", "logo": "pen" },
+    { "id": "t6", "name": "Startup plan", "folder": "C:\\Users\\Prabin\\OneDrive - Personal\\Ventures\\startup-plan", "accent": "red", "logo": "rocket" }
+  ]
+}
+

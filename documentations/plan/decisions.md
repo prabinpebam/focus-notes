@@ -20,6 +20,22 @@ The gate that protects `main` is unchanged: desktop runtime changes still land o
 
 The owner wrote: "I'd already approve the UI and UX for the image insertion. Launch that demo again." This re-confirms the 3 November approval of mock 9 (`vq-project-mocks` at `4afe907f`): its Insert tab shows the drop marker, a dropped image and the refusals (a 30 MB TIFF, a batch with damaged files). D-349's images slice 1 is therefore built against that mock, with no new strict-design step. Wiring waits for the owner's separate execution go-ahead. The orchestrator assigns the number.
 
+## D-353: loading placeholders are translucent, so they take any surface's hue
+
+**Decided (the owner, 5 November 2026: "loading Shimmer needs to work on different bg hues, so shimmer can't be grey. It has to get the subtleness with opacity of black and white, else the lack of hue in the shimmer area stands out. I noticed this issue in Open dialog modal in the Project card. This should be a general fix and it should get this fixed automatically.").** Every skeleton's fill and passing light are now black or white at an opacity, set once at the token level, so a placeholder on a project-tinted card, a sunken panel or any theme's surface takes that surface's hue:
+
+- **Tokens.** Two semantic colours, `color.skeleton` and `color.skeletonHighlight`, over new reference families `ref.color.shade` (black at an opacity) and `ref.color.glow` (white at an opacity). Light themes use black at 8% with white at 55% for the light; dark themes use white at 8% for both. High contrast light uses black at 16%, and high contrast dark uses white at 20% with a 14% light. `cmp.skeleton.fill` and `cmp.skeleton.highlight` read them instead of the opaque `surfaceSunken` and `surfaceRaised`.
+- **Automatic.** No view or component overrides anything: every `Skeleton` use gets it, project scopes re-declare the theme's values with their tint (`[data-theme-scope]`), and custom themes inherit their base theme's values. Reduced motion (still) and forced colours (a GrayText shape) are unchanged (D-208).
+- **Kept true.** `tools/test/shimmer.test.mjs` fails if any theme's skeleton colours stop being translucent black or white. The gallery's **Mocks: Open → Loading shimmer on project tints** shows the placeholder on six project tints in this window's theme, Paper, Ink, Sepia and both high contrast themes.
+
+Affects [components → Skeleton](../design/system/components.md), [perceived performance](../architecture/perceived-performance.md), D-208.
+
+## D-352: the Open dialog's project cards are approved and wired
+
+**Decided (the owner, 5 November 2026: "The open dialog is approved, implement it.").** The approved design is `vq-open-project-card` at `9965a7f4` (mocks `mock.open.view` and `mock.open.cardStates`). It's merged into the real Open view with no change to Open's behaviour (D-318): each project card shows its size line and its GitHub line from real data, as D-346 describes. The repository is read from the folder's own Git config; the counts come from an asynchronous walk in the main process, kept for the session, shown at once on the next Open and recounted each time. A count that fails leaves the line out. Pressing the GitHub line opens the repository through the safe link path, and if it can't, Open's status row says so with **Retry** (`project.open.repoFailed`).
+
+Affects [Projects](../experience/projects.md#a-project-cards-github-link-and-size), PRJ-20 to PRJ-22, WP-P.21.
+
 ## D-351: publishing a note shows its deploy as one honest wait
 
 **Proposed (worker, readiness review of 5 November 2026; ordinary behaviour, reversible).** When a note is published or unpublished, the app reports the GitHub Pages deploy the same way a share's readiness is already reported (R-53, D-344):

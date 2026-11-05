@@ -1,7 +1,23 @@
 import type { App, AppState } from "./app.ts";
-import { opErrorCode, type OpErrorCode, type PlatformBridge, type ProjectEntry } from "./bridge.ts";
+import { opErrorCode, type OpErrorCode, type PlatformBridge, type ProjectEntry, type ProjectStats } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import { busyProps, type TaskTracker } from "./tasks.ts";
+
+/** A count quicker than this shows no placeholder: the line just appears (perceived performance, D-346). */
+export const STATS_PLACEHOLDER_MS = 300;
+/** A placeholder, once shown, stays at least this long, so it never flickers. */
+export const STATS_PLACEHOLDER_HOLD_MS = 500;
+
+/** A folder's size in decimal units: one decimal below 10 ("2.4 MB"), whole numbers above ("37 KB"). */
+export function formatSize(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = Math.max(0, bytes);
+  let unit = 0;
+  while (value >= 1000 && unit < units.length - 1) { value /= 1000; unit++; }
+  let shown = unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  if (shown >= 1000 && unit < units.length - 1) { shown = 1; unit++; }
+  return `${shown} ${units[unit]}`;
+}
 
 export function registerProjectOpen(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"];
@@ -32,6 +48,43 @@ export function registerProjectOpen(ctx: {
     console.error("Project action failed", command, code);
   };
   const close = () => { listing++; action++; clearFailure(); clearPinFailures(); state.open = false; state.loading = false; state.pending = false; github.open = false; changed(); };
+  // Each card's size line (D-346): the last count shows at once while the folder is recounted; a count that
+  // takes longer than STATS_PLACEHOLDER_MS with nothing to show holds the line's place with a placeholder.
+  // A failed count leaves no line and no error: the card still opens.
+  const counts = new Map<string, { value?: ProjectStats; counting: boolean; slow: boolean; shownAt: number }>();
+  const count = (entries: ProjectEntry[]) => {
+    const stats = bridge.projects?.stats;
+    if (!stats) return;
+    for (const entry of entries) {
+      if (entry.localNotes) continue;
+      const c = counts.get(entry.folder) ?? { counting: false, slow: false, shownAt: 0 };
+      counts.set(entry.folder, c);
+      if (entry.stats && !c.value) c.value = entry.stats;
+      if (c.counting) continue;
+      c.counting = true; c.slow = false;
+      const timer = setTimeout(() => { if (c.counting) { c.slow = true; c.shownAt = performance.now(); changed(); } }, STATS_PLACEHOLDER_MS);
+      const started = performance.now();
+      let counted: ProjectStats | undefined;
+      void stats(entry.folder).then(
+        (value) => { counted = value; },
+        (error: unknown) => { console.error("Project count failed", opErrorCode(error)); },
+      ).finally(() => {
+        clearTimeout(timer);
+        performance.measure("fn:project.stats", { start: started, end: performance.now() });
+        const settle = () => { if (counted) c.value = counted; c.counting = false; c.slow = false; changed(); };
+        const held = c.slow && !c.value ? STATS_PLACEHOLDER_HOLD_MS - (performance.now() - c.shownAt) : 0;
+        if (held > 0) setTimeout(settle, held); else settle();
+      });
+    }
+  };
+  const statsOf = (e: ProjectEntry) => {
+    const c = counts.get(e.folder);
+    const value = c?.value ?? e.stats;
+    return {
+      stats: value ? ctx.catalog.format("project.open.stats", { size: formatSize(value.bytes), files: value.files, media: value.media, folders: value.folders }) : "",
+      statsBusy: Boolean(c?.counting && c.slow && !value),
+    };
+  };
   async function refresh(full = false) {
     // The last list stays on screen while the new one loads (no blank frame); a first load shows placeholders.
     const request = ++listing;
@@ -39,7 +92,7 @@ export function registerProjectOpen(ctx: {
     try {
       const entries = await ctx.tracker.section("project.list", "project.open.listing", () => bridge.projects!.list(), "fn:project.list");
       if (request !== listing || operation !== action || !state.open) return;
-      state.entries = entries; clearFailure(); clearPinFailures();
+      state.entries = entries; clearFailure(); clearPinFailures(); count(entries);
     }
     catch (error) { if (request === listing && operation === action && state.open) fail("project.open.listFailed", "projects.refresh", error); }
     finally { if (request === listing) { state.loading = false; changed(); } }
@@ -199,6 +252,15 @@ export function registerProjectOpen(ctx: {
       changed();
     },
   });
+  commands.register<{id: string}>({
+    id: "projects.openRepo", title: "project.open.repoCommand", enabled: () => Boolean(bridge.projects?.openRepo),
+    run: async ({id}) => {
+      const request = begin();
+      try { await bridge.projects!.openRepo!(id); if (request === action) clearFailure(); }
+      catch (error) { if (request === action) fail("project.open.repoFailed", "projects.openRepo", error, { id }); }
+      changed();
+    },
+  });
   commands.register({
     id: "projects.openFile", title: "project.openFile", enabled: () => Boolean(bridge.projects?.openFile),
     run: async () => {
@@ -270,7 +332,7 @@ export function registerProjectOpen(ctx: {
       githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
       repos: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
       recent: { type: "array", items: item },
-      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, pinned: { type: "boolean" }, pinCommit, menu } } },
+      entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, repo: text, stats: text, statsBusy: { type: "boolean" }, pinned: { type: "boolean" }, pinCommit, menu } } },
     } },
     select: (_s: AppState) => {
       const query = state.query.toLowerCase();
@@ -284,7 +346,7 @@ export function registerProjectOpen(ctx: {
         return {...n, id, label, description: `${e.name}${e.localNotes ? " · " + ctx.catalog.format("project.localOnly") : ""} · ${parts.join(" / ") || ctx.catalog.format("project.root")}`, icon: "newNote", pinCommit: commitOf(id), menu: pinMenu(id, n.pinned)};
       })).filter(n => `${n.label} ${n.description}`.toLowerCase().includes(query))
         .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.rank - a.rank).slice(0, 50);
-      return { ...state, recoveryAction: recovery ? ctx.catalog.format("commit.retry") : "", pendingLabel: busyProps(_s.tasks, "project.open", (key, args) => ctx.catalog.format(key, args)).busyLabel ?? ctx.catalog.format("project.open.preparing"), dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, pinCommit: commitOf(e.folder), menu: pinMenu(e.folder, Boolean(e.pinned)) })),
+      return { ...state, recoveryAction: recovery ? ctx.catalog.format("commit.retry") : "", pendingLabel: busyProps(_s.tasks, "project.open", (key, args) => ctx.catalog.format(key, args)).busyLabel ?? ctx.catalog.format("project.open.preparing"), dialog: state.open && !state.full, entries: entries.map((e) => ({ ...e, id: e.folder, repo: e.repo ?? "", ...statsOf(e), pinCommit: commitOf(e.folder), menu: pinMenu(e.folder, Boolean(e.pinned)) })),
         recent,
         recentWaiting: state.loading && _s.tasks.findLast(t => t.target === "project.list")?.phase === "on" && recent.length === 0,
         entriesWaiting: state.loading && _s.tasks.findLast(t => t.target === "project.list")?.phase === "on" && entries.length === 0,

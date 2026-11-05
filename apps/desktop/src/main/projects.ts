@@ -5,12 +5,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { access, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateStep } from "@focus-notes/core";
+import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateStep, ProjectStats } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi } from "@focus-notes/github";
 import { parseRecord } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
+import { countProject, githubRepo } from "./project-card.ts";
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
@@ -181,7 +182,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       const identity = saved.projectSettings?.[folder];
       const history = await recent(profile);
       const lastPath = profile === app.getPath("userData") ? await lastNote() : undefined;
-      return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes };
+      const github = saved.localNotes ? undefined : await githubRepo(folder);
+      const last = counted.get(folder);
+      return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes, ...(github ? { repo: github } : {}), ...(last ? { stats: last } : {}) };
     }));
   }
   async function pin(folder: string, path?: string) {
@@ -203,6 +206,25 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const canonical = await realpath(folder);
     if (!known.has(canonical)) throw new Error("Unknown project");
     return canonical;
+  }
+  // A card's size line (D-346): each count is kept for this process, so a reopened Open shows it at once
+  // while the folder is counted again; one count per folder runs at a time.
+  const counted = new Map<string, ProjectStats>();
+  const counting = new Map<string, Promise<ProjectStats>>();
+  async function stats(folder: string): Promise<ProjectStats> {
+    const canonical = await knownFolder(folder);
+    const running = counting.get(canonical);
+    if (running) return running;
+    const count = countProject(canonical).then((value) => { counted.set(canonical, value); return value; })
+      .finally(() => counting.delete(canonical));
+    counting.set(canonical, count);
+    return count;
+  }
+  /** The listed folder's GitHub repository, from its own Git config; never a URL from the window. */
+  async function repo(folder: string): Promise<string> {
+    const found = await githubRepo(await knownFolder(folder));
+    if (!found) throw new Error("No GitHub remote");
+    return found;
   }
   async function open(folder: string, note?: string): Promise<void> {
     await list();
@@ -376,5 +398,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { list, known: knownFolder, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
+  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed };
 }

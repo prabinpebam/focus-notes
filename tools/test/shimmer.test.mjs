@@ -48,3 +48,31 @@ describe("the shimmer (D-208)", () => {
     expect(read("packages", "ui", "src", "primitives", "Skeleton", "Skeleton.tsx")).toMatch(/aria-hidden="true"/);
   });
 });
+
+describe("the shimmer on any hue (D-353)", () => {
+  const base = json(tokens, "semantic", "color.json").color;
+  const ref = json(tokens, "reference", "base.json").ref.color;
+  const resolve = (alias) => {
+    const [, family, step] = /^\{ref\.color\.(\w+)\.(\w+)\}$/.exec(alias) ?? [];
+    return ref[family]?.[step]?.$value;
+  };
+  const themes = ["paper", "sepia", "ink", "dusk", "forest-light", "forest-dark", "harbor-light", "harbor-dark", "contrast-light", "contrast-dark"];
+
+  it("reads its fill and light from the translucent skeleton colours", () => {
+    const skeleton = json(tokens, "component", "skeleton.json").cmp.skeleton;
+    expect(skeleton.fill.$value).toBe("{color.skeleton}");
+    expect(skeleton.highlight.$value).toBe("{color.skeletonHighlight}");
+  });
+
+  it("is black or white at an opacity in every theme, never an opaque grey, so a tinted surface keeps its hue", () => {
+    for (const theme of themes) {
+      const own = json(tokens, "themes", `${theme}.json`).color ?? {};
+      for (const key of ["skeleton", "skeletonHighlight"]) {
+        const value = resolve((own[key] ?? base[key]).$value);
+        expect(value, `${theme} ${key}`).toMatch(/^#(000000|ffffff)[0-9a-f]{2}$/i);
+        const alpha = parseInt(value.slice(7), 16);
+        expect(alpha > 0 && alpha < 255, `${theme} ${key} alpha`).toBe(true);
+      }
+    }
+  });
+});
