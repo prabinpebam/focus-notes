@@ -35,6 +35,8 @@ describe("PRV-02: the desktop's data folder", () => {
     // QLT-06: unsaved text in the drafts is the person's writing, so it goes with the workspace (the folder once it's empty), and an old journal left over with it.
     expect(filesRemovedBy("signOut").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json"]);
     expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
+    // Deleting the project (PRJ-23) forgets the same, and its recent notes too; the folder record stays for the other windows' lists, which skip a missing folder.
+    expect(filesRemovedBy("deleteProject").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
     // Quitting deletes nothing: drafts are kept by the draft store itself, which deletes each once its note is saved.
     expect(filesRemovedBy("quit")).toEqual([]);
     expect(filesRemovedBy("runSetupAgain")).toEqual(["setup.json"]);

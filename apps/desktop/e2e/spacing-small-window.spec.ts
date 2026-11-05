@@ -28,7 +28,7 @@ for (const theme of ["light", "dark"] as const) {
           await content.evaluate(el => { (el as HTMLElement).style.paddingInlineStart = "16px"; });
           expect(await visualProblems(l.page)).toEqual(expect.arrayContaining([expect.stringMatching(/uniform padding:.*left 16/)]));
           await content.evaluate(el => { (el as HTMLElement).style.removeProperty("padding-inline-start"); });
-          for (const tab of ["Workspace", "Appearance"]) {
+          for (const tab of ["Project", "Appearance"]) {
             await l.page.getByRole("tab", { name: tab, exact: true }).click();
             await settled(l.page);
             problems.push(...(await visualProblems(l.page)).map(problem => `settings ${tab}: ${problem}`));

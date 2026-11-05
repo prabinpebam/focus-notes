@@ -11,7 +11,7 @@ import { createShareReader, SHARE_COMMANDS, SHARE_VIEW_MODEL, type OpenedShare, 
 import { parseShareFragment, SiteReader, type OpenShare, type SiteFetch } from "@focus-notes/seal";
 import { shareContracts, shareRegistry } from "@focus-notes/ui/share";
 import { mountPage, type RuntimeApp } from "@focus-notes/ui-runtime/page";
-import { messages, pages } from "@focus-notes/views";
+import { messages, pages } from "@focus-notes/views/pages";
 import { createSessionStore } from "./session.ts";
 
 // Never inside another page's frame, where it could be overlaid or clickjacked (a meta CSP can't say

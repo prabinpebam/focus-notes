@@ -254,6 +254,13 @@
       "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
     },
     {
+      "id": "WP-P.23", "stage": "MP", "title": "Delete a project with GitHub handoff",
+      "summary": "Approved by the owner on 5 November 2026 and built with fakes only. PRJ-23: consequences, a copy of the notes not on GitHub, typed confirmation, the GitHub settings Danger Zone handoff, status checks that never treat a 404 as proof, the person's explicit I deleted it, recoverable recycling to the Recycle Bin with private notes kept beside it, a precise locked-file failure, then Open with one success pill. No real repository is deleted by an agent.",
+      "requirements": ["PRJ-23"], "dependsOn": ["WP-P.17", "WP-P.20"],
+      "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
+      "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
+    },
+    {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
       "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Built after POP release over 86631980: native ItemCard radio area, shared Writer bridge/tracker and explicit save failure/default deletion. UX-LIST evidence checked; integration and owner acceptance pending. D-264/D-265/D-266 preserved.",
       "requirements": ["AIS-16"],

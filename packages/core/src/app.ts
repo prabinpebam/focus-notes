@@ -36,6 +36,7 @@ import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./setting
 import { registerProject } from "./project-app.ts";
 import { registerProjectIntro } from "./project-intro-app.ts";
 import { registerProjectOpen } from "./project-open-app.ts";
+import { registerProjectDelete } from "./project-delete-app.ts";
 import { registerProjectNew } from "./project-new-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerAi } from "./ai-app.ts";
@@ -478,6 +479,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
   const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load: (path, keepCurrent = false) => openNote(path, { keepOnFailure: keepCurrent }), flush, toast, tracker });
   registerProjectNew({ store, commands, viewModels, catalog, bridge, tracker });
+  registerProjectDelete({
+    store, commands, viewModels, catalog, bridge, tracker, flush, toast,
+    projectName: () => appState.projectSettings?.[store.state.workspace.folder ?? ""]?.name,
+    // The project is gone (DD-PROJ-15): no note is left to show, so the window opens Open, full size.
+    deleted: async () => {
+      store.update((s) => ({ ...s, note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" }, ui: { ...s.ui, settings: { ...s.ui.settings, open: false } } }));
+      await persistAppState({ lastNotePath: undefined }).catch(() => {});
+      await commands.run("projects.open");
+    },
+  });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels, tracker });
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });

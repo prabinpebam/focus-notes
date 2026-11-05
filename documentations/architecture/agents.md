@@ -146,7 +146,7 @@ The switches in Settings → Agents and the list of Recent agent changes are WP-
 | `focus-notes sync` / `status` | Syncs now / shows sync state |
 | `focus-notes mcp` | Starts the MCP server on stdio |
 
-Every command accepts `--json` (stable, schema-documented output) and `--workspace <path>`, and uses documented exit codes: 0 success, 1 error, 2 conflict, 3 not permitted. The command-line tool follows the same permissions as agents, except that the person at the terminal can always read and edit their own notes.
+Every command accepts `--json` (stable, schema-documented output) and `--project <path>`, and uses documented exit codes: 0 success, 1 error, 2 conflict, 3 not permitted. The old `--workspace` spelling remains a compatibility alias; both map to the same internal key, and supplying both is a repeated-option error. The command-line tool follows the same permissions as agents, except that the person at the terminal can always read and edit their own notes.
 
 **As built (WP-7.3, D-165).** The commands are `packages/cli`; the desktop app's own executable runs them with `--cli` (released builds can't run Electron as Node), through the `focus-notes` launcher in its resources ([Distribution](../plan/distribution.md)). A command acts as the person at the terminal: it claims the terminal principal once, so both roots are open whatever the switches say, with the same path, disk, and sharing checks as agents. `focus-notes mcp` never claims it and keeps the agent switches. The terminal has no rate limit, and its output isn't wrapped as untrusted.
 
@@ -166,7 +166,7 @@ Every command accepts `--json` (stable, schema-documented output) and `--workspa
 - **Writes** are one commit each, `Agent edit: <path>` with `Focus-Notes-Agent: command line`. While the desktop app holds the workspace, they're refused (`appRunning`) and nothing is written. `edit` and `append` read the note's version first, and a change in between is refused (`changed`).
 - **Output:** with `--json`, standard output is exactly one JSON object, `{"ok": true, …}` or `{"ok": false, "error": <code>, "message": …}`. Without it, results go to standard output and problems to standard error as one line.
 - **Exit codes:** 0 done; 1 error (`appRunning`, `notFound`, `noRepository`, `failed`, a usage mistake); 2 conflict (`changed`, `exists`); 3 not permitted (`outsideNotes`, `invalidPath`, `link`, `sharing`, `never`, and the other refusals).
-- **The workspace** is `--workspace <folder>`, else the one the app last opened (from its data folder, or `--data <folder>`).
+- **The project** is `--project <folder>`, else the one the app last opened (from its data folder, or `--data <folder>`). The compatibility spelling `--workspace` remains accepted but is not shown in help.
 
 ## Deep links
 

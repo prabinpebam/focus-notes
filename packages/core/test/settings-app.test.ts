@@ -16,7 +16,7 @@ const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
 const GRACE = { login: "grace", id: 99, name: "Grace Hopper" };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number } = {}) {
+function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number; standalone?: boolean } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   let account: AccountStatus = opts.account ?? { account: ADA, gcm: true, gh: false, via: "gcm" };
@@ -59,6 +59,7 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
     saveAppState: async (s) => void saved.push(s),
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
+    ...(opts.standalone ? { projects: { local: true } as PlatformBridge["projects"] } : {}),
     ...(opts.desktop === false ? {} : {
       firstRun: fr,
       ...(opts.drafts === undefined ? {} : {
@@ -81,7 +82,7 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
         onReport: () => () => {},
       },
       workspace: {
-        info: async () => ({ folder: "/home/ada/Documents/Focus Notes" }),
+        info: async () => ({ folder: "/home/ada/Documents/Focus Notes", repo: "ada/notes" }),
         scan: async () => ({ folder: "/home/ada/Documents/Focus Notes", roots: [{ id: "local", path: "/n", readOnly: false }], entries: [] }),
         writeFormat: async () => {},
         renameNote: async () => {},
@@ -113,11 +114,37 @@ describe("IA-VIEW-SETTINGS: opening Settings", () => {
     await t.run("settings.open");
     await settle();
     expect(t.vm()).toMatchObject({ open: true, section: "account", title: "Settings" });
-    expect(t.vm().sections.map((s: { id: string }) => s.id)).toEqual(["account", "project", "workspace", "ai", "appearance"]);
+    // One concept, Project: where it's kept is part of Project, with no category of its own (owner, 5 November).
+    expect(t.vm().sections.map((s: { id: string }) => s.id)).toEqual(["account", "project", "ai", "appearance"]);
     await t.run("settings.setSection", { value: "workspace" });
-    expect(t.vm().section).toBe("workspace");
+    expect(t.vm().section).toBe("account");
+    await t.run("settings.setSection", { value: "project" });
+    expect(t.vm().section).toBe("project");
     await t.run("settings.setOpen", { open: false });
     expect(t.vm().open).toBe(false);
+  });
+  it("a standalone file's window has This file instead of Project, Sharing and Agents, and names the file", async () => {
+    const t = shell({ standalone: true });
+    await t.app.start();
+    await settle();
+    expect(t.vm().sections.map((s: { id: string }) => s.id)).not.toContain("project");
+    expect(t.vm().sections.find((s: { id: string }) => s.id === "file")).toMatchObject({ label: "This file" });
+    expect(t.vm().sections.map((s: { id: string }) => s.id)).not.toContain("sharing");
+    await t.run("settings.setSection", { value: "project" });
+    expect(t.vm().section).not.toBe("project");
+    await t.run("settings.setSection", { value: "file" });
+    expect(t.vm()).toMatchObject({ section: "file", file: { path: "/n/a.md" } });
+    expect(shell().vm().sections.map((s: { id: string }) => s.id)).not.toContain("file");
+  });
+  it("Project says where it's kept: saved to GitHub, or on this computer only with Link to GitHub and no Remove", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    expect(t.vm().workspace).toMatchObject({ linked: true, offline: false, repo: "ada/notes", canRemove: true, canLink: false, removeBlocked: false });
+    t.app.store.update((s) => ({ ...s, workspace: { ...s.workspace, repo: undefined } }));
+    expect(t.vm().workspace).toMatchObject({ linked: false, offline: true, canRemove: false, canLink: false, removeBlocked: true, offlineDetail: "History kept with Git. Not on GitHub." });
+    t.app.store.update((s) => ({ ...s, sync: { ...s.sync, git: false } }));
+    expect(t.vm().workspace).toMatchObject({ offline: true, offlineDetail: "Not on GitHub, and no history kept yet." });
   });
   it("is unavailable, and says why, in a shell without an account (the browser)", async () => {
     const t = shell({ desktop: false, state: { version: 1 } });
@@ -230,7 +257,7 @@ describe("FRE-07: Settings → Account", () => {
     await t.app.start();
     await settle();
     await t.run("settings.open");
-    await t.run("settings.setSection", { value: "workspace" });
+    await t.run("settings.setSection", { value: "project" });
     await t.run("setup.runAgain");
     await settle();
     expect(t.calls).toContain("setupReset");
@@ -245,7 +272,7 @@ describe("FRE-07: Settings → Account", () => {
   });
 });
 
-describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from this computer", () => {
+describe("PRV-02, FRE-07: Settings → Project → Remove from this computer", () => {
   it("signing out and removing the workspace say how many unsaved drafts go too, and say nothing when there are none (QLT-06, D-221)", async () => {
     const t = shell({ drafts: 2 });
     await t.app.start();
@@ -288,8 +315,8 @@ describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from 
     await t.app.start();
     await settle();
     await t.run("settings.open");
-    await t.run("settings.setSection", { value: "workspace" });
-    expect(t.vm().workspace).toMatchObject({ folder: "/home/ada/Documents/Focus Notes", canRemove: true });
+    await t.run("settings.setSection", { value: "project" });
+    expect(t.vm().workspace).toMatchObject({ folder: "/home/ada/Documents/Focus Notes", linked: true, offline: false, repo: "ada/notes", canRemove: true, canLink: false, removeBlocked: false });
     await t.run("workspace.remove");
     expect(t.vm("vm.removeWorkspace")).toMatchObject({ open: true, state: "unpushed", canRemove: false, canSync: true });
     expect(t.vm("vm.removeWorkspace").message).toBe("2 changes aren't on GitHub yet. Sync first, so nothing is lost.");
@@ -323,12 +350,12 @@ describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from 
     await local.app.start();
     await local.run("workspace.remove");
     expect(local.vm("vm.removeWorkspace")).toMatchObject({ state: "notGit", canRemove: false, canSync: false });
-    expect(local.vm("vm.removeWorkspace").message).toBe("This workspace isn't saved to GitHub, so removing it would delete your only copy of its notes. Focus Notes won't remove it.");
+    expect(local.vm("vm.removeWorkspace").message).toBe("This project isn't saved to GitHub, so removing it would delete your only copy of its notes. Focus Notes won't remove it.");
 
     const other = shell({ removal: [{ state: "notWorkspace", waiting: 0, folder: "/w", repositories: [] }] });
     await other.app.start();
     await other.run("workspace.remove");
     expect(other.vm("vm.removeWorkspace")).toMatchObject({ state: "notWorkspace", canRemove: false, canSync: false });
-    expect(other.vm("vm.removeWorkspace").message).toBe("This folder isn't a Focus Notes workspace, so Focus Notes won't remove it.");
+    expect(other.vm("vm.removeWorkspace").message).toBe("This folder isn't a Focus Notes project, so Focus Notes won't remove it.");
   });
 });

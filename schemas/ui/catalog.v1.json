@@ -745,7 +745,9 @@
         "busy with icon and words",
         "toggle off",
         "toggle on",
-        "disabled with reason"
+        "disabled with reason",
+        "danger with icon",
+        "danger disabled with reason"
       ]
     },
     {
@@ -6609,6 +6611,7 @@
       "stackItem",
       "stackGroup",
       "stackSection",
+      "stackRegion",
       "inlinePair",
       "inlineItem",
       "inlineGroup",
@@ -7015,7 +7018,8 @@
         "vm.project",
         "vm.sharingSettings",
         "vm.sharingPeople",
-        "vm.sharingPreview"
+        "vm.sharingPreview",
+        "vm.projectDelete"
       ]
     },
     {

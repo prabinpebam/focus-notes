@@ -14,6 +14,7 @@ import { localImportCopies } from "./local-import.ts";
 import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts";
 import { countProject, githubRepo } from "./project-card.ts";
 import { spawnOffThread } from "./spelling/off-thread.ts";
+import type { GitRunner } from "./git/run.ts";
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
@@ -72,7 +73,7 @@ export function candidateGitHubApi(origin: string): GitHubApi {
   });
 }
 
-export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string) {
+export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner, spawned?: () => void) {
   const userData = app.getPath("userData");
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? userData);
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
@@ -296,11 +297,14 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       throw error;
     }
   }
+  /** This window's own folder, canonical; undefined once it was deleted (PRJ-23). */
+  const here = async () => (existsSync(home()) ? realpath(home()) : undefined);
   async function list(): Promise<ProjectEntry[]> {
     known.clear();
-    known.set(await realpath(home()), userData);
+    const own = await here();
+    if (own) known.set(own, userData);
     await mkdir(profiles, { recursive: true });
-    if (userData === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder))) await writeFile(join(rootProfile, DATA_FILES.projectFolder), await realpath(home()), { flag: "wx" });
+    if (userData === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder)) && own) await writeFile(join(rootProfile, DATA_FILES.projectFolder), own, { flag: "wx" });
     const rootRecord = parseRecord(await readFile(join(rootProfile, DATA_FILES.workspace), "utf8").catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return "";
       throw error;
@@ -390,15 +394,16 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (!isAbsolute(path) || within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("That note isn't in this project");
       target = path;
     }
-    if (canonical === await realpath(home()) && !target) return;
+    if (canonical === await here() && !target) return;
     // One process and single-instance lock per project keep all existing workspace services scoped.
-    if (profile === userData && canonical !== await realpath(home())) throw new Error("That project profile is already in use");
+    if (profile === userData && canonical !== await here()) throw new Error("That project profile is already in use");
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(target ? ["--project-note", target] : [])];
     const child = spawn(process.execPath, args, {
       env: { ...process.env, FOCUS_NOTES_USER_DATA: profile, FOCUS_NOTES_DOCS: canonical, FOCUS_NOTES_PROJECTS_PROFILE: rootProfile, FOCUS_NOTES_LOCAL_NOTES: localNotes ? "1" : "", FOCUS_NOTES_PROJECT_NOTE: target ?? "" },
       stdio: "ignore",
     });
     await new Promise<void>((accept, reject) => { child.once("spawn", accept); child.once("error", reject); });
+    spawned?.();
   }
   async function choose(): Promise<string | undefined> {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"], defaultPath: dirname(home()) });
@@ -483,7 +488,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   async function create(input: { parent: string; name: string; accent: string; logo: string }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
     if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
-    const steps: ProjectCreateStep[] = ["check", "folder", ...(candidateApi ? ["repository" as const] : []), "profile"];
+    const steps: ProjectCreateStep[] = ["check", "folder", ...(git ? ["history" as const] : []), ...(candidateApi ? ["repository" as const] : []), "profile"];
     const step = async <T>(id: ProjectCreateStep, work: () => Promise<T>): Promise<T> => {
       operation?.signal.throwIfAborted();
       operation?.progress({ steps, step: id, done: false });
@@ -501,6 +506,17 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await mkdir(result.folder);
       await mkdir(join(result.folder, "notes"));
     });
+    if (git) {
+      // Every project keeps its history with Git, offline or on GitHub (project model, the owner 5 November).
+      await step("history", async () => {
+        for (const args of [["init", "--quiet"], ["symbolic-ref", "HEAD", "refs/heads/main"]]) {
+          const r = await git({ cwd: result.folder, args });
+          if (r.code !== 0) throw new Error(`Couldn't start the project's history: git ${args[0]} failed.`);
+        }
+        // The first commit needs the person's Git identity; without one, the history starts at their first save.
+        await git({ cwd: result.folder, args: ["commit", "--allow-empty", "--quiet", "-m", "Start the project"] });
+      });
+    }
     if (candidateApi) {
       await step("repository", async () => {
         const api = candidateGitHubApi(candidateApi);
@@ -541,7 +557,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const owner = [...known.keys()].filter((f) => { const r = relative(f, file); return r && !r.startsWith("..") && !isAbsolute(r); }).sort((a, b) => b.length - a.length)[0];
     const folder = owner ?? dirname(file);
     // A file in this window's own project opens here (the window asks for it).
-    if (owner && owner === await realpath(home())) return { file, here: true };
+    if (owner && owner === await here()) return { file, here: true };
     if (!owner) await adopt(folder, undefined, true);
     await open(folder, file);
     return { file, here: false };

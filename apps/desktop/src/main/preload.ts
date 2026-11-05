@@ -215,6 +215,12 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Remove this workspace from this computer (FRE-07): the main process checks everything is on GitHub, twice.
     removal: () => ipcRenderer.invoke("workspace:removal"),
     remove: () => ipcRenderer.invoke("workspace:remove"),
+    // Delete project (PRJ-23): GitHub's side happens on GitHub's page; the main process checks again before the Recycle Bin.
+    deletion: () => ipcRenderer.invoke("workspace:deletion"),
+    repoStatus: (repo: string) => ipcRenderer.invoke("workspace:repoStatus", repo),
+    openRepoSettings: (repo: string) => ipcRenderer.invoke("workspace:openRepoSettings", repo),
+    exportUnsynced: () => ipcRenderer.invoke("workspace:exportUnsynced"),
+    deleteLocal: (opts: { keepPrivate: boolean }) => ipcRenderer.invoke("workspace:deleteLocal", opts),
     onChange: (listener: (changes: unknown[]) => void) => {
       const handler = (_e: unknown, changes: unknown[]) => listener(changes);
       ipcRenderer.on("workspace:changed", handler);

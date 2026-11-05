@@ -99,7 +99,12 @@ function measure(panel: Element): Measured {
   const sections = sectionEls.map((s, i) => {
     const header = s.querySelector(":scope > [data-section-header]");
     const body = s.querySelector(":scope > [data-section-body]");
-    const itemInk = body ? [...body.children].filter(visible).map(ink).filter((rows) => rows.length) : [];
+    // An item that is itself an enclosure (a card) is its border box, as it is at the section level.
+    const itemInk = body ? [...body.children].filter(visible).map((c) => {
+      if (getComputedStyle(c).display === "contents" || !enclosed(c)) return ink(c);
+      const r = c.getBoundingClientRect();
+      return [{ top: r.top, bottom: r.bottom, label: ((c as HTMLElement).innerText || c.tagName).trim().split("\n")[0]!.slice(0, 40) }];
+    }).filter((rows) => rows.length) : [];
     return {
       heading: header ? (header as HTMLElement).innerText.split("\n")[0]! : "",
       headingGap: header ? gap(ink(header), itemInk[0]) : null,

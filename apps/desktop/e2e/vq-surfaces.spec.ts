@@ -42,9 +42,9 @@ for (const { name: sizeName, size } of SIZES) {
       // The note's scrollbar thumb never runs into the window's rounded corners (D-111).
       problems.push(...await scrollbarClearOfCorners(page));
       // Dialogs never shrink while open (D-111): tabs that hold less, and filters that leave less.
-      await settings(page, "Workspace");
+      await settings(page, "Project");
       const dialog = page.getByRole("dialog", { name: "Settings" });
-      problems.push(...await dialogNeverShrinks(page, "settings", ["Appearance", "Account", "Workspace"].map((c) => () => dialog.getByRole("tab", { name: c }).click())));
+      problems.push(...await dialogNeverShrinks(page, "settings", ["Appearance", "Account", "Project"].map((c) => () => dialog.getByRole("tab", { name: c }).click())));
       await reset(page);
       await page.keyboard.press(`${mod}+Shift+Slash`);
       await expect(page.getByRole("searchbox", { name: "Search shortcuts" })).toBeFocused();

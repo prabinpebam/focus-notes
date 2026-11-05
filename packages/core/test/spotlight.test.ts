@@ -152,6 +152,8 @@ describe("KEY-01: which commands Spotlight lists", () => {
     // Steps inside Find in all notes' sheet and the theme manager, which their own controls run (D-110, D-108).
     for (const id of ["findAll.choose", "findAll.close", "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix"]) expect(isInternalCommand(id), id).toBe(true);
     for (const id of ["find.allNotes", "theme.manager.open", "reading.reset"]) expect(isInternalCommand(id), id).toBe(false);
+    // Settings no longer has its own button (project model, slice 2): Spotlight is where it's found.
+    expect(isInternalCommand("workspace.openFromGitHub")).toBe(false);
     // Editor and table keys act on what's in front of them, from anywhere: they're listed.
     expect(isInternalCommand("format.bold", "editor")).toBe(false);
     expect(isInternalCommand("table.addRowBelow", "table")).toBe(false);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { UNSAFE_PortalProvider } from "react-aria";
 import { useOverlayContainers } from "../../layouts/AppRoot/in-window.tsx";
@@ -35,8 +35,14 @@ const TABBABLE = "a[href], button, input, select, textarea, [tabindex], [content
  * A modal dialog over a dimmed canvas (Foundations → Surfaces, layer 5). Focus stays inside while
  * it's open and returns where it was when it closes. Esc and clicking the scrim close it.
  */
-export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", height = "stable", contentInset = true, id, children, onOpenChange }: DialogPanelProps) {
+export function DialogPanel({ label, open: requested, size = "l", header, fixed, footer, placement = "center", material = "raised", height = "stable", contentInset = true, id, children, onOpenChange }: DialogPanelProps) {
   const containers = useOverlayContainers();
+  // Opened on the same render as its AppRoot, it would portal to <body> before the window's overlay
+  // layer exists, and React Aria would leave the whole app root (dialog included) inert. Wait one
+  // commit for AppRoot to publish its layer; a dialog opened later in a running window is unaffected.
+  const [placed, setPlaced] = useState(() => Boolean(containers.overlays ?? containers.window));
+  useEffect(() => { if (!placed) setPlaced(true); }, [placed]);
+  const open = Boolean(requested) && placed;
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef, Boolean(open));
   // The tallest it has been since it opened, kept as its least height (D-111). Reset when it closes.
@@ -117,7 +123,7 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
   }, [open]);
   return (
     <UNSAFE_PortalProvider getContainer={() => containers.overlays ?? containers.window ?? document.body}>
-    <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
+    <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={open} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
       <UNSAFE_PortalProvider getContainer={() => containers.window ?? document.body}>
       <Modal className={`${s.modal} ${s.size[size]} ${s.height[height]}`} data-dialog-modal="" data-height={height}>
         <div className={s.band} data-drag-band="" aria-hidden="true" />

@@ -18,10 +18,20 @@ import { frameProblems, recordFrames, watchMotion, watchShifts, type Frame } fro
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
+
+/** Open a project from GitHub: since Settings has no storage category (project model, slice 2), Spotlight's command. */
+async function openFromGitHub(page: Page) {
+  const spot = page.getByRole("dialog", { name: "Spotlight" });
+  await page.keyboard.press(`${mod}+/`);
+  await spot.getByRole("combobox").fill("Open a project from GitHub");
+  await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");
+  await expect(spot.locator("[role=option][aria-selected=true]")).not.toHaveAttribute("aria-disabled", "true", { timeout: 15_000 });
+  await page.keyboard.press("Enter");
+}
 async function openWorkspaceSettings(page: Page) {
   await press(page, `${mod}+,`);
   await expect(settings(page)).toBeVisible();
-  const tab = settings(page).getByRole("tab", { name: "Workspace" });
+  const tab = settings(page).getByRole("tab", { name: "Project", exact: true });
   await tab.click();
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
@@ -120,8 +130,7 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     await settle(page);
 
     await mark("opening another workspace");
-    await openWorkspaceSettings(page);
-    await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    await openFromGitHub(page);
     const open = card(page).getByRole("button", { name: "Open", exact: true });
     await expect(open).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
@@ -144,8 +153,8 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
 
     await mark("removing the workspace");
     await openWorkspaceSettings(page);
-    await settings(page).getByRole("button", { name: "Remove this workspace from this computer…" }).click();
-    const dialog = page.getByRole("dialog", { name: "Remove this workspace?" });
+    await settings(page).getByRole("button", { name: "Remove from this computer…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Remove this project?" });
     await dialog.getByRole("button", { name: "Remove", exact: true }).click({ timeout: 30_000 });
     await heading(page, "We found your notes");
     await settle(page);

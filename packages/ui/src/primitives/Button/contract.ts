@@ -49,5 +49,8 @@ export const contract = defineContract({
     { name: "toggle off", props: { label: { t: "gallery.action" }, variant: "subtle", icon: "link", toggle: true, pressed: false } },
     { name: "toggle on", covers: ["selected"], props: { label: { t: "gallery.action" }, variant: "subtle", icon: "link", toggle: true, pressed: true } },
     { name: "disabled with reason", covers: ["disabled"], props: { label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
+    // The one action that destroys (Delete project): its icon, and disabled until the typed name matches.
+    { name: "danger with icon", props: { label: { t: "gallery.action" }, variant: "danger", icon: "delete" } },
+    { name: "danger disabled with reason", props: { label: { t: "gallery.action" }, variant: "danger", disabled: true, disabledReason: { t: "gallery.reason" } } },
   ],
 });

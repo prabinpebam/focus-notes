@@ -2364,6 +2364,29 @@
               "t": "gallery.reason"
             }
           }
+        },
+        {
+          "name": "danger with icon",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "danger",
+            "icon": "delete"
+          }
+        },
+        {
+          "name": "danger disabled with reason",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "danger",
+            "disabled": true,
+            "disabledReason": {
+              "t": "gallery.reason"
+            }
+          }
         }
       ]
     },

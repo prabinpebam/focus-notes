@@ -60,7 +60,20 @@ async function setUp(opts: { note?: string } = {}) {
   return { w, l, note };
 }
 const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
-async function openSettings(page: Page, section: "Account" | "Workspace" = "Account") {
+
+/** Open a project from GitHub: since Settings has no storage category (project model, slice 2), Spotlight's command. */
+async function openFromGitHub(page: Page) {
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Settings" })).toHaveCount(0);
+  const spot = page.getByRole("dialog", { name: "Spotlight" });
+  await page.keyboard.press(`${mod}+/`);
+  await spot.getByRole("combobox").fill("Open a project from GitHub");
+  await expect(spot.locator("[role=option][aria-selected=true]")).toContainText("Open a project from GitHub…");
+  // Enabled once the account's login is known, as the Settings button it replaces waited to be.
+  await expect(spot.locator("[role=option][aria-selected=true]")).not.toHaveAttribute("aria-disabled", "true", { timeout: 15_000 });
+  await page.keyboard.press("Enter");
+}
+async function openSettings(page: Page, section: "Account" | "Project" = "Account") {
   await press(page, `${mod}+,`);
   await expect(settings(page)).toBeVisible();
   const tab = settings(page).getByRole("tab", { name: section });
@@ -141,8 +154,7 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     await settings(page).getByRole("tab", { name: "Account" }).focus();
     await press(page, "ArrowDown");
     await expect(settings(page).getByRole("tab", { name: "Project", exact: true })).toHaveAttribute("aria-selected", "true");
-    await press(page, "ArrowDown");
-    await expect(settings(page).getByRole("tab", { name: "Workspace" })).toHaveAttribute("aria-selected", "true");
+    // Where it's kept is part of Project (project model, slice 2).
     await expect(settings(page).getByText(w.dirs.docs)).toBeVisible();
     expect(await settledAxe(page)).toEqual([]);
     await press(page, "Escape");
@@ -156,7 +168,7 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     await item.click();
     await expect(settings(page)).toBeVisible();
     // It opens where it was left.
-    await expect(settings(page).getByRole("tab", { name: "Workspace" })).toHaveAttribute("aria-selected", "true");
+    await expect(settings(page).getByRole("tab", { name: "Project", exact: true })).toHaveAttribute("aria-selected", "true");
     await settings(page).getByRole("tab", { name: "Account" }).click();
 
     // Sign out, keeping Git's sign-in for the terminal.
@@ -273,7 +285,7 @@ test("FRE-07: Run setup again walks the first run from Connect; Esc goes back to
   const { w, l } = await setUp();
   const { page } = l;
   try {
-    await openSettings(page, "Workspace");
+    await openSettings(page, "Project");
     await settings(page).getByRole("button", { name: "Run setup again" }).click();
     await heading(page, "You're connected");
     await expect(card(page).getByRole("img", { name: "Step 2 of 4" })).toBeVisible();
@@ -297,8 +309,8 @@ test("FRE-06: Settings → Open another workspace from GitHub shows the notes th
   const { w, l } = await setUp();
   const { page } = l;
   try {
-    await openSettings(page, "Workspace");
-    await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    await openSettings(page, "Project");
+    await openFromGitHub(page);
     await heading(page, "We found your notes");
     await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
     await expect(card(page).getByText("notes", { exact: true })).toBeVisible();
@@ -313,8 +325,8 @@ test("FRE-06: Settings → Open another workspace from GitHub shows the notes th
     await expect(card(page)).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: "Note" })).toContainText("Only mine.");
 
-    await openSettings(page, "Workspace");
-    await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    await openSettings(page, "Project");
+    await openFromGitHub(page);
     await expect(open).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
     // D-155: the notes go in a folder named after their repository, Documents/notes, beside the open workspace, and writing starts there.
@@ -344,9 +356,9 @@ test("FRE-07, PRV-02: removing the workspace is refused while changes aren't on 
     await expect.poll(() => readFileSync(join(w.dirs.docs, "private", "notes", "secret.md"), "utf8"), { timeout: 10_000 }).toContain("Words not on GitHub yet.");
     const before = top(w.dirs.userData);
 
-    await openSettings(page, "Workspace");
-    await settings(page).getByRole("button", { name: "Remove this workspace from this computer…" }).click();
-    const dialog = page.getByRole("dialog", { name: "Remove this workspace?" });
+    await openSettings(page, "Project");
+    await settings(page).getByRole("button", { name: "Remove from this computer…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Remove this project?" });
     await expect(dialog.getByText("1 change isn't on GitHub yet. Sync first, so nothing is lost.")).toBeVisible({ timeout: 15_000 });
     await expect(dialog.getByRole("button", { name: "Remove", exact: true })).toHaveCount(0);
     expect(await settledAxe(page)).toEqual([]);

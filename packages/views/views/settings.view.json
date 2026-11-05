@@ -19,7 +19,8 @@
     "vm.project",
     "vm.sharingSettings",
     "vm.sharingPeople",
-    "vm.sharingPreview"
+    "vm.sharingPreview",
+    "vm.projectDelete"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -107,7 +108,7 @@
                   "project": {
                     "type": "Stack",
                     "props": {
-                      "gap": "stackSection"
+                      "gap": "stackRegion"
                     },
                     "children": [
                       {
@@ -885,6 +886,378 @@
                                     },
                                     "tone": "muted"
                                   }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Section",
+                        "id": "projectWhere",
+                        "slots": {
+                          "heading": [
+                            {
+                              "type": "Heading",
+                              "props": {
+                                "level": "2",
+                                "value": {
+                                  "t": "project.home.heading"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "role": "secondary",
+                                  "tone": "muted",
+                                  "value": {
+                                    "t": "project.home.folder"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.settings.workspace.folder"
+                                  },
+                                  "personal": true
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.settings.workspace.linked"
+                            },
+                            "props": {
+                              "icon": "github",
+                              "title": {
+                                "t": "project.home.linked.title"
+                              },
+                              "detail": {
+                                "t": "project.home.linked.detail",
+                                "args": {
+                                  "repo": {
+                                    "get": "vm.settings.workspace.repo"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.settings.workspace.offline"
+                            },
+                            "props": {
+                              "icon": "hardDrive",
+                              "title": {
+                                "t": "project.home.offline.title"
+                              },
+                              "detail": {
+                                "get": "vm.settings.workspace.offlineDetail"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.linked"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "inlineItem",
+                                  "wrap": true
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "command.sync.now"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "sync.now"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "command.setup.runAgain"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "setup.runAgain"
+                                      }
+                                    },
+                                    "when": {
+                                      "get": "vm.settings.workspace.canRunSetup"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "settings.workspace.setupNote"
+                                  },
+                                  "tone": "muted"
+                                },
+                                "when": {
+                                  "get": "vm.settings.workspace.canRunSetup"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.canLink"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "inlineItem"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "project.home.link"
+                                      },
+                                      "icon": "github"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "setup.runAgain"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "project.home.linkNote"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.canRemove"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "inlineItem"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "project.home.remove"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "workspace.remove"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "project.home.removeNote"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.removeBlocked"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "inlineItem"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "project.home.remove"
+                                      },
+                                      "disabled": true,
+                                      "disabledReason": {
+                                        "t": "project.home.removeOffline"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "project.home.removeOffline"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.canDelete"
+                            },
+                            "children": [
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "inlineItem"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "project.delete.entry"
+                                      },
+                                      "icon": "delete",
+                                      "variant": "danger"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "project.delete"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.settings.workspace.deleteNote"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "file": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackSection"
+                    },
+                    "children": [
+                      {
+                        "type": "Section",
+                        "slots": {
+                          "heading": [
+                            {
+                              "type": "Heading",
+                              "props": {
+                                "level": "3",
+                                "value": {
+                                  "t": "file.settings.title"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "icon": "documentText",
+                              "title": {
+                                "t": "file.settings.outside"
+                              },
+                              "detail": {
+                                "t": "file.settings.outsideDetail"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "stackPair"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "role": "label",
+                                  "value": {
+                                    "t": "file.settings.location"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.settings.file.path"
+                                  },
+                                  "personal": true
                                 }
                               }
                             ]
@@ -1974,156 +2347,6 @@
                                 "on": {
                                   "press": {
                                     "run": "account.signIn"
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "workspace": {
-                    "type": "Stack",
-                    "props": {
-                      "gap": "stackSection"
-                    },
-                    "children": [
-                      {
-                        "type": "Section",
-                        "slots": {
-                          "heading": [
-                            {
-                              "type": "Heading",
-                              "props": {
-                                "level": "3",
-                                "value": {
-                                  "t": "settings.workspace.heading"
-                                }
-                              }
-                            }
-                          ]
-                        },
-                        "children": [
-                          {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "stackPair"
-                            },
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "get": "vm.settings.workspace.folderText"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "get": "vm.settings.workspace.gitNote"
-                                  },
-                                  "tone": "muted"
-                                }
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Stack",
-                            "props": { "gap": "stackPair" },
-                            "children": [
-                              {
-                                "type": "Inline",
-                                "props": {
-                                  "gap": "inlineItem",
-                                  "wrap": true
-                                },
-                                "children": [
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "command.sync.now"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "sync.now"
-                                      }
-                                    },
-                                    "when": {
-                                      "get": "vm.settings.workspace.git"
-                                    }
-                                  },
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "get": "vm.settings.workspace.setupLabel"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "setup.runAgain"
-                                      }
-                                    },
-                                    "when": {
-                                      "get": "vm.settings.workspace.canRunSetup"
-                                    }
-                                  },
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "command.workspace.openFromGitHub"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "workspace.openFromGitHub"
-                                      }
-                                    },
-                                    "when": {
-                                      "get": "vm.settings.workspace.canOpenOther"
-                                    }
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "settings.workspace.setupNote"
-                                  },
-                                  "tone": "muted"
-                                },
-                                "when": {
-                                  "get": "vm.settings.workspace.canRunSetup"
-                                }
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Inline",
-                            "when": {
-                              "get": "vm.settings.workspace.canRemove"
-                            },
-                            "props": {
-                              "gap": "inlineItem"
-                            },
-                            "children": [
-                              {
-                                "type": "Button",
-                                "props": {
-                                  "label": {
-                                    "t": "command.workspace.remove"
-                                  }
-                                },
-                                "on": {
-                                  "press": {
-                                    "run": "workspace.remove"
                                   }
                                 }
                               }
@@ -3625,6 +3848,7 @@
           }
         ]
       },
+      { "use": "project.delete" },
       {
         "type": "Dialog",
         "id": "removeWorkspace",

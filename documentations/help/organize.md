@@ -8,7 +8,7 @@ Create, rename, move and delete notes and folders, and get a deleted note back.
 ## Choose where to write
 
 Press **Ctrl+Shift+N** (**Shift+Command+N** on Mac) for **New note in…**.
-Choose a Public or Private folder in this workspace, then **Create note**.
+Choose a Public or Private folder in this project, then **Create note**.
 The current folder is already chosen. Type in the search field to filter folders.
 **New folder…** creates a folder inside the chosen one without leaving the picker.
 Cancel creates no note; a folder you already created stays.

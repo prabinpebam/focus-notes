@@ -341,7 +341,9 @@ describe("THM-13: Edit colors and the contrast guard", () => {
     expect(saveWarning(t.app.messages, themeValues.paper!)).toBeUndefined();
     const bad = { ...themeValues.paper!, "color.text": "#d0ccc4", "color.textMuted": "#e0dcd4" };
     expect(saveWarning(t.app.messages, bad)).toMatch(/^This theme has \d+ hard-to-read pairs\. Save anyway\?$/);
-    expect(saveWarning(t.app.messages, { ...themeValues.paper!, "color.danger": "#ff9a8f" })).toBe("This theme has 1 hard-to-read pair. Save anyway?");
+    // A pale danger fails as text on the canvas, and as the danger button's fill under its white text, at rest, hovered and pressed.
+    expect(saveWarning(t.app.messages, { ...themeValues.paper!, "color.danger": "#ff9a8f" })).toBe("This theme has 4 hard-to-read pairs. Save anyway?");
+    expect(saveWarning(t.app.messages, { ...themeValues.paper!, "color.onDanger": "#f4b0a8" })).toBe("This theme has 3 hard-to-read pairs. Save anyway?");
   });
 });
 
@@ -349,7 +351,7 @@ describe("Settings → Appearance (DD-SET-02)", () => {
   it("summarizes the look, sets the interface size, and opens the theme manager", async () => {
     const t = await started({ settings: null });
     const a = () => (t.vm("vm.settings") as { appearance: Record<string, unknown> }).appearance;
-    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "project", "workspace", "ai", "appearance"]);
+    expect(t.vm("vm.settings").sections.map((s: { id: string }) => s.id)).toEqual(["account", "project", "ai", "appearance"]);
     expect(a()).toMatchObject({ summary: "System · Paper / Ink · 16 px Mono (Roboto Mono)", scale: "1", canSync: false });
     expect((a().scales as { label: string }[]).map((s) => s.label)).toEqual(["90%", "100%", "110%", "125%", "150%"]);
     await t.run("ui.setScale", { value: "1.25" });

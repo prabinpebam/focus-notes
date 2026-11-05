@@ -639,7 +639,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
     const t = await atNotes();
     await t.run("firstRun.setMode", { value: "clone" });
     expect(t.vm()).toMatchObject({ panel: "clone", activeId: "ada/notes", reposSummary: "2 repositories" });
-    expect((t.vm().repos as { description: string }[])[0]!.description).toBe("Focus Notes workspace");
+    expect((t.vm().repos as { description: string }[])[0]!.description).toBe("Focus Notes project");
     await t.run("firstRun.nextRepo");
     expect(t.vm().activeId).toBe("ada/recipes");
     await t.run("firstRun.setQuery", { value: "note" });
@@ -651,7 +651,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
     const t = await atNotes();
     await t.run("firstRun.setMode", { value: "local" });
     await t.run("firstRun.openFolder");
-    expect(t.vm().error).toMatch(/isn't a Focus Notes workspace/);
+    expect(t.vm().error).toMatch(/isn't a Focus Notes project/);
     expect(t.calls).not.toContain("openWorkspace");
   });
   it("Settings → Open another workspace from GitHub shows Your notes alone, opens the one chosen, and Esc goes back to writing", async () => {

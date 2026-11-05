@@ -1023,8 +1023,9 @@ test("New project streams actual setup steps and Cancel keeps the partial folder
     for (let i = 0; i < 3; i++) await project.getByRole("button", { name: "Next", exact: true }).click();
     await project.getByRole("button", { name: "Create project", exact: true }).click();
     const progress = project.getByRole("progressbar");
-    await expect(progress).toHaveAttribute("aria-label", "2 of 5 steps completed");
-    await expect(progress).toHaveAttribute("value", "40");
+    // check, folder and history (the project's Git, project model slice 3) are done; the repository is held.
+    await expect(progress).toHaveAttribute("aria-label", "3 of 6 steps completed");
+    await expect(progress).toHaveAttribute("value", "50");
     await expect(project.locator("[data-step-mark][data-step-mark-size=compact] [data-busy]")).toHaveCount(1);
     await expect(project.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
     await project.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -1036,7 +1037,7 @@ test("New project streams actual setup steps and Cancel keeps the partial folder
     await expect(project.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
     expect(creates).toBe(1);
     const folder = join(parent, "Streamed project");
-    expect(readdirSync(folder)).toEqual(["notes"]);
+    expect(readdirSync(folder).sort()).toEqual([".git", "notes"]);
     expect(readFileSync(note, "utf8")).toBe(bytes);
     expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
   } finally {

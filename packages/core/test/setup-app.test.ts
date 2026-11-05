@@ -71,7 +71,7 @@ describe("FRE-08: setup in the app", () => {
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "notInstance" } }, { running: false }));
     const instance = t.vm().steps[1]!;
     expect(instance).toMatchObject({ state: "failed", failed: true, done: false });
-    expect(instance.problem).toMatch(/isn't a Focus Notes workspace/);
+    expect(instance.problem).toMatch(/isn't a Focus Notes project/);
     expect(t.vm().steps[0]!.problem).toBe("");
   });
 

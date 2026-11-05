@@ -16,7 +16,7 @@ function projectWindows(...args: Parameters<typeof createProjects>) {
   instances.push(instance);
   return instance;
 }
-const forgetLocalData = (profile: string, event: "signOut" | "removeWorkspace") => removeLocalData(profile, event, true);
+const forgetLocalData = (profile: string, event: "signOut" | "removeWorkspace" | "deleteProject") => removeLocalData(profile, event, true);
 
 const paths = vi.hoisted(() => ({ profile: "" }));
 const spawned = vi.hoisted(() => [] as { args: string[]; env: Record<string, string | undefined> }[]);
@@ -128,8 +128,9 @@ it.skipIf(process.platform !== "win32")("fences held protection, queued pins and
   await vi.waitFor(async () => expect(await projectWindows(() => root, writeFile).position(note)).toEqual({ from: 10, to: 10, scroll: 30 }));
 });
 
+for (const event of ["removeWorkspace", "deleteProject"] as const) {
 for (const heldFile of [DATA_FILES.projectLastNote, DATA_FILES.projectRecent, DATA_FILES.lastProject]) {
-  it(`drains an already-started ${heldFile} atomic write before removing local metadata`, async () => {
+  it(`drains an already-started ${heldFile} atomic write before ${event} removes local metadata`, async () => {
     const { root } = await setup();
     let release!: () => void;
     const held = new Promise<void>(resolve => { release = resolve; });
@@ -145,7 +146,7 @@ for (const heldFile of [DATA_FILES.projectLastNote, DATA_FILES.projectRecent, DA
     await vi.waitFor(() => expect(entered).toBe(true));
     let removed = false;
     const purging = projects.purge(async () => {
-      await forgetLocalData(paths.profile, "removeWorkspace");
+      await forgetLocalData(paths.profile, event);
       removed = true;
     });
     await new Promise<void>(resolve => setImmediate(resolve));
@@ -156,6 +157,32 @@ for (const heldFile of [DATA_FILES.projectLastNote, DATA_FILES.projectRecent, DA
     await expect(readFile(join(paths.profile, heldFile), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 }
+}
+
+it.skipIf(process.platform !== "win32")("keeps a deleted project's metadata fenced and its missing folder out of Open", async () => {
+  const { root, projects } = await setup();
+  const home = await realpath(join(root, "existing"));
+  const note = join(home, "first.md");
+  await writeFile(note, "# First\n");
+  await projects.remember(note);
+  await vi.waitFor(async () => expect(await readFile(join(paths.profile, DATA_FILES.projectRecent), "utf8")).toContain("dpapi:"));
+  await writeFile(join(paths.profile, DATA_FILES.lastProject), JSON.stringify({ profile: paths.profile }));
+  await projects.list();
+  protection.hold = true;
+  const pin = projects.pin(home, note);
+  await vi.waitFor(() => expect(protection.pending.length).toBeGreaterThan(0));
+  await rm(home, { recursive: true });
+  const purging = projects.purge(() => forgetLocalData(paths.profile, "deleteProject"));
+  protection.hold = false;
+  for (const finish of protection.pending.splice(0)) finish();
+  await Promise.all([pin, purging]);
+  expect(await projects.list()).toEqual([]);
+  await projects.remember(note);
+  await projects.closed();
+  for (const file of [DATA_FILES.projectLastNote, DATA_FILES.projectRecent, DATA_FILES.lastProject]) {
+    await expect(readFile(join(paths.profile, file), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  }
+});
 
 it("removes a cross-profile launch pointer only when it names the purged profile", async () => {
   const { root } = await setup();
@@ -543,6 +570,20 @@ it("reports actual local steps and preserves a completed profile receipt when ca
   expect(events.every(event => event.steps.join(",") === "check,folder,profile")).toBe(true);
   expect(await readdir(folder)).toEqual(["notes"]);
   expect((await projects.list()).find(project => project.folder === folder)).toMatchObject({ name: "New book" });
+});
+
+it("starts every new project's history with Git as its own named step, and stops when Git can't start it", async () => {
+  const { root } = await setup();
+  const calls: string[] = [];
+  const git = async (call: { cwd: string; args: string[] }) => { calls.push(`${call.cwd.split(sep).pop()}: ${call.args.join(" ")}`); return { code: 0, stdout: "", stderr: "" }; };
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git);
+  const events: Omit<ProjectCreateProgress, "request">[] = [];
+  await projects.create({ parent: root, name: "Kept", accent: "teal", logo: "book" }, { signal: new AbortController().signal, progress: event => events.push(event) });
+  expect(events[0]?.steps).toEqual(["check", "folder", "history", "profile"]);
+  expect(calls).toEqual(["Kept: init --quiet", "Kept: symbolic-ref HEAD refs/heads/main", "Kept: commit --allow-empty --quiet -m Start the project"]);
+  const failing = projectWindows(() => join(root, "existing"), writeFile, undefined, async () => ({ code: 1, stdout: "", stderr: "" }));
+  await expect(failing.create({ parent: root, name: "No git", accent: "teal", logo: "book" })).rejects.toThrow("history");
+  expect((await failing.list()).some(project => project.name === "No git")).toBe(false);
 });
 
 it("stops at a safe boundary without deleting a completed folder or overwriting its notes on another Create", async () => {

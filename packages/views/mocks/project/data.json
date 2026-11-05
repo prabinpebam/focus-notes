@@ -1,0 +1,420 @@
+{
+  "sections": [
+    {
+      "label": "Account",
+      "id": "account"
+    },
+    {
+      "label": "Project",
+      "id": "project"
+    },
+    {
+      "label": "Sharing",
+      "id": "sharing"
+    },
+    {
+      "label": "Agents",
+      "id": "agents"
+    },
+    {
+      "label": "AI",
+      "id": "ai"
+    },
+    {
+      "label": "Appearance",
+      "id": "appearance"
+    },
+    {
+      "label": "Keyboard",
+      "id": "keyboard"
+    },
+    {
+      "label": "About",
+      "id": "about"
+    }
+  ],
+  "fileSections": [
+    {
+      "label": "Account",
+      "id": "account"
+    },
+    {
+      "label": "This file",
+      "id": "file"
+    },
+    {
+      "label": "AI",
+      "id": "ai"
+    },
+    {
+      "label": "Appearance",
+      "id": "appearance"
+    },
+    {
+      "label": "Keyboard",
+      "id": "keyboard"
+    },
+    {
+      "label": "About",
+      "id": "about"
+    }
+  ],
+  "folder": "C:\\Users\\Prabin\\Documents\\Focus Notes\\Garden notes",
+  "repo": "prabin/garden-notes",
+  "file": {
+    "path": "D:\\Shared\\Allotment\\Spring planting plan.md",
+    "assets": "Spring planting plan.assets",
+    "txtPath": "D:\\Shared\\Allotment\\seed-order.txt"
+  },
+  "project": {
+    "name": "Garden notes",
+    "accent": "green",
+    "accentChoice": "green",
+    "accentFailed": false,
+    "logo": "leaf",
+    "logoChoice": "leaf",
+    "logoCommit": "rest",
+    "logoFailed": false,
+    "logoError": "",
+    "uploadSrc": "",
+    "uploadCommit": "rest",
+    "uploadFailed": false,
+    "uploadError": "",
+    "watermark": "on",
+    "fontCommit": "rest",
+    "fontValue": "App default",
+    "scopeFont": "app",
+    "fontChoice": "app",
+    "fontOpen": false,
+    "fontFailed": false,
+    "themeCommit": "rest",
+    "themeValue": "Ink",
+    "scopeTheme": "ink",
+    "themeChoice": "ink",
+    "themeOpen": false,
+    "themeFailed": false,
+    "accents": [
+      {
+        "id": "red",
+        "label": "Red"
+      },
+      {
+        "id": "orange",
+        "label": "Orange"
+      },
+      {
+        "id": "amber",
+        "label": "Amber"
+      },
+      {
+        "id": "lime",
+        "label": "Lime"
+      },
+      {
+        "id": "green",
+        "label": "Green"
+      },
+      {
+        "id": "teal",
+        "label": "Teal"
+      },
+      {
+        "id": "cyan",
+        "label": "Cyan"
+      },
+      {
+        "id": "blue",
+        "label": "Blue"
+      },
+      {
+        "id": "indigo",
+        "label": "Indigo"
+      },
+      {
+        "id": "violet",
+        "label": "Violet"
+      },
+      {
+        "id": "pink",
+        "label": "Pink"
+      },
+      {
+        "id": "slate",
+        "label": "Slate"
+      }
+    ],
+    "logos": [
+      {
+        "id": "book",
+        "label": "Book"
+      },
+      {
+        "id": "briefcase",
+        "label": "Briefcase"
+      },
+      {
+        "id": "beaker",
+        "label": "Beaker"
+      },
+      {
+        "id": "heart",
+        "label": "Heart"
+      },
+      {
+        "id": "star",
+        "label": "Star"
+      },
+      {
+        "id": "leaf",
+        "label": "Leaf"
+      },
+      {
+        "id": "rocket",
+        "label": "Rocket"
+      },
+      {
+        "id": "lightbulb",
+        "label": "Lightbulb"
+      },
+      {
+        "id": "music",
+        "label": "Music"
+      },
+      {
+        "id": "camera",
+        "label": "Camera"
+      },
+      {
+        "id": "people",
+        "label": "People"
+      },
+      {
+        "id": "home",
+        "label": "Home"
+      },
+      {
+        "id": "airplane",
+        "label": "Airplane"
+      },
+      {
+        "id": "code",
+        "label": "Code"
+      },
+      {
+        "id": "brush",
+        "label": "Brush"
+      },
+      {
+        "id": "trophy",
+        "label": "Trophy"
+      },
+      {
+        "id": "earth",
+        "label": "Earth"
+      },
+      {
+        "id": "food",
+        "label": "Food"
+      },
+      {
+        "id": "building",
+        "label": "Building"
+      },
+      {
+        "id": "chat",
+        "label": "Chat"
+      },
+      {
+        "id": "diamond",
+        "label": "Diamond"
+      },
+      {
+        "id": "flag",
+        "label": "Flag"
+      },
+      {
+        "id": "sparkle",
+        "label": "Sparkle"
+      },
+      {
+        "id": "pen",
+        "label": "Pen"
+      }
+    ],
+    "fonts": [
+      {
+        "id": "mono",
+        "label": "Mono"
+      },
+      {
+        "id": "serif",
+        "label": "Serif"
+      },
+      {
+        "id": "sans",
+        "label": "Sans"
+      },
+      {
+        "id": "hyperlegible",
+        "label": "Atkinson Hyperlegible"
+      },
+      {
+        "id": "dyslexic",
+        "label": "OpenDyslexic"
+      },
+      {
+        "id": "system",
+        "label": "System"
+      }
+    ],
+    "watermarkOptions": [
+      {
+        "id": "off",
+        "label": "Off"
+      },
+      {
+        "id": "on",
+        "label": "On"
+      }
+    ],
+    "themeTiles": [
+      {
+        "id": "paper",
+        "label": "Paper",
+        "name": "Paper",
+        "kind": "light",
+        "badge": "AAA",
+        "description": "light, AAA"
+      },
+      {
+        "id": "sepia",
+        "label": "Sepia",
+        "name": "Sepia",
+        "kind": "light",
+        "badge": "AAA",
+        "description": "light, AAA"
+      },
+      {
+        "id": "harbor-light",
+        "label": "Harbor light",
+        "name": "Harbor light",
+        "kind": "light",
+        "badge": "AA",
+        "description": "light, AA"
+      },
+      {
+        "id": "forest-light",
+        "label": "Forest light",
+        "name": "Forest light",
+        "kind": "light",
+        "badge": "AA",
+        "description": "light, AA"
+      },
+      {
+        "id": "contrast-light",
+        "label": "High contrast light",
+        "name": "High contrast light",
+        "kind": "light",
+        "badge": "AAA",
+        "description": "light, AAA"
+      },
+      {
+        "id": "ink",
+        "label": "Ink",
+        "name": "Ink",
+        "kind": "dark",
+        "badge": "AAA",
+        "description": "dark, AAA"
+      },
+      {
+        "id": "dusk",
+        "label": "Dusk",
+        "name": "Dusk",
+        "kind": "dark",
+        "badge": "AAA",
+        "description": "dark, AAA"
+      },
+      {
+        "id": "harbor-dark",
+        "label": "Harbor dark",
+        "name": "Harbor dark",
+        "kind": "dark",
+        "badge": "AA",
+        "description": "dark, AA"
+      },
+      {
+        "id": "forest-dark",
+        "label": "Forest dark",
+        "name": "Forest dark",
+        "kind": "dark",
+        "badge": "AA",
+        "description": "dark, AA"
+      },
+      {
+        "id": "contrast-dark",
+        "label": "High contrast dark",
+        "name": "High contrast dark",
+        "kind": "dark",
+        "badge": "AAA",
+        "description": "dark, AAA"
+      }
+    ]
+  },
+  "people": {
+    "available": false,
+    "busy": false,
+    "people": [
+      {
+        "detail": "Owner",
+        "id": "u1",
+        "badge": "Owner",
+        "login": "prabin",
+        "initials": "PP"
+      }
+    ]
+  },
+  "del": {
+    "name": "Garden notes",
+    "repo": "prabin/garden-notes",
+    "privateRepo": "prabin/garden-notes-private",
+    "otherRepo": "meera/garden-notes",
+    "otherOwner": "@meera",
+    "org": "green-thumbs",
+    "orgRepo": "green-thumbs/garden-notes",
+    "site": "prabin.github.io/garden-notes",
+    "siteNotes": 3,
+    "links": 4,
+    "peopleCount": 2,
+    "peopleNames": "@meera and @arjun",
+    "privateCount": 12,
+    "repos": [
+      { "id": "prabin/garden-notes", "label": "prabin/garden-notes", "detail": "Deleted on GitHub", "icon": "check", "waiting": false, "canOpen": false, "ask": false },
+      { "id": "prabin/garden-notes-private", "label": "prabin/garden-notes-private", "detail": "Waiting for you to delete it…", "icon": "github", "waiting": true, "canOpen": true, "ask": false }
+    ],
+    "unsyncedCount": 3,
+    "unsynced": [
+      {
+        "id": "u1",
+        "label": "Spring planting plan",
+        "description": "beds / north"
+      },
+      {
+        "id": "u2",
+        "label": "Seed order",
+        "description": "shopping"
+      },
+      {
+        "id": "u3",
+        "label": "Compost log",
+        "description": "notes"
+      }
+    ],
+    "exportPath": "Documents\\Garden notes (copy)",
+    "lockedFile": "north-beds.md",
+    "retryAt": "16:42",
+    "toastDone": "Garden notes is deleted. Its folder is in the Recycle Bin.",
+    "toastOffline": "Garden notes is in the Recycle Bin.",
+    "toastKept": "Garden notes is removed from this computer. It's still on GitHub.",
+    "toastKeptAction": "Open on GitHub"
+  }
+}

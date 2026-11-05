@@ -52,7 +52,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 17 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 56 | `hover`, `pressed`, `focusVisible` |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 58 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy`, `pending`, `confirmed`, `failed` | 13 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
@@ -200,7 +200,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **Heading** | Implemented | `level` 1 to 3 (interface headings, not note headings): 28, 24, 20 px, all bold (700); `value`. The shared ramp separates Settings section headers from subsection labels (D-258) | Heading | Sheets, dialogs, settings |
 | **Icon** | Implemented | `name` (Fluent registry), `size` s/m/l, `filled` | Image, or hidden when decorative | Everywhere |
 | **Shortcut** | Implemented | `keys` (key caps in the platform's symbols, from a view model, which takes them from the command registry) and `label` (the chord in words). Caps are hidden from screen readers, which read the words instead | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
-| **Button** | Implemented | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed`, `autoFocus` (takes focus when it appears: a confirmation's *Cancel*, D-100, or a first-run step's primary action, D-101). Inside an editor companion (Positioner), a pointer press leaves focus in the note | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link, the first run |
+| **Button** | Implemented | `variant` primary, secondary, subtle, danger. `danger` is only for the one action that destroys (**Delete project…** and its final confirm): `color.danger` fill, `color.onDanger` text, the shared hover and pressed overlays, focus ring and disabled opacity; the contrast guard checks its text at rest, hovered and pressed in every theme (D-pending, the owner, 5 November). `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed`, `autoFocus` (takes focus when it appears: a confirmation's *Cancel*, D-100, or a first-run step's primary action, D-101). Inside an editor companion (Positioner), a pointer press leaves focus in the note | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link, the first run |
 | **IconButton** | Implemented | `icon`, `label` (required), `variant` subtle or frost, `toggle` with `pressed`, and `mixed` for a toggle that applies to only part of what it acts on (`aria-pressed="mixed"`, a lighter fill) | Button, or toggle button | Toolbar, window controls, find bar, formatting toolbar |
 | **Link** | Planned | `label`, `command` (internal) or `url` (opened through the `link.open` command). The product site's links are **SiteLink** | Link | Help text, About |
 | **Checkbox** | Planned | `label`, `checked` (bindable), `indeterminate` | Checkbox | Lists, settings |
@@ -284,7 +284,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | Component | Status | What it does | Key props |
 | --- | --- | --- | --- |
 | **Stack** | Implemented | Children in a column | `gap`, `align`, `padding` |
-| **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart. No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
+| **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart, or `stackRegion` when they hold labelled fields with hints (Settings → Project). No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
 | **Inline** | Implemented | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
 | **ToolbarRow** | Implemented | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items. A new `focusRequest` moves focus into it (<kbd>Alt+F10</kbd>) | `label` (required), `focusRequest` |
 | **Columns** | Implemented | Children side by side in equal columns while each has room (`layout.sheetMin`), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window | `gap` |

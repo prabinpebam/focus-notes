@@ -148,7 +148,7 @@ export const looksLikeToken = (t: string) => /^[A-Za-z0-9_]{20,255}$/.test(t.tri
 /** Where to make a fine-grained token, pre-filled with what setup and sync need (D-21). */
 export const TOKEN_PAGE = "https://github.com/settings/personal-access-tokens/new?" + new URLSearchParams({
   name: "Focus Notes",
-  description: "Focus Notes on this computer: saving notes and setting up the workspace.",
+  description: "Focus Notes on this computer: saving notes and setting up the project.",
   expires_in: "90",
   contents: "write",
   administration: "write",

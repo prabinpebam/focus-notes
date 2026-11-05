@@ -218,7 +218,7 @@ export const SURFACES: Surface[] = [
     if (tab === "Reading") await expect(sheet.getByRole("slider").first()).toBeVisible();
   } })),
   { name: "settings account", open: (page) => settings(page, "Account"), tooltips: (page) => page.getByRole("dialog", { name: "Settings" }).getByRole("button", { name: "Close" }) },
-  { name: "settings workspace", open: (page) => settings(page, "Workspace") },
+  { name: "settings workspace", open: (page) => settings(page, "Project") },
   { name: "settings appearance", open: (page) => settings(page, "Appearance") },
   // Send feedback (D-203), signed out here: Continue on GitHub, Problem with the report, then Idea without it.
   { name: "send feedback", open: (page) => sendFeedback(page, "Problem"), tooltips: (page) => page.getByRole("dialog", { name: "Send feedback" }).getByRole("button") },

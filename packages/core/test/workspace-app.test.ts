@@ -256,6 +256,24 @@ describe("FIL-18: a first-save name survives later title edits", () => {
     expect(app.store.state.note.path).toBe(path);
     expect(f.renames).toHaveLength(1);
   });
+  it("names a first save that lands while the tree is still being listed, once the listing finishes", async () => {
+    const f = setup({ files: { [`${ROOT}/untitled.md`]: "" }, open: `${ROOT}/untitled.md` });
+    const scan = f.bridge.workspace!.scan;
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    f.bridge.workspace!.scan = async () => { const s = await scan(); await gate; return s; };
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    await settle();
+    expect(app.store.state.workspace.listing).toBe("loading");
+    await app.commands.run("note.setContent", { value: "# On focus\n\nText" });
+    await app.flush();
+    expect(f.renames).toEqual([]);
+    release();
+    await expect.poll(() => f.renames).toEqual([[`${ROOT}/untitled.md`, `${ROOT}/on-focus.md`]]);
+    expect(app.store.state.note.path).toBe(`${ROOT}/on-focus.md`);
+    expect(f.files[`${ROOT}/on-focus.md`]).toBe("# On focus\n\nText");
+  });
   it("a published note keeps its name", async () => {
     const path = `${ROOT}/plan.md`;
     const f = setup({ files: { [path]: "# Plan\n" }, open: path, published: [path] });
