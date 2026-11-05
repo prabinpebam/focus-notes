@@ -399,6 +399,8 @@
   "project.open.unpinItem": "Unpin {name}",
   "project.open.openItem": "Open {name}",
   "project.open.reveal": "{platform, select, macos {Show in Finder} linux {Show in file manager} other {Show in File Explorer}}",
+  "project.open.repo": "Open {repo} on GitHub",
+  "project.open.stats": "{files, plural, =0 {No files yet. Start your first note.} other {{size} · {files, plural, one {# file} other {# files}} · {media, plural, other {# media}} · {folders, plural, one {# folder} other {# folders}}}}",
   "project.open.revealFailed": "The folder couldn’t be shown. Your notes weren’t changed. Check that it still exists and try again.",
   "project.open.listFailed": "Your projects couldn’t be listed. Your notes weren’t changed. Try again.",
   "project.open.pinFailed": "The pin couldn’t be changed. Your notes weren’t changed. Try again.",
