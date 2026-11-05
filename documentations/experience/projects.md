@@ -129,7 +129,7 @@ The owner, 5 November, word for word:
 >
 > Add this in the execution track.
 
-Planned (PRJ-20 to PRJ-22, D-346; design first, in the gallery's **Mocks: Open** before any wiring). Under the folder path come the size line, then the GitHub line; the size line between the two links keeps their targets from overlapping:
+Built (PRJ-20 to PRJ-22, D-346; the owner approved the design on 5 November and it's wired with real data, D-352). Under the folder path come the size line, then the GitHub line; the size line between the two links keeps their targets from overlapping:
 
 - **The project's size** shows on one compact line under the folder path: **2.4 MB · 37 files · 5 media · 6 folders**. Files counts every file, media counts the images among them that the app recognises, and folders counts the folders inside the project. Hidden folders such as `.git` are left out. An empty project says **No files yet. Start your first note.** instead of a line of zeros, in the same quiet secondary text. In a narrow window the line ends in an ellipsis, like the path.
 - **The linked repository.** When the project's folder has a GitHub remote, its card shows a last line: the GitHub mark and **owner/repo**, in the path line's quiet text and icon style. A local-only project has no such line. Nothing new encloses it: no border, fill or badge.

@@ -26,6 +26,18 @@
       "transparent": {
         "$value": "#00000000"
       },
+      "shade": {
+        "$description": "Pure black at an opacity: darkens whatever it's drawn on and keeps that surface's hue (D-353).",
+        "a08": { "$value": "#00000014" },
+        "a16": { "$value": "#00000029" }
+      },
+      "glow": {
+        "$description": "Pure white at an opacity: lightens whatever it's drawn on and keeps that surface's hue (D-353).",
+        "a08": { "$value": "#ffffff14" },
+        "a14": { "$value": "#ffffff24" },
+        "a20": { "$value": "#ffffff33" },
+        "a55": { "$value": "#ffffff8c" }
+      },
       "paper": {
         "650": {
           "$value": "#5b564e",

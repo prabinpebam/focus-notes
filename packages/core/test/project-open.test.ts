@@ -1,7 +1,7 @@
 /** Open (owner, 4 November): a project's folder path shows the folder, and a first load shows placeholders, not "empty". */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../views/messages/en.json" with { type: "json" };
-import { createApp, MessageCatalog, type PlatformBridge, type ProjectCreateProgress, type ProjectEntry } from "../src/index.ts";
+import { createApp, formatSize, MessageCatalog, type PlatformBridge, type ProjectCreateProgress, type ProjectEntry } from "../src/index.ts";
 
 function appWith(projects: Partial<NonNullable<PlatformBridge["projects"]>>, readNote: PlatformBridge["readNote"] = async () => "", overrides: Partial<PlatformBridge> = {}) {
   const bridge = {
@@ -466,5 +466,64 @@ describe("Open", () => {
     expect(vm(app)).toMatchObject({ entriesWaiting: false, recentWaiting: false });
     await opening;
     expect(vm(app).entries).toHaveLength(1);
+  });
+  type Card = { repo: string; stats: string; statsBusy: boolean };
+  const card = (app: ReturnType<typeof createApp>) => vm(app).entries[0] as Card;
+  it("formats a project's size in decimal units, one decimal below 10", () => {
+    expect([0, 999, 1000, 37_400, 2_400_000, 9_960_000, 999_600, 1_250_000_000].map(formatSize))
+      .toEqual(["0 B", "999 B", "1 KB", "37 KB", "2.4 MB", "10 MB", "1 MB", "1.3 GB"]);
+  });
+  it("shows a card's GitHub repository and its counted size line (D-346)", async () => {
+    const app = appWith({ list: async () => [{ ...book, repo: "ana/book" }], stats: async () => ({ bytes: 2_400_000, files: 37, media: 5, folders: 6 }) });
+    await app.commands.run("projects.open");
+    await vi.waitFor(() => expect(card(app).stats).toBe("2.4 MB · 37 files · 5 media · 6 folders"));
+    expect(card(app)).toMatchObject({ repo: "ana/book", statsBusy: false });
+  });
+  it("says an empty project has no files yet, and a local-only one has no GitHub line", async () => {
+    const app = appWith({ list: async () => [book], stats: async () => ({ bytes: 0, files: 0, media: 0, folders: 0 }) });
+    await app.commands.run("projects.open");
+    await vi.waitFor(() => expect(card(app).stats).toBe("No files yet. Start your first note."));
+    expect(card(app).repo).toBe("");
+  });
+  it("holds the size line with a placeholder only after 300 ms, and shows the last count at once", async () => {
+    vi.useFakeTimers();
+    let done!: (s: { bytes: number; files: number; media: number; folders: number }) => void;
+    const stats = vi.fn(() => new Promise<{ bytes: number; files: number; media: number; folders: number }>((r) => { done = r; }));
+    const app = appWith({ list: async () => [book], stats });
+    await app.commands.run("projects.open");
+    expect(card(app)).toMatchObject({ stats: "", statsBusy: false });
+    await vi.advanceTimersByTimeAsync(299);
+    expect(card(app).statsBusy).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(card(app).statsBusy).toBe(true);
+    done({ bytes: 1000, files: 1, media: 0, folders: 1 });
+    await vi.advanceTimersByTimeAsync(499);
+    expect(card(app)).toMatchObject({ stats: "", statsBusy: true });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(card(app)).toMatchObject({ stats: "1 KB · 1 file · 0 media · 1 folder", statsBusy: false });
+    await app.commands.run("projects.close");
+    await app.commands.run("projects.open");
+    await vi.advanceTimersByTimeAsync(400);
+    expect(stats).toHaveBeenCalledTimes(2);
+    expect(card(app)).toMatchObject({ stats: "1 KB · 1 file · 0 media · 1 folder", statsBusy: false });
+  });
+  it("leaves the size line out without an error when a count fails", async () => {
+    const app = appWith({ list: async () => [book], stats: async () => { throw new Error("gone"); } });
+    await app.commands.run("projects.open");
+    await vi.waitFor(() => expect(card(app).statsBusy).toBe(false));
+    expect(card(app).stats).toBe("");
+    expect(vm(app).error).toBe("");
+  });
+  it("opens a card's repository through the bridge, and says so with Retry when it can't", async () => {
+    const opened: string[] = [];
+    let refused = true;
+    const app = appWith({ list: async () => [book], openRepo: async (folder: string) => { if (refused) throw new Error("gone"); opened.push(folder); } });
+    await app.commands.run("projects.open");
+    await app.commands.run("projects.openRepo", { id: "C:\\Book" });
+    expect(vm(app)).toMatchObject({ error: en["project.open.repoFailed"], recoveryAction: "Retry" });
+    refused = false;
+    await app.commands.run("projects.retry");
+    expect(opened).toEqual(["C:\\Book"]);
+    expect(vm(app).error).toBe("");
   });
 });
