@@ -18,7 +18,7 @@ import {
   actionsFor, Frecency, HELP_ENTRIES, itemKey, mergeResults, parseFilters, prefixMode, rankLocal, rowId,
   type ActionContext, type ActionId, type GroupId, type QuickAction, type SpotlightMode, type SpotlightRow,
 } from "./spotlight.ts";
-import { ANCHORS, anchorPresent, CATALOG, catalogEntry, listable, NEEDS, stepsFor, type ActionScope, type CatalogEntry } from "./actions-catalog.ts";
+import { ANCHORS, actionAvailability, CATALOG, catalogEntry, listable, stepsFor, type ActionScope, type CatalogEntry } from "./actions-catalog.ts";
 
 export interface SpotlightState {
   open: boolean;
@@ -145,17 +145,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     return { id: e.id, title: actionLabel(e), ...(k.length ? { keywords: k } : {}) };
   });
   /** Listed, unavailable with a reason, or hidden (ACT-08). `browse`: `>` shows hidden ones with what they need. */
-  const availability = (e: CatalogEntry, browse = false): { shown: boolean; reason?: string } => {
-    if (!listable(e, scope)) {
-      if (!browse) return { shown: false };
-      return { shown: true, reason: msg(anchorPresent(e.anchor, scope) ? "spotlight.unavailable" : NEEDS[e.anchor]) };
-    }
-    const blocked = e.blockedBy?.(scope);
-    if (blocked) return { shown: true, reason: msg(blocked) };
-    const d = commands.describe(e.steps[0]![0]);
-    if (!d.enabled) return { shown: true, reason: d.disabledReason ? msg(d.disabledReason) : msg("spotlight.unavailable") };
-    return { shown: true };
-  };
+  const availability = (e: CatalogEntry, browse = false) => actionAvailability(e, scope, (id) => commands.describe(id), msg, browse);
   const actionRow = (e: CatalogEntry, group: GroupId = e.anchor, highlights: SpotlightRow["highlights"] = []): SpotlightRow =>
     ({ id: rowId(group, e.id), group, kind: "command", key: e.id, label: actionLabel(e), highlights });
   /**
@@ -519,6 +509,15 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     shortcut: { default: "Mod+Shift+C", handledBy: field, whenEnabled: true }, layer: "pro", group: "spotlight",
     enabled: linkable,
     run: () => { const row = activeRow(); return row ? perform(row, "copyLink") : undefined; },
+  });
+  commands.register({
+    id: "note.copyLink", title: "actions.note.copyLink", group: "app",
+    enabled: (s) => Boolean(bridge.copyText) && s.note.status === "ready" && Boolean(s.note.path),
+    run: () => {
+      const path = store.state.note.path!;
+      const label = titleOfMarkdown(store.state.note.markdown) ?? titleOfPath(path);
+      return copy(linkTo({ id: path, key: path, path, label, kind: "note", group: "notes", highlights: [] }), msg("spotlight.copiedLink", { name: label }));
+    },
   });
   const jumpGroup = (dir: 1 | -1) => () => {
     const list = shown();

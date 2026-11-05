@@ -456,7 +456,7 @@ These are independently reviewable slices; lookahead permits design without unre
 | WP-A.6 | **AI actions through the approved prompt.** Rewrite, Write, presets pre-filled, Caption. | ACT-10 | WP-A.3, WP-AI.14, WP-P.2 | code, security, accessibility |
 | WP-A.7 | **Your own actions (after a week of use).** Saved prompts and templates, `actions.json`, schema version 1. | ACT-13, ACT-14 | WP-A.6 | code, security, design-system, accessibility |
 
-**GATE-MACT:** every [Actions done row](definition-of-done.md#actions-draft-for-owner-review) has its evidence, and the owner has run its *Try it* in a review build.
+**GATE-MACT:** every [Actions done row](definition-of-done.md#actions-mact) has its evidence, and the owner has run its *Try it* in a review build.
 
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 

@@ -54,6 +54,10 @@
       "budget": 50,
       "unit": "ms"
     },
+    "ACT-12.availability150Ms": {
+      "budget": 2,
+      "unit": "ms"
+    },
     "SPT-07.openMs": {
       "budget": 50,
       "unit": "ms"
