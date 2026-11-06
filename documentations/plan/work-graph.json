@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-11-03",
+  "updated": "2026-11-06",
   "stages": [
     {
       "id": "M0",
@@ -109,21 +109,21 @@
       "summary": "Enter dismisses Spotlight after acting; Shift+Enter retains toggles. Ctrl+Enter generates from the AI prompt, not during composition.",
       "requirements": ["SPT-10", "RWR-91"], "dependsOn": ["WP-4.2", "WP-AI.14"],
       "touches": ["core", "views", "editor"], "reviews": ["code", "accessibility"],
-      "specs": ["experience/spotlight.html", "experience/rewrite-with-ai.md"], "lookahead": true, "status": "built"
+      "specs": ["experience/spotlight.html", "experience/rewrite-with-ai.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.2", "stage": "MP", "title": "Write at caret",
       "summary": "Prompt-only AI insertion, exact cancellation and one undo; never sends surrounding note.",
       "requirements": ["RWR-92"], "dependsOn": ["WP-AI.14"],
       "touches": ["core", "editor", "views"], "reviews": ["code", "security", "design-system"],
-      "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md"], "lookahead": true, "status": "built"
+      "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.3", "stage": "MP", "title": "Title and file name apart",
       "summary": "Name once on first save, explicit Rename file, atomic link updates and preserved identity.",
       "requirements": ["FIL-18"], "dependsOn": ["WP-2.3"],
       "touches": ["core", "views"], "reviews": ["code"],
-      "specs": ["design/views/files.html"], "lookahead": true, "status": "built"
+      "specs": ["design/views/files.html"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
@@ -132,81 +132,81 @@
       "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
       "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "architecture/repository-and-publishing.html", "architecture/desktop-and-git.md"],
-      "lookahead": true, "status": "planned"
+      "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.5", "stage": "MP", "title": "Recognizable project windows",
       "summary": "Window identity only as the colour outline, the project pill after Backed up and the optional watermark; Settings → Project with Font and Theme tiles and popovers reusing the app's tiles; the local-drive pill outside projects; passive SVG logos, no raw-upload rendering (mocks approved, owner 3 November 19:39).",
       "requirements": ["PRJ-04", "PRJ-13", "PRJ-18", "PRJ-19"], "dependsOn": ["WP-P.4"],
       "touches": ["desktop", "core", "ui", "views", "tokens", "schemas"], "reviews": ["security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.6", "stage": "MP", "title": "Projects, recent and pins",
       "summary": "Projects list, recent files with location and stable shortcuts to projects, folders and notes.",
       "requirements": ["PRJ-05", "PRJ-06", "PRJ-07", "FIL-19"], "dependsOn": ["WP-P.4", "WP-P.3"],
       "touches": ["core", "views", "schemas"], "reviews": ["code", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "design/views/files.html"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md", "design/views/files.html"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.7", "stage": "MP", "title": "Choose a place before writing",
       "summary": "New note in today's workspace folder picker (D-338), project-scoped when projects land; collision-free platform key changes; regular New note unchanged.",
       "requirements": ["FIL-17", "KEY-09"], "dependsOn": [],
       "touches": ["core", "views"], "reviews": ["code", "design-system", "accessibility"],
-      "specs": ["design/views/files.html", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "built"
+      "specs": ["design/views/files.html", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.8", "stage": "MP", "title": "Local notes and standalone files",
-      "summary": "Local-only capture and Open with, autosave/recovery/conflicts without implicit project import.",
+      "summary": "Local-only capture and Open with, autosave/recovery/conflicts without implicit project import. 6 November: Local notes, location pill and in-app Open file are built; Explorer file associations remain missing.",
       "requirements": ["PRJ-08", "PRJ-09"], "dependsOn": ["WP-P.6"],
       "touches": ["desktop", "core", "views"], "reviews": ["code", "security", "accessibility"],
-      "specs": ["experience/projects.md", "experience/notes-folder.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md", "experience/notes-folder.md"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.9", "stage": "MP", "title": "Item-first share dialog",
       "summary": "Share… in the menu, straight to the fixed item's dialog, counts, review tree, switches and four actions; first action publishes; Share… starts a new share (D-307, D-311). Ships on today's sharing, before projects (D-314). Nothing added to the writing window (D-336). UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 1 to 11.",
       "requirements": ["SHR-13", "SHR-14", "SHR-15", "SHR-16", "SHR-24"], "dependsOn": ["WP-5.3", "WP-P.16"],
       "touches": ["core", "ui", "views"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["design/views/sharing.md", "design/system/components.md"], "lookahead": true, "status": "planned"
+      "specs": ["design/views/sharing.md", "design/system/components.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
-      "summary": "Opaque random share/access identifiers, item-based history and template; no source-name-derived links/paths/files, including media. Extend pre-commit/deploy leak checks; preserve old grants without new revealing aliases. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 2 and 12.",
+      "summary": "Opaque random share/access identifiers, item-based history and template; no source-name-derived links/paths/files, including media. Extend pre-commit/deploy leak checks; preserve old grants without new revealing aliases. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 2 and 12. 6 November: current opaque shares are built; media leak-check extension and MP.14 evidence remain open.",
       "requirements": ["SHR-17", "SHR-18", "SHR-19", "SHR-23"], "dependsOn": ["WP-P.9", "WP-5.4"],
       "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
-      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.11", "stage": "MP", "title": "GitHub collaborators",
-      "summary": "Account-backed invites with real personal/organization roles, full-scope warning and safe pending/failure states. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 13 and 14.",
+      "summary": "Account-backed invites with real personal/organization roles, full-scope warning and safe pending/failure states. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 13 and 14. 6 November: Invite dialog and roles save a local draft only; sending invitations to GitHub and real-account MP.8 proof remain open.",
       "requirements": ["PRJ-12"], "dependsOn": ["WP-P.4"],
       "touches": ["github", "core", "views"], "reviews": ["code", "security", "design-system"],
-      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.12", "stage": "MP", "title": "A website with its own theme",
-      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 11.",
+      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 11. 6 November: local site appearance is built; the theme on the live website and real publishing remain open pending P1 to P4.",
       "requirements": ["SHR-20"], "dependsOn": ["WP-5.1", "WP-P.4", "WP-P.13"],
       "touches": ["web", "views", "tokens"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.22", "stage": "MP", "title": "Publish and unpublish on today's workspace",
-      "summary": "D-349 publishing slice 2: the approved Publish... dialog does the real visibility move and save to GitHub on today's workspace (no projects needed), Unpublish moves the note back, and the deploy is one honest long task (D-351): Publishing... until GitHub reports the Pages deployment for that commit succeeded, Copy link, Retry, Removing from your site.... Publishing slice 1 (gallery mocks for these states and the site's empty, missing and failure pages) goes first. Waits for the owner's yes to publishing on today's workspace; agents test against protocol fakes only (D-343).",
+      "summary": "D-349 publishing slice 2: the approved Publish... dialog does the real visibility move and save to GitHub on today's workspace (no projects needed), Unpublish moves the note back, and the deploy is one honest long task (D-351): Publishing... until GitHub reports the Pages deployment for that commit succeeded, Copy link, Retry, Removing from your site.... Publishing slice 1 (gallery mocks for these states and the site's empty, missing and failure pages) goes first. Waits for the owner's yes to publishing on today's workspace; agents test against protocol fakes only (D-343). 6 November: Publish saves a local preview draft only; real Publish/Unpublish and deploy status wait on the owner's P1 to P4 answers.",
       "requirements": ["SHR-25", "SHR-26"], "dependsOn": ["WP-5.1"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/published-site.md", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/published-site.md", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
-      "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched.",
+      "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched. 6 November: apps/web, its demo and IndexedDB store still exist; browser retirement is approved but not implemented.",
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
       "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
       "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"
     },
     {
       "id": "WP-P.14", "stage": "MP", "title": "Public home, sections and reading",
-      "summary": "Public-only article discovery, folder sections/counts, scalable navigation, optional project mark, site theme and focus reading; no shared-only index metadata.",
+      "summary": "Public-only article discovery, folder sections/counts, scalable navigation, optional project mark, site theme and focus reading; no shared-only index metadata. 6 November: the live public home page with sections and counts remains unbuilt; publishing waits on P1 to P4.",
       "requirements": ["SHR-21"], "dependsOn": ["WP-P.12", "WP-P.5", "WP-P.9"],
       "touches": ["web", "seal", "views", "ui"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/published-site.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
@@ -216,56 +216,56 @@
       "summary": "In-app read-only website renderer, theme/font/default size draft, explicit Apply separate from Publish and safe Cancel/retry. Full-window preview from Settings → Sharing (D-337). UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 15.",
       "requirements": ["SHR-22"], "dependsOn": ["WP-P.14"],
       "touches": ["desktop", "core", "views", "ui"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/published-site.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/published-site.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.16", "stage": "MP", "title": "Switch primitive",
       "summary": "Sealed labelled Switch with checked semantics, thumb position and On/Off text, pending, disabled-with-reason and error states, cmp.switch tokens, in the gallery (D-286, D-314). The approved primitive and tokens are on vq-share-mocks (packages/ui/src/primitives/Switch, cmp.switch.*); pending and error states still need design (D-335).",
       "requirements": ["DSY-15"], "dependsOn": [],
       "touches": ["tokens", "ui"], "reviews": ["design-system", "accessibility"],
-      "specs": ["design/system/components.md"], "lookahead": true, "status": "planned"
+      "specs": ["design/system/components.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.17", "stage": "MP", "title": "Call it a project",
       "summary": "The terminology move first: upgrade notice, first-run explainer and figure, Settings → Project, Files heading, window titles and Help; no files or repositories move (D-272, D-314).",
       "requirements": ["PRJ-11"], "dependsOn": [],
       "touches": ["views", "core"], "reviews": ["design-system", "accessibility"],
-      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.18", "stage": "MP", "title": "Turn sharing on and off",
-      "summary": "First-share step that creates the site with a neutral name (D-312), local sealing with no private key on the site (D-305), and Turn off that withdraws content and removes legacy keys. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 5 and 12.",
+      "summary": "First-share step that creates the site with a neutral name (D-312), local sealing with no private key on the site (D-305), and Turn off that withdraws content and removes legacy keys. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 5 and 12. 6 November: today's Turn off sharing confirmation exists; the separate-site-repository model and full turn-off flow remain open.",
       "requirements": ["PRJ-10"], "dependsOn": ["WP-P.4", "WP-P.9", "WP-P.12", "WP-5.1"],
       "touches": ["core", "desktop", "seal"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.19", "stage": "MP", "title": "Launch where I left off",
       "summary": "Launch reopens the last-edited note (the last window closed) at its caret, in its project's window; recovery for a missing note; Open when there's nothing to reopen (D-318).",
       "requirements": ["PRJ-14"], "dependsOn": ["WP-P.4"],
       "touches": ["desktop", "core"], "reviews": ["code"],
-      "specs": ["experience/projects.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.20", "stage": "MP", "title": "The Open view",
       "summary": "Ctrl+Alt+O opens Open: search, New Local note, Open file…, Open from GitHub…, New project…; Recent files and Projects in two columns ranked by exponential-decay frecency; pins in Open apart from pins in Files (D-319, D-321, D-322).",
       "requirements": ["PRJ-15", "PRJ-16", "PRJ-17"], "dependsOn": ["WP-P.6", "WP-P.8"],
       "touches": ["core", "views", "ui"], "reviews": ["code", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/projects.md", "experience/keyboard-shortcuts.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.21", "stage": "MP", "title": "A project card's GitHub link and size",
       "summary": "Open's project cards show the linked GitHub repository (GitHub mark and owner/repo, read from the local remote) as its own button that opens it in the default browser, and the project's size, files, media files and folders on one line counted asynchronously and cached (owner, 5 November; D-346).",
       "requirements": ["PRJ-20", "PRJ-21", "PRJ-22"], "dependsOn": ["WP-P.20"],
       "touches": ["core", "views", "ui", "desktop"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
+      "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.23", "stage": "MP", "title": "Delete a project with GitHub handoff",
-      "summary": "Approved by the owner on 5 November 2026 and built with fakes only. PRJ-23: consequences, a copy of the notes not on GitHub, typed confirmation, the GitHub settings Danger Zone handoff, status checks that never treat a 404 as proof, the person's explicit I deleted it, recoverable recycling to the Recycle Bin with private notes kept beside it, a precise locked-file failure, then Open with one success pill. No real repository is deleted by an agent.",
+      "summary": "Approved by the owner on 5 November 2026 and built with fakes only. PRJ-23: consequences, a copy of the notes not on GitHub, typed confirmation, the GitHub settings Danger Zone handoff, status checks that never treat a 404 as proof, the person's explicit I deleted it, recoverable recycling to the Recycle Bin with private notes kept beside it, a precise locked-file failure, then Open with one success pill. No real repository is deleted by an agent. 6 November: built and tested with fakes; the first real deletion is reserved for the owner (D-343), so MP.34 acceptance remains open.",
       "requirements": ["PRJ-23"], "dependsOn": ["WP-P.17", "WP-P.20"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
+      "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
@@ -281,7 +281,7 @@
       "requirements": ["RWR-70", "RWR-71", "RWR-72", "RWR-73", "RWR-74", "RWR-75", "RWR-76", "RWR-77", "RWR-78", "RWR-79", "RWR-80", "RWR-81", "RWR-82", "RWR-83", "AIS-01", "AIS-02", "AIS-03", "AIS-04", "AIS-05", "AIS-06", "AIS-07", "AIS-08", "AIS-09", "AIS-10", "AIS-11", "AIS-12", "AIS-15", "KEY-08", "SPT-09", "UI-14", "I18N-04", "PRV-05", "LIC-03"],
       "dependsOn": ["WP-1.1", "WP-8.9"], "touches": ["core", "editor", "tokens", "ui", "views", "desktop"],
       "reviews": ["code", "security", "design-system"], "specs": ["experience/rewrite-with-ai.md", "experience/ai-settings.md", "design/rewrite-with-ai.md", "architecture/rewrite-engine.md", "architecture/rewrite-providers.md", "plan/rewrite-acceptance.md"],
-      "lookahead": true, "status": "building"
+      "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-AI.12", "stage": "MAI", "title": "Live Markdown while streaming and platform key names",
@@ -1755,7 +1755,7 @@
         "architecture/performance-and-quality.md"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-5.13",
@@ -1793,7 +1793,7 @@
       "id": "WP-5.14",
       "stage": "M5",
       "title": "Notes folder recovery and sync status",
-      "summary": "The start check before anything else, with no silent re-creation; the recovery view (download again, sign in again, find the folder, start an empty folder offline); the workspace record's kind, notes on GitHub, account and last backup; the out-of-sync alert and card with Sync now, automatic sync when nothing could be lost, and the mass-deletion pause; offline mode in the corner; Settings showing the account Git signs in with (DEF-33).",
+      "summary": "The start check before anything else, with no silent re-creation; the recovery view (download again, sign in again, find the folder, start an empty folder offline); the workspace record's kind, notes on GitHub, account and last backup; the out-of-sync alert and card with Sync now, automatic sync when nothing could be lost, and the mass-deletion pause; offline mode in the corner; Settings showing the account Git signs in with (DEF-33). 6 November: recovery and sync status are partial; the complete notes-folder recovery flow remains open.",
       "requirements": [
         "FRE-11",
         "FRE-12",
@@ -1822,7 +1822,7 @@
         "architecture/perceived-performance.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-5.15",
@@ -2369,7 +2369,7 @@
       "id": "WP-8.2",
       "stage": "M8",
       "title": "Custom and generated themes",
-      "summary": "Custom themes, sync, named schemes, import, generation from a seed color, and shuffle.",
+      "summary": "Custom themes, sync, named schemes, import, generation from a seed color, and shuffle. 6 November: custom/generated themes are in Preview; remaining theme-polish scope is not formally closed.",
       "requirements": [
         "THM-04",
         "THM-05",
@@ -2428,7 +2428,7 @@
       "id": "WP-8.4",
       "stage": "M8",
       "title": "Workspace pro",
-      "summary": "Replace across notes, Spotlight filters and preview, sorting and duplicating, and note history.",
+      "summary": "Replace across notes, Spotlight filters and preview, sorting and duplicating, and note history. 6 November: Files sort, history, replace across notes and Spotlight filters/preview are in Preview; remaining pro scope is not formally closed.",
       "requirements": [
         "FND-05",
         "SPT-06",
@@ -2460,7 +2460,7 @@
       "id": "WP-8.5",
       "stage": "M8",
       "title": "Multiple windows",
-      "summary": "One note per window, with state kept per window.",
+      "summary": "One note per window, with state kept per window. 6 November: project windows and Open in new window are built; formal two-project acceptance and the remaining multi-window lifecycle/platform work are not closed.",
       "requirements": [
         "DSK-06"
       ],
@@ -2616,7 +2616,7 @@
         "design/views/files.html"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-8.11",
@@ -2644,7 +2644,7 @@
         "design/views/files.html"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-8.12",
@@ -2673,13 +2673,13 @@
         "experience/print.md"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-A.1",
       "stage": "MACT",
       "title": "Actions design in the gallery (strict design)",
-      "summary": "View-document mocks in packages/views/mocks/actions/: empty field with a selection, a typed query mixing files and anchored groups, a blocked AI row with its fix, `>` browse, a result's More actions, and a standalone file's window; light, dark and contrast. Gallery only; no wiring until the owner approves.",
+      "summary": "View-document mocks in packages/views/mocks/actions/: empty field with a selection, a typed query mixing files and anchored groups, a blocked AI row with its fix, `>` browse, a result's More actions, and a standalone file's window; light, dark and contrast. Gallery only; no wiring until the owner approves. 6 November: optional gallery mocks were waived for direct approved implementation; runtime delivery is WP-A.2 to WP-A.6, not evidence that this gallery-only package is built.",
       "requirements": [],
       "dependsOn": ["WP-4.2"],
       "touches": ["views"],
@@ -2699,7 +2699,7 @@
       "reviews": ["code", "design-system", "accessibility"],
       "specs": ["experience/actions.md", "architecture/actions-framework.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-A.3",
@@ -2712,7 +2712,7 @@
       "reviews": ["code", "design-system", "accessibility"],
       "specs": ["experience/actions.md", "architecture/actions-framework.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-A.4",
@@ -2725,7 +2725,7 @@
       "reviews": ["code", "accessibility"],
       "specs": ["experience/actions.md", "architecture/actions-framework.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-A.5",
@@ -2738,7 +2738,7 @@
       "reviews": ["code", "security", "accessibility"],
       "specs": ["experience/actions.md", "architecture/actions-framework.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-A.6",
@@ -2751,13 +2751,13 @@
       "reviews": ["code", "security", "accessibility"],
       "specs": ["experience/actions.md", "architecture/actions-framework.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-A.7",
       "stage": "MACT",
       "title": "Your own actions (waits for the owner's yes)",
-      "summary": "Saved prompts and text templates in app-data actions.json with schemas/actions.schema.json version 1; New action... from `>`; rename, edit, delete; the Yours group; label clashes refused; no code.",
+      "summary": "Saved prompts and text templates in app-data actions.json with schemas/actions.schema.json version 1; New action... from `>`; rename, edit, delete; the Yours group; label clashes refused; no code. 6 November: deferred by D-364 until a week of using the starter set; MACT.9 remains open.",
       "requirements": ["ACT-13", "ACT-14"],
       "dependsOn": ["WP-A.6"],
       "touches": ["core", "views", "desktop", "schemas"],
@@ -2770,14 +2770,14 @@
       "id": "WP-9.3",
       "stage": "Later",
       "title": "Managed image assets",
-      "summary": "Root-owned assets/images with random names, relative references, local sidecars, atomic copy/move/recovery (D-301). Inline images don't wait for sharing (D-314).",
+      "summary": "Root-owned assets/images with random names, relative references, local sidecars, atomic copy/move/recovery (D-301). Inline images don't wait for sharing (D-314). 6 November: managed assets and metadata stripping before public Git writes are built; link rebasing on moves and copies remains open.",
       "requirements": ["IMG-05"],
       "dependsOn": ["WP-2.3"],
       "touches": ["core", "desktop", "seal", "markdown", "schemas"],
       "reviews": ["code", "security"],
       "specs": ["experience/images.md", "architecture/content-model.md", "architecture/repository-and-publishing.html"],
       "lookahead": true,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-9.4",
@@ -2790,7 +2790,7 @@
       "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/images.md", "architecture/editor-engine.md"],
       "lookahead": true,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-9.5",
@@ -2816,7 +2816,7 @@
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",
-      "summary": "Registered inline-flow image block, Column/Wide/Actual geometry, remembered and mixed-selection switches, safe menu/clipboard/replace/export, lossless attributes and shared accessible rendering. Built on main (candidate slice, 3 November): rendering, the context menu with display modes, Rounded corners and Limit height (mixed selection), the missing-image state with Retry and the hidden-comment format (D-347). Remaining (D-349 slices 2 and 3): Edit description and Add caption, Cut, Copy, Replace image, Save image, remembered defaults, and the image round-trip corpus and journeys.",
+      "summary": "Registered inline-flow image block, Column/Wide/Actual geometry, remembered and mixed-selection switches, safe menu/clipboard/replace/export, lossless attributes and shared accessible rendering. Built on main (candidate slice, 3 November): rendering, the context menu with display modes, Rounded corners and Limit height (mixed selection), the missing-image state with Retry and the hidden-comment format (D-347). Remaining (D-349 slices 2 and 3): Edit description and Add caption, Cut, Copy, Replace image, Save image, remembered defaults, and the image round-trip corpus and journeys. 6 November: local display, sizing, Rounded corners, Limit height and Edit image are built; description, caption, Cut, Copy, Replace, Save image and remembered defaults remain open.",
       "requirements": [
         "EXT-03", "IMG-02", "IMG-03", "IMG-04", "IMG-10", "IMG-11"
       ],
@@ -2846,7 +2846,7 @@
       "summary": "D-349 images slice 1, built together with WP-9.3's storage core: paste (Ctrl+V), drop with the insertion marker, Insert image..., /image and Spotlight copy validated PNG/JPEG/WebP files into assets/images/<random-id> and insert relative standard Markdown images as one undoable edit; all-or-none batches, Adding N images... wait, read-only and unsaved-note branches. The insertion design is approved (mock 9, owner 3 and 5 November); build against it, no new mock.",
       "requirements": ["IMG-01"], "dependsOn": ["WP-9.3"],
       "touches": ["editor", "core", "desktop", "markdown", "views"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/images.md", "experience/editing.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/images.md", "experience/editing.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-9.8", "stage": "Later", "title": "Print images",

@@ -1,6 +1,6 @@
 # Roadmap
 
-> **MAI owner feedback, D-267 (integrated, locally verified):** WP-AI.15 owns AIS-16, the single directly selectable Settings AI connections list. Default is the same device-local Writer as Rewrite's remembered picker. One Find on this PC button replaces the local section. Exact implementation c4335741 is integrated into own-candidate over 86631980, preserving D-264/D-265/D-266; combined check/types/build, 401 units and five journeys pass. UX-LIST.1 to UX-LIST.5 evidence and Try it are in [Definition of done](definition-of-done.md#settings-ai-single-list-stage); [candidate evidence](rewrite-acceptance.md#settings-list-combined-candidate-1-november) records the scoped checks. No full suite or CI wait before owner review; owner acceptance and the full MAI gate remain pending.
+> **MAI owner feedback, D-267 (built, verifying as of 6 November):** WP-AI.15 owns AIS-16, the single directly selectable Settings AI connections list, now in Preview. Default is the same device-local Writer as Rewrite's remembered picker. One Find on this PC button replaces the local section. UX-LIST.1 to UX-LIST.5 evidence and Try it are in [Definition of done](definition-of-done.md#settings-ai-single-list-stage); [candidate evidence](rewrite-acceptance.md#settings-list-combined-candidate-1-november) retains the earlier scoped checks. Owner acceptance and the full MAI gate remain pending.
 
 The stages in which Focus Notes gets built. Every stage ends with an app someone can install and use for real work, and every requirement belongs to exactly one stage. The work inside each stage is in the [Implementation plan](implementation-plan.md), what "done" means is in [Definition of done](definition-of-done.md), and how agents carry the work is in [The agentic loop](agentic-loop.html). There are no dates, because neither the seed spec nor the owner has set any.
 
@@ -21,17 +21,17 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
-| **MP: Projects and simpler sharing** | Private projects in distinct windows; local capture, pins, opaque item-first sharing and a clean website. Browser retirement approved to plan (D-292). | Desktop writers and website readers | Planned 1.x | 35 |
-| **MACT: Actions you can trust** (approved, building) | Spotlight becomes Actions, *Find and act*: files and folders, and only proven, distinct actions grouped by what they act on. | The owner, then desktop writers | Planned 1.x | 16 |
+| **MP: Projects and simpler sharing** | Desktop slices built and verifying; real invitations/publishing and browser retirement remain open (D-292). | Desktop writers and website readers | Preview; partial 1.x | 35 |
+| **MACT: Actions you can trust** (built, verifying) | Spotlight becomes Actions, *Find and act*: files and folders, and only proven, distinct actions grouped by what they act on. Own actions deferred. | The owner, then desktop writers | Preview 1.x | 16 |
 | **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 14 |
 
 ## Where we are
 
 **Settings type ramp (1 November, D-258).** A low-risk refinement to DSY-01 / WP-0.3 (M0): the shared Heading/Text primitives separate section headers (20 px / 700), subsection labels (16 px / 600) and body/help text (14 px / 400). The [foundations](../design/foundations.md#type) record the complete ramp and chain; the owner's combined review build is prepared by the coordinator, not merged here.
 
-### Current state: MP build order (3 November, evening)
+### Historical MP build order (3 November, evening)
 
-The projects, Files, Local notes, images, sharing and publishing UX is approved (owner, 19:39; D-335 and the projects mocks). Built in this order, each package against its [Definition of Done rows](definition-of-done.md#projects-and-simpler-sharing):
+The projects, Files, Local notes, images, sharing and publishing UX was approved (owner, 19:39; D-335 and the projects mocks). This was the implementation order, not today's status; the current assessment follows below. Each package is checked against its [Definition of Done rows](definition-of-done.md#projects-and-simpler-sharing):
 
 1. **WP-P.16** Switch primitive (landed on `main` at `2bc655a5`).
 2. **WP-P.9** item-first share dialog, in parallel with the general fixes **WP-P.1**, **WP-P.2**, **WP-P.7** (D-338, today's workspace) and **WP-P.3**.
@@ -43,36 +43,48 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 
 ### Current state (16 October, evening)
 
-The short, current list for anyone picking up the work; the stage-by-stage history follows below. Statuses live in [`work-graph.json`](work-graph.json).
+**Updated 6 November, afternoon.** This heading stays unchanged so existing links keep working. The assessment uses `main` at `15a3ee3d` and the final OFB Preview `ca6ae17`, ready at 13:12. Statuses live in [`work-graph.json`](work-graph.json): delivered packages are **verifying**, not a claim of formal stage sign-off. The stage-by-stage history below is historical.
 
-- **Built and on `main`, in the owner's Preview:** M0 to M7 are built and verifying. Today added custom themes (WP-8.2, slices 1–3), toolbar and keybinding customization (WP-8.3), Files sort and note history (WP-8.4), Open in new window (WP-8.5), the save-overwrite fix (DEF-26), the slash menu fix (DEF-25), Ctrl+= widening the column, block spacing (D-183), and tables that fill the column, insert on a border, resize by dragging and switch between Fit to column and Bleed to edge (D-182).
-- **Live on GitHub Pages:** the landing page, the demo at `/demo/`, the owner's app at `/app/`, and Help as a section of these docs (D-167, D-174, D-176, D-177, D-181).
-- **Partly built:**
-  - **WP-8.2 custom themes:** rename, import, generate from one color, shuffle, export.
-  - **WP-8.4 workspace pro:** last-changed time on rows, replace across notes (FND-05), Spotlight filters and a preview pane (SPT-06).
-  - **WP-8.5 multiple windows:** <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>, reopening the same windows at launch, the macOS Window menu.
-  - **WP-8.8 document minimap (D-185, D-186):** built on the `fix-state-note` branch (17 October) with its code, accessibility and design-system reviews addressed, and the owner's docking added: Files and the contents dock flush to the window's edges, resizable, Files undocking first as the window narrows (*Dock contents*, D-186, D-187). Waiting for its Windows CI run and the owner's look. It stays in focus mode, which is on by default. Follow-ups: a setting to turn it off, an exit fade for the card, PopoverPanel's own hover-close delay reading `wait.hoverClose`, and, on Linux only (D-112, report-only), an axe `label-content-name-mismatch` in the ⋯ menu that's new on this branch (m1-toolbar and m1-a11y; Windows and macOS pass).
-  - **WP-AI.11 Rewrite with AI and Settings → AI (D-256, D-257):** the in-place rewrite is built. The 1 November feedback slice (D-261, D-262, `fix-ai-integration-picker`) updates RWR-73 and AIS-03 in WP-AI.11 and AIS-13 in WP-AI.13: no private-notes blocking option; every prompt names the integration, model and This computer or Cloud, with a remembered connection picker. **WP-AI.14 (D-265/D-266, built on `own-popover-build`):** inline selection-anchored prompt, no passage preview, document scrolling, clamp while any selected fragment is visible, draft-loss confirmation on non-empty deselection; first-send disclaimer/consent removed. Mid-rewrite cancellation (RWR-86) stays. [UX-POP.1 to UX-POP.6 / Try it](definition-of-done.md#inline-prompt-popover-definition-of-done) record local evidence; candidate integration and owner acceptance remain. Fast checks, no full suite or CI wait before owner review (D-255). See [Rewrite with AI](../experience/rewrite-with-ai.md).
-  - **WP-8.10 backup by repository (D-191):** Private and Public in Files each show their repository's backup icon and card, counting what waits there (empty folders too), with *Back up to GitHub* for that repository. Built on `wp-repo-backup` (18 October); waiting for its Windows CI run and the owner's look.
-  - **WP-5.6, WP-5.7, WP-6.2:** loose ends.
-- **Not started:**
-  - WP-5.14 notes folder recovery and sync status, then WP-5.15 choosing where notes live: specified in [Where your notes live](../experience/notes-folder.md) (D-212 to D-215, proposed 24 October), waiting for the owner's approval before building;
-  - WP-8.6 signing, updates, channels and stores (needs the owner's certificates);
-  - WP-8.7 more interface languages;
-  - WP-9.1 image block and WP-9.2 gallery block.
-- **Product site:**
-  - WP-10.2 and WP-10.3: the eight Help sections exist but have no articles yet;
-  - WP-10.5: downloads need real installers (WP-8.6);
-  - WP-10.7: the app's Learn more links aren't wired yet.
-- **Open defects and polish:**
-  - Note history briefly says it needs Git before Git has started; it should say it's getting ready.
-  - Typing in a 50,000-word note, or in very large tables with wrapping cells, misses its budget locally. Virtualising what's off screen would fix it.
-  - Intermittent CI journeys: the real-cursor drag helper never starting (`m5-snappy`), the first-run card (`m1-a11y`), `wp83-customize`, `dsk09-frames`, `m1-tables` (DEF-27).
-  - The white window margin (D-153) needs a look on the owner's hardware.
-- **Crash recovery made isolated (WP-8.9, D-190, 18 October):** the recovery journal recreated four notes under names they'd held during title renames, and committed them. The plan and a benchmark of how other editors recover are in [Crash recovery](../architecture/crash-recovery.md). Done and released in **v1.0.2** (26 October): drafts in the app's data folder, matched at launch without writing, back through the editor or Files → Recovered; proven on Windows by the isolation journey, a 40-round rename storm on CI and `fn:recovery.match` at 10.7 ms (D-222). The storm also found DEF-36 to DEF-39 (a save's new file ID, a new draft waiting for Git, leftover save temps, and the spell checker's helper stalling the main thread), all fixed. The v1.0.2 MSIX is ready to upload to the Store by hand.
-- **Waiting on the owner:** D-158 (where new notes go without a private repository), the look without a GPU (D-151 (13)), and the anchored setup card.
-- **Suggested next, in order:** finish WP-8.5 and WP-8.4, the image block (WP-9.1), then the Help articles (WP-10.3).
-- **How to work:** read the project context at the top of [`AGENTS.md`](../../AGENTS.md) first. This is the owner's hobby project in development: do what they ask directly, gate a change only on the checks that cover it (D-180), and keep only the real safety rules (their notes, privacy, their computer).
+#### Built and in Preview
+
+| Stage | Delivered |
+| --- | --- |
+| M0 to M4 | The writing editor, blocks, tables, slash menu, focus mode, themes, font size, find/replace, shortcut layers, desktop window, isolated crash recovery, sign-in and Git sync, private/public notes, Recently deleted, Spotlight and theme manager. Built and verifying; no formal stage sign-off recorded. |
+| M5 | Public/private notes, public pages, sealed link/passcode shares with expiry, Extend/Withdraw, diagnostics, Send feedback (WP-5.12) and close to tray. Release qualification and remaining first-run work are still open. |
+| M7 | MCP server, agent permissions (Switches), CLI and deep links. |
+| M8 | Custom/generated themes, Customize toolbar (wired 6 November), Files sort, note history, replace across notes, Spotlight filters/preview, Open in new window, minimap, per-repository backup, Import files and Print. Remaining platform/lifecycle and distribution work is not closed. |
+| MAI | Settings → AI with 26 service kinds, inline prompt, streaming rewrite with formatting and one Undo, Ctrl+Shift+R, Ctrl+Enter to send, and writing at the caret without a selection. The full MAI gate remains open. |
+| MP | Item-first Files Share dialog, first-share confirmation, Project wording, distinct project windows/profiles and scope, 2 px colour outline with Switch, pill/watermark, preset/uploaded logos, project font/theme, Open with recent/project cards (GitHub link and size), pins, caret restoration, New note in…, Rename file, Local notes/location pill and in-app Open file. Delete project is built with fake-account tests only. Preview site is full-window but local only. |
+| OFB | Every allocated row is met: shared button geometry/padding, Settings Switches, one pending pattern, auto-dismiss notifications, slash blocks/Table insertion, images slice 1, Customize toolbar, Actions A.2 to A.6, project border, restored toolbar icons, code tint, table-wide focus and disabled-section fade. [Evidence](gate-evidence.md#owner-feedback-batch-6-november-ofb) records final Preview `ca6ae17`. |
+| Images | Local images, Column/Wide/Actual, Rounded corners, Limit height, crop/rotate, broken-image Retry, paste/drop/Insert image/slash/Actions insertion into managed assets, and metadata stripping before public Git writes. This is slice 1, not completion of the whole image stage. |
+
+#### Waiting on the owner
+
+| Decision or acceptance | What remains |
+| --- | --- |
+| Publishing P1 to P4 | [Readiness questions](../experience/published-site.md#readiness-assessment-5-november): publish on today's project rather than wait for a separate site repository; `/n/` note paths; stripped location/camera metadata; first live publish on the real site or a throwaway repository. Until answered, Publish… saves only a local preview draft. |
+| First real Delete project | The owner's manual run, including progress, status-check and resume screens (D-343). Agents never delete a real repository; MP.34 real-account acceptance is open. |
+| On-disk Project rename | UI terminology is delivered; folders, the workspace-format filename and template files are a separate decision, part c of “Project replaces workspace”. No disk move is implied. |
+| Faster reopen | `fix-reopen-residual` is paused after red CI on 5 November (shards 2 and 3); resume or drop. |
+| Your own actions | WP-A.7 / MACT.9 is deferred by D-364 until a week using the starter set. |
+| MAI acceptance | Full gate and owner acceptance remain open; real providers beyond connected ones require approval (WP-AI.7, WP-AI.8). |
+
+#### Specced but missing or partial
+
+| Area | Remaining work |
+| --- | --- |
+| MP | Explorer file associations (WP-P.8); Invite sends only a local draft, not GitHub invitations (WP-P.11); live Publish/Unpublish, deploy status, live theme and public home sections/counts (WP-P.22, WP-P.12, WP-P.14); browser app/demo/IndexedDB retirement (WP-P.13); separate site repository per project (D-312), full Turn sharing off across that model (WP-P.18), and extended opaque-name/media leak proof (WP-P.10, MP.14). Windows sharing copies information; macOS uses the share sheet, as designed. |
+| Images | Description/caption, Cut/Copy/Replace/Save and remembered defaults (rest of WP-9.1); move/copy link rebasing (rest of WP-9.3); image printing (WP-9.8), publishing (WP-9.9), AI captions (WP-9.5), encrypted sharing (WP-9.6; notes with images cannot yet be shared), and Gallery (WP-9.2). |
+| M5 / 1.0 | Notes-folder recovery/sync status is partial (WP-5.14); choosing where notes live and Move… are missing (WP-5.15). Template update PRs (WP-5.6), Windows splash/launch timing (WP-5.16), Store-package Git (WP-5.17) and release qualification (WP-5.7) remain in progress. |
+| M8 | Code signing, automatic updates, Beta, winget and Homebrew (WP-8.6) and more interface languages (WP-8.7) remain missing; the Store build updates itself. Custom themes, workspace pro and multiple windows retain remaining scope in building packages. |
+| Product site and Help | 11 articles of roughly 40 planned (WP-10.3); Learn more links (WP-10.7) missing; Help extras, screenshots and landing work remain building. Browser writing is retired in the product direction, not yet removed from `apps/web`. |
+| MAI / MACT | MAI gate evidence and Help (WP-AI.9), shortcut names in menus (WP-AI.12); unlisted Actions candidates remain unlisted until wired: Caption image with AI, Show this project in Explorer, Open this project on GitHub. |
+
+**Evidence is not stage acceptance.** MP.5 has recorded evidence; remaining MP rows still need named proofs, including the two-project MP.1 journey and real-account MP.8/MP.34. IMG.11 is met; other image rows remain open. MACT is met except deferred MACT.9; OFB is met. No formal owner stage sign-off is claimed.
+
+**Known open defects:** DEF-40 save-timing flake is quarantined until 7 November; DEF-42 rename storm takes 1067 ms against 1000 ms only under 4× CPU stress (owner allowed landing). The Preview-versus-Store launch lock was fixed on 6 November (D-366); the paused reopen candidate is not landed.
+
+**Next work is the owner's choice**, not an automatic feature queue. Read the project context in [`AGENTS.md`](../../AGENTS.md), keep partial-package scope explicit, and protect the owner's notes, privacy and computer.
 
 ### History
 **M0 (walking skeleton) is built** and passes its demo as automated journey tests on Windows: the app opens to the canvas with the trigger, saves what you type as Markdown, reopens it, keeps untouched files byte-identical, and makes no network requests. CI passes on Windows, macOS, and Linux, and the preview release `v0.0.1` is ready for the owner's gate.

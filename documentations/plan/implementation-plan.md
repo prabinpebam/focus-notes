@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. MP adds 18 planned packages for projects, simpler sharing and the read-only website/preview; none is built or accepted. Earlier release-path examples remain historical where superseded.
+> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. As of 6 November, most MP desktop slices are built and verifying; file associations, real invitations, live publishing and browser retirement remain partial or planned. No formal MP stage acceptance is claimed. Earlier release-path examples remain historical where superseded.
 
 ## How to read a work package
 
@@ -392,9 +392,9 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 <h2 id="mp" data-reader-personas="product design engineering">MP: Projects and simpler sharing</h2>
 
-**Current authorization:** the owner approved the designs on 3 November at 19:39 and authorized implementation against the DoD. WP-P.1, WP-P.2, WP-P.3 and WP-P.7 are built on `wp-general-fixes`, with focused evidence and exact-head CI still required before integration. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates.
+**Current authorization and status, 6 November:** the owner approved the designs on 3 November at 19:39. WP-P.1 to WP-P.7, WP-P.9, WP-P.15 to WP-P.17 and WP-P.19 to WP-P.21 are built on `main` and verifying in Preview. WP-P.23 is built with fakes only. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates.
 
-**Remaining packages are planned.** The [3 November direction](next-direction.md) supersedes browser writing and named sharing. Earlier MW/browser/demo packages describe historical work only, not a second roadmap. D-292 retires that product completely; WP-P.13 preserves existing drafts before removing its runtime. Ordinary file import remains, not a browser ease-in plan.
+**Remaining scope:** WP-P.8 has Local notes and in-app Open file, but not Explorer associations; WP-P.10 needs extended media leak proof; WP-P.11 only saves an Invite draft; WP-P.12/WP-P.22 have local preview/drafts, not live publish/unpublish or deploy status; WP-P.14's home sections/counts are not built. WP-P.18 needs the full separate-site-repository sharing model. WP-P.13 is still planned: the browser app, demo and IndexedDB runtime remain. The [3 November direction](next-direction.md) supersedes browser writing and named sharing; D-292 retires that product direction, not its code yet. Ordinary file import remains, not a browser ease-in plan. [Current state](roadmap.md#current-state-16-october-evening) and each package's graph summary distinguish delivered slices from open scope.
 
 **You can:** keep unrelated projects in distinct windows, find recent files by place, pin folders/projects, jot locally or edit a stray file, share one item without recipients and publish a clean website. Delivers UC-PROJ-01 to UC-PROJ-08, UC-FILE-12, UC-RWR-12 and UC-SHARE-07 to UC-SHARE-10, plus the revised existing writing/sharing capabilities.
 
@@ -422,9 +422,9 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.19 | Launch where I left off | PRJ-14 | WP-P.4 | code |
 | WP-P.20 | The Open view | PRJ-15, PRJ-16, PRJ-17 | WP-P.6, WP-P.8 | code, design-system, accessibility |
 | WP-P.21 | A project card's GitHub link and size | PRJ-20, PRJ-21, PRJ-22 | WP-P.20 | code, security, design-system, accessibility |
-| WP-P.23 | **Planned, waiting for owner approval:** Delete a project; GitHub Danger Zone handoff, safe local cleanup and Open with an in-dialog success pill | PRJ-23 | WP-P.17, WP-P.20 | code, security, design-system, accessibility |
+| WP-P.23 | **Built, verifying with fakes only:** Delete a project; GitHub Danger Zone handoff, safe local cleanup and Open with an in-dialog success pill. First real deletion is the owner's. | PRJ-23 | WP-P.17, WP-P.20 | code, security, design-system, accessibility |
 
-**Deletion is a separate approval (5 November).** [Deleting a project](../experience/project-model.md#deleting-a-project) holds the owner's words, feasibility, flow, recovery and light/dark mocks. WP-P.23 remains planned: the additional post-404 confirmation, ambiguous-access recovery, export failure and retained-private-copy safeguards must be mocked/reviewed before implementation. The accepted Project work proceeds in slices: words first, merged Project tab second, Git for every project plus Link to GitHub third, standalone-file Settings fourth. None of those slices wires deletion.
+**Deletion acceptance, 6 November.** [Deleting a project](../experience/project-model.md#deleting-a-project) holds the flow and safeguards. WP-P.23 is now built and tested with fakes, including progress, status-check and resume screens. The first real deletion is reserved for the owner by D-343; MP.34 is not accepted by fake-account coverage.
 
 These are independently reviewable slices; lookahead permits design without unrelated stage gates. **Order (D-314):** the smallest owner-visible slices go first and don't wait for projects: WP-P.16 (Switch) and WP-P.9 (the owner's three share-dialog fixes on today's sharing), WP-P.1 to WP-P.3 (keys, write at caret, file names) and WP-P.17 (the [terminology move](../experience/projects.md#meeting-project-for-the-first-time), mostly words). Then WP-P.4 (windows and scope), WP-P.5 to WP-P.8, and the site work (WP-P.12 to WP-P.15, WP-P.18). Each slice gives the owner a view or behaviour to try within about an hour of work; larger ones are reviewed as JSON views first. WP-P.10 includes opaque link/code/path/file identifiers and the extended leak checks (MP.14). Accepted choices are recorded in [Next direction](next-direction.md#what-needs-the-owner); none of the six remain open.
 
@@ -436,7 +436,7 @@ These are independently reviewable slices; lookahead permits design without unre
 
 **You can:** open any file or folder of the project from one dialog, and find and run a curated set of actions that all work, grouped by what they act on, each impossible to confuse with another; blocked actions say why and offer their fix. Delivers UC-ACT-01 to UC-ACT-08; UC-ACT-09 follows after a week of use.
 
-**Used by:** the owner first. **Delivered as:** planned desktop 1.x.
+**Used by:** the owner first. **Delivered as:** built in Preview, final OFB `ca6ae17` at 13:12 on 6 November. WP-A.2 to WP-A.6 are verifying; MACT is met except deferred MACT.9 / WP-A.7. WP-A.1's optional gallery-only design is not claimed delivered by the runtime evidence.
 
 **Order, smallest visible slice first:**
 
