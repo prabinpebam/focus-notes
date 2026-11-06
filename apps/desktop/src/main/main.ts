@@ -22,7 +22,7 @@ import { appIdentity, preparePreviewProfile } from "./app-identity.ts";
 import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { stageNoteMove, validateNoteImages } from "./note-move.ts";
-import { copyNoteMedia, removeCopies } from "./note-media.ts";
+import { copyNoteMedia, ownSidecar, removeCopies } from "./note-media.ts";
 import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
@@ -991,7 +991,7 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
 async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: NoteRewrite[] }> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
   type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string; toRoot: string }
-    | { op: "write" | "create"; path: string; text: string; root: string; before?: string };
+    | { op: "write" | "create"; path: string; text: string; root: string; before?: string; source?: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
@@ -1006,7 +1006,15 @@ async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: Note
       const at = opPath(o.path);
       if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
       if (o.before !== undefined && (o.op !== "write" || typeof o.before !== "string")) throw refuse("invalid");
-      return { op: o.op, ...at, text: o.text, ...(typeof o.before === "string" ? { before: o.before } : {}) };
+      // A duplicate names the note it copies, in the same root, so the sidecar images it owns can be copied too.
+      let source: string | undefined;
+      if (o.source !== undefined) {
+        if (o.op !== "create") throw refuse("invalid");
+        const from = opPath(o.source);
+        if (from.root !== at.root || !isMarkdown(from.path)) throw refuse("invalid");
+        source = from.path;
+      }
+      return { op: o.op, ...at, text: o.text, ...(typeof o.before === "string" ? { before: o.before } : {}), ...(source ? { source } : {}) };
     }
     throw refuse("invalid");
   });
@@ -1112,7 +1120,16 @@ async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: Note
         // A new note, never over another (the conflict resolver's copies, FIL-12).
         if (existsSync(op.path)) throw refuse("taken");
         if (!(await isDir(dirname(op.path)))) throw refuse("notFound");
-        await writeFile(op.path, op.text, { encoding: "utf8", flag: "wx" });
+        let text = op.text;
+        if (op.op === "create" && op.source) {
+          // Images in the original's own sidecar are copied into the duplicate's; shared ones stay shared.
+          const boundary = isWorkspace() ? dirname(op.root) : op.root;
+          const copy = await copyNoteMedia(text, op.source, op.path, boundary, undefined, false, text, ownSidecar(op.source));
+          undo.push(() => removeCopies(copy.paths));
+          media.push(...copy.paths);
+          text = copy.text;
+        }
+        await writeFile(op.path, text, { encoding: "utf8", flag: "wx" });
         undo.push(() => rm(op.path, { force: true }));
       }
     }

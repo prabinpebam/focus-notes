@@ -654,8 +654,8 @@ export type WorkspaceOp =
   /** A note's new text, at its path after the batch's moves: links that follow a rename or move (FIL-09, D-95). */
   /** `before`: the text the app read and rewrote; the shell writes nothing if the file holds anything else (DEF-26). */
   | { op: "write"; path: string; text: string; before?: string }
-  /** A new note, never over another: a copy the conflict resolver keeps (FIL-12). */
-  | { op: "create"; path: string; text: string };
+  /** A new note, never over another: a copy the conflict resolver keeps (FIL-12), or a duplicate of `source` (D-162), which gets its own copies of the images only that note owns. */
+  | { op: "create"; path: string; text: string; source?: string };
 
 /**
  * A note the shell itself rewrote in a batch: a note moved into the other root points at its own

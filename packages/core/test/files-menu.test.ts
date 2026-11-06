@@ -313,7 +313,8 @@ describe("the menu in the app (D-162)", () => {
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     await app.commands.run("files.duplicate");
     await settle();
-    expect(f.batches).toEqual([[{ op: "create", path: "private:ideas-copy.md", text: "# Ideas copy\n\nSee [w](welcome.md).\n" }]]);
+    // IMG-05: the duplicate names its original, so the shell can copy the images only that note owns.
+    expect(f.batches).toEqual([[{ op: "create", path: "private:ideas-copy.md", text: "# Ideas copy\n\nSee [w](welcome.md).\n", source: "private:ideas.md" }]]);
     expect(vm(app).items.find((i) => i.id === "private:ideas-copy.md")).toMatchObject({ label: "Ideas copy", selected: true });
     expect(vm(app).focusId).toBe("private:ideas-copy.md");
     const t = app.store.state.ui.toasts.at(-1)!;
@@ -323,7 +324,7 @@ describe("the menu in the app (D-162)", () => {
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     await app.commands.run("files.duplicate");
     await settle();
-    expect(f.batches[1]).toEqual([{ op: "create", path: "private:ideas-copy-2.md", text: "# Ideas copy 2\n\nSee [w](welcome.md).\n" }]);
+    expect(f.batches[1]).toEqual([{ op: "create", path: "private:ideas-copy-2.md", text: "# Ideas copy 2\n\nSee [w](welcome.md).\n", source: "private:ideas.md" }]);
     await app.commands.run(t.action!.command, t.action!.args);
     await settle();
     expect(f.batches[2]).toEqual([{ op: "delete", path: "private:ideas-copy.md" }]);

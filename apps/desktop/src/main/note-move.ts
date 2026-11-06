@@ -13,7 +13,7 @@ export async function validateNoteImages(text: string, note: string, boundary: s
   await localNoteImages(text, note, boundary);
 }
 
-export async function localNoteImages(text: string, note: string, boundary: string): Promise<{
+export async function localNoteImages(text: string, note: string, boundary: string, select?: (path: string) => boolean): Promise<{
   start: number; end: number; path: string; canonicalPath: string; suffix: string; index: number;
 }[]> {
   const canonical = await realpath(boundary);
@@ -23,6 +23,7 @@ export async function localNoteImages(text: string, note: string, boundary: stri
     if (/^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i.test(written)) continue;
     const cut = written.search(/[?#]/);
     const path = resolve(dirname(note), decodeURIComponent(cut < 0 ? written : written.slice(0, cut)));
+    if (select && !select(path)) continue;
     if (!inside(boundary, path)) throw new Error("invalid");
     const actual = await realpath(path).catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") throw new Error("missingImage");

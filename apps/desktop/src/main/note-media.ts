@@ -12,14 +12,20 @@ const inside = (root: string, path: string): boolean => {
 };
 const destinationPath = (path: string) => path.split(sep).map(part => encodeURIComponent(part)).join("/");
 
+/** Media only this note owns: in a `….assets` folder beside it (a standalone note's sidecar), never a shared root's. */
+export const ownSidecar = (note: string) => (path: string): boolean => {
+  const first = relative(dirname(note), path).split(sep)[0] ?? "";
+  return /\.assets$/i.test(first) && first !== ".." && inside(dirname(note), path);
+};
+
 /**
- * Copy only the note's authorized local media, before any destination note is published. Failure
- * never deletes or rewrites originals; it removes only the fresh copies this call made.
+ * Copy only the note's authorized local media (those `select` picks), before any destination note
+ * is published. Failure never deletes or rewrites originals; it removes only the fresh copies this call made.
  * `source` is the note's text where it is now, when `text` is that text with other links already
  * rewritten for the destination: images resolve from `source` and are replaced in `text` in order.
  */
-export async function copyNoteMedia(text: string, from: string, to: string, sourceBoundary: string, destinationRoot: string | undefined, publicCopy: boolean, source = text): Promise<{ text: string; paths: string[] }> {
-  const images = await localNoteImages(source, from, sourceBoundary);
+export async function copyNoteMedia(text: string, from: string, to: string, sourceBoundary: string, destinationRoot: string | undefined, publicCopy: boolean, source = text, select?: (path: string) => boolean): Promise<{ text: string; paths: string[] }> {
+  const images = await localNoteImages(source, from, sourceBoundary, select);
   if (!images.length) return { text, paths: [] };
   const targets = source === text ? undefined : imageDestinations(text);
   if (targets && targets.length !== imageDestinations(source).length) throw new Error("changed");

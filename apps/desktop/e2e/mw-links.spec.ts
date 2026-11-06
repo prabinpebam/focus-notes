@@ -89,6 +89,64 @@ test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and U
   }
 });
 
+test("IMG-05: Duplicate gives the copy its own sidecar images and keeps shared ones shared; the original is untouched", async () => {
+  const dirs = tempDirs();
+  mkdirSync(join(dirs.docs, ".focus-notes"));
+  writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{"formatVersion":1}');
+  const notes = join(dirs.docs, "notes");
+  mkdirSync(join(dirs.docs, "assets", "images"), { recursive: true });
+  mkdirSync(join(notes, "welcome.md.assets", "images"), { recursive: true });
+  const pixels = Buffer.from(picture().split(",")[1]!, "base64");
+  const managed = join(dirs.docs, "assets", "images", "p.png");
+  const sidecar = join(notes, "welcome.md.assets", "images", "p.png");
+  writeFileSync(managed, pixels);
+  writeFileSync(sidecar, pixels);
+  const original = "# Illustrated\n\n![Managed](../assets/images/p.png)\n\n![Sidecar](welcome.md.assets/images/p.png)\n";
+  writeFileSync(join(notes, "welcome.md"), original);
+  git(dirs.docs, "init", "-q", "-b", "main");
+  configure(dirs.docs);
+  git(dirs.docs, "add", ".");
+  git(dirs.docs, "commit", "-qm", "Initial image fixtures");
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    const editor = page.getByRole("textbox", { name: "Note" });
+    const images = editor.locator("img");
+    const loaded = async () => {
+      await expect(images).toHaveCount(2);
+      await expect.poll(() => images.evaluateAll(nodes => nodes.every(node =>
+        node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0))).toBe(true);
+    };
+    await loaded();
+    await page.keyboard.press(`${mod}+O`);
+    const tree = page.getByRole("tree", { name: "Notes and folders" });
+    await fileRow(tree, "Illustrated").click({ button: "right" });
+    await page.getByRole("menu", { name: "Actions for “Illustrated”" }).getByRole("menuitem", { name: /^Duplicate/ }).click();
+    await expect(page.locator("#toasts").getByText("Duplicated “Illustrated”.")).toBeVisible({ timeout: 15_000 });
+    const copy = join(notes, "illustrated-copy.md");
+    await expect.poll(() => existsSync(copy)).toBe(true);
+    const text = readFileSync(copy, "utf8");
+    const m = /^!\[Sidecar\]\(illustrated-copy\.md\.assets\/images\/([0-9a-f-]{36})\.png\)$/m.exec(text);
+    expect(m, text).not.toBeNull();
+    expect(text).toContain("![Managed](../assets/images/p.png)");
+    expect(readFileSync(join(notes, "illustrated-copy.md.assets", "images", `${m![1]!}.png`))).toEqual(pixels);
+    // The copy shows both pictures from its own references.
+    await fileRow(tree, "Illustrated copy").dblclick();
+    await expect(editor).toContainText("Illustrated copy");
+    await loaded();
+    expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
+    expect(readFileSync(sidecar)).toEqual(pixels);
+    expect(readFileSync(managed)).toEqual(pixels);
+    await expect.poll(() => git(dirs.docs, "status", "--porcelain", "--untracked-files=all")).not.toContain("illustrated-copy.md.assets");
+  } finally {
+    try { await quit(l); }
+    finally {
+      const script = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", script, "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
+
 test("FIL-09: renames and moves update relative links in other notes on disk, byte for byte, and a refusal puts them back", async () => {
   const dirs = tempDirs();
   const docs = dirs.docs;

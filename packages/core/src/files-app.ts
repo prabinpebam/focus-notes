@@ -717,7 +717,7 @@ export function registerFiles(ctx: Ctx) {
     const what = whatOf(paths);
     const failed = (why: string) => catalog.format("files.duplicateFailed", { what, reason: why });
     let t = tree();
-    const copies: { path: string; title: string; text: string }[] = [];
+    const copies: { path: string; title: string; text: string; source: string }[] = [];
     try {
       for (const p of paths) {
         const found = findNode(t, p);
@@ -729,14 +729,14 @@ export function registerFiles(ctx: Ctx) {
         if (plan.kind === "refused") return void toast(failed(reason(plan.reason)), { tone: "error" });
         const text = p === store.state.note.path ? store.state.note.markdown : await bridge.readNote(p);
         t = applyChanges(plan.tree, [{ path: plan.path, kind: "note", exists: true, title }]);
-        copies.push({ path: plan.path, title, text: retitle(withoutNoteId(text), title) });
+        copies.push({ path: plan.path, title, text: retitle(withoutNoteId(text), title), source: p });
       }
     } catch (e) {
       return void toast(failed(reason(opErrorCode(e))), { tone: "error" });
     }
     if (!copies.length) return;
     const made = copies.map((c) => c.path);
-    await perform(t, copies.map((c) => ({ op: "create" as const, path: c.path, text: c.text })), {
+    await perform(t, copies.map((c) => ({ op: "create" as const, path: c.path, text: c.text, source: c.source })), {
       touched: made, select: made, done: catalog.format("files.duplicated", { what }), failed,
       undo: () => removeCopies(made),
     });

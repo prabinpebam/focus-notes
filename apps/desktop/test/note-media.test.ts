@@ -5,7 +5,7 @@ import { join, relative, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { crc32 } from "node:zlib";
 import { imageDestinations } from "@focus-notes/core";
-import { copyNoteMedia } from "../src/main/note-media.ts";
+import { copyNoteMedia, ownSidecar } from "../src/main/note-media.ts";
 import { validateNoteImages } from "../src/main/note-move.ts";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -105,6 +105,21 @@ describe("IMG-05 authorized media copies", () => {
     expect(result.paths[0]!.startsWith(join(f.root, "copy.md.assets", "images") + sep)).toBe(true);
     await validateNoteImages(result.text, to, f.root);
     expect(await readFile(f.from, "utf8")).toBe(f.text);
+  });
+  it("copies a duplicate's own sidecar images into its sidecar, leaving shared and missing unowned images as written", async () => {
+    const f = await setup();
+    const notes = join(f.source, "notes");
+    await mkdir(join(notes, "a.md.assets", "images"), { recursive: true });
+    await writeFile(join(notes, "a.md.assets", "images", "s.png"), png);
+    const text = "![own](a.md.assets/images/s.png)\n![shared](../assets/images/p.png)\n![gone](../assets/images/missing.png)\n";
+    const to = join(notes, "a-copy.md");
+    const result = await copyNoteMedia(text, f.from, to, f.source, undefined, false, text, ownSidecar(f.from));
+    expect(result.paths).toHaveLength(1);
+    expect(result.paths[0]!.startsWith(join(notes, "a-copy.md.assets", "images") + sep)).toBe(true);
+    const rel = relative(notes, result.paths[0]!).split(sep).join("/");
+    expect(result.text).toBe(`![own](${rel})\n![shared](../assets/images/p.png)\n![gone](../assets/images/missing.png)\n`);
+    expect(await readFile(join(notes, "a.md.assets", "images", "s.png"))).toEqual(png);
+    expect(await readdir(join(notes, "a.md.assets", "images"))).toEqual(["s.png"]);
   });
   it("copies a cropped image's kept original (originalSrc) too, rewriting both and keeping the comment's other words", async () => {
     const f = await setup();
