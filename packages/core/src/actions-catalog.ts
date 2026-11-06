@@ -131,7 +131,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   // ---- App ----
   { id: "account.signIn", steps: [["account.signIn"]], label: "actions.account.signIn", anchor: "app", effect: "flow", leaves: "github", when: (s) => !s.signedIn, alsoIn: ["Settings → Account"], proof: proof("account.signIn") },
   { id: "account.signOut", steps: [["account.signOut"]], label: "actions.account.signOut", anchor: "app", effect: "flow", leaves: "none", when: (s) => s.signedIn, alsoIn: ["Settings → Account"], proof: proof("account.signOut") },
-  { id: "ai.connect", steps: [["ai.openSettings"], ["ai.add"]], label: "actions.ai.connect", anchor: "app", effect: "flow", leaves: "none", alsoIn: ["Settings → AI"], proof: proof("ai.connect") },
+  { id: "ai.connect", steps: [["ai.add"], ["ai.openSettings"]], label: "actions.ai.connect", anchor: "app", effect: "flow", leaves: "none", alsoIn: ["Settings → AI"], proof: proof("ai.connect") },
   { id: "shortcuts.open", steps: [["shortcuts.open"]], label: "actions.shortcuts.open", anchor: "app", effect: "navigate", leaves: "none", alsoIn: ["⋯ menu", "Help menu"], proof: proof("shortcuts.open") },
   { id: "toolbar.customize", steps: [["toolbar.customize"]], label: "actions.toolbar.customize", anchor: "app", effect: "flow", leaves: "none", alsoIn: ["⋯ menu"], proof: proof("toolbar.customize") },
   { id: "theme.manager.open", steps: [["theme.manager.open"]], label: "actions.theme.manager.open", anchor: "app", effect: "flow", leaves: "none", alsoIn: ["⋯ menu", "Settings → Appearance"], proof: proof("theme.manager.open") },

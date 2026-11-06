@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { registerAi, reasonCode } from "../src/ai-app.ts";
+import { CATALOG } from "../src/actions-catalog.ts";
 import { aiProvider } from "../src/ai-providers.ts";
 import type { AiBridge, AiSettingsView } from "../src/bridge.ts";
 import { CommandRegistry } from "../src/commands.ts";
@@ -651,6 +652,36 @@ describe("disclosed integration and user judgement (D-261, D-262)", () => {
 });
 
 describe("Change in Settings (RWR-74, AIS-13)", () => {
+  it("prepares the Actions connection form before Settings' slow account check finishes", async () => {
+    const t = setup({ connections: [] });
+    let release!: () => void;
+    const account = new Promise<void>((resolve) => { release = resolve; });
+    let checking = false, finished = false;
+    t.commands.register({ id: "settings.setSection", title: "command.settings.setSection", run: async () => { await t.commands.run("ai.load"); } });
+    t.commands.register({ id: "settings.open", title: "command.settings.open", run: async () => {
+      checking = true;
+      await account;
+      finished = true;
+    } });
+    const entry = CATALOG.find((e) => e.id === "ai.connect")!;
+    const connecting = (async () => {
+      for (const [command] of entry.steps) await t.commands.run(command);
+    })();
+    try {
+      await settle();
+      expect(checking).toBe(true);
+      expect(finished).toBe(false);
+      expect(t.settingsVm()).toMatchObject({ formOpen: true, empty: false });
+      await t.commands.run("ai.cancel");
+      expect(t.settingsVm()).toMatchObject({ formOpen: false, empty: true });
+    } finally {
+      release();
+      await connecting;
+    }
+    expect(finished).toBe(true);
+    expect(t.settingsVm()).toMatchObject({ formOpen: false, empty: true });
+  });
+
   it("opens at AI even while Settings' account check is still running", async () => {
     const t = setup();
     const order: string[] = [];
