@@ -209,6 +209,9 @@
           "$ref": "#/$defs/c_OpenItem"
         },
         {
+          "$ref": "#/$defs/c_ImageCrop"
+        },
+        {
           "$ref": "#/$defs/c_ToolbarComposer"
         },
         {
@@ -1509,6 +1512,231 @@
               "$ref": "#/$defs/actions"
             },
             "openRepo": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_ImageCrop": {
+      "type": "object",
+      "description": "Image-only direct crop stage (D-372, strict design). Eight native edge/corner buttons and a move target surround the source; Arrow moves one oriented source pixel, Shift+Arrow ten. The same component renders the exact clipped, rotated and flipped result without handles. Aspect presets constrain the crop through rotation and dragging. Draft-only; never writes assets. Not an inline image menu.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ImageCrop"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "alt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "intrinsicWidth": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "intrinsicHeight": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "editing": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "x": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "y": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "rotation": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "0",
+                    "90",
+                    "180",
+                    "270"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "aspect": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "free",
+                    "original",
+                    "square",
+                    "fourThree",
+                    "wide"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "flipHorizontal": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "flipVertical": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "handles": {
+              "$ref": "#/$defs/read"
+            }
+          },
+          "required": [
+            "src",
+            "alt",
+            "intrinsicWidth",
+            "intrinsicHeight",
+            "handles"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            },
+            "commit": {
               "$ref": "#/$defs/actions"
             }
           }

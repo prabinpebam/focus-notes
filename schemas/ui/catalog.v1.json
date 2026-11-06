@@ -370,6 +370,125 @@
       ]
     },
     {
+      "type": "ImageCrop",
+      "tier": "primitive",
+      "description": "Image-only direct crop stage (D-372, strict design). Eight native edge/corner buttons and a move target surround the source; Arrow moves one oriented source pixel, Shift+Arrow ten. The same component renders the exact clipped, rotated and flipped result without handles. Aspect presets constrain the crop through rotation and dragging. Draft-only; never writes assets. Not an inline image menu.",
+      "props": {
+        "src": {
+          "kind": "text",
+          "required": true
+        },
+        "alt": {
+          "kind": "message",
+          "required": true
+        },
+        "intrinsicWidth": {
+          "kind": "number",
+          "min": 1,
+          "required": true
+        },
+        "intrinsicHeight": {
+          "kind": "number",
+          "min": 1,
+          "required": true
+        },
+        "editing": {
+          "kind": "boolean",
+          "default": true
+        },
+        "x": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 0
+        },
+        "y": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 0
+        },
+        "width": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 100
+        },
+        "height": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 100
+        },
+        "rotation": {
+          "kind": "enum",
+          "values": [
+            "0",
+            "90",
+            "180",
+            "270"
+          ],
+          "default": "0"
+        },
+        "aspect": {
+          "kind": "enum",
+          "values": [
+            "free",
+            "original",
+            "square",
+            "fourThree",
+            "wide"
+          ],
+          "default": "free"
+        },
+        "flipHorizontal": {
+          "kind": "boolean",
+          "default": false
+        },
+        "flipVertical": {
+          "kind": "boolean",
+          "default": false
+        },
+        "handles": {
+          "kind": "list",
+          "of": "options",
+          "required": true
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "x": "number",
+            "y": "number",
+            "width": "number",
+            "height": "number"
+          }
+        },
+        "commit": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "editing"
+      ],
+      "tokens": "cmp.imageCrop.*",
+      "a11y": {
+        "pattern": "named native crop buttons",
+        "name": "alt"
+      },
+      "fixtures": [
+        "aspect original",
+        "aspect square",
+        "aspect fourThree",
+        "aspect wide",
+        "rotation 90",
+        "rotation 180",
+        "rotation 270",
+        "cropped result",
+        "editing stage"
+      ]
+    },
+    {
       "type": "ToolbarComposer",
       "tier": "primitive",
       "description": "The visual toolbar customizer (IA-CMP-TOOLBAR, DD-IA-08): the real toolbar shown open, above every action that can join it, grouped by category, each the real icon button with its name. Drag to add or reorder (a marker shows where), hold over a button for motion.hold to replace it, drag one off to remove it; full, the marker is red. Keys: Space or Enter picks up, arrows choose a place, Enter drops, Esc cancels, Delete removes; each step is announced.",
@@ -6793,6 +6912,7 @@
       "textArea",
       "imageFitMax",
       "imageFitViewport",
+      "imageEditViewport",
       "imageWideExtra",
       "imageQuarterTurn",
       "fontCell",
