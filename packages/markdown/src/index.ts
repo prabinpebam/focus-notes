@@ -363,13 +363,15 @@ export interface LinkDestination {
   end: number;
   /** Written as `<…>`, where spaces may appear unencoded. */
   angle: boolean;
+  /** Image provenance stores a complete Markdown destination inside a URI component. */
+  encoding?: "component";
 }
 
 let foundDestinations: LinkDestination[] = [];
 type Token = { start: { offset: number }; end: { offset: number } };
 const recordRaw = (t: Token) => { foundDestinations.push({ start: t.start.offset, end: t.end.offset, angle: false }); };
 const recordLiteral = (t: Token) => { if (t.end.offset - t.start.offset > 2) foundDestinations.push({ start: t.start.offset + 1, end: t.end.offset - 1, angle: true }); };
-/** The parser's own tokens say exactly where each destination is; nothing in code, HTML, or front matter is one. */
+/** The parser's tokens identify Markdown destinations, excluding code, HTML and front matter. */
 function collectDestinations(this: Processor) {
   const data = this.data();
   (data.fromMarkdownExtensions ??= []).push({
@@ -379,14 +381,24 @@ function collectDestinations(this: Processor) {
 const linkProcessor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]).use(remarkDirective).use(collectDestinations);
 
 /**
- * Every link, image, and reference definition destination in a note, in source order, so a
+ * Every link, image, reference definition and retained image-original destination, in source order, so a
  * caller can change just those characters and leave every other byte as it was.
  */
 export function linkDestinations(input: string): LinkDestination[] {
   const bom = input.startsWith("\uFEFF") ? 1 : 0;
   foundDestinations = [];
   try {
-    linkProcessor.parse(bom ? input.slice(1) : input);
+    const tree = linkProcessor.parse(bom ? input.slice(1) : input) as Md.Root;
+    for (let i = 0; i < tree.children.length; i++) {
+      const child = tree.children[i]!, next = tree.children[i + 1];
+      if (child.type !== "html" || next?.type !== "paragraph" || next.children.length !== 1 || next.children[0]?.type !== "image") continue;
+      if (!/^<!-- image: (.*?) -->$/.test(child.value.trim())) continue;
+      const match = /(?:^| )original=([^ ]+)/.exec(child.value);
+      if (!match) continue;
+      try { decodeURIComponent(match[1]!); } catch { continue; }
+      const start = (child.position?.start.offset ?? 0) + match.index + match[0].indexOf("original=") + 9;
+      foundDestinations.push({ start, end: start + match[1]!.length, angle: false, encoding: "component" });
+    }
     return foundDestinations.map((d) => ({ ...d, start: d.start + bom, end: d.end + bom })).sort((a, b) => a.start - b.start);
   } finally {
     foundDestinations = [];
