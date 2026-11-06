@@ -302,8 +302,30 @@ test("D-161: pinned, Files stays open while notes open; the text moves clear of 
   // Reduced motion: pinned at once.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.keyboard.press(`${mod}+O`);
+  await l.app.evaluate(({ ipcMain }) => {
+    const handlers: unknown = Reflect.get(ipcMain, "_invokeHandlers");
+    const save: unknown = handlers instanceof Map ? handlers.get("state:save") : undefined;
+    if (typeof save !== "function") throw new Error("State save handler unavailable");
+    Reflect.set(globalThis, "dockStateSave", save);
+    ipcMain.removeHandler("state:save");
+    ipcMain.handle("state:save", () => new Promise((_resolve, reject) => Reflect.set(globalThis, "rejectDockWrite", reject)));
+  });
   await files.getByRole("button", { name: "Dock Files" }).click();
   const moved = await page.evaluate(() => new Promise<number>((done) => requestAnimationFrame(() => done((document.querySelector('[contenteditable="true"]') as HTMLElement).getBoundingClientRect().left))));
   expect(moved).toBeGreaterThanOrEqual(sheet.x + sheet.width + 16 - 1);
+  await expect(files.getByRole("button", { name: "Undock Files" })).toHaveAttribute("data-commit", "pending");
+  await l.app.evaluate(({ ipcMain }) => {
+    const reject: unknown = Reflect.get(globalThis, "rejectDockWrite");
+    const save: unknown = Reflect.get(globalThis, "dockStateSave");
+    if (typeof reject !== "function" || typeof save !== "function") throw new Error("Dock write controls unavailable");
+    reject(new Error("injected docking refusal"));
+    ipcMain.removeHandler("state:save");
+    ipcMain.handle("state:save", (...args) => save(...args));
+  });
+  await expect(files.getByRole("button", { name: "Dock Files" })).toHaveAttribute("data-commit", "failed");
+  await expect.poll(async () => Math.round((await where()).left)).toBe(Math.round(before.left));
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(files.getByRole("button", { name: "Undock Files" })).toHaveAttribute("data-commit", "confirmed");
+  await expect.poll(async () => (await where()).left).toBeGreaterThanOrEqual(sheet.x + sheet.width + 16 - 1);
   await quit(l);
 });

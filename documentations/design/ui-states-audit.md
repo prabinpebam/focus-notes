@@ -75,37 +75,37 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 70dabc00aaf0-1 | words | packages/core/src/feedback-app.ts:205 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "feedback.openIssue" |
 | f27dc8ffb4e9-1 | catalog.format("feedback.notSent") | packages/core/src/feedback-app.ts:212 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "feedback.open" |
 | 9c3a7621cbfa-1 | catalog.format(&#96;feedback.copied.${copied}&#96;) | packages/core/src/feedback-app.ts:235 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 0450a69e92c6-1 | catalog.format("toast.revealFolderFailed") | packages/core/src/files-app.ts:267 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 39607c2f300a-1 | withLinks(o.done, writes) | packages/core/src/files-app.ts:500 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | undoAction(o.undo) |
-| c1bd84941e01-1 | o.failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:515 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| db50c6bdb7cf-1 | catalog.format(key, { ...args, reason: reason(why) }) | packages/core/src/files-app.ts:519 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 3b36e7f0caab-1 | done | packages/core/src/files-app.ts:658 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| edbeaaef6f47-1 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:716 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| b98c7ab09d1e-1 | failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:722 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| b98c7ab09d1e-2 | failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:768 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 5ae426d72c8b-1 | catalog.format("files.importNone", { what: skipped }) | packages/core/src/files-app.ts:771 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| edbeaaef6f47-2 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:777 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 34d62b93c3e5-1 | catalog.format("toast.revealItemFailed") | packages/core/src/files-app.ts:813 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 34d62b93c3e5-2 | catalog.format("toast.revealItemFailed") | packages/core/src/files-app.ts:835 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 2884623f70a5-1 | catalog.format("files.copiedItems", { what: rowsWhat(rows) }) | packages/core/src/files-app.ts:870 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 5685f46aae9b-1 | catalog.format("toast.copyItemsFailed") | packages/core/src/files-app.ts:872 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 427468e8dd77-1 | rows.length === 1 ? catalog.format("files.copiedPath", { what: rowsWhat(rows) }) : catalog.format("files.copiedPaths", { count: rows.length }) | packages/core/src/files-app.ts:885 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| c32033ff7f15-1 | catalog.format("toast.copyFailed") | packages/core/src/files-app.ts:887 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 2124dbd82f11-1 | catalog.format("files.copiedText", { what: rowsWhat([row]) }) | packages/core/src/files-app.ts:906 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| c32033ff7f15-2 | catalog.format("toast.copyFailed") | packages/core/src/files-app.ts:908 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| edbeaaef6f47-3 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:935 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 3b36e7f0caab-2 | done | packages/core/src/files-app.ts:1019 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| f71763aea2b7-1 | failed(reason("notFound")) | packages/core/src/files-app.ts:1064 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| edbeaaef6f47-4 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:1068 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| e46a31674a49-1 | catalog.format("recovered.discardFailed", { what: draftName(d) }) | packages/core/src/files-app.ts:1087 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 3b36e7f0caab-3 | done | packages/core/src/files-app.ts:1091 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 083bd07d0e10-1 | catalog.format("recovered.gone", { what: draftName(d) }) | packages/core/src/files-app.ts:1121 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| b6fb889c4d99-1 | catalog.format("recovered.copyFailed", { what }) | packages/core/src/files-app.ts:1148 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 3b36e7f0caab-4 | done | packages/core/src/files-app.ts:1151 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| e37d4f447ca7-1 | error | packages/core/src/files-app.ts:1177 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| e37d4f447ca7-2 | error | packages/core/src/files-app.ts:1240 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 3b36e7f0caab-5 | done | packages/core/src/files-app.ts:1347 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| d5276c437f2d-1 | catalog.format("files.renameFailed", { what: whatOf([path]), reason: reason(opErrorCode(e)) }) | packages/core/src/files-app.ts:1351 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 0450a69e92c6-1 | catalog.format("toast.revealFolderFailed") | packages/core/src/files-app.ts:273 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 39607c2f300a-1 | withLinks(o.done, writes) | packages/core/src/files-app.ts:506 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | undoAction(o.undo) |
+| c1bd84941e01-1 | o.failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:521 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| db50c6bdb7cf-1 | catalog.format(key, { ...args, reason: reason(why) }) | packages/core/src/files-app.ts:525 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-1 | done | packages/core/src/files-app.ts:664 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-1 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:722 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b98c7ab09d1e-1 | failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:728 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b98c7ab09d1e-2 | failed(reason(opErrorCode(e))) | packages/core/src/files-app.ts:774 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 5ae426d72c8b-1 | catalog.format("files.importNone", { what: skipped }) | packages/core/src/files-app.ts:777 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-2 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:783 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 34d62b93c3e5-1 | catalog.format("toast.revealItemFailed") | packages/core/src/files-app.ts:819 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 34d62b93c3e5-2 | catalog.format("toast.revealItemFailed") | packages/core/src/files-app.ts:841 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2884623f70a5-1 | catalog.format("files.copiedItems", { what: rowsWhat(rows) }) | packages/core/src/files-app.ts:876 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 5685f46aae9b-1 | catalog.format("toast.copyItemsFailed") | packages/core/src/files-app.ts:878 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 427468e8dd77-1 | rows.length === 1 ? catalog.format("files.copiedPath", { what: rowsWhat(rows) }) : catalog.format("files.copiedPaths", { count: rows.length }) | packages/core/src/files-app.ts:891 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| c32033ff7f15-1 | catalog.format("toast.copyFailed") | packages/core/src/files-app.ts:893 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 2124dbd82f11-1 | catalog.format("files.copiedText", { what: rowsWhat([row]) }) | packages/core/src/files-app.ts:912 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| c32033ff7f15-2 | catalog.format("toast.copyFailed") | packages/core/src/files-app.ts:914 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-3 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:941 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-2 | done | packages/core/src/files-app.ts:1025 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| f71763aea2b7-1 | failed(reason("notFound")) | packages/core/src/files-app.ts:1070 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| edbeaaef6f47-4 | failed(reason(plan.reason)) | packages/core/src/files-app.ts:1074 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e46a31674a49-1 | catalog.format("recovered.discardFailed", { what: draftName(d) }) | packages/core/src/files-app.ts:1093 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-3 | done | packages/core/src/files-app.ts:1097 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 083bd07d0e10-1 | catalog.format("recovered.gone", { what: draftName(d) }) | packages/core/src/files-app.ts:1127 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| b6fb889c4d99-1 | catalog.format("recovered.copyFailed", { what }) | packages/core/src/files-app.ts:1154 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-4 | done | packages/core/src/files-app.ts:1157 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e37d4f447ca7-1 | error | packages/core/src/files-app.ts:1183 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| e37d4f447ca7-2 | error | packages/core/src/files-app.ts:1246 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3b36e7f0caab-5 | done | packages/core/src/files-app.ts:1353 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d5276c437f2d-1 | catalog.format("files.renameFailed", { what: whatOf([path]), reason: reason(opErrorCode(e)) }) | packages/core/src/files-app.ts:1357 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | b2910f7c51f7-1 | catalog.format("toast.signedIn", { login: signedInAs(a) }) | packages/core/src/first-run-app.ts:280 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 61e752d949cf-1 | catalog.format("format.link.copied") | packages/core/src/format.ts:203 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 6be22b1cff7e-1 | catalog.format("format.link.copyFailed") | packages/core/src/format.ts:205 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |

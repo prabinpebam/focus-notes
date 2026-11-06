@@ -225,8 +225,14 @@ export function registerFiles(ctx: Ctx) {
   });
   // ---- docking (D-161, D-187): kept on this device ----
   const setPinned = async (pinned: boolean) => {
-    await ctx.persistAppState({ filesPinned: pinned ? true : undefined });
+    const previous = files().pinned;
     setFiles(() => ({ pinned }));
+    try {
+      await ctx.persistAppState({ filesPinned: pinned ? true : undefined });
+    } catch (error) {
+      setFiles(() => ({ pinned: previous }));
+      throw error;
+    }
   };
   commands.register<{ value: boolean }>({
     id: "files.setPinned", title: "command.files.togglePin",

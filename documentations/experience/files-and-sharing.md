@@ -9,6 +9,8 @@ Manage notes inside one project, then choose deliberately whether anything leave
 
 **Open** in the [trigger toolbar](main-ui.html), Mod+O or Mod+Shift+E opens the project's Files tree and reveals the current note. It closes after opening a note unless docked. Docking the panel is different from pinning a folder shortcut.
 
+**As built: docking is direct manipulation (D-161).** Dock/Undock moves the writing layout immediately, including with reduced motion, while the control's own border shows the pending save. Persistence confirms the change; a refusal restores the previous layout and shows the error outline with Retry for the same explicit intent. Folder/note shortcut pins remain acknowledgement-first and never change this layout.
+
 | Region | What it contains |
 | --- | --- |
 | Project heading | Name, logo, backup state, Open local folder |

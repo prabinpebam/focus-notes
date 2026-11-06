@@ -193,7 +193,47 @@ describe("opening the panel (IA-VIEW-FILES)", () => {
     expect(vm(app).items.find(item => item.id === path)?.label).toBe("During retry");
     expect(f.notes.get(path)?.text).toBe("# During retry\n");
   });
-  it("only docks after persistence, retains failed docking for Retry and never repeats a toggle", async () => {
+  it("docks before persistence, rolls back on refusal and retries the exact intention", async () => {
+    const f = setup();
+    const app = await started(f);
+    await app.commands.run("files.open");
+    let release!: (error?: Error) => void;
+    f.bridge.saveAppState = () => new Promise<void>((resolve, reject) => {
+      release = error => error ? reject(error) : resolve();
+    });
+    const pin = app.commands.run("files.togglePin");
+    await settle();
+    expect(app.store.state.ui.files.pinned).toBe(true);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "pending" });
+    expect(app.commands.describe("files.togglePin").enabled).toBe(false);
+    const failure = expect(pin).rejects.toThrow("disk full");
+    release(new Error("disk full"));
+    await failure;
+    expect(app.store.state.ui.files.pinned).toBe(false);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "failed" });
+    await app.commands.run("app.reportFailure", { command: "files.togglePin" });
+    const failed = app.store.state.ui.toasts[0]!;
+    expect(failed.action).toMatchObject({ command: "files.togglePin", args: { value: true } });
+    const retry = app.commands.run("toast.action", { id: failed.id });
+    await settle();
+    expect(app.store.state.ui.files.pinned).toBe(true);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "pending" });
+    release();
+    await retry;
+    expect(app.store.state.ui.files.pinned).toBe(true);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "confirmed" });
+
+    const unpin = app.commands.run("files.togglePin");
+    await settle();
+    expect(app.store.state.ui.files.pinned).toBe(false);
+    const refusal = expect(unpin).rejects.toThrow("disk full");
+    release(new Error("disk full"));
+    await refusal;
+    expect(app.store.state.ui.files.pinned).toBe(true);
+    expect(app.viewModels.select("vm.files", app.store.state)).toMatchObject({ pinCommit: "failed" });
+  });
+
+  it("retains failed docking for Retry and never repeats a toggle", async () => {
     const f = setup();
     const app = await started(f);
     await app.commands.run("files.open");
