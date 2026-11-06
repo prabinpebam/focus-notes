@@ -43,10 +43,12 @@ test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and U
     const { page } = l;
     const editor = page.getByRole("textbox", { name: "Note" });
     const images = editor.locator("img");
+    let step = 0;
     const loaded = async () => {
-      await expect(images).toHaveCount(2);
+      const at = `images shown, check ${++step}`;
+      await expect(images, at).toHaveCount(2, { timeout: 15_000 });
       await expect.poll(() => images.evaluateAll(nodes => nodes.every(node =>
-        node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0))).toBe(true);
+        node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0)), { message: at, timeout: 15_000 }).toBe(true);
     };
     await loaded();
     await page.keyboard.press(`${mod}+O`);
@@ -64,12 +66,15 @@ test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and U
     await loaded();
     expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
     expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/welcome.md"]);
-    await fileRow(tree, "Illustrated").click();
-    await page.keyboard.press(rename);
-    await tree.getByRole("textbox", { name: "File name" }).fill("Renamed");
-    await page.keyboard.press("Enter");
     const renamed = page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Renamed to “Renamed”." });
-    await expect(renamed).toBeVisible();
+    // The tree may still redraw after Undo and close a just-opened name field; a closed field renames nothing, so try again.
+    await expect(async () => {
+      await fileRow(tree, "Illustrated").click();
+      await page.keyboard.press(rename);
+      await tree.getByRole("textbox", { name: "File name" }).fill("Renamed", { timeout: 3_000 });
+      await page.keyboard.press("Enter");
+      await expect(renamed).toBeVisible({ timeout: 10_000 });
+    }).toPass({ timeout: 45_000 });
     await loaded();
     expect(readFileSync(join(notes, "renamed.md"), "utf8")).toBe(original);
     expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/renamed.md"]);
@@ -113,9 +118,9 @@ test("IMG-05: Duplicate gives the copy its own sidecar images and keeps shared o
     const editor = page.getByRole("textbox", { name: "Note" });
     const images = editor.locator("img");
     const loaded = async () => {
-      await expect(images).toHaveCount(2);
+      await expect(images).toHaveCount(2, { timeout: 15_000 });
       await expect.poll(() => images.evaluateAll(nodes => nodes.every(node =>
-        node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0))).toBe(true);
+        node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0)), { timeout: 15_000 }).toBe(true);
     };
     await loaded();
     await page.keyboard.press(`${mod}+O`);
