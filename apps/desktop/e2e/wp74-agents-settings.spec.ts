@@ -34,6 +34,68 @@ const permissions = (userData: string) => {
   }
 };
 
+test("OFB.25–OFB.28: Off parent disables and fades dependent Switch rows without changing their colours", async () => {
+  const { dirs } = instance();
+  const l = await launch(dirs);
+  console.log(`ofb-switch-owned-pid=${l.pid}`);
+  try {
+    const settings = await openAgents(l.page);
+    const connect = settings.getByRole("switch", { name: /^Agents can connect/ });
+    const switches = settings.getByRole("switch");
+    await expect(switches).toHaveCount(5);
+    const readPublic = settings.getByRole("switch", { name: /^Read public notes/ });
+    await expect(connect).not.toBeChecked();
+    await expect(readPublic).toBeChecked();
+    const paint = () => switches.evaluateAll(inputs => inputs.map(input => {
+      const row = input.closest("label")!;
+      const track = row.querySelector('[data-part="switch-track"]')!;
+      const thumb = row.querySelector('[data-part="switch-thumb"]')!;
+      const style = getComputedStyle(row);
+      return {
+        opacity: Number(style.opacity), gap: Number.parseFloat(style.columnGap),
+        colours: [getComputedStyle(track).backgroundColor, getComputedStyle(track).borderColor, getComputedStyle(thumb).backgroundColor],
+        descendantOpacity: [...row.querySelectorAll("span")].map(span => Number(getComputedStyle(span).opacity)),
+      };
+    }));
+    const off = await paint();
+    for (let i = 1; i < 5; i++) {
+      await expect(switches.nth(i)).toBeDisabled();
+      expect(off[i]!.opacity).toBe(0.4);
+      expect(off[i]!.gap).toBe(8);
+      expect(off[i]!.descendantOpacity.every(opacity => opacity === 1)).toBe(true);
+    }
+    await expect(settings.getByText("Turn on Agents can connect first", { exact: true })).toHaveCount(4);
+    const before = permissions(dirs.userData);
+    await settings.getByText("Read public notes", { exact: true }).click({ force: true });
+    await expect(readPublic).toBeChecked();
+    expect(permissions(dirs.userData)).toEqual(before);
+    await connect.focus();
+    await l.page.keyboard.press("Tab");
+    for (let i = 1; i < 5; i++) await expect(switches.nth(i)).not.toBeFocused();
+    await settings.getByText("Agents can connect", { exact: true }).click();
+    await expect.poll(() => permissions(dirs.userData).connect).toBe(true);
+    for (let i = 1; i < 5; i++) await expect(switches.nth(i)).toBeEnabled();
+    await l.page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running"));
+    const on = await paint();
+    for (let i = 1; i < 5; i++) {
+      expect(on[i]!.opacity).toBe(1);
+      expect(on[i]!.colours).toEqual(off[i]!.colours);
+    }
+    await expect(settings.getByText("Turn on Agents can connect first", { exact: true })).toHaveCount(0);
+    await connect.focus();
+    await l.page.keyboard.press("Tab");
+    await expect(readPublic).toBeFocused();
+    await l.page.screenshot({ path: join(test.info().outputDir, "agents-enabled.png") });
+    await settings.getByText("Agents can connect", { exact: true }).click();
+    await expect.poll(() => permissions(dirs.userData).connect).toBe(false);
+    await expect(connect).not.toBeChecked();
+    await expect(readPublic).toBeDisabled();
+    await expect(settings.getByText("Turn on Agents can connect first", { exact: true })).toHaveCount(4);
+    await l.page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running"));
+    await l.page.screenshot({ path: join(test.info().outputDir, "agents-disabled.png") });
+  } finally { await quit(l); }
+});
+
 test("AGT-02: Settings → Agents writes agents.json, copies a working snippet, and undoes an agent's change", async () => {
   const { dirs } = instance();
   // An agent's change to undo: the command-line tool's write is an attributed commit like any agent's.

@@ -231,6 +231,22 @@ Seventeen control/geometry units pass, including both IconButton inputs with exa
 | Rest, hover, pressed, focus-visible, disabled, pending, selected | One box, fixed token padding and reserved border; colour/ink/focus-ring changes only | Zero-padding bleed and offset painted extensions | Actual primitive rendering matrix in `packages/ui/test/button-geometry.test.tsx`, included in `pnpm check`; intentionally broken fixtures must be detected |
 | First-run actions | Create new notes instead, More options and Back use the primitive unchanged | Per-view edge-alignment escape | Built-app `ofb-buttons.spec.ts`: measured padding and bounds, real hover/press/focus, light/dark and default/narrow captures |
 
+### Disabled controls, 6 November 10:39
+
+The owner's exact words are retained in [OFB.25–OFB.28](../plan/definition-of-done.md#owner-feedback-batch-6-november-ofb); [D-367](../plan/decisions.md#d-367-disabled-preserves-colours-switch-labels-have-a-gap-off-parents-disable-dependents) makes them system rules.
+
+| Surface or primitive | Audit result | System treatment |
+| --- | --- | --- |
+| Switch, every surface | Disabled paint overrode the On track, thumb and label, but did not visibly fade the row; the track-label gap was 4 px | Delete disabled hue token/selectors; whole-row `opacity.disabled`, including reason; component gap now 8 px |
+| Settings → Agents | Existing VM binds all four dependent rows to Off parent and the command rejects changes; semantics were wired, paint was wrong | Reuse Switch's disabled contract; native disabled input skips Tab and ignores activation; "Turn on Agents can connect first" stays |
+| Buttons, icon buttons, result choices | Existing disabled opacity, no disabled hue swap | Existing button renderer matrix now compares disabled and rest paint; style lint rejects positive disabled hue selectors |
+| Menus | Forced-colour unavailable labels/shortcuts used GrayText, with separate descendant fades | Remove disabled hue token/overrides and fade the whole unavailable item once, preserving focus explanations; pending remains distinct |
+| DatePicker | Disabled day recoloured to muted | Disabled uses opacity only; unavailable-day colour is a separate availability state |
+| Settings → Appearance / Project / AI | No additional Off-parent Switch dependency; project border and watermark are independent; AI connection actions are not child settings of Agents | No invented dependency or additional wrapper |
+| Sharing | Item-sharing controls already bind lock and reason; link and passcode are independent draft choices; passcode-specific fields are conditional on passcode | Existing Switch row fade applies to locked controls; conditional fields remain hidden, not a new disabled group |
+
+No additional disabled-group wrapper: each Switch already owns its full label/description row and receives the disabled state from the view. Another wrapper would risk double-fading and unnecessarily add a contract. Temporary commit pending retains focus and uses its own-border sign; it is not persistent disabled.
+
 ### Owner feedback queue, 5 November
 
 **"No tooltip on menu", fixed in `f892846a`:** the menu items' explanations (for example Publish… and Help and docs) were rendered as tooltips, but every React Aria popover carried an inline `z-index: 100000` from its overlay positioning. That put the menu above the tooltip layer, so it painted over its own items' tooltips. The shared `useWindowBoundary` now clears that inline value, so every popover stacks by its layer token (popover 8, below tooltip 9). Worker16's journey missed it because `toBeVisible` doesn't detect occlusion. The new native journey hit-tests the tooltip's centre and corners in the built app, on keyboard focus and on a real mouse rest, for a disabled item and a later-preview item. It also checks that an item without a reason shows none, that the explanation remains the item's accessible description, and that pressing a disabled item keeps the menu open. Forcing the old inline value back makes the journey fail on paint. A static guard (`popover-box.test.ts`) keeps every `<Popover>` on `useWindowBoundary()` and a layer token.

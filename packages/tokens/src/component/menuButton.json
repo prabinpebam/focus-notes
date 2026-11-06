@@ -80,11 +80,6 @@
         "$value": "{color.onSelection}",
         "$description": "The focused item's text in forced colors (HighlightText)."
       },
-      "textDisabled": {
-        "$type": "color",
-        "$value": "{color.textDisabled}",
-        "$description": "An unavailable item's label and shortcut in forced colors (GrayText)."
-      },
       "pressed": {
         "$type": "color",
         "$value": "{color.pressed}"

@@ -47,7 +47,7 @@ export function Switch({ label, checked, onLabel, offLabel, description, disable
       onChange={(value) => onChange?.({ value })}
       {...(id ? { id } : {})}
     >
-      <span className={s.trackSlot} aria-hidden="true"><span className={s.track}><span className={s.thumb} />{commit ? <CommitMark variant="border" state={commit} /> : null}</span></span>
+      <span className={s.trackSlot} aria-hidden="true"><span className={s.track} data-part="switch-track"><span className={s.thumb} data-part="switch-thumb" />{commit ? <CommitMark variant="border" state={commit} /> : null}</span></span>
       <span className={s.text}>
         <span className={s.name}>
           <span className={s.label}>{label}</span>

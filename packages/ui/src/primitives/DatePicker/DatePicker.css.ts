@@ -56,7 +56,8 @@ export const cell = style({
     "&[data-pressed]": { backgroundColor: t.pressed },
     "&[data-focus-visible]": ring,
     "&[data-selected]": { backgroundColor: t.selected, color: t.onSelected },
-    "&[data-disabled], &[data-unavailable]": { color: t.muted, opacity: t.disabledOpacity },
+    "&[data-disabled]": { opacity: t.disabledOpacity },
+    "&[data-unavailable]": { color: t.muted, opacity: t.disabledOpacity },
   },
 });
 // The calendar's table is laid out by its cells alone: no borders or padding from table styles elsewhere.

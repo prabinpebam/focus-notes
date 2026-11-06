@@ -36,6 +36,19 @@ export const EXEMPT = [
   { file: "Switch/Switch.css.ts", rule: "geometry in a state", match: /Switch_thumb__/, why: "an out-of-flow thumb; its place is the state" },
 ];
 
+export function disabledPaintErrors(css) {
+  const errors = [];
+  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = match[1].replace(/:not\([^)]*\)/g, "");
+    if (!/\[data-disabled\]|\[aria-disabled=["']?true["']?\]|:disabled\b/.test(selector)) continue;
+    for (const declaration of match[2].split(";")) {
+      if (/^\s*(?:color|background(?:-color|-image)?|border(?:-[\w-]+)?-color|fill|stroke)\s*:/.test(declaration))
+        errors.push(`disabled recolour: use the disabled opacity, preserving the enabled colours: ${declaration.trim()}`);
+    }
+  }
+  return errors;
+}
+
 const exempt = (file, f) => EXEMPT.find((e) => file.endsWith(e.file) && f.rule.startsWith(e.rule) && e.match.test(f.text));
 
 export async function lint() {
@@ -43,6 +56,7 @@ export async function lint() {
   const errors = [];
   const warnings = [];
   for (const { file, css } of styles) {
+    for (const error of disabledPaintErrors(css)) errors.push(`${file}: ${error}`);
     // Bare scale step (spacing ST-1): the design system's own form of the kit's --space-<n> rule. Only
     // component tokens read the scale; styles read a role or a component token.
     for (const m of css.matchAll(/[^;{}]*var\(--fn-space-scale-[a-z]+\)[^;{}]*/g))

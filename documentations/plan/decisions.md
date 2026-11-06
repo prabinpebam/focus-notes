@@ -1,5 +1,14 @@
 # Decisions
 
+## D-367: Disabled preserves colours; Switch labels have a gap; Off parents disable dependents
+
+**Status:** Accepted (the owner, 6 November 2026, 10:39). **Affects:** [Foundations → States](../design/foundations.md#states), [UI states audit](../design/ui-states-audit.md#disabled-controls-6-november-1039), [OFB.25–OFB.28](definition-of-done.md#owner-feedback-batch-6-november-ofb), IA-VIEW-SETTINGS, IA-CMP-SWITCH, DSY-15, AGT-02.
+
+- **Same value, same colours:** disabled = the actual enabled colours at the shared `opacity.disabled`, never a hue swap. A Switch keeps its On accent/On thumb or Off track/Off thumb. Its whole row, including label and description, fades once. Remove Switch and menu disabled-colour tokens, menu descendant fades and DatePicker's disabled hue override.
+- **One clear gap:** `cmp.switch.gap` aliases `space.inlineItem` (8 px at default text size), owned by the primitive's layout, not a label margin or a screen override.
+- **Dependent rows:** an Off parent disables its dependent controls, removes them from keyboard focus and prevents activation, keeping the reason. Agents already provides the disabled binding and command guard; the missing visible distinction was the Switch's disabled paint, not missing permission wiring. Reuse that row-level disabled contract rather than layering another opacity wrapper.
+- **Enforcement:** extend the existing button geometry/paint check, reject disabled hue declarations in the existing spacing/style lint, and assert computed gap, colours, opacity, focus skipping and ineffective activation in built Settings → Agents. Pending locks remain a distinct state that preserves focus.
+
 ## D-pending: Project replaces workspace everywhere
 
 **Status:** Accepted (the owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."; re-confirmed, the owner, 5 November 2026, 19:46: "Removing workspace and having only Project, the design is approved." and "Delete dialog looks good, it's approved." then "Go ahead and implement all of these."). The on-disk and template renames in (c) stay a separate owner decision; implementation changes user-facing words only. **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).

@@ -12,6 +12,7 @@ export const root = style({
   fontFamily: t.font,
   cursor: "default",
   outline: "none",
+  selectors: { "&[data-disabled]": { opacity: t.disabledOpacity } },
 });
 
 /** The track's place: the hit's height, the track centred in it on the label's first line (spacing SP-9, no margins). */
@@ -34,7 +35,6 @@ export const track = style({
     [`${root}[data-selected] &`]: { backgroundColor: t.trackOn, borderColor: t.trackOn },
     [`${root}[data-pressed]:not([data-selected]) &`]: { backgroundColor: t.hover },
     [`${root}[data-focus-visible] &`]: { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusOffset },
-    [`${root}[data-disabled] &`]: { borderColor: t.disabledText, backgroundColor: t.trackOff },
   },
   "@media": {
     "(hover: hover)": { selectors: { [`${root}[data-hovered]:not([data-selected]) &`]: { backgroundColor: t.hover } } },
@@ -55,7 +55,6 @@ export const thumb = style({
   transitionTimingFunction: t.easing,
   selectors: {
     [`${root}[data-selected] &`]: { insetInlineStart: `calc(100% - ${t.thumbSize} - ${t.inset})`, backgroundColor: t.thumbOn },
-    [`${root}[data-disabled] &`]: { backgroundColor: t.disabledText },
   },
 });
 
@@ -63,6 +62,6 @@ export const text = style({ display: "flex", flexDirection: "column", minWidth: 
 // The name line is as tall as the row and centres its words on the track, so label, state word and track share one middle (DSY-15).
 export const name = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", columnGap: t.nameGap, minHeight: t.hit, lineHeight: t.lineHeight });
 // Like every form label: body size, semibold (D-111).
-export const label = style({ color: t.label, fontSize: t.labelSize, fontWeight: t.labelWeight, selectors: { [`${root}[data-disabled] &`]: { color: t.disabledText } } });
+export const label = style({ color: t.label, fontSize: t.labelSize, fontWeight: t.labelWeight });
 export const state = style({ color: t.state, fontSize: t.stateSize, fontVariantNumeric: "tabular-nums" });
 export const description = style({ color: t.state, fontSize: t.stateSize });

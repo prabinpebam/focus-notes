@@ -49,7 +49,7 @@ export const item = style({
     "&[data-pressed]": { backgroundColor: t.pressed },
     // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
-    "&[data-disabled]": { opacity: t.disabledOpacity },
+    '&[data-disabled], &[aria-disabled="true"]:not([aria-busy="true"])': { opacity: t.disabledOpacity },
   },
   // Forced colors: the focused item in the system's highlight, as a system menu shows it (D-204).
   "@media": { "(forced-colors: active)": { selectors: { "&[data-focused]": { backgroundColor: t.forcedFocused, color: t.forcedFocusedText, forcedColorAdjust: "none" } } } },
@@ -57,20 +57,13 @@ export const item = style({
 
 export const label = style({ flexGrow: 1, display: "flex", flexDirection: "column" });
 export const labelRow = style({ display: "flex", alignItems: "center", gap: t.gap });
-const unavailable = `${item}[aria-disabled="true"] &`;
-export const labelText = style({
-  flexGrow: 1,
-  selectors: { [unavailable]: { opacity: t.disabledOpacity } },
-  "@media": { "(forced-colors: active)": { selectors: { [unavailable]: { color: t.textDisabled } } } },
-});
+export const labelText = style({ flexGrow: 1 });
 export const check = style({ width: t.captionSize, display: "inline-flex", justifyContent: "center", color: t.text });
 // In the interface font, as everywhere else shortcuts show (a <kbd> would be monospace).
-// An unavailable item's shortcut dims with its label; in forced colors, a focused one is in the
-// highlight's text color, as its label (D-204).
+// In forced colors, a focused shortcut shares its label's highlight text (D-204).
 export const shortcut = style({
   color: t.textMuted, fontSize: t.captionSize, fontFamily: t.font,
-  selectors: { [unavailable]: { opacity: t.disabledOpacity } },
-  "@media": { "(forced-colors: active)": { selectors: { [`${item}[data-focused] &`]: { color: t.forcedFocusedText }, [unavailable]: { color: t.textDisabled } } } },
+  "@media": { "(forced-colors: active)": { selectors: { [`${item}[data-focused] &`]: { color: t.forcedFocusedText } } } },
 });
 // Its space is its own padding, the line on its content box (spacing SP-9).
 export const separator = style({ height: t.separatorWidth, boxSizing: "content-box", paddingBlock: t.separatorSpace, backgroundColor: t.separator, backgroundClip: "content-box" });

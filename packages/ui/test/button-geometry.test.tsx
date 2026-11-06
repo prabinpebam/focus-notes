@@ -10,8 +10,10 @@ import { MenuButton } from "../src/primitives/MenuButton/MenuButton.tsx";
 import { PillButton } from "../src/primitives/PillButton/PillButton.tsx";
 import { TriggerButton } from "../src/primitives/TriggerButton/TriggerButton.tsx";
 import { PickerButton } from "../src/primitives/PickerButton/PickerButton.tsx";
+import { Switch } from "../src/primitives/Switch/Switch.tsx";
 import { FloatingContext } from "../src/layouts/Layer/floating.ts";
 import { compileStyles } from "../../../tools/spacing/compile-css.mjs";
+import { disabledPaintErrors } from "../../../tools/spacing/lint.mjs";
 
 const requireDesktop = createRequire(resolve("apps/desktop/package.json"));
 const { _electron } = requireDesktop("@playwright/test") as typeof import("@playwright/test");
@@ -52,13 +54,14 @@ describe("D-354: buttons own their padding and paint in every state", () => {
 
   beforeAll(async () => {
     css = readFileSync(resolve("packages/tokens/dist/tokens.css"), "utf8") +
-      (await compileStyles()).filter(({ file }) => /primitives\/(Button|IconButton|MenuButton|PillButton|TriggerButton|PickerButton|SignalDot|Icon|Spinner|CommitMark)\//.test(file) || file.endsWith("control.css.ts"))
+      (await compileStyles()).filter(({ file }) => /primitives\/(Button|IconButton|MenuButton|PillButton|TriggerButton|PickerButton|Switch|SignalDot|Icon|Spinner|CommitMark)\//.test(file) || file.endsWith("control.css.ts"))
         .map(({ css }) => css).join("\n");
     app = await _electron.launch({
       executablePath: requireDesktop("electron"),
       args: [resolve("tools/spacing/button-window.cjs")],
       env: { ...process.env, FOCUS_NOTES_E2E: "1", ELECTRON_ENABLE_LOGGING: "0" },
     });
+    console.log(`ofb-switch-owned-pid=${app.process().pid}`);
     page = await app.firstWindow();
   }, 120_000);
   afterAll(async () => { if (app) await app.close(); });
@@ -86,6 +89,7 @@ describe("D-354: buttons own their padding and paint in every state", () => {
       });
       return {
         padding, tokenPadding,
+        paint: [style.color, style.backgroundColor, style.backgroundImage, style.borderColor],
         geometry: [rect.x, rect.y, rect.width, rect.height, ...padding.map(Number.parseFloat),
           style.borderInlineStartWidth, style.borderInlineEndWidth, child?.x, child?.y, child?.width, child?.height],
         outsidePaint: ["::before", "::after"].some(pseudo => {
@@ -118,10 +122,65 @@ describe("D-354: buttons own their padding and paint in every state", () => {
           expect(value.tokenPadding, label).toEqual([true, true]);
           expect(value.geometry, label).toEqual(rest[i]!.geometry);
           expect(value.outsidePaint, label).toBe(false);
+          if (state === "disabled") expect(value.paint, label).toEqual(rest[i]!.paint);
         });
       }
     }
   }, 120_000);
+
+  it("D-367: Switch labels have a positive token gap; disabled rows fade once without recolouring on or off", async () => {
+    const render = (disabled: boolean) => renderToStaticMarkup(<>
+      {[false, true].map(checked => <Switch key={String(checked)} label="Read public notes" description="Public notes only"
+        onLabel="On" offLabel="Off" checked={checked} disabled={disabled}
+        disabledReason="Turn on Agents can connect first" />)}
+    </>);
+    const measure = () => page.locator("label").evaluateAll(rows => rows.map(row => {
+      const style = getComputedStyle(row);
+      const children = [...row.querySelectorAll("span")];
+      const tokenGap = [...document.styleSheets].flatMap(sheet => [...sheet.cssRules])
+        .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && row.matches(rule.selectorText))
+        .map(rule => rule.style.gap).filter(Boolean).at(-1);
+      return {
+        gap: Number.parseFloat(style.columnGap), tokenGap,
+        opacity: Number(style.opacity),
+        paints: children.map(child => {
+          const s = getComputedStyle(child);
+          return [s.color, s.backgroundColor, s.borderColor, s.opacity];
+        }),
+        disabled: row.querySelector("input")!.disabled,
+      };
+    }));
+    for (const theme of ["light", "dark", "contrast-light", "contrast-dark"]) {
+      await page.emulateMedia({ colorScheme: theme.endsWith("dark") ? "dark" : "light" });
+      await page.setContent(`<style>${css}</style>${render(false)}`);
+      await page.locator("html").evaluate((html, theme) => html.setAttribute("data-theme", theme), theme);
+      const enabled = await measure();
+      expect(enabled).toHaveLength(2);
+      await page.setContent(`<style>${css}</style>${render(true)}`);
+      await page.locator("html").evaluate((html, theme) => html.setAttribute("data-theme", theme), theme);
+      const disabled = await measure();
+      disabled.forEach((row, i) => {
+        expect(row.gap).toBe(8);
+        expect(row.tokenGap).toBe("var(--fn-cmp-switch-gap)");
+        expect(row.opacity).toBe(0.4);
+        expect(row.paints, theme).toEqual(enabled[i]!.paints);
+        expect(row.disabled).toBe(true);
+      });
+    }
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.locator("html").evaluate(html => html.removeAttribute("data-theme"));
+    await page.addStyleTag({ content: "label { gap: 0px !important; }" });
+    const broken = await measure();
+    expect(broken.every(row => row.gap === 0 && !row.tokenGap?.includes("var(--fn-"))).toBe(true);
+  });
+
+  it("D-367: rejects disabled hue overrides but not hover exclusions or opacity", () => {
+    expect(disabledPaintErrors('.control[data-disabled] { color: red; background-color: blue; border-color: green; }')).toHaveLength(3);
+    expect(disabledPaintErrors('.control[aria-disabled="true"] .thumb { background: red; }')).toHaveLength(1);
+    expect(disabledPaintErrors('.control:disabled { fill: red; }')).toHaveLength(1);
+    expect(disabledPaintErrors('.control[data-disabled] { opacity: var(--fn-opacity-disabled); }')).toEqual([]);
+    expect(disabledPaintErrors('.control[data-hovered]:not([aria-disabled="true"]) { background-color: red; }')).toEqual([]);
+  });
 
   it("rejects deliberately broken zero/literal padding, state drift and an offset hover layer", async () => {
     await page.setContent(`<style>${css}

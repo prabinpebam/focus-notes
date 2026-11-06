@@ -153,10 +153,12 @@ The editor and published pages use the same tokens. A unit test (`packages/ui/te
 | Pressed or active | `color.pressed` fill (text at 10%). Toggle buttons stay filled with a filled icon. | Buttons, toggles |
 | Selected | `color.selection` fill and a 2 px accent bar or outline | Rows, cells, gallery tiles |
 | Focus visible | 2 px `color.focusRing` outline with a 2 px offset, shown only for keyboard focus | Every focusable element |
-| Disabled | 40% opacity, no hover, still focusable when its tooltip explains why | Buttons, menu items |
+| Disabled | Same actual colours at `opacity.disabled` (40%), never a recolour; fade the whole control, label and description once. No hover. An Off parent's dependents are unfocusable and inoperable, with their reason kept. Temporary pending locks retain focus; menu explanations remain accessible. | All controls, including Switch rows |
 | Destructive | `color.danger` text. Filled with `color.danger` only on the confirming button. | Delete actions |
 
 **Hit targets:** at least 32 &times; 32 px with a fine pointer and 44 &times; 44 px with a coarse pointer (touch, pen), even when the visible control is smaller.
+
+**Switch labels (D-367):** the Switch owns a positive `cmp.switch.gap`, aliasing `space.inlineItem` (8 px by default), between its track and label. Its description stays with the label. Disabled On keeps the real accent track and on-colour thumb, faded together with its words; disabled Off keeps the real off colours. Settings → Agents' four dependent rows retain "Turn on Agents can connect first" while the parent is Off.
 
 <h2 data-reader-personas="design">Motion</h2>
 
