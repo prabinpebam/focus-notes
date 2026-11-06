@@ -33,6 +33,25 @@ export const input = style({
 /** Holds the input and its trailing slot, so the slot sits inside the field at the inline end. */
 export const box = style({ position: "relative", display: "flex", minWidth: 0 });
 globalStyle(`${box} > input`, { flexGrow: 1, minWidth: 0 });
+export const adornedBox = style({
+  alignItems: "center", gap: t.gap, height: t.height, paddingInline: t.paddingInline,
+  borderRadius: t.radius, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border,
+  backgroundColor: t.background, boxSizing: "border-box",
+  ":focus-within": { borderColor: t.borderFocus, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
+  selectors: {
+    "&[data-invalid]": { borderColor: t.borderInvalid },
+    "&[data-invalid]:focus-within": { borderColor: t.borderInvalid, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderInvalid}` },
+    [`${root}[data-commit] &`]: { paddingInlineEnd: t.slotRoom },
+    [`${root}[data-commit="pending"] &`]: { borderColor: t.borderCommit, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderCommit}` },
+    [`${root}[data-commit="failed"] &`]: { borderColor: t.borderInvalid },
+    [`${root}[data-commit="failed"] &:focus-within`]: { borderColor: t.borderInvalid, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderInvalid}` },
+  },
+});
+export const prefix = style({ color: t.description, fontSize: t.fontSize, flexShrink: 0, cursor: "text", userSelect: "none" });
+export const adornedInput = style({
+  width: "100%", minWidth: 0, height: "100%", padding: 0, border: 0, outline: "none", boxShadow: "none",
+  background: "transparent", color: t.text, font: "inherit", fontSize: t.fontSize,
+});
 export const slot = style({ position: "absolute", insetBlock: 0, insetInlineEnd: t.paddingInline, display: "flex", alignItems: "center", width: t.slot, pointerEvents: "none" });
 /** As tall as the 32 px buttons beside it in a bar (the link editor), or the 40 px field of a dialog or panel (D-111). */
 export const size = styleVariants({ m: { height: t.heightCompact }, l: {} });
