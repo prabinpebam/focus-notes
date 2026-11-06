@@ -1,9 +1,24 @@
 import { test, expect, _electron as electron } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { launch, quit, type Launched } from "./helpers.ts";
+
+async function closeInstances(launched: Launched[], root: string): Promise<void> {
+  try {
+    await Promise.all(launched.map(quit));
+  } finally {
+    if (process.platform === "win32") {
+      // Include this runner's descendants too if Electron failed before launch() returned its PID.
+      const only = [...launched.map(instance => instance.pid), process.pid].join(",");
+      const cleanup = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+      execFileSync("pwsh", ["-NoProfile", "-File", cleanup, "-OnlyPid", only, "-WhatIf"], { stdio: "inherit" });
+      execFileSync("pwsh", ["-NoProfile", "-File", cleanup, "-OnlyPid", only], { stdio: "inherit" });
+    }
+    rmSync(root, { recursive: true, force: true });
+  }
+}
 
 test("Preview and the stable channel keep their native locks and writing windows side by side", async () => {
   test.skip(Boolean(process.env.FOCUS_NOTES_E2E_EXE), "Uses a source-only entrypoint to isolate the synthetic default profile.");
@@ -11,7 +26,6 @@ test("Preview and the stable channel keep their native locks and writing windows
   const legacy = join(root, "Focus Notes");
   const previewProfile = `${legacy} Preview`;
   const launched: Launched[] = [];
-  const pids: number[] = [];
   try {
     for (const channel of ["stable", "preview"]) {
       const docs = join(root, "notes");
@@ -23,7 +37,6 @@ test("Preview and the stable channel keep their native locks and writing windows
         FOCUS_NOTES_TEST_LEGACY_PROFILE: legacy,
       }, { entrypoint: join(import.meta.dirname, "channel-entry.mjs") });
       launched.push(instance);
-      pids.push(instance.pid);
       console.log(`channel-native pid=${instance.pid}`);
       await expect(instance.page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
     }
@@ -46,17 +59,32 @@ test("Preview and the stable channel keep their native locks and writing windows
     })).rejects.toThrow();
     for (const { page } of launched) await expect(page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
   } finally {
-    try {
-      await Promise.all(launched.map(quit));
-    } finally {
-      if (process.platform === "win32") {
-        // Include this runner's descendants too if Electron failed before launch() returned its PID.
-        const only = [...pids, process.pid].join(",");
-        const cleanup = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
-        execFileSync("pwsh", ["-NoProfile", "-File", cleanup, "-OnlyPid", only, "-WhatIf"], { stdio: "inherit" });
-        execFileSync("pwsh", ["-NoProfile", "-File", cleanup, "-OnlyPid", only], { stdio: "inherit" });
-      }
-      rmSync(root, { recursive: true, force: true });
-    }
+    await closeInstances(launched, root);
+  }
+});
+
+test("Preview still opens after a carry-over failure and shows its must-read retry notice", async () => {
+  test.skip(Boolean(process.env.FOCUS_NOTES_E2E_EXE), "Uses a source-only entrypoint to isolate the synthetic default profile.");
+  const root = mkdtempSync(join(tmpdir(), "fn-channel-native-"));
+  const legacy = join(root, "Focus Notes");
+  const launched: Launched[] = [];
+  try {
+    const docs = join(root, "notes");
+    mkdirSync(legacy);
+    mkdirSync(docs);
+    writeFileSync(join(legacy, "last-project.json"), "injected malformed pointer");
+    const instance = await launch({ userData: legacy, docs }, {
+      FOCUS_NOTES_CHANNEL: "preview", FOCUS_NOTES_USER_DATA: "",
+      FOCUS_NOTES_TEST_LEGACY_PROFILE: legacy,
+    }, { entrypoint: join(import.meta.dirname, "channel-entry.mjs") });
+    launched.push(instance);
+    console.log(`channel-native pid=${instance.pid}`);
+    await expect(instance.page.getByText("Couldn't bring over your Preview settings. Focus Notes will try again next time.", { exact: true })).toBeVisible();
+    expect(await instance.app.evaluate(({ app }) => ({ lock: app.hasSingleInstanceLock(), profile: app.getPath("userData") }))).toEqual({
+      lock: true, profile: `${legacy} Preview`,
+    });
+    expect(existsSync(join(`${legacy} Preview`, "preview-carry-over.json"))).toBe(false);
+  } finally {
+    await closeInstances(launched, root);
   }
 });

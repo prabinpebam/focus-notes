@@ -21,7 +21,7 @@ The owner's 6 November feedback ([OFB stage](../plan/definition-of-done.md#owner
 
 One row per production notification call, including dynamic message expressions and forwarding calls (which delegate dismissal to the originating caller). `node tools/notification-inventory.mjs` scans the TypeScript AST, so dynamic keys cannot escape coverage. Call IDs hash the source call, not its line number. The check rejects missing or changed rows, dismissal types and reasons; the deliberate broken fixtures also reject invalid must-read reasons. `--write` refreshes this block after reviewing changed callsites.
 
-Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, a recovery decision or the running rewrite's only Stop control is must-read. Pending actions pause their remaining timer, as do hover, focus and a background window.
+Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, a recovery decision, the running rewrite's only Stop control, or Preview starting without all its previous settings is must-read. The last case must explain the next-launch retry, since its own working profile remains usable and new changes are never overwritten. Pending actions pause their remaining timer, as do hover, focus and a background window.
 
 <!-- generated:notification-inventory -->
 | Call ID | Message key or expression | Shown when (source) | Type | Reason | Action |
@@ -51,6 +51,7 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 95707da4a75e-1 | catalog.format("toast.revealItemFailed") | packages/core/src/app.ts:1689 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 622621cf4b88-2 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1836 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 622621cf4b88-3 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1843 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 76f66d0fd5ca-1 | catalog.format("toast.previewCarryOverFailed") | packages/core/src/app.ts:1864 | must-read | profile-carry-over: Preview opened without all its previous settings; the person must know the original is retained and the next launch retries without overwriting new changes. | None |
 | d2cef3e5197d-1 | catalog.format("block.copiedLink", { name: b.text }) | packages/core/src/block-handle.ts:93 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 2e9627698b69-1 | catalog.format("table.copyFailed") | packages/core/src/block-handle.ts:95 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | a22985aaed62-1 | catalog.format("toast.copiedToLocal", { note: titleOfPath(target) }) | packages/core/src/browser.ts:165 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |

@@ -178,6 +178,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   defaultNotePath: () => ipcRenderer.invoke("note:default"),
   loadAppState: () => ipcRenderer.invoke("state:load"),
+  ...(params.get("startupNotice") === "preview-carry-over" ? { startupNotice: "preview-carry-over" } : {}),
   saveAppState: (state: unknown) => ipcRenderer.invoke("state:save", state),
   systemScheme: () => (darkQuery?.matches ? "dark" : "light"),
   onSystemSchemeChange: (listener: (s: "light" | "dark") => void) => {

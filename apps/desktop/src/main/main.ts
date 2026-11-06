@@ -17,7 +17,7 @@ import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/a
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { cliArgv, isStoreBuild, storeAliasPath } from "./store-build.ts";
-import { appIdentity, carryPreviewProfile } from "./app-identity.ts";
+import { appIdentity, preparePreviewProfile } from "./app-identity.ts";
 import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
@@ -95,15 +95,9 @@ const identity = appIdentity({
   defaultUserData: app.getPath("userData"), userData: process.env.FOCUS_NOTES_USER_DATA,
   channel: process.env.FOCUS_NOTES_CHANNEL,
 });
-if (identity.legacyUserData) {
-  try {
-    await carryPreviewProfile(identity.legacyUserData, identity.userData);
-  } catch (error) {
-    console.error("Could not carry over the Preview profile; the original is unchanged.", error);
-    app.exit(1);
-    throw error;
-  }
-}
+const previewCarryOverFailed = await preparePreviewProfile(identity, (error) => {
+  console.error("Could not carry over the Preview profile; the original is unchanged. Will retry next launch.", error);
+});
 if (identity.channel !== "stable") {
   app.setName(identity.name);
   if (process.platform === "win32") app.setAppUserModelId(identity.appId);
@@ -2567,7 +2561,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(previewCarryOverFailed && !extra.note ? { startupNotice: "preview-carry-over" } : {}), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.

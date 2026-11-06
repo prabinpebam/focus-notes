@@ -72,6 +72,8 @@ export interface PlatformBridge {
   };
   defaultNotePath(): Promise<string>;
   loadAppState(): Promise<AppStateFile>;
+  /** A nonpersistent startup outcome, announced once by the existing notification surface. */
+  startupNotice?: "preview-carry-over";
   saveAppState(state: AppStateFile): Promise<void>;
   /** The OS color scheme, and changes to it. */
   systemScheme(): "light" | "dark";

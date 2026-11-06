@@ -33,6 +33,18 @@ function fakeBridge(files: Record<string, string> = {}, overrides: Partial<Platf
 const messages = { "command.note.open": "Open", "command.note.save": "Save", "command.note.setContent": "Set", "command.appearance.toggle": "Theme", "command.trigger.activate": "Menu", "command.app.ready": "Ready" };
 
 describe("app start", () => {
+  it("starts normally with one must-read Preview carry-over notice and no persisted error flag", async () => {
+    const f = fakeBridge({}, { startupNotice: "preview-carry-over" });
+    const app = createApp(f.bridge, en);
+    await app.start();
+    expect(app.store.state.note.status).toBe("ready");
+    expect(app.store.state.ui.toasts).toMatchObject([{
+      message: "Couldn't bring over your Preview settings. Focus Notes will try again next time.",
+      sticky: true, tone: "warning",
+    }]);
+    expect(f.state()).not.toHaveProperty("startupNotice");
+  });
+
   it("opens the welcome note on first launch", async () => {
     const { bridge } = fakeBridge();
     const app = createApp(bridge, messages);

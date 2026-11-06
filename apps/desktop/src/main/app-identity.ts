@@ -1,5 +1,5 @@
-import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { copyFile, cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { constants, existsSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS, LOCK_FILES } from "@focus-notes/core/inventory";
 
@@ -36,11 +36,27 @@ export function appIdentity(options: {
 const excluded = new Set<string>([
   ...Object.values(CHROMIUM_FOLDERS), ...LOCK_FILES,
   DATA_FILES.projectMetadata, DATA_FILES.projectMetadataWal, DATA_FILES.projectMetadataShm, DATA_FILES.agentLimitsLock,
+  DATA_FILES.previewCarryOver,
 ]);
+
+async function copyMissing(source: string, destination: string): Promise<void> {
+  await mkdir(destination, { recursive: true });
+  for (const entry of await readdir(source, { withFileTypes: true })) {
+    const from = join(source, entry.name), to = join(destination, entry.name);
+    if (entry.isDirectory()) await copyMissing(from, to);
+    else if (entry.isFile()) {
+      try { await copyFile(from, to, constants.COPYFILE_EXCL); }
+      catch (error) {
+        if (!(error && typeof error === "object" && "code" in error && error.code === "EEXIST")) throw error;
+      }
+    } else throw new Error("Preview profile contains an unsupported file type.");
+  }
+}
 
 /** Snapshot only durable app data; never move notes, copy live SQLite locks, or overwrite a profile. */
 export async function carryPreviewProfile(source: string, destination: string): Promise<void> {
-  if (existsSync(destination) || !existsSync(source)) return;
+  const completed = join(destination, DATA_FILES.previewCarryOver);
+  if (existsSync(completed) || !existsSync(source)) return;
   await mkdir(dirname(destination), { recursive: true });
   const staging = await mkdtemp(`${destination}.carry-`);
   try {
@@ -62,8 +78,25 @@ export async function carryPreviewProfile(source: string, destination: string): 
         await writeFile(pointer, `${JSON.stringify({ profile: join(destination, DATA_FOLDERS.projectProfiles, child) })}\n`);
       }
     }
-    await rename(staging, destination);
+    await copyMissing(staging, destination);
+    await writeFile(completed, '{"version":1}\n');
   } finally {
     await rm(staging, { recursive: true, force: true });
+  }
+}
+
+export async function preparePreviewProfile(
+  identity: ReturnType<typeof appIdentity>,
+  report: (error: unknown) => void,
+  carry: typeof carryPreviewProfile = carryPreviewProfile,
+): Promise<boolean> {
+  if (!identity.legacyUserData) return false;
+  try {
+    await carry(identity.legacyUserData, identity.userData);
+    return false;
+  } catch (error) {
+    report(error);
+    await mkdir(identity.userData, { recursive: true });
+    return true;
   }
 }
