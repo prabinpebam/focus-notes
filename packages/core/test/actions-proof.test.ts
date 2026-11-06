@@ -136,6 +136,21 @@ const OUTCOMES: Record<string, (s: AppState, before: AppState) => boolean> = {
 };
 
 describe("ACT-07, ACT-16: the catalogue's own rules", () => {
+  it("help.open opens the existing Help home from Actions without changing note bytes", async () => {
+    const d = desktop();
+    const app = createApp(d.bridge, messages);
+    await app.start();
+    await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
+    const before = { ...d.files };
+    await app.commands.run("spotlight.open");
+    await type(app, "> Help and docs");
+    const row = items(app).find((i) => i.id.endsWith(":help.open"))!;
+    expect(row.disabled).not.toBe(true);
+    await app.commands.run("spotlight.choose", { id: row.id });
+    expect(d.opened).toEqual(["https://prabinpebam.github.io/focus-notes/documentations/#help/index.md"]);
+    expect(d.files).toEqual(before);
+    expect(sp(app).open).toBe(false);
+  });
   it("keeps the approved image insertion route available from Actions", async () => {
     const app = await started();
     await app.commands.run("spotlight.open");
