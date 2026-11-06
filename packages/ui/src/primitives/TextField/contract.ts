@@ -3,12 +3,14 @@ import { defineContract, GAP } from "../../contract.ts";
 export const contract = defineContract({
   type: "TextField",
   tier: "primitive",
-  description: "A labelled single-line field, with an optional description. Secrets use type password.",
+  description: "A labelled single-line field, with an optional description. An inline prefix uses one token-painted wrapper and focuses its border, never the inner input. Numeric step enables Arrow Up/Down, Shift by ten, and spinbutton semantics. Secrets use type password.",
   props: {
     label: { kind: "message", required: true },
     value: { kind: "text", bindable: true },
     placeholder: { kind: "message" },
     description: { kind: "message" },
+    prefix: { kind: "message", description: "Inline secondary-ink adornment inside the input wrapper. Keep a full accessible label, with labelHidden for compact W/H controls." },
+    step: { kind: "number", min: 1, description: "Numeric Arrow Up/Down increment; Shift multiplies by ten. The owner of the value handles bounds and validation." },
     type: { kind: "enum", values: ["text", "password", "url"], default: "text" },
     invalid: { kind: "boolean", default: false },
     error: { kind: "message", description: "What's wrong, below the field while it's invalid, and read with it (D-135)." },
@@ -34,6 +36,8 @@ export const contract = defineContract({
   a11y: { pattern: "text box", name: "label" },
   uncovered: { focused: GAP.focused },
   fixtures: [
+    ...(["width", "height"] as const).map(axis => ({ name: `inline prefix ${axis}`, props: { label: { t: `gallery.dimension.${axis}` }, prefix: { t: `gallery.dimension.${axis}Prefix` }, labelHidden: true, value: { get: "vm.gallery.dimension" }, step: 1, size: "m", width: "number" } })),
+    ...(["rest", "pending", "confirmed", "failed"] as const).map(commit => ({ name: `inline prefix commit ${commit}`, props: { label: { t: "gallery.dimension.width" }, prefix: { t: "gallery.dimension.widthPrefix" }, labelHidden: true, value: { get: "vm.gallery.dimension" }, step: 1, commit, ...(commit === "failed" ? { error: { t: "commit.failed" }, retryLabel: { t: "commit.retry" }, revertLabel: { t: "commit.revert" } } : {}) } })),
     { name: "width number", props: { label: { t: "gallery.sample" }, size: "m", width: "number" } },
     { name: "type text", props: { label: { t: "unlock.passphrase" }, type: "text", description: { t: "unlock.intro" } } },
     { name: "type password", props: { label: { t: "unlock.passphrase" }, type: "password" } },

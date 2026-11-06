@@ -5629,7 +5629,7 @@
     },
     "c_TextField": {
       "type": "object",
-      "description": "A labelled single-line field, with an optional description. Secrets use type password.",
+      "description": "A labelled single-line field, with an optional description. An inline prefix uses one token-painted wrapper and focuses its border, never the inner input. Numeric step enables Arrow Up/Down, Shift by ten, and spinbutton semantics. Secrets use type password.",
       "required": [
         "type",
         "props"
@@ -5706,6 +5706,30 @@
                 },
                 {
                   "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "prefix": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "step": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
                 }
               ]
             },
