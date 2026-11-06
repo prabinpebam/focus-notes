@@ -67,6 +67,17 @@ The coordinator approved the four-VM whole-file option on 6 November. `tools/ci/
 
 `pnpm exec vitest run tools/test/journey-shards.test.mjs tools/test/ci-workflow.test.mjs tools/test/repository.test.mjs` passes 24 tests after the workflow is wired. `pnpm check`, desktop typecheck, Slate runtime and `git diff --check` pass. The runner's exact file filters also pass all four `m0-walking-skeleton.spec.ts` journeys invisibly with one worker; scoped cleanup runs afterwards and no owned Electron process remains. The scheduling proposal remains a model until this branch's exact-head Windows run supplies measured shard times. Landing must wait for the caption milestone; if `main` advances, rebase and gate the new exact head before the locked non-force fast-forward.
 
+**First exact-head proof, not landed:** [42225794374](https://github.com/prabinpebam/focus-notes/actions/runs/42225794374) passed every Windows job on `f685eac3`, based on `main` at `5d3d8277`. The four shards ran **474 unique cases: 443 passed, 31 skipped, none failed** (one more passing case than the timing baseline), with no duplicates or omissions. The Windows unit job passed 3159 tests (7 skipped), including the new coverage contracts; web passed 47 journeys (2 skipped).
+
+| Shard | Model, test seconds | Measured journey step seconds | Difference | Passing / skipped | Measured complete job seconds |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 950.2 | 935 | -15.2 | 127 / 1 | 1035 |
+| 2 | 950.4 | 963 | +12.6 | 101 / 1 | 1061 |
+| 3 | 950.7 | 780 | -170.7 | 137 / 1 | 854 |
+| 4 | 948.5 | 809 | -139.5 | 78 / 28 | 892 |
+
+The slowest measured journey step was 963 seconds versus the prior final-print run's 1110 seconds (147 seconds less in this observation), and the longest journey job was 1061 seconds (17.7 minutes). The separate Windows test job took **1166 seconds (19.4 minutes)**, now setting the overall gate floor; its budgets step alone took 531 seconds. Compared with the prior observed 1211-second slowest job, the overall gate was only 45 seconds shorter. These runs have different application heads and runner noise: this is measured evidence, not a controlled same-head A/B experiment or a guaranteed future speedup. Caption landing and a fresh exact-head gate after any base change remain required before this branch lands.
+
 ### Inline images: Print and Save as PDF
 
 **Met (6 November):** IMG.12 / IMG-12 (WP-9.8, D-348) landed on `main` at `42cb1ed8d72df8b9389063696c7d6cece64df0a3` after [exact-head Windows CI 42216947356](https://github.com/prabinpebam/focus-notes/actions/runs/42216947356) passed every job, including all four journey shards. The landing was a non-force fast-forward under `landing.lock`; the remote SHA was verified and the lock released. WP-9.8 remains **verifying**, not formal stage acceptance; the scheduled Preview refresh has not been independently inspected for this row. The pipeline snapshots the note's bounded local images, paints the print-only NoteContent image groups and waits for every `img.decode()` before using the unchanged native Print/PDF path. Missing or undecodable pixels become muted descriptions, not blanks or broken icons. A tracked, cancellable preparation pill retains the note and source files; `fn:image.print` records the complete preparation wait.
