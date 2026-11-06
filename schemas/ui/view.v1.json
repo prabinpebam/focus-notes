@@ -1805,6 +1805,32 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "disabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "disabledReason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -13356,6 +13382,9 @@
               "$ref": "#/$defs/actions"
             },
             "imageEdited": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageEditApplied": {
               "$ref": "#/$defs/actions"
             },
             "imageCaptionPrepared": {

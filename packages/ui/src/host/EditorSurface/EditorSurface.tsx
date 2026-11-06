@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
-  applyLink, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, trackImageCaption, applyImageCaption, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
+  applyLink, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, trackImageCaption, applyImageCaption, trackImageEdit, applyImageEdit, restoreImageOriginal, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
   focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setImageWords, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
@@ -39,10 +39,11 @@ export interface EditorSurfaceProps {
   onImageFailed?: (payload: { src: string; value: string; key: string }) => void;
   onImageSelect?: (payload: ImagePayload) => void;
   onImageAction?: (payload: { id: string }) => void;
-  onImageEdited?: (payload: { src: string; data: string }) => void;
+  onImageEdited?: (payload: { src: string; data: string; request: string }) => void;
+  onImageEditApplied?: (payload: { request: string; accepted: boolean }) => void;
   onImageCaptionPrepared?: (payload: { request: string; data: string; error: string }) => void;
   onImageCaptionApplied?: (payload: { request: string; accepted: boolean }) => void;
-  onImageEditError?: () => void;
+  onImageEditError?: (payload: { request: string }) => void;
   onImageImport?: (payload: { request: string; key: string; data: string; error: string }) => void;
   onImageImported?: (payload: { batch: string; accepted: boolean }) => void;
   /** Changes when a different note is loaded. The editor resets only then. */
@@ -180,7 +181,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
-  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", imageCaptionLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageImport, onImageImported, onImageCaptionPrepared, onImageCaptionApplied,
+  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", imageCaptionLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageEditApplied, onImageImport, onImageImported, onImageCaptionPrepared, onImageCaptionApplied,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
@@ -192,8 +193,8 @@ export function EditorSurface({
   const imageRenders = useRef(new Set<() => void>());
   const imageOptions = useRef({ documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, captionLabel: imageCaptionLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction });
   imageOptions.current = { documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, captionLabel: imageCaptionLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction };
-  const imageEditRef = useRef({ onImageEdited, onImageEditError });
-  imageEditRef.current = { onImageEdited, onImageEditError };
+  const imageEditRef = useRef({ onImageEdited, onImageEditError, onImageEditApplied });
+  imageEditRef.current = { onImageEdited, onImageEditError, onImageEditApplied };
   const imageImportRef = useRef({ onImageImport, onImageImported, documentKey });
   imageImportRef.current = { onImageImport, onImageImported, documentKey };
   const imageCaptionRef = useRef({ onImageCaptionPrepared, onImageCaptionApplied });
@@ -820,8 +821,29 @@ export function EditorSurface({
         return;
       }
       if (id === "image.renderEdit") {
-        void renderImageEdit(String(args.data), Number(args.x), Number(args.y), Number(args.width), Number(args.height), Number(args.rotation))
-          .then((data) => imageEditRef.current.onImageEdited?.({ src: String(args.src), data }), () => imageEditRef.current.onImageEditError?.());
+        const request = String(args.request), key = imageOptions.current.documentKey;
+        void renderImageEdit(String(args.data), Number(args.x), Number(args.y), Number(args.width), Number(args.height), Number(args.rotation), Boolean(args.flipHorizontal), Boolean(args.flipVertical))
+          .then(data => {
+            if (imageOptions.current.documentKey === key) imageEditRef.current.onImageEdited?.({ src: String(args.src), data, request });
+          }, error => {
+            console.error("Image crop render failed", error);
+            if (imageOptions.current.documentKey === key) imageEditRef.current.onImageEditError?.({ request });
+          });
+        return;
+      }
+      if (id === "image.trackEdit") {
+        trackImageEdit(editor, String(args.request), Number(args.pos), String(args.src));
+        return;
+      }
+      if (id === "image.applyEdit") {
+        const image = args.image, request = String(args.request);
+        if (image && typeof image === "object" && "src" in image && typeof image.src === "string" && "width" in image && typeof image.width === "number" && "height" in image && typeof image.height === "number" && "originalSrc" in image && typeof image.originalSrc === "string") {
+          imageEditRef.current.onImageEditApplied?.({ request, accepted: applyImageEdit(editor, request, { src: image.src, width: image.width, height: image.height, originalSrc: image.originalSrc }) });
+        } else imageEditRef.current.onImageEditApplied?.({ request, accepted: false });
+        return;
+      }
+      if (id === "image.restore") {
+        if (!restoreImageOriginal(editor, Number(args.pos), String(args.src), String(args.originalSrc))) imageOptions.current.action?.({ id: "image.restore.failed" });
         return;
       }
       syncSelection(editor);

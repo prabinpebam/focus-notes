@@ -32,6 +32,8 @@ export interface ImageCropProps {
   toolbarLabel?: string;
   /** A new reset signal restores the opening ratio-lock mode, including repeated preset choices. */
   resetSignal?: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
   children?: ReactNode;
   /** Draft-only changes; the primitive never writes an image or a note. */
   onChange?: (rect: CropRect) => void;
@@ -45,7 +47,7 @@ export interface ImageCropProps {
  * @a11y Native named buttons for handles; source remains described.
  * @key Arrow moves an edge or the crop by one source pixel; Shift+Arrow by ten.
  */
-export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing = true, x = 0, y = 0, width: requestedWidth = 100, height: requestedHeight = 100, rotation = "0", aspect = "free", flipHorizontal = false, flipVertical = false, handles, widthLabel, heightLabel, lockLabel, rangeMessage, toolbarLabel, resetSignal, children, onChange, onCommit }: ImageCropProps) {
+export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing = true, x = 0, y = 0, width: requestedWidth = 100, height: requestedHeight = 100, rotation = "0", aspect = "free", flipHorizontal = false, flipVertical = false, handles, widthLabel, heightLabel, lockLabel, rangeMessage, toolbarLabel, resetSignal, disabled = false, disabledReason, children, onChange, onCommit }: ImageCropProps) {
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ handle: Handle; px: number; py: number; rect: CropRect } | undefined>(undefined);
   const [locked, setLocked] = useState(aspect !== "free");
@@ -146,9 +148,9 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
       {editing ? <>
         <div className={s.shade} aria-hidden="true"><div className={s.aperture} /></div>
         <div className={s.controlFrame}>
-          <button type="button" className={s.move} aria-label={handles.find(handle => handle.id === "move")?.label} onPointerDown={e => pointerDown(e, "move")} onPointerMove={pointerMove}
+          <button type="button" disabled={disabled} className={s.move} aria-label={handles.find(handle => handle.id === "move")?.label} onPointerDown={e => pointerDown(e, "move")} onPointerMove={pointerMove}
             onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }} onKeyDown={e => keyDown(e, "move")} />
-          {handles.map(({ id, label }) => id !== "move" && id in s.handles ? <button key={id} type="button" aria-label={label} title={label} className={`${s.handle} ${s.handles[id as Handle]}`}
+          {handles.map(({ id, label }) => id !== "move" && id in s.handles ? <button key={id} type="button" disabled={disabled} aria-label={label} title={label} className={`${s.handle} ${s.handles[id as Handle]}`}
             onPointerDown={e => pointerDown(e, id as Handle)} onPointerMove={pointerMove}
             onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }}
             onKeyDown={e => keyDown(e, id as Handle)} /> : null)}
@@ -159,12 +161,12 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
       <div className={s.toolbar} role="group" aria-label={toolbarLabel}>
         <div className={s.actions}>{children}</div>
         <div className={s.dimensions}>
-          <TextField label={widthLabel} prefix="W" labelHidden step={1} value={String(Math.round(width * iw / 100))} width="number" size="m" onChange={({ value }) => resizePixels("width", value)} />
-          <IconButton icon={locked ? "lock" : "unlock"} label={lockLabel} toggle pressed={locked} onPress={() => {
+          <TextField label={widthLabel} prefix="W" labelHidden step={1} readOnly={disabled} value={String(Math.round(width * iw / 100))} width="number" size="m" onChange={({ value }) => resizePixels("width", value)} />
+          <IconButton icon={locked ? "lock" : "unlock"} label={lockLabel} toggle pressed={locked} disabled={disabled} disabledReason={disabledReason} onPress={() => {
             lockedRatio.current = locked ? undefined : width * iw / (height * ih);
             setLocked(!locked);
           }} />
-          <TextField label={heightLabel} prefix="H" labelHidden step={1} value={String(Math.round(height * ih / 100))} width="number" size="m" onChange={({ value }) => resizePixels("height", value)} />
+          <TextField label={heightLabel} prefix="H" labelHidden step={1} readOnly={disabled} value={String(Math.round(height * ih / 100))} width="number" size="m" onChange={({ value }) => resizePixels("height", value)} />
         </div>
       </div>
       {rangeError && rangeMessage ? <Text value={rangeMessage} tone="danger" role="caption" announce /> : null}

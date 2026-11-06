@@ -191,7 +191,7 @@ describe("ACT-07, ACT-16: the catalogue's own rules", () => {
   });
   it("ACT-05: refuses a captured image after its document is replaced, keeping the query", async () => {
     const d = desktop();
-    d.bridge.writeImage = async () => {};
+    d.bridge.createImageCopy = async () => ({ src: "crop.png", width: 100, height: 100 });
     const app = createApp(d.bridge, messages);
     await app.start();
     await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
