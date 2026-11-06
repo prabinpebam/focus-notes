@@ -90,6 +90,8 @@ Five additional native entries now pass across scoped runs: Connect to AI opens 
 
 For comparison, existing Windows CI run `42121409521` reports first open 59.1 ms, then 37.9/35.6/22.6/28.1 ms (median 35.6), unlike the local invisible-window first sample of about 1976 ms. Local first-paint and throttling probes remain inconclusive, so no catalogue-warming speed-up or cold-open acceptance is claimed.
 
+**W3e separate proof/image increment (not the gated r5 application).** The inherited 37 per-entry outcomes and three fake-provider AI journeys pass together on the rebased r5 application (40 total, 8.6 minutes). The separate Edit image follow-up passes its native proof: select one decoded image, open Actions without a context menu, open the existing crop dialog with correct intrinsic dimensions, cancel without changing Markdown or image bytes, then select text and verify the image action is absent. Its image-anchor regression failed before implementation; catalogue/Actions units, static checks, desktop typecheck and build pass afterwards. The original candidate `038f8bb2` remains frozen for exact CI `42134520242`; this follow-up still needs its own combined gate and landing. Native standalone/local-only availability, remaining per-entry system/outbound proofs, cold first open and spoken screen-reader evidence remain open.
+
 | Row | Current evidence | Remaining |
 | --- | --- | --- |
 | MACT.1, MACT.2, MACT.10 | `actions-proof.test.ts`: catalogue integrity rejects duplicate labels, absent commands/proof/pointer paths and bare shared verbs; allow-list excludes dialog steps. `actions-outcomes.spec.ts` adds 37 native visible outcomes. | Native outcome proof for remaining entries; exact-head CI and Preview |

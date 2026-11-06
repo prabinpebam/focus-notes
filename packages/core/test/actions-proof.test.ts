@@ -98,7 +98,13 @@ function contextFor(app: App, e: CatalogEntry) {
   app.store.update((s: AppState) => ({
     ...s,
     account: { ...s.account, login: e.id === "account.signOut" ? "octo" : "" },
-    ui: { ...s.ui, format: { ...s.ui.format, selection: e.anchor === "selection", toolbar: false } },
+    ui: {
+      ...s.ui, format: { ...s.ui.format, selection: e.anchor === "selection" && e.id !== "image.edit", toolbar: false },
+      ...(e.id === "image.edit" ? { images: { ...s.ui.images, selected: {
+        pos: 8, src: "square.png", count: 1, text: false, from: 8, to: 9,
+        rounded: false, fitHeight: true, mode: "column", width: 20, height: 10, roundMixed: false, limitMixed: false,
+      } } } : {}),
+    },
   }));
 }
 
@@ -142,6 +148,51 @@ describe("ACT-07, ACT-16: the catalogue's own rules", () => {
     await app.commands.run("spotlight.choose", { id: row!.id });
     expect(editorActions).toContain("image.insert");
     expect(sp(app).open).toBe(false);
+  });
+  it("ACT-05: an image anchor is distinct from text and is captured before Actions takes focus", async () => {
+    const app = await started();
+    app.store.update((s) => ({
+      ...s, ui: { ...s.ui, images: { ...s.ui.images, selected: {
+        pos: 8, src: "square.png", count: 1, text: false, from: 8, to: 9,
+        rounded: false, fitHeight: true, mode: "column", width: 20, height: 10,
+        roundMixed: false, limitMixed: false,
+      } } },
+    }));
+    await app.commands.run("spotlight.open");
+    await type(app, "Edit this image");
+    expect(items(app).some((i) => i.id.endsWith(":image.edit"))).toBe(true);
+    app.store.update((s) => ({ ...s, ui: { ...s.ui, images: { ...s.ui.images, selected: { ...s.ui.images.selected!, count: 2 } } } }));
+    await app.commands.run("spotlight.setOpen", { open: false });
+    await app.commands.run("spotlight.open");
+    await type(app, "Edit this image");
+    expect(items(app).some((i) => i.id.endsWith(":image.edit"))).toBe(false);
+    await type(app, "Make selection bold");
+    expect(items(app).some((i) => i.id.endsWith(":format.bold"))).toBe(false);
+    await app.commands.run("spotlight.setOpen", { open: false });
+    app.store.update((s) => ({ ...s, ui: { ...s.ui, images: { ...s.ui.images, selected: undefined }, format: { ...s.ui.format, selection: true } } }));
+    await app.commands.run("spotlight.open");
+    await type(app, "Edit this image");
+    expect(items(app).some((i) => i.id.endsWith(":image.edit"))).toBe(false);
+  });
+  it("ACT-05: refuses a captured image after its document is replaced, keeping the query", async () => {
+    const d = desktop();
+    d.bridge.writeImage = async () => {};
+    const app = createApp(d.bridge, messages);
+    await app.start();
+    await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
+    contextFor(app, CATALOG.find((e) => e.id === "image.edit")!);
+    app.store.update((s) => ({ ...s, ui: { ...s.ui, images: { ...s.ui.images, sources: [
+      { id: "square.png", value: "data:image/png;base64,fixture", pending: false, failed: false },
+    ] } } }));
+    await app.commands.run("spotlight.open");
+    await type(app, "Edit this image");
+    const row = items(app).find((i) => i.id.endsWith(":image.edit"))!;
+    expect(row.disabled).not.toBe(true);
+    app.store.update((s) => ({ ...s, note: { ...s.note, key: `${s.note.key}:replacement` } }));
+    await app.commands.run("spotlight.choose", { id: row.id });
+    expect(app.store.state.ui.images.edit).toBe(false);
+    expect(sp(app)).toMatchObject({ open: true, query: "Edit this image" });
+    expect(items(app).find((i) => i.id.endsWith(":image.edit"))?.disabled).toBe(true);
   });
   it("ACT-12 availability at 150 entries includes actual command predicates", async () => {
     const app = await started();

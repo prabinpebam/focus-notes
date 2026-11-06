@@ -690,6 +690,10 @@ export function EditorSurface({
       if (id === "actions.capture") {
         syncSelection(editor);
         tracker.current?.refresh();
+        const selected = captureImageSelection(editor);
+        const node = selected.count === 1 ? editor.view.nodeDOM(selected.pos) : undefined;
+        const image = node instanceof Element ? node.querySelector("img") : null;
+        imageOptions.current.select?.({ ...selected, width: image?.naturalWidth ?? 0, height: image?.naturalHeight ?? 0 });
         return;
       }
       if (id === "rewrite.capture") {

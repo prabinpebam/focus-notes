@@ -19,6 +19,8 @@ export type Leaves = "none" | "github" | "ai" | "system" | "browser";
 export interface ActionScope {
   /** A non-empty text selection in the open note. */
   selection: boolean;
+  /** One selected image, not a text range containing images. */
+  image?: { pos: number; src: string; key: string };
   /** A note is open and ready. */
   note: boolean;
   /** The open note can be changed. */
@@ -68,6 +70,7 @@ export interface CatalogEntry {
 
 const inProject = (s: ActionScope) => s.project;
 const writable = (s: ActionScope) => s.writable;
+const selectedText = (s: ActionScope) => s.selection && s.writable;
 const needsAi = (s: ActionScope) => s.aiChecking ? "actions.reason.checkingAi" : !s.ai ? "actions.reason.connectAi" : undefined;
 
 const PROOF = "packages/core/test/actions-proof.test.ts";
@@ -76,15 +79,16 @@ const proof = (title: string) => `${PROOF}: ${title}`;
 /** The starter set (Actions → The starter set): its Ready rows, in each group's display order. */
 export const CATALOG: readonly CatalogEntry[] = [
   // ---- This selection ----
-  { id: "format.bold", steps: [["format.bold"]], label: "actions.format.bold", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("format.bold") },
-  { id: "format.italic", steps: [["format.italic"]], label: "actions.format.italic", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("format.italic") },
-  { id: "format.strike", steps: [["format.strike"]], label: "actions.format.strike", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("format.strike") },
-  { id: "format.code", steps: [["format.code"]], label: "actions.format.code", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("format.code") },
-  { id: "link.edit", steps: [["link.edit"]], label: "actions.link.edit", anchor: "selection", effect: "edit", leaves: "none", when: writable, alsoIn: ["formatting toolbar"], proof: proof("link.edit") },
-  { id: "rewrite.open", steps: [["rewrite.open"]], label: "actions.rewrite.open", anchor: "selection", effect: "outbound", leaves: "ai", when: writable, blockedBy: needsAi, fix: "ai.connect", alsoIn: ["text menu", "Edit menu"], proof: proof("rewrite.open") },
+  { id: "format.bold", steps: [["format.bold"]], label: "actions.format.bold", anchor: "selection", effect: "edit", leaves: "none", when: selectedText, alsoIn: ["formatting toolbar"], proof: proof("format.bold") },
+  { id: "format.italic", steps: [["format.italic"]], label: "actions.format.italic", anchor: "selection", effect: "edit", leaves: "none", when: selectedText, alsoIn: ["formatting toolbar"], proof: proof("format.italic") },
+  { id: "format.strike", steps: [["format.strike"]], label: "actions.format.strike", anchor: "selection", effect: "edit", leaves: "none", when: selectedText, alsoIn: ["formatting toolbar"], proof: proof("format.strike") },
+  { id: "format.code", steps: [["format.code"]], label: "actions.format.code", anchor: "selection", effect: "edit", leaves: "none", when: selectedText, alsoIn: ["formatting toolbar"], proof: proof("format.code") },
+  { id: "link.edit", steps: [["link.edit"]], label: "actions.link.edit", anchor: "selection", effect: "edit", leaves: "none", when: selectedText, alsoIn: ["formatting toolbar"], proof: proof("link.edit") },
+  { id: "image.edit", steps: [["image.edit"]], label: "actions.image.edit", anchor: "selection", effect: "flow", leaves: "none", when: (s) => Boolean(s.image) && s.writable, alsoIn: ["Image options"], proof: proof("image.edit") },
+  { id: "rewrite.open", steps: [["rewrite.open"]], label: "actions.rewrite.open", anchor: "selection", effect: "outbound", leaves: "ai", when: selectedText, blockedBy: needsAi, fix: "ai.connect", alsoIn: ["text menu", "Edit menu"], proof: proof("rewrite.open") },
   ...(["concise", "warmer", "grammar"] as const).map((preset): CatalogEntry => ({
     id: `rewrite.${preset}`, steps: [["rewrite.open", { preset }]], label: `actions.rewrite.${preset}`,
-    anchor: "selection", effect: "outbound", leaves: "ai", when: writable, blockedBy: needsAi, fix: "ai.connect",
+    anchor: "selection", effect: "outbound", leaves: "ai", when: selectedText, blockedBy: needsAi, fix: "ai.connect",
     alsoIn: ["Rewrite prompt presets"], proof: proof(`rewrite.${preset}`),
   })),
 
@@ -110,7 +114,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   { id: "note.revealLocal", steps: [["note.revealLocal"]], label: "actions.note.revealLocal", anchor: "note", effect: "navigate", leaves: "system", alsoIn: ["Files menu"], proof: proof("note.revealLocal") },
   { id: "history.open", steps: [["history.open"]], label: "actions.history.open", anchor: "note", effect: "navigate", leaves: "none", when: inProject, alsoIn: ["⋯ menu"], proof: proof("history.open") },
   { id: "outline.show", steps: [["outline.show"]], label: "actions.outline.show", anchor: "note", effect: "navigate", leaves: "none", alsoIn: ["contents rail"], proof: proof("outline.show") },
-  { id: "rewrite.write", steps: [["rewrite.open"]], label: "actions.rewrite.write", anchor: "note", effect: "outbound", leaves: "ai", when: (s) => s.writable && !s.selection, blockedBy: needsAi, fix: "ai.connect", alsoIn: ["Edit menu", "Ctrl+Shift+R at the caret"], proof: proof("rewrite.write") },
+  { id: "rewrite.write", steps: [["rewrite.open"]], label: "actions.rewrite.write", anchor: "note", effect: "outbound", leaves: "ai", when: (s) => s.writable && !s.selection && !s.image, blockedBy: needsAi, fix: "ai.connect", alsoIn: ["Edit menu", "Ctrl+Shift+R at the caret"], proof: proof("rewrite.write") },
   { id: "note.print", steps: [["note.print"]], label: "actions.note.print", anchor: "note", effect: "flow", leaves: "system", alsoIn: ["File menu"], proof: proof("note.print") },
   { id: "note.delete", steps: [["files.reveal", { path: "path" }], ["files.delete"]], label: "actions.note.delete", anchor: "note", effect: "destructive", leaves: "none", when: (s) => inProject(s) && s.writable, alsoIn: ["Files menu"], proof: proof("note.delete") },
 
@@ -153,7 +157,7 @@ export const catalogEntry = (id: string): CatalogEntry | undefined => BY_ID.get(
 /** Whether an action's anchor is there at all (Q3). */
 export function anchorPresent(anchor: Anchor, s: ActionScope): boolean {
   switch (anchor) {
-    case "selection": return s.selection && s.note;
+    case "selection": return (s.selection || Boolean(s.image)) && s.note;
     case "note": return s.note;
     case "project": return s.project;
     case "app": return true;

@@ -257,6 +257,8 @@ The native outcome journey covers 37 entries, including formatting with Undo, ac
 
 The caret's *Write with AI…* row reuses `rewrite.open`, with no note context in its request. *Caption this image with AI…* remains a candidate: there is no caption command in the current app, and this slice does not invent a second AI surface or send an image.
 
+**Image-anchor follow-up (landing pending).** Selecting one image makes *Edit this image…* available in This selection. Actions captures that image and its decoded dimensions before its field takes focus, then opens the existing crop-and-rotate dialog. A text range containing images is not a single-image anchor, and image-only selection does not offer text formatting or caret Write. Cancelling leaves the image and Markdown bytes unchanged; a replaced document cannot run the old image target.
+
 ## Owner decisions (approved defaults, 6 November)
 
 The owner approved the spec on 6 November at 02:07; the recommended default of each question below is the decision.
