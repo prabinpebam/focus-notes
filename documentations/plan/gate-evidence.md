@@ -18,6 +18,17 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Image crop landing: scoped first-readiness quarantine, 7 November
+
+The approved D-372 crop landed as `0bb2f1c1` after all seven jobs passed on that exact head in [42268712808](https://github.com/prabinpebam/focus-notes/actions/runs/42268712808), first attempt. The earlier frozen head `6afaa382` also passed all seven jobs in attempt 3 of [42256607087](https://github.com/prabinpebam/focus-notes/actions/runs/42256607087); main advanced to `4c7db417`, so crop was rebased and the combined image-move/copy/provenance implementation gated again before the non-force fast-forward.
+
+The coordinator authorized exactly these two historical first-readiness cases, not a waiver for any other failure. These rows change no test, selector, timeout, budget or assertion; both cases pass in the final green gate.
+
+| Exact scope | Failure and run | Owner | Expiry | Status and removal evidence |
+| --- | --- | --- | --- | --- |
+| `apps/web/e2e/a11y.spec.ts`: "A11Y-01 on the web (light): the browser's surfaces have no axe violations, 24 px targets, and visible focus", initial Note editor readiness only | Note textbox absent at the 5 s initial `Garden log` / `Reading list` assertion; attempt 1 of [42256607087](https://github.com/prabinpebam/focus-notes/actions/runs/42256607087). Snapshot contains no DOM; cold-readiness timing is suspected, not proven. The unchanged case passes main `c8ff5865` in [42235765232](https://github.com/prabinpebam/focus-notes/actions/runs/42235765232). | W10e (inherited from W10d) | 13 November 2026 | Open: compare first render and cold-ready on `c8ff5865` / `7700b646` against the landed head, profile shared UI icon startup, fix or lazily load only the measured cause, verify this case and remove the row before expiry. |
+| `apps/desktop/e2e/vq-flows.spec.ts`: "D-111, D-126, D-127: the full-window setup passes the visual quality checklist and the visual score, dark, default window", first Connect heading only | "Connect your GitHub account" absent at 5 s; attempt 1 of [42256607087](https://github.com/prabinpebam/focus-notes/actions/runs/42256607087). Snapshot shows "Checking this computer" and live connecting status, not a missing icon. The unchanged case passes main [42235765232](https://github.com/prabinpebam/focus-notes/actions/runs/42235765232) and takes 2.2 s in attempt 2 on the same crop head. | W10e (inherited from W10d) | 13 November 2026 | Open: measure cold setup readiness against the same baselines, establish the cause without raising the budget, verify this case and remove the row before expiry. |
+
 ### CI duration investigation (6 November)
 
 The owner requested measured causes and a coverage-preserving proposal on `fix-ci-duration`, not an automatic push to `main`. No workflow, runtime, cleanup protection, retry policy or quarantine was changed. The older green runtime baseline is [41407737491](https://github.com/prabinpebam/focus-notes/actions/runs/41407737491); short runs that skipped desktop journeys are not baselines.
