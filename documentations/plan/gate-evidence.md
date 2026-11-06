@@ -18,6 +18,47 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### CI duration investigation (6 November)
+
+The owner requested measured causes and a coverage-preserving proposal on `fix-ci-duration`, not an automatic push to `main`. No workflow, runtime, cleanup protection, retry policy or quarantine was changed. The older green runtime baseline is [41407737491](https://github.com/prabinpebam/focus-notes/actions/runs/41407737491); short runs that skipped desktop journeys are not baselines.
+
+| Run | Journey step seconds: shard 1 / 2 / 3 / 4 | Passing journeys |
+| --- | --- | --- |
+| 41407737491, older green baseline | 614 / 345 / 394 / 732 | 294 |
+| 42207751177, green toolbar | 925 / 586 / 991 / 1074 | 441 |
+| 42213869604, first print candidate; journeys green | 1040 / 608 / 1069 / 1115 | 442 |
+| 42216947356, green print | 1006 / 732 / 992 / 1110 | 442 |
+
+Coverage grew about 50%. Baseline shards 2/3 took 5-7 minutes, but 1/4 already took 10/12 minutes. The new Actions outcomes, UI states and review feedback suites contributed about 278, 350 and 250 seconds respectively in the final run. Expensive visual-quality suites already existed in the baseline. Setup/cache/build contributed about 76-139 seconds per shard, with no long runner queue or retry churn identified. Whole-file sharding distributes case counts, not measured duration. The final separate Windows unit/build/package/budget/web job took 1063 seconds (17.7 minutes), including 456 seconds of budgets: journey-only changes cannot remove that gate floor.
+
+#### Cheap causes checked, not assumed
+
+Five paired invisible launch measurements on the same local Windows checkout found first-run median 2365 ms (1927-2573 ms) and returning-note median 2105 ms (2079-2463 ms). **Every first-run and returning launch had an attached worker and a responsive main-process inspector.** The hypothesis that a fresh setup always waits five seconds for an impossible worker is disproved on the current build; its inspector synchronization remains unchanged.
+
+Five local dead-`-OnlyPid` cleanup samples had median 486 ms (465-728 ms). Full `Win32_Process` enumeration had median 474 ms; name-filtered enumeration 382 ms, but a name-only snapshot cannot preserve arbitrary intermediate ancestors and descendants. A dead parent PID can still own orphan children. No live-PID early return or weaker owner-review/Preview/KeepPid protection was introduced for this small, unproven saving.
+
+The temporary measurement journey passed all five repeats (ten launches), retained the initial setup control's focus and returning editor, checked the inspector PID, and ran scoped `-WhatIf` then real cleanup after each launch. No owned Electron process remained. The temporary journey was removed afterwards rather than adding benchmark work to every CI run.
+
+#### Proposed scheduling, not applied
+
+The following are **duration replays, not measured post-change CI speedups**. They reuse the final run's 3799.8 seconds of reported case work; minute-formatted durations are rounded by Playwright. The same fixed whole-file allocation was also replayed against the other two recent runs, not fitted separately to each. Four runners still mean one worker per isolated Windows VM; increasing workers inside one VM is not proposed.
+
+| Option | Final modeled test load, seconds | Maximum replayed load: first print / toolbar | Final journey job estimate, including setup | Runner cost |
+| --- | --- | --- | --- | --- |
+| **Recommended: four duration-balanced whole-file partitions** | 950 / 950 / 951 / 949 | 1010 / 923 | About 17.1-18.2 minutes | Same four VMs and setup count |
+| Split only Actions outcomes, UI states and review feedback into four round-robin case groups; retain other files' assignments | 909 / 962 / 984 / 945 | 1063 / 972 | About 17.7-18.7 minutes | Same four VMs; possible duplicated file hooks |
+| Native per-test sharding with `--fully-parallel` | 924 / 758 / 969 / 1149 | 1155 / 1100 | About 20.4-21.5 minutes | Same four VMs; **not recommended** |
+| Five duration-balanced whole-file partitions | 761 / 760 / 759 / 759 / 761 | 830 / 742 | About 14.0-15.0 minutes | One extra concurrent VM (+25%); about 1.3-2.3 extra Windows runner minutes of setup |
+| Six duration-balanced whole-file partitions | 634 / 633 / 633 / 633 / 633 / 635 | 698 / 620 | About 11.9-12.9 minutes | Two extra concurrent VMs (+50%); about 2.5-4.6 extra Windows runner minutes of setup |
+
+Estimates exclude existing reporter/teardown gaps (up to about 20 seconds in the recent runs), runner variability and any newly duplicated hooks. The four-way recommendation models a full gate around 17.7-18.2 minutes plus those gaps, against the final observed 20.2-minute slowest journey job. Five/six VMs still model a full gate no shorter than the separate 17.7-minute Windows job. Runner-minute estimates are additional setup work, not currency prices or guaranteed billed savings.
+
+**Exact workflow proposal before implementation:** retain `matrix.shard: [1, 2, 3, 4]`, `workers: 1`, `retries: 0`, all existing checks and timeouts. Replace only the journey step's `run: pnpm test:e2e --shard=${{ matrix.shard }}/4` with `run: node ../../tools/ci/run-journey-shard.mjs --shard=${{ matrix.shard }}/4`, retaining `working-directory: apps/desktop`. The proposed runner (not yet built) would execute a deterministic longest-processing-time whole-file partition, run each selected file without native re-sharding, and reject any partition whose union/uniqueness differs from the enumerated current files. All 97 current specs, including six zero-duration/skipped files, and all 473 enumerated cases must remain represented. Unknown/new files need an explicit conservative weight, never omission. A subsequent implementation needs partition/coverage contracts and an exact-head Windows gate before any claimed improvement or main landing.
+
+Per-test membership was checked with `CI=1 pnpm exec playwright test --list --fully-parallel --shard=<1..4>/4 --reporter=json`: 119/118/118/118 cases, matching all 473 historical cases exactly once, including the CI-only 40-round crash corpus. These were enumeration-only commands, not screen-level local journeys. Plain per-test sharding still leaves the expensive later visual suites concentrated, so equal case counts do not solve the observed duration imbalance.
+
+Local evidence is retained outside the repository in `focus-notes-work/logs/w11b-launch-verified.log`, `w11b-per-test-shard-1.json` through `-4.json`, and `w11b-ci-model.json`, alongside W11's saved four-run logs and timings. The desktop build, `pnpm check`, Slate runtime check and `git diff --check` passed. The changed page rendered headlessly in light/dark with one H1, the new section anchor, fitting SVG figures, a resolving existing decisions link and no page errors; the temporary browser and server were closed. The first launch measurement attempt was stopped because this reused checkout had no built entrypoint, then rebuilt. No failed hypothesis was turned into a production change.
+
 ### Inline images: Print and Save as PDF
 
 **Met (6 November):** IMG.12 / IMG-12 (WP-9.8, D-348) landed on `main` at `42cb1ed8d72df8b9389063696c7d6cece64df0a3` after [exact-head Windows CI 42216947356](https://github.com/prabinpebam/focus-notes/actions/runs/42216947356) passed every job, including all four journey shards. The landing was a non-force fast-forward under `landing.lock`; the remote SHA was verified and the lock released. WP-9.8 remains **verifying**, not formal stage acceptance; the scheduled Preview refresh has not been independently inspected for this row. The pipeline snapshots the note's bounded local images, paints the print-only NoteContent image groups and waits for every `img.decode()` before using the unchanged native Print/PDF path. Missing or undecodable pixels become muted descriptions, not blanks or broken icons. A tracked, cancellable preparation pill retains the note and source files; `fn:image.print` records the complete preparation wait.
