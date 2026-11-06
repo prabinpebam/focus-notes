@@ -3,12 +3,16 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { CATALOG } from "../../../packages/core/src/actions-catalog.ts";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
+import { MessageCatalog } from "../../../packages/core/src/messages.ts";
 import { test, expect, type Page } from "./fixtures.ts";
-import { fileRow, launch, quit, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../../packages/views/messages/en.json"), "utf8")) as Record<string, string>;
+const catalog = new MessageCatalog("en", messages);
+const actionLabel = (key: string) => catalog.format(key, { platform: process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux" });
+const actionRow = (page: Page, label: string) => actions(page).getByRole("option").filter({ has: page.getByText(label, { exact: true }) });
 const actions = (page: Page) => page.getByRole("dialog", { name: "Actions", exact: true });
 const editor = (page: Page) => page.getByRole("textbox", { name: "Note", exact: true });
 const files = (page: Page) => page.getByRole("complementary", { name: "Files", exact: true });
@@ -112,6 +116,35 @@ const outcomes: Record<string, Outcome> = {
   },
   "projects.open": destination("Open"),
   "projects.new": destination("New project"),
+  "projects.openFile": {
+    prepare: async ({ app }, docs) => {
+      const path = join(docs, "private", "notes", "chosen.md");
+      write(path, "# Chosen file\n\nOpened from Actions.\n");
+      await app.evaluate(({ dialog }, file) => {
+        dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] });
+      }, path);
+    },
+    check: async ({ page, app }, docs) => {
+      await expect(editor(page)).toContainText("Opened from Actions.");
+      expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+      expect(readFileSync(join(docs, "private", "notes", "chosen.md"), "utf8")).toBe("# Chosen file\n\nOpened from Actions.\n");
+    },
+  },
+  "diagnostics.save": {
+    prepare: async ({ app }, docs) => {
+      await app.evaluate(({ dialog }, filePath) => {
+        dialog.showSaveDialog = async () => ({ canceled: false, filePath });
+      }, join(docs, "..", "actions-report.md"));
+    },
+    check: async ({ page }, docs) => {
+      const path = join(docs, "..", "actions-report.md");
+      await expect.poll(() => existsSync(path), { timeout: 15_000 }).toBe(true);
+      const report = readFileSync(path, "utf8");
+      expect(report).toContain("## Focus Notes diagnostic report");
+      for (const secret of ["Native outcome proof.", "welcome.md", docs]) expect(report).not.toContain(secret);
+      await expect(page.getByRole("region", { name: "Notifications", exact: true })).toContainText("saved");
+    },
+  },
   "note.newIn": destination(messages["command.note.newIn"]!),
   "note.new": {
     check: async ({ page }) => {
@@ -265,14 +298,59 @@ for (const [id, outcome] of Object.entries(outcomes)) {
       await page.keyboard.press(`${mod}+/`);
       const field = actions(page).getByRole("combobox");
       await expect(field).toBeFocused();
-      const label = messages[entry!.label]!;
+      const label = actionLabel(entry!.label);
       await field.fill(label);
-      const row = actions(page).getByRole("option").filter({ hasText: label }).first();
+      const row = actionRow(page, label);
       await expect(row).toBeVisible();
       await expect(row).not.toHaveAttribute("aria-disabled", "true");
       await row.click();
       await expect(actions(page)).toBeHidden();
       await outcome.check(l, inst.dirs.docs);
+    } finally {
+      await quit(l);
+      if (process.platform === "win32") {
+        const script = join(import.meta.dirname, "../../../tools/dev/close-test-apps.ps1");
+        for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", script, "-OnlyPid", String(l.pid), ...flags], { stdio: "pipe" });
+      }
+    }
+  });
+}
+
+for (const context of ["Local notes", "standalone file"] as const) {
+  test(`MACT.4, MACT.6: ${context} keeps project actions hidden and reveals only its own file`, async () => {
+    const dirs = tempDirs();
+    const path = join(dirs.docs, "Welcome.md");
+    const original = "# Local proof\n\nKeep these local bytes.\n";
+    write(path, original);
+    write(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", localNotes: true, projectIntroSeen: true, lastNotePath: path }));
+    const l = await launch(dirs, {
+      FOCUS_NOTES_LOCAL_NOTES: "1", FOCUS_NOTES_LOCAL_NOTES_HOME: dirs.docs,
+      ...(context === "standalone file" ? { FOCUS_NOTES_PROJECT_NOTE: path } : {}),
+    });
+    try {
+      await expect(editor(l.page)).toContainText("Keep these local bytes.");
+      await l.app.evaluate(({ shell }) => {
+        Reflect.set(globalThis, "mactRevealedPath", "");
+        shell.showItemInFolder = (path) => { Reflect.set(globalThis, "mactRevealedPath", path); };
+      });
+      await l.page.keyboard.press(`${mod}+/`);
+      const field = actions(l.page).getByRole("combobox");
+      await expect(field).toBeFocused();
+      for (const id of ["project.settings", "project.rename", "note.share", "note.publish", "history.open", "files.import"]) {
+        const entry = CATALOG.find((e) => e.id === id)!;
+        const label = actionLabel(entry.label);
+        await field.fill(label);
+        await expect(actionRow(l.page, label)).toHaveCount(0);
+      }
+      const reveal = actionLabel(CATALOG.find((e) => e.id === "note.revealLocal")!.label);
+      await field.fill(reveal);
+      const row = actionRow(l.page, reveal);
+      await expect(row).not.toHaveAttribute("aria-disabled", "true");
+      await row.click();
+      await expect(actions(l.page)).toBeHidden();
+      await expect.poll(() => l.app.evaluate(() => String(Reflect.get(globalThis, "mactRevealedPath")))).toBe(path);
+      expect(readFileSync(path, "utf8")).toBe(original);
+      expect(existsSync(join(dirs.docs, ".git"))).toBe(false);
     } finally {
       await quit(l);
       if (process.platform === "win32") {
