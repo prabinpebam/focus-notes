@@ -28,11 +28,13 @@ IMG.12 / IMG-12 (WP-9.8, D-348) is implemented with local evidence; exact-head W
 | --- | --- |
 | `pnpm check` | Passed: boundaries, kits, chain, plan, action proof, licenses, generated files, spacing, notification inventory and UI schemas |
 | `pnpm typecheck` | Passed: every package, including desktop/preload |
-| `pnpm exec vitest run packages/core/test/print.test.ts packages/ui/test/print-images.test.tsx apps/desktop/test/print-images.test.ts apps/desktop/test/pdf-text.test.ts` | Passed: related print, fallback, decode and PDF-parser regressions |
+| `pnpm exec vitest run packages/core/test/print.test.ts packages/core/test/diagnostics.test.ts packages/core/test/menu-bar.test.ts packages/ui/test/print-images.test.tsx apps/desktop/test/print-images.test.ts apps/desktop/test/pdf-text.test.ts` | Passed: 49 print, fallback, decode, PDF-parser, diagnostic and menu-bar regressions |
 | `pnpm --filter @focus-notes/desktop run build` | Passed |
 | `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test image-print.spec.ts wp812-print.spec.ts --workers=1` | Passed: both journeys; portrait and landscape image PDFs plus existing text/page-number behavior. Owned app instances closed afterwards |
 | `node slate/scripts/runtime-host.mjs check --repo . --host documentations` | Passed; all seven changed pages rendered headlessly with one H1 and fitting figures in light/dark; print-evidence anchor resolved |
 | `git diff --check` | Passed |
+
+The first exact-head CI run, [42213869604](https://github.com/prabinpebam/focus-notes/actions/runs/42213869604) on `8fe80100`, passed all four Windows journey shards but rejected two coupled static contracts in its unit job: task targets must be literal fixed IDs, and every contextual-only command must state why it is absent from the menu bar. The follow-up keeps the existing literal `note.print`, excludes `print.cancel` as the preparation pill's control, and allow-lists the new `fn:image.print` diagnostic timing. The actual diagnostics and menu-bar regressions are now included in the local gate; no journey or quarantine was relaxed. A new exact-head run must be green before landing.
 
 ### Inline images: Describe (6 November)
 

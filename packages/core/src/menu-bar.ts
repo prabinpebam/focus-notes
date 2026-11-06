@@ -97,6 +97,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
+  { why: "print preparation pill's Cancel control", ids: /^print\.cancel$/ },
   { why: "commit feedback and retry controls", ids: /^commit\.(run|revert)$/ },
   { why: "Project settings fields and controls", ids: /^project\..+$/ },
   { why: "Open view and New project steps; Open itself is in File", ids: /^projects\.(?!open$).+$/ },

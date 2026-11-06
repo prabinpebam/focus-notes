@@ -141,7 +141,7 @@ export function registerPrint(ctx: Ctx): void {
           await new Promise<void>((done) => ctx.afterPaint(done));
           if (!cancelled) await bridge.preparePrintImages?.();
         };
-        await tracker.run(PRINT_NOTE, hasImages(blocks) ? "task.printImagesPreparing" : "task.printPreparing",
+        await tracker.run("note.print", hasImages(blocks) ? "task.printImagesPreparing" : "task.printPreparing",
           () => Promise.race([prepare(), cancelledWait]), undefined, "fn:image.print");
         clearProgress();
         cancelPreparation = undefined;
