@@ -65,11 +65,27 @@ const outcomes: Record<string, Outcome> = {
   "feedback.open": destination("Send feedback"),
   "diagnostics.reportProblem": destination("Send feedback"),
   "ai.connect": {
-    check: async ({ page }) => {
+    prepare: async ({ app }) => {
+      await app.evaluate(({ ipcMain }) => {
+        Reflect.set(globalThis, "mactAccountChecking", false);
+        const account = new Promise((resolve) => {
+          Reflect.set(globalThis, "mactReleaseAccount", () => resolve({ gcm: false, gh: false, via: "helper" }));
+        });
+        ipcMain.removeHandler("firstRun:account");
+        ipcMain.handle("firstRun:account", () => {
+          Reflect.set(globalThis, "mactAccountChecking", true);
+          return account;
+        });
+      });
+    },
+    check: async ({ page, app }) => {
+      await expect.poll(() => app.evaluate(() => Reflect.get(globalThis, "mactAccountChecking"))).toBe(true);
       await expect(settings(page).getByRole("button", { name: "Service", exact: true })).toBeVisible();
       await expect(settings(page).getByRole("textbox", { name: "Model", exact: true })).toBeVisible();
       await settings(page).getByRole("button", { name: "Cancel", exact: true }).click();
       await expect(settings(page).getByText("No AI connections", { exact: true })).toBeVisible();
+      await app.evaluate(() => Reflect.get(globalThis, "mactReleaseAccount")());
+      await expect(settings(page).getByRole("button", { name: "Service", exact: true })).toBeHidden();
     },
   },
   "note.share": {
