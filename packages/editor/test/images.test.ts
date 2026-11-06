@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
-import { coreExtensions, MarkdownSession, setImageOptions, setImageWords, closeImageTyping, type PMNode } from "../src/index.ts";
+import { coreExtensions, MarkdownSession, setImageOptions, setImageWords, closeImageTyping, trackImageEdit, applyImageEdit, restoreImageOriginal, type PMNode } from "../src/index.ts";
 
 const editors: Editor[] = [];
 afterEach(() => { for (const editor of editors.splice(0)) editor.destroy(); });
@@ -16,6 +16,42 @@ function open() {
   const md = () => session.serialize(editor.getJSON() as PMNode);
   return { editor, markdown, md, images };
 }
+
+it("makes the cropped reference one Undo step, retains provenance after reopening, and restores without changing other images", () => {
+  const { editor, images, md, markdown } = open();
+  const first = images[0]!;
+  trackImageEdit(editor, "crop", first.pos, first.src);
+  expect(applyImageEdit(editor, "crop", { src: "assets/crop.png", width: 50, height: 40, originalSrc: first.src })).toBe(true);
+  const cropped = md();
+  expect(cropped).toContain("size=50x40 original=red.png");
+  expect(cropped).toContain("![Red](assets/crop.png)");
+  expect(cropped).toContain("<!-- image: rounded -->\n![Blue](blue.png)");
+  editor.commands.undo();
+  expect(md()).toBe(markdown);
+  editor.commands.redo();
+  expect(md()).toBe(cropped);
+  const reopened = new MarkdownSession(cropped);
+  expect(reopened.doc.content?.find(node => node.type === "image")?.attrs?.originalSrc).toBe("red.png");
+  expect(restoreImageOriginal(editor, first.pos, "assets/crop.png", "red.png")).toBe(true);
+  expect(md()).toBe(markdown);
+  editor.commands.undo();
+  expect(md()).toBe(cropped);
+});
+
+it("maps a crop target through typing but refuses a deleted or changed image node", () => {
+  const { editor, images } = open();
+  const first = images[0]!;
+  trackImageEdit(editor, "crop", first.pos, first.src);
+  editor.commands.insertContentAt(2, "extra");
+  expect(applyImageEdit(editor, "crop", { src: "crop.png", width: 1, height: 1, originalSrc: first.src })).toBe(true);
+  const pos = first.pos + 5;
+  trackImageEdit(editor, "changed", pos, "crop.png");
+  setImageWords(editor, { pos, src: "crop.png" }, { title: "Changed caption" });
+  expect(applyImageEdit(editor, "changed", { src: "wrong.png", width: 1, height: 1, originalSrc: first.src })).toBe(false);
+  trackImageEdit(editor, "deleted", pos, "crop.png");
+  editor.commands.deleteRange({ from: pos, to: pos + 1 });
+  expect(applyImageEdit(editor, "deleted", { src: "wrong.png", width: 1, height: 1, originalSrc: first.src })).toBe(false);
+});
 
 it("keeps immediate consecutive image choices and following typing as separate Undo steps", () => {
   const { editor, md, markdown, images } = open();

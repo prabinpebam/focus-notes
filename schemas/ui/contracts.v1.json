@@ -1232,6 +1232,13 @@
         },
         "resetSignal": {
           "kind": "boolean"
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabledReason": {
+          "kind": "message"
         }
       },
       "events": {
@@ -17650,6 +17657,7 @@
           "payload": {
             "pos": "number",
             "src": "text",
+            "originalSrc": "text",
             "alt": "text",
             "title": "text",
             "text": "boolean",
@@ -17674,7 +17682,14 @@
         "imageEdited": {
           "payload": {
             "src": "text",
-            "data": "text"
+            "data": "text",
+            "request": "text"
+          }
+        },
+        "imageEditApplied": {
+          "payload": {
+            "request": "text",
+            "accepted": "boolean"
           }
         },
         "imageCaptionPrepared": {
@@ -17690,7 +17705,11 @@
             "accepted": "boolean"
           }
         },
-        "imageEditError": {},
+        "imageEditError": {
+          "payload": {
+            "request": "text"
+          }
+        },
         "imageImport": {
           "payload": {
             "request": "text",

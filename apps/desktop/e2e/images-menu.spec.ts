@@ -55,6 +55,118 @@ async function imageMenu(page: Page, image: Locator) {
   await page.mouse.click(point.x, point.y, { button: "right" });
   return point;
 }
+const naturalSize = (image: Locator) => image.evaluate(el => el instanceof HTMLImageElement ? [el.naturalWidth, el.naturalHeight] : []);
+
+test("IMG-EDIT-appearance: approved toolbar stays usable in light, dark and narrow", async ({}, testInfo) => {
+  const dirs = sample();
+  const launched = await launch(dirs);
+  try {
+    const { page } = launched;
+    for (const width of [1024, 360]) for (const theme of ["light", "dark"]) {
+      await page.setViewportSize({ width, height: 780 });
+      await page.mouse.move(20, 20);
+      const themeId = theme === "light" ? "paper" : "ink";
+      if (await page.evaluate(() => document.documentElement.dataset.theme) !== themeId) {
+        await page.locator(".tiptap").focus();
+        await page.keyboard.press("Control+.");
+        await page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "Switch light and dark", exact: true }).press("Space");
+        await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe(themeId);
+        await page.keyboard.press("Escape");
+      }
+      await imageMenu(page, page.getByRole("img", { name: "Red square", exact: true }));
+      await page.getByRole("menuitem", { name: "Edit image", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: "Edit image", exact: true });
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole("spinbutton", { name: "Width (px)" }).fill("180");
+      await dialog.getByRole("spinbutton", { name: "Height (px)" }).fill("100");
+      await dialog.getByRole("button", { name: "Aspect ratio", exact: true }).click();
+      await page.getByRole("menuitemcheckbox", { name: "1:1", exact: true }).click();
+      await expect(dialog.getByRole("spinbutton", { name: "Width (px)" })).toHaveValue("100");
+      await expect(dialog.getByRole("spinbutton", { name: "Height (px)" })).toHaveValue("100");
+      await expect(dialog.getByRole("button", { name: "Lock aspect ratio", exact: true })).toHaveAttribute("aria-pressed", "true");
+      await dialog.getByRole("spinbutton", { name: "Width (px)" }).fill("9999");
+      await expect(dialog.getByText("Adjusted to fit the image. Use positive whole-pixel dimensions within its bounds.", { exact: true })).toBeVisible();
+      await expect(dialog.getByRole("spinbutton", { name: "Width (px)" })).toHaveValue("120");
+      for (const label of ["Rotate left", "Rotate right", "Flip horizontal", "Flip vertical", "Reset"]) await expect(dialog.getByRole("button", { name: label, exact: true })).toBeInViewport();
+      const bounds = await dialog.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
+      await page.screenshot({ path: testInfo.outputPath(`crop-built-${theme}-${width}.png`) });
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(dialog).not.toBeVisible();
+    }
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(original);
+  } finally { await close(launched); }
+});
+
+test("IMG-EDIT: cropped copy is visible, Undo and Restore original retain both files across reopen", async ({}, testInfo) => {
+  const dirs = sample();
+  const source = png(300, 120, [200, 30, 30], true);
+  writeFileSync(join(dirs.docs, "red.png"), source);
+  let launched: Awaited<ReturnType<typeof launch>> | undefined;
+  try {
+    launched = await launch(dirs);
+    const { page } = launched;
+    const red = page.getByRole("img", { name: "Red square", exact: true });
+    await imageMenu(page, red);
+    const rightPixel = await red.evaluate(el => {
+      if (!(el instanceof HTMLImageElement)) throw new Error("Missing original image");
+      const canvas = document.createElement("canvas");
+      canvas.width = el.naturalWidth; canvas.height = el.naturalHeight;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(el, 0, 0);
+      return [...ctx.getImageData(el.naturalWidth - 1, 0, 1, 1).data];
+    });
+    await page.getByRole("menuitem", { name: "Edit image", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Edit image", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("spinbutton", { name: "Width (px)" }).fill("180");
+    await dialog.getByRole("button", { name: "Flip horizontal", exact: true }).click();
+    await dialog.getByRole("spinbutton", { name: "Height (px)" }).fill("90");
+    await dialog.getByRole("spinbutton", { name: "Width (px)" }).press("ArrowUp");
+    await expect(dialog.getByRole("spinbutton", { name: "Width (px)" })).toHaveValue("181");
+    await dialog.getByRole("spinbutton", { name: "Width (px)" }).press("Shift+ArrowDown");
+    await expect(dialog.getByRole("spinbutton", { name: "Width (px)" })).toHaveValue("171");
+    await dialog.getByRole("spinbutton", { name: "Width (px)" }).fill("180");
+    await page.screenshot({ path: testInfo.outputPath("crop-built-light.png") });
+    await dialog.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect.poll(() => naturalSize(red), PROMPTLY).toEqual([180, 90]);
+    expect(await red.evaluate(el => {
+      if (!(el instanceof HTMLImageElement)) throw new Error("Missing cropped image");
+      const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(el, 0, 0);
+      return [...ctx.getImageData(0, 0, 1, 1).data];
+    })).toEqual(rightPixel);
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toContain("original=red.png");
+    const cropped = readFileSync(join(dirs.docs, "Welcome.md"), "utf8");
+    const relative = /!\[Red square\]\(([^)]+)\)/.exec(cropped)![1]!;
+    const copy = join(dirs.docs, relative);
+    expect(copy).not.toBe(join(dirs.docs, "red.png"));
+    expect(readFileSync(copy).readUInt32BE(16)).toBe(180);
+    expect(readFileSync(join(dirs.docs, "red.png"))).toEqual(source);
+    await page.locator(".tiptap").press("Control+z");
+    await expect.poll(() => naturalSize(red), PROMPTLY).toEqual([300, 120]);
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(original);
+    expect(existsSync(copy)).toBe(true);
+    await page.locator(".tiptap").press("Control+Shift+z");
+    await expect.poll(() => naturalSize(red), PROMPTLY).toEqual([180, 90]);
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(cropped);
+    await close(launched); launched = undefined;
+    launched = await launch(dirs);
+    const reopened = launched.page.getByRole("img", { name: "Red square", exact: true });
+    await expect.poll(() => naturalSize(reopened), PROMPTLY).toEqual([180, 90]);
+    await imageMenu(launched.page, reopened);
+    await launched.page.getByRole("menuitem", { name: "Restore original", exact: true }).click();
+    await expect.poll(() => naturalSize(reopened), PROMPTLY).toEqual([300, 120]);
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(original);
+    expect(existsSync(copy)).toBe(true);
+    expect(readFileSync(join(dirs.docs, "red.png"))).toEqual(source);
+    await launched.page.locator(".tiptap").press("Control+z");
+    await expect.poll(() => naturalSize(reopened), PROMPTLY).toEqual([180, 90]);
+  } finally { if (launched) await close(launched); }
+});
 
 test("IMG-AI: connected vision integration gets bounded pixels only; review, Undo and Stop preserve the note", async () => {
   const dirs = sample();

@@ -28,6 +28,7 @@ export const EXEMPT = [
   // The window's own resize edges and corners, and an image's crop handles, are physical geometry.
   { file: "WindowFrame/WindowFrame.css.ts", rule: "physical property", match: /./, why: "the window's physical edges and corners" },
   { file: "ImageFrame/ImageFrame.css.ts", rule: "physical property", match: /./, why: "an image's physical crop handles" },
+  { file: "ImageCrop/ImageCrop.css.ts", rule: "physical property", match: /./, why: "oriented image pixel coordinates and physical crop handles must not mirror in RTL" },
   // The minimap rail sits beside the note's scrollbar, which is at the window's right edge.
   { file: "EditorSurface/DocMinimap.css.ts", rule: "physical property", match: /^right: calc\(var\(--fn-cmp-editor-surface-scrollbar-size\)/, why: "beside the note's scrollbar at the window's right edge" },
   // Centred by `left: 50%` and a translation: the same in either direction.

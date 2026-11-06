@@ -7,7 +7,7 @@ import { FullAppOverlay } from "../../layouts/AppRoot/in-window.tsx";
 import * as styles from "./image-view.css.ts";
 import type { ImageSource, MenuSection } from "../../data.ts";
 
-export interface ImagePayload { pos: number; src: string; alt?: string; title?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean }
+export interface ImagePayload { pos: number; src: string; originalSrc?: string; alt?: string; title?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean }
 export interface ImageViewOptions {
   documentKey: string;
   sources: ImageSource[];
@@ -27,11 +27,11 @@ export interface ImageViewOptions {
 
 export function captureImageSelection(editor: Editor): ImagePayload {
   const { from, to } = editor.state.selection;
-  const images: { pos: number; src: string; alt: string; title: string; rounded: boolean; fitHeight: boolean; mode: string }[] = [];
+  const images: { pos: number; src: string; originalSrc: string; alt: string; title: string; rounded: boolean; fitHeight: boolean; mode: string }[] = [];
   let text = false;
   editor.state.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isText && Math.min(to, pos + node.nodeSize) > Math.max(from, pos)) text = true;
-    if (node.type.name === "image") images.push({ pos, src: String(node.attrs.src), alt: String(node.attrs.alt ?? ""), title: String(node.attrs.title ?? ""), rounded: node.attrs.rounded === true, fitHeight: node.attrs.fitHeight !== false, mode: String(node.attrs.mode) });
+    if (node.type.name === "image") images.push({ pos, src: String(node.attrs.src), originalSrc: String(node.attrs.originalSrc ?? ""), alt: String(node.attrs.alt ?? ""), title: String(node.attrs.title ?? ""), rounded: node.attrs.rounded === true, fitHeight: node.attrs.fitHeight !== false, mode: String(node.attrs.mode) });
   });
   const rounded = images.length > 0 && images.every((i) => i.rounded);
   const fitHeight = images.length > 0 && images.every((i) => i.fitHeight);
@@ -83,7 +83,7 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
       if (inRange) return { ...captureImageSelection(editor), ...size };
       const roundAll = current.attrs.rounded === true;
       const limitAll = current.attrs.fitHeight !== false;
-      return { pos: typeof pos === "number" ? pos : -1, src: String(current.attrs.src), alt: String(current.attrs.alt ?? ""), title: String(current.attrs.title ?? ""), rounded: roundAll, fitHeight: limitAll, mode: String(current.attrs.mode), ...size,
+      return { pos: typeof pos === "number" ? pos : -1, src: String(current.attrs.src), originalSrc: String(current.attrs.originalSrc ?? ""), alt: String(current.attrs.alt ?? ""), title: String(current.attrs.title ?? ""), rounded: roundAll, fitHeight: limitAll, mode: String(current.attrs.mode), ...size,
         from: typeof pos === "number" ? pos : 0, to: typeof pos === "number" ? pos + current.nodeSize : 0, count: 1,
         roundMixed: false, limitMixed: false };
     };
@@ -132,18 +132,36 @@ export function imageView(options: () => ImageViewOptions, renders: Set<() => vo
   };
 }
 
-export async function renderImageEdit(data: string, x: number, y: number, width: number, height: number, rotation: number): Promise<string> {
+export async function renderImageEdit(data: string, x: number, y: number, width: number, height: number, rotation: number, flipHorizontal = false, flipVertical = false): Promise<string> {
   const image = new Image();
   image.src = data;
   await image.decode();
-  if (![x, y, width, height].every(Number.isFinite) || x < 0 || y < 0 || width < 1 || height < 1 || x + width > image.naturalWidth || y + height > image.naturalHeight) throw new Error("invalid-crop");
+  if (![0, 90, 180, 270].includes(rotation) || ![x, y, width, height].every(Number.isFinite) || x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > 100.000001 || y + height > 100.000001 || image.naturalWidth * image.naturalHeight > 40_000_000) throw new Error("invalid-crop");
+  const iw = rotation % 180 ? image.naturalHeight : image.naturalWidth;
+  const ih = rotation % 180 ? image.naturalWidth : image.naturalHeight;
+  const oriented = document.createElement("canvas");
+  oriented.width = iw; oriented.height = ih;
+  const source = oriented.getContext("2d");
+  if (!source) throw new Error("image-render-failed");
+  source.translate(flipHorizontal ? iw : 0, flipVertical ? ih : 0);
+  source.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1);
+  if (rotation === 90) source.translate(iw, 0);
+  else if (rotation === 180) source.translate(iw, ih);
+  else if (rotation === 270) source.translate(0, ih);
+  source.rotate(rotation * Math.PI / 180);
+  source.drawImage(image, 0, 0);
   const canvas = document.createElement("canvas");
-  canvas.width = rotation % 180 ? height : width;
-  canvas.height = rotation % 180 ? width : height;
+  const left = Math.round(x / 100 * iw), top = Math.round(y / 100 * ih);
+  canvas.width = Math.max(1, Math.min(iw - left, Math.round(width / 100 * iw)));
+  canvas.height = Math.max(1, Math.min(ih - top, Math.round(height / 100 * ih)));
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("image-render-failed");
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(rotation * Math.PI / 180);
-  ctx.drawImage(image, x, y, width, height, -width / 2, -height / 2, width, height);
-  return canvas.toDataURL(data.slice(5, data.indexOf(";")));
+  ctx.drawImage(oriented, left, top, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("image-encode-failed")), "image/png"));
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("image-encode-failed"));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }

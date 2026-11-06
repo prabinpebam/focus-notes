@@ -161,11 +161,11 @@ Selection-only, insertion Undo, replacement Undo and display Undo remain ordinar
 <text x="780" y="337" font-size="16" font-weight="600" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fnimg-edit__footer" data-slate-fit-padding="16">Cancel · Done</text>
 </g>
 </svg>
-<figcaption>Proposed D-372 flow: direct manipulation first, reversible commit last. D-327's number-fields-first design is superseded only after the owner approves this replacement.</figcaption>
+<figcaption>Approved D-372 flow: direct manipulation first, reversible commit last. This replaces D-327's number-fields-first design.</figcaption>
 </figure>
 
 > [!NOTE]
-> **Design proposal, 6 November (D-372), awaiting approval.** The owner at 14:17: “Image cropping and the entire editing has to be thought through. It's completely failing right now. The task flow itself makes no sense. Benchmark againt the best and similar UX that's out there and adopt established UI and UX for this.” Keep the image-only modal: the [source notes above](#the-owners-image-notes-3-november-2026) explicitly say “Opens a dialog/modal”. The later brief replaces destructive editing with a preserved original and a cropped copy; it does not authorize runtime wiring before review.
+> **Approved, 6 November 2026 at 20:56 (D-372).** The owner: “The image edit design is approved, you can go ahead an dimplement it.” The owner at 14:17: “Image cropping and the entire editing has to be thought through. It's completely failing right now. The task flow itself makes no sense. Benchmark againt the best and similar UX that's out there and adopt established UI and UX for this.” Keep the image-only modal: the [source notes above](#the-owners-image-notes-3-november-2026) explicitly say “Opens a dialog/modal”. Runtime wiring is now authorized; the preserved original and cropped copy replace destructive editing.
 
 ### Benchmark: established crop flows
 
@@ -232,7 +232,9 @@ The real design-system `ImageCrop` primitive and JSON view document render fake 
 
 **15:44 revision evidence:** [Exact dimensions](http://127.0.0.1:5234/?f=mock.imageEdit.dimensions) opens a 600 × 400 px draft. The full mouse path was reinspected in light/dark at 1024 px and both themes at 360 px: interior dragging, aspect menu, locked 400 × 400 px, unlocked 400 × 300 px, 9000 px clamped to the 1200 px source with an inline message, Reset (including a manually locked Free ratio), rotate/flip, Done, Undo, Restore, Cancel and refusal/error frames. Screenshots are in `focus-notes-work\scratch\w10c-image-edit`. The pre-existing browser warning that meta-delivered `frame-ancestors` is ignored remains; no application or inline-style CSP errors were observed.
 
-**D-373 gallery fix:** blocked runtime style tags came from Fluent Icons' Griffel renderer, not ImageCrop's CSS variables. The gallery build alone rewrites the existing icon imports to Fluent's documented atomic headless SVG imports and external CSS, keeping the strict CSP unchanged. At wiring time this transform must move into `packages/ui`, so gallery and app use the same icon implementation: the desktop has the same `style-src 'self'` CSP. The desktop app's icon imports and approved appearance are untouched in this design increment. The crop stage uses a separate semantic viewport budget so all controls fit; aspect geometry shrinks with the image instead of leaving handles over letterboxed space.
+**D-373 shared icon fix:** blocked runtime style tags came from Fluent Icons' Griffel renderer, not ImageCrop's CSS variables. With approval, `packages/ui` directly imports Fluent's headless exports and external CSS, replacing the gallery-only transform. Gallery and desktop use the same SVGs under their unchanged `style-src 'self'` CSP. The crop stage uses a separate semantic viewport budget so all controls fit; aspect geometry shrinks with the image instead of leaving handles over letterboxed space.
+
+The note stores the retained original's relative path as an encoded `original=` token in its existing hidden `image:` settings comment. Other Markdown readers still display the ordinary image link. Restore original is a normal editor transaction, survives reopening, preserves description, caption and display options, and is itself undoable. Crop copies remain on disk after Undo, Restore, a stale-target refusal or a failed reference swap; there is no automatic garbage collection.
 
 ## Auto caption using AI
 

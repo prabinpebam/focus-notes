@@ -6,11 +6,11 @@ export const ratio = createVar();
 export const ratioNumber = createVar();
 export const x = createVar(), y = createVar(), width = createVar(), height = createVar();
 export const wrapper = style({ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 });
-export const edit = style({ padding: t.inset, gap: tokens.space.stackGroup });
-export const controls = style({ width: "100%", display: "flex", flexDirection: "column", gap: tokens.space.stackPair });
-export const toolbar = style({ display: "flex", flexWrap: "wrap", alignItems: "end", justifyContent: "center", gap: tokens.space.inlineGroup });
-export const actions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: tokens.space.inlineItem });
-export const dimensions = style({ display: "flex", alignItems: "end", gap: tokens.space.inlineItem });
+export const edit = style({ padding: t.inset, gap: t.stackGap });
+export const controls = style({ width: "100%", display: "flex", flexDirection: "column", gap: t.feedbackGap });
+export const toolbar = style({ display: "flex", flexWrap: "wrap", alignItems: "end", justifyContent: "center", gap: t.toolbarGap });
+export const actions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: t.controlGap });
+export const dimensions = style({ display: "flex", alignItems: "end", gap: t.controlGap });
 export const stage = style({
   position: "relative", width: `min(100%, calc(min(${t.maxHeight}, ${t.viewportHeight}) * ${ratioNumber}))`, aspectRatio: ratio,
   minWidth: 0,

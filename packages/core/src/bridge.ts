@@ -32,7 +32,8 @@ export interface PlatformBridge {
   readImage?(note: string, src: string): Promise<string>;
   copyImage?(note: string, src: string, alt: string, caption: string): Promise<void>;
   saveImage?(note: string, src: string): Promise<boolean>;
-  writeImage?(note: string, src: string, data: string, expected: string): Promise<void>;
+  /** Stage a bounded derived asset without overwriting or deleting the source, including on failure. */
+  createImageCopy?(note: string, src: string, data: string, expected: string): Promise<{ src: string; width: number; height: number }>;
   importImages?(note: string, inputs?: readonly { data: string }[], replace?: boolean): Promise<{ batch: string; images: { src: string; width: number; height: number }[] } | undefined>;
   finishImageImport?(batch: string, keep: boolean): Promise<void>;
   /** As readNote, but only a missing file is null; permission and other read failures still reject. */
