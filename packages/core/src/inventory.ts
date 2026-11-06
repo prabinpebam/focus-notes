@@ -25,6 +25,8 @@ export type Removal = "signOut" | "removeWorkspace" | "deleteProject" | "runSetu
 export const DATA_FILES = {
   /** Device settings, the first run's step, and the recent note (`lastNotePath`). */
   state: "state.json",
+  /** Successful legacy Preview carry-over only; absence means retry missing files next launch. */
+  previewCarryOver: "preview-carry-over.json",
   /** Local project preview's folder pointer; no note text or credentials. */
   projectFolder: "project-folder.txt",
   projectLastNote: "last-project-note.dat",
@@ -101,6 +103,7 @@ export interface InventoryItem {
 /** Everything in the desktop's data folder (Security and privacy → Data inventory). */
 export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "deviceSettings", path: DATA_FILES.state, removedBy: ["deleteDataFolder"] },
+  { id: "previewCarryOver", path: DATA_FILES.previewCarryOver, removedBy: ["deleteDataFolder"] },
   { id: "projectFolder", path: DATA_FILES.projectFolder, removedBy: ["deleteDataFolder"] },
   { id: "projectLastNote", path: DATA_FILES.projectLastNote, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   { id: "projectRecent", path: DATA_FILES.projectRecent, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },

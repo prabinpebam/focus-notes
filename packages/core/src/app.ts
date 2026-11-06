@@ -1860,6 +1860,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await browser.start();
       // Once every command is registered and the first note is open: the menu bar never delays the caret (PRF-02).
       menuBar.start();
+      if (bridge.startupNotice === "preview-carry-over") {
+        toast(catalog.format("toast.previewCarryOverFailed"), { tone: "warning", sticky: true, mustReadReason: "profile-carry-over" });
+      }
     },
   };
 }

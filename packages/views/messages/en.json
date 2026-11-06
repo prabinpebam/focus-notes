@@ -1818,6 +1818,7 @@
   "toast.settingsSynced": "Appearance now syncs through your private notes.",
   "toast.settingsLocal": "Appearance now stays on this device.",
   "toast.settingsFailed": "Couldn't change where appearance is kept. Your current appearance is unchanged. Try again.",
+  "toast.previewCarryOverFailed": "Couldn't bring over your Preview settings. Focus Notes will try again next time.",
   "trigger.conflict": "Changed in two places",
   "task.resolving": "Settling the conflict…",
   "command.conflict.open": "Resolve the conflict",

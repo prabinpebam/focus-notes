@@ -1,7 +1,7 @@
 import type { ToastState } from "./app.ts";
 import type { Clock } from "./tasks.ts";
 
-export const MUST_READ_REASONS = ["data-at-risk", "recovery-decision", "operation-control"] as const;
+export const MUST_READ_REASONS = ["data-at-risk", "recovery-decision", "operation-control", "profile-carry-over"] as const;
 export interface NotificationOptions {
   tone?: ToastState["tone"];
   action?: ToastState["action"];
