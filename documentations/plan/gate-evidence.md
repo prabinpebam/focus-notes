@@ -78,6 +78,44 @@ The coordinator approved the four-VM whole-file option on 6 November. `tools/ci/
 
 The slowest measured journey step was 963 seconds versus the prior final-print run's 1110 seconds (147 seconds less in this observation), and the longest journey job was 1061 seconds (17.7 minutes). The separate Windows test job took **1166 seconds (19.4 minutes)**, now setting the overall gate floor; its budgets step alone took 531 seconds. Compared with the prior observed 1211-second slowest job, the overall gate was only 45 seconds shorter. These runs have different application heads and runner noise: this is measured evidence, not a controlled same-head A/B experiment or a guaranteed future speedup. Caption landing and a fresh exact-head gate after any base change remain required before this branch lands.
 
+#### Windows test-job floor: measured breakdown and next proposal
+
+The bounded follow-up reuses the saved logs and completed job metadata; no further workflow change is applied. Values below are elapsed seconds, not summed CPU time. Run 42213869604 failed its unit step after **221 seconds**; its 948-second job is not a successful-gate baseline. The fourth column is the new scheduler's exact-head run.
+
+| Step | 42207751177 | 42213869604 | 42216947356 | 42225794374 |
+| --- | ---: | ---: | ---: | ---: |
+| Complete Windows test job | 1150 | 948 | 1063 | 1166 |
+| Checkout | 6 | 6 | 7 | 7 |
+| Public agentic-craft submodule | 2 | 2 | 1 | 2 |
+| pnpm action setup | 22 | 16 | 24 | 35 |
+| Node setup and pnpm-store cache | 30 | 28 | 31 | 31 |
+| Frozen dependency install | 15 | 13 | 13 | 13 |
+| Fetch Electron | 3 | 3 | 4 | 6 |
+| Tokens | 5 | 4 | 5 | 4 |
+| Repository checks | 46 | 42 | 44 | 44 |
+| Dependency audit | 1 | 2 | 1 | 1 |
+| Typecheck | 50 | 43 | 45 | 44 |
+| Fetch bundled Git | 2 | 3 | 2 | 3 |
+| Unit tests | 258 | 221, failed | 231 | 234 |
+| Desktop build | 5 | 4 | 5 | 5 |
+| Store package check | 41 | 39 | 40 | 54 |
+| Complete budgets | 511 | 372 | 456 | 531 |
+| Browser install, web builds and web journeys | 145 | 142 | 146 | 146 |
+
+Step transitions, artifact/post-job work and timestamp rounding explain the difference between step sums and complete-job time. The pnpm store already restores successfully in all four logs; dependency installation takes only 13-15 seconds. Browser downloads occupy about 10-12 seconds, the five web builds/startup about 13-16 seconds, and all 49 web cases about 115-120 seconds (47 pass, 2 skip). A browser-binary cache cannot remove the two-minute journey work; its net saving is unmeasured and must subtract cache restore/save time.
+
+Budgets are the largest serial block. Within them, the 10,000-note workspace takes **267.7 / 198.4 / 228.7 / 303.5 seconds**, and draft recovery **156.5 / 91.6 / 141.3 / 144.2 seconds**, respectively. Together they account for about 78-84% of the budget step. They create real fixtures and exercise indexing/recovery; workspace memory also waits 20 seconds, requires eight stable samples within 2%, and measures idle CPU after a further pause. Those measurement windows, warmups, repeats, fixtures and assertions are coverage, not delays to delete. Existing logs do not separately time fixture creation versus initial indexing, so neither is claimed as a proven optimization target. Caching a pre-indexed fixture or running benchmarks beside unit/web work would change the measurement, not preserve it.
+
+| Proposed next cut, not implemented | Replay of test-job seconds, in the same four-run order | Other job and runner cost | Full-gate implication on 42225794374 |
+| --- | --- | --- | --- |
+| **Smallest sufficient change: move the complete Windows web step to an independent job** | 1005 / 806 / 917 / 1020 | Same browser install, five builds, 49 cases and one worker. Duplicated checkout/pnpm/Node/install/tokens cost 67-90 measured seconds; new web job about 209-236 seconds before post-job overhead. One extra Windows job: 5 to 6 total jobs, still exactly four desktop journey VMs. | Test job 19.4 to about 17.0 minutes; observed journey job at 17.7 minutes becomes the limit. Modeled overall saving about 105 seconds, not a measured result. |
+| Move the complete, unchanged budgets command to an independent Windows job | 639 / 576 / 607 / 635 | All ten benchmark steps and budgets retained. With 76-139 seconds of setup/build overhead, new budget jobs model 587-650 / 448-511 / 532-595 / 607-670 seconds. One extra Windows job; no concurrent benchmark work inside its VM. | Test/budget side falls to about 10.6-11.2 minutes, but the same 17.7-minute journey limit remains: no additional full-gate saving over the smaller web move in this run. |
+| Cache Chromium/FFmpeg binaries; optionally measure Vitest's filesystem transform cache | No defensible whole-job replay yet | No extra VM. Browser downloads offer at most the observed 10-12-second gross span; restore/save overhead may erase it. Installed Vitest supports `fsModuleCache`, disabled by default, but no measured saving or invalidation proof exists here. | A small cache experiment, not evidence that the present 105-second critical-path gap disappears. |
+
+**Exact proposed workflow change for the smaller option:** add a Windows-only `web-windows` job using the existing pinned checkout, pnpm and Node actions, `.nvmrc`, pnpm-store cache, frozen install and token build. Move the existing two-command Chromium install/`pnpm test:web` step there unchanged, with the current one-worker, headless web configuration. It must still run on non-desktop changes and independently of desktop/unit success; retain failure artifacts from `test-results/web` under a distinct artifact name. Remove only that moved Windows step from the serial test job; retain its dormant Linux variant, all checks, typechecks, units, Store packaging and complete budget invocation. This adds roughly 1.1-1.5 aggregate runner minutes of setup, not another journey shard. No approval or implementation is assumed: the coordinator receives this proposal before another workflow edit.
+
+These are elapsed-step DAG replays with unchanged work, not guarantees about queues, runner speed or total billed cost. The recommendation is the smaller web move because it clears the currently observed test-job floor without changing benchmark execution context; a later benchmark-job split only earns its extra scope if fresh measurements show that floor growing again. No same-VM parallel benchmark run, coverage reduction, retry, quarantine or additional desktop shard is proposed.
+
 ### Inline images: Print and Save as PDF
 
 **Met (6 November):** IMG.12 / IMG-12 (WP-9.8, D-348) landed on `main` at `42cb1ed8d72df8b9389063696c7d6cece64df0a3` after [exact-head Windows CI 42216947356](https://github.com/prabinpebam/focus-notes/actions/runs/42216947356) passed every job, including all four journey shards. The landing was a non-force fast-forward under `landing.lock`; the remote SHA was verified and the lock released. WP-9.8 remains **verifying**, not formal stage acceptance; the scheduled Preview refresh has not been independently inspected for this row. The pipeline snapshots the note's bounded local images, paints the print-only NoteContent image groups and waits for every `img.decode()` before using the unchanged native Print/PDF path. Missing or undecodable pixels become muted descriptions, not blanks or broken icons. A tracked, cancellable preparation pill retains the note and source files; `fn:image.print` records the complete preparation wait.
