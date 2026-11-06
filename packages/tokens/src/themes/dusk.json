@@ -110,7 +110,7 @@
   "code": {
     "background": {
       "$type": "color",
-      "$value": "{ref.color.dusk.800}"
+      "$value": "{ref.color.glow.a08}"
     },
     "text": {
       "$type": "color",

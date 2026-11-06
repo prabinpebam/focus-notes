@@ -92,7 +92,7 @@
   "code": {
     "background": {
       "$type": "color",
-      "$value": "{ref.color.hcLight.100}"
+      "$value": "{ref.color.shade.a16}"
     },
     "text": {
       "$type": "color",

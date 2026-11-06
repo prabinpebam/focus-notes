@@ -41,7 +41,7 @@
     "ringBorder": { "$type": "color", "$value": "{ref.color.ink.600}" }
   },
   "code": {
-    "background": { "$type": "color", "$value": "{ref.color.ink.800}" },
+    "background": { "$type": "color", "$value": "{ref.color.glow.a08}" },
     "text": { "$type": "color", "$value": "{ref.color.ink.50}" }
   },
   "shadow": {

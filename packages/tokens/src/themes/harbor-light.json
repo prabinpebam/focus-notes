@@ -78,7 +78,7 @@
   "code": {
     "background": {
       "$type": "color",
-      "$value": "{ref.color.harborLight.100}"
+      "$value": "{ref.color.shade.a08}"
     },
     "text": {
       "$type": "color",

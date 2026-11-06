@@ -325,6 +325,8 @@ Frost appears only through `Surface variant="frost"`, and `Surface` refuses fros
 
 <h2 id="block-components" data-reader-personas="design engineering">Block components</h2>
 
+**Code fill (OFB.31, owner, 6 November: "Code blocks should have slightly different bg color."):** editor and published NoteContent already share `code.background`, also used by existing inline code. Its fill now follows the note's own hue: black at 8% in light themes, white at 8% in dark themes; contrast themes use 16% black / 20% white. No border or layout change is added; the contrast guard checks code text on the composited fill.
+
 As built (WP-5.1, D-114), note content renders on published pages through one block component, **NoteContent**, read-only, inside the ReaderPage layout. The editor draws the same blocks as its own node views, with the same rules, so a note looks identical in both places. The per-block components first planned here are parts of NoteContent, not registered contracts. Each block also has a registration in the [block registry](../../architecture/editor-engine.md#block-registry-contract).
 
 | Component | Status | Renders |

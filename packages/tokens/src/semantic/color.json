@@ -62,7 +62,7 @@
     "rowTint": { "$type": "color", "$value": "{ref.color.transparent}" }
   },
   "code": {
-    "background": { "$type": "color", "$value": "{ref.color.paper.100}" },
+    "background": { "$type": "color", "$value": "{ref.color.shade.a08}", "$description": "A subtle code fill over the note's own surface: shade in light themes, glow in dark themes. Shared by fenced and existing inline code, in the editor and published output (OFB.31)." },
     "text": { "$type": "color", "$value": "{ref.color.paper.900}" }
   }
 }
