@@ -2796,14 +2796,14 @@
       "id": "WP-9.5",
       "stage": "Later",
       "title": "Optional AI image captions",
-      "summary": "Existing explicitly image-capable integration/model, selected stripped raster and instruction only, reviewed caption below image; no model hosting, implicit fallback or surrounding-note upload.",
+      "summary": "D-371 candidate: existing server-confirmed image-capable integration/model, metadata-free PNG at most 2048 px per edge and 5 MiB plus instruction only. Independent tracked/cancelable stream; editable result, byte-and-node stale guard, one Undo and unchanged Writer/description. Fake-integration journey verifies actual payload bounds, review, saved caption, Undo, reopening and Stop. Exact-head CI and landing pending; no model hosting, implicit fallback or surrounding-note upload.",
       "requirements": ["IMG-09"],
       "dependsOn": ["WP-9.1", "WP-AI.14"],
       "touches": ["editor", "core", "desktop", "views"],
       "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/images.md", "architecture/editor-engine.md"],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-9.6", "stage": "Later", "title": "Encrypted image sharing",

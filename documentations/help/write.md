@@ -34,6 +34,14 @@ Right-click one image. **Copy** puts its pixels, description and caption on the 
 
 **Rounded corners** and **Limit height** change the selected images and are remembered on this device for the next insertion. Existing images keep their own choices. A failed settings save leaves the previous insertion defaults intact and says so.
 
+## Write an image caption with AI
+
+Right-click an image and choose **Auto caption with AI…**. Choose an image-capable connected integration; the dialog shows its model and whether it runs on this computer or in the cloud. This choice does not change your writer for rewriting. If image support cannot be confirmed, choose **Write caption** instead.
+
+Edit the instruction, then choose **Generate caption**. Only a smaller, location-free copy of the selected image and your instruction go to that integration, not the note or its name. **Stop** cancels generation without changing the existing caption.
+
+Review and edit the result, then choose **Use caption**. Undo restores the previous caption. The image description remains separate. If the image changed or disappeared, copy the result from its field or reopen the dialog to generate again; the stale result cannot change another image.
+
 ## Coming soon
 
 - Write and format with Markdown shortcuts

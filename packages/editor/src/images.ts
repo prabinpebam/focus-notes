@@ -1,11 +1,11 @@
 import { Extension, type CommandProps, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey, type Selection } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
-import type { ResolvedPos } from "@tiptap/pm/model";
+import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
 
 export interface ImageImportRequest { request: string; files?: File[]; error?: string }
 export interface ImageAsset { src: string; width: number; height: number }
-interface Target extends ImageImportRequest { pos: number; invalid: boolean; cut?: string; replace?: string }
+interface Target extends ImageImportRequest { pos: number; invalid: boolean; cut?: string; replace?: string; caption?: string; original?: PMNode }
 const key = new PluginKey<ReadonlyMap<string, Target>>("imageInsertion");
 let sequence = 0;
 const allowedAt = (pos: ResolvedPos) => !pos.parent.type.spec.code
@@ -23,10 +23,10 @@ export function cancelImageImport(editor: Editor, request: string): void {
   if (!editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(key, { remove: request }).setMeta("addToHistory", false));
 }
 
-function trackImageTarget(editor: Editor, request: string, pos: number, src: string, operation: "cut" | "replace"): void {
+function trackImageTarget(editor: Editor, request: string, pos: number, src: string, operation: "cut" | "replace" | "caption"): void {
   const node = Number.isInteger(pos) && pos >= 0 && pos < editor.state.doc.content.size ? editor.state.doc.nodeAt(pos) : undefined;
   if (editor.isEditable && node?.type.name === "image" && node.attrs.src === src) {
-    editor.view.dispatch(editor.state.tr.setMeta(key, { add: { request, pos, invalid: false, [operation]: src } satisfies Target }).setMeta("addToHistory", false));
+    editor.view.dispatch(editor.state.tr.setMeta(key, { add: { request, pos, invalid: false, [operation]: src, ...(operation === "caption" ? { original: node } : {}) } satisfies Target }).setMeta("addToHistory", false));
   }
 }
 
@@ -36,6 +36,19 @@ export function trackImageCut(editor: Editor, request: string, pos: number, src:
 
 export function trackImageReplacement(editor: Editor, request: string, pos: number, src: string): void {
   trackImageTarget(editor, request, pos, src, "replace");
+}
+
+export function trackImageCaption(editor: Editor, request: string, pos: number, src: string): void {
+  trackImageTarget(editor, request, pos, src, "caption");
+}
+
+export function applyImageCaption(editor: Editor, request: string, title: string): boolean {
+  const target = key.getState(editor.state)?.get(request);
+  const node = target && editor.state.doc.nodeAt(target.pos);
+  if (!target || target.invalid || !editor.isEditable || node !== target.original || node?.type.name !== "image" || node.attrs.src !== target.caption) return false;
+  editor.view.dispatch(closeHistory(editor.state.tr).setNodeMarkup(target.pos, undefined, { ...node.attrs, title: title || null }).setMeta(key, { remove: request }));
+  editor.view.dispatch(closeHistory(editor.state.tr));
+  return true;
 }
 
 export function finishImageCut(editor: Editor, request: string): boolean {
@@ -88,7 +101,7 @@ export const ImageInsertion = Extension.create<{ onRequest?: (request: ImageImpo
           const next = new Map<string, Target>();
           for (const [id, target] of previous) {
             const mapped = tr.mapping.mapResult(target.pos, 1);
-            next.set(id, { ...target, pos: mapped.pos, invalid: target.invalid || mapped.deletedAcross || Boolean((target.cut || target.replace) && mapped.deleted) });
+            next.set(id, { ...target, pos: mapped.pos, invalid: target.invalid || mapped.deletedAcross || Boolean((target.cut || target.replace || target.caption) && mapped.deleted) });
           }
           const meta = tr.getMeta(key) as { add?: Target; remove?: string } | undefined;
           if (meta?.add) next.set(meta.add.request, meta.add);
@@ -100,7 +113,7 @@ export const ImageInsertion = Extension.create<{ onRequest?: (request: ImageImpo
         const sent = new Set<string>();
         return { update(view) {
           for (const id of sent) if (!key.getState(view.state)?.has(id)) sent.delete(id);
-          for (const [id, target] of key.getState(view.state) ?? []) if (!target.cut && !target.replace && !sent.has(id)) {
+          for (const [id, target] of key.getState(view.state) ?? []) if (!target.cut && !target.replace && !target.caption && !sent.has(id)) {
             sent.add(id);
             queueMicrotask(() => { if (!editor.isDestroyed) onRequest?.(target); });
           }

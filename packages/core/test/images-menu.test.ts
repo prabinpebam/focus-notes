@@ -72,6 +72,7 @@ describe("one image's menu", () => {
       { id: "clipboard", items: ["Cut", "Copy"] },
       { id: "file", items: ["Replace image…", "Save image…"] },
       { id: "words", items: ["Edit description…", "Add caption"] },
+      { id: "assistance", items: ["Auto caption with AI…"] },
       { id: "pixels", items: ["Edit image"] },
       { id: "mode", label: "Display", items: ["Column (on)", "Wide (off)", "Actual size (off)"] },
       { id: "look", items: ["Rounded corners (off)", "Limit height (on)"] },

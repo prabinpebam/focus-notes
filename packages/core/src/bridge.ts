@@ -233,6 +233,12 @@ export interface AiSettingsView { writer: string; connections: import("./ai-prov
 export interface AiConnectionInput { id?: string; provider: string; name: string; endpoint: string; model: string; deployment?: string; apiVersion?: string; account?: string; key?: string }
 export interface AiConnectionDetailInput { id?: string; provider: string; field: "name" | "endpoint" | "model" | "deployment" | "apiVersion" | "account"; value: string }
 export interface AiBridge {
+  /** Confirm image input from each saved integration's own metadata, never from its model name. */
+  captionSettings?(): Promise<AiSettingsView>;
+  /** Only this bounded metadata-free raster and instruction cross; the choice never changes Writer. */
+  captionStart?(id: string, input: { connection: string; instruction: string; image: string }): Promise<void>;
+  captionCancel?(id: string): Promise<void>;
+  onCaptionEvent?(listener: (event: unknown) => void): () => void;
   settings(): Promise<AiSettingsView>;
   save(input: AiConnectionInput): Promise<AiSettingsView>;
   /** One independent detail. Never accepts a key or contacts a provider. */

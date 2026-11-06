@@ -3,10 +3,11 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { crc32, deflateSync } from "node:zlib";
 import { execFileSync } from "node:child_process";
+import { createServer } from "node:http";
 import type { Locator, Page } from "@playwright/test";
 import { launch, quit, tempDirs, PROMPTLY } from "./helpers.ts";
 
-function png(width: number, height: number, rgb: [number, number, number]): Buffer {
+function png(width: number, height: number, rgb: [number, number, number], noise = false): Buffer {
   const chunk = (type: string, data: Buffer) => {
     const length = Buffer.alloc(4); length.writeUInt32BE(data.length);
     const body = Buffer.concat([Buffer.from(type), data]);
@@ -16,7 +17,11 @@ function png(width: number, height: number, rgb: [number, number, number]): Buff
   const header = Buffer.alloc(13);
   header.writeUInt32BE(width, 0); header.writeUInt32BE(height, 4); header[8] = 8; header[9] = 2;
   const raw = Buffer.alloc((width * 3 + 1) * height);
-  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) raw.set(rgb, y * (width * 3 + 1) + 1 + x * 3);
+  let seed = 123456789;
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    if (noise) { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; }
+    raw.set(noise ? [seed & 255, (seed >>> 8) & 255, (seed >>> 16) & 255] : rgb, y * (width * 3 + 1) + 1 + x * 3);
+  }
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", header), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
 }
 
@@ -50,6 +55,96 @@ async function imageMenu(page: Page, image: Locator) {
   await page.mouse.click(point.x, point.y, { button: "right" });
   return point;
 }
+
+test("IMG-AI: connected vision integration gets bounded pixels only; review, Undo and Stop preserve the note", async () => {
+  const dirs = sample();
+  const initial = original.replace("![Red square](red.png)", '![Red square](red.png "Old caption")');
+  writeFileSync(join(dirs.docs, "Welcome.md"), initial);
+  writeFileSync(join(dirs.docs, "red.png"), png(2300, 1400, [200, 30, 30], true));
+  expect(readFileSync(join(dirs.docs, "red.png")).length).toBeGreaterThan(5 * 1024 * 1024);
+  const requests: { model: string; messages: { role: string; content: string; images?: string[] }[] }[] = [];
+  let hanging = false;
+  const server = createServer((request, response) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", chunk => { body += chunk; });
+    request.on("end", () => {
+      const input = JSON.parse(body);
+      if (request.url === "/api/show") {
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({ capabilities: input.model === "vision" ? ["completion", "vision"] : ["completion"] }));
+      } else {
+        requests.push(input);
+        response.setHeader("content-type", "application/x-ndjson");
+        response.write(JSON.stringify({ message: { content: "Generated caption." }, done: false }) + "\n");
+        if (!hanging) response.end(JSON.stringify({ done: true }) + "\n");
+      }
+    });
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Caption test server unavailable");
+  const connection = { provider: "ollama", endpoint: `http://127.0.0.1:${address.port}`, deployment: "", apiVersion: "", account: "" };
+  writeFileSync(join(dirs.userData, "ai.json"), JSON.stringify({ version: 2, writer: "writer", connections: [
+    { ...connection, id: "writer", name: "Text writer", model: "writer" }, { ...connection, id: "vision", name: "Vision integration", model: "vision" },
+  ] }));
+  let launched: Awaited<ReturnType<typeof launch>> | undefined;
+  try {
+    launched = await launch(dirs);
+    const { page } = launched;
+    const red = page.getByRole("img", { name: "Red square", exact: true });
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Auto caption with AI…", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Auto caption with AI", exact: true });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Generate caption" })).toBeDisabled();
+    expect(requests).toEqual([]);
+    await dialog.getByRole("button", { name: "AI integration", exact: true }).click();
+    await page.getByRole("menuitemcheckbox", { name: /Vision integration/ }).click();
+    await dialog.getByRole("textbox", { name: "Instruction", exact: true }).fill("Only a short caption.");
+    await dialog.getByRole("button", { name: "Generate caption" }).click();
+    const result = dialog.getByRole("textbox", { name: "Caption", exact: true });
+    await expect(result).toHaveValue("Generated caption.");
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(initial);
+    expect(requests).toHaveLength(1);
+    const payload = requests[0]!;
+    expect(payload.model).toBe("vision");
+    expect(payload.messages.at(-1)?.content).toBe("Only a short caption.");
+    const bytes = Buffer.from(payload.messages.at(-1)!.images![0]!, "base64");
+    expect(bytes.length).toBeLessThanOrEqual(5 * 1024 * 1024);
+    expect(bytes.readUInt32BE(16)).toBeLessThanOrEqual(2048);
+    expect(bytes.readUInt32BE(20)).toBeLessThanOrEqual(2048);
+    expect(JSON.stringify(payload)).not.toContain("Welcome.md");
+    expect(JSON.stringify(payload)).not.toContain("First paragraph");
+    expect(JSON.stringify(payload)).not.toContain(dirs.docs);
+    await result.fill("Edited **caption**");
+    await dialog.getByRole("button", { name: "Use caption" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByText("Edited **caption**", { exact: true })).toBeVisible();
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toContain('![Red square](red.png "Edited **caption**")');
+    expect(JSON.parse(readFileSync(join(dirs.userData, "ai.json"), "utf8")).writer).toBe("writer");
+    await page.getByRole("textbox", { name: "Note", exact: true }).click();
+    await page.keyboard.press("Control+z");
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(initial);
+    hanging = true;
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Auto caption with AI…", exact: true }).click();
+    await dialog.getByRole("button", { name: "AI integration", exact: true }).click();
+    await page.getByRole("menuitemcheckbox", { name: /Vision integration/ }).click();
+    await dialog.getByRole("button", { name: "Generate caption" }).click();
+    await expect.poll(() => requests.length).toBe(2);
+    await expect(dialog.getByText("Writing caption…", { exact: true })).toBeVisible();
+    await dialog.getByRole("button", { name: "Stop", exact: true }).click();
+    await expect(dialog.getByText("Writing caption…", { exact: true })).not.toBeVisible();
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(initial);
+  } finally {
+    try { if (launched) await close(launched); }
+    finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    }
+  }
+});
 
 test("IMG.3: Copy transfers pixels and safe words; Cut, Replace, Save and remembered defaults preserve the note", async () => {
   const dirs = sample();
@@ -259,7 +354,7 @@ test("IMG-11: the single-image menu groups its choices at the pointer; both togg
     expect(Math.abs(bounds!.x - point.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(bounds!.y - point.y)).toBeLessThanOrEqual(1);
     const labels = await menu.locator("[role^=menuitem]").allTextContents();
-    expect(labels.map((label) => label.trim())).toEqual(["Cut", "Copy", "Replace image…", "Save image…", "Edit description…", "Add caption", "Edit image", "✓Column", "Wide", "Actual size", "Rounded corners", "✓Limit height"]);
+    expect(labels.map((label) => label.trim())).toEqual(["Cut", "Copy", "Replace image…", "Save image…", "Edit description…", "Add caption", "Auto caption with AI…", "Edit image", "✓Column", "Wide", "Actual size", "Rounded corners", "✓Limit height"]);
     await page.getByRole("menuitemcheckbox", { name: "Rounded corners", exact: true }).click();
     const roundedBytes = original.replace("![Red square]", "<!-- image: rounded -->\n![Red square]");
     await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(roundedBytes);

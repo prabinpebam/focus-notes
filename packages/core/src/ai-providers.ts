@@ -7,6 +7,8 @@
 export type AiShape = "openai" | "anthropic" | "gemini" | "azure" | "ollama" | "cohere" | "copilot-cli";
 export type AiGroup = "local" | "cloud" | "gateway";
 export type AiField = "endpoint" | "model" | "deployment" | "apiVersion" | "account";
+export const CAPTION_IMAGE_EDGE = 2048;
+export const CAPTION_IMAGE_BYTES = 5 * 1024 * 1024;
 
 export interface AiProvider {
   id: string;
@@ -88,6 +90,9 @@ export const AZURE_API_VERSION = "2024-10-21";
 
 /** A connection as Settings shows it: never its key. */
 export interface AiConnectionView {
+  /** Confirmed by the connected server's model metadata, never inferred from a model name. */
+  imageCapable?: boolean;
+  capabilityError?: string;
   id: string;
   provider: string;
   name: string;

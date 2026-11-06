@@ -1,9 +1,35 @@
 // @vitest-environment happy-dom
 import { afterEach, expect, it, vi } from "vitest";
 import { Editor } from "@tiptap/core";
-import { coreExtensions, EDITOR_OPTIONS, insertImageAssets, requestImageCommand, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, MarkdownSession, type PMNode } from "../src/index.ts";
+import { coreExtensions, EDITOR_OPTIONS, insertImageAssets, requestImageCommand, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, trackImageCaption, applyImageCaption, setImageWords, MarkdownSession, type PMNode } from "../src/index.ts";
 
 const editors: Editor[] = [];
+it("caption applies to the captured image through typing, preserves its description, and is one Undo", async () => {
+  const { editor, md, requests } = setup('Before\n\n![Description](same.png "Old")\n\n![Other](same.png)\n');
+  const pos = editor.state.doc.child(0).nodeSize;
+  trackImageCaption(editor, "caption", pos, "same.png");
+  editor.commands.setTextSelection(2);
+  editor.commands.insertContent("typed ");
+  const before = md();
+  expect(applyImageCaption(editor, "caption", "Plain **caption**")).toBe(true);
+  expect(md()).toContain('![Description](same.png "Plain **caption**")');
+  expect(md()).toContain("![Other](same.png)");
+  editor.commands.undo();
+  expect(md()).toBe(before);
+  await Promise.resolve();
+  expect(requests).not.toHaveBeenCalled();
+});
+it("caption never applies after editing or deleting the exact image, even with duplicate sources", () => {
+  const { editor, md } = setup('Before\n\n![Description](same.png "Old")\n\n![Other](same.png)\n');
+  const pos = editor.state.doc.child(0).nodeSize;
+  trackImageCaption(editor, "changed", pos, "same.png");
+  setImageWords(editor, { pos, src: "same.png" }, { title: "Manual" });
+  expect(applyImageCaption(editor, "changed", "AI")).toBe(false);
+  trackImageCaption(editor, "deleted", pos, "same.png");
+  editor.commands.deleteRange({ from: pos, to: pos + 1 });
+  expect(applyImageCaption(editor, "deleted", "AI")).toBe(false);
+  expect(md()).toContain("![Other](same.png)");
+});
 it("Cut follows the captured image through typing, keeps duplicate sources, and is one Undo", async () => {
   const { editor, requests, md } = setup('Before\n\n![One](same.png "Caption")\n\n![Two](same.png)\n');
   const pos = editor.state.doc.child(0).nodeSize;

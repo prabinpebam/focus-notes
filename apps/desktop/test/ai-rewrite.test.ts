@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { crc32 } from "node:zlib";
 import { aiProvider } from "@focus-notes/core/ai-providers";
-import { AiService, answerText, deltaText, generateCall, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
+import { AiService, answerText, deltaText, generateCall, imageCapability, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
 import { CopilotIntegration } from "../src/main/ai-copilot.ts";
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
@@ -21,6 +22,48 @@ const answering = (seen: Seen[], body: (url: string) => unknown) =>
 const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
 
 describe("AI connections (main process)", () => {
+  it("caption capability comes from server metadata, never model names", () => {
+    expect(imageCapability({ capabilities: ["vision"] }, "fake", true)).toBe(true);
+    expect(imageCapability({ capabilities: ["completion"] }, "vision-model", true)).toBe(false);
+    expect(imageCapability({ data: [{ id: "fake", architecture: { input_modalities: ["text", "image"] } }] }, "fake")).toBe(true);
+    expect(imageCapability({ data: [{ id: "vision-model" }] }, "vision-model")).toBe(false);
+    expect(imageCapability({ data: [{ id: "other", input_modalities: ["image"] }] }, "fake")).toBe(false);
+  });
+  it("caption sends only stripped pixels and instruction to the chosen connection without changing Writer", async () => {
+    const image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
+    const seen: Seen[] = [];
+    const ai = new AiService(file(), crypt, write, answering(seen, url => url.endsWith("/api/show") ? { capabilities: ["vision"] } : { message: { content: "A red square." } }));
+    const first = await ai.save({ provider: "ollama", name: "Writer", endpoint: "http://127.0.0.1:11434", model: "writer" });
+    const settings = await ai.save({ provider: "ollama", name: "Vision", endpoint: "http://127.0.0.1:11434", model: "vision" });
+    const id = settings.connections[1]!.id;
+    expect((await ai.captionSettings()).connections[1]?.imageCapable).toBe(true);
+    seen.length = 0;
+    expect(await collect(ai, { mode: "caption", text: "", connection: id, instruction: "Short caption", image, path: "secret-note.md", otherAsset: "private.jpg" })).toEqual(["A red square."]);
+    const request = JSON.parse(seen.at(-1)!.init.body as string);
+    expect(request.model).toBe("vision");
+    expect(request.messages.at(-1)).toEqual({ role: "user", content: "Short caption", images: [image.split(",")[1]] });
+    expect(JSON.stringify(seen)).not.toContain("secret-note.md");
+    expect(JSON.stringify(seen)).not.toContain("private.jpg");
+    expect((await ai.settings()).writer).toBe(first.writer);
+    await expect(collect(ai, { mode: "caption", text: "never send note", connection: id, instruction: "Short caption", image })).rejects.toThrow("invalid-text");
+    await expect(collect(ai, { mode: "caption", text: "", connection: id, instruction: "Short caption", image: "https://example.test/a.png" })).rejects.toThrow("invalid-image");
+    const oversized = Buffer.from(image.split(",")[1]!, "base64");
+    oversized.writeUInt32BE(2049, 16);
+    oversized.writeUInt32BE(crc32(oversized.subarray(12, 29)) >>> 0, 29);
+    const count = seen.length;
+    await expect(collect(ai, { mode: "caption", text: "", connection: id, instruction: "Short caption", image: `data:image/png;base64,${oversized.toString("base64")}` })).rejects.toThrow("image-too-large");
+    await expect(collect(ai, { mode: "caption", text: "", connection: id, instruction: "Short caption", image: image + "A".repeat(7 * 1024 * 1024) })).rejects.toThrow("invalid-image");
+    expect(seen).toHaveLength(count);
+  });
+  it("caption refuses a text-only saved integration before sending pixels", async () => {
+    const seen: Seen[] = [];
+    const ai = new AiService(file(), crypt, write, answering(seen, () => ({ capabilities: ["completion"] })));
+    const settings = await ai.save({ provider: "ollama", name: "Text", endpoint: "http://127.0.0.1:11434", model: "vision-sounding-name" });
+    await expect(collect(ai, { mode: "caption", text: "", connection: settings.writer, instruction: "Caption", image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==" })).rejects.toThrow("model-missing");
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.url).toContain("/api/show");
+    expect(JSON.stringify(seen)).not.toContain("iVBORw");
+  });
   it("RWR-92: write mode sends the prompt alone and rejects note context", async () => {
     const seen: Seen[] = [];
     const ai = new AiService(file(), crypt, write, answering(seen, () => ({ message: { content: "Hello" } })));

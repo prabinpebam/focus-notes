@@ -15,6 +15,7 @@
     "vm.slash",
     "vm.table",
     "vm.images",
+    "vm.imageCaption",
     "vm.block",
     "vm.feedback",
     "vm.picker",
@@ -1120,6 +1121,8 @@
           } },
           "imageAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } },
           "imageEdited": { "run": "image.edited", "args": { "src": { "get": "event.src" }, "data": { "get": "event.data" } } },
+          "imageCaptionPrepared": { "run": "image.ai.prepared", "args": { "request": { "get": "event.request" }, "data": { "get": "event.data" }, "error": { "get": "event.error" } } },
+          "imageCaptionApplied": { "run": "image.ai.applied", "args": { "request": { "get": "event.request" }, "accepted": { "get": "event.accepted" } } },
           "imageEditError": { "run": "image.edit.failed" },
           "imageImport": { "run": "image.import", "args": { "request": { "get": "event.request" }, "key": { "get": "event.key" }, "data": { "get": "event.data" }, "error": { "get": "event.error" } } },
           "imageImported": { "run": "image.imported", "args": { "batch": { "get": "event.batch" }, "accepted": { "get": "event.accepted" } } },
@@ -9599,6 +9602,49 @@
   "children": [{ "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
     { "type": "TextField", "props": { "label": { "t": "image.describe.alt" }, "description": { "t": "image.describe.altHint" }, "value": { "bind": "vm.images.alt" }, "autoFocus": true } },
     { "type": "TextField", "props": { "label": { "t": "image.describe.caption" }, "description": { "t": "image.describe.captionHint" }, "value": { "bind": "vm.images.caption" } } }
+  ] }]
+},
+{
+  "type": "DialogPanel",
+  "id": "imageCaption",
+  "props": { "label": { "t": "image.ai.title2" }, "open": { "get": "vm.imageCaption.open" }, "size": "m", "height": "content" },
+  "on": { "openChange": { "run": "image.ai.close" } },
+  "slots": {
+    "header": [{ "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+      { "type": "Icon", "props": { "name": "sparkle", "size": "m" } },
+      { "type": "Heading", "props": { "level": "2", "value": { "t": "image.ai.title2" } } }
+    ] }],
+    "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
+      { "switch": { "get": "vm.imageCaption.writing" }, "cases": { "true": { "type": "Button", "props": { "label": { "t": "image.ai.stop" }, "variant": "secondary" }, "on": { "press": { "run": "image.ai.stop" } } },
+        "false": { "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
+          { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "image.ai.close" } } },
+          { "type": "Button", "props": { "label": { "t": "image.ai.generate" }, "variant": "secondary", "icon": "sparkle", "disabled": { "get": "vm.imageCaption.generateDisabled" }, "disabledReason": { "t": "image.ai.generateReason" } }, "on": { "press": { "run": "image.ai.generate" } } },
+          { "when": { "get": "vm.imageCaption.hasResult" }, "type": "Button", "props": { "label": { "t": "image.ai.use" }, "variant": "primary", "busy": { "get": "vm.imageCaption.applying" }, "feedback": "border", "disabled": { "get": "vm.imageCaption.useDisabled" }, "disabledReason": { "t": "image.ai.useReason" } }, "on": { "press": { "run": "image.ai.use" } } }
+        ] }
+      } }
+    ] }]
+  },
+  "children": [{ "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+    { "switch": { "get": "vm.imageCaption.loading" }, "cases": { "true": { "type": "Text", "props": { "value": { "t": "image.ai.preparing" }, "announce": true } },
+      "false": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+        { "type": "Inline", "props": { "gap": "inlineGroup", "align": "start" }, "children": [
+          { "type": "ImageFrame", "props": { "src": { "get": "vm.imageCaption.preview" }, "mode": "thumb" } },
+          { "type": "ItemCard", "props": { "title": { "get": "vm.imageCaption.connectionName" }, "detail": { "get": "vm.imageCaption.connectionModel" }, "badge": { "get": "vm.imageCaption.connectionWhere" }, "icon": "sparkle" }, "children": [
+            { "type": "MenuButton", "props": { "label": { "t": "image.ai.integration" }, "variant": "select", "text": { "get": "vm.imageCaption.chosen" }, "sections": { "get": "vm.imageCaption.choices" }, "busy": { "get": "vm.imageCaption.writing" } }, "on": { "action": { "run": "image.ai.integration", "args": { "value": { "get": "event.id" } } } } }
+          ] }
+        ] },
+        { "when": { "get": "vm.imageCaption.hasResult" }, "type": "TextField", "props": { "label": { "t": "image.ai.result" }, "description": { "t": "image.ai.resultHint" }, "value": { "bind": "vm.imageCaption.result" }, "multiline": true, "compactMultiline": true, "readOnly": { "get": "vm.imageCaption.applying" } } },
+        { "when": { "get": "vm.imageCaption.noVision" }, "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+          { "type": "Text", "props": { "value": { "t": "image.ai.noVisionActual" } } },
+          { "type": "Text", "props": { "value": { "t": "image.ai.writerKept" }, "role": "caption", "tone": "muted" } },
+          { "type": "Button", "props": { "label": { "t": "image.ai.write" }, "variant": "subtle" }, "on": { "press": { "run": "image.ai.manual" } } }
+        ] },
+        { "type": "TextField", "props": { "label": { "t": "image.ai.instruction" }, "value": { "bind": "vm.imageCaption.instruction" }, "multiline": true, "compactMultiline": true, "autoFocus": true, "readOnly": { "get": "vm.imageCaption.writing" } } },
+        { "type": "Text", "props": { "value": { "get": "vm.imageCaption.disclosure" }, "role": "caption", "tone": "muted" } }
+      ] }
+    } },
+    { "when": { "get": "vm.imageCaption.writing" }, "type": "Text", "props": { "value": { "t": "image.ai.writing" }, "announce": true } },
+    { "type": "Text", "props": { "value": { "get": "vm.imageCaption.error" }, "tone": "danger", "announce": true } }
   ] }]
 }
 ]

@@ -12,8 +12,10 @@
  */
 import { readFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
-import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiProvider, type AiDiscoveryProgress } from "@focus-notes/core/ai-providers";
+import { AI_PROVIDERS, AZURE_API_VERSION, CAPTION_IMAGE_EDGE, CAPTION_IMAGE_BYTES, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiProvider, type AiDiscoveryProgress } from "@focus-notes/core/ai-providers";
 import { CopilotIntegration } from "./ai-copilot.ts";
+import { imageClipboard } from "./image-transfer.ts";
+import { rasterInfo } from "./image-import.ts";
 
 export interface AiCrypt {
   available(): boolean;
@@ -74,6 +76,16 @@ const MAX_ANSWER = 2 * MAX_TEXT;
 /** The most a whole JSON answer may be, in bytes: a Test or a probe, a model list (OpenRouter's is large), and a generation answered in one piece. */
 const MAX_JSON = { test: 2 * 1024 * 1024, list: 4 * 1024 * 1024, answer: 8 * MAX_ANSWER } as const;
 const MAX_CONNECTIONS = 30;
+const object = (value: unknown): Record<string, unknown> | undefined => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+export function imageCapability(json: unknown, model: string, ollama = false): boolean {
+  const root = object(json);
+  if (ollama) return Array.isArray(root?.capabilities) && root.capabilities.includes("vision");
+  const models = root?.data;
+  if (!Array.isArray(models)) return false;
+  const entry = models.map(object).find(item => item?.id === model);
+  const modalities = object(entry?.architecture)?.input_modalities ?? entry?.input_modalities;
+  return Array.isArray(modalities) && modalities.includes("image");
+}
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const SYSTEM = "You rewrite text for a writer. Rewrite the text the user gives, following their instruction. Reply with only the rewritten text: no preamble, no quotes, no commentary. Keep the language of the text.";
 
@@ -149,9 +161,10 @@ const bearer = (key: string): Record<string, string> => (key ? { authorization: 
  * take `max_completion_tokens` (they refuse `max_tokens`), and they and Gemini 2.5 count their
  * thinking in the limit, so it has room for it.
  */
-export function generateCall(p: AiProvider, c: Connection, key: string, system: string, user: string, maxTokens: number): Call {
+export function generateCall(p: AiProvider, c: Connection, key: string, system: string, user: string, maxTokens: number, image?: string): Call {
   const base = baseOf(p, c);
-  const messages = [{ role: "system", content: system }, { role: "user", content: user }];
+  const content = image ? [{ type: "text", text: user }, { type: "image_url", image_url: { url: image } }] : user;
+  const messages = [{ role: "system", content: system }, { role: "user", content }];
   switch (p.shape) {
     case "anthropic":
       return { url: `${base}/v1/messages`, headers: { "x-api-key": key, "anthropic-version": "2023-06-01" }, body: { model: c.model, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] } };
@@ -161,7 +174,7 @@ export function generateCall(p: AiProvider, c: Connection, key: string, system: 
       if (!/^[\w.-]{1,100}$/.test(c.deployment)) throw new Error("invalid-deployment");
       return { url: `${base}/openai/deployments/${encodeURIComponent(c.deployment)}/chat/completions?api-version=${encodeURIComponent(c.apiVersion || AZURE_API_VERSION)}`, headers: { "api-key": key }, body: { messages, max_tokens: maxTokens } };
     case "ollama":
-      return { url: `${base}/api/chat`, headers: bearer(key), body: { model: c.model, messages, stream: false, think: false, options: { num_predict: maxTokens } } };
+      return { url: `${base}/api/chat`, headers: bearer(key), body: { model: c.model, messages: image ? [{ role: "system", content: system }, { role: "user", content: user, images: [image.slice(image.indexOf(",") + 1)] }] : messages, stream: false, think: false, options: { num_predict: maxTokens } } };
     case "cohere":
       return { url: `${base}/v2/chat`, headers: bearer(key), body: { model: c.model, messages, max_tokens: maxTokens } };
     default:
@@ -544,6 +557,30 @@ export class AiService {
       x.close();
     }
   }
+  async #captionCapable(c: Connection, signal?: AbortSignal): Promise<boolean> {
+    const p = aiProvider(c.provider)!;
+    if (p.shape !== "ollama" && p.shape !== "openai") return false;
+    const key = this.#open(c);
+    if (p.key === "required" && !key) throw new AiError("key-required");
+    const base = baseOf(p, c), local = isLoopback(base);
+    const call = p.shape === "ollama"
+      ? { url: `${base}/api/show`, headers: bearer(key), body: { model: c.model } }
+      : modelsCall(p, c, key);
+    if (!call) return false;
+    return imageCapability(await this.#json(call, this.#limit("list", local), local, MAX_JSON.list, signal), c.model, p.shape === "ollama");
+  }
+  async captionSettings(): Promise<AiSettings> {
+    const s = await this.#read();
+    const connections = await Promise.all(s.connections.map(async c => {
+      try { return { ...view(c), imageCapable: await this.#captionCapable(c) }; }
+      catch (error) {
+        const reason = reasonOf(error).code;
+        console.error("Image capability check failed", reason);
+        return { ...view(c), imageCapable: false, capabilityError: reason };
+      }
+    }));
+    return { writer: s.writer, connections };
+  }
   /**
    * Remembers which of a server's models are on this computer, from a list this process fetched,
    * and marks the saved connections there (Settings and the prompt disclose where text goes).
@@ -694,16 +731,25 @@ export class AiService {
    */
   async *stream(input: unknown, signal: AbortSignal): AsyncGenerator<string> {
     const a = (input ?? {}) as Record<string, unknown>;
-    const writing = a.mode === "write";
-    if (a.mode !== undefined && !writing) throw new Error("invalid-mode");
-    if (typeof a.text !== "string" || (writing ? a.text !== "" : !a.text.trim()) || a.text.length > MAX_TEXT) throw new Error("invalid-text");
+    const writing = a.mode === "write", caption = a.mode === "caption";
+    if (a.mode !== undefined && !writing && !caption) throw new Error("invalid-mode");
+    if (typeof a.text !== "string" || (writing || caption ? a.text !== "" : !a.text.trim()) || a.text.length > MAX_TEXT) throw new Error("invalid-text");
     if (typeof a.instruction !== "string" || !a.instruction.trim() || a.instruction.length > MAX_INSTRUCTION) throw new Error("invalid-instruction");
-    const system = writing ? "You write text for a writer. Follow the user's prompt. Reply with only the requested text, without a preamble or commentary." : SYSTEM;
-    const user = writing ? a.instruction.trim() : `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`;
+    const system = caption ? "Write a short plain-text caption for the provided image, following the user's instruction. Return only the caption, without markup or commentary." : writing ? "You write text for a writer. Follow the user's prompt. Reply with only the requested text, without a preamble or commentary." : SYSTEM;
+    const user = writing || caption ? a.instruction.trim() : `Instruction: ${a.instruction.trim()}\n\nText:\n${a.text}`;
     const s = await this.#read();
-    const c = s.connections.find((x) => x.id === s.writer);
+    const c = s.connections.find((x) => x.id === (caption ? a.connection : s.writer));
     if (!c) throw new AiError("not-configured");
     const p = aiProvider(c.provider)!;
+    let image: string | undefined;
+    if (caption) {
+      if (typeof a.image !== "string" || a.image.length > Math.ceil(CAPTION_IMAGE_BYTES / 3) * 4 + 64) throw new Error("invalid-image");
+      const content = imageClipboard(a.image, "", "");
+      const info = rasterInfo(content.bytes);
+      if (content.bytes.length > CAPTION_IMAGE_BYTES || info.width > CAPTION_IMAGE_EDGE || info.height > CAPTION_IMAGE_EDGE) throw new Error("image-too-large");
+      if (!await this.#captionCapable(c, signal)) throw new AiError("model-missing");
+      image = `data:image/${info.ext === "jpg" ? "jpeg" : info.ext};base64,${content.bytes.toString("base64")}`;
+    }
     if (p.shape === "azure" ? !c.deployment : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
     if (p.shape === "copilot-cli") {
       const started = performance.now();
@@ -718,7 +764,7 @@ export class AiService {
     }
     const key = this.#open(c);
     if (p.key === "required" && !key) throw new AiError("key-required");
-    const call = streamCall(p, generateCall(p, c, key, system, user, 4096));
+    const call = streamCall(p, generateCall(p, c, key, system, user, caption ? 512 : 4096, image));
     const local = isLoopback(call.url);
     const started = performance.now();
     let first = true;

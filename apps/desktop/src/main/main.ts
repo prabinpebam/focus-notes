@@ -1588,6 +1588,37 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (scan && scan.id === id) scan.abort.abort();
   });
   handle("ai:models", (input: unknown) => ai.models(input));
+  handle("ai:captionSettings", () => ai.captionSettings());
+  const captions = new Map<number, { id: string; abort: AbortController }>();
+  handleFrom("ai:captionStart", (e, id: unknown, input: unknown) => {
+    if (typeof id !== "string" || !/^[\w-]{1,64}$/.test(id) || !input || typeof input !== "object") throw new Error("invalid-request");
+    const data = input as Record<string, unknown>;
+    const sender = e.sender, owner = sender.id;
+    captions.get(owner)?.abort.abort();
+    const abort = new AbortController();
+    captions.set(owner, { id, abort });
+    const gone = () => abort.abort();
+    sender.once("destroyed", gone);
+    sender.once("did-start-loading", gone);
+    const send = (event: Record<string, unknown>) => { if (!sender.isDestroyed()) sender.send("ai:captionEvent", { id, ...event }); };
+    void (async () => {
+      try {
+        for await (const text of ai.stream({ mode: "caption", text: "", connection: data.connection, instruction: data.instruction, image: data.image }, abort.signal)) send({ type: "delta", text });
+        send({ type: "done" });
+      } catch (error) { send({ type: "error", ...reasonOf(error) }); }
+      finally {
+        if (captions.get(owner)?.abort === abort) captions.delete(owner);
+        if (!sender.isDestroyed()) {
+          sender.removeListener("destroyed", gone);
+          sender.removeListener("did-start-loading", gone);
+        }
+      }
+    })();
+  });
+  handleFrom("ai:captionCancel", (e, id: unknown) => {
+    const caption = captions.get(e.sender.id);
+    if (caption && caption.id === id) caption.abort.abort();
+  });
   // Rewrite streams: one per window at a time, each chunk sent to the window that asked, tagged with its id.
   // A Stop, a new rewrite, or the window closing or reloading aborts the request here, not just in the window.
   const rewrites = new Map<number, { id: string; abort: AbortController }>();

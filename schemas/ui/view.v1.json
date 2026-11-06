@@ -12982,6 +12982,12 @@
             "imageEdited": {
               "$ref": "#/$defs/actions"
             },
+            "imageCaptionPrepared": {
+              "$ref": "#/$defs/actions"
+            },
+            "imageCaptionApplied": {
+              "$ref": "#/$defs/actions"
+            },
             "imageEditError": {
               "$ref": "#/$defs/actions"
             },

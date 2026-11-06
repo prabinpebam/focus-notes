@@ -289,6 +289,14 @@ contextBridge.exposeInMainWorld("focusNotes", {
     },
     models: (input: unknown) => ipcRenderer.invoke("ai:models", input),
     rewriteStart: (id: string, input: unknown) => ipcRenderer.invoke("ai:rewriteStart", id, input),
+    captionSettings: () => ipcRenderer.invoke("ai:captionSettings"),
+    captionStart: (id: string, input: unknown) => ipcRenderer.invoke("ai:captionStart", id, input),
+    captionCancel: (id: string) => ipcRenderer.invoke("ai:captionCancel", id),
+    onCaptionEvent: (listener: (event: unknown) => void) => {
+      const on = (_event: Electron.IpcRendererEvent, data: unknown) => listener(data);
+      ipcRenderer.on("ai:captionEvent", on);
+      return () => { ipcRenderer.removeListener("ai:captionEvent", on); };
+    },
     rewriteCancel: (id: string) => ipcRenderer.invoke("ai:rewriteCancel", id),
     onRewriteEvent: (listener: (event: unknown) => void) => {
       const on = (_e: unknown, event: unknown) => listener(event);

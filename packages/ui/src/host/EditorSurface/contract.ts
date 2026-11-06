@@ -50,6 +50,8 @@ export const contract = defineContract({
     imageSelect: { payload: { pos: "number", src: "text", alt: "text", title: "text", text: "boolean", announce: "boolean", rounded: "boolean", fitHeight: "boolean", mode: "text", width: "number", height: "number", from: "number", to: "number", count: "number", roundMixed: "boolean", limitMixed: "boolean" } },
     imageAction: { payload: { id: "text" } },
     imageEdited: { payload: { src: "text", data: "text" } },
+    imageCaptionPrepared: { payload: { request: "text", data: "text", error: "text" } },
+    imageCaptionApplied: { payload: { request: "text", accepted: "boolean" } },
     imageEditError: {},
     imageImport: { payload: { request: "text", key: "text", data: "text", error: "text" } },
     imageImported: { payload: { batch: "text", accepted: "boolean" } },

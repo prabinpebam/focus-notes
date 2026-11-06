@@ -6,6 +6,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { noteReadOnly } from "./workspace-app.ts";
 import type { TaskTracker } from "./tasks.ts";
+import { registerImageCaption } from "./image-caption-app.ts";
 
 type SelectedImage = { pos: number; src: string; alt?: string; title?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
 export interface ImagesState {
@@ -23,7 +24,7 @@ export interface ImagesState {
 }
 export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", saving: false, transferring: false, error: "", describe: false, alt: "", caption: "" };
 
-export function registerImages(ctx: {
+export interface ImagesContext {
   store: Store<AppState>; bridge: PlatformBridge; commands: CommandRegistry<AppState>; viewModels: ViewModelRegistry<AppState>; catalog: MessageCatalog;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   toast: (text: string, opts?: { tone?: "info" | "error"; subject?: string }) => number;
@@ -32,7 +33,10 @@ export function registerImages(ctx: {
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   announce: (text: string) => void;
   itemSchema: Record<string, unknown>; describeItem: (id: string) => Record<string, unknown>;
-}) {
+}
+
+export function registerImages(ctx: ImagesContext) {
+  registerImageCaption(ctx);
   const { store, bridge, commands, viewModels, catalog } = ctx;
   const state = () => store.state.ui.images;
   const set = (patch: Partial<ImagesState>) => store.update((s) => ({ ...s, ui: { ...s.ui, images: { ...s.ui.images, ...patch } } }));
@@ -348,6 +352,7 @@ export function registerImages(ctx: {
           { id: "clipboard", items: ["image.cut", "image.copy"].map(ctx.describeItem) },
           { id: "file", items: ["image.replace", "image.save"].map(ctx.describeItem) },
           { id: "words", items: [ctx.describeItem("image.describe"), { ...ctx.describeItem("image.caption"), label: catalog.format(s.selected.title ? "image.caption.edit" : "image.caption.add") }] },
+          { id: "assistance", items: [ctx.describeItem("image.ai")] },
           { id: "pixels", items: [ctx.describeItem("image.edit")] },
           { id: "mode", label: catalog.format("image.display"), items: ["image.mode.column", "image.mode.wide", "image.mode.actual"].map(ctx.describeItem) },
           { id: "look", items: imageSection(store.state).items },

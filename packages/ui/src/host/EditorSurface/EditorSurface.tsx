@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
-  applyLink, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
+  applyLink, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, trackImageCaption, applyImageCaption, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
   focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setImageWords, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
 import { captureImageSelection, imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
+import { prepareImageCaption } from "./image-caption.ts";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { keepClearOfPinned } from "./pinned-column.ts";
@@ -39,6 +40,8 @@ export interface EditorSurfaceProps {
   onImageSelect?: (payload: ImagePayload) => void;
   onImageAction?: (payload: { id: string }) => void;
   onImageEdited?: (payload: { src: string; data: string }) => void;
+  onImageCaptionPrepared?: (payload: { request: string; data: string; error: string }) => void;
+  onImageCaptionApplied?: (payload: { request: string; accepted: boolean }) => void;
   onImageEditError?: () => void;
   onImageImport?: (payload: { request: string; key: string; data: string; error: string }) => void;
   onImageImported?: (payload: { batch: string; accepted: boolean }) => void;
@@ -177,7 +180,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
-  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", imageCaptionLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageImport, onImageImported,
+  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", imageCaptionLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageImport, onImageImported, onImageCaptionPrepared, onImageCaptionApplied,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
@@ -193,6 +196,8 @@ export function EditorSurface({
   imageEditRef.current = { onImageEdited, onImageEditError };
   const imageImportRef = useRef({ onImageImport, onImageImported, documentKey });
   imageImportRef.current = { onImageImport, onImageImported, documentKey };
+  const imageCaptionRef = useRef({ onImageCaptionPrepared, onImageCaptionApplied });
+  imageCaptionRef.current = { onImageCaptionPrepared, onImageCaptionApplied };
   useEffect(() => { for (const render of imageRenders.current) render(); }, [imageSources, imageMenu, documentKey, imageMissing, imageLoadingLabel, imageRetryLabel, imageRetryBusyLabel]);
   const scrollerRef = useRef<HTMLElement | null>(null);
   const minimapRef = useRef<DocMinimapHandle | null>(null);
@@ -782,6 +787,24 @@ export function EditorSurface({
       }
       if (id === "image.trackReplacement") {
         trackImageReplacement(editor, String(args.request), Number(args.pos), String(args.src));
+        return;
+      }
+      if (id === "image.trackCaption") {
+        trackImageCaption(editor, String(args.request), Number(args.pos), String(args.src));
+        return;
+      }
+      if (id === "image.prepareCaption") {
+        const request = String(args.request);
+        void prepareImageCaption(String(args.data), Number(args.edge), Number(args.limit))
+          .then(data => imageCaptionRef.current.onImageCaptionPrepared?.({ request, data, error: "" }), error => {
+            console.error("Image caption preparation failed", error instanceof Error ? error.name : "unknown");
+            imageCaptionRef.current.onImageCaptionPrepared?.({ request, data: "", error: "image-preparation-failed" });
+          });
+        return;
+      }
+      if (id === "image.applyCaption") {
+        const request = String(args.request);
+        imageCaptionRef.current.onImageCaptionApplied?.({ request, accepted: applyImageCaption(editor, request, String(args.title)) });
         return;
       }
       if (id === "image.finishCut") {

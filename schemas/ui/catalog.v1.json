@@ -6051,6 +6051,19 @@
             "data": "text"
           }
         },
+        "imageCaptionPrepared": {
+          "payload": {
+            "request": "text",
+            "data": "text",
+            "error": "text"
+          }
+        },
+        "imageCaptionApplied": {
+          "payload": {
+            "request": "text",
+            "accepted": "boolean"
+          }
+        },
         "imageEditError": {},
         "imageImport": {
           "payload": {
@@ -7073,6 +7086,7 @@
         "vm.slash",
         "vm.table",
         "vm.images",
+        "vm.imageCaption",
         "vm.block",
         "vm.feedback",
         "vm.picker",

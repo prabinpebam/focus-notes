@@ -1,5 +1,17 @@
 # Decisions
 
+## D-371: captions use only confirmed image-capable connected integrations
+
+**Decided (implementation, 6 November 2026; IMG-09).** Caption capability is explicit server metadata, never a model-name guess: Ollama's saved endpoint reports `vision` through `/api/show`; OpenAI-compatible model lists report `image` in the selected model's `architecture.input_modalities` or `input_modalities`. Missing metadata is unsupported, not a silent fallback. This initially covers Ollama and compatible services such as OpenRouter that publish modality metadata; other integrations remain available for rewriting. The caption choice never changes the Writer.
+
+Generate sends only an instruction and a renderer-decoded, metadata-free PNG, at most 2,048 pixels on either edge and 5 MiB. The main process validates those limits again and constructs only the provider's image request. It never sends note text, names, paths, other assets or location metadata, uploads a public URL, starts a model or adds a destination. Capability checks contact only the person's saved integration.
+
+The dialog retains the image and existing caption. Stop cancels its own bounded AI stream, not a rewrite. The editable plain-text result is applied only after rechecking source bytes and the mapped immutable image node; changed, replaced or deleted images retain the result for copying and require reopening before regeneration. Use caption is one ordinary Undo edit and never changes the description. Capability and generation errors have explicit retry/manual recovery.
+
+**References:** [Ollama model details](https://docs.ollama.com/api-reference/show-model-details.md), [OpenRouter model modalities](https://openrouter.ai/docs/api/api-reference/models/list-all-models-and-their-properties.md).
+
+**Affects:** [Auto caption](../experience/images.md#auto-caption-using-ai), [Writing Help](../help/write.md#write-an-image-caption-with-ai), [caption waits](../architecture/perceived-performance.md#other-image-waits-planned), WP-9.5.
+
 ## D-370: image clipboard and Save image never disclose the source location
 
 **Decided (implementation, 6 November 2026; IMG-03, IMG-11).** Copy/Cut writes decoded pixels plus an HTML data image containing escaped description and caption, with no asset path. Ancillary location/camera metadata is stripped using the existing public-image sanitizer. Cut and Replace track the captured image through editor transactions; deleted targets are refused, never redirected to another image with the same source. Replacement imports exactly one new managed file and keeps the current words and display choices.

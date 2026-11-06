@@ -17261,6 +17261,19 @@
             "data": "text"
           }
         },
+        "imageCaptionPrepared": {
+          "payload": {
+            "request": "text",
+            "data": "text",
+            "error": "text"
+          }
+        },
+        "imageCaptionApplied": {
+          "payload": {
+            "request": "text",
+            "accepted": "boolean"
+          }
+        },
         "imageEditError": {},
         "imageImport": {
           "payload": {
