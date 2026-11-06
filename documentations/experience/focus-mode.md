@@ -3,7 +3,7 @@
 Focus mode keeps the paragraph you are writing at full strength and dims everything else. It is one of the two signature features, and it is the only concept carried over from the earlier [`markdown-focus-editor`](https://github.com/prabinpebam/markdown-focus-editor) project.
 
 > [!NOTE]
-> **TL;DR.** The focus unit is the **whole current paragraph**, including wrapped lines and hard breaks (owner, 29 October, D-232). A full-width mask leaves that paragraph at 100% and subdues the rest of the canvas to 30%. Moving between lines in the same paragraph leaves its band unchanged; moving to another paragraph moves the band. Selections cover complete endpoint paragraphs and everything between them. Covers FOC-01 to FOC-06 in the [requirements](../product/requirements.md).
+> **TL;DR.** The focus unit is the **whole current paragraph**, including wrapped lines and hard breaks (owner, 29 October, D-232), or the **entire table** when the caret is inside one (owner, 6 November, OFB.35). A full-width mask leaves that block at 100% and subdues the rest of the canvas to 30%. Moving within the same paragraph or table leaves its band unchanged; moving to another block moves the band. Selections cover complete endpoint blocks and everything between them. Covers FOC-01 to FOC-06 in the [requirements](../product/requirements.md).
 
 <figure class="slate-figure">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" role="img" aria-labelledby="focus-title focus-desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport">
@@ -56,6 +56,7 @@ The seed spec and reference implementation use a visual row. The owner changed t
 | --- | --- | --- |
 | Visual row (wrapped line) | No | The earlier behavior, superseded by D-232. |
 | Paragraph or text block | **Yes** | Keeps the whole passage being written bright, even when it wraps. |
+| Entire table | **Yes, inside a table** | Owner, 6 November: "Focus mode for table should focus the entire table. No sub highlighting within table." ([OFB.35](../plan/definition-of-done.md#owner-feedback-batch-6-november-ofb)) |
 | Sentence | No | The reference project's docs mentioned it, but its code never implemented it. It would need language-aware segmentation. |
 
 ## Visual treatment
@@ -71,7 +72,7 @@ The seed spec and reference implementation use a visual row. The owner changed t
 Only the selection's endpoint blocks are measured; there is no walk through the document's text nodes.
 
 1. **Resolve** the selection's start and end through the editor's `domAtPos`.
-2. **Find the nearest text block** around each endpoint: a paragraph, heading or code block. A paragraph inside a list, quote or table wins over its outer container.
+2. **Find the containing table first** around each endpoint. Outside a table, find the nearest text block: a paragraph, heading or code block. A paragraph inside a list, quote or callout still wins over its outer container; code blocks remain whole.
 3. **Measure** those blocks with `getBoundingClientRect()`, including empty paragraphs. Use the outermost top and bottom when the selection spans blocks.
 4. **Write** the edges into the mask in *content* coordinates relative to the column, so scrolling moves the band with the text and doesn't trigger a recompute.
 
@@ -100,7 +101,7 @@ All triggers mark the band as stale, and one `requestAnimationFrame` callback ba
 | **Empty document or empty paragraph** | The band covers the empty paragraph's line-height. The placeholder text stays subdued. |
 | **Headings** | The whole heading stays bright, including wrapped lines. |
 | **Lists and quotes** | The containing paragraph stays bright, not the entire list or quote. Bullets and quote bars at the same height show because the mask covers the full width. |
-| **Tables** | The containing paragraph inside the cell stays bright. The full-width band also shows neighboring cells' content at the same height, as before. |
+| **Tables** | The entire table stays bright, including every header, row and cell. Moving between cells leaves the band unchanged; no internal row or cell focus highlighting or dimming is added. |
 | **Code blocks** | The whole code block stays bright, including source lines and wrapped lines. |
 | **Future components (image, gallery)** | A selected component counts as a single row, and the whole component is shown at full strength. |
 | **Editor loses focus to a toolbar panel** | The band stays at the last caret position. Panels open above the canvas. |

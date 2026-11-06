@@ -7,12 +7,12 @@ import type { Editor } from "@tiptap/react";
 const BLOCKS = "p, h1, h2, h3, h4, h5, h6, li, pre, td, th, blockquote";
 const varName = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
 
-/** The containing paragraph or text block, in viewport coordinates (D-232). */
+/** The containing table, or nearest text block outside a table, in viewport coordinates. */
 function blockBoxAt(editor: Editor, pos: number): { top: number; bottom: number; block: Element } {
   const view = editor.view;
   const at = view.domAtPos(pos).node;
   const el = (at.nodeType === Node.ELEMENT_NODE ? (at as Element) : at.parentElement) ?? view.dom;
-  const block = el.closest(BLOCKS) ?? el;
+  const block = el.closest("table") ?? el.closest(BLOCKS) ?? el;
   const { top, bottom } = block.getBoundingClientRect();
   return { top, bottom, block };
 }

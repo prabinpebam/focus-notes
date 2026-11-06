@@ -52,7 +52,6 @@ it.each([
   ["heading", "# A heading that wraps"],
   ["list paragraph", "- First item\n- Second item"],
   ["quote paragraph", "> First paragraph\n>\n> Second paragraph"],
-  ["table cell paragraph", "| First | Second |\n| --- | --- |\n| One | Two |"],
   ["code block", "```\nfirst line\nsecond line\n```"],
   ["empty paragraph", ""],
 ])("covers the whole %s, not just the caret's line", (_name, markdown) => {
@@ -60,6 +59,26 @@ it.each([
   editor.commands.setTextSelection(blocks[0]!.pos);
   flush();
   expect(band()).toEqual(["80px", "152px"]);
+});
+
+it("OFB.35: every table cell focuses the whole table without measuring its rows or paragraphs", () => {
+  const { editor, column, blocks, flush, band } = setup("Before.\n\n| First | Second |\n| --- | --- |\n| One | Two |\n\nAfter.");
+  const table = column.querySelector("table")!;
+  const tableBox = vi.spyOn(table, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 200, 400, 300));
+  const rows = [...table.querySelectorAll("tr, td, th")].map(el => vi.spyOn(el, "getBoundingClientRect"));
+  const cells = blocks.filter(block => table.contains(block.el));
+  expect(cells).toHaveLength(4);
+  for (const cell of cells) {
+    editor.commands.setTextSelection(cell.pos);
+    flush();
+    expect(band()).toEqual(["180px", "480px"]);
+  }
+  expect(tableBox).toHaveBeenCalledTimes(4);
+  for (const cell of cells) expect(cell.measure).not.toHaveBeenCalled();
+  for (const row of rows) expect(row).not.toHaveBeenCalled();
+  editor.commands.setTextSelection(blocks.at(-1)!.pos);
+  flush();
+  expect(band()).toEqual(["580px", "652px"]);
 });
 
 it("keeps the same band within a paragraph and moves it to the next paragraph", () => {

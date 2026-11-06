@@ -163,6 +163,54 @@ test("FOC-03: focus mode toggles with the shortcut and survives a restart", asyn
   await quit(again);
 });
 
+test("OFB.35: the whole table stays undimmed in every cell and outside text stays dimmed", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Table focus\n\nBefore the table.\n\n| First | Second |\n| --- | --- |\n| One | Two |\n| Three | Four |\n\nAfter the table.\n");
+  const l = await launch(dirs);
+  try {
+    const editor = l.page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toBeFocused();
+    await expect(l.page.locator("[data-focus-mode=on]")).toBeVisible();
+    const cells = editor.locator("td, th");
+    await expect(cells).toHaveCount(6);
+    const measure = () => l.page.evaluate(() => {
+      const column = document.querySelector<HTMLElement>("[data-focus-mode=on]")!;
+      const table = column.querySelector("table")!;
+      const origin = column.getBoundingClientRect().top;
+      const props = [...Array(column.style.length)].map((_, i) => column.style[i]!).filter(p => p.startsWith("--"));
+      const edges = props.map(p => parseFloat(getComputedStyle(column).getPropertyValue(p)));
+      const top = Math.min(...edges), bottom = Math.max(...edges);
+      const mask = getComputedStyle(column).maskImage;
+      const alpha = mask.match(/(?:\/\s*|,\s*)(0?\.\d+)\s*\)/);
+      if (!alpha) throw new Error(`Missing computed dim alpha in focus mask: ${mask}`);
+      const strength = (el: Element) => {
+        const rect = el.getBoundingClientRect();
+        const y = (rect.top + rect.bottom) / 2 - origin;
+        return Number(getComputedStyle(el).opacity) * (y >= top && y <= bottom ? 1 : Number(alpha[1]));
+      };
+      const rect = table.getBoundingClientRect();
+      return {
+        off: Math.max(Math.abs(top - (rect.top - origin)), Math.abs(bottom - (rect.bottom - origin))),
+        cells: [...table.querySelectorAll("td, th")].map(strength),
+        outside: [...column.querySelectorAll(".tiptap > p")].map(strength),
+        mask,
+      };
+    });
+    for (let i = 0; i < 6; i++) {
+      await cells.nth(i).locator("p").click();
+      await expect.poll(async () => (await measure()).off).toBeLessThanOrEqual(1);
+      const result = await measure();
+      expect(result.mask).toContain("linear-gradient");
+      expect(result.cells).toEqual([1, 1, 1, 1, 1, 1]);
+      expect(result.outside).toHaveLength(2);
+      for (const opacity of result.outside) expect(opacity).toBeGreaterThan(0);
+      for (const opacity of result.outside) expect(opacity).toBeLessThan(1);
+    }
+  } finally {
+    await quit(l);
+  }
+});
+
 test("FOC-04: with reduced motion the band moves instantly", async () => {
   const l = await launch(tempDirs());
   await l.page.emulateMedia({ reducedMotion: "reduce" });
