@@ -22,6 +22,7 @@ function appFor(platform: Platform) {
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
     toggleFullScreen: () => {},
+    openLink: () => {},
   };
   return createApp(bridge, en);
 }
@@ -64,7 +65,9 @@ describe("the toolbar (UI-04, UI-07)", () => {
     const byId = new Map(flat(vmOf(app)).map((i) => [i.id, i]));
     expect(byId.get("note.share")).toMatchObject({ label: "Share…", disabled: true, reason: "Sharing is in the desktop app's Settings" });
     expect(byId.get("settings.open")).toMatchObject({ label: "Settings…", disabled: true, reason: "Settings manage your GitHub account, so they're in the desktop app", shortcut: "⌘," });
-    expect(byId.get("help.open")).toMatchObject({ label: "Help and docs", disabled: true, reason: "Help and docs arrive in a later preview" });
+    expect(byId.get("help.open")).toMatchObject({ label: "Help and docs" });
+    expect(byId.get("help.open")?.disabled).not.toBe(true);
+    expect(byId.get("help.open")?.reason).toBeUndefined();
     // Running one does nothing (and never throws), so the menu can stay open on it.
     const before = app.store.state;
     await app.commands.run("settings.open");

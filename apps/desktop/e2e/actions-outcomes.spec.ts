@@ -43,6 +43,19 @@ const captureClipboard = async ({ app }: Launched) => {
   });
 };
 const outcomes: Record<string, Outcome> = {
+  "help.open": {
+    prepare: async ({ app }) => {
+      await app.evaluate(({ shell }) => {
+        Reflect.set(globalThis, "mactHelpUrl", "");
+        shell.openExternal = async (url: string) => { Reflect.set(globalThis, "mactHelpUrl", url); };
+      });
+    },
+    check: async ({ app, page }, docs) => {
+      await expect.poll(() => app.evaluate(() => Reflect.get(globalThis, "mactHelpUrl"))).toBe("https://prabinpebam.github.io/focus-notes/documentations/#help/index.md");
+      await expect(editor(page)).toContainText("Native outcome proof.");
+      expect(readFileSync(join(docs, "private", "notes", "welcome.md"), "utf8")).toBe("# Welcome\n\n## Scope\n\nNative outcome proof.\n");
+    },
+  },
   "settings.open": destination("Settings"),
   "shortcuts.open": destination("Keyboard shortcuts"),
   "toolbar.customize": destination("Customize toolbar"),
