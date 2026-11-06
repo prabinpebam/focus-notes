@@ -56,6 +56,8 @@ The final focused repair gate passes 149 units across importer/metadata, image/c
 
 Local repair evidence: seven busy-policy units, `pnpm check`, UI-runtime and desktop typechecks, desktop/web builds, 26 related native passes (including four final light/dark Close-tooltip and small-window inset journeys), and four headless web quality/inset passes. The wrapped-toolbar inset probe measures its layout frame rather than its ragged last row, with a broken-edge-padding fixture that still fails. First-run native light/dark frames and small-window conflict/Recently deleted journeys also passed locally after their gate failures; that does not make the old CI green. The three pending OFB rows remain awaiting a new exact-head green gate, main and Preview.
 
+The next exact-head run, 42131237086 on `0147c5e4`, passed all four Windows journey shards but failed one of 3,001 unit cases: FileTree's old pin test still required toggle-button semantics. The unit now verifies the named Pin and Unpin actions dispatch the correct target in both directions without selecting, opening or expanding the row, and asserts neither action exposes `aria-pressed`. This test-only correction does not change the already-tested runtime; the failed run is still not a green landing gate.
+
 ### Actions (MACT), 6 November
 
 The reserved head `6dc31044` failed exact-head run `42121409521`: the bench still queried the old dialog name, the history and GitHub-opener journeys exposed a provisional Create selection surviving the second search stage, and the newly landed Insert table command was omitted from the allow-list. The replacement candidate fixes these causes; the red run is not acceptance.
