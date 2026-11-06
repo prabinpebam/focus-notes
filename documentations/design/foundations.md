@@ -160,6 +160,8 @@ The editor and published pages use the same tokens. A unit test (`packages/ui/te
 
 **Switch labels (D-367):** the Switch owns a positive `cmp.switch.gap`, aliasing `space.inlineItem` (8 px by default), between its track and label. Its description stays with the label. Disabled On keeps the real accent track and on-colour thumb, faded together with its words; disabled Off keeps the real off colours. Settings → Agents' four dependent rows retain "Turn on Agents can connect first" while the parent is Off.
 
+**Windows forced-colors menus:** disabled menu labels and shortcuts use the system's GrayText through `cmp.menuButton.forcedDisabledText`, only while `forced-colors: active` (D-204). The normal-theme disabled fade remains unchanged. The style guard allows only this forced-colors token exception; the native journey keeps its GrayText assertions.
+
 <h2 data-reader-personas="design">Motion</h2>
 
 | Token | Duration | Easing | Used for |

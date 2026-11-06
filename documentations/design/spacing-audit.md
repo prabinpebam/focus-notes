@@ -211,6 +211,10 @@ No outer padding is restored to a functional scroll frame, and no per-view exemp
 
 With `FOCUS_NOTES_E2E=1`, the UI-09, compact Settings keyboard/footer, and SP-14 journeys passed, as did both affected-surface VQ themes using `VQ_ONLY` for Files, Spotlight, Settings, Theme and feedback. The full Settings focus-ring pass succeeded **three times** at both sizes after its resize callback returned and asserted the actual `[480, 360]` bounds instead of leaving an undefined Electron evaluation result. All app runs ended with PID-scoped cleanup. These are low-risk UI anatomy and measurement changes under D-255, not main-process, preload, IPC, saving, or network changes; no full-suite or CI wait was added.
 
+## Find option groups after the 6 November Switch gap correction
+
+The exact-head Windows gate `42172677903` found an S2 grouping regression in Find/Replace: the four option Switches were 8 px apart, equal to each Switch's corrected 8 px track-label gap. The shared `canvas` view's option `Inline` now uses `space.inlineGroup` (16 px), so each track-label pair remains tighter than neighbouring options. No primitive, spacing token, audit threshold or exclusion changes.
+
 ## Not fixed, and why
 
 Each is excluded by name in the enforcing journey (`EXCLUDED`) or the lint (`EXEMPT`), with its reason:

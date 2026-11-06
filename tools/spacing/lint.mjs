@@ -38,10 +38,22 @@ export const EXEMPT = [
 
 export function disabledPaintErrors(css) {
   const errors = [];
+  const forced = [...css.matchAll(/@media[^{]*\(forced-colors:\s*active\)[^{]*\{/g)].map(media => {
+    let end = media.index + media[0].length;
+    let depth = 1;
+    while (end < css.length && depth) {
+      if (css[end] === "{") depth++;
+      if (css[end] === "}") depth--;
+      end++;
+    }
+    return { start: media.index, end };
+  });
   for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const selector = match[1].replace(/:not\([^)]*\)/g, "");
     if (!/\[data-disabled\]|\[aria-disabled=["']?true["']?\]|:disabled\b/.test(selector)) continue;
     for (const declaration of match[2].split(";")) {
+      if (/^\s*color:\s*var\(--fn-cmp-menu-button-forced-disabled-text\)\s*$/.test(declaration) &&
+        forced.some(range => match.index >= range.start && match.index < range.end)) continue;
       if (/^\s*(?:color|background(?:-color|-image)?|border(?:-[\w-]+)?-color|fill|stroke)\s*:/.test(declaration))
         errors.push(`disabled recolour: use the disabled opacity, preserving the enabled colours: ${declaration.trim()}`);
     }

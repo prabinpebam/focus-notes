@@ -80,6 +80,11 @@
         "$value": "{color.onSelection}",
         "$description": "The focused item's text in forced colors (HighlightText)."
       },
+      "forcedDisabledText": {
+        "$type": "color",
+        "$value": "{color.textDisabled}",
+        "$description": "Disabled menu text in forced colors only (GrayText), preserving the system's unavailable-item signal."
+      },
       "pressed": {
         "$type": "color",
         "$value": "{color.pressed}"

@@ -698,7 +698,7 @@
                               "false": {
                                 "type": "Inline",
                                 "props": {
-                                  "gap": "inlineItem",
+                                  "gap": "inlineGroup",
                                   "wrap": true
                                 },
                                 "children": [

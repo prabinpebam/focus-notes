@@ -52,7 +52,10 @@ export const item = style({
     '&[data-disabled], &[aria-disabled="true"]:not([aria-busy="true"])': { opacity: t.disabledOpacity },
   },
   // Forced colors: the focused item in the system's highlight, as a system menu shows it (D-204).
-  "@media": { "(forced-colors: active)": { selectors: { "&[data-focused]": { backgroundColor: t.forcedFocused, color: t.forcedFocusedText, forcedColorAdjust: "none" } } } },
+  "@media": { "(forced-colors: active)": { selectors: {
+    "&[data-focused]": { backgroundColor: t.forcedFocused, color: t.forcedFocusedText, forcedColorAdjust: "none" },
+    '&[data-disabled], &[aria-disabled="true"]:not([aria-busy="true"])': { color: t.forcedDisabledText, forcedColorAdjust: "none" },
+  } } },
 });
 
 export const label = style({ flexGrow: 1, display: "flex", flexDirection: "column" });
@@ -63,7 +66,10 @@ export const check = style({ width: t.captionSize, display: "inline-flex", justi
 // In forced colors, a focused shortcut shares its label's highlight text (D-204).
 export const shortcut = style({
   color: t.textMuted, fontSize: t.captionSize, fontFamily: t.font,
-  "@media": { "(forced-colors: active)": { selectors: { [`${item}[data-focused] &`]: { color: t.forcedFocusedText } } } },
+  "@media": { "(forced-colors: active)": { selectors: {
+    [`${item}[data-focused] &`]: { color: t.forcedFocusedText },
+    [`${item}[data-disabled] &, ${item}[aria-disabled="true"]:not([aria-busy="true"]) &`]: { color: t.forcedDisabledText, forcedColorAdjust: "none" },
+  } } },
 });
 // Its space is its own padding, the line on its content box (spacing SP-9).
 export const separator = style({ height: t.separatorWidth, boxSizing: "content-box", paddingBlock: t.separatorSpace, backgroundColor: t.separator, backgroundClip: "content-box" });

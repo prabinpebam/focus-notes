@@ -180,6 +180,10 @@ describe("D-354: buttons own their padding and paint in every state", () => {
     expect(disabledPaintErrors('.control:disabled { fill: red; }')).toHaveLength(1);
     expect(disabledPaintErrors('.control[data-disabled] { opacity: var(--fn-opacity-disabled); }')).toEqual([]);
     expect(disabledPaintErrors('.control[data-hovered]:not([aria-disabled="true"]) { background-color: red; }')).toEqual([]);
+    expect(disabledPaintErrors('@media (forced-colors: active) { .control[data-disabled] { color: var(--fn-cmp-menu-button-forced-disabled-text); } }')).toEqual([]);
+    expect(disabledPaintErrors('.control[data-disabled] { color: var(--fn-cmp-menu-button-forced-disabled-text); }')).toHaveLength(1);
+    expect(disabledPaintErrors('@media (forced-colors: active) { .control[data-disabled] { color: red; } }')).toHaveLength(1);
+    expect(disabledPaintErrors('@media (forced-colors: active) { .control[data-disabled] { color: var(--fn-cmp-menu-button-forced-disabled-text); } } .control[data-disabled] { color: var(--fn-cmp-menu-button-forced-disabled-text); }')).toHaveLength(1);
   });
 
   it("rejects deliberately broken zero/literal padding, state drift and an offset hover layer", async () => {
