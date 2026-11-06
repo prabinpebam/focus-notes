@@ -6,7 +6,7 @@ import { opErrorCode } from "./bridge.ts";
 export function registerImageCaption(ctx: ImagesContext): void {
   const { store, bridge, catalog, commands, viewModels, tracker } = ctx;
   let open = false, loading = false, writing = false, applying = false, stale = false;
-  let instruction = catalog.format("image.ai.prompt"), result = "", error = "", integration = "", preview = "";
+  let instruction = "", result = "", error = "", integration = "", preview = "";
   let connections: AiConnectionView[] = [];
   let sequence = 0;
   let target: { request: string; key: string; note: string; pos: number; src: string; version: string } | undefined;

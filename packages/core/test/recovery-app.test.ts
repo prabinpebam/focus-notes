@@ -37,6 +37,15 @@ const messages = {
 };
 afterEach(() => vi.useRealTimers());
 
+it("registers optional image caption commands without translating an unopened dialog at startup", async () => {
+  const f = fakeBridge();
+  const app = createApp(f.bridge, messages);
+  expect(app.commands.has("image.ai")).toBe(true);
+  await app.start();
+  expect(app.store.state.note.markdown).toBe("# Welcome\n");
+  expect(f.writes).toEqual([]);
+});
+
 describe("QLT-03: unsaved text kept for recovery, from the app", () => {
   it("gets unsaved text at once, then every JOURNAL_INTERVAL_MS while typing goes on, and never saved text", async () => {
     vi.useFakeTimers();
