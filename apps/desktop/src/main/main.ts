@@ -17,6 +17,7 @@ import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/a
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { cliArgv, isStoreBuild, storeAliasPath } from "./store-build.ts";
+import { appIdentity, carryPreviewProfile } from "./app-identity.ts";
 import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
@@ -89,7 +90,26 @@ const platform = process.platform === "darwin" ? "macos" : process.platform === 
 const frameKind = frameKindFor(platform, process.argv, process.env);
 let windowFrame: AppWindowFrame | undefined;
 
-if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
+const identity = appIdentity({
+  store: isStoreBuild(), packaged: app.isPackaged, executable: process.execPath,
+  defaultUserData: app.getPath("userData"), userData: process.env.FOCUS_NOTES_USER_DATA,
+  channel: process.env.FOCUS_NOTES_CHANNEL,
+});
+if (identity.legacyUserData) {
+  try {
+    await carryPreviewProfile(identity.legacyUserData, identity.userData);
+  } catch (error) {
+    console.error("Could not carry over the Preview profile; the original is unchanged.", error);
+    app.exit(1);
+    throw error;
+  }
+}
+if (identity.channel !== "stable") {
+  app.setName(identity.name);
+  if (process.platform === "win32") app.setAppUserModelId(identity.appId);
+  process.env.FOCUS_NOTES_CHANNEL = identity.channel;
+}
+app.setPath("userData", identity.userData);
 if (!process.env.FOCUS_NOTES_PROJECTS_PROFILE && !process.env.FOCUS_NOTES_PROJECT_NOTE) {
   const rootProfile = app.getPath("userData");
   const resume = resumeProjectProfile(rootProfile);
@@ -2813,7 +2833,7 @@ const linkArrived = (l: DeepLink | undefined) => {
   mainWindow?.webContents.send("deeplink:arrived");
 };
 // The Store's package declares the scheme in its manifest, and its folder moves with each version (D-202).
-if (app.isPackaged && !journey && primary && !storeBuild) app.setAsDefaultProtocolClient("focus-notes");
+if (app.isPackaged && !journey && primary && !storeBuild && identity.channel === "stable") app.setAsDefaultProtocolClient("focus-notes");
 app.on("open-url", (e, url) => {
   e.preventDefault();
   linkArrived(parseDeepLink(url));
