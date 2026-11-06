@@ -47,12 +47,13 @@ export function MorphPanel({ label, open = false, trigger, content, onOpenChange
     return () => ro.disconnect();
   }, []);
 
+  useLayoutEffect(() => {
+    if (!open || preview) return;
+    body.current?.querySelector<HTMLElement>('[tabindex="0"]:not([aria-disabled="true"]), button:not([aria-disabled="true"]):not([tabindex="-1"])')?.focus();
+  }, [open, preview]);
+
   useEffect(() => {
     if (!open || preview) return;
-    // Focus moves to the first action once the content can take it (Main UI → Behavior).
-    const id = requestAnimationFrame(() => {
-      body.current?.querySelector<HTMLElement>('[tabindex="0"]:not([aria-disabled="true"]), button:not([aria-disabled="true"]):not([tabindex="-1"])')?.focus();
-    });
     const inside = (n: EventTarget | null) => n instanceof Node && (root.current?.contains(n) || (n instanceof Element && n.closest(`[${FLOATING_CHILD}]`)));
     const onEscape = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || !(e.target instanceof Node) || !root.current?.contains(e.target)) return;
@@ -66,7 +67,6 @@ export function MorphPanel({ label, open = false, trigger, content, onOpenChange
     window.addEventListener("keydown", onEscape, true);
     document.addEventListener("pointerdown", onPointer, true);
     return () => {
-      cancelAnimationFrame(id);
       window.removeEventListener("keydown", onEscape, true);
       document.removeEventListener("pointerdown", onPointer, true);
     };
