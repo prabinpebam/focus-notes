@@ -443,6 +443,53 @@ describe("SPT-04: states, the empty field, and no match", () => {
     expect(asked).not.toHaveBeenCalled();
   });
 
+  it("keeps a quick-actions target through late search replies and index changes until Back", async () => {
+    const { app } = await started(desktop(), { search: false });
+    const hit: SearchHit = {
+      kind: "note", key: `${PUB}/essays/on-focus.md`, path: `${PUB}/essays/on-focus.md`,
+      label: "On focus", highlights: [], tier: "prefix", score: 1, root: "public",
+    };
+    const listeners = new Set<(status: IndexStatus) => void>();
+    let status: IndexStatus = { notes: 1, indexed: 1, pending: 0, seq: 1 };
+    let hold = false;
+    let reply: ((hits: SearchHit[]) => void) | undefined;
+    const service: SearchService = {
+      query: async query => ({
+        query, hits: hold ? await new Promise<SearchHit[]>(resolve => { reply = resolve; }) : [hit], ms: 0,
+      }),
+      find: async () => { throw new Error("not asked"); },
+      status: () => status,
+      onStatus: listener => { listeners.add(listener); return () => listeners.delete(listener); },
+      setItems: () => {},
+      whenIndexed: async () => status,
+      stop: () => {},
+    };
+    app.useSearch(service);
+    await app.commands.run("spotlight.quickOpen");
+    await type(app, "focus");
+    hold = true;
+    status = { ...status, indexed: 2, notes: 2, seq: 2 };
+    for (const listener of listeners) listener(status);
+    await vi.waitFor(() => expect(reply).toBeDefined());
+    await app.commands.run("spotlight.actions");
+    expect(vm(app).actionsTitle).toBe("More actions for “On focus”");
+    reply!([]);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(vm(app).actionsTitle).toBe("More actions for “On focus”");
+    expect(vm(app).items.map(item => item.label)).toContain("Move to…");
+    const query = vi.spyOn(service, "query");
+    status = { ...status, indexed: 3, notes: 3, seq: 3 };
+    for (const listener of listeners) listener(status);
+    await new Promise(resolve => setTimeout(resolve, 400));
+    expect(query).not.toHaveBeenCalled();
+    expect(vm(app).actionsTitle).toBe("More actions for “On focus”");
+    hold = false;
+    await app.commands.run("spotlight.back");
+    await vi.waitFor(() => expect(query).toHaveBeenCalled());
+    expect(sp(app).actions).toBeUndefined();
+    await app.commands.run("spotlight.setOpen", { open: false });
+  });
+
   it("no match offers Create note, which makes a note named after the query, and Find in all notes, which searches for it", async () => {
     const { app, files } = await started();
     await app.commands.run("spotlight.open");

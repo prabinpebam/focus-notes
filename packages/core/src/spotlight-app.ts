@@ -302,7 +302,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       return placeActions(s.mode === "all" || s.mode === "notes" ? contentRows(rows) : rows, s.mode === "commands");
     };
     const keep = follow && selectedByUser;
-    if (!s.open) return;
+    if (!s.open || s.actions) return;
     const my = ++seq;
     if (s.mode === "help") return setRows(helpRows(s.query), false, false);
     if (s.mode === "headings" && !s.everywhere) return setRows(localHeadings(s.query), false, false);
@@ -473,14 +473,20 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   const showActions = () => {
     const row = activeRow();
     if (!row || !actionsOf(row.kind) || sp().fromLink) return;
-    set({ actions: { row: row.id, activeId: actionList(row).find((a) => a.available)?.id ?? "" } });
+    // Keep the submenu's target stable until Back, including replies already in flight.
+    seq++;
+    selectedByUser = true;
+    set({ busy: false, actions: { row: row.id, activeId: actionList(row).find((a) => a.available)?.id ?? "" } });
   };
   commands.register({ id: "spotlight.actions", title: "command.spotlight.actions", shortcut: { default: "Mod+K", handledBy: field, whenEnabled: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
   // → does the same at the end of the field's text; elsewhere it still moves the caret (D-109).
   commands.register({ id: "spotlight.actionsRight", title: "command.spotlight.actionsRight", shortcut: { default: "Right", handledBy: field, whenEnabled: true, atFieldEnd: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
   commands.register({
     id: "spotlight.back", title: "command.spotlight.back", shortcut: { default: "Left", alternates: { default: ["Escape"] }, handledBy: field, whenEnabled: true }, layer: "power", group: "spotlight",
-    enabled: (s) => Boolean(s.ui.spotlight.actions), run: () => set({ actions: undefined }),
+    enabled: (s) => Boolean(s.ui.spotlight.actions), run: () => {
+      set({ actions: undefined });
+      void refresh(true);
+    },
   });
   commands.register({
     id: "spotlight.all", title: "command.spotlight.all", shortcut: { default: "Backspace", handledBy: field, whenEnabled: true }, layer: "power", group: "spotlight",

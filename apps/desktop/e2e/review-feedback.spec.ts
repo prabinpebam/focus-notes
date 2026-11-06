@@ -605,12 +605,13 @@ test("menu explanations are accessible descriptions and hover or focus tooltips 
     await l.page.mouse.up();
     await expect(menu).toBeVisible();
 
-    // The menu's last disabled item, where the tooltip has the least room, and an enabled item with no reason.
+    // Help is now available; it must not retain the old planned-feature reason or tooltip.
     const help = l.page.getByRole("menuitem", { name: "Help and docs", exact: true });
-    const helpTip = l.page.getByRole("tooltip", { name: "Help and docs arrive in a later preview", exact: true });
+    await expect(help).not.toHaveAttribute("aria-disabled", "true");
+    await expect(help).toHaveAccessibleDescription("");
     await rest(help);
-    await expect(helpTip).toBeVisible();
-    expect(await paintedOnTop(helpTip)).toEqual({ opacity: "1", covered: [] });
+    await l.page.waitForTimeout(700);
+    await expect(l.page.getByRole("tooltip")).toHaveCount(0);
     await expect(tip).toHaveCount(0);
     await rest(l.page.getByRole("menuitem", { name: /^Settings…/ }));
     await l.page.waitForTimeout(700);

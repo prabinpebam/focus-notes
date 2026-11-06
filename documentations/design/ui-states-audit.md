@@ -143,10 +143,10 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 12a158e779e1-1 | catalog.format("paste.imagesLeftOut") | packages/core/src/slash.ts:143 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 0b3ece652939-1 | catalog.format(key, args) | packages/core/src/slash.ts:149 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 88dc1e6063a2-1 | catalog.format("paste.lineBreaks") | packages/core/src/slash.ts:152 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 7284eb7be408-1 | done | packages/core/src/spotlight-app.ts:641 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 49ed82fdadc3-1 | msg("spotlight.copyFailed") | packages/core/src/spotlight-app.ts:643 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| cabf6a6b3513-1 | msg("actions.contentMissing") | packages/core/src/spotlight-app.ts:653 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 18541b7ebc54-1 | msg("actions.stale") | packages/core/src/spotlight-app.ts:667 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 7284eb7be408-1 | done | packages/core/src/spotlight-app.ts:647 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 49ed82fdadc3-1 | msg("spotlight.copyFailed") | packages/core/src/spotlight-app.ts:649 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| cabf6a6b3513-1 | msg("actions.contentMissing") | packages/core/src/spotlight-app.ts:659 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 18541b7ebc54-1 | msg("actions.stale") | packages/core/src/spotlight-app.ts:673 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 91c87aa45309-1 | describe(problem) | packages/core/src/sync-app.ts:87 | must-read | recovery-decision: Conflicting versions need the person's recovery choice. | action(problem) |
 | 6858f3328871-1 | catalog.format(format === "tsv" ? "table.copied.tsv" : "table.copied.markdown") | packages/core/src/table.ts:134 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 046fc9d0f656-1 | catalog.format("table.copyFailed") | packages/core/src/table.ts:136 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
