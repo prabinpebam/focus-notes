@@ -19,7 +19,8 @@ export async function localNoteImages(text: string, note: string, boundary: stri
   const canonical = await realpath(boundary);
   const images: { start: number; end: number; path: string; canonicalPath: string; suffix: string; index: number }[] = [];
   for (const [index, destination] of imageDestinations(text).entries()) {
-    const written = text.slice(destination.start, destination.end).replace(/\\([!-/:-@[-`{-~])/g, "$1");
+    const raw = text.slice(destination.start, destination.end);
+    const written = (destination.encoding === "component" ? decodeURIComponent(raw) : raw).replace(/\\([!-/:-@[-`{-~])/g, "$1");
     if (/^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i.test(written)) continue;
     const cut = written.search(/[?#]/);
     const path = resolve(dirname(note), decodeURIComponent(cut < 0 ? written : written.slice(0, cut)));

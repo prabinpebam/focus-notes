@@ -26,11 +26,14 @@ test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and U
   mkdirSync(join(dirs.docs, "assets", "images"), { recursive: true });
   mkdirSync(join(notes, "welcome.md.assets", "images"), { recursive: true });
   const pixels = Buffer.from(picture().split(",")[1]!, "base64");
+  const retainedPixels = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0u0AAAAASUVORK5CYII=", "base64");
   const managed = join(dirs.docs, "assets", "images", "p.png");
+  const retained = join(dirs.docs, "assets", "images", "original.png");
   const sidecar = join(notes, "welcome.md.assets", "images", "p.png");
   writeFileSync(managed, pixels);
+  writeFileSync(retained, retainedPixels);
   writeFileSync(sidecar, pixels);
-  const original = '# Illustrated\n\n<!-- image: rounded -->\n![Managed](../assets/images/p.png "Caption")\n\n![Sidecar](welcome.md.assets/images/p.png)\n';
+  const original = '# Illustrated\n\n<!-- image: rounded original=..%2Fassets%2Fimages%2Foriginal.png -->\n![Managed](../assets/images/p.png "Caption")\n\n![Sidecar](welcome.md.assets/images/p.png)\n';
   writeFileSync(join(notes, "welcome.md"), original);
   git(dirs.docs, "init", "-q", "-b", "main");
   configure(dirs.docs);
@@ -57,15 +60,25 @@ test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and U
     const moved = page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Moved “Illustrated” to “Shelf”." });
     await expect(moved).toBeVisible();
     await loaded();
-    const movedText = original.replace("(../assets/", "(../../assets/").replace("(welcome.md.assets/", "(../welcome.md.assets/");
+    const movedText = original.replace("(../assets/", "(../../assets/").replace("(welcome.md.assets/", "(../welcome.md.assets/").replace("original=..%2Fassets", "original=..%2F..%2Fassets");
     expect(readFileSync(join(notes, "Shelf", "welcome.md"), "utf8")).toBe(movedText);
     expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/Shelf/welcome.md"]);
     expect(git(dirs.docs, "status", "--porcelain", "--untracked-files=all")).not.toContain("welcome.md");
+    await images.first().click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Restore original", exact: true }).click();
+    await loaded();
+    await expect.poll(() => images.first().evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
+    await expect.poll(() => readFileSync(join(notes, "Shelf", "welcome.md"), "utf8")).toContain('![Managed](../../assets/images/original.png "Caption")');
+    await editor.press(`${mod}+z`);
+    await loaded();
+    await expect.poll(() => images.first().evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(128);
+    await expect.poll(() => readFileSync(join(notes, "Shelf", "welcome.md"), "utf8")).toBe(movedText);
     await moved.getByRole("button", { name: "Undo", exact: true }).click();
     await expect.poll(() => existsSync(join(notes, "welcome.md"))).toBe(true);
     await loaded();
     expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
     expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/welcome.md"]);
+    if (!await tree.isVisible()) await page.keyboard.press(`${mod}+O`);
     const renamed = page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Renamed to “Renamed”." });
     // The tree may still redraw after Undo and close a just-opened name field; a closed field renames nothing, so try again.
     await expect(async () => {
@@ -84,6 +97,7 @@ test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and U
     expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
     expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/welcome.md"]);
     expect(readFileSync(managed)).toEqual(pixels);
+    expect(readFileSync(retained)).toEqual(retainedPixels);
     expect(readFileSync(sidecar)).toEqual(pixels);
   } finally {
     try { await quit(l); }

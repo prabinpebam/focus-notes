@@ -390,14 +390,14 @@ export function linkDestinations(input: string): LinkDestination[] {
   try {
     const tree = linkProcessor.parse(bom ? input.slice(1) : input);
     const found = foundDestinations.map((d) => ({ ...d, start: d.start + bom, end: d.end + bom }));
-    return [...found, ...originalSources(tree, input, bom)].sort((a, b) => a.start - b.start);
+    return [...found, ...originalSources(tree, bom)].sort((a, b) => a.start - b.start);
   } finally {
     foundDestinations = [];
   }
 }
 
 /** Encoded `original=` values attached to actual images, never comments in code. */
-function originalSources(tree: Md.Root, input: string, bom: number): LinkDestination[] {
+function originalSources(tree: Md.Root, bom: number): LinkDestination[] {
   const out: LinkDestination[] = [];
   for (let i = 0; i < tree.children.length; i++) {
     const child = tree.children[i]!, next = tree.children[i + 1];
@@ -412,7 +412,7 @@ function originalSources(tree: Md.Root, input: string, bom: number): LinkDestina
   return out;
 }
 
-/** Only image destinations, including definitions referenced by images, using the same parser. */
+/** Only image destinations, including retained originals and definitions referenced by images. */
 export function imageDestinations(input: string): LinkDestination[] {
   const bom = input.startsWith("\uFEFF") ? 1 : 0;
   const tree = linkProcessor.parse(bom ? input.slice(1) : input);
@@ -427,8 +427,7 @@ export function imageDestinations(input: string): LinkDestination[] {
   };
   visit(tree);
   const spans = [...images, ...definitions.filter(d => references.has(d.identifier.toUpperCase()))];
-  const originals = originalSources(tree, input, bom);
-  return linkDestinations(input).filter(d => originals.some(o => o.start === d.start) || spans.some(n =>
+  return linkDestinations(input).filter(d => d.encoding === "component" || spans.some(n =>
     n.position?.start.offset !== undefined && n.position.end.offset !== undefined
     && d.start >= n.position.start.offset + bom && d.end <= n.position.end.offset + bom));
 }

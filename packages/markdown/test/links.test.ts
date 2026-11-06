@@ -27,6 +27,7 @@ describe("linkDestinations", () => {
     const src = "\uFEFF<!-- image: rounded original=assets%2Fold%2520photo.png -->\r\n![crop](assets/crop.png)\r\n";
     expect(dests(src)).toEqual([["assets%2Fold%2520photo.png", false], ["assets/crop.png", false]]);
     expect(linkDestinations(src)[0]?.encoding).toBe("component");
+    expect(imageDestinations(src)).toEqual(linkDestinations(src));
     const ignored = "```\n<!-- image: original=code.png -->\n![crop](code.png)\n```\n\n<!-- image: original=unrelated.png -->\n\nText.\n\n<!-- image: original=bad%ZZ -->\n![crop](crop.png)\n";
     expect(dests(ignored)).toEqual([["crop.png", false]]);
   });

@@ -28,6 +28,22 @@ async function setup() {
   return { root, from, to, before, text, image };
 }
 describe("IMG-05 ordered note moves", () => {
+  it("validates retained originals as well as crops without crossing the visibility boundary", async () => {
+    const f = await setup();
+    const original = join(f.root, "a.md.assets", "images", "old photo.png");
+    await writeFile(original, "original bytes");
+    const note = (src: string) => `<!-- image: original=${encodeURIComponent(src)} -->\n![crop](a.md.assets/images/p.png)\n`;
+    await validateNoteImages(note("a.md.assets/images/old%20photo.png"), f.from, f.root);
+    await expect(validateNoteImages(note("a.md.assets/images/missing.png"), f.from, f.root)).rejects.toThrow("missingImage");
+    await expect(validateNoteImages(note("../private/assets/original.png"), f.from, f.root)).rejects.toThrow("invalid");
+    const outside = await mkdtemp(join(tmpdir(), "fn-original-outside-"));
+    folders.push(outside);
+    await writeFile(join(outside, "private.png"), "private");
+    await symlink(outside, join(f.root, "escape"), process.platform === "win32" ? "junction" : "dir");
+    await expect(validateNoteImages(note("escape/private.png"), f.from, f.root)).rejects.toThrow("invalid");
+    expect(await readFile(f.from, "utf8")).toBe(f.before);
+    expect(await readFile(original, "utf8")).toBe("original bytes");
+  });
   it("publishes the fully rewritten destination while retaining the source until commit, and can undo", async () => {
     const f = await setup();
     await validateNoteImages(f.before, f.from, f.root);
