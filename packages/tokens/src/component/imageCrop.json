@@ -1,5 +1,9 @@
 { "cmp": { "imageCrop": {
   "$extensions": { "owner": "ImageCrop" },
+  "stackGap": { "$type": "dimension", "$value": "{space.stackGroup}", "$description": "Space between the crop preview and toolbar." },
+  "feedbackGap": { "$type": "dimension", "$value": "{space.stackPair}", "$description": "Range feedback stays next to its controls." },
+  "toolbarGap": { "$type": "dimension", "$value": "{space.inlineGroup}", "$description": "Separation between transform actions and dimensions." },
+  "controlGap": { "$type": "dimension", "$value": "{space.inlineItem}", "$description": "Space between related toolbar controls." },
   "target": { "$type": "dimension", "$value": "{size.hit}", "$description": "Invisible crop handle target, inside the padded editing stage." },
   "mark": { "$type": "dimension", "$value": "{space.inlineGroup}", "$description": "Visible corner and edge handle size, independent of the target." },
   "inset": { "$type": "dimension", "$value": "{space.insetLg}", "$description": "Space around the source for crop handles and their focus rings." },

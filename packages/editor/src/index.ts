@@ -118,7 +118,7 @@ registerBlock({ name: "image", title: "block.image", markdown: "native", inserta
 
 const InlineImage = Node.create<{ view?: NodeViewRenderer }>({
   name: "image", group: "block", atom: true, selectable: true,
-  addAttributes: () => ({ src: { default: "" }, alt: { default: "" }, title: { default: null }, rounded: { default: false }, fitHeight: { default: true }, mode: { default: "column" }, width: { default: null }, height: { default: null } }),
+  addAttributes: () => ({ src: { default: "" }, originalSrc: { default: null, rendered: false }, alt: { default: "" }, title: { default: null }, rounded: { default: false }, fitHeight: { default: true }, mode: { default: "column" }, width: { default: null }, height: { default: null } }),
   parseHTML: () => [{ tag: "img[src]" }],
   renderHTML: ({ HTMLAttributes }) => ["img", HTMLAttributes],
   addNodeView() { return this.options.view ?? null; },

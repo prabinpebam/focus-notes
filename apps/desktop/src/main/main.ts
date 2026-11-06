@@ -7,6 +7,7 @@
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { importImages, imageInputsFromPaths, type ImageInput } from "./image-import.ts";
+import { createImageCopy } from "./image-edit.ts";
 import { imageClipboard } from "./image-transfer.ts";
 import { copyFile, lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
@@ -1339,6 +1340,27 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!mime) throw new Error("invalid-image");
     return mime;
   };
+  handleFrom("image:createCopy", async (event, path, src, data, expected) => {
+    const note = notePath(path);
+    await assertWritable(note);
+    if (typeof data !== "string" || typeof expected !== "string") throw new Error("invalid-image");
+    const source = await imagePath(note, src), root = imageRoot(note);
+    const result = await createImageCopy(note, root, source, expected, data, async (file, size) => {
+      const encoded = `data:image/png;base64,${(await readFile(file)).toString("base64")}`;
+      const valid = await event.sender.executeJavaScript(`(async () => {
+        const image = new Image(); let timer;
+        try {
+          image.src = ${JSON.stringify(encoded)};
+          await Promise.race([image.decode(), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("invalid-image")), 10000); })]);
+          return image.naturalWidth === ${size.width} && image.naturalHeight === ${size.height};
+        } finally { clearTimeout(timer); image.src = ""; }
+      })()`);
+      if (!valid) throw new Error("invalid-image");
+    }, root !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note));
+    await assertWritable(note);
+    if (isWorkspace()) await (await gitOpening)?.commitBatch(result.paths.map(path => ({ op: "import", path })));
+    return result.image;
+  });
   handle("image:read", async (note, src) => {
     if (typeof src === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(src) && src.length <= 28 * 1024 * 1024) return src;
     const path = await imagePath(note, src);
@@ -1375,19 +1397,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       await rename(temporary, chosen.filePath);
     } finally { await rm(temporary, { force: true }); }
     return true;
-  });
-  handle("image:write", async (note, src, data, expected) => {
-    const path = await imagePath(note, src);
-    const mime = imageMime(path);
-    if (!["image/png", "image/jpeg", "image/webp"].includes(mime) || typeof data !== "string" || !data.startsWith(`data:${mime};base64,`) || data.length > 28 * 1024 * 1024 || typeof expected !== "string") throw new Error("invalid-image");
-    const original = `data:${mime};base64,${(await readFile(path)).toString("base64")}`;
-    if (original !== expected) throw new Error("image-changed");
-    const temp = `${path}.${randomUUID()}.tmp`;
-    try {
-      await writeFile(temp, Buffer.from(data.slice(data.indexOf(",") + 1), "base64"), { flag: "wx" });
-      if (!Buffer.from(expected.slice(expected.indexOf(",") + 1), "base64").equals(await readFile(path))) throw new Error("image-changed");
-      await rename(temp, path);
-    } finally { await rm(temp, { force: true }); }
   });
   const projects = projectWindows(notesHome, async (path, content) => {
     if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");

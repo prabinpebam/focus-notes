@@ -1,21 +1,97 @@
-import {
-  FolderOpen20Regular, HardDrive20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, Desktop20Regular, MoreHorizontal20Regular, MoreVertical20Regular,
-  Search20Regular, Add20Regular, Dismiss20Regular, Checkmark20Regular, DocumentAdd20Regular, TextBold20Regular,
-  TextItalic20Regular, Link20Regular, Subtract20Regular, SquareMultiple20Regular, Square20Regular,
-  FullScreenMaximize20Regular, FullScreenMinimize20Regular, CenterVertical20Regular, TextFont20Regular,
-  Keyboard20Regular, Settings20Regular, Info20Regular, Warning20Regular, ErrorCircle20Regular, ArrowSync20Regular,
-  Delete20Regular, Rename20Regular, Copy20Regular, Folder20Regular, Document20Regular, ChevronRight20Regular,
-  ChevronDown20Regular, ArrowUndo20Regular, ArrowRedo20Regular, Table20Regular, TextQuote20Regular, Code20Regular,
-  TextBulletList20Regular, TextNumberListLtr20Regular, TextHeader120Regular, TextHeader220Regular,
-  TextHeader320Regular, Color20Regular, Share20Regular, History20Regular, TextCaseTitle20Regular, TextWholeWord20Regular,
-  BracesVariable20Regular, ArrowSort20Regular, SelectAllOn20Regular, ReOrderDotsVertical20Regular, ArrowUp20Regular, ArrowDown20Regular, LockClosed20Regular, ArrowExportLtr20Regular,
-  ArrowImport20Regular, TextStrikethrough20Regular, TextT20Regular, TaskListLtr20Regular, LineHorizontal120Regular, FolderAdd20Regular,
-  Cloud20Regular, CloudArrowUp20Regular, CloudCheckmark20Regular, CloudOff20Regular,
-  ArrowDownload20Regular, Circle20Regular, Globe20Regular, CalendarLtr20Regular, ChevronLeft20Regular, Mail20Regular, Pin20Regular, PinOff20Regular,
-  PersonFeedback20Regular, CheckmarkCircle20Regular, Print20Regular,
-  Image20Regular, ImageAdd20Regular, Crop20Regular, ArrowRotateClockwise20Regular, ArrowRotateCounterclockwise20Regular, FlipHorizontal20Regular, FlipVertical20Regular, LockOpen20Regular, WindowNew20Regular, Notepad20Regular,
-  ArrowUpload20Regular, ClosedCaption20Regular, TextDescription20Regular, Sparkle20Regular, DocumentText20Regular, Pin20Filled,
-} from "@fluentui/react-icons";
+import "@fluentui/react-icons/headless/styles.css";
+import { FolderOpen20Regular } from "@fluentui/react-icons/headless/svg/folder-open";
+import { HardDrive20Regular } from "@fluentui/react-icons/headless/svg/hard-drive";
+import { Save20Regular } from "@fluentui/react-icons/headless/svg/save";
+import { WeatherMoon20Regular } from "@fluentui/react-icons/headless/svg/weather-moon";
+import { WeatherSunny20Regular } from "@fluentui/react-icons/headless/svg/weather-sunny";
+import { Desktop20Regular } from "@fluentui/react-icons/headless/svg/desktop";
+import { MoreHorizontal20Regular } from "@fluentui/react-icons/headless/svg/more-horizontal";
+import { MoreVertical20Regular } from "@fluentui/react-icons/headless/svg/more-vertical";
+import { Search20Regular } from "@fluentui/react-icons/headless/svg/search";
+import { Add20Regular } from "@fluentui/react-icons/headless/svg/add";
+import { Dismiss20Regular } from "@fluentui/react-icons/headless/svg/dismiss";
+import { Checkmark20Regular } from "@fluentui/react-icons/headless/svg/checkmark";
+import { DocumentAdd20Regular } from "@fluentui/react-icons/headless/svg/document-add";
+import { TextBold20Regular } from "@fluentui/react-icons/headless/svg/text-bold";
+import { TextItalic20Regular } from "@fluentui/react-icons/headless/svg/text-italic";
+import { Link20Regular } from "@fluentui/react-icons/headless/svg/link";
+import { Subtract20Regular } from "@fluentui/react-icons/headless/svg/subtract";
+import { SquareMultiple20Regular } from "@fluentui/react-icons/headless/svg/square-multiple";
+import { Square20Regular } from "@fluentui/react-icons/headless/svg/square";
+import { FullScreenMaximize20Regular } from "@fluentui/react-icons/headless/svg/full-screen-maximize";
+import { FullScreenMinimize20Regular } from "@fluentui/react-icons/headless/svg/full-screen-minimize";
+import { CenterVertical20Regular } from "@fluentui/react-icons/headless/svg/center-vertical";
+import { TextFont20Regular } from "@fluentui/react-icons/headless/svg/text-font";
+import { Keyboard20Regular } from "@fluentui/react-icons/headless/svg/keyboard";
+import { Settings20Regular } from "@fluentui/react-icons/headless/svg/settings";
+import { Info20Regular } from "@fluentui/react-icons/headless/svg/info";
+import { Warning20Regular } from "@fluentui/react-icons/headless/svg/warning";
+import { ErrorCircle20Regular } from "@fluentui/react-icons/headless/svg/error-circle";
+import { ArrowSync20Regular } from "@fluentui/react-icons/headless/svg/arrow-sync";
+import { Delete20Regular } from "@fluentui/react-icons/headless/svg/delete";
+import { Rename20Regular } from "@fluentui/react-icons/headless/svg/rename";
+import { Copy20Regular } from "@fluentui/react-icons/headless/svg/copy";
+import { Folder20Regular } from "@fluentui/react-icons/headless/svg/folder";
+import { Document20Regular } from "@fluentui/react-icons/headless/svg/document";
+import { ChevronRight20Regular } from "@fluentui/react-icons/headless/svg/chevron-right";
+import { ChevronDown20Regular } from "@fluentui/react-icons/headless/svg/chevron-down";
+import { ChevronLeft20Regular } from "@fluentui/react-icons/headless/svg/chevron-left";
+import { ArrowUndo20Regular } from "@fluentui/react-icons/headless/svg/arrow-undo";
+import { ArrowRedo20Regular } from "@fluentui/react-icons/headless/svg/arrow-redo";
+import { Table20Regular } from "@fluentui/react-icons/headless/svg/table";
+import { TextQuote20Regular } from "@fluentui/react-icons/headless/svg/text-quote";
+import { Code20Regular } from "@fluentui/react-icons/headless/svg/code";
+import { TextBulletList20Regular } from "@fluentui/react-icons/headless/svg/text-bullet-list";
+import { TextNumberListLtr20Regular } from "@fluentui/react-icons/headless/svg/text-number-list-ltr";
+import { TextHeader120Regular, TextHeader220Regular, TextHeader320Regular } from "@fluentui/react-icons/headless/svg/text-header";
+import { Color20Regular } from "@fluentui/react-icons/headless/svg/color";
+import { Share20Regular } from "@fluentui/react-icons/headless/svg/share";
+import { History20Regular } from "@fluentui/react-icons/headless/svg/history";
+import { TextCaseTitle20Regular } from "@fluentui/react-icons/headless/svg/text-case-title";
+import { TextWholeWord20Regular } from "@fluentui/react-icons/headless/svg/text-whole-word";
+import { BracesVariable20Regular } from "@fluentui/react-icons/headless/svg/braces-variable";
+import { ArrowSort20Regular } from "@fluentui/react-icons/headless/svg/arrow-sort";
+import { SelectAllOn20Regular } from "@fluentui/react-icons/headless/svg/select-all-on";
+import { ReOrderDotsVertical20Regular } from "@fluentui/react-icons/headless/svg/re-order-dots-vertical";
+import { ArrowUp20Regular } from "@fluentui/react-icons/headless/svg/arrow-up";
+import { ArrowDown20Regular } from "@fluentui/react-icons/headless/svg/arrow-down";
+import { LockClosed20Regular } from "@fluentui/react-icons/headless/svg/lock-closed";
+import { ArrowExportLtr20Regular } from "@fluentui/react-icons/headless/svg/arrow-export-ltr";
+import { ArrowImport20Regular } from "@fluentui/react-icons/headless/svg/arrow-import";
+import { TextStrikethrough20Regular } from "@fluentui/react-icons/headless/svg/text-strikethrough";
+import { TextT20Regular } from "@fluentui/react-icons/headless/svg/text-t";
+import { TaskListLtr20Regular } from "@fluentui/react-icons/headless/svg/task-list-ltr";
+import { LineHorizontal120Regular } from "@fluentui/react-icons/headless/svg/line-horizontal";
+import { FolderAdd20Regular } from "@fluentui/react-icons/headless/svg/folder-add";
+import { Cloud20Regular } from "@fluentui/react-icons/headless/svg/cloud";
+import { CloudArrowUp20Regular } from "@fluentui/react-icons/headless/svg/cloud-arrow-up";
+import { CloudCheckmark20Regular } from "@fluentui/react-icons/headless/svg/cloud-checkmark";
+import { CloudOff20Regular } from "@fluentui/react-icons/headless/svg/cloud-off";
+import { ArrowDownload20Regular } from "@fluentui/react-icons/headless/svg/arrow-download";
+import { Circle20Regular } from "@fluentui/react-icons/headless/svg/circle";
+import { Globe20Regular } from "@fluentui/react-icons/headless/svg/globe";
+import { CalendarLtr20Regular } from "@fluentui/react-icons/headless/svg/calendar-ltr";
+import { Mail20Regular } from "@fluentui/react-icons/headless/svg/mail";
+import { Pin20Regular, Pin20Filled } from "@fluentui/react-icons/headless/svg/pin";
+import { PinOff20Regular } from "@fluentui/react-icons/headless/svg/pin-off";
+import { PersonFeedback20Regular } from "@fluentui/react-icons/headless/svg/person-feedback";
+import { CheckmarkCircle20Regular } from "@fluentui/react-icons/headless/svg/checkmark-circle";
+import { Print20Regular } from "@fluentui/react-icons/headless/svg/print";
+import { Image20Regular } from "@fluentui/react-icons/headless/svg/image";
+import { ImageAdd20Regular } from "@fluentui/react-icons/headless/svg/image-add";
+import { Crop20Regular } from "@fluentui/react-icons/headless/svg/crop";
+import { ArrowRotateClockwise20Regular } from "@fluentui/react-icons/headless/svg/arrow-rotate-clockwise";
+import { ArrowRotateCounterclockwise20Regular } from "@fluentui/react-icons/headless/svg/arrow-rotate-counterclockwise";
+import { FlipHorizontal20Regular } from "@fluentui/react-icons/headless/svg/flip-horizontal";
+import { FlipVertical20Regular } from "@fluentui/react-icons/headless/svg/flip-vertical";
+import { LockOpen20Regular } from "@fluentui/react-icons/headless/svg/lock-open";
+import { WindowNew20Regular } from "@fluentui/react-icons/headless/svg/window-new";
+import { Notepad20Regular } from "@fluentui/react-icons/headless/svg/notepad";
+import { ArrowUpload20Regular } from "@fluentui/react-icons/headless/svg/arrow-upload";
+import { ClosedCaption20Regular } from "@fluentui/react-icons/headless/svg/closed-caption";
+import { TextDescription20Regular } from "@fluentui/react-icons/headless/svg/text-description";
+import { Sparkle20Regular } from "@fluentui/react-icons/headless/svg/sparkle";
+import { DocumentText20Regular } from "@fluentui/react-icons/headless/svg/document-text";
 import type { ComponentType, SVGProps } from "react";
 import type { IconName } from "./icon-names.ts";
 import { GitHubMark } from "./github-mark.tsx";

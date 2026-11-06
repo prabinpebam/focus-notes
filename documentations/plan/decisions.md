@@ -21,7 +21,7 @@ The dialog retains the image and existing caption. Stop cancels its own bounded 
 **Affects:** [Image menu](../experience/images.md#image-menu-and-selection), [Writing Help](../help/write.md#copy-replace-or-save-an-image), [image waits](../architecture/perceived-performance.md#other-image-waits-planned), WP-9.1.
 ## D-372: Image-only editing, handles first, original preserved
 
-**Status:** Proposed (coordinator direction, 6 November 2026; owner approval pending). **Affects:** [Images → Crop and rotate dialog](../experience/images.md#crop-and-rotate-dialog), IMG-04, IMG-10, CP-FLOW-01, CP-SAFE-01, SC-IMG-03, UC-IMG-04; supersedes D-327 and the earlier destructive-save interpretation only when approved.
+**Status:** Approved by the owner, 6 November 2026 at 20:56: “The image edit design is approved, you can go ahead an dimplement it.” **Affects:** [Images → Crop and rotate dialog](../experience/images.md#crop-and-rotate-dialog), IMG-04, IMG-10, CP-FLOW-01, CP-SAFE-01, SC-IMG-03, UC-IMG-04; supersedes D-327 and the earlier destructive-save interpretation.
 
 The owner's source says “Opens a dialog/modal”; the 14:17 feedback asks to rethink the entire editing task flow and benchmark established UX. Keep the image-only modal, but put direct crop handles first, followed by Free/Original/1:1/4:3/16:9, rotate, flip, Reset, Done/Enter and Cancel/Esc. The [source benchmark and failures](../experience/images.md#benchmark-established-crop-flows) distinguish verified help from Word's 404 and Apple's 429.
 
@@ -47,7 +47,7 @@ Use the design system's shared TextField prefix, not mock-only styling: W/H insi
 
 The initial link had accessibility-tree evidence but inadequate rendered evidence. Main reproduced mouse/stability timeouts and two blocked style tags. Independent normal-mouse headless Chromium isolated the CSP reports to Fluent Icons' Griffel stylesheet insertion. Use the installed library's documented atomic headless imports and external CSS in the gallery build only; never loosen the CSP or modify the desktop's icon styling. Budget the crop stage separately from a note image, preserving source geometry as it shrinks. Reinspect the complete path in light/dark/narrow and take the owner-requested screenshots before another review handoff. Automated tests and runtime wiring still await explicit design approval.
 
-At wiring time move the gallery-only icon transform into `packages/ui`, preserving the same rendered SVGs and external CSS in the app and gallery. The desktop's matching `style-src 'self'` policy rules out leaving the gallery correction as a preview-only divergence.
+With the owner's D-372 approval at 20:56 on 6 November 2026, shared `packages/ui` imports now use Fluent's headless exports and external CSS directly; the gallery-only transform is removed. App and gallery keep the same SVGs under the unchanged `style-src 'self'` policy.
 
 ## D-367: Disabled preserves colours; Switch labels have a gap; Off parents disable dependents
 

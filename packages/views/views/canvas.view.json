@@ -1112,7 +1112,7 @@
           "imageRetry": { "run": "image.retry", "args": { "src": { "get": "event.src" }, "key": { "get": "event.key" } } },
           "imageFailed": { "run": "image.failed", "args": { "src": { "get": "event.src" }, "value": { "get": "event.value" }, "key": { "get": "event.key" } } },
           "imageSelect": { "run": "image.select", "args": {
-            "pos": { "get": "event.pos" }, "src": { "get": "event.src" },
+            "pos": { "get": "event.pos" }, "src": { "get": "event.src" }, "originalSrc": { "get": "event.originalSrc" },
             "alt": { "get": "event.alt" }, "title": { "get": "event.title" }, "text": { "get": "event.text" }, "announce": { "get": "event.announce" },
             "rounded": { "get": "event.rounded" }, "fitHeight": { "get": "event.fitHeight" }, "mode": { "get": "event.mode" },
             "width": { "get": "event.width" }, "height": { "get": "event.height" },
@@ -1120,10 +1120,11 @@
             "roundMixed": { "get": "event.roundMixed" }, "limitMixed": { "get": "event.limitMixed" }
           } },
           "imageAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } },
-          "imageEdited": { "run": "image.edited", "args": { "src": { "get": "event.src" }, "data": { "get": "event.data" } } },
+          "imageEdited": { "run": "image.edited", "args": { "src": { "get": "event.src" }, "data": { "get": "event.data" }, "request": { "get": "event.request" } } },
+          "imageEditApplied": { "run": "image.edit.applied", "args": { "request": { "get": "event.request" }, "accepted": { "get": "event.accepted" } } },
           "imageCaptionPrepared": { "run": "image.ai.prepared", "args": { "request": { "get": "event.request" }, "data": { "get": "event.data" }, "error": { "get": "event.error" } } },
           "imageCaptionApplied": { "run": "image.ai.applied", "args": { "request": { "get": "event.request" }, "accepted": { "get": "event.accepted" } } },
-          "imageEditError": { "run": "image.edit.failed" },
+          "imageEditError": { "run": "image.edit.failed", "args": { "request": { "get": "event.request" } } },
           "imageImport": { "run": "image.import", "args": { "request": { "get": "event.request" }, "key": { "get": "event.key" }, "data": { "get": "event.data" }, "error": { "get": "event.error" } } },
           "imageImported": { "run": "image.imported", "args": { "batch": { "get": "event.batch" }, "accepted": { "get": "event.accepted" } } },
           "findScope": {
@@ -1394,37 +1395,38 @@
         }
       },
       {
-        "type": "DialogPanel",
+        "type": "Dialog",
         "id": "imageEdit",
-        "props": { "label": { "t": "image.edit.title" }, "open": { "get": "vm.images.edit" }, "size": "m", "height": "content" },
+        "props": { "title": { "t": "image.edit.title" }, "closeLabel": { "t": "image.edit.close" }, "open": { "get": "vm.images.edit" }, "size": "l", "height": "content", "contentInset": false },
         "on": { "openChange": { "run": "image.edit.close" } },
-        "slots": {
-          "header": [{ "type": "Heading", "props": { "level": "2", "value": { "t": "image.edit.title" } } }],
-          "footer": [{
-            "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" },
-            "children": [
-              { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle", "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.close" } } },
-              { "type": "Button", "props": { "label": { "t": "image.edit.save" }, "variant": "primary", "busy": { "get": "vm.images.saving" }, "disabled": { "get": "vm.images.invalid" }, "disabledReason": { "t": "image.edit.invalid" } }, "on": { "press": { "run": "image.edit.save" } } }
-            ]
-          }]
-        },
         "children": [{
-          "type": "Stack", "props": { "gap": "stackItem" }, "children": [
-            { "type": "ImageFrame", "props": {
-              "src": { "get": "vm.images.src" }, "crop": true, "rotation": { "get": "vm.images.rotation" },
-              "cropX": { "get": "vm.images.cropX" }, "cropY": { "get": "vm.images.cropY" },
-              "cropWidth": { "get": "vm.images.cropWidth" }, "cropHeight": { "get": "vm.images.cropHeight" }
-            } },
-            { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true, "align": "end" }, "children": [
-              { "type": "TextField", "props": { "label": { "t": "image.edit.left" }, "value": { "bind": "vm.images.x" }, "size": "m", "width": "number", "autoFocus": true } },
-              { "type": "TextField", "props": { "label": { "t": "image.edit.top" }, "value": { "bind": "vm.images.y" }, "size": "m", "width": "number" } },
-              { "type": "TextField", "props": { "label": { "t": "image.edit.width" }, "value": { "bind": "vm.images.width" }, "size": "m", "width": "number" } },
-              { "type": "TextField", "props": { "label": { "t": "image.edit.height" }, "value": { "bind": "vm.images.height" }, "size": "m", "width": "number" } },
-              { "type": "SegmentedControl", "props": { "label": { "t": "image.edit.turn" }, "options": { "get": "vm.images.rotations" }, "actions": true }, "on": { "action": { "run": "image.edit.rotate", "args": { "id": { "get": "event.id" } } } } }
+          "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+            { "type": "ImageCrop", "props": {
+              "src": { "get": "vm.images.src" }, "alt": { "get": "vm.images.alt" }, "rotation": { "get": "vm.images.rotation" },
+              "intrinsicWidth": { "get": "vm.images.intrinsicWidth" }, "intrinsicHeight": { "get": "vm.images.intrinsicHeight" },
+              "x": { "get": "vm.images.cropX" }, "y": { "get": "vm.images.cropY" }, "width": { "get": "vm.images.cropWidth" }, "height": { "get": "vm.images.cropHeight" },
+              "aspect": { "get": "vm.images.aspect" }, "flipHorizontal": { "get": "vm.images.flipHorizontal" }, "flipVertical": { "get": "vm.images.flipVertical" },
+              "handles": { "get": "vm.images.handles" }, "widthLabel": { "t": "image.width.px" }, "heightLabel": { "t": "image.height.px" }, "lockLabel": { "t": "image.lock" },
+              "rangeMessage": { "t": "image.range" }, "toolbarLabel": { "t": "image.toolbar" }, "resetSignal": { "get": "vm.images.resetSignal" }, "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" }
+            }, "on": {
+              "change": { "run": "image.edit.crop", "args": { "x": { "get": "event.x" }, "y": { "get": "event.y" }, "width": { "get": "event.width" }, "height": { "get": "event.height" } } },
+              "commit": { "run": "image.edit.save" }
+            }, "children": [
+              { "type": "MenuButton", "props": { "icon": "crop", "label": { "t": "image.aspect" }, "sections": { "get": "vm.images.aspects" }, "busy": { "get": "vm.images.saving" } }, "on": { "action": { "run": "image.edit.aspect", "args": { "id": { "get": "event.id" } } } } },
+              { "type": "IconButton", "props": { "icon": "rotateLeft", "label": { "t": "image.rotate.left" }, "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.rotate", "args": { "id": "left" } } } },
+              { "type": "IconButton", "props": { "icon": "rotate", "label": { "t": "image.rotate.right" }, "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.rotate", "args": { "id": "right" } } } },
+              { "type": "IconButton", "props": { "icon": "flipHorizontal", "label": { "t": "image.flip.horizontal" }, "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.flipHorizontal" } } },
+              { "type": "IconButton", "props": { "icon": "flipVertical", "label": { "t": "image.flip.vertical" }, "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.flipVertical" } } },
+              { "type": "IconButton", "props": { "icon": "undo", "label": { "t": "image.reset" }, "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.rotate", "args": { "id": "reset" } } } }
             ] },
-            { "type": "Text", "when": { "get": "vm.images.invalid" }, "props": { "value": { "t": "image.edit.invalid" }, "tone": "danger" } },
-            { "type": "Text", "props": { "value": { "get": "vm.images.error" }, "tone": "danger" } },
-            { "type": "Text", "props": { "value": { "t": "image.edit.warning" }, "role": "caption", "tone": "muted" } }
+            { "type": "Stack", "props": { "padding": "insetLg", "gap": "stackGroup" }, "children": [
+              { "type": "Text", "props": { "value": { "t": "image.safe" }, "tone": "muted" } },
+              { "type": "Text", "props": { "value": { "get": "vm.images.error" }, "tone": "danger" } },
+              { "type": "Inline", "props": { "justify": "end", "gap": "inlineItem", "wrap": true }, "children": [
+                { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle", "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.close" } } },
+                { "type": "Button", "props": { "label": { "t": "image.edit.save" }, "variant": "primary", "busy": { "get": "vm.images.saving" }, "disabled": { "get": "vm.images.invalid" }, "disabledReason": { "get": "vm.images.invalidReason" } }, "on": { "press": { "run": "image.edit.save" } } }
+              ] }
+            ] }
           ]
         }]
       },

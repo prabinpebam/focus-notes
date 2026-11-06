@@ -8,13 +8,18 @@ import { noteReadOnly } from "./workspace-app.ts";
 import type { TaskTracker } from "./tasks.ts";
 import { registerImageCaption } from "./image-caption-app.ts";
 
-type SelectedImage = { pos: number; src: string; alt?: string; title?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
+type SelectedImage = { pos: number; src: string; originalSrc?: string; alt?: string; title?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
 export interface ImagesState {
   sources: readonly { id: string; value: string; pending: boolean; failed: boolean }[];
   selected?: SelectedImage;
   edit: boolean;
   x: string; y: string; width: string; height: string;
   rotation: "0" | "90" | "180" | "270";
+  aspect: "free" | "original" | "square" | "fourThree" | "wide";
+  flipHorizontal: boolean;
+  flipVertical: boolean;
+  resetSignal: boolean;
+  targetChanged: boolean;
   saving: boolean;
   transferring: boolean;
   error: string;
@@ -22,7 +27,7 @@ export interface ImagesState {
   alt: string;
   caption: string;
 }
-export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", saving: false, transferring: false, error: "", describe: false, alt: "", caption: "" };
+export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", aspect: "free", flipHorizontal: false, flipVertical: false, resetSignal: false, targetChanged: false, saving: false, transferring: false, error: "", describe: false, alt: "", caption: "" };
 
 export interface ImagesContext {
   store: Store<AppState>; bridge: PlatformBridge; commands: CommandRegistry<AppState>; viewModels: ViewModelRegistry<AppState>; catalog: MessageCatalog;
@@ -40,12 +45,16 @@ export function registerImages(ctx: ImagesContext) {
   const { store, bridge, commands, viewModels, catalog } = ctx;
   const state = () => store.state.ui.images;
   const set = (patch: Partial<ImagesState>) => store.update((s) => ({ ...s, ui: { ...s.ui, images: { ...s.ui.images, ...patch } } }));
+  let sequence = 0;
+  let draftRequest: string | undefined;
+  let pending: { request: string; note: string; key: string; selected: SelectedImage; expected: string; finish: () => void } | undefined;
   let noteKey = store.state.note.key;
   const reading = new Map<string, symbol>();
   const notified = new Set<string>();
   store.subscribe(() => {
     if (store.state.note.key === noteKey) return;
     noteKey = store.state.note.key;
+    pending?.finish(); pending = undefined; draftRequest = undefined;
     reading.clear();
     notified.clear();
     set(IMAGES_CLOSED);
@@ -276,54 +285,119 @@ export function registerImages(ctx: ImagesContext) {
     const source = state().sources.find(s => s.id === state().selected?.src);
     return source && !source.failed && !source.pending ? source.value : "";
   };
-  const canEdit = () => writable() && state().selected?.count === 1 && Boolean(bridge.writeImage) && /^data:image\/(png|jpeg|webp);/.test(dataOf()) && !state().selected?.src.startsWith("data:");
+  const canEdit = () => writable() && state().selected?.count === 1 && Boolean(bridge.createImageCopy) && /^data:image\/(png|jpeg|webp);/.test(dataOf()) && !state().selected?.src.startsWith("data:");
   const valid = () => {
     const s = state(), image = s.selected;
     const [x, y, width, height] = [s.x, s.y, s.width, s.height].map(Number);
-    return Boolean(image && [x, y, width, height].every(Number.isFinite) && x! >= 0 && y! >= 0 && width! > 0 && height! > 0 && x! + width! <= image.width && y! + height! <= image.height);
+    return Boolean(image && [x, y, width, height].every(Number.isFinite) && x! >= 0 && y! >= 0 && width! > 0 && height! > 0 && x! + width! <= 100.000001 && y! + height! <= 100.000001);
   };
   commands.register({
     id: "image.edit", title: "image.edit.title", enabled: canEdit,
     run: () => {
       const image = state().selected;
-      if (image) set({ edit: true, x: "0", y: "0", width: String(image.width), height: String(image.height), rotation: "0", error: "" });
+      if (image) {
+        draftRequest = `crop-${++sequence}`;
+        ctx.editorAction("image.trackEdit", { request: draftRequest, pos: image.pos, src: image.src });
+        set({ edit: true, x: "0", y: "0", width: "100", height: "100", rotation: "0", aspect: "free", flipHorizontal: false, flipVertical: false, resetSignal: !state().resetSignal, targetChanged: false, error: "" });
+      }
     },
   });
-  commands.register({ id: "image.edit.close", title: "image.edit.cancel", enabled: () => !state().saving, run: () => set({ edit: false, error: "" }) });
+  commands.register({ id: "image.edit.close", title: "image.edit.cancel", enabled: () => !state().saving, run: () => {
+    if (draftRequest) ctx.editorAction("image.cancelImport", { request: draftRequest });
+    draftRequest = undefined; set({ edit: false, error: "" });
+  } });
   for (const field of ["x", "y", "width", "height"] as const) commands.register<{ value: string }>({
     id: `image.edit.${field}`, title: "image.edit.title",
     run: ({ value }) => set({ [field]: value, error: "" }),
   });
+  commands.register<{ x: number; y: number; width: number; height: number }>({
+    id: "image.edit.crop", title: "image.edit.title", enabled: () => state().edit && !state().saving,
+    run: ({ x, y, width, height }) => {
+      if (![x, y, width, height].every(Number.isFinite) || x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > 100.000001 || y + height > 100.000001) throw new Error("invalid-crop");
+      set({ x: String(x), y: String(y), width: String(width), height: String(height), error: "" });
+    },
+  });
+  commands.register<{ id: ImagesState["aspect"] }>({
+    id: "image.edit.aspect", title: "image.edit.title", enabled: () => state().edit && !state().saving,
+    run: ({ id }) => {
+      if (!["free", "original", "square", "fourThree", "wide"].includes(id)) throw new Error("invalid-aspect");
+      set({ aspect: id, resetSignal: !state().resetSignal });
+    },
+  });
+  for (const field of ["flipHorizontal", "flipVertical"] as const) commands.register({
+    id: `image.edit.${field}`, title: field === "flipHorizontal" ? "image.flip.horizontal" : "image.flip.vertical",
+    enabled: () => state().edit && !state().saving,
+    run: () => set({ [field]: !state()[field] }),
+  });
   commands.register<{ id: string }>({
     id: "image.edit.rotate", title: "image.edit.turn",
+    enabled: () => state().edit && !state().saving,
     run: ({ id }) => {
-      if (id === "reset") return set({ x: "0", y: "0", width: String(state().selected?.width ?? 0), height: String(state().selected?.height ?? 0), rotation: "0" });
+      if (id === "reset") return set({ x: "0", y: "0", width: "100", height: "100", rotation: "0", aspect: "free", flipHorizontal: false, flipVertical: false, resetSignal: !state().resetSignal, error: "" });
       const rotation = (Number(state().rotation) + (id === "left" ? 270 : 90)) % 360;
       set({ rotation: rotation === 90 ? "90" : rotation === 180 ? "180" : rotation === 270 ? "270" : "0" });
     },
   });
-  let savingNote = "";
   commands.register({
-    id: "image.edit.save", title: "image.edit.save", enabled: () => canEdit() && valid() && !state().saving,
+    id: "image.edit.save", title: "image.edit.save", enabled: () => canEdit() && state().edit && valid() && !state().saving && !state().targetChanged,
     run: () => {
-      savingNote = store.state.note.path ?? "";
+      const selected = state().selected!;
+      if (state().x === "0" && state().y === "0" && state().width === "100" && state().height === "100" && state().rotation === "0" && !state().flipHorizontal && !state().flipVertical) {
+        if (draftRequest) ctx.editorAction("image.cancelImport", { request: draftRequest });
+        draftRequest = undefined; set({ edit: false }); return;
+      }
+      if (!draftRequest) throw new Error("image-target-changed");
+      const request = draftRequest;
+      let finish!: () => void;
+      const completed = new Promise<void>(resolve => { finish = resolve; });
+      pending = { request, note: store.state.note.path!, key: store.state.note.key, selected: { ...selected }, expected: dataOf(), finish };
       set({ saving: true, error: "" });
-      ctx.editorAction("image.renderEdit", { src: state().selected?.src, data: dataOf(), x: Number(state().x), y: Number(state().y), width: Number(state().width), height: Number(state().height), rotation: Number(state().rotation) });
+      void ctx.tracker.section("image.edit.save", "image.edit.saving", () => completed, "fn:image.edit.save", "none");
+      ctx.editorAction("image.renderEdit", { request, src: selected.src, data: dataOf(), x: Number(state().x), y: Number(state().y), width: Number(state().width), height: Number(state().height), rotation: Number(state().rotation), flipHorizontal: state().flipHorizontal, flipVertical: state().flipVertical });
     },
   });
-  commands.register<{ src: string; data: string }>({
+  const current = (operation: NonNullable<typeof pending>) => pending === operation && operation.note === store.state.note.path && operation.key === store.state.note.key;
+  commands.register<{ src: string; data: string; request: string }>({
     id: "image.edited", title: "image.edit.save",
-    run: async ({ src, data }) => {
-      if (!state().saving || src !== state().selected?.src || savingNote !== store.state.note.path || !bridge.writeImage) return;
+    run: async ({ src, data, request }) => {
+      const operation = pending;
+      if (!operation || operation.request !== request || !current(operation) || !state().saving || src !== operation.selected.src || !bridge.createImageCopy) return;
       try {
-        await bridge.writeImage(savingNote, src, data, dataOf());
-        if (savingNote !== store.state.note.path) return;
-        set({ saving: false, edit: false, sources: state().sources.map((s) => s.id === src ? { ...s, value: data, pending: false, failed: false } : s) });
-        ctx.toast(catalog.format("image.edit.saved"));
-      } catch { set({ saving: false, error: catalog.format("image.edit.failed") }); }
+        const image = await bridge.createImageCopy(operation.note, src, data, operation.expected);
+        if (!current(operation)) return;
+        set({ sources: [...state().sources, { id: image.src, value: data, pending: false, failed: false }] });
+        ctx.editorAction("image.applyEdit", { request, image: { ...image, originalSrc: operation.selected.originalSrc || operation.selected.src } });
+      } catch (error) {
+        console.error("Image crop copy failed", opErrorCode(error));
+        operation.finish();
+        if (current(operation)) { pending = undefined; set({ saving: false, error: catalog.format("image.edit.failed") }); }
+      }
     },
   });
-  commands.register({ id: "image.edit.failed", title: "image.edit.title", run: () => set({ saving: false, error: catalog.format("image.edit.failed") }) });
+  commands.register<{ request: string; accepted: boolean }>({
+    id: "image.edit.applied", title: "image.edit.save",
+    run: ({ request, accepted }) => {
+      if (!pending || pending.request !== request || !current(pending)) return;
+      pending.finish();
+      pending = undefined;
+      if (accepted) draftRequest = undefined;
+      set({ saving: false, edit: !accepted, targetChanged: !accepted, error: accepted ? "" : catalog.format("image.edit.changed") });
+      if (accepted) ctx.toast(catalog.format("image.edit.saved"));
+    },
+  });
+  commands.register<{ request: string }>({ id: "image.edit.failed", title: "image.edit.title", run: ({ request }) => {
+    if (!pending || pending.request !== request || !current(pending)) return;
+    pending.finish();
+    pending = undefined; set({ saving: false, error: catalog.format("image.edit.failed") });
+  } });
+  commands.register({
+    id: "image.restore", title: "image.restore", enabled: () => writable() && state().selected?.count === 1 && Boolean(state().selected?.originalSrc) && !state().saving,
+    run: () => {
+      const image = state().selected!;
+      ctx.editorAction("image.restore", { pos: image.pos, src: image.src, originalSrc: image.originalSrc });
+    },
+  });
+  commands.register({ id: "image.restore.failed", title: "image.restore", run: () => { ctx.toast(catalog.format("image.edit.failed"), { tone: "error" }); } });
   const imageSection = (s: AppState) => ({
     id: "images", label: catalog.format("image.selection", { count: s.ui.images.selected?.count ?? 0 }),
     items: ["image.rounded", "image.fitHeight"].map((id) => ({
@@ -339,21 +413,28 @@ export function registerImages(ctx: ImagesContext) {
       menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       edit: { type: "boolean" }, saving: { type: "boolean" }, invalid: { type: "boolean" }, error: { type: "string" }, src: { type: "string" }, rotation: { type: "string", enum: ["0", "90", "180", "270"] },
       describe: { type: "boolean" }, alt: { type: "string" }, caption: { type: "string" },
+      invalidReason: { type: "string" },
       x: { type: "string" }, y: { type: "string" }, width: { type: "string" }, height: { type: "string" },
       cropX: { type: "number" }, cropY: { type: "number" }, cropWidth: { type: "number" }, cropHeight: { type: "number" },
+      intrinsicWidth: { type: "number" }, intrinsicHeight: { type: "number" }, aspect: { type: "string", enum: ["free", "original", "square", "fourThree", "wide"] },
+      flipHorizontal: { type: "boolean" }, flipVertical: { type: "boolean" }, resetSignal: { type: "boolean" },
+      handles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
+      aspects: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       rotations: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, icon: { type: "string" } } } },
     } },
     select: () => {
       const s = state();
-      return { ...s, invalid: !valid(), src: dataOf(),
-        cropX: Number(s.x) / (s.selected?.width || 1) * 100, cropY: Number(s.y) / (s.selected?.height || 1) * 100,
-        cropWidth: Number(s.width) / (s.selected?.width || 1) * 100, cropHeight: Number(s.height) / (s.selected?.height || 1) * 100,
+      return { ...s, invalid: !valid() || s.targetChanged, invalidReason: catalog.format(s.targetChanged ? "image.edit.changed" : "image.edit.invalid"), alt: s.edit ? s.selected?.alt || "" : s.alt, src: dataOf(),
+        cropX: Number(s.x), cropY: Number(s.y), cropWidth: Number(s.width), cropHeight: Number(s.height),
+        intrinsicWidth: s.selected?.width || 1, intrinsicHeight: s.selected?.height || 1,
+        handles: ["nw", "n", "ne", "e", "se", "s", "sw", "w", "move"].map(id => ({ id, label: catalog.format(`image.handle.${id}`) })),
+        aspects: [{ id: "aspects", items: ["free", "original", "square", "fourThree", "wide"].map(id => ({ id, label: catalog.format(`image.aspect.${id}`), checked: s.aspect === id })) }],
         menu: s.selected?.count === 1 && !s.selected.text ? [
           { id: "clipboard", items: ["image.cut", "image.copy"].map(ctx.describeItem) },
           { id: "file", items: ["image.replace", "image.save"].map(ctx.describeItem) },
           { id: "words", items: [ctx.describeItem("image.describe"), { ...ctx.describeItem("image.caption"), label: catalog.format(s.selected.title ? "image.caption.edit" : "image.caption.add") }] },
           { id: "assistance", items: [ctx.describeItem("image.ai")] },
-          { id: "pixels", items: [ctx.describeItem("image.edit")] },
+          { id: "pixels", items: [ctx.describeItem("image.edit"), ...(s.selected.originalSrc ? [ctx.describeItem("image.restore")] : [])] },
           { id: "mode", label: catalog.format("image.display"), items: ["image.mode.column", "image.mode.wide", "image.mode.actual"].map(ctx.describeItem) },
           { id: "look", items: imageSection(store.state).items },
         ] : s.selected?.count ? [imageSection(store.state)] : [],

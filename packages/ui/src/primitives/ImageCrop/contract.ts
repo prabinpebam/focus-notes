@@ -24,6 +24,8 @@ export const contract = defineContract({
     rangeMessage: { kind: "message" },
     toolbarLabel: { kind: "message" },
     resetSignal: { kind: "boolean" },
+    disabled: { kind: "boolean", default: false },
+    disabledReason: { kind: "message" },
   },
   events: { change: { payload: { x: "number", y: "number", width: "number", height: "number" } }, commit: {} },
   slots: { default: { accepts: "any" } }, states: ["rest", "editing"], tokens: "cmp.imageCrop.*",
