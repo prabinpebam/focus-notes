@@ -12,6 +12,16 @@ The gallery demonstrates fake-data state transitions only; persistence, normal e
 
 **Owner revision, 15:44:** "Image editing icons are well established, ples use icon btns and fit fucntionalities in a toolbar approach at the bottom. Should also be able to specify exact height and width." Use one bottom icon toolbar, established Fluent crop/rotate/flip/reset glyphs, tooltips and accessible names. Exact pixel width/height and a ratio-lock manipulation toggle share the toolbar. Typing updates the crop, locked dimensions follow its ratio, and out-of-range sizes clamp with an inline explanation. Drag inside the crop to move; remove the centre square. Done/Cancel, copied result, preserved original, Undo and Restore original remain unchanged. Approval is still pending.
 
+**Owner revision, 16:43, word for word:**
+
+> Height and width should be just H an W inside the input filed wrapper.
+> - Wrapper with the visual style of the input
+> - H or W
+> - Value (This filed should not be highlighted on focus, the wrapper border should be highlighted instead.)
+> These are very well established patterns, should not require me to micro manage these stuff.
+
+Use the design system's shared TextField prefix, not mock-only styling: W/H inside the one input wrapper, full accessible names Width (px)/Height (px), wrapper-only focus, no visible labels above. Arrow Up/Down steps one pixel; Shift steps ten. An aspect choice only shrinks and centres within the current crop (600 × 700 → 600 × 600 for 1:1), never restores full-image bounds. Keep lock state explicit, typing ratio-preserving, out-of-bounds feedback inline, tooltips on every icon and all compact controls aligned. [The crop section's self-review](../experience/images.md#proposed-task-flow-and-copy-policy) records verified Figma/Photoshop/Google Docs comparisons and the unverified Canva help fetch. Adopt standard controls without waiting for owner micromanagement; design approval remains pending.
+
 ## D-373: Gallery crop evidence under the unchanged strict CSP
 
 **Status:** Design-preview correction (6 November 2026), not desktop runtime approval. **Affects:** [Image editing gallery and limitations](../experience/images.md#gallery-review-and-limitations), the gallery build, ImageCrop tokens and fixtures.

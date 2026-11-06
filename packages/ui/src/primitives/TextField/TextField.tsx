@@ -8,6 +8,10 @@ export interface TextFieldProps {
   value?: string;
   placeholder?: string;
   description?: string;
+  /** A compact inline prefix (for example W or H); label remains the accessible name. */
+  prefix?: string;
+  /** Numeric Arrow Up/Down increment; Shift multiplies it by ten. */
+  step?: number;
   type?: "text" | "password" | "url";
   invalid?: boolean;
   /** What's wrong, shown below the field while it's invalid and read with it (its description). */
@@ -49,10 +53,12 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, commit, commitOnBlur = false, retryLabel, revertLabel, id, onRetry, onRevert, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, prefix, step, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", width = "fill", multiline, compactMultiline, readOnly, scrolls, required, commit, commitOnBlur = false, retryLabel, revertLabel, id, onRetry, onRevert, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const area = useRef<HTMLTextAreaElement | null>(null);
   const [draft, setDraft] = useState(value ?? "");
+  const displayedValue = commitOnBlur ? draft : value ?? "";
+  const change = (next: string) => commitOnBlur ? setDraft(next) : onChange?.({ value: next });
   useEffect(() => setDraft(value ?? ""), [value]);
   const save = () => {
     if (commitOnBlur && commit !== "pending" && !readOnly && draft !== (value ?? "")) onChange?.({ value: draft });
@@ -63,8 +69,8 @@ export function TextField({ label, value, placeholder, description, type = "text
   return (
     <AriaTextField
       className={`${s.root} ${s.width[width]}`}
-      value={commitOnBlur ? draft : value ?? ""}
-      onChange={(v) => commitOnBlur ? setDraft(v) : onChange?.({ value: v })}
+      value={displayedValue}
+      onChange={change}
       onBlur={save}
       type={type}
       isInvalid={Boolean(invalid) || commit === "failed"}
@@ -78,14 +84,28 @@ export function TextField({ label, value, placeholder, description, type = "text
       <Label className={labelHidden ? s.hidden : s.label}>{label}</Label>
       {multiline ? (
         <TextArea ref={area} rows={compactMultiline ? 2 : undefined} className={`${s.input} ${s.area}${scrolls ? ` ${s.scrolls}` : ""}${compactMultiline ? ` ${s.compactArea}` : ""}`} spellCheck={!scrolls} autoCorrect="off" {...(placeholder ? { placeholder } : {})} />
-      ) : <div className={s.box}><Input
+      ) : <div className={`${s.box}${prefix ? ` ${s.adornedBox} ${s.size[size]}` : ""}`}
+        {...(prefix ? { "data-invalid": Boolean(invalid) || commit === "failed" ? "" : undefined } : {})}
+        onClick={prefix ? () => input.current?.focus() : undefined}>
+        {prefix ? <span className={s.prefix} aria-hidden="true">{prefix}</span> : null}
+        <Input
         ref={input}
-        className={`${s.input} ${s.size[size]}`}
+        className={prefix ? s.adornedInput : `${s.input} ${s.size[size]}`}
+        {...(step ? { inputMode: "decimal" as const, role: "spinbutton", "aria-valuenow": Number.isFinite(Number(displayedValue)) && displayedValue !== "" ? Number(displayedValue) : undefined } : {})}
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
         autoComplete={type === "password" ? "off" : "on"}
         onKeyDown={(e) => {
+          if (step && !readOnly && commit !== "pending" && !e.nativeEvent.isComposing && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            const current = Number(displayedValue);
+            if (Number.isFinite(current)) {
+              e.preventDefault();
+              e.stopPropagation();
+              change(String(current + (e.key === "ArrowUp" ? 1 : -1) * step * (e.shiftKey ? 10 : 1)));
+            }
+            return;
+          }
           if (e.key === "Escape" && commitOnBlur && draft !== (value ?? "")) {
             e.preventDefault();
             e.stopPropagation();

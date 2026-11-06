@@ -67,7 +67,7 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
   const rect = { x, y, width, height };
   useEffect(() => {
     if (editing && (Math.abs(width - requestedWidth) > 0.00001 || Math.abs(height - requestedHeight) > 0.00001)) {
-      onChange?.({ x, y, width, height });
+      onChange?.({ x: x + (requestedWidth - width) / 2, y: y + (requestedHeight - height) / 2, width, height });
     }
   }, [editing, x, y, width, height, requestedWidth, requestedHeight, onChange]);
   const resizePixels = (axis: "width" | "height", value: string) => {
@@ -159,12 +159,12 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
       <div className={s.toolbar} role="group" aria-label={toolbarLabel}>
         <div className={s.actions}>{children}</div>
         <div className={s.dimensions}>
-          <TextField label={widthLabel} value={String(Math.round(width * iw / 100))} width="number" size="m" onChange={({ value }) => resizePixels("width", value)} />
+          <TextField label={widthLabel} prefix="W" labelHidden step={1} value={String(Math.round(width * iw / 100))} width="number" size="m" onChange={({ value }) => resizePixels("width", value)} />
           <IconButton icon={locked ? "lock" : "unlock"} label={lockLabel} toggle pressed={locked} onPress={() => {
             lockedRatio.current = locked ? undefined : width * iw / (height * ih);
             setLocked(!locked);
           }} />
-          <TextField label={heightLabel} value={String(Math.round(height * ih / 100))} width="number" size="m" onChange={({ value }) => resizePixels("height", value)} />
+          <TextField label={heightLabel} prefix="H" labelHidden step={1} value={String(Math.round(height * ih / 100))} width="number" size="m" onChange={({ value }) => resizePixels("height", value)} />
         </div>
       </div>
       {rangeError && rangeMessage ? <Text value={rangeMessage} tone="danger" role="caption" announce /> : null}

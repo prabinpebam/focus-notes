@@ -2260,7 +2260,7 @@
     {
       "type": "TextField",
       "tier": "primitive",
-      "description": "A labelled single-line field, with an optional description. Secrets use type password.",
+      "description": "A labelled single-line field, with an optional description. An inline prefix uses one token-painted wrapper and focuses its border, never the inner input. Numeric step enables Arrow Up/Down, Shift by ten, and spinbutton semantics. Secrets use type password.",
       "props": {
         "label": {
           "kind": "message",
@@ -2275,6 +2275,15 @@
         },
         "description": {
           "kind": "message"
+        },
+        "prefix": {
+          "kind": "message",
+          "description": "Inline secondary-ink adornment inside the input wrapper. Keep a full accessible label, with labelHidden for compact W/H controls."
+        },
+        "step": {
+          "kind": "number",
+          "min": 1,
+          "description": "Numeric Arrow Up/Down increment; Shift multiplies by ten. The owner of the value handles bounds and validation."
         },
         "type": {
           "kind": "enum",
@@ -2399,6 +2408,12 @@
         "name": "label"
       },
       "fixtures": [
+        "inline prefix width",
+        "inline prefix height",
+        "inline prefix commit rest",
+        "inline prefix commit pending",
+        "inline prefix commit confirmed",
+        "inline prefix commit failed",
         "width number",
         "type text",
         "type password",
