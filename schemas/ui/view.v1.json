@@ -733,6 +733,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -1362,6 +1366,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -1520,7 +1528,7 @@
     },
     "c_ImageCrop": {
       "type": "object",
-      "description": "Image-only direct crop stage (D-372, strict design). Eight native edge/corner buttons and a move target surround the source; Arrow moves one oriented source pixel, Shift+Arrow ten. The same component renders the exact clipped, rotated and flipped result without handles. Aspect presets constrain the crop through rotation and dragging. Draft-only; never writes assets. Not an inline image menu.",
+      "description": "Image-only direct crop stage (D-372, strict design). Eight native edge/corner buttons surround the source; dragging its transparent interior moves the box without a centre mark. Arrow moves one oriented source pixel, Shift+Arrow ten. Optional exact px fields and ratio lock share one wrapping bottom toolbar with slotted icon actions. Out-of-range dimensions clamp with an inline message. The same component renders the exact clipped, rotated and flipped result without handles. Draft-only; never writes assets. Not an inline image menu.",
       "required": [
         "type",
         "props"
@@ -1719,6 +1727,84 @@
             },
             "handles": {
               "$ref": "#/$defs/read"
+            },
+            "widthLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "heightLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "lockLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "rangeMessage": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "toolbarLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "resetSignal": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -1739,6 +1825,12 @@
             "commit": {
               "$ref": "#/$defs/actions"
             }
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
           }
         }
       }
@@ -2423,6 +2515,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -2663,6 +2759,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -2990,6 +3090,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -3800,6 +3904,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -4266,6 +4374,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -7052,6 +7164,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -7341,6 +7457,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
@@ -7882,6 +8002,10 @@
                     "imageAdd",
                     "crop",
                     "rotate",
+                    "rotateLeft",
+                    "flipHorizontal",
+                    "flipVertical",
+                    "unlock",
                     "openWindow",
                     "quickNote",
                     "upload",
