@@ -119,6 +119,14 @@ describe("on/off semantics (OFB.6, D-355)", () => {
     expect(toggleButtonProblems({ type: "IconButton", props: { pressed: false } })).toHaveLength(1);
     expect(messagesOf(problems(toggle("settings.sync"))).join()).toContain("must use Switch");
   });
+  it("does not exempt minimap Pin from the pressed-button rule", () => {
+    const button = toggle("outline.togglePin");
+    const pin = { ...button, type: "IconButton", props: { ...button.props, icon: "pin" } };
+    expect(toggleButtonProblems(pin)).toHaveLength(1);
+    expect(toggleButtonProblems({ ...pin, props: { pressed: true } })).toHaveLength(1);
+    expect(messagesOf(problems(pin)).join()).toContain("must use Switch");
+    expect(toggleButtonProblems({ ...pin, props: { label: { t: "gallery.sample" } } })).toEqual([]);
+  });
   it("preserves formatting and actual three-way named choices, not two or three duplicates", () => {
     expect(toggleButtonProblems(toggle("format.bold"))).toEqual([]);
     const choices = ["concise", "warmer", "grammar"].map((v) => toggle("rewrite.preset", v));
