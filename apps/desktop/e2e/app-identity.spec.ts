@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { launch, quit, type Launched } from "./helpers.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 async function closeInstances(launched: Launched[], root: string): Promise<void> {
   try {
@@ -45,8 +46,8 @@ test("Preview and the stable channel keep their native locks and writing windows
       invisible: BrowserWindow.getAllWindows().every(window => window.getOpacity() === 0),
     }))));
     expect(identities).toEqual([
-      { name: identities[0]!.name, profile: legacy, ownsLock: true, invisible: true },
-      { name: "Focus Notes Preview", profile: previewProfile, ownsLock: true, invisible: true },
+      { name: identities[0]!.name, profile: legacy, ownsLock: true, invisible: journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) },
+      { name: "Focus Notes Preview", profile: previewProfile, ownsLock: true, invisible: journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) },
     ]);
     expect(identities[0]!.name).not.toBe(identities[1]!.name);
     for (const profile of [legacy, previewProfile]) expect(existsSync(join(profile, "project-metadata.sqlite"))).toBe(true);

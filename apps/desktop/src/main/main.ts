@@ -92,7 +92,8 @@ let windowFrame: AppWindowFrame | undefined;
 
 const identity = appIdentity({
   store: isStoreBuild(), packaged: app.isPackaged, executable: process.execPath,
-  defaultUserData: app.getPath("userData"), userData: process.env.FOCUS_NOTES_USER_DATA,
+  defaultUserData: process.env.FOCUS_NOTES_USER_DATA ? resolve(process.env.FOCUS_NOTES_USER_DATA) : app.getPath("userData"),
+  userData: process.env.FOCUS_NOTES_USER_DATA,
   channel: process.env.FOCUS_NOTES_CHANNEL,
 });
 const previewCarryOverFailed = await preparePreviewProfile(identity, (error) => {
