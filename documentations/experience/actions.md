@@ -1,5 +1,7 @@
 # Actions: find and act
 
+The keyboard toolbar regression follows the enabled Help entry: activating **Help and docs** closes the menu, opens the documentation home through the existing system-browser bridge, and returns focus to the unchanged note. Its test intercepts the external launch so validation never opens a browser on the owner's screen.: find and act
+
 **Approved by the owner, 6 November 2026 (D-361 to D-364), with the recommended defaults on the five open questions.** The feature the owner's Spotlight note asks for: one dialog, **Actions**, tagline **Find and act**, that opens any file or folder in the project and runs a curated set of actions that all work and can't be confused. The rules behind it are the [Actions framework](../architecture/actions-framework.md).
 
 > [!NOTE]
