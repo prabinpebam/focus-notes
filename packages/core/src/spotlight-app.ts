@@ -118,8 +118,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const root = path ? rootOf(t, path) : undefined;
     const vis = path ? visibilityOf(t, path) : undefined;
     const writable = Boolean(path) && (root ? !root.readOnly : !isReadOnlyPath(path)) && s.workspace.access === "write";
+    const image = s.ui.images.selected;
     return {
       selection: Boolean(path) && s.ui.format.selection,
+      ...(path && image?.count === 1 && !image.text ? { image: { pos: image.pos, src: image.src, key: s.note.key } } : {}),
       note: Boolean(path),
       writable,
       ...(vis ? { visibility: vis } : {}),
@@ -658,7 +660,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       const e = catalogEntry(row.key);
       if (!e) return;
       // The note changed since Actions opened (ACT-05): refuse, keep the query, and say what changed.
-      if ((e.anchor === "note" || e.anchor === "selection") && (store.state.note.path !== scope.path || store.state.note.status !== "ready")) {
+      const staleImage = e.id === "image.edit" && scope.image && (
+        store.state.note.key !== scope.image.key || store.state.ui.images.selected?.pos !== scope.image.pos || store.state.ui.images.selected?.src !== scope.image.src
+      );
+      if ((e.anchor === "note" || e.anchor === "selection") && (store.state.note.path !== scope.path || store.state.note.status !== "ready" || staleImage)) {
         ctx.toast(msg("actions.stale"), { tone: "error" });
         scope = scopeNow();
         return refresh();
