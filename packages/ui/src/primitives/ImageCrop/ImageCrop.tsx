@@ -1,4 +1,7 @@
-import { useRef, type CSSProperties, type PointerEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type CSSProperties, type PointerEvent, type KeyboardEvent } from "react";
+import { IconButton } from "../IconButton/IconButton.tsx";
+import { TextField } from "../TextField/TextField.tsx";
+import { Text } from "../Text/Text.tsx";
 import * as s from "./ImageCrop.css.ts";
 
 type Handle = keyof typeof s.handles;
@@ -19,8 +22,17 @@ export interface ImageCropProps {
   aspect?: "free" | "original" | "square" | "fourThree" | "wide";
   flipHorizontal?: boolean;
   flipVertical?: boolean;
-  /** Names for all eight edges/corners and the move target, from the message model. */
+  /** Names for all eight edges/corners and the invisible move target, from the message model. */
   handles: readonly { id: string; label: string }[];
+  /** Exact source-pixel controls share the bottom toolbar with the view's icon actions. */
+  widthLabel?: string;
+  heightLabel?: string;
+  lockLabel?: string;
+  rangeMessage?: string;
+  toolbarLabel?: string;
+  /** A new reset signal restores the opening ratio-lock mode, including repeated preset choices. */
+  resetSignal?: boolean;
+  children?: ReactNode;
   /** Draft-only changes; the primitive never writes an image or a note. */
   onChange?: (rect: CropRect) => void;
   /** The owning design view decides how a draft is committed. */
@@ -33,16 +45,47 @@ export interface ImageCropProps {
  * @a11y Native named buttons for handles; source remains described.
  * @key Arrow moves an edge or the crop by one source pixel; Shift+Arrow by ten.
  */
-export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing = true, x = 0, y = 0, width: requestedWidth = 100, height: requestedHeight = 100, rotation = "0", aspect = "free", flipHorizontal = false, flipVertical = false, handles, onChange, onCommit }: ImageCropProps) {
+export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing = true, x = 0, y = 0, width: requestedWidth = 100, height: requestedHeight = 100, rotation = "0", aspect = "free", flipHorizontal = false, flipVertical = false, handles, widthLabel, heightLabel, lockLabel, rangeMessage, toolbarLabel, resetSignal, children, onChange, onCommit }: ImageCropProps) {
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ handle: Handle; px: number; py: number; rect: CropRect } | undefined>(undefined);
+  const [locked, setLocked] = useState(aspect !== "free");
+  const [rangeError, setRangeError] = useState(false);
+  const lockedRatio = useRef<number | undefined>(undefined);
+  const lockContext = useRef({ aspect, resetSignal });
+  const resetPending = lockContext.current.aspect !== aspect || lockContext.current.resetSignal !== resetSignal;
+  useEffect(() => {
+    lockContext.current = { aspect, resetSignal };
+    setLocked(aspect !== "free"); lockedRatio.current = undefined; setRangeError(false);
+  }, [aspect, resetSignal]);
   const quarter = rotation === "90" || rotation === "270";
   const iw = quarter ? intrinsicHeight : intrinsicWidth, ih = quarter ? intrinsicWidth : intrinsicHeight;
   const aspectValue = aspect === "original" ? iw / ih : aspect === "square" ? 1 : aspect === "fourThree" ? 4 / 3 : aspect === "wide" ? 16 / 9 : undefined;
-  const factor = aspectValue === undefined ? undefined : aspectValue * ih / iw;
+  const effectiveAspect = !editing || resetPending ? aspectValue : locked ? lockedRatio.current ?? aspectValue : undefined;
+  const factor = effectiveAspect === undefined ? undefined : effectiveAspect * ih / iw;
   const width = factor === undefined ? requestedWidth : Math.min(requestedWidth, requestedHeight * factor);
   const height = factor === undefined ? requestedHeight : width / factor;
   const rect = { x, y, width, height };
+  useEffect(() => {
+    if (editing && (Math.abs(width - requestedWidth) > 0.00001 || Math.abs(height - requestedHeight) > 0.00001)) {
+      onChange?.({ x, y, width, height });
+    }
+  }, [editing, x, y, width, height, requestedWidth, requestedHeight, onChange]);
+  const resizePixels = (axis: "width" | "height", value: string) => {
+    const pixels = Number(value);
+    if (!Number.isFinite(pixels) || value.trim() === "") { setRangeError(true); return; }
+    const limit = axis === "width" ? iw : ih;
+    const bounded = Math.max(1, Math.min(limit, Math.round(pixels)));
+    let nextWidth = axis === "width" ? bounded / iw * 100 : width;
+    let nextHeight = axis === "height" ? bounded / ih * 100 : height;
+    if (factor !== undefined) {
+      if (axis === "width") nextHeight = nextWidth / factor;
+      else nextWidth = nextHeight * factor;
+      const scale = Math.min(1, 100 / nextWidth, 100 / nextHeight);
+      nextWidth *= scale; nextHeight *= scale;
+    }
+    setRangeError(bounded !== pixels || Math.abs((axis === "width" ? nextWidth * iw : nextHeight * ih) / 100 - pixels) > 0.5);
+    onChange?.({ x: Math.min(x, 100 - nextWidth), y: Math.min(y, 100 - nextHeight), width: nextWidth, height: nextHeight });
+  };
   const turn = rotation === "90" ? `translate(${iw} 0) rotate(90)` : rotation === "180" ? `translate(${iw} ${ih}) rotate(180)` : rotation === "270" ? `translate(0 ${ih}) rotate(270)` : "";
   const flip = `translate(${flipHorizontal ? iw : 0} ${flipVertical ? ih : 0}) scale(${flipHorizontal ? -1 : 1} ${flipVertical ? -1 : 1})`;
   const viewBox = editing ? `0 0 ${iw} ${ih}` : `${x * iw / 100} ${y * ih / 100} ${width * iw / 100} ${height * ih / 100}`;
@@ -94,7 +137,7 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
     change(handle, (e.key === "ArrowLeft" ? -pixels : e.key === "ArrowRight" ? pixels : 0) / iw * 100, (e.key === "ArrowUp" ? -pixels : e.key === "ArrowDown" ? pixels : 0) / ih * 100, rect);
   };
   return <div className={`${s.wrapper}${editing ? ` ${s.edit}` : ""}`} onKeyDown={event => {
-    if (editing && event.key === "Enter") { event.preventDefault(); onCommit?.(); }
+    if (editing && event.key === "Enter" && !(event.target instanceof HTMLInputElement)) { event.preventDefault(); onCommit?.(); }
   }}>
     <div ref={stage} className={s.stage} style={variables}>
       <svg className={s.image} viewBox={viewBox} role="img" aria-label={alt}>
@@ -103,12 +146,28 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
       {editing ? <>
         <div className={s.shade} aria-hidden="true"><div className={s.aperture} /></div>
         <div className={s.controlFrame}>
-          {handles.map(({ id, label }) => id in s.handles ? <button key={id} type="button" aria-label={label} title={label} className={`${s.handle} ${s.handles[id as Handle]}`}
+          <button type="button" className={s.move} aria-label={handles.find(handle => handle.id === "move")?.label} onPointerDown={e => pointerDown(e, "move")} onPointerMove={pointerMove}
+            onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }} onKeyDown={e => keyDown(e, "move")} />
+          {handles.map(({ id, label }) => id !== "move" && id in s.handles ? <button key={id} type="button" aria-label={label} title={label} className={`${s.handle} ${s.handles[id as Handle]}`}
             onPointerDown={e => pointerDown(e, id as Handle)} onPointerMove={pointerMove}
             onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }}
             onKeyDown={e => keyDown(e, id as Handle)} /> : null)}
         </div>
       </> : null}
     </div>
+    {editing && widthLabel && heightLabel && lockLabel ? <div className={s.controls}>
+      <div className={s.toolbar} role="group" aria-label={toolbarLabel}>
+        <div className={s.actions}>{children}</div>
+        <div className={s.dimensions}>
+          <TextField label={widthLabel} value={String(Math.round(width * iw / 100))} width="number" size="m" onChange={({ value }) => resizePixels("width", value)} />
+          <IconButton icon={locked ? "lock" : "unlock"} label={lockLabel} toggle pressed={locked} onPress={() => {
+            lockedRatio.current = locked ? undefined : width * iw / (height * ih);
+            setLocked(!locked);
+          }} />
+          <TextField label={heightLabel} value={String(Math.round(height * ih / 100))} width="number" size="m" onChange={({ value }) => resizePixels("height", value)} />
+        </div>
+      </div>
+      {rangeError && rangeMessage ? <Text value={rangeMessage} tone="danger" role="caption" announce /> : null}
+    </div> : null}
   </div>;
 }
