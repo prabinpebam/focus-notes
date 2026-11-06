@@ -295,6 +295,7 @@
     },
     "imageFitMax": { "$value": "{ref.size.576}", "$description": "Fit height (D-300): an image is never taller than this…" },
     "imageFitViewport": { "$value": "{ref.size.70vh}", "$description": "…nor than this share of the window, so it is seen whole without scrolling." },
+    "imageEditViewport": { "$value": "{ref.size.35vh}", "$description": "Image editing preview leaves room for aspect choices, transforms and commit controls." },
     "imageWideExtra": { "$value": "{ref.size.128}", "$description": "How far a Wide image reaches past the reading column, split between both sides." },
     "imageQuarterTurn": { "$type": "number", "$value": 0.58, "$description": "Edit image: a landscape picture turned a quarter is drawn this much smaller, so it stays inside its frame." },
     "fontCell": { "$value": "{ref.size.80}", "$description": "A font cell's height in the font picker." },

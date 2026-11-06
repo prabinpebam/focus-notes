@@ -20,6 +20,7 @@ import { shareMocks } from "../mocks/share/index.ts";
 import { uiStatesMocks } from "../mocks/ui-states/index.ts";
 import { openMocks } from "../mocks/open/index.ts";
 import { projectMocks } from "../mocks/project/index.ts";
+import { imageEditMocks } from "../mocks/image-edit/index.ts";
 import { compose } from "./compose.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
@@ -35,4 +36,4 @@ export const fragments: Record<string, unknown> = {};
 export { mocks, mockData };
 
 /** Design mocks shown in the gallery before anything is wired (strict design mode): one group per area, each with its views, fake data and entries. */
-export const mockGroups = [projectMocks, openMocks, shareMocks, uiStatesMocks];
+export const mockGroups = [projectMocks, openMocks, shareMocks, uiStatesMocks, imageEditMocks];
