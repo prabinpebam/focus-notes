@@ -55,7 +55,7 @@ jobs:
           # Capture-only files (screenshot catalogues, their helpers, Store images) never ship in the
           # app and run on review-captures instead, so they don't turn the journeys on (D-224).
           app="$(echo "$files" | grep -Ev '^(apps/desktop/e2e/([a-z0-9-]+-catalog\.spec\.ts|scene-capture\.ts|fre-fakes\.ts)|tools/release/store-(screenshots\.py|logos\.py|listing\.mjs))$' || true)"
-          if [ -z "$files" ] || echo "$app" | grep -Eq '^(apps/desktop/|packages/|templates/|schemas/|tools/(release|bench|dev)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|\.npmrc$|\.github/workflows/ci\.yml$)'; then
+          if [ -z "$files" ] || echo "$app" | grep -Eq '^(apps/desktop/|packages/|templates/|schemas/|tools/(release|bench|dev|ci)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|\.npmrc$|\.github/workflows/ci\.yml$)'; then
             echo "desktop=true" >> "$GITHUB_OUTPUT"
           else
             echo "desktop=false" >> "$GITHUB_OUTPUT"
@@ -195,7 +195,7 @@ jobs:
       - name: Journey tests (shard ${{ matrix.shard }} of 4)
         timeout-minutes: 30
         working-directory: apps/desktop
-        run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+        run: node ../../tools/ci/run-journey-shard.mjs --shard=${{ matrix.shard }}/4
       - name: Keep test results
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
