@@ -64,8 +64,15 @@ const { app, ipcMain, nativeTheme, BrowserWindow } = require("electron");
 nativeTheme.themeSource = ${JSON.stringify(scheme === "dark" ? "light" : "dark")};
 globalThis.uiStatesFirstFrames = [];
 globalThis.uiStatesStartupFrames = [];
+globalThis.uiStatesPaintAcks = [];
 app.on("web-contents-created", (_event, contents) => {
   if (contents.getType() !== "window") return;
+  const capture = contents.capturePage.bind(contents);
+  contents.capturePage = async (...args) => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    globalThis.uiStatesPaintAcks.push(!BrowserWindow.fromWebContents(contents)?.isVisible());
+    return capture(...args);
+  };
   contents.once("did-start-loading", () => contents.beginFrameSubscription(image => {
     const visible = BrowserWindow.fromWebContents(contents)?.isVisible() === true;
     globalThis.uiStatesStartupFrames.push({ visible, png: image.toPNG().toString("base64") });
@@ -88,6 +95,7 @@ import(${JSON.stringify(main)});
     await expect(l.page.getByRole("button", { name: "Get started", exact: true })).toBeVisible();
     await expect.poll(() => l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames").length)).toBe(1);
     const frames = await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesFirstFrames")) as { hidden: boolean; theme: string; scheme: string; background: string; width: number; height: number; png: string }[];
+    expect(await l.app.evaluate(() => Reflect.get(globalThis, "uiStatesPaintAcks").slice(0, 2))).toEqual([true, true]);
     expect(frames[0]).toMatchObject({ hidden: true, theme: scheme === "dark" ? "ink" : "paper", scheme });
     expect(frames[0]!.background).not.toBe("rgba(0, 0, 0, 0)");
     expect(frames[0]!.width).toBeGreaterThan(300);
