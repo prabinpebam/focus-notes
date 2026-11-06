@@ -17850,14 +17850,6 @@
         "moreLabel": {
           "kind": "message",
           "required": true
-        },
-        "onLabel": {
-          "kind": "message",
-          "required": true
-        },
-        "offLabel": {
-          "kind": "message",
-          "required": true
         }
       },
       "events": {
@@ -17917,12 +17909,6 @@
             },
             "moreLabel": {
               "t": "toolbar.more"
-            },
-            "onLabel": {
-              "t": "switch.on"
-            },
-            "offLabel": {
-              "t": "switch.off"
             }
           }
         },
@@ -17950,12 +17936,6 @@
             },
             "moreLabel": {
               "t": "toolbar.more"
-            },
-            "onLabel": {
-              "t": "switch.on"
-            },
-            "offLabel": {
-              "t": "switch.off"
             }
           }
         }
@@ -17981,14 +17961,6 @@
           "required": true
         },
         "moreLabel": {
-          "kind": "message",
-          "required": true
-        },
-        "onLabel": {
-          "kind": "message",
-          "required": true
-        },
-        "offLabel": {
           "kind": "message",
           "required": true
         }
@@ -18024,12 +17996,6 @@
             },
             "moreLabel": {
               "t": "toolbar.more"
-            },
-            "onLabel": {
-              "t": "switch.on"
-            },
-            "offLabel": {
-              "t": "switch.off"
             }
           }
         }

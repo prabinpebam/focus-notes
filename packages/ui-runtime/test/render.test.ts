@@ -6,6 +6,8 @@ import { createApp, type PlatformBridge } from "@focus-notes/core";
 import { messages } from "@focus-notes/views";
 import { ViewHost, sizeClassOf, type RuntimeDeps } from "../src/render.ts";
 import { breakpoints } from "@focus-notes/tokens";
+import { JSDOM } from "jsdom";
+import { Toolbar } from "../../ui/src/compounds/Toolbar/Toolbar.tsx";
 
 const bridge: PlatformBridge = {
   platform: "macos", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
@@ -32,6 +34,25 @@ const render = (app: ReturnType<typeof setup>["app"], view: unknown) => {
 };
 
 describe("the renderer (DSY-06)", () => {
+  it("OFB.30: writing-toolbar modes are unlabelled icon buttons with pressed state", () => {
+    const html = renderToString(h(Toolbar, {
+      label: "Toolbar", moreLabel: "More", more: [],
+      items: [
+        { id: "focus.toggle", label: "Focus mode", icon: "focus", checked: true },
+        { id: "appearance.toggle", label: "Switch light and dark", icon: "lightTheme", checked: false },
+      ],
+    }));
+    const dom = new JSDOM(html);
+    const toolbar = dom.window.document.querySelector('[role="toolbar"]')!;
+    expect(toolbar.querySelector('[role="switch"]')).toBeNull();
+    for (const [name, pressed] of [["Focus mode", "true"], ["Switch light and dark", "false"]]) {
+      const button = toolbar.querySelector(`button[aria-label="${name}"]`)!;
+      expect(button.getAttribute("aria-pressed")).toBe(pressed);
+      expect(button.textContent).toBe("");
+      expect(button.querySelector("svg")).not.toBeNull();
+    }
+    dom.window.close();
+  });
   it("OFB.6: resolves all responsive classes at the token boundaries", () => {
     expect(sizeClassOf(breakpoints.medium - 1)).toBe("compact");
     expect(sizeClassOf(breakpoints.medium)).toBe("medium");

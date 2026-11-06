@@ -14,8 +14,6 @@ export interface TriggerProps {
   items: CommandItem[];
   more: MenuSection[];
   moreLabel: string;
-  onLabel: string;
-  offLabel: string;
   onOpenChange?: (payload: { open: boolean }) => void;
   onAction?: (payload: { id: string }) => void;
 }
@@ -24,7 +22,7 @@ export interface TriggerProps {
  * The trigger (IA-CMP-TRIGGER, IA-CMP-SAVESTATE): opens the toolbar under itself (UI-03). Its dot
  * turns to the danger tone only when saving fails.
  */
-export function Trigger({ label, problemLabel, problem, shortcut, open, toolbarLabel, items, more, moreLabel, onLabel, offLabel, onOpenChange, onAction }: TriggerProps) {
+export function Trigger({ label, problemLabel, problem, shortcut, open, toolbarLabel, items, more, moreLabel, onOpenChange, onAction }: TriggerProps) {
   return (
     <MorphPanel
       label={toolbarLabel}
@@ -39,7 +37,7 @@ export function Trigger({ label, problemLabel, problem, shortcut, open, toolbarL
           onPress={() => onOpenChange?.({ open: !open })}
         />
       }
-      content={<Toolbar label={toolbarLabel} items={items} more={more} moreLabel={moreLabel} onLabel={onLabel} offLabel={offLabel} {...(onAction ? { onAction } : {})} />}
+      content={<Toolbar label={toolbarLabel} items={items} more={more} moreLabel={moreLabel} {...(onAction ? { onAction } : {})} />}
     />
   );
 }

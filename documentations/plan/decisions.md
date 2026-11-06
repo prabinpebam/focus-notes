@@ -8,6 +8,11 @@
 - **One clear gap:** `cmp.switch.gap` aliases `space.inlineItem` (8 px at default text size), owned by the primitive's layout, not a label margin or a screen override.
 - **Dependent rows:** an Off parent disables its dependent controls, removes them from keyboard focus and prevents activation, keeping the reason. Agents already provides the disabled binding and command guard; the missing visible distinction was the Switch's disabled paint, not missing permission wiring. Reuse that row-level disabled contract rather than layering another opacity wrapper.
 - **Enforcement:** extend the existing button geometry/paint check, reject disabled hue declarations in the existing spacing/style lint, and assert computed gap, colours, opacity, focus skipping and ineffective activation in built Settings → Agents. Pending locks remain a distinct state that preserves focus.
+## D-368: writing-window toolbar modes remain icon buttons
+
+**Decided (the owner, 6 November 2026: "Toolbar was the exception where we have to use buttons to toggle modes... Chage the toolbar back to what it was exactly.").** Toolbar mode toggles (Focus mode, light/dark and other writing-window toolbar modes) stay icon toggle buttons with `aria-pressed`. The Switch rule covers binary *settings* only. This amends D-355; it does not change Settings Switches. The writing window is sacred, so a rule change never alters it without the owner's direction.
+
+**Affects:** AGENTS.md, Toolbar and Trigger, `ui:check`, [OFB.5–OFB.7 and OFB.30](definition-of-done.md), [gate evidence](gate-evidence.md).
 
 ## D-pending: Project replaces workspace everywhere
 
@@ -134,7 +139,7 @@ The owner's Spotlight note (5 November): "We don't want to dump all actions and 
 
 ## D-355: on/off settings are Switches, never buttons
 
-**Decided (the owner, 6 November 2026: "Why do you use btns for toggles, who does that. It's so confusing. Use proper components, use the swtich toggle for AI agent connecting options. If you are using btn for toggles anywhere else, change it to Switch toggle.").** Every binary setting uses the Switch primitive (`role="switch"`). A button with a pressed or selected state is allowed only for a formatting toggle in the editor toolbar (Bold, Italic) or a segmented choice of three or more; a check fails on any other. **Affects** Settings → Agents and every Settings section, [components](../design/system/components.md), OFB.5 to OFB.7.
+**Decided (the owner, 6 November 2026: "Why do you use btns for toggles, who does that. It's so confusing. Use proper components, use the swtich toggle for AI agent connecting options. If you are using btn for toggles anywhere else, change it to Switch toggle.").** Every binary setting uses the Switch primitive (`role="switch"`). **Amended by D-368:** writing-window toolbar mode icons retain `aria-pressed`; formatting toggles (Bold, Italic) and segmented choices of three or more remain exceptions too. A check fails on other binary buttons. **Affects** Settings → Agents and every Settings section, [components](../design/system/components.md), OFB.5 to OFB.7.
 
 ## D-354: buttons keep one geometry and never lose their padding
 

@@ -279,9 +279,7 @@
               },
               "moreLabel": {
                 "t": "toolbar.more"
-              },
-              "onLabel": { "t": "switch.on" },
-              "offLabel": { "t": "switch.off" }
+              }
             },
             "on": {
               "openChange": {

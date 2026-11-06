@@ -28,6 +28,7 @@ The design system's components: what each one is for, its variants and key props
 | Contract | Required behaviour |
 | --- | --- |
 | Meaning | A binary on/off choice, not a radio option or action button. Link/Passcode and Include notes added later in Share, Focus in the site, and boolean Settings rows use it. |
+| Writing toolbar exception | D-368: Focus mode and light/dark in the writing-window toolbar stay icon-only toggle buttons with `aria-pressed`, never labelled Switches. Binary Settings choices still use Switch. |
 | Anatomy | Visible text label, track, thumb, On/Off text twin; checked fill plus thumb position. No one-sided accent border. All colours, dimensions, opacity and motion are tokens. |
 | Semantics | Native checkbox with switch semantics or equivalent APG switch; accessible name matches label; checked exposed; Space toggles once, Tab follows ordinary form order. |
 | States | Off/on, rest, hover, pressed, focus-visible, disabled, pending and refused change. No native disabled focus loss during pending; retain the persisted value until confirmed, with named tracker feedback. |

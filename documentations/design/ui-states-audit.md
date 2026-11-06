@@ -176,14 +176,14 @@ The first toolbar gate exposed a startup race in the unrelated delete/Undo fixtu
 
 ### Owner feedback batch, 6 November: on/off audit
 
-The source audit found 27 production toggle declarations (one Agents repeat renders five permissions), plus the command-driven toolbar. All view declarations and the runtime toolbar now follow these semantic groups. The checker rejects boolean buttons, including an explicit false pressed state without `toggle`; only formatting and sibling groups of at least three distinct named choices pass. Primitive gallery fixtures demonstrate supported states, not settings, and are the only fixture exemption.
+The source audit found 27 production toggle declarations (one Agents repeat renders five permissions), plus the command-driven toolbar. D-368 corrects the toolbar conversion: writing-window mode icons are an explicit exception. The checker rejects other boolean buttons, including an explicit false pressed state without `toggle`; formatting and sibling groups of at least three distinct named choices pass too. Primitive gallery fixtures demonstrate supported states, not settings, and are the only fixture exemption.
 
 | Surface | Meaning | Required treatment | Evidence |
 | --- | --- | --- | --- |
 | Settings → Agents | Five independent on/off permissions, saved as one permission document | Switch; own-border pending/confirmation/refusal, stored value and focus retained, row Retry | Implemented locally: 13 core units; real Git-backed restart journey; synthetic refusal/Retry keyboard journey with stable bounds |
 | Settings appearance sync; sharing link/passcode, new words on Save and included items; reader Remember; feedback attachment | Binary settings or explicit-save draft choices | Switch | Converted. Appearance sync keeps the stored value until acknowledged, shows pending/confirmation/refusal and row Retry; drafts commit only on their existing Save |
 | Find and Find in all: case, whole word, regular expression, selection | Binary search settings | Switch | Converted; shortcuts preserved. Compact Find puts the same Switches in the existing PopoverPanel, with every label in bounds at 360 × 320; the match remains visible afterward |
-| Trigger toolbar: Focus mode and light/dark | Binary mode settings | Switch | Converted; real command and keyboard journeys, durable focus refusal/Retry, composer restart journey |
+| Trigger toolbar: Focus mode and light/dark | Writing-window modes, D-368 exception | IconButton with `aria-pressed`, no visible label | Restored to pre-conversion anatomy; mode-effect/keyboard/pressed-state guards and durable focus refusal/Retry remain |
 | Find's replacement disclosure; Files pin/unpin; immediate new passcode words | Open/close or named actions, not settings | Action buttons, without misleading pressed semantics | Disclosure uses `aria-expanded`; Files uses Dock/Undock names, not pressed state. Immediate passcode regeneration stays an action; the manage-share draft's new-words choice is a Switch |
 | Bold, italic, strike, code, link | Editor formatting | Pressed buttons are appropriate | Preserve |
 | Rewrite presets | Three mutually exclusive choices | Segmented choice | Preserved; checker accepts three distinct named values and rejects two or duplicated choices |

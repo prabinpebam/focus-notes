@@ -107,10 +107,13 @@ export function groupingProblems(node: Component): [string, string][] {
   return out;
 }
 
-/** D-355: pressed buttons express formatting or a genuine three-or-more named choice, never on/off. */
-export function toggleButtonProblems(node: Component, siblings: readonly Node[] = []): string[] {
+/** D-355/D-368: settings use Switch; writing-toolbar modes and formatting retain icon toggles. */
+export function toggleButtonProblems(node: Component, siblings: readonly Node[] = [], parentType?: string): string[] {
   if (!["Button", "IconButton"].includes(node.type) || (!node.props?.toggle && node.props?.pressed === undefined)) return [];
   const action = node.on?.press;
+  const toolbarModes = ["focus.toggle", "appearance.toggle"];
+  if (parentType === "ToolbarRow" && node.type === "IconButton" && node.props?.toggle && node.props.pressed !== undefined
+    && action && !Array.isArray(action) && "run" in action && toolbarModes.includes(action.run)) return [];
   const formatCommands = ["format.bold", "format.italic", "format.strike", "format.code", "link.edit"];
   if (action && !Array.isArray(action) && "run" in action && formatCommands.includes(action.run)) return [];
   const choice = (n: Node): { group: string; value: string } | undefined => {
@@ -128,7 +131,7 @@ export function toggleButtonProblems(node: Component, siblings: readonly Node[] 
     const values = new Set(siblings.map(choice).filter((c) => c?.group === own.group).map((c) => c!.value));
     if (values.size >= 3) return [];
   }
-  return ["an on/off setting must use Switch; pressed buttons are only for editor formatting or a grouped choice of at least three named options (D-355)"];
+  return ["an on/off setting must use Switch; pressed buttons are only for writing-toolbar icon modes, editor formatting or a grouped choice of at least three named options (D-355, D-368)"];
 }
 
 export function checkUi(inputs: CheckInputs): Problem[] {
@@ -289,10 +292,10 @@ export function checkUi(inputs: CheckInputs): Problem[] {
       for (const [e, actions] of Object.entries(node.on ?? {})) checkActions(actions, `${at}/on/${e}`, scope, c.events[e]?.payload);
       const kids = node.children ?? [];
       for (const [i, child] of kids.entries()) for (const shape of shapesOf(child))
-        for (const message of /^gallery\.(Button|IconButton)\.\d+$/.test(name) ? [] : toggleButtonProblems(shape, kids)) add("design", `${at}/children/${i}`, message);
+        for (const message of /^gallery\.(Button|IconButton)\.\d+$/.test(name) ? [] : toggleButtonProblems(shape, kids, node.type)) add("design", `${at}/children/${i}`, message);
       for (const [slotName, nodes] of Object.entries(node.slots ?? {}))
         for (const [i, child] of nodes.entries()) for (const shape of shapesOf(child))
-          for (const message of toggleButtonProblems(shape, nodes)) add("design", `${at}/slots/${slotName}/${i}`, message);
+          for (const message of toggleButtonProblems(shape, nodes, node.type)) add("design", `${at}/slots/${slotName}/${i}`, message);
       // Gallery mocks are design proposals; the views built from them are checked.
       for (const [where, m] of name.startsWith("gallery.") ? [] : groupingProblems(node))
         if (!(`${name} ${at}${where}` in GROUPING_EXCEPTIONS)) add("design", `${at}${where}`, m);

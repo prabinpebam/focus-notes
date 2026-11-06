@@ -6568,14 +6568,6 @@
         "moreLabel": {
           "kind": "message",
           "required": true
-        },
-        "onLabel": {
-          "kind": "message",
-          "required": true
-        },
-        "offLabel": {
-          "kind": "message",
-          "required": true
         }
       },
       "events": {
@@ -6629,14 +6621,6 @@
           "required": true
         },
         "moreLabel": {
-          "kind": "message",
-          "required": true
-        },
-        "onLabel": {
-          "kind": "message",
-          "required": true
-        },
-        "offLabel": {
           "kind": "message",
           "required": true
         }

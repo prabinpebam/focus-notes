@@ -1678,17 +1678,17 @@ test("compact focus and docking controls retain stored values on failure and rec
   try {
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
     const toolbar = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
-    const focus = toolbar.getByRole("switch", { name: "Focus mode", exact: true });
+    const focus = toolbar.getByRole("button", { name: "Focus mode", exact: true });
     block();
     await focus.press("Space");
-    await expect(focus.locator("xpath=ancestor::label")).toHaveAttribute("data-commit", "failed");
-    await expect(focus).not.toBeChecked();
+    await expect(focus).toHaveAttribute("data-commit", "failed");
+    await expect(focus).toHaveAttribute("aria-pressed", "false");
     await expect(toolbar).toBeVisible();
     restore();
     await retry.click();
     await expect.poll(() => saved().focusMode).toBe(true);
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
-    await expect(focus).toBeChecked();
+    await expect(focus).toHaveAttribute("aria-pressed", "true");
     await l.page.keyboard.press("Escape");
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+o" : "Control+o");
     const files = l.page.getByRole("complementary", { name: "Files", exact: true });

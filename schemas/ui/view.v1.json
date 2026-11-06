@@ -13706,32 +13706,6 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
-            },
-            "onLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
-            },
-            "offLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
             }
           },
           "required": [
@@ -13739,9 +13713,7 @@
             "toolbarLabel",
             "items",
             "more",
-            "moreLabel",
-            "onLabel",
-            "offLabel"
+            "moreLabel"
           ]
         },
         "on": {
@@ -13822,41 +13794,13 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
-            },
-            "onLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
-            },
-            "offLabel": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/message"
-                },
-                {
-                  "$ref": "#/$defs/read"
-                },
-                {
-                  "$ref": "#/$defs/expr"
-                }
-              ]
             }
           },
           "required": [
             "label",
             "items",
             "more",
-            "moreLabel",
-            "onLabel",
-            "offLabel"
+            "moreLabel"
           ]
         },
         "on": {

@@ -105,6 +105,15 @@ describe("on/off semantics (OFB.6, D-355)", () => {
     type: "Button", props: { toggle: true, pressed: false, label: { t: "gallery.sample" } },
     on: { press: { run, ...(value ? { args: { value } } : {}) } },
   });
+  it("D-368: allows only icon mode toggles inside the writing toolbar", () => {
+    for (const run of ["focus.toggle", "appearance.toggle"]) {
+      const icon: ComponentNode = { ...toggle(run), type: "IconButton" };
+      expect(toggleButtonProblems(icon, [], "ToolbarRow")).toEqual([]);
+      expect(toggleButtonProblems(icon, [], "Stack")).toHaveLength(1);
+      expect(toggleButtonProblems(toggle(run), [], "ToolbarRow")).toHaveLength(1);
+    }
+    expect(toggleButtonProblems({ ...toggle("settings.sync"), type: "IconButton" }, [], "ToolbarRow")).toHaveLength(1);
+  });
   it("rejects boolean buttons including false pressed state without toggle", () => {
     expect(toggleButtonProblems(toggle("settings.sync"))).toHaveLength(1);
     expect(toggleButtonProblems({ type: "IconButton", props: { pressed: false } })).toHaveLength(1);
@@ -215,7 +224,7 @@ describe("list item contracts (DS-A04)", () => {
     badIds: { type: "array", items: { type: "object", properties: { id: { type: "number" }, label: { type: "string" } } } },
     flatSections: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: { type: "string" } } } } },
   } } as const;
-  const toolbar = (items: string, more: string) => ({ type: "Toolbar", props: { label: { t: "toolbar.label" }, items: { get: items }, more: { get: more }, moreLabel: { t: "toolbar.more" }, onLabel: { t: "switch.on" }, offLabel: { t: "switch.off" } } });
+  const toolbar = (items: string, more: string) => ({ type: "Toolbar", props: { label: { t: "toolbar.label" }, items: { get: items }, more: { get: more }, moreLabel: { t: "toolbar.more" } } });
   const check = (items: string, more: string) => messagesOf(checkUi({
     ...base, viewModels: new Map<string, { schema: JsonSchema; setters?: Record<string, string> }>([...base.viewModels, ["vm.probe", { schema: probe as unknown as JsonSchema }]]),
     views: { t: { ...view(toolbar(items, more)).t, viewModels: ["vm.app", "vm.canvas", "vm.probe"] } },
