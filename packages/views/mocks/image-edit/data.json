@@ -6,6 +6,18 @@
   "dialog": "Edit image",
   "close": "Cancel image editing",
   "aspect": "Aspect ratio",
+  "toolbar": "Image editing tools",
+  "width": "Width (px)",
+  "height": "Height (px)",
+  "lock": "Lock aspect ratio",
+  "range": "Adjusted to fit the image. Use positive whole-pixel dimensions within its bounds.",
+  "ratioMenu": [{ "id": "ratios", "items": [
+    { "id": "free", "label": "Free" },
+    { "id": "original", "label": "Original" },
+    { "id": "square", "label": "1:1" },
+    { "id": "fourThree", "label": "4:3" },
+    { "id": "wide", "label": "16:9" }
+  ] }],
   "ratios": [
     { "id": "free", "label": "Free" },
     { "id": "original", "label": "Original" },
