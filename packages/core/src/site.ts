@@ -14,6 +14,7 @@ export const SITE_RELEASES = `${SITE_REPOSITORY}/releases/latest`;
 
 /** Help is a section of the Slate docs (D-181): its home, by the docs' hash route. */
 export const HELP_DOCS = "documentations/#help/index.md";
+export const HELP_URL = `https://prabinpebam.github.io/focus-notes/${HELP_DOCS}`;
 /** A help page's address in the docs, from its file in documentations/help/ ("fix-a-problem.md"), with an optional anchor. */
 export const helpDocsPath = (page: string, anchor?: string): string => `documentations/#help/${page}${anchor ? `#${anchor}` : ""}`;
 

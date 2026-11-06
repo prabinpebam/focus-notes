@@ -56,6 +56,7 @@ import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, projectAppearance, 
 import { customThemesOf, isCustomId } from "./custom-themes.ts";
 import { headingCount } from "./outline.ts";
 import { registerImages, IMAGES_CLOSED, type ImagesState } from "./images-app.ts";
+import { HELP_URL } from "./site.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -275,15 +276,6 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
-/**
- * ⋯ items whose feature arrives in a later work package: present now, disabled, and saying why
- * (UI-07, Foundations → States), rather than hidden. Each becomes a real command when it lands.
- */
-export const PLANNED_MENU_COMMANDS = [
-  // Help and docs open the product site's help, which arrives with the product site (WP-5.6).
-  { id: "help.open", title: "command.help.open", icon: "info", disabledReason: "command.help.open.reason" },
-] as const;
-
 export interface App {
   store: Store<AppState>;
   commands: CommandRegistry<AppState>;
@@ -1232,13 +1224,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: ({ value }) => { if (value === "mac" || value === "pc") setShortcuts({ platform: value }); },
   });
 
-  for (const p of PLANNED_MENU_COMMANDS) {
-    commands.register({
-      id: p.id, title: p.title, icon: p.icon, disabledReason: p.disabledReason,
-      enabled: () => false,
-      run: () => {},
-    });
-  }
+  const openHelp = bridge.openLink ?? bridge.openExternal;
+  commands.register({
+    id: "help.open", title: "command.help.open", icon: "info",
+    enabled: () => Boolean(openHelp),
+    run: () => openHelp!(HELP_URL),
+  });
 
   commands.register<NotePosition>({
     id: "note.position", title: "command.app.ready",
@@ -1376,8 +1367,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   // The actions that can be pinned (UI-08, D-170): the six defaults, then ⋯'s own commands.
-  const planned = new Set<string>(PLANNED_MENU_COMMANDS.map((c) => c.id));
-  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && !planned.has(id));
+  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id));
   registerToolbarCustomize({
     store, commands, viewModels, catalog, persistAppState, announce, toast, pinnable, defaults: DEFAULT_TOOLBAR,
     describeItem,
