@@ -363,13 +363,15 @@ export interface LinkDestination {
   end: number;
   /** Written as `<…>`, where spaces may appear unencoded. */
   angle: boolean;
+  /** Image provenance stores a complete Markdown destination inside a URI component. */
+  encoding?: "component";
 }
 
 let foundDestinations: LinkDestination[] = [];
 type Token = { start: { offset: number }; end: { offset: number } };
 const recordRaw = (t: Token) => { foundDestinations.push({ start: t.start.offset, end: t.end.offset, angle: false }); };
 const recordLiteral = (t: Token) => { if (t.end.offset - t.start.offset > 2) foundDestinations.push({ start: t.start.offset + 1, end: t.end.offset - 1, angle: true }); };
-/** The parser's own tokens say exactly where each destination is; nothing in code, HTML, or front matter is one. */
+/** The parser's tokens identify Markdown destinations, excluding code, HTML and front matter. */
 function collectDestinations(this: Processor) {
   const data = this.data();
   (data.fromMarkdownExtensions ??= []).push({
@@ -379,9 +381,8 @@ function collectDestinations(this: Processor) {
 const linkProcessor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]).use(remarkDirective).use(collectDestinations);
 
 /**
- * Every link, image, and reference definition destination in a note, in source order, so a
- * caller can change just those characters and leave every other byte as it was. An image's kept
- * original (`originalSrc=` in its hidden settings comment, D-347) is one too, so it moves with the image.
+ * Every link, image, reference definition and retained image-original destination, in source order, so a
+ * caller can change just those characters and leave every other byte as it was.
  */
 export function linkDestinations(input: string): LinkDestination[] {
   const bom = input.startsWith("\uFEFF") ? 1 : 0;
@@ -395,27 +396,19 @@ export function linkDestinations(input: string): LinkDestination[] {
   }
 }
 
-const ORIGINAL_SRC = /(?:^|\s)originalSrc=(?:"([^"]*)"|((?:(?!-->)\S)+))/g;
-/** `originalSrc=` values in image settings comments, block-level ones only (never in code). */
+/** Encoded `original=` values attached to actual images, never comments in code. */
 function originalSources(tree: Md.Root, input: string, bom: number): LinkDestination[] {
   const out: LinkDestination[] = [];
-  const visit = (node: Md.Nodes): void => {
-    if (node.type === "html" && node.position?.start.offset !== undefined && node.position.end.offset !== undefined) {
-      const from = node.position.start.offset + bom;
-      const raw = input.slice(from, node.position.end.offset + bom);
-      const open = /^\s*<!-- image: /.exec(raw);
-      if (open && /-->\s*$/.test(raw)) {
-        for (const m of raw.matchAll(ORIGINAL_SRC)) {
-          const value = m[1] ?? m[2]!;
-          if (!value) continue;
-          const start = from + m.index! + m[0].length - value.length - (m[1] !== undefined ? 1 : 0);
-          out.push({ start, end: start + value.length, angle: false });
-        }
-      }
-    }
-    if ("children" in node) for (const child of node.children) visit(child);
-  };
-  visit(tree);
+  for (let i = 0; i < tree.children.length; i++) {
+    const child = tree.children[i]!, next = tree.children[i + 1];
+    if (child.type !== "html" || next?.type !== "paragraph" || next.children.length !== 1 || next.children[0]?.type !== "image") continue;
+    if (!/^<!-- image: (.*?) -->$/.test(child.value.trim())) continue;
+    const match = /(?:^| )original=([^ ]+)/.exec(child.value);
+    if (!match || child.position?.start.offset === undefined) continue;
+    try { decodeURIComponent(match[1]!); } catch { continue; }
+    const start = child.position.start.offset + bom + match.index + match[0].indexOf("original=") + 9;
+    out.push({ start, end: start + match[1]!.length, angle: false, encoding: "component" });
+  }
   return out;
 }
 

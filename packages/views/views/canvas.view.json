@@ -1421,7 +1421,7 @@
             ] },
             { "type": "Stack", "props": { "padding": "insetLg", "gap": "stackGroup" }, "children": [
               { "type": "Text", "props": { "value": { "t": "image.safe" }, "tone": "muted" } },
-              { "type": "Text", "props": { "value": { "get": "vm.images.error" }, "tone": "danger" } },
+              { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.images.error" }, ""] } }, "props": { "value": { "get": "vm.images.error" }, "tone": "danger" } },
               { "type": "Inline", "props": { "justify": "end", "gap": "inlineItem", "wrap": true }, "children": [
                 { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle", "disabled": { "get": "vm.images.saving" }, "disabledReason": { "t": "image.edit.saving" } }, "on": { "press": { "run": "image.edit.close" } } },
                 { "type": "Button", "props": { "label": { "t": "image.edit.save" }, "variant": "primary", "busy": { "get": "vm.images.saving" }, "disabled": { "get": "vm.images.invalid" }, "disabledReason": { "get": "vm.images.invalidReason" } }, "on": { "press": { "run": "image.edit.save" } } }
