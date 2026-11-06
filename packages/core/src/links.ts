@@ -89,7 +89,8 @@ export function rewriteLinks(text: string, from: string, to: string, moves: read
   let at = 0;
   let links = 0;
   for (const d of linkDestinations(text)) {
-    const written = text.slice(d.start, d.end);
+    const raw = text.slice(d.start, d.end);
+    const written = d.encoding === "component" ? decodeURIComponent(raw) : raw;
     if (/^[/#?]/.test(written) || SCHEME.test(unescape(written))) continue;
     const cut = written.search(/[?#]/);
     const pathPart = cut < 0 ? written : written.slice(0, cut);
@@ -113,7 +114,7 @@ export function rewriteLinks(text: string, from: string, to: string, moves: read
     let rewritten = segs.map((s) => (s === ".." ? s : spelled.get(s) ?? encode(s, d.angle))).join("/");
     if (wsegs[0] === "." && segs[0] !== "..") rewritten = `./${rewritten}`;
     if (pathPart.endsWith("/")) rewritten += "/";
-    out += text.slice(at, d.start) + rewritten + suffix;
+    out += text.slice(at, d.start) + (d.encoding === "component" ? encodeURIComponent(rewritten + suffix) : rewritten + suffix);
     at = d.end;
     links++;
   }

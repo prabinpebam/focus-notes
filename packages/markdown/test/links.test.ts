@@ -7,6 +7,13 @@ import { linkDestinations } from "../src/index.ts";
 const dests = (src: string) => linkDestinations(src).map((d) => [src.slice(d.start, d.end), d.angle]);
 
 describe("linkDestinations", () => {
+  it("finds encoded original provenance only on actual image settings", () => {
+    const src = "\uFEFF<!-- image: rounded original=assets%2Fold%2520photo.png -->\r\n![crop](assets/crop.png)\r\n";
+    expect(dests(src)).toEqual([["assets%2Fold%2520photo.png", false], ["assets/crop.png", false]]);
+    expect(linkDestinations(src)[0]?.encoding).toBe("component");
+    const ignored = "```\n<!-- image: original=code.png -->\n![crop](code.png)\n```\n\n<!-- image: original=unrelated.png -->\n\nText.\n\n<!-- image: original=bad%ZZ -->\n![crop](crop.png)\n";
+    expect(dests(ignored)).toEqual([["crop.png", false]]);
+  });
   it("finds inline links, images, and reference definitions with their exact ranges", () => {
     const src = "See [a](../a/b.md) and ![pic](img/p.png \"T\") and [r][id].\n\n[id]: notes/c.md \"Title\"\n";
     expect(dests(src)).toEqual([["../a/b.md", false], ["img/p.png", false], ["notes/c.md", false]]);

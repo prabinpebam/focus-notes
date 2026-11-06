@@ -8,6 +8,19 @@ import { buildTree, planLinkWrites, rewriteLinks } from "../src/index.ts";
 const rw = (text: string, from: string, moves: { from: string; to: string }[], to = from) => rewriteLinks(text, from, to, moves).text;
 
 describe("rewriteLinks (FIL-09)", () => {
+  it("rebases cropped images and retained originals together without changing other metadata", () => {
+    const src = "<!-- image: rounded original=assets%2Fold%2520photo.png -->\n![crop](assets/crop.png)\n";
+    const out = rw(src, "n.md", [{ from: "n.md", to: "Box/n.md" }], "Box/n.md");
+    expect(out).toBe("<!-- image: rounded original=..%2Fassets%2Fold%2520photo.png -->\n![crop](../assets/crop.png)\n");
+    expect(parseMarkdown(out).doc.content?.[0]?.attrs?.originalSrc).toBe("../assets/old%20photo.png");
+    expect(rw(src, "n.md", [{ from: "assets/old photo.png", to: "assets/new photo.png" }])).toBe(
+      "<!-- image: rounded original=assets%2Fnew%2520photo.png -->\n![crop](assets/crop.png)\n",
+    );
+    expect(rewriteLinks(src, "n.md", "public/n.md", [{ from: "n.md", to: "public/n.md" }], () => false).text).toBe(src);
+    expect(rw("<!-- image: original=assets%2Fold.png%3Fv%3D1%23part -->\n![crop](crop.png)\n", "n.md", [{ from: "assets/old.png", to: "assets/new.png" }])).toBe(
+      "<!-- image: original=assets%2Fnew.png%3Fv%3D1%23part -->\n![crop](crop.png)\n",
+    );
+  });
   it("rewrites a relative link to a moved note, and only its destination", () => {
     const src = "# N\n\nSee [the plan](../a/b.md) today.\n";
     expect(rw(src, "x/n.md", [{ from: "a/b.md", to: "c/b.md" }])).toBe("# N\n\nSee [the plan](../c/b.md) today.\n");
