@@ -2,7 +2,7 @@ import { defineContract } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "ImageCrop", tier: "primitive",
-  description: "Image-only direct crop stage (D-372, strict design). Eight native edge/corner buttons and a move target surround the source; Arrow moves one oriented source pixel, Shift+Arrow ten. The same component renders the exact clipped, rotated and flipped result without handles. Aspect presets constrain the crop through rotation and dragging. Draft-only; never writes assets. Not an inline image menu.",
+  description: "Image-only direct crop stage (D-372, strict design). Eight native edge/corner buttons surround the source; dragging its transparent interior moves the box without a centre mark. Arrow moves one oriented source pixel, Shift+Arrow ten. Optional exact px fields and ratio lock share one wrapping bottom toolbar with slotted icon actions. Out-of-range dimensions clamp with an inline message. The same component renders the exact clipped, rotated and flipped result without handles. Draft-only; never writes assets. Not an inline image menu.",
   props: {
     src: { kind: "text", required: true },
     alt: { kind: "message", required: true },
@@ -18,9 +18,15 @@ export const contract = defineContract({
     flipHorizontal: { kind: "boolean", default: false },
     flipVertical: { kind: "boolean", default: false },
     handles: { kind: "list", of: "options", required: true },
+    widthLabel: { kind: "message" },
+    heightLabel: { kind: "message" },
+    lockLabel: { kind: "message" },
+    rangeMessage: { kind: "message" },
+    toolbarLabel: { kind: "message" },
+    resetSignal: { kind: "boolean" },
   },
   events: { change: { payload: { x: "number", y: "number", width: "number", height: "number" } }, commit: {} },
-  slots: {}, states: ["rest", "editing"], tokens: "cmp.imageCrop.*",
+  slots: { default: { accepts: "any" } }, states: ["rest", "editing"], tokens: "cmp.imageCrop.*",
   a11y: { pattern: "named native crop buttons", name: "alt" },
   fixtures: [
     ...(["original", "square", "fourThree", "wide"] as const).map(aspect => ({ name: `aspect ${aspect}`, props: { src: { get: "vm.gallery.imageSrc" }, alt: { t: "gallery.sample" }, intrinsicWidth: 640, intrinsicHeight: 360, aspect, handles: { get: "vm.gallery.options" } } })),

@@ -10,11 +10,15 @@ Done stages a new bounded managed image copy and changes the note's relative lin
 
 The gallery demonstrates fake-data state transitions only; persistence, normal editor Undo, source-version guards and asynchronous saving remain a post-approval implementation. The modal is grounded in the owner's actual source, so no unwanted in-place alternative is added.
 
+**Owner revision, 15:44:** "Image editing icons are well established, ples use icon btns and fit fucntionalities in a toolbar approach at the bottom. Should also be able to specify exact height and width." Use one bottom icon toolbar, established Fluent crop/rotate/flip/reset glyphs, tooltips and accessible names. Exact pixel width/height and a ratio-lock manipulation toggle share the toolbar. Typing updates the crop, locked dimensions follow its ratio, and out-of-range sizes clamp with an inline explanation. Drag inside the crop to move; remove the centre square. Done/Cancel, copied result, preserved original, Undo and Restore original remain unchanged. Approval is still pending.
+
 ## D-373: Gallery crop evidence under the unchanged strict CSP
 
 **Status:** Design-preview correction (6 November 2026), not desktop runtime approval. **Affects:** [Image editing gallery and limitations](../experience/images.md#gallery-review-and-limitations), the gallery build, ImageCrop tokens and fixtures.
 
 The initial link had accessibility-tree evidence but inadequate rendered evidence. Main reproduced mouse/stability timeouts and two blocked style tags. Independent normal-mouse headless Chromium isolated the CSP reports to Fluent Icons' Griffel stylesheet insertion. Use the installed library's documented atomic headless imports and external CSS in the gallery build only; never loosen the CSP or modify the desktop's icon styling. Budget the crop stage separately from a note image, preserving source geometry as it shrinks. Reinspect the complete path in light/dark/narrow and take the owner-requested screenshots before another review handoff. Automated tests and runtime wiring still await explicit design approval.
+
+At wiring time move the gallery-only icon transform into `packages/ui`, preserving the same rendered SVGs and external CSS in the app and gallery. The desktop's matching `style-src 'self'` policy rules out leaving the gallery correction as a preview-only divergence.
 
 ## D-367: Disabled preserves colours; Switch labels have a gap; Off parents disable dependents
 

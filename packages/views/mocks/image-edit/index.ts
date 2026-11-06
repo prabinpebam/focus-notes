@@ -12,6 +12,7 @@ export const imageEditMocks = {
     { id: "imageEdit.selected", label: "1. Selected image → Edit image", view: "flow" },
     { id: "imageEdit.enter", label: "2. Edit image · drag the handles", view: "flow", local: { open: true } },
     { id: "imageEdit.handles", label: "3. Crop tightened around the boats", view: "flow", local: { open: true, x: 15, y: 20, width: 70, height: 65 } },
+    { id: "imageEdit.dimensions", label: "Exact pixels · width, height and ratio lock", view: "flow", local: { open: true, x: 15, y: 20, width: 50, height: 57.14285714285714 } },
     { id: "imageEdit.aspect", label: "4. Aspect preset · 1:1", view: "flow", local: { open: true, ratio: "square", x: 0, y: 0, width: 56.25, height: 100 } },
     { id: "imageEdit.transform", label: "5. Rotate and flip", view: "flow", local: { open: true, rotation: "90", flipHorizontal: true, ratio: "square", width: 56.25 } },
     { id: "imageEdit.done", label: "6. Done · creates a copy", view: "flow", local: { open: true, x: 15, y: 20, width: 70, height: 65 } },
