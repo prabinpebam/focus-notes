@@ -3,12 +3,13 @@ import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.imageCrop;
 export const ratio = createVar();
+export const ratioNumber = createVar();
 export const x = createVar(), y = createVar(), width = createVar(), height = createVar();
 export const wrapper = style({ display: "flex", justifyContent: "center", minWidth: 0 });
 export const edit = style({ padding: t.inset });
 export const stage = style({
-  position: "relative", width: "100%", aspectRatio: ratio,
-  maxHeight: `min(${t.maxHeight}, ${t.viewportHeight})`, minWidth: 0,
+  position: "relative", width: `min(100%, calc(min(${t.maxHeight}, ${t.viewportHeight}) * ${ratioNumber}))`, aspectRatio: ratio,
+  minWidth: 0,
 });
 export const image = style({ display: "block", width: "100%", height: "100%" });
 export const shade = style({ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" });

@@ -1,13 +1,13 @@
 { "cmp": { "imageCrop": {
   "$extensions": { "owner": "ImageCrop" },
   "target": { "$type": "dimension", "$value": "{size.hit}", "$description": "Invisible crop handle target, inside the padded editing stage." },
-  "mark": { "$type": "dimension", "$value": "{space.inlinePair}", "$description": "Visible corner and edge handle size, independent of the target." },
+  "mark": { "$type": "dimension", "$value": "{space.inlineGroup}", "$description": "Visible corner and edge handle size, independent of the target." },
   "inset": { "$type": "dimension", "$value": "{space.insetLg}", "$description": "Space around the source for crop handles and their focus rings." },
-  "line": { "$type": "color", "$value": "{color.onAccent}", "$description": "Crop boundary and handle ink over the source pixels." },
+  "line": { "$type": "color", "$value": "{color.accent}", "$description": "Crop boundary and handle ink over the source pixels." },
   "ring": { "$type": "color", "$value": "{color.accent}", "$description": "Keyboard focus on the active crop handle." },
   "stroke": { "$type": "dimension", "$value": "{border.focus}", "$description": "Reserved crop boundary and handle stroke width." },
   "shade": { "$type": "color", "$value": "{color.scrim}", "$description": "Pixels outside the crop remain visible but dimmed." },
   "shadeReach": { "$type": "dimension", "$value": "{radius.round}", "$description": "Clipped overlay extends beyond any source edge." },
   "maxHeight": { "$type": "dimension", "$value": "{size.imageFitMax}", "$description": "Editing stage fits the window without hiding the actions." },
-  "viewportHeight": { "$type": "dimension", "$value": "{size.imageFitViewport}", "$description": "Portrait image stage shrinks to the available review viewport." }
+  "viewportHeight": { "$type": "dimension", "$value": "{size.imageEditViewport}", "$description": "Editing stage leaves room for the aspect choices, transforms and Done within the dialog." }
 } } }

@@ -19,6 +19,21 @@ The dialog retains the image and existing caption. Stop cancels its own bounded 
 **Save image…** exports the decoded raster as PNG through the native Save dialog with overwrite confirmation. The default name is `image.png`, not a note or source path. Non-PNG destinations are refused; a temporary sibling and atomic rename preserve any existing destination on write failure. Remembered Rounded corners / Limit height are serialized device-state writes, separate from each image's Markdown and normal Undo. A failed defaults write keeps the last saved defaults.
 
 **Affects:** [Image menu](../experience/images.md#image-menu-and-selection), [Writing Help](../help/write.md#copy-replace-or-save-an-image), [image waits](../architecture/perceived-performance.md#other-image-waits-planned), WP-9.1.
+## D-372: Image-only editing, handles first, original preserved
+
+**Status:** Proposed (coordinator direction, 6 November 2026; owner approval pending). **Affects:** [Images → Crop and rotate dialog](../experience/images.md#crop-and-rotate-dialog), IMG-04, IMG-10, CP-FLOW-01, CP-SAFE-01, SC-IMG-03, UC-IMG-04; supersedes D-327 and the earlier destructive-save interpretation only when approved.
+
+The owner's source says “Opens a dialog/modal”; the 14:17 feedback asks to rethink the entire editing task flow and benchmark established UX. Keep the image-only modal, but put direct crop handles first, followed by Free/Original/1:1/4:3/16:9, rotate, flip, Reset, Done/Enter and Cancel/Esc. The [source benchmark and failures](../experience/images.md#benchmark-established-crop-flows) distinguish verified help from Word's 404 and Apple's 429.
+
+Done stages a new bounded managed image copy and changes the note's relative link as one ordinary Undo transaction. Never overwrite the original. Ctrl+Z and Restore original recover the retained reference even without Git; other references keep their pixels. Keep every unused copy: no automatic deletion. Each copy obeys 20 MiB / 40 MP limits; Git projects version the note and referenced asset together, offline files retain them locally. Storage growth is the explicit trade-off for data safety and plain Markdown interoperability, rather than inventing portable crop directives unsupported by other readers.
+
+The gallery demonstrates fake-data state transitions only; persistence, normal editor Undo, source-version guards and asynchronous saving remain a post-approval implementation. The modal is grounded in the owner's actual source, so no unwanted in-place alternative is added.
+
+## D-373: Gallery crop evidence under the unchanged strict CSP
+
+**Status:** Design-preview correction (6 November 2026), not desktop runtime approval. **Affects:** [Image editing gallery and limitations](../experience/images.md#gallery-review-and-limitations), the gallery build, ImageCrop tokens and fixtures.
+
+The initial link had accessibility-tree evidence but inadequate rendered evidence. Main reproduced mouse/stability timeouts and two blocked style tags. Independent normal-mouse headless Chromium isolated the CSP reports to Fluent Icons' Griffel stylesheet insertion. Use the installed library's documented atomic headless imports and external CSS in the gallery build only; never loosen the CSP or modify the desktop's icon styling. Budget the crop stage separately from a note image, preserving source geometry as it shrinks. Reinspect the complete path in light/dark/narrow and take the owner-requested screenshots before another review handoff. Automated tests and runtime wiring still await explicit design approval.
 
 ## D-367: Disabled preserves colours; Switch labels have a gap; Off parents disable dependents
 
