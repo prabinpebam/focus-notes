@@ -6,7 +6,7 @@ import { createApp, type PlatformBridge } from "@focus-notes/core";
 import { messages } from "@focus-notes/views";
 import { ViewHost, sizeClassOf, type RuntimeDeps } from "../src/render.ts";
 import { breakpoints } from "@focus-notes/tokens";
-import { JSDOM } from "jsdom";
+import { Window } from "happy-dom";
 import { Toolbar } from "../../ui/src/compounds/Toolbar/Toolbar.tsx";
 
 const bridge: PlatformBridge = {
@@ -42,8 +42,9 @@ describe("the renderer (DSY-06)", () => {
         { id: "appearance.toggle", label: "Switch light and dark", icon: "lightTheme", checked: false },
       ],
     }));
-    const dom = new JSDOM(html);
-    const toolbar = dom.window.document.querySelector('[role="toolbar"]')!;
+    const dom = new Window();
+    dom.document.body.innerHTML = html;
+    const toolbar = dom.document.querySelector('[role="toolbar"]')!;
     expect(toolbar.querySelector('[role="switch"]')).toBeNull();
     for (const [name, pressed] of [["Focus mode", "true"], ["Switch light and dark", "false"]]) {
       const button = toolbar.querySelector(`button[aria-label="${name}"]`)!;
@@ -51,7 +52,7 @@ describe("the renderer (DSY-06)", () => {
       expect(button.textContent).toBe("");
       expect(button.querySelector("svg")).not.toBeNull();
     }
-    dom.window.close();
+    dom.close();
   });
   it("OFB.6: resolves all responsive classes at the token boundaries", () => {
     expect(sizeClassOf(breakpoints.medium - 1)).toBe("compact");
