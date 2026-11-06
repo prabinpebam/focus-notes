@@ -30,8 +30,10 @@ export interface PlatformBridge {
   platform: Platform;
   readNote(path: string): Promise<string>;
   readImage?(note: string, src: string): Promise<string>;
+  copyImage?(note: string, src: string, alt: string, caption: string): Promise<void>;
+  saveImage?(note: string, src: string): Promise<boolean>;
   writeImage?(note: string, src: string, data: string, expected: string): Promise<void>;
-  importImages?(note: string, inputs?: readonly { data: string }[]): Promise<{ batch: string; images: { src: string; width: number; height: number }[] } | undefined>;
+  importImages?(note: string, inputs?: readonly { data: string }[], replace?: boolean): Promise<{ batch: string; images: { src: string; width: number; height: number }[] } | undefined>;
   finishImageImport?(batch: string, keep: boolean): Promise<void>;
   /** As readNote, but only a missing file is null; permission and other read failures still reject. */
   readNoteIfExists?(path: string): Promise<string | null>;
@@ -710,6 +712,7 @@ export interface DemoBridge {
 }
 
 export interface AppStateFile {
+  imageDefaults?: { rounded: boolean; fitHeight: boolean };
   sharingDrafts?: Record<string, import("./sharing-people.ts").SharingDraft>;
   version: 1;
   projectIntroSeen?: boolean;

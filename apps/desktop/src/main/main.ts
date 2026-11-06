@@ -5,8 +5,9 @@
  * API for setup and sharing, configured AI integrations, and the workspace's own Pages site to
  * confirm publication without credentials or redirects (D-344).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, safeStorage, session, ShareMenu, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { importImages, imageInputsFromPaths, type ImageInput } from "./image-import.ts";
+import { imageClipboard } from "./image-transfer.ts";
 import { copyFile, lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -1276,13 +1277,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (inside(join(notesHome(), "notes"), note)) return notesHome();
     return undefined;
   };
-  handleFrom("image:import", async (event, path, inputs) => {
+  handleFrom("image:import", async (event, path, inputs, replace) => {
+    if (replace !== undefined && typeof replace !== "boolean") throw new Error("invalid-image");
     const note = notePath(path);
     await assertWritable(note);
     await stat(note);
     let files: ImageInput[];
     if (inputs === undefined) {
-      const options = { properties: ["openFile" as const, "multiSelections" as const], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp"] }] };
+      const options = { properties: replace ? ["openFile" as const] : ["openFile" as const, "multiSelections" as const], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp"] }] };
       const parent = win();
       const choice = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options);
       if (choice.canceled) return undefined;
@@ -1291,6 +1293,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (!Array.isArray(inputs) || inputs.length > 20 || inputs.some((item) => !item || typeof item !== "object" || typeof item.data !== "string")) throw new Error("invalid-image");
       files = inputs;
     }
+    if (replace && files.length !== 1) throw new Error("image-count");
     const root = imageRoot(note);
     const result = await importImages(note, root, files, async (path, size) => {
       // Chromium's async decoder does not depend on Windows thumbnail codecs.
@@ -1342,6 +1345,36 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const info = await stat(path);
     if (!info.isFile() || info.size > 20 * 1024 * 1024) throw new Error("image-too-large");
     return `data:${imageMime(path)};base64,${(await readFile(path)).toString("base64")}`;
+  });
+  const transferImage = async (note: unknown, src: unknown) => {
+    const path = await imagePath(note, src);
+    const info = await stat(path);
+    if (!info.isFile() || info.size > 20 * 1024 * 1024) throw new Error("image-too-large");
+    const data = `data:${imageMime(path)};base64,${(await readFile(path)).toString("base64")}`;
+    return data;
+  };
+  handle("image:copy", async (note, src, alt, caption) => {
+    if (typeof alt !== "string" || typeof caption !== "string") throw new Error("invalid-image");
+    const content = imageClipboard(await transferImage(note, src), alt, caption);
+    const image = nativeImage.createFromBuffer(content.bytes);
+    if (image.isEmpty()) throw new Error("invalid-image");
+    clipboard.write({ image, html: content.html, text: content.text });
+  });
+  handle("image:save", async (note, src) => {
+    const content = imageClipboard(await transferImage(note, src), "", "");
+    const image = nativeImage.createFromBuffer(content.bytes);
+    if (image.isEmpty()) throw new Error("invalid-image");
+    const options = { defaultPath: "image.png", filters: [{ name: "PNG image", extensions: ["png"] }], properties: ["showOverwriteConfirmation" as const] };
+    const parent = win();
+    const chosen = parent ? await dialog.showSaveDialog(parent, options) : await dialog.showSaveDialog(options);
+    if (chosen.canceled || !chosen.filePath) return false;
+    if (extname(chosen.filePath).toLowerCase() !== ".png") throw new Error("invalid-image-destination");
+    const temporary = `${chosen.filePath}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temporary, image.toPNG(), { flag: "wx" });
+      await rename(temporary, chosen.filePath);
+    } finally { await rm(temporary, { force: true }); }
+    return true;
   });
   handle("image:write", async (note, src, data, expected) => {
     const path = await imagePath(note, src);

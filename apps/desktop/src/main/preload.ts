@@ -102,8 +102,10 @@ ipcRenderer.on("spelling:replace", (_e, word: unknown, replacement: unknown) => 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
   readImage: (note: string, src: string) => ipcRenderer.invoke("image:read", note, src),
+  copyImage: (note: string, src: string, alt: string, caption: string) => ipcRenderer.invoke("image:copy", note, src, alt, caption),
+  saveImage: (note: string, src: string) => ipcRenderer.invoke("image:save", note, src),
   writeImage: (note: string, src: string, data: string, expected: string) => ipcRenderer.invoke("image:write", note, src, data, expected),
-  importImages: (note: string, inputs?: readonly { data: string }[]) => ipcRenderer.invoke("image:import", note, inputs),
+  importImages: (note: string, inputs?: readonly { data: string }[], replace?: boolean) => ipcRenderer.invoke("image:import", note, inputs, replace),
   finishImageImport: (batch: string, keep: boolean) => ipcRenderer.invoke("image:finishImport", batch, keep),
   // GPU or software compositing (D-121): the main process reads it, and tells of changes after a GPU crash.
   compositing: {

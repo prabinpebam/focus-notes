@@ -157,6 +157,15 @@ The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-r
 
 ## Other image waits (planned)
 
+The Menu candidate (6 November, D-370) uses named section tasks while keeping the editor mounted and usable. Cut keeps its reference until the clipboard succeeds; Replace keeps its old pixels until the imported reference is accepted. Device defaults serialize without blocking note edits and remain at the last durable value on failure.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Copy/Cut one image | Responsive → waiting; named section task | Copying image…; recoverable failure leaves the reference intact | `fn:image.copy`; existing 300/500 ms tracker timing, no speed claim |
+| Replace one image | Responsive → waiting; existing importer and mapped image target | Replacing image…; old image remains until validation and import succeed | `fn:image.replace`; same importer limits and asynchronous decode |
+| Export a PNG copy | Waiting; native Save dialog and atomic destination write | Saving image… → Image saved.; Cancel is not a success | `fn:image.save`; PNG destination only, existing overwrite confirmation |
+| Remember insertion defaults | Responsive; serialized device-state write | Saving image options…; failed write reports that only the note changed | `fn:image.defaults`; previous durable defaults retained |
+
 IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker and 300 ms delay/500 ms minimum visible indicator; acknowledge within 100 ms. Keep input, old pixels and the caption draft mounted; only the destructive commit briefly prevents duplicate image saves. Bounded decode/encode runs outside the main process.
 
 | Operation | Class / pattern | Place and words | Measure / target |
