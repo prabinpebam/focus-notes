@@ -14,10 +14,10 @@ export async function validateNoteImages(text: string, note: string, boundary: s
 }
 
 export async function localNoteImages(text: string, note: string, boundary: string, select?: (path: string) => boolean): Promise<{
-  start: number; end: number; path: string; canonicalPath: string; suffix: string; index: number;
+  start: number; end: number; path: string; canonicalPath: string; suffix: string; index: number; encoding?: "component";
 }[]> {
   const canonical = await realpath(boundary);
-  const images: { start: number; end: number; path: string; canonicalPath: string; suffix: string; index: number }[] = [];
+  const images: { start: number; end: number; path: string; canonicalPath: string; suffix: string; index: number; encoding?: "component" }[] = [];
   for (const [index, destination] of imageDestinations(text).entries()) {
     const raw = text.slice(destination.start, destination.end);
     const written = (destination.encoding === "component" ? decodeURIComponent(raw) : raw).replace(/\\([!-/:-@[-`{-~])/g, "$1");
@@ -31,7 +31,7 @@ export async function localNoteImages(text: string, note: string, boundary: stri
       throw error;
     });
     if (!inside(canonical, actual) || !(await stat(actual)).isFile()) throw new Error("invalid");
-    images.push({ start: destination.start, end: destination.end, path, canonicalPath: actual, suffix: cut < 0 ? "" : written.slice(cut), index });
+    images.push({ start: destination.start, end: destination.end, path, canonicalPath: actual, suffix: cut < 0 ? "" : written.slice(cut), index, encoding: destination.encoding });
   }
   return images;
 }

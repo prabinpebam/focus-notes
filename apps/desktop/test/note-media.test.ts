@@ -121,16 +121,42 @@ describe("IMG-05 authorized media copies", () => {
     expect(await readFile(join(notes, "a.md.assets", "images", "s.png"))).toEqual(png);
     expect(await readdir(join(notes, "a.md.assets", "images"))).toEqual(["s.png"]);
   });
-  it("copies a cropped image's kept original (originalSrc) too, rewriting both and keeping the comment's other words", async () => {
+  it.each([false, true])("copies a cropped image's encoded original too, retaining metadata and source bytes (public: %s)", async (publicCopy) => {
     const f = await setup();
-    await writeFile(join(f.source, "assets", "images", "o.png"), png);
-    const text = "<!-- image: wide originalSrc=../assets/images/o.png -->\n![A](../assets/images/p.png)\n";
-    const result = await copyNoteMedia(text, f.from, f.to, f.source, f.destination, true);
+    const originalPath = join(f.source, "assets", "images", "o #%.png");
+    await writeFile(originalPath, png);
+    const text = "\uFEFF<!-- image: wide original=..%2Fassets%2Fimages%2Fo%2520%2523%2525.png size=4x3 -->\r\n![A](../assets/images/p.png \"Cap\")\r\n";
+    const result = await copyNoteMedia(text, f.from, f.to, f.source, f.destination, publicCopy);
     expect(result.paths).toHaveLength(2);
     const [original, cropped] = result.paths.map(p => relative(join(f.destination, "notes"), p).split(sep).join("/"));
-    expect(result.text).toBe(`<!-- image: wide originalSrc=${original} -->\n![A](${cropped})\n`);
+    expect(result.text).toBe(`\uFEFF<!-- image: wide original=${encodeURIComponent(original!)} size=4x3 -->\r\n![A](${cropped} "Cap")\r\n`);
     await validateNoteImages(result.text, f.to, f.destination);
-    expect(await readFile(join(f.source, "assets", "images", "o.png"))).toEqual(png);
+    expect(await readFile(originalPath)).toEqual(png);
+    expect(await readFile(f.asset)).toEqual(png);
+  });
+  it("duplicates encoded originals only when owned by the source sidecar, including planned link rewrites", async () => {
+    const f = await setup();
+    const notes = join(f.source, "notes");
+    await mkdir(join(notes, "a.md.assets", "images"), { recursive: true });
+    const originalPath = join(notes, "a.md.assets", "images", "o %.png");
+    await writeFile(originalPath, png);
+    const source = "[note](other.md)\n\n<!-- image: rounded original=a.md.assets%2Fimages%2Fo%2520%2525.png -->\n![A](../assets/images/p.png)\n";
+    const planned = source.replace("[note](other.md)", "[note](renamed.md)");
+    const to = join(notes, "copy.md");
+    const result = await copyNoteMedia(planned, f.from, to, f.source, undefined, false, source, ownSidecar(f.from));
+    expect(result.paths).toHaveLength(1);
+    const original = relative(notes, result.paths[0]!).split(sep).join("/");
+    expect(result.text).toBe(`[note](renamed.md)\n\n<!-- image: rounded original=${encodeURIComponent(original)} -->\n![A](../assets/images/p.png)\n`);
+    await validateNoteImages(result.text, to, f.source);
+    expect(await readFile(originalPath)).toEqual(png);
+  });
+  it("refuses an encoded missing or out-of-bound original before copying the cropped image", async () => {
+    const f = await setup();
+    for (const [path, error] of [["../assets/images/missing.png", "missingImage"], ["../../outside.png", "invalid"]]) {
+      const text = `<!-- image: original=${encodeURIComponent(path!)} -->\n![A](../assets/images/p.png)\n`;
+      await expect(copyNoteMedia(text, f.from, f.to, f.source, f.destination, true)).rejects.toThrow(error);
+      expect(await readdir(f.destination)).toEqual(["notes"]);
+    }
   });
   it("resolves images from the source text and writes them into the link-rewritten destination text", async () => {
     const f = await setup();

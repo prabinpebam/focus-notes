@@ -107,10 +107,12 @@ test("IMG-05: Make public shows the note's images from public copies, stripped, 
   const length = Buffer.alloc(4), crc = Buffer.alloc(4);
   length.writeUInt32BE(chunk.length - 4); crc.writeUInt32BE(crc32(chunk));
   const original = Buffer.concat([plain.subarray(0, 33), length, chunk, crc, plain.subarray(33)]);
+  const keptPlain = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0u0AAAAASUVORK5CYII=", "base64");
+  const keptOriginal = Buffer.concat([keptPlain.subarray(0, 33), length, chunk, crc, keptPlain.subarray(33)]);
   const cropped = join(priv, "assets", "images", "c.png"), kept = join(priv, "assets", "images", "o.png");
   writeFileSync(cropped, original);
-  writeFileSync(kept, original);
-  writeFileSync(join(priv, "notes", "welcome.md"), "# Welcome\n\nFirst line.\n\n<!-- image: rounded originalSrc=../assets/images/o.png -->\n![Pic](../assets/images/c.png \"Cap\")\n");
+  writeFileSync(kept, keptOriginal);
+  writeFileSync(join(priv, "notes", "welcome.md"), "# Welcome\n\nFirst line.\n\n<!-- image: rounded original=..%2Fassets%2Fimages%2Fo.png -->\n![Pic](../assets/images/c.png \"Cap\")\n");
   git(priv, "add", "-A");
   git(priv, "commit", "-q", "-m", "Add a picture");
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
@@ -126,11 +128,21 @@ test("IMG-05: Make public shows the note's images from public copies, stripped, 
     await expect(page.locator("#toasts").getByText("Made “Welcome” public.")).toBeVisible({ timeout: 15_000 });
     const moved = join(dirs.docs, "notes", "welcome.md");
     const text = readFileSync(moved, "utf8");
-    const m = /^<!-- image: rounded originalSrc=\.\.\/assets\/images\/([0-9a-f-]{36})\.png -->\n!\[Pic\]\(\.\.\/assets\/images\/([0-9a-f-]{36})\.png "Cap"\)$/m.exec(text);
+    const m = /^<!-- image: rounded original=\.\.%2Fassets%2Fimages%2F([0-9a-f-]{36})\.png -->\n!\[Pic\]\(\.\.\/assets\/images\/([0-9a-f-]{36})\.png "Cap"\)$/m.exec(text);
     expect(m, text).not.toBeNull();
-    for (const id of [m![1]!, m![2]!]) expect(readFileSync(join(dirs.docs, "assets", "images", `${id}.png`))).toEqual(plain);
+    expect(readFileSync(join(dirs.docs, "assets", "images", `${m![1]!}.png`))).toEqual(keptPlain);
+    expect(readFileSync(join(dirs.docs, "assets", "images", `${m![2]!}.png`))).toEqual(plain);
     // The open note follows: the image still shows, and saving keeps the public references.
     await shown();
+    await image.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Restore original", exact: true }).click();
+    await shown();
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBe(1);
+    await expect.poll(() => readFileSync(moved, "utf8")).toContain(`![Pic](../assets/images/${m![1]!}.png "Cap")`);
+    await editor.press(`${mod}+z`);
+    await shown();
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBe(128);
+    await expect.poll(() => readFileSync(moved, "utf8")).toBe(text);
     await editor.click();
     await page.keyboard.press(`${mod}+End`);
     await page.keyboard.type(" Later.");
@@ -139,7 +151,7 @@ test("IMG-05: Make public shows the note's images from public copies, stripped, 
     expect(readFileSync(moved, "utf8")).toContain(`(../assets/images/${m![2]!}.png "Cap")`);
     // The private originals stay, byte for byte; nothing private reaches the public repository.
     expect(readFileSync(cropped)).toEqual(original);
-    expect(readFileSync(kept)).toEqual(original);
+    expect(readFileSync(kept)).toEqual(keptOriginal);
     await expect.poll(() => show(notesRemote, `assets/images/${m![2]!}.png`) !== "", { timeout: 15_000 }).toBe(true);
     expect(git(notesRemote, "log", "--all", "-p", "--text")).not.toContain("secret-kiwi-41");
   } finally { await quit(l); }

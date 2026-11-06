@@ -286,7 +286,7 @@ This slice covers individual note moves within one root, explicit file rename an
 
 | Step | Safety rule |
 | --- | --- |
-| Copy | Before the destination note exists, each referenced local image is validated in the source's boundary and copied into the destination root's `assets/images/` under a new random name. A cropped image's kept original (`originalSrc=` in its hidden settings comment) is copied and rebased the same way. Into Public, copies lose ancillary metadata (D-365). Unreferenced assets are never copied. |
+| Copy | Before the destination note exists, each referenced local image is validated in the source's boundary and copied into the destination root's `assets/images/` under a new random name. A cropped image's kept original (the encoded `original=` token in its hidden settings comment) is copied and rebased the same way, preserving the outer URI-component encoding. Into Public, copies lose ancillary metadata (D-365). Unreferenced assets are never copied. |
 | Rewrite | Only the destination note's image destinations change; every other byte stays. The open note follows the new references, keeping anything typed meanwhile. |
 | Keep | Source images are never moved, renamed or deleted. The note itself moves as before, staged as for same-root moves. A refusal removes only this batch's fresh copies, so no unreferenced copy can reach a later commit. |
 | Commit | The copies are committed with the note in the destination repository, private first; the message adds "Copy N images". |

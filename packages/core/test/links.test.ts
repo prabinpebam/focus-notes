@@ -41,13 +41,13 @@ describe("rewriteLinks (FIL-09)", () => {
     expect(rw(src, "n.md", [{ from: "Box", to: "Crate" }])).toBe("![pic](Crate/img/p.png) and [r][id].\n\n[id]: Crate/b.md \"Title\"\n");
   });
   it("IMG-05: a moved note rebases its image's kept original exactly like the image, keeping the rest of the comment", () => {
-    const src = "<!-- image: wide originalSrc=../assets/images/o.png size=4x3 -->\n![A](../assets/images/c.png \"Cap\")\n";
+    const src = "<!-- image: wide original=..%2Fassets%2Fimages%2Fo.png size=4x3 -->\n![A](../assets/images/c.png \"Cap\")\n";
     expect(rw(src, "notes/a.md", [{ from: "notes/a.md", to: "notes/deep/a.md" }], "notes/deep/a.md"))
-      .toBe("<!-- image: wide originalSrc=../../assets/images/o.png size=4x3 -->\n![A](../../assets/images/c.png \"Cap\")\n");
+      .toBe("<!-- image: wide original=..%2F..%2Fassets%2Fimages%2Fo.png size=4x3 -->\n![A](../../assets/images/c.png \"Cap\")\n");
   });
   it("IMG-05: followImages applies the shell's copied image destinations to text typed meanwhile", () => {
-    const before = "<!-- image: originalSrc=../assets/images/o.png -->\n![A](../assets/images/c.png)\n";
-    const after = "<!-- image: originalSrc=../assets/images/o2.png -->\n![A](../assets/images/c2.png)\n";
+    const before = "<!-- image: original=..%2Fassets%2Fimages%2Fo.png -->\n![A](../assets/images/c.png)\n";
+    const after = "<!-- image: original=..%2Fassets%2Fimages%2Fo2.png -->\n![A](../assets/images/c2.png)\n";
     expect(followImages(`${before}\nTyped.\n`, before, after)).toBe(`${after}\nTyped.\n`);
     expect(followImages("No images.\n", before, after)).toBe("No images.\n");
   });

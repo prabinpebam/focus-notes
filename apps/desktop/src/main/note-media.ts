@@ -73,7 +73,8 @@ export async function copyNoteMedia(text: string, from: string, to: string, sour
   for (const image of images) {
     const identity = image.canonicalPath;
     const target = targets?.[image.index] ?? image;
-    rewritten += text.slice(at, target.start) + copied.get(identity)! + image.suffix;
+    const destination = copied.get(identity)! + image.suffix;
+    rewritten += text.slice(at, target.start) + (target.encoding === "component" ? encodeURIComponent(destination) : destination);
     at = target.end;
   }
   return { text: rewritten + text.slice(at), paths };

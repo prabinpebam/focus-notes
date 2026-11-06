@@ -118,9 +118,12 @@ test("IMG-05: Duplicate gives the copy its own sidecar images and keeps shared o
   const pixels = Buffer.from(picture().split(",")[1]!, "base64");
   const managed = join(dirs.docs, "assets", "images", "p.png");
   const sidecar = join(notes, "welcome.md.assets", "images", "p.png");
+  const retained = join(notes, "welcome.md.assets", "images", "original %.png");
+  const retainedPixels = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0u0AAAAASUVORK5CYII=", "base64");
   writeFileSync(managed, pixels);
   writeFileSync(sidecar, pixels);
-  const original = "# Illustrated\n\n![Managed](../assets/images/p.png)\n\n![Sidecar](welcome.md.assets/images/p.png)\n";
+  writeFileSync(retained, retainedPixels);
+  const original = "# Illustrated\n\n![Managed](../assets/images/p.png)\n\n<!-- image: original=welcome.md.assets%2Fimages%2Foriginal%2520%2525.png -->\n![Sidecar](welcome.md.assets/images/p.png)\n";
   writeFileSync(join(notes, "welcome.md"), original);
   git(dirs.docs, "init", "-q", "-b", "main");
   configure(dirs.docs);
@@ -147,14 +150,25 @@ test("IMG-05: Duplicate gives the copy its own sidecar images and keeps shared o
     const text = readFileSync(copy, "utf8");
     const m = /^!\[Sidecar\]\(illustrated-copy\.md\.assets\/images\/([0-9a-f-]{36})\.png\)$/m.exec(text);
     expect(m, text).not.toBeNull();
+    const originalMatch = /original=illustrated-copy\.md\.assets%2Fimages%2F([0-9a-f-]{36})\.png/.exec(text);
+    expect(originalMatch, text).not.toBeNull();
+    expect(readFileSync(join(notes, "illustrated-copy.md.assets", "images", `${originalMatch![1]!}.png`))).toEqual(retainedPixels);
     expect(text).toContain("![Managed](../assets/images/p.png)");
     expect(readFileSync(join(notes, "illustrated-copy.md.assets", "images", `${m![1]!}.png`))).toEqual(pixels);
     // The copy shows both pictures from its own references.
     await fileRow(tree, "Illustrated copy").dblclick();
     await expect(editor).toContainText("Illustrated copy");
     await loaded();
+    await images.nth(1).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Restore original", exact: true }).click();
+    await expect.poll(() => images.nth(1).evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
+    await expect.poll(() => readFileSync(copy, "utf8")).toContain(`![Sidecar](illustrated-copy.md.assets/images/${originalMatch![1]!}.png)`);
+    await editor.press(`${mod}+z`);
+    await expect.poll(() => images.nth(1).evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(128);
+    await expect.poll(() => readFileSync(copy, "utf8")).toBe(text);
     expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
     expect(readFileSync(sidecar)).toEqual(pixels);
+    expect(readFileSync(retained)).toEqual(retainedPixels);
     expect(readFileSync(managed)).toEqual(pixels);
     await expect.poll(() => git(dirs.docs, "status", "--porcelain", "--untracked-files=all")).not.toContain("illustrated-copy.md.assets");
   } finally {
