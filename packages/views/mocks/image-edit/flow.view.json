@@ -56,8 +56,7 @@
                   "children": [
                     { "type": "MenuButton", "props": { "icon": "crop", "label": { "get": "vm.mockImageEdit.aspect" }, "sections": { "get": "vm.mockImageEdit.ratioMenu" } }, "on": { "action": [
                       { "set": "local.resetSignal", "to": { "expr": { "!": [{ "get": "local.resetSignal" }] } } },
-                      { "set": "local.ratio", "to": { "get": "event.id" } }, { "set": "local.x", "to": 0 }, { "set": "local.y", "to": 0 },
-                      { "set": "local.width", "to": 100 }, { "set": "local.height", "to": 100 }
+                      { "set": "local.ratio", "to": { "get": "event.id" } }
                     ] } },
                     { "type": "IconButton", "props": { "icon": "rotateLeft", "label": { "get": "vm.mockImageEdit.rotateLeft" } }, "on": { "press": { "set": "local.rotation", "to": { "expr": { "if": [{ "==": [{ "get": "local.rotation" }, "0"] }, "270", { "==": [{ "get": "local.rotation" }, "270"] }, "180", { "==": [{ "get": "local.rotation" }, "180"] }, "90", "0"] } } } } },
                     { "type": "IconButton", "props": { "icon": "rotate", "label": { "get": "vm.mockImageEdit.rotateRight" } }, "on": { "press": { "set": "local.rotation", "to": { "expr": { "if": [{ "==": [{ "get": "local.rotation" }, "0"] }, "90", { "==": [{ "get": "local.rotation" }, "90"] }, "180", { "==": [{ "get": "local.rotation" }, "180"] }, "270", "0"] } } } } },

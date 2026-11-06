@@ -6022,7 +6022,7 @@
     {
       "type": "TextField",
       "tier": "primitive",
-      "description": "A labelled single-line field, with an optional description. Secrets use type password.",
+      "description": "A labelled single-line field, with an optional description. An inline prefix uses one token-painted wrapper and focuses its border, never the inner input. Numeric step enables Arrow Up/Down, Shift by ten, and spinbutton semantics. Secrets use type password.",
       "props": {
         "label": {
           "kind": "message",
@@ -6037,6 +6037,15 @@
         },
         "description": {
           "kind": "message"
+        },
+        "prefix": {
+          "kind": "message",
+          "description": "Inline secondary-ink adornment inside the input wrapper. Keep a full accessible label, with labelHidden for compact W/H controls."
+        },
+        "step": {
+          "kind": "number",
+          "min": 1,
+          "description": "Numeric Arrow Up/Down increment; Shift multiplies by ten. The owner of the value handles bounds and validation."
         },
         "type": {
           "kind": "enum",
@@ -6164,6 +6173,119 @@
         "focused": "Focus in the field: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
+        {
+          "name": "inline prefix width",
+          "props": {
+            "label": {
+              "t": "gallery.dimension.width"
+            },
+            "prefix": {
+              "t": "gallery.dimension.widthPrefix"
+            },
+            "labelHidden": true,
+            "value": {
+              "get": "vm.gallery.dimension"
+            },
+            "step": 1,
+            "size": "m",
+            "width": "number"
+          }
+        },
+        {
+          "name": "inline prefix height",
+          "props": {
+            "label": {
+              "t": "gallery.dimension.height"
+            },
+            "prefix": {
+              "t": "gallery.dimension.heightPrefix"
+            },
+            "labelHidden": true,
+            "value": {
+              "get": "vm.gallery.dimension"
+            },
+            "step": 1,
+            "size": "m",
+            "width": "number"
+          }
+        },
+        {
+          "name": "inline prefix commit rest",
+          "props": {
+            "label": {
+              "t": "gallery.dimension.width"
+            },
+            "prefix": {
+              "t": "gallery.dimension.widthPrefix"
+            },
+            "labelHidden": true,
+            "value": {
+              "get": "vm.gallery.dimension"
+            },
+            "step": 1,
+            "commit": "rest"
+          }
+        },
+        {
+          "name": "inline prefix commit pending",
+          "props": {
+            "label": {
+              "t": "gallery.dimension.width"
+            },
+            "prefix": {
+              "t": "gallery.dimension.widthPrefix"
+            },
+            "labelHidden": true,
+            "value": {
+              "get": "vm.gallery.dimension"
+            },
+            "step": 1,
+            "commit": "pending"
+          }
+        },
+        {
+          "name": "inline prefix commit confirmed",
+          "props": {
+            "label": {
+              "t": "gallery.dimension.width"
+            },
+            "prefix": {
+              "t": "gallery.dimension.widthPrefix"
+            },
+            "labelHidden": true,
+            "value": {
+              "get": "vm.gallery.dimension"
+            },
+            "step": 1,
+            "commit": "confirmed"
+          }
+        },
+        {
+          "name": "inline prefix commit failed",
+          "props": {
+            "label": {
+              "t": "gallery.dimension.width"
+            },
+            "prefix": {
+              "t": "gallery.dimension.widthPrefix"
+            },
+            "labelHidden": true,
+            "value": {
+              "get": "vm.gallery.dimension"
+            },
+            "step": 1,
+            "commit": "failed",
+            "error": {
+              "t": "commit.failed"
+            },
+            "retryLabel": {
+              "t": "commit.retry"
+            },
+            "revertLabel": {
+              "t": "commit.revert"
+            }
+          }
+        },
         {
           "name": "width number",
           "props": {
