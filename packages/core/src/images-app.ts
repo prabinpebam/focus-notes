@@ -1,5 +1,5 @@
 import type { AppState } from "./app.ts";
-import { opErrorCode, type PlatformBridge } from "./bridge.ts";
+import { opErrorCode, type AppStateFile, type PlatformBridge } from "./bridge.ts";
 import type { Store } from "./store.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
@@ -15,18 +15,21 @@ export interface ImagesState {
   x: string; y: string; width: string; height: string;
   rotation: "0" | "90" | "180" | "270";
   saving: boolean;
+  transferring: boolean;
   error: string;
   describe: boolean;
   alt: string;
   caption: string;
 }
-export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", saving: false, error: "", describe: false, alt: "", caption: "" };
+export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", saving: false, transferring: false, error: "", describe: false, alt: "", caption: "" };
 
 export function registerImages(ctx: {
   store: Store<AppState>; bridge: PlatformBridge; commands: CommandRegistry<AppState>; viewModels: ViewModelRegistry<AppState>; catalog: MessageCatalog;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   toast: (text: string, opts?: { tone?: "info" | "error"; subject?: string }) => number;
   tracker: TaskTracker;
+  appState: () => AppStateFile;
+  persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   announce: (text: string) => void;
   itemSchema: Record<string, unknown>; describeItem: (id: string) => Record<string, unknown>;
 }) {
@@ -45,6 +48,73 @@ export function registerImages(ctx: {
   });
   const writable = () => (state().selected?.count ?? 0) > 0 && !noteReadOnly(store.state);
   const single = () => writable() && state().selected?.count === 1 && !state().selected?.text;
+  let transfer = 0;
+  let remembering = Promise.resolve();
+  const transferError = (id: string, problem: unknown) => {
+    console.error("Image transfer failed", opErrorCode(problem));
+    ctx.toast(catalog.format(id), { tone: "error" });
+  };
+  const readableSingle = () => state().selected?.count === 1 && !state().selected?.text && !state().transferring;
+  for (const action of ["copy", "cut"] as const) commands.register({
+    id: `image.${action}`, title: `image.${action}`, enabled: () => readableSingle() && Boolean(bridge.copyImage) && (action !== "cut" || single()),
+    run: async () => {
+      const image = state().selected;
+      const note = store.state.note.path, key = store.state.note.key;
+      const copy = bridge.copyImage;
+      if (!image || !note || !copy) return;
+      const request = `image-cut-${++transfer}`;
+      set({ transferring: true });
+      if (action === "cut") ctx.editorAction("image.trackCut", { request, pos: image.pos, src: image.src });
+      try {
+        await ctx.tracker.section("image.copy", "image.copy.loading", () => copy(note, image.src, image.alt ?? "", image.title ?? ""), "fn:image.copy");
+        if (action === "cut") {
+          if (store.state.note.key !== key || noteReadOnly(store.state)) throw new Error("image-target-changed");
+          ctx.editorAction("image.finishCut", { request });
+        }
+      } catch (problem) {
+        ctx.editorAction("image.cancelImport", { request });
+        transferError("image.copy.failed", problem);
+      } finally { if (store.state.note.key === key) set({ transferring: false }); }
+    },
+  });
+  commands.register({ id: "image.cut.failed", title: "image.cut", run: () => transferError("image.copy.failed", new Error("image-target-changed")) });
+  commands.register({
+    id: "image.replace", title: "image.replace", enabled: () => single() && !state().transferring && Boolean(bridge.importImages),
+    run: async () => {
+      const image = state().selected, note = store.state.note.path, key = store.state.note.key;
+      const importImages = bridge.importImages;
+      if (!image || !note || !importImages) return;
+      const request = `image-replace-${++transfer}`;
+      let batch: string | undefined;
+      set({ transferring: true });
+      ctx.editorAction("image.trackReplacement", { request, pos: image.pos, src: image.src });
+      try {
+        const imported = await ctx.tracker.section("image.replace", "image.replace.loading", () => importImages(note, undefined, true), "fn:image.replace");
+        if (!imported) { ctx.editorAction("image.cancelImport", { request }); return; }
+        batch = imported.batch;
+        if (store.state.note.key !== key || noteReadOnly(store.state) || imported.images.length !== 1) throw new Error("image-target-changed");
+        ctx.editorAction("image.insertAssets", { request, batch, images: imported.images });
+        batch = undefined;
+      } catch (problem) {
+        if (batch) await bridge.finishImageImport?.(batch, false);
+        ctx.editorAction("image.cancelImport", { request });
+        transferError("image.replace.failed", problem);
+      } finally { if (store.state.note.key === key) set({ transferring: false }); }
+    },
+  });
+  commands.register({
+    id: "image.save", title: "image.save", enabled: () => readableSingle() && Boolean(bridge.saveImage),
+    run: async () => {
+      const image = state().selected, note = store.state.note.path, key = store.state.note.key;
+      const save = bridge.saveImage;
+      if (!image || !note || !save) return;
+      set({ transferring: true });
+      try {
+        if (await ctx.tracker.section("image.save", "image.save.loading", () => save(note, image.src), "fn:image.save")) ctx.toast(catalog.format("image.save.saved"));
+      } catch (problem) { transferError("image.save.failed", problem); }
+      finally { if (store.state.note.key === key) set({ transferring: false }); }
+    },
+  });
   let descriptionTarget: SelectedImage | undefined;
   commands.register({
     id: "image.describe", title: "image.describe.menu", enabled: single,
@@ -103,7 +173,7 @@ export function registerImages(ctx: {
         if (!imported) { ctx.editorAction("image.cancelImport", { request }); return; }
         batch = imported.batch;
         if (store.state.note.path !== note || store.state.note.key !== key || noteReadOnly(store.state)) throw new Error("image-target-changed");
-        ctx.editorAction("image.insertAssets", { request, batch, images: imported.images });
+        ctx.editorAction("image.insertAssets", { request, batch, images: imported.images.map(image => ({ ...image, ...(ctx.appState().imageDefaults ?? { rounded: false, fitHeight: true }) })) });
         batch = undefined;
       } catch (problem) {
         if (batch) await bridge.finishImageImport?.(batch, false);
@@ -171,13 +241,20 @@ export function registerImages(ctx: {
     commands.register({
       id: `image.${field}`, title: field === "rounded" ? "image.rounded" : "image.limit", enabled: writable,
       checked: () => state().selected?.[field] === true,
-      run: () => {
+      run: async () => {
         const selected = state().selected;
         if (!selected) return;
         const next = { ...selected, [field]: !selected[field], [field === "rounded" ? "roundMixed" : "limitMixed"]: false };
         ctx.editorAction("image.set", { pos: selected.pos, src: selected.src, from: selected.from, to: selected.to, [field]: !selected[field] });
         set({ selected: next });
         ctx.announce(catalog.format(field === "rounded" ? "image.announce.rounded" : "image.announce.limit", { state: next[field] ? "on" : "off" }));
+        const writing = remembering.then(() => ctx.tracker.section("image.defaults", "image.defaults.loading", () =>
+          ctx.persistAppState({ imageDefaults: { ...(ctx.appState().imageDefaults ?? { rounded: false, fitHeight: true }), [field]: next[field] } }), "fn:image.defaults"));
+        remembering = writing.catch((problem) => {
+          console.error("Image defaults save failed", opErrorCode(problem));
+          ctx.toast(catalog.format("image.defaults.failed"), { tone: "error" });
+        });
+        await remembering;
       },
     });
   }
@@ -268,6 +345,8 @@ export function registerImages(ctx: {
         cropX: Number(s.x) / (s.selected?.width || 1) * 100, cropY: Number(s.y) / (s.selected?.height || 1) * 100,
         cropWidth: Number(s.width) / (s.selected?.width || 1) * 100, cropHeight: Number(s.height) / (s.selected?.height || 1) * 100,
         menu: s.selected?.count === 1 && !s.selected.text ? [
+          { id: "clipboard", items: ["image.cut", "image.copy"].map(ctx.describeItem) },
+          { id: "file", items: ["image.replace", "image.save"].map(ctx.describeItem) },
           { id: "words", items: [ctx.describeItem("image.describe"), { ...ctx.describeItem("image.caption"), label: catalog.format(s.selected.title ? "image.caption.edit" : "image.caption.add") }] },
           { id: "pixels", items: [ctx.describeItem("image.edit")] },
           { id: "mode", label: catalog.format("image.display"), items: ["image.mode.column", "image.mode.wide", "image.mode.actual"].map(ctx.describeItem) },

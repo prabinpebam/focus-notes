@@ -51,6 +51,75 @@ async function imageMenu(page: Page, image: Locator) {
   return point;
 }
 
+test("IMG.3: Copy transfers pixels and safe words; Cut, Replace, Save and remembered defaults preserve the note", async () => {
+  const dirs = sample();
+  const saved = join(dirs.docs, "saved.png");
+  let launched = await launch(dirs);
+  try {
+    let { app, page } = launched;
+    await app.evaluate(({ clipboard }) => {
+      const captured = clipboard as typeof clipboard & { imageCopy?: { html: string; text: string; size: { width: number; height: number } } };
+      clipboard.write = content => {
+        captured.imageCopy = { html: content.html ?? "", text: content.text ?? "", size: content.image?.getSize() ?? { width: 0, height: 0 } };
+      };
+    });
+    const red = page.getByRole("img", { name: "Red square", exact: true });
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Copy", exact: true }).click();
+    await expect.poll(() => app.evaluate(({ clipboard }) => (clipboard as typeof clipboard & { imageCopy?: { size: { width: number; height: number } } }).imageCopy?.size)).toEqual({ width: 300, height: 120 });
+    const copy = await app.evaluate(({ clipboard }) => (clipboard as typeof clipboard & { imageCopy?: { html: string; text: string; size: { width: number; height: number } } }).imageCopy);
+    expect(copy?.size).toEqual({ width: 300, height: 120 });
+    expect(copy?.text).toBe("Red square");
+    expect(copy?.html).toContain('src="data:image/png;base64,');
+    expect(copy?.html).not.toContain(dirs.docs);
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(original);
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Cut", exact: true }).click();
+    await expect(red).toHaveCount(0);
+    expect(existsSync(join(dirs.docs, "red.png"))).toBe(true);
+    await page.keyboard.press("Control+z");
+    await expect(red).toBeVisible();
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(original);
+    await app.evaluate(({ dialog }, filePath) => { dialog.showSaveDialog = async () => ({ canceled: true, filePath }); }, saved);
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Save image…", exact: true }).click();
+    expect(existsSync(saved)).toBe(false);
+    await app.evaluate(({ dialog }, filePath) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath }); }, saved);
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Save image…", exact: true }).click();
+    await expect.poll(() => existsSync(saved), PROMPTLY).toBe(true);
+    expect(readFileSync(saved).subarray(1, 4).toString()).toBe("PNG");
+    await app.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, join(dirs.docs, "blue.png"));
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Replace image…", exact: true }).click();
+    await expect.poll(() => red.evaluate((el: HTMLImageElement) => [el.naturalWidth, el.naturalHeight])).toEqual([120, 80]);
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toContain("assets/images/");
+    expect(existsSync(join(dirs.docs, "red.png"))).toBe(true);
+    await page.keyboard.press("Control+z");
+    await expect.poll(() => red.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(300);
+    await imageMenu(page, red);
+    await page.getByRole("menuitemcheckbox", { name: "Rounded corners", exact: true }).click();
+    await imageMenu(page, red);
+    await page.getByRole("menuitemcheckbox", { name: "Limit height", exact: true }).click();
+    await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toContain("rounded unlimited");
+    await close(launched);
+    launched = await launch(dirs);
+    ({ app, page } = launched);
+    await app.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, join(dirs.docs, "blue.png"));
+    await page.getByRole("textbox", { name: "Note", exact: true }).click();
+    await page.keyboard.press("Control+End");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("/");
+    await page.getByRole("listbox", { name: "Insert a block" }).getByRole("option", { name: /^Insert image/ }).click();
+    const inserted = page.locator("[data-image-node]").last();
+    await expect(page.locator("[data-image-node]")).toHaveCount(3);
+    await expect.poll(() => inserted.locator("img").evaluate(el => Number.parseFloat(getComputedStyle(el.parentElement!).borderRadius))).toBeGreaterThan(0);
+    await imageMenu(page, inserted.locator("img"));
+    await expect(page.getByRole("menuitemcheckbox", { name: "Rounded corners", exact: true })).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("menuitemcheckbox", { name: "Limit height", exact: true })).toHaveAttribute("aria-checked", "false");
+  } finally { await close(launched); }
+});
+
 test("IMG-11: clicking an image selects its outline; Delete and Backspace remove only its reference, and Undo restores it", async () => {
   const dirs = sample();
   const launched = await launch(dirs);
@@ -190,7 +259,7 @@ test("IMG-11: the single-image menu groups its choices at the pointer; both togg
     expect(Math.abs(bounds!.x - point.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(bounds!.y - point.y)).toBeLessThanOrEqual(1);
     const labels = await menu.locator("[role^=menuitem]").allTextContents();
-    expect(labels.map((label) => label.trim())).toEqual(["Edit description…", "Add caption", "Edit image", "✓Column", "Wide", "Actual size", "Rounded corners", "✓Limit height"]);
+    expect(labels.map((label) => label.trim())).toEqual(["Cut", "Copy", "Replace image…", "Save image…", "Edit description…", "Add caption", "Edit image", "✓Column", "Wide", "Actual size", "Rounded corners", "✓Limit height"]);
     await page.getByRole("menuitemcheckbox", { name: "Rounded corners", exact: true }).click();
     const roundedBytes = original.replace("![Red square]", "<!-- image: rounded -->\n![Red square]");
     await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(roundedBytes);

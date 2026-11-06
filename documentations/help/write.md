@@ -20,6 +20,14 @@ Right-click an image and choose **Edit description…**. **Image description** i
 
 Choose **Add caption** or **Edit caption** to type directly below the image. Enter finishes that line. Removing all its words removes the caption; an image without a caption shows no placeholder. Descriptions and captions stay in standard Markdown as `![description](image.png "caption")` and survive reopening.
 
+## Copy, replace or save an image
+
+Right-click one image. **Copy** puts its pixels, description and caption on the clipboard, not its file location. **Cut** does the same before removing the image from the note; Undo restores it, and its file is never deleted.
+
+**Replace image…** copies a chosen image into the note's managed assets and keeps its description, caption and display choices. Undo restores the old reference. **Save image…** saves a separate PNG copy through the system dialog; Cancel changes nothing.
+
+**Rounded corners** and **Limit height** change the selected images and are remembered on this device for the next insertion. Existing images keep their own choices. A failed settings save leaves the previous insertion defaults intact and says so.
+
 ## Coming soon
 
 - Write and format with Markdown shortcuts

@@ -1,5 +1,13 @@
 # Decisions
 
+## D-370: image clipboard and Save image never disclose the source location
+
+**Decided (implementation, 6 November 2026; IMG-03, IMG-11).** Copy/Cut writes decoded pixels plus an HTML data image containing escaped description and caption, with no asset path. Ancillary location/camera metadata is stripped using the existing public-image sanitizer. Cut and Replace track the captured image through editor transactions; deleted targets are refused, never redirected to another image with the same source. Replacement imports exactly one new managed file and keeps the current words and display choices.
+
+**Save image…** exports the decoded raster as PNG through the native Save dialog with overwrite confirmation. The default name is `image.png`, not a note or source path. Non-PNG destinations are refused; a temporary sibling and atomic rename preserve any existing destination on write failure. Remembered Rounded corners / Limit height are serialized device-state writes, separate from each image's Markdown and normal Undo. A failed defaults write keeps the last saved defaults.
+
+**Affects:** [Image menu](../experience/images.md#image-menu-and-selection), [Writing Help](../help/write.md#copy-replace-or-save-an-image), [image waits](../architecture/perceived-performance.md#other-image-waits-planned), WP-9.1.
+
 ## D-367: Disabled preserves colours; Switch labels have a gap; Off parents disable dependents
 
 **Status:** Accepted (the owner, 6 November 2026, 10:39). **Affects:** [Foundations → States](../design/foundations.md#states), [UI states audit](../design/ui-states-audit.md#disabled-controls-6-november-1039), [OFB.25–OFB.28](definition-of-done.md#owner-feedback-batch-6-november-ofb), IA-VIEW-SETTINGS, IA-CMP-SWITCH, DSY-15, AGT-02.

@@ -20,6 +20,84 @@ async function setup(readImage: NonNullable<PlatformBridge["readImage"]>, overri
   return app;
 }
 
+async function select(app: Awaited<ReturnType<typeof setup>>) {
+  await app.commands.run("image.select", { pos: 3, src: "a.png", alt: "Description", title: "Caption", rounded: false, fitHeight: true, mode: "wide", width: 300, height: 120, from: 3, to: 4, count: 1, roundMixed: false, limitMixed: false });
+}
+describe("image transfers", () => {
+  it("Cut waits for clipboard success before removing its captured target", async () => {
+    let done!: () => void;
+    const copy = vi.fn(() => new Promise<void>(resolve => { done = resolve; }));
+    const app = await setup(async () => DATA, { copyImage: copy });
+    await select(app);
+    const action = vi.fn();
+    app.onEditorAction(action);
+    const cutting = app.commands.run("image.cut");
+    expect(copy).toHaveBeenCalledWith(NOTE, "a.png", "Description", "Caption");
+    expect(action.mock.calls.map(call => call[0])).toEqual(["image.trackCut"]);
+    done();
+    await cutting;
+    expect(action.mock.calls.map(call => call[0])).toEqual(["image.trackCut", "image.finishCut"]);
+  });
+  it("failed Copy keeps the image and surfaces the exact recoverable message", async () => {
+    const app = await setup(async () => DATA, { copyImage: async () => { throw new Error("private-path"); } });
+    await select(app);
+    const action = vi.fn();
+    app.onEditorAction(action);
+    await app.commands.run("image.cut");
+    expect(action.mock.calls.map(call => call[0])).not.toContain("image.finishCut");
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe("Couldn't copy this image. Try again.");
+  });
+  it("Cancel Save leaves the note and notifications unchanged", async () => {
+    const app = await setup(async () => DATA, { saveImage: async () => false });
+    await select(app);
+    await app.commands.run("image.save");
+    expect(app.store.state.ui.toasts).toEqual([]);
+    expect(app.store.state.note.markdown).toBe("# Current\n");
+  });
+  it("Replace releases staged files if the note changes while the picker is open", async () => {
+    let done!: (value: { batch: string; images: { src: string; width: number; height: number }[] }) => void;
+    const finish = vi.fn(async () => {});
+    const app = await setup(async () => DATA, { importImages: () => new Promise(resolve => { done = resolve; }), finishImageImport: finish });
+    await select(app);
+    const replacing = app.commands.run("image.replace");
+    app.store.update(s => ({ ...s, note: { ...s.note, key: "another" } }));
+    done({ batch: "replacement", images: [{ src: "new.png", width: 1, height: 1 }] });
+    await replacing;
+    expect(finish).toHaveBeenCalledWith("replacement", false);
+  });
+  it("insertion uses the last successfully persisted device defaults", async () => {
+    const save = vi.fn(async (_state: Parameters<PlatformBridge["saveAppState"]>[0]) => {});
+    const app = await setup(async () => DATA, { saveAppState: save, importImages: async () => ({ batch: "new", images: [{ src: "new.png", width: 1, height: 1 }] }) });
+    await select(app);
+    await app.commands.run("image.rounded");
+    expect(save.mock.calls.at(-1)?.[0]).toMatchObject({ imageDefaults: { rounded: true, fitHeight: true } });
+    const action = vi.fn();
+    app.onEditorAction(action);
+    await app.commands.run("image.import", { request: "insert", key: app.store.state.note.key });
+    expect(action).toHaveBeenCalledWith("image.insertAssets", expect.objectContaining({ images: [expect.objectContaining({ rounded: true, fitHeight: true })] }));
+  });
+  it("a failed defaults write keeps the last durable insertion choices and reports the failure", async () => {
+    const save = vi.fn(async (_state: Parameters<PlatformBridge["saveAppState"]>[0]) => {});
+    const app = await setup(async () => DATA, { saveAppState: save, importImages: async () => ({ batch: "new", images: [{ src: "new.png", width: 1, height: 1 }] }) });
+    await select(app);
+    save.mockRejectedValueOnce(new Error("device-write-failed"));
+    await app.commands.run("image.rounded");
+    expect(app.store.state.ui.images.selected?.rounded).toBe(true);
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe(messages["image.defaults.failed"]);
+    const action = vi.fn();
+    app.onEditorAction(action);
+    await app.commands.run("image.import", { request: "insert", key: app.store.state.note.key });
+    expect(action).toHaveBeenCalledWith("image.insertAssets", expect.objectContaining({ images: [expect.objectContaining({ rounded: false, fitHeight: true })] }));
+  });
+  it("rapid edits of different defaults serialize without losing either choice", async () => {
+    const save = vi.fn(async (_state: Parameters<PlatformBridge["saveAppState"]>[0]) => {});
+    const app = await setup(async () => DATA, { saveAppState: save });
+    await select(app);
+    await Promise.all([app.commands.run("image.rounded"), app.commands.run("image.fitHeight")]);
+    expect(save.mock.calls.at(-1)?.[0]).toMatchObject({ imageDefaults: { rounded: true, fitHeight: false } });
+  });
+});
+
 describe("image import handoff", () => {
   it("reports the named limit even through Electron's remote-method prefix, without leaking the path", async () => {
     const app = await setup(async () => DATA, { importImages: async () => { throw new Error("Error invoking remote method 'image:import': Error: image-too-large"); } });

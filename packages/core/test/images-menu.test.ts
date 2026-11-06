@@ -47,7 +47,7 @@ describe("one image's menu", () => {
     await t.app.commands.run("image.describe.save");
     expect(t.actions).toEqual([["image.words", { pos: 5, src: "red.png", alt: "After alt", title: "After caption" }]]);
     expect(t.app.store.state.ui.images.describe).toBe(false);
-    expect(shape(t.images())[0]).toEqual({ id: "words", items: ["Edit description…", "Edit caption"] });
+    expect(shape(t.images()).find(s => s.id === "words")).toEqual({ id: "words", items: ["Edit description…", "Edit caption"] });
     await t.app.commands.run("image.caption");
     expect(t.actions.at(-1)).toEqual(["image.caption", { pos: 5, src: "red.png" }]);
   });
@@ -69,6 +69,8 @@ describe("one image's menu", () => {
     const t = await started();
     await t.select({});
     expect(shape(t.images())).toEqual([
+      { id: "clipboard", items: ["Cut", "Copy"] },
+      { id: "file", items: ["Replace image…", "Save image…"] },
       { id: "words", items: ["Edit description…", "Add caption"] },
       { id: "pixels", items: ["Edit image"] },
       { id: "mode", label: "Display", items: ["Column (on)", "Wide (off)", "Actual size (off)"] },

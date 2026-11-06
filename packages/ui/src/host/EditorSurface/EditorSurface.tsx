@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
-  applyLink, cancelImageImport, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
+  applyLink, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
   focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setImageWords, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
@@ -774,6 +774,19 @@ export function EditorSurface({
       }
       if (id === "image.cancelImport") {
         cancelImageImport(editor, String(args.request));
+        return;
+      }
+      if (id === "image.trackCut") {
+        trackImageCut(editor, String(args.request), Number(args.pos), String(args.src));
+        return;
+      }
+      if (id === "image.trackReplacement") {
+        trackImageReplacement(editor, String(args.request), Number(args.pos), String(args.src));
+        return;
+      }
+      if (id === "image.finishCut") {
+        if (!finishImageCut(editor, String(args.request))) imageOptions.current.action?.({ id: "image.cut.failed" });
+        editor.view.focus();
         return;
       }
       if (id === "image.insertAssets") {
