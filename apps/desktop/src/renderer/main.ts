@@ -27,6 +27,7 @@ declare global {
 
 // The first frame is the theme's canvas, never Chromium's white (DSK-09, D-148).
 bootTheme(location.search);
+const firstTheme = document.documentElement.dataset.theme;
 
 const raw = window.focusNotes;
 const base = {
@@ -132,7 +133,7 @@ let running: Running;
   const missing = new URLSearchParams(location.search).get("folder") === "missing";
   const started = app.start();
   // The window shows once this frame is drawn, never an unpainted page (DSK-09, D-148).
-  void (missing ? started.catch(() => {}) : Promise.resolve()).then(() => afterFirstThemedFrame()).then(() => {
+  void (missing ? started.catch(() => {}) : Promise.resolve()).then(() => afterFirstThemedFrame(undefined, undefined, firstTheme)).then(() => {
     performance.mark(FIRST_FRAME_MARK);
     base.firstFrame();
   });

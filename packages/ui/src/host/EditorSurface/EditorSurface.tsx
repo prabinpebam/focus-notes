@@ -818,7 +818,7 @@ export function EditorSurface({
       const action = EDITOR_ACTIONS[id];
       // From the table controls: they hand focus back to the note themselves once their menu closes.
       // And from the block handle, which names its block (EDT-07).
-      if ((id.startsWith("table.") || (id.startsWith("block.") && typeof args.block === "number")) && action) {
+      if (((id.startsWith("table.") && id !== "table.insert") || (id.startsWith("block.") && typeof args.block === "number")) && action) {
         if (editor.isEditable) action(editor, args);
         return;
       }
@@ -846,7 +846,7 @@ export function EditorSurface({
       }
       // Run from the formatting toolbar by keyboard, focus stays in the toolbar; Esc goes back to the text.
       const active = document.activeElement;
-      if (inCompanion(active) && active?.matches("[data-focus-visible]")) {
+      if (id !== "table.insert" && inCompanion(active) && active?.matches("[data-focus-visible]")) {
         action(editor);
         return;
       }

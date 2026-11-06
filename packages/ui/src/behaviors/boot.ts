@@ -29,17 +29,17 @@ export function bootTheme(search: string, html: HTMLElement = document.documentE
  * Resolves once the app's layout is drawn in the theme the page was asked for (or `maxMs` passed):
  * the moment the desktop window may show (`fn:window.firstFrame`).
  */
-export function afterFirstThemedFrame(maxMs = 1500, html: HTMLElement = document.documentElement): Promise<void> {
-  const wanted = html.dataset.theme;
+export function afterFirstThemedFrame(maxMs = 1500, html: HTMLElement = document.documentElement, wanted = html.dataset.theme): Promise<void> {
   const started = performance.now();
+  let previousDrawn = false;
   return new Promise((resolve) => {
     const tick = () => {
       const drawn = Boolean(document.querySelector("[data-app-root]")) && (!wanted || html.dataset.theme === wanted);
-      if (drawn || performance.now() - started > maxMs) {
-        // One more frame: the one with the layout is then on screen.
-        requestAnimationFrame(() => resolve());
+      if ((drawn && previousDrawn) || performance.now() - started > maxMs) {
+        resolve();
         return;
       }
+      previousDrawn = drawn;
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
