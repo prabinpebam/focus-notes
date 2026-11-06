@@ -2394,6 +2394,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // Shown once the page has drawn its first themed frame with the app's layout (`fn:window.firstFrame`),
   // never on DOM ready alone: a transparent window shows an unpainted page as white or see-through.
   let shown = false;
+  let painting = false;
   const show = (on: "first-frame" | "timeout") => {
     if (shown || win.isDestroyed()) return;
     shown = true;
@@ -2405,7 +2406,13 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
     else win.show();
   };
   const onFirstFrame = (e: IpcMainEvent) => {
-    if (e.sender === win.webContents && fromApp(e)) show("first-frame");
+    if (e.sender !== win.webContents || !fromApp(e) || painting) return;
+    painting = true;
+    // Animation frames precede compositing; a readback acknowledges the surface before native show.
+    void win.webContents.capturePage(undefined, { stayHidden: true }).then(
+      () => show("first-frame"),
+      (error: unknown) => process.stderr.write(`[focus-notes] first-frame paint failed: ${error instanceof Error ? error.name : "Error"}\n`),
+    );
   };
   ipcMain.on("window:firstFrame", onFirstFrame);
   let fallback: ReturnType<typeof setTimeout> | undefined;
