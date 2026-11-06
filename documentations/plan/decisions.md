@@ -1,5 +1,23 @@
 # Decisions
 
+## D-366: Preview and development run beside the Store app
+
+**Status:** Accepted (owner bug report, 6 November 2026). **Affects:** desktop startup, PKG-03, PKG-12, D-202, D-122.
+
+The plain **Focus Notes Preview** shortcut must stay open while Microsoft Store Focus Notes is running. The scheduled builder produces an ordinary unpacked release and its launcher sets no channel or profile flags: both previously used the release identity and the same logical default `userData` path before requesting Electron's single-instance lock. Windows' Store filesystem redirection does not provide a separate lock namespace.
+
+| Channel | App identity | Default profile and lock |
+| --- | --- | --- |
+| Store and ordinary release | Unchanged; `io.github.prabinpebam.focusnotes` | Unchanged |
+| Preview | Focus Notes Preview; `io.github.prabinpebam.focusnotes.preview` | Legacy default path plus ` Preview` |
+| Development | Focus Notes Development; `io.github.prabinpebam.focusnotes.development` | Legacy default path plus ` Development` |
+
+Startup resolves the identity **before** restoring a project profile and taking the lock. The Store always stays stable. Unpackaged development is distinct by default; `FOCUS_NOTES_CHANNEL` can explicitly select `stable`, `preview` or `development` for builds and native tests. Existing Preview executables under `focus-notes-work/preview/builds/<commit>/`, `app/` or `candidates/<commit>/` are recognized without changing or running the owner's updater. Preview and development set their own Windows AppUserModelID; only stable releases register as the default `focus-notes:` handler, so Preview does not take over the installed app's links. Explicit `FOCUS_NOTES_USER_DATA` paths (project windows, fresh profiles and tests) stay exact.
+
+**Existing Preview settings carry over once, without a move.** When the new Preview profile does not exist and no explicit profile was supplied, startup copies only the legacy unpackaged app's inventoried durable data into a temporary sibling, then publishes the complete copy. This includes settings, keybindings, OS-protected data, project profiles and recovery drafts. The last-project pointer is adjusted to the copied project profile; notes remain at their original paths. Chromium caches, single-instance locks, transient agent locks and project lifecycle SQLite files are not copied; lifecycle metadata is rebuilt by the existing project store. Store package data is never read. The original profile is never edited or deleted, an existing destination is never refreshed or overwritten, and a carry-over error stops startup with an explicit error rather than resetting settings. Close an older Preview before first opening the updated one so the snapshot includes its latest saved settings.
+
+**Regression coverage:** identity units compare Preview, development, release and Store, including Store's precedence over a channel override. Carry-over units prove source preservation, no overwrite, project pointer remapping, draft retention and exclusion of transient files. The native journey uses two invisible built-app processes with the same synthetic legacy default, confirms both retain their native locks and writing windows under different channels, and confirms a third process in the Preview channel is refused. It never launches or stops the owner's Store app or Preview.
+
 ## D-pending: Project replaces workspace everywhere
 
 **Status:** Accepted (the owner, 5 November 2026: "The project + Workspace design is approved. We can implement this design."; re-confirmed, the owner, 5 November 2026, 19:46: "Removing workspace and having only Project, the design is approved." and "Delete dialog looks good, it's approved." then "Go ahead and implement all of these."). The on-disk and template renames in (c) stay a separate owner decision; implementation changes user-facing words only. **Affects** [One concept: Project](../experience/project-model.md), [Projects](../experience/projects.md), [Images](../experience/images.md#assets-markdown-and-encrypted-sharing), CP-SCOPE-01, SC-PROJ-04, SC-PROJ-05, UC-PROJ-07, UC-PROJ-08, IA-VIEW-SETTINGS, IA-VIEW-FRE, [Foundations → Words](../design/foundations.md).
