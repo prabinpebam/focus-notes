@@ -43,7 +43,7 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 
 ### Current state (16 October, evening)
 
-**Updated 6 November, afternoon.** This heading stays unchanged so existing links keep working. The assessment uses `main` at `15a3ee3d` and the final OFB Preview `ca6ae17`, ready at 13:12. Statuses live in [`work-graph.json`](work-graph.json): delivered packages are **verifying**, not a claim of formal stage sign-off. The stage-by-stage history below is historical.
+**Updated 6 November, evening.** This heading stays unchanged so existing links keep working. The assessment uses `main` at `42cb1ed8` for landed image printing and retains the final OFB Preview `ca6ae17`, ready at 13:12; image printing's scheduled Preview refresh has not been independently inspected. Statuses live in [`work-graph.json`](work-graph.json): delivered packages are **verifying**, not a claim of formal stage sign-off. The stage-by-stage history below is historical.
 
 #### Built and in Preview
 
@@ -56,7 +56,7 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 | MAI | Settings → AI with 26 service kinds, inline prompt, streaming rewrite with formatting and one Undo, Ctrl+Shift+R, Ctrl+Enter to send, and writing at the caret without a selection. The full MAI gate remains open. |
 | MP | Item-first Files Share dialog, first-share confirmation, Project wording, distinct project windows/profiles and scope, 2 px colour outline with Switch, pill/watermark, preset/uploaded logos, project font/theme, Open with recent/project cards (GitHub link and size), pins, caret restoration, New note in…, Rename file, Local notes/location pill and in-app Open file. Delete project is built with fake-account tests only. Preview site is full-window but local only. |
 | OFB | Every allocated row is met: shared button geometry/padding, Settings Switches, one pending pattern, auto-dismiss notifications, slash blocks/Table insertion, images slice 1, Customize toolbar, Actions A.2 to A.6, project border, restored toolbar icons, code tint, table-wide focus and disabled-section fade. [Evidence](gate-evidence.md#owner-feedback-batch-6-november-ofb) records final Preview `ca6ae17`. |
-| Images | Local images, Column/Wide/Actual, Rounded corners, Limit height, crop/rotate, broken-image Retry, paste/drop/Insert image/slash/Actions insertion into managed assets, and metadata stripping before public Git writes. This is slice 1, not completion of the whole image stage. |
+| Images | Local images, Column/Wide/Actual, Rounded corners, Limit height, crop/rotate, broken-image Retry, paste/drop/Insert image/slash/Actions insertion into managed assets, and metadata stripping before public Git writes. Print and Save as PDF with captions and missing descriptions (WP-9.8 / IMG-12) landed at `42cb1ed8`: [42216947356](https://github.com/prabinpebam/focus-notes/actions/runs/42216947356) passed every Windows job; Preview refresh is not independently inspected. This is not completion of the whole image stage. |
 
 #### Waiting on the owner
 
@@ -74,13 +74,15 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 | Area | Remaining work |
 | --- | --- |
 | MP | Explorer file associations (WP-P.8); Invite sends only a local draft, not GitHub invitations (WP-P.11); live Publish/Unpublish, deploy status, live theme and public home sections/counts (WP-P.22, WP-P.12, WP-P.14); browser app/demo/IndexedDB retirement (WP-P.13); separate site repository per project (D-312), full Turn sharing off across that model (WP-P.18), and extended opaque-name/media leak proof (WP-P.10, MP.14). Windows sharing copies information; macOS uses the share sheet, as designed. |
-| Images | Description/caption, Cut/Copy/Replace/Save and remembered defaults (rest of WP-9.1); move/copy link rebasing (rest of WP-9.3); image printing (WP-9.8), publishing (WP-9.9), AI captions (WP-9.5), encrypted sharing (WP-9.6; notes with images cannot yet be shared), and Gallery (WP-9.2). |
+| Images | Description/caption, Cut/Copy/Replace/Save and remembered defaults (rest of WP-9.1); move/copy link rebasing (rest of WP-9.3); publishing (WP-9.9), AI captions (WP-9.5), encrypted sharing (WP-9.6; notes with images cannot yet be shared), and Gallery (WP-9.2). Image printing (WP-9.8) is built and verifying, not missing. |
 | M5 / 1.0 | Notes-folder recovery/sync status is partial (WP-5.14); choosing where notes live and Move… are missing (WP-5.15). Template update PRs (WP-5.6), Windows splash/launch timing (WP-5.16), Store-package Git (WP-5.17) and release qualification (WP-5.7) remain in progress. |
 | M8 | Code signing, automatic updates, Beta, winget and Homebrew (WP-8.6) and more interface languages (WP-8.7) remain missing; the Store build updates itself. Custom themes, workspace pro and multiple windows retain remaining scope in building packages. |
 | Product site and Help | 11 articles of roughly 40 planned (WP-10.3); Learn more links (WP-10.7) missing; Help extras, screenshots and landing work remain building. Browser writing is retired in the product direction, not yet removed from `apps/web`. |
 | MAI / MACT | MAI gate evidence and Help (WP-AI.9), shortcut names in menus (WP-AI.12); unlisted Actions candidates remain unlisted until wired: Caption image with AI, Show this project in Explorer, Open this project on GitHub. |
 
-**Evidence is not stage acceptance.** MP.5 has recorded evidence; remaining MP rows still need named proofs, including the two-project MP.1 journey and real-account MP.8/MP.34. IMG.11 is met; other image rows remain open. MACT is met except deferred MACT.9; OFB is met. No formal owner stage sign-off is claimed.
+**Evidence is not stage acceptance.** MP.5 has recorded evidence; remaining MP rows still need named proofs, including the two-project MP.1 journey and real-account MP.8/MP.34. IMG.11 and [IMG.12](gate-evidence.md#inline-images-print-and-save-as-pdf) are met by automated evidence; other image rows remain open. MACT is met except deferred MACT.9; OFB is met. No formal owner stage sign-off is claimed.
+
+**IMG-12 Try it after Preview updates:** open a note with images → More → Print… → Save as PDF: images and captions in place, none split; a missing image prints its description.
 
 **Known open defects:** DEF-40 save-timing flake is quarantined until 7 November; DEF-42 rename storm takes 1067 ms against 1000 ms only under 4× CPU stress (owner allowed landing). The Preview-versus-Store launch lock was fixed on 6 November (D-366); the paused reopen candidate is not landed.
 
