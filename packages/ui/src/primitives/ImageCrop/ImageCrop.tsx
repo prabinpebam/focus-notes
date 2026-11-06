@@ -16,12 +16,15 @@ export interface ImageCropProps {
   /** Crop rectangle as percentages of the oriented source. */
   x?: number; y?: number; width?: number; height?: number;
   rotation?: "0" | "90" | "180" | "270";
+  aspect?: "free" | "original" | "square" | "fourThree" | "wide";
   flipHorizontal?: boolean;
   flipVertical?: boolean;
   /** Names for all eight edges/corners and the move target, from the message model. */
   handles: readonly { id: string; label: string }[];
   /** Draft-only changes; the primitive never writes an image or a note. */
   onChange?: (rect: CropRect) => void;
+  /** The owning design view decides how a draft is committed. */
+  onCommit?: () => void;
 }
 
 /**
@@ -30,17 +33,22 @@ export interface ImageCropProps {
  * @a11y Native named buttons for handles; source remains described.
  * @key Arrow moves an edge or the crop by one source pixel; Shift+Arrow by ten.
  */
-export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing = true, x = 0, y = 0, width = 100, height = 100, rotation = "0", flipHorizontal = false, flipVertical = false, handles, onChange }: ImageCropProps) {
+export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing = true, x = 0, y = 0, width: requestedWidth = 100, height: requestedHeight = 100, rotation = "0", aspect = "free", flipHorizontal = false, flipVertical = false, handles, onChange, onCommit }: ImageCropProps) {
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ handle: Handle; px: number; py: number; rect: CropRect } | undefined>(undefined);
   const quarter = rotation === "90" || rotation === "270";
   const iw = quarter ? intrinsicHeight : intrinsicWidth, ih = quarter ? intrinsicWidth : intrinsicHeight;
+  const aspectValue = aspect === "original" ? iw / ih : aspect === "square" ? 1 : aspect === "fourThree" ? 4 / 3 : aspect === "wide" ? 16 / 9 : undefined;
+  const factor = aspectValue === undefined ? undefined : aspectValue * ih / iw;
+  const width = factor === undefined ? requestedWidth : Math.min(requestedWidth, requestedHeight * factor);
+  const height = factor === undefined ? requestedHeight : width / factor;
   const rect = { x, y, width, height };
   const turn = rotation === "90" ? `translate(${iw} 0) rotate(90)` : rotation === "180" ? `translate(${iw} ${ih}) rotate(180)` : rotation === "270" ? `translate(0 ${ih}) rotate(270)` : "";
   const flip = `translate(${flipHorizontal ? iw : 0} ${flipVertical ? ih : 0}) scale(${flipHorizontal ? -1 : 1} ${flipVertical ? -1 : 1})`;
   const viewBox = editing ? `0 0 ${iw} ${ih}` : `${x * iw / 100} ${y * ih / 100} ${width * iw / 100} ${height * ih / 100}`;
   const variables = {
     [s.ratio.slice(4, -1)]: editing ? `${iw} / ${ih}` : `${width * iw} / ${height * ih}`,
+    [s.ratioNumber.slice(4, -1)]: editing ? iw / ih : width * iw / (height * ih),
     [s.x.slice(4, -1)]: `${x}%`, [s.y.slice(4, -1)]: `${y}%`,
     [s.width.slice(4, -1)]: `${width}%`, [s.height.slice(4, -1)]: `${height}%`,
   } as CSSProperties;
@@ -52,6 +60,21 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
     if (handle.includes("e")) right = clamp(right + dx, left + 100 / iw, 100);
     if (handle.includes("n")) top = clamp(top + dy, 0, bottom - 100 / ih);
     if (handle.includes("s")) bottom = clamp(bottom + dy, top + 100 / ih, 100);
+    if (factor !== undefined) {
+      const horizontal = handle.includes("w") || handle.includes("e");
+      const vertical = handle.includes("n") || handle.includes("s");
+      const useWidth = horizontal && (!vertical || Math.abs(dx / start.width) >= Math.abs(dy / start.height));
+      const anchorX = handle.includes("w") ? start.x + start.width : handle.includes("e") ? start.x : start.x + start.width / 2;
+      const anchorY = handle.includes("n") ? start.y + start.height : handle.includes("s") ? start.y : start.y + start.height / 2;
+      const maxWidth = horizontal ? handle.includes("w") ? anchorX : 100 - anchorX : 2 * Math.min(anchorX, 100 - anchorX);
+      const maxHeight = vertical ? handle.includes("n") ? anchorY : 100 - anchorY : 2 * Math.min(anchorY, 100 - anchorY);
+      const nextWidth = clamp(useWidth ? right - left : (bottom - top) * factor, Math.max(100 / iw, 100 / ih * factor), Math.min(maxWidth, maxHeight * factor));
+      const nextHeight = nextWidth / factor;
+      left = handle.includes("w") ? anchorX - nextWidth : handle.includes("e") ? anchorX : anchorX - nextWidth / 2;
+      top = handle.includes("n") ? anchorY - nextHeight : handle.includes("s") ? anchorY : anchorY - nextHeight / 2;
+      right = left + nextWidth;
+      bottom = top + nextHeight;
+    }
     onChange?.({ x: left, y: top, width: right - left, height: bottom - top });
   };
   const pointerDown = (e: PointerEvent<HTMLButtonElement>, handle: Handle) => {
@@ -70,7 +93,9 @@ export function ImageCrop({ src, alt, intrinsicWidth, intrinsicHeight, editing =
     const pixels = e.shiftKey ? 10 : 1;
     change(handle, (e.key === "ArrowLeft" ? -pixels : e.key === "ArrowRight" ? pixels : 0) / iw * 100, (e.key === "ArrowUp" ? -pixels : e.key === "ArrowDown" ? pixels : 0) / ih * 100, rect);
   };
-  return <div className={`${s.wrapper}${editing ? ` ${s.edit}` : ""}`}>
+  return <div className={`${s.wrapper}${editing ? ` ${s.edit}` : ""}`} onKeyDown={event => {
+    if (editing && event.key === "Enter") { event.preventDefault(); onCommit?.(); }
+  }}>
     <div ref={stage} className={s.stage} style={variables}>
       <svg className={s.image} viewBox={viewBox} role="img" aria-label={alt}>
         <g transform={flip}><g transform={turn}><image href={src.startsWith("data:image/") ? src : undefined} width={intrinsicWidth} height={intrinsicHeight} /></g></g>
