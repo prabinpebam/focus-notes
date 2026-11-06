@@ -28,8 +28,8 @@ test("ACT-05, ACT-02: Actions captures a single image and opens its existing cro
     await expect(actions).toBeHidden();
     const crop = page.getByRole("dialog", { name: "Edit image", exact: true });
     await expect(crop).toBeVisible();
-    await expect(crop.getByRole("textbox", { name: "Width", exact: true })).toHaveValue("1");
-    await expect(crop.getByRole("textbox", { name: "Height", exact: true })).toHaveValue("1");
+    await expect(crop.getByRole("spinbutton", { name: "Width (px)", exact: true })).toHaveValue("1");
+    await expect(crop.getByRole("spinbutton", { name: "Height (px)", exact: true })).toHaveValue("1");
     await crop.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(crop).toBeHidden();
     expect(readFileSync(notePath, "utf8")).toBe(markdown);
