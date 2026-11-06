@@ -203,7 +203,7 @@ The public-repository boundary applies already during insertion, not only in the
 
 The folder is a media area at its owning repository/local root, not an `assets` folder created beside every nested note. Use at least 128 random bits for managed asset IDs, collision-check and regenerate; extensions follow validated raster type, not source names. References are relative from the note; moves rebase them transactionally. Existing asset paths continue to resolve, with no mass relocation. Renaming a standalone note may retain its existing sidecar name/references; Save as/copy carries referenced media into the destination sidecar, never deletes the original. Copying/importing a note between roots copies referenced authorized media first, updates only destination references and keeps the original; Private → Public still needs the ordinary visibility confirmation. A reference shared by notes is not permission to publish those other notes.
 
-**Same-root note moves and renames (WP-9.3 / IMG-05, implementation under validation):**
+**Same-root note moves and renames (WP-9.3 / IMG-05, landed):**
 
 | Step | Safety rule |
 | --- | --- |
@@ -212,7 +212,18 @@ The folder is a media area at its owning repository/local root, not an `assets` 
 | Finish | Keep the old note until all batch rewrites succeed, then remove its old directory entry. An interrupted staged move leaves both usable notes rather than a moved note with broken image links. No image bytes or sidecars are moved, renamed, flattened or deleted. |
 | Undo or recover | Move Undo rebases references back; Rename Undo restores the exact old filename. Refused rollback never overwrites an external edit: retain copies and tell the person to review both folders in Files before retrying. |
 
-This slice covers individual note moves within one root, explicit file rename and title-following rename. Existing folder-batch behavior is unchanged. Cross-root asset copies and standalone Save as/copy remain separate pending slices; publishing and encrypted sharing are not part of this implementation. Files move/rename and Undo use the shared task tracker, with [named wait measures](../architecture/perceived-performance.md#image-preserving-note-moves).
+This slice covers individual note moves within one root, explicit file rename and title-following rename. Existing folder-batch behavior is unchanged. It landed at `c8ff5865` after every job passed in [Windows CI 42235765232](https://github.com/prabinpebam/focus-notes/actions/runs/42235765232) (attempt 2; attempt 1 failed only two load timeouts in untouched tests). Publishing and encrypted sharing are not part of this implementation. Files move/rename and Undo use the shared task tracker, with [named wait measures](../architecture/perceived-performance.md#image-preserving-note-moves).
+
+**Notes changing root: Make public, Make private and moves between roots (WP-9.3 / IMG-05, implementation under validation):**
+
+| Step | Safety rule |
+| --- | --- |
+| Copy | Before the destination note exists, each referenced local image is validated in the source's boundary and copied into the destination root's `assets/images/` under a new random name. A cropped image's kept original (`originalSrc=` in its hidden settings comment) is copied and rebased the same way. Into Public, copies lose ancillary metadata (D-365). Unreferenced assets are never copied. |
+| Rewrite | Only the destination note's image destinations change; every other byte stays. The open note follows the new references, keeping anything typed meanwhile. |
+| Keep | Source images are never moved, renamed or deleted. The note itself moves as before, staged as for same-root moves. A refusal removes only this batch's fresh copies, so no unreferenced copy can reach a later commit. |
+| Commit | The copies are committed with the note in the destination repository, private first; the message adds "Copy N images". |
+
+Private → Public keeps the ordinary visibility confirmation. Moving a whole folder between roots is unchanged and not covered yet.
 
 **Cross-root foundation only (unlanded follow-up):** a shell helper can copy the exact referenced local media closure into a destination root or standalone sidecar, deduplicate repeated references and rewrite only image destination spans. Public copies use the existing metadata stripper; canonical validation rejects an escaping junction while output paths preserve the caller's root spelling. The original note and assets are never modified, and failures retain any already-created safe copies rather than deleting assets. Helper units cover missing media, collisions, read-only refusal, metadata stripping, reference definitions, junction paths and standalone sidecars. It is not yet connected to Files or a standalone command, and does not claim either copy flow works in the app. No new runtime wait exists until that wiring is added.
 

@@ -500,7 +500,7 @@ export interface WorkspaceBridge {
    * who can see a note: one commit in each repository, private first (FIL-06, D-97). Rejects with
    * an Error whose message ends in an {@link OpErrorCode}.
    */
-  apply?(ops: WorkspaceOp[]): Promise<void>;
+  apply?(ops: WorkspaceOp[]): Promise<void | { rewrites?: NoteRewrite[] }>;
   /**
    * Asks for an export bundle with the system's open dialog (FRE-10). Only the shell reads the file,
    * refusing one that's too large (the message ends in `tooLarge`) or isn't a bundle. Undefined if cancelled.
@@ -656,6 +656,12 @@ export type WorkspaceOp =
   | { op: "write"; path: string; text: string; before?: string }
   /** A new note, never over another: a copy the conflict resolver keeps (FIL-12). */
   | { op: "create"; path: string; text: string };
+
+/**
+ * A note the shell itself rewrote in a batch: a note moved into the other root points at its own
+ * copies of its images (D-365). `from` and `path` are before and after; `before` is the text it read.
+ */
+export interface NoteRewrite { from: string; path: string; before: string; text: string }
 
 /** Why a batch was refused. The shell's error message ends with one of these. */
 export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed", "changed", "missingImage", "recovery"] as const;

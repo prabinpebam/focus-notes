@@ -3,7 +3,7 @@
  * names, and every operation shown at once, written after, and put back if refused (PRF-09).
  */
 import type { AppState, ToastState } from "./app.ts";
-import type { PlatformBridge, AppStateFile, WorkspaceOp, OpErrorCode, RecoveredDraft } from "./bridge.ts";
+import type { PlatformBridge, AppStateFile, WorkspaceOp, OpErrorCode, RecoveredDraft, NoteRewrite } from "./bridge.ts";
 import { opErrorCode } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
@@ -12,7 +12,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import type { TaskTracker } from "./tasks.ts";
 import { sourceOf } from "./notes.ts";
 import { blocksOf, groupByDay, type DeletedNote } from "./history.ts";
-import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
+import { followImages, planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
   actedOn, ancestorsOf, copyTitle, destinations, importedNote, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, rowMenu, select, selectAll, targetFolder, titleOfNode,
   topLevel, visibleRows, withoutNoteId, type FileRow, type FilesSort, type Selection,
@@ -418,13 +418,17 @@ export function registerFiles(ctx: Ctx) {
   /** Each rewrite carries the text it was made from: the shell writes nothing over a change since (DEF-26). */
   const writeOps = (writes: readonly LinkWrite[]): WorkspaceOp[] => writes.map((w) => ({ op: "write", path: w.path, text: w.text, before: w.before }));
   /** After the batch, the open note shows its new links, keeping anything typed while it was written. */
-  const followLinks = (writes: readonly LinkWrite[], moves: readonly PathMove[], before: WorkspaceTree) => {
+  const followLinks = (writes: readonly LinkWrite[], moves: readonly PathMove[], before: WorkspaceTree, shell: readonly NoteRewrite[] = []) => {
     const n = store.state.note;
-    const w = writes.find((x) => x.path === n.path);
+    const own = shell.find((x) => x.path === n.path);
+    const planned = writes.find((x) => x.path === n.path);
+    // The shell's rewrite (images copied for the note's new root) is made from the planned one.
+    const w = own ? { from: own.from, path: own.path, before: planned?.before ?? own.before, text: own.text } : planned;
     if (!w) return;
     const same = n.markdown === w.before;
     ctx.sawOnDisk?.(w.path, w.text);
-    const text = same ? w.text : rewriteLinks(n.markdown, w.from, w.path, moves, sameRootOf(before)).text;
+    const linked = same ? w.text : rewriteLinks(n.markdown, w.from, w.path, moves, sameRootOf(before)).text;
+    const text = same || !own ? linked : followImages(linked, planned?.text ?? own.before, own.text);
     ctx.setNote({ key: `${w.path}#links-${Date.now()}`, initialMarkdown: text, markdown: text, saveState: same ? "saved" : "unsaved" });
     ctx.loaded(w.path, text);
   };
@@ -479,7 +483,7 @@ export function registerFiles(ctx: Ctx) {
       // Links in other notes, and in the moved notes themselves, change in the same batch (FIL-09).
       const writes = await planLinkWrites(before, moves, readForLinks());
       refusedIfOpen(writes);
-      await ws!.apply!([...ops, ...writeOps(writes)]);
+      const result = await ws!.apply!([...ops, ...writeOps(writes)]);
       if (moves.length) ctx.notesMoved?.(moves);
       // The open note follows a move; a deleted one is closed after.
       const p = store.state.note.path;
@@ -491,7 +495,7 @@ export function registerFiles(ctx: Ctx) {
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
         }
       }
-      followLinks(writes, moves, before);
+      followLinks(writes, moves, before, result?.rewrites);
       return writes;
     });
     const done = queue.catch(() => {}).then(() => moves.length && ctx.tracker

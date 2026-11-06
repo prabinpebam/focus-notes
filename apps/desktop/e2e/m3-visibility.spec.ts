@@ -6,10 +6,12 @@
  * only: nothing touches the network.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { existsSync, readdirSync, readFileSync, truncateSync, writeFileSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, truncateSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { crc32 } from "node:zlib";
 import { launch, quit, type Launched } from "./helpers.ts";
+import { picture } from "./fre-fakes.ts";
 import { axeViolations } from "./axe.ts";
 import { git, instance } from "./instance.ts";
 
@@ -93,6 +95,54 @@ test("FIL-06, SHR-02: Make public asks first, then commits in both repositories,
   expect(git(notesRemote, "log", "--all", "-p")).not.toContain("quince-73");
   expect(git(dirs.docs, "log", "--all", "-p")).not.toContain("quince-73");
   await quit(l);
+});
+
+test("IMG-05: Make public shows the note's images from public copies, stripped, while the private originals stay", async () => {
+  const { dirs, notesRemote } = instance();
+  const priv = join(dirs.docs, "private");
+  mkdirSync(join(priv, "assets", "images"), { recursive: true });
+  // A PNG with a private text chunk: the public copy must not carry it (D-365).
+  const plain = Buffer.from(picture().split(",")[1]!, "base64");
+  const chunk = Buffer.from("tEXtComment\0GPS secret-kiwi-41");
+  const length = Buffer.alloc(4), crc = Buffer.alloc(4);
+  length.writeUInt32BE(chunk.length - 4); crc.writeUInt32BE(crc32(chunk));
+  const original = Buffer.concat([plain.subarray(0, 33), length, chunk, crc, plain.subarray(33)]);
+  const cropped = join(priv, "assets", "images", "c.png"), kept = join(priv, "assets", "images", "o.png");
+  writeFileSync(cropped, original);
+  writeFileSync(kept, original);
+  writeFileSync(join(priv, "notes", "welcome.md"), "# Welcome\n\nFirst line.\n\n<!-- image: rounded originalSrc=../assets/images/o.png -->\n![Pic](../assets/images/c.png \"Cap\")\n");
+  git(priv, "add", "-A");
+  git(priv, "commit", "-q", "-m", "Add a picture");
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  try {
+    const { page } = l;
+    const editor = page.getByRole("textbox", { name: "Note" });
+    const image = editor.locator("img");
+    const shown = () => expect.poll(() => image.evaluateAll(nodes => nodes.length === 1 && nodes.every(node =>
+      node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0)), { timeout: 15_000 }).toBe(true);
+    await shown();
+    await more(page, /^Make public/);
+    await page.getByRole("dialog", { name: "Make public?" }).getByRole("button", { name: "Make public" }).click();
+    await expect(page.locator("#toasts").getByText("Made “Welcome” public.")).toBeVisible({ timeout: 15_000 });
+    const moved = join(dirs.docs, "notes", "welcome.md");
+    const text = readFileSync(moved, "utf8");
+    const m = /^<!-- image: rounded originalSrc=\.\.\/assets\/images\/([0-9a-f-]{36})\.png -->\n!\[Pic\]\(\.\.\/assets\/images\/([0-9a-f-]{36})\.png "Cap"\)$/m.exec(text);
+    expect(m, text).not.toBeNull();
+    for (const id of [m![1]!, m![2]!]) expect(readFileSync(join(dirs.docs, "assets", "images", `${id}.png`))).toEqual(plain);
+    // The open note follows: the image still shows, and saving keeps the public references.
+    await shown();
+    await editor.click();
+    await page.keyboard.press(`${mod}+End`);
+    await page.keyboard.type(" Later.");
+    await page.keyboard.press(`${mod}+S`);
+    await expect.poll(() => readFileSync(moved, "utf8")).toContain("Later.");
+    expect(readFileSync(moved, "utf8")).toContain(`(../assets/images/${m![2]!}.png "Cap")`);
+    // The private originals stay, byte for byte; nothing private reaches the public repository.
+    expect(readFileSync(cropped)).toEqual(original);
+    expect(readFileSync(kept)).toEqual(original);
+    await expect.poll(() => show(notesRemote, `assets/images/${m![2]!}.png`) !== "", { timeout: 15_000 }).toBe(true);
+    expect(git(notesRemote, "log", "--all", "-p", "--text")).not.toContain("secret-kiwi-41");
+  } finally { await quit(l); }
 });
 
 test("SHR-01: a new note is private by default, even from a public note", async () => {

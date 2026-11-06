@@ -29,7 +29,9 @@ export type BatchOp =
   /** A note put back from history: Recently deleted's Restore, or a delete's Undo (FIL-10). */
   | { op: "restore"; path: string }
   /** A new note: a copy the conflict resolver keeps (FIL-12). */
-  | { op: "create"; path: string };
+  | { op: "create"; path: string }
+  /** An image copied for a note that changed visibility; committed with it, never a line of its own (D-365). */
+  | { op: "media"; path: string };
 
 const parent = (p: string) => (p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "");
 const KEEP = "/.gitkeep";
@@ -103,14 +105,15 @@ export function backupMessage(changes: Change[]): string {
 
 /** The message for one batch from the Files panel, said as the operation, with its link updates (FIL-05, FIL-09). */
 export function batchMessage(ops: BatchOp[], changes: Change[] = []): string {
-  const main = ops.filter((o) => o.op !== "write");
+  const main = ops.filter((o) => o.op !== "write" && o.op !== "media");
   const writes = ops.filter((o): o is Extract<BatchOp, { op: "write" }> => o.op === "write");
   const movedTo = new Set(main.flatMap((o) => (o.op === "move" ? [o.to] : o.op === "visibility" ? [o.path] : [])));
   const line = (o: (typeof main)[number]) => (o.op === "createFolder" ? `Create folder ${o.path}` : o.op === "delete" ? `Delete ${o.path}`
     : o.op === "move" ? describe({ status: "R", from: o.from, path: o.to })
       : o.op === "visibility" ? `Make ${o.to}: ${o.path}` : o.op === "import" ? `Import ${o.path}` : o.op === "restore" ? `Restore ${o.path}` : o.op === "create" ? `Create ${o.path}` : "");
   const linkNotes = writes.filter((w) => !movedTo.has(w.path)).length;
-  const links = linkNotes ? [`Update links in ${plural(linkNotes, "note", "notes")}`] : [];
+  const copies = ops.filter((o) => o.op === "media").length;
+  const links = [...(linkNotes ? [`Update links in ${plural(linkNotes, "note", "notes")}`] : []), ...(copies ? [`Copy ${plural(copies, "image", "images")}`] : [])];
   if (!main.length) return changes.length ? message(saveMessage(changes), []) : "Update notes";
   const kinds = new Set(main.map((o) => o.op));
   let subject: string;

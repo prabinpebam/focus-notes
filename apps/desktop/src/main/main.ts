@@ -22,6 +22,7 @@ import { appIdentity, preparePreviewProfile } from "./app-identity.ts";
 import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { stageNoteMove, validateNoteImages } from "./note-move.ts";
+import { copyNoteMedia, removeCopies } from "./note-media.ts";
 import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
@@ -59,7 +60,7 @@ import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
 import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, mapLimit, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
-import type { ConflictChoice, DeletionResult, RemovalCheck } from "@focus-notes/core";
+import type { ConflictChoice, DeletionResult, NoteRewrite, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { deletionCheck, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
@@ -772,6 +773,16 @@ const formatFile = () => join(notesHome(), ".focus-notes", "workspace.json");
 const isWorkspace = () => existsSync(formatFile());
 // A clone whose account can't reach the private repository has no private root (FRE-06).
 const hasPrivate = () => existsSync(join(notesHome(), "private", "notes")) || existsSync(join(notesHome(), "private", ".git"));
+/** Where a project note's managed images live: its visibility's `assets/images` (D-365). */
+const imageRoot = (note: string) => {
+  if (!isWorkspace()) return undefined;
+  if (hasPrivate() && inside(join(notesHome(), "private", "notes"), note)) return join(notesHome(), "private");
+  if (inside(join(notesHome(), "notes"), note)) return notesHome();
+  return undefined;
+};
+/** Whether images written for this note may be published, so their metadata is stripped (D-365). */
+const publicMedia = (note: string) =>
+  imageRoot(note) !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note);
 // New notes without a private repository (D-158): held out of Git, in the notes repository's
 // info/exclude, until the writer answers Make it public or Keep it on this computer only.
 let heldCache: { home: string; file: HeldFile } | undefined;
@@ -977,9 +988,9 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
  * A move between the Private and Public roots changes who can see it (FIL-06): the folders it needs
  * in the other root are made, and taken away again if the batch is undone.
  */
-async function applyOps(raw: unknown): Promise<BatchOp[]> {
+async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: NoteRewrite[] }> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
-  type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
+  type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string; toRoot: string }
     | { op: "write" | "create"; path: string; text: string; root: string; before?: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
@@ -989,7 +1000,7 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
       const to = opPath(o.to);
       // Only a workspace's two roots can be crossed (D-84); anything else stays in its root.
       if (from.root !== to.root && !isWorkspace()) throw refuse("invalid");
-      return { op: "move" as const, path: from.path, to: to.path, root: from.root };
+      return { op: "move" as const, path: from.path, to: to.path, root: from.root, toRoot: to.root };
     }
     if (o?.op === "write" || o?.op === "create") {
       const at = opPath(o.path);
@@ -1005,6 +1016,8 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   const undo: (() => Promise<unknown>)[] = [];
   const finishMoves: (() => Promise<void>)[] = [];
   const consumed = new Set<Op>();
+  const media: string[] = [];
+  const rewrites: NoteRewrite[] = [];
   const held = await heldNotes();
   try {
     for (const op of ops) {
@@ -1030,12 +1043,15 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         }
         if (!(await isDir(dirname(to)))) throw refuse("notFound");
         await writesDone(from);
-        const safeNoteMove = st.isFile() && !caseOnly && inside(op.root, to);
+        // A note into the other root gets its own copies of its images; the originals stay (D-365).
+        const crossNote = st.isFile() && !caseOnly && !inside(op.root, to);
+        const safeNoteMove = st.isFile() && !caseOnly && (crossNote || inside(op.root, to));
+        const toPublic = !inside(join(notesHome(), "private"), to);
         let copiedHold: "waiting" | "local" | undefined;
         if (held && safeNoteMove) {
           const state = await held.list();
           copiedHold = state.local.includes(from) ? "local" : state.waiting.includes(from) ? "waiting" : undefined;
-          if (copiedHold) {
+          if (copiedHold && toPublic) {
             // Both complete copies must stay excluded, including after an interrupted staging (D-158).
             await held.hold(to);
             if (copiedHold === "local") await held.answer(to, "local");
@@ -1051,10 +1067,18 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
           const before = await readFile(from, "utf8");
           if (paired?.op === "write" && paired.before !== undefined && paired.before !== before) throw refuse("changed");
           const boundary = isWorkspace() ? dirname(op.root) : op.root;
+          const toBoundary = isWorkspace() ? dirname(op.toRoot) : op.toRoot;
           const canonical = await realpath(boundary);
-          if (!inside(canonical, await realpath(from)) || !inside(canonical, await realpath(dirname(to)))) throw refuse("invalid");
-          await validateNoteImages(before, from, boundary);
-          const noteMove = await stageNoteMove(from, to, paired?.op === "write" ? paired.text : before, before);
+          if (!inside(canonical, await realpath(from)) || !inside(await realpath(toBoundary), await realpath(dirname(to)))) throw refuse("invalid");
+          let text = paired?.op === "write" ? paired.text : before;
+          if (crossNote) {
+            const copy = await copyNoteMedia(text, from, to, boundary, imageRoot(to), publicMedia(to), before);
+            undo.push(() => removeCopies(copy.paths));
+            media.push(...copy.paths);
+            if (copy.text !== text) rewrites.push({ from, path: to, before, text: copy.text });
+            text = copy.text;
+          } else await validateNoteImages(before, from, boundary);
+          const noteMove = await stageNoteMove(from, to, text, before);
           staged = true;
           undo.push(async () => {
             if (copiedHold && held) {
@@ -1123,8 +1147,9 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
       void drafts?.gone(op.path);
     }
   }
-  // What was done, for the batch's one commit.
-  return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
+  // What was done, for the batch's one commit: copied images are committed with their notes.
+  const done = ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
+  return { done: [...done, ...media.map((path): BatchOp => ({ op: "media", path }))], rewrites };
 }
 
 // ---- Recently deleted and conflicts (FIL-10, FIL-12) ----
@@ -1319,12 +1344,6 @@ async function slowSeam(channel: string): Promise<void> {
 let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume"> | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
   const imageBatches = new Map<string, string[]>();
-  const imageRoot = (note: string) => {
-    if (!isWorkspace()) return undefined;
-    if (hasPrivate() && inside(join(notesHome(), "private", "notes"), note)) return join(notesHome(), "private");
-    if (inside(join(notesHome(), "notes"), note)) return notesHome();
-    return undefined;
-  };
   handleFrom("image:import", async (event, path, inputs, replace) => {
     if (replace !== undefined && typeof replace !== "boolean") throw new Error("invalid-image");
     const note = notePath(path);
@@ -1359,7 +1378,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         } finally { clearTimeout(timer); image.src = ""; }
       })()`);
       if (!valid) throw new Error("invalid-image");
-    }, root !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note));
+    }, publicMedia(note));
     const batch = randomUUID();
     imageBatches.set(batch, result.paths);
     return { batch, images: result.images };
@@ -1961,8 +1980,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Each batch is one commit (FIL-05, D-94): resolved after the commit, so "saved" means saved (PRF-09).
   // A commit that fails leaves the files as the batch made them and is reported as a sync problem.
   handle("workspace:apply", async (ops) => {
-    const done = await applyOps(ops);
+    const { done, rewrites } = await applyOps(ops);
     await (await gitOpening)?.commitBatch(done);
+    // The shell's own reference changes, so the open note follows them instead of saving old ones back.
+    return rewrites.length ? { rewrites } : undefined;
   });
   handle("bundle:choose", () => chooseBundle(win()));
   handle("bundle:import", (id, to) => importBundle(id, to));

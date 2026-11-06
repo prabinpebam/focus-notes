@@ -5,7 +5,7 @@
  * the note stays as it was (content-model.md → The Markdown bridge). Planned here, written by the
  * shell in the same all-or-nothing batch as the PathMove (D-94, D-95).
  */
-import { linkDestinations } from "@focus-notes/markdown";
+import { imageDestinations, linkDestinations } from "@focus-notes/markdown";
 import { rootOf, walk, type WorkspaceTree } from "./workspace.ts";
 
 export interface PathMove { from: string; to: string }
@@ -134,6 +134,33 @@ export const sameRootOf = (tree: WorkspaceTree) => (a: string, b: string): boole
   const media = fold(r.path.replace(/notes$/i, "assets") + sepOf(r.path) + "images" + sepOf(r.path));
   return fold(b).startsWith(media);
 };
+
+/**
+ * The image destinations `after` changed from `before` (the same images in the same order), made
+ * in `text` wherever it still names the old one: edits typed meanwhile stay, and so does an image
+ * added since.
+ */
+export function followImages(text: string, before: string, after: string): string {
+  const a = imageDestinations(before);
+  const b = imageDestinations(after);
+  if (a.length !== b.length) return text;
+  const changed = new Map<string, string>();
+  a.forEach((d, i) => {
+    const old = before.slice(d.start, d.end);
+    const now = after.slice(b[i]!.start, b[i]!.end);
+    if (old !== now) changed.set(old, now);
+  });
+  if (!changed.size) return text;
+  let out = "";
+  let at = 0;
+  for (const d of imageDestinations(text)) {
+    const next = changed.get(text.slice(d.start, d.end));
+    if (next === undefined) continue;
+    out += text.slice(at, d.start) + next;
+    at = d.end;
+  }
+  return out + text.slice(at);
+}
 
 /** Whether a note could link to anything moving: its text names one of them, however it's spelled. */
 function mentions(text: string, names: readonly string[]): boolean {

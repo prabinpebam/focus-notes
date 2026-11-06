@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseMarkdown, serializeMarkdown } from "@focus-notes/markdown";
-import { buildTree, planLinkWrites, rewriteLinks, sameRootOf } from "../src/index.ts";
+import { buildTree, followImages, planLinkWrites, rewriteLinks, sameRootOf } from "../src/index.ts";
 
 const rw = (text: string, from: string, moves: { from: string; to: string }[], to = from) => rewriteLinks(text, from, to, moves).text;
 
@@ -26,6 +26,17 @@ describe("rewriteLinks (FIL-09)", () => {
   it("rewrites images and reference definitions, and links to anything in a moved folder", () => {
     const src = "![pic](Box/img/p.png) and [r][id].\n\n[id]: Box/b.md \"Title\"\n";
     expect(rw(src, "n.md", [{ from: "Box", to: "Crate" }])).toBe("![pic](Crate/img/p.png) and [r][id].\n\n[id]: Crate/b.md \"Title\"\n");
+  });
+  it("IMG-05: a moved note rebases its image's kept original exactly like the image, keeping the rest of the comment", () => {
+    const src = "<!-- image: wide originalSrc=../assets/images/o.png size=4x3 -->\n![A](../assets/images/c.png \"Cap\")\n";
+    expect(rw(src, "notes/a.md", [{ from: "notes/a.md", to: "notes/deep/a.md" }], "notes/deep/a.md"))
+      .toBe("<!-- image: wide originalSrc=../../assets/images/o.png size=4x3 -->\n![A](../../assets/images/c.png \"Cap\")\n");
+  });
+  it("IMG-05: followImages applies the shell's copied image destinations to text typed meanwhile", () => {
+    const before = "<!-- image: originalSrc=../assets/images/o.png -->\n![A](../assets/images/c.png)\n";
+    const after = "<!-- image: originalSrc=../assets/images/o2.png -->\n![A](../assets/images/c2.png)\n";
+    expect(followImages(`${before}\nTyped.\n`, before, after)).toBe(`${after}\nTyped.\n`);
+    expect(followImages("No images.\n", before, after)).toBe("No images.\n");
   });
   it("never changes links in code, absolute URLs, site-root links, or links within the note", () => {
     const src = "`[c](b.md)`\n\n```\n[d](b.md)\n```\n\n[w](https://example.com/b.md) [m](mailto:a@b.c) [r](/b.md) [h](#b) <https://x.org/b.md>\n";

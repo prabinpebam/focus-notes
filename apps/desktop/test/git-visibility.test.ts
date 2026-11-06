@@ -38,6 +38,9 @@ describe("commit messages say who can see it now", () => {
       .toBe("Make 2 items public\n\nMake public: notes/a.md\nMake public: notes/b.md\nUpdate links in 1 note");
     // The moved note's own text isn't a link update elsewhere.
     expect(batchMessage([{ op: "visibility", path: "notes/a.md", to: "private" }, { op: "write", path: "notes/a.md" }])).toBe("Make private: notes/a.md");
+    // IMG-05: images copied for the note go in its commit, said once, never as items of their own.
+    expect(batchMessage([{ op: "visibility", path: "notes/a.md", to: "public" }, { op: "media", path: "assets/images/1.png" }, { op: "media", path: "assets/images/2.png" }]))
+      .toBe("Make public: notes/a.md\n\nCopy 2 images");
     expect(batchMessage([{ op: "import", path: "notes/a.md" }, { op: "import", path: "notes/b.md" }])).toBe("Import 2 notes\n\nImport notes/a.md\nImport notes/b.md");
   });
 });

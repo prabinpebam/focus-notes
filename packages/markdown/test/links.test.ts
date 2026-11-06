@@ -7,6 +7,13 @@ import { imageDestinations, linkDestinations } from "../src/index.ts";
 const dests = (src: string) => linkDestinations(src).map((d) => [src.slice(d.start, d.end), d.angle]);
 
 describe("linkDestinations", () => {
+  it("IMG-05: an image's kept original (originalSrc in its settings comment) is an image destination, never one in code", () => {
+    const src = "<!-- image: wide originalSrc=../assets/images/o%20x.png size=4x3 -->\n![A](../assets/images/c.png)\n\n```\n<!-- image: originalSrc=code.png -->\n```\n";
+    expect(imageDestinations(src).map(d => src.slice(d.start, d.end))).toEqual(["../assets/images/o%20x.png", "../assets/images/c.png"]);
+    expect(dests(src)).toEqual([["../assets/images/o%20x.png", false], ["../assets/images/c.png", false]]);
+    const quoted = '<!-- image: originalSrc="orig.png" -->\n![A](c.png)\n';
+    expect(imageDestinations(quoted).map(d => quoted.slice(d.start, d.end))).toEqual(["orig.png", "c.png"]);
+  });
   it("IMG-05: selects only image resources and their referenced definitions, preserving exact source offsets", () => {
     const src = '\uFEFF# Images\r\n\r\n![A](<p x.png> "Caption") ![B][ref] [note](note.md)\r\n\r\n[ref]: second.png "Title"\r\n[unused]: missing.png\r\n';
     expect(imageDestinations(src).map(d => [src.slice(d.start, d.end), d.angle])).toEqual([["p x.png", true], ["second.png", false]]);

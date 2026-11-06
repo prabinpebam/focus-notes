@@ -368,17 +368,43 @@ const linkProcessor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontm
 
 /**
  * Every link, image, and reference definition destination in a note, in source order, so a
- * caller can change just those characters and leave every other byte as it was.
+ * caller can change just those characters and leave every other byte as it was. An image's kept
+ * original (`originalSrc=` in its hidden settings comment, D-347) is one too, so it moves with the image.
  */
 export function linkDestinations(input: string): LinkDestination[] {
   const bom = input.startsWith("\uFEFF") ? 1 : 0;
   foundDestinations = [];
   try {
-    linkProcessor.parse(bom ? input.slice(1) : input);
-    return foundDestinations.map((d) => ({ ...d, start: d.start + bom, end: d.end + bom })).sort((a, b) => a.start - b.start);
+    const tree = linkProcessor.parse(bom ? input.slice(1) : input);
+    const found = foundDestinations.map((d) => ({ ...d, start: d.start + bom, end: d.end + bom }));
+    return [...found, ...originalSources(tree, input, bom)].sort((a, b) => a.start - b.start);
   } finally {
     foundDestinations = [];
   }
+}
+
+const ORIGINAL_SRC = /(?:^|\s)originalSrc=(?:"([^"]*)"|((?:(?!-->)\S)+))/g;
+/** `originalSrc=` values in image settings comments, block-level ones only (never in code). */
+function originalSources(tree: Md.Root, input: string, bom: number): LinkDestination[] {
+  const out: LinkDestination[] = [];
+  const visit = (node: Md.Nodes): void => {
+    if (node.type === "html" && node.position?.start.offset !== undefined && node.position.end.offset !== undefined) {
+      const from = node.position.start.offset + bom;
+      const raw = input.slice(from, node.position.end.offset + bom);
+      const open = /^\s*<!-- image: /.exec(raw);
+      if (open && /-->\s*$/.test(raw)) {
+        for (const m of raw.matchAll(ORIGINAL_SRC)) {
+          const value = m[1] ?? m[2]!;
+          if (!value) continue;
+          const start = from + m.index! + m[0].length - value.length - (m[1] !== undefined ? 1 : 0);
+          out.push({ start, end: start + value.length, angle: false });
+        }
+      }
+    }
+    if ("children" in node) for (const child of node.children) visit(child);
+  };
+  visit(tree);
+  return out;
 }
 
 /** Only image destinations, including definitions referenced by images, using the same parser. */
@@ -396,7 +422,8 @@ export function imageDestinations(input: string): LinkDestination[] {
   };
   visit(tree);
   const spans = [...images, ...definitions.filter(d => references.has(d.identifier.toUpperCase()))];
-  return linkDestinations(input).filter(d => spans.some(n =>
+  const originals = originalSources(tree, input, bom);
+  return linkDestinations(input).filter(d => originals.some(o => o.start === d.start) || spans.some(n =>
     n.position?.start.offset !== undefined && n.position.end.offset !== undefined
     && d.start >= n.position.start.offset + bom && d.end <= n.position.end.offset + bom));
 }

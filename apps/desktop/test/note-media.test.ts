@@ -106,4 +106,34 @@ describe("IMG-05 authorized media copies", () => {
     await validateNoteImages(result.text, to, f.root);
     expect(await readFile(f.from, "utf8")).toBe(f.text);
   });
+  it("copies a cropped image's kept original (originalSrc) too, rewriting both and keeping the comment's other words", async () => {
+    const f = await setup();
+    await writeFile(join(f.source, "assets", "images", "o.png"), png);
+    const text = "<!-- image: wide originalSrc=../assets/images/o.png -->\n![A](../assets/images/p.png)\n";
+    const result = await copyNoteMedia(text, f.from, f.to, f.source, f.destination, true);
+    expect(result.paths).toHaveLength(2);
+    const [original, cropped] = result.paths.map(p => relative(join(f.destination, "notes"), p).split(sep).join("/"));
+    expect(result.text).toBe(`<!-- image: wide originalSrc=${original} -->\n![A](${cropped})\n`);
+    await validateNoteImages(result.text, f.to, f.destination);
+    expect(await readFile(join(f.source, "assets", "images", "o.png"))).toEqual(png);
+  });
+  it("resolves images from the source text and writes them into the link-rewritten destination text", async () => {
+    const f = await setup();
+    const source = "[n](other.md)\n![A](../assets/images/p.png)\n";
+    const planned = "[n](../../private/notes/other.md)\n![A](../assets/images/p.png)\n";
+    const result = await copyNoteMedia(planned, f.from, f.to, f.source, f.destination, false, source);
+    const rel = relative(join(f.destination, "notes"), result.paths[0]!).split(sep).join("/");
+    expect(result.text).toBe(`[n](../../private/notes/other.md)\n![A](${rel})\n`);
+  });
+  it("removes only its own fresh copies when a later image fails", async () => {
+    const f = await setup();
+    await writeFile(join(f.source, "assets", "images", "q.png"), png);
+    const text = "![A](../assets/images/p.png)\n![B](../assets/images/q.png)\n";
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(open).mockImplementationOnce(actual.open as typeof open).mockRejectedValueOnce(Object.assign(new Error("denied"), { code: "EACCES" }));
+    await expect(copyNoteMedia(text, f.from, f.to, f.source, f.destination, true)).rejects.toMatchObject({ code: "EACCES" });
+    expect(await readdir(join(f.destination, "assets", "images"))).toEqual([]);
+    expect(await readFile(f.asset)).toEqual(png);
+    expect(await readFile(join(f.source, "assets", "images", "q.png"))).toEqual(png);
+  });
 });
