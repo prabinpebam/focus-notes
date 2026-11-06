@@ -12,7 +12,8 @@ const inside = (root: string, path: string): boolean => {
 export async function validateNoteImages(text: string, note: string, boundary: string): Promise<void> {
   const canonical = await realpath(boundary);
   for (const destination of imageDestinations(text)) {
-    const written = text.slice(destination.start, destination.end).replace(/\\([!-/:-@[-`{-~])/g, "$1");
+    const raw = text.slice(destination.start, destination.end);
+    const written = (destination.encoding === "component" ? decodeURIComponent(raw) : raw).replace(/\\([!-/:-@[-`{-~])/g, "$1");
     if (/^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i.test(written)) continue;
     const path = resolve(dirname(note), decodeURIComponent(written.split(/[?#]/, 1)[0]!));
     if (!inside(boundary, path)) throw new Error("invalid");

@@ -405,7 +405,7 @@ export function linkDestinations(input: string): LinkDestination[] {
   }
 }
 
-/** Only image destinations, including definitions referenced by images, using the same parser. */
+/** Only image destinations, including retained originals and definitions referenced by images. */
 export function imageDestinations(input: string): LinkDestination[] {
   const bom = input.startsWith("\uFEFF") ? 1 : 0;
   const tree = linkProcessor.parse(bom ? input.slice(1) : input);
@@ -420,7 +420,7 @@ export function imageDestinations(input: string): LinkDestination[] {
   };
   visit(tree);
   const spans = [...images, ...definitions.filter(d => references.has(d.identifier.toUpperCase()))];
-  return linkDestinations(input).filter(d => spans.some(n =>
+  return linkDestinations(input).filter(d => d.encoding === "component" || spans.some(n =>
     n.position?.start.offset !== undefined && n.position.end.offset !== undefined
     && d.start >= n.position.start.offset + bom && d.end <= n.position.end.offset + bom));
 }
