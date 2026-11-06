@@ -1,6 +1,6 @@
 import { test, expect, _electron as electron } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { launch, quit, type Launched } from "./helpers.ts";
@@ -36,6 +36,7 @@ test("Preview and the stable channel keep their native locks and writing windows
       { name: "Focus Notes Preview", profile: previewProfile, ownsLock: true, invisible: true },
     ]);
     expect(identities[0]!.name).not.toBe(identities[1]!.name);
+    for (const profile of [legacy, previewProfile]) expect(existsSync(join(profile, "project-metadata.sqlite"))).toBe(true);
     const previewEnv = await launched[1]!.app.evaluate(() => Object.fromEntries(
       Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
     ));
