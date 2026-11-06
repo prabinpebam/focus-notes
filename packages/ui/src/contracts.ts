@@ -81,6 +81,7 @@ import { contract as SiteGrid } from "./layouts/SiteGrid/contract.ts";
 import { contract as SiteThemeShowcase } from "./primitives/SiteThemeShowcase/contract.ts";
 import { contract as ProjectMark } from "./primitives/ProjectMark/contract.ts";
 import { contract as ImageFrame } from "./primitives/ImageFrame/contract.ts";
+import { contract as ImageCrop } from "./primitives/ImageCrop/contract.ts";
 import { contract as FontChoice } from "./primitives/FontChoice/contract.ts";
 import { contract as ProjectPill } from "./primitives/ProjectPill/contract.ts";
 import { contract as OpenItem } from "./primitives/OpenItem/contract.ts";
@@ -91,7 +92,7 @@ import { contract as ProjectScope } from "./layouts/ProjectScope/contract.ts";
 export const contractsByType = {
   EmptyState, NotificationRegion,
   SecureKeyField,
-  OpenItem,
+  OpenItem, ImageCrop,
   ToolbarComposer,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, ScanRadar, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
