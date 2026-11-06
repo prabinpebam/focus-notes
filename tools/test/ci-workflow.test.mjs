@@ -49,3 +49,29 @@ describe("D-255: CI gates the exact unmerged candidate, including its evidence f
     expect(changed("fix-candidate", "0".repeat(40))).toEqual(["documentations/evidence.md", "packages/runtime.ts"]);
   });
 });
+
+describe("D-255: Windows web journeys do not serialize the desktop gate", () => {
+  it("runs the unchanged web commands independently on every CI invocation", () => {
+    const web = workflow.jobs["web-windows"];
+    expect(web).toBeDefined();
+    expect(web["runs-on"]).toBe("windows-latest");
+    expect(web.needs).toBeUndefined();
+    expect(web.if).toBeUndefined();
+    const commands = web.steps.filter((step) => step.run).map((step) => step.run.trim());
+    expect(commands).toEqual([
+      "pnpm install --frozen-lockfile",
+      "node packages/tokens/build.mjs",
+      "pnpm --filter @focus-notes/web exec playwright install chromium\npnpm test:web",
+    ]);
+    expect(web.steps.find((step) => step.name === "Web app journeys (Chromium)").if)
+      .toBe("${{ !cancelled() && runner.os == 'Windows' }}");
+    const setup = web.steps.find((step) => step.uses?.startsWith("actions/setup-node@"));
+    expect(setup.with).toEqual({ "node-version-file": ".nvmrc", cache: "pnpm" });
+    const results = web.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+    expect(results.if).toBe("failure()");
+    expect(results.with).toEqual({ name: "web-test-results-windows", path: "test-results/web" });
+    expect(workflow.jobs.test.steps.some((step) => step.name === "Web app journeys (Chromium)")).toBe(false);
+    expect(workflow.jobs.test.steps.find((step) => step.name === "Web app journeys (Chromium, Linux)")).toBeDefined();
+    expect(workflow.jobs.test.steps.find((step) => step.name === "Budgets (QLT-05)").run).toBe("pnpm bench --check");
+  });
+});
