@@ -201,7 +201,7 @@ test("UI-03: click, Enter, Space, Mod+. and F10 open the toolbar; Esc and a clic
   await quit(l);
 });
 
-test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later ones are unavailable and say why", async () => {
+test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable and Help opens its documentation home", async () => {
   const l = await launch(tempDirs());
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
@@ -252,12 +252,22 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   await expect(settings).toHaveAccessibleName(process.platform === "darwin" ? "Settings… ⌘," : "Settings… Ctrl+,");
   const help = menu.getByRole("menuitem", { name: /^Help and docs/ });
   await expect(help).toHaveAccessibleName("Help and docs");
-  await expect(help).toHaveAccessibleDescription("Help and docs arrive in a later preview");
-  // Choosing an unavailable item does nothing and keeps the menu open.
+  await expect(help).not.toHaveAttribute("aria-disabled", "true");
+  await expect(help).toHaveAccessibleDescription("");
+  await l.app.evaluate(({ shell }) => {
+    Reflect.set(globalThis, "toolbarHelpUrl", "");
+    shell.openExternal = async (url: string) => { Reflect.set(globalThis, "toolbarHelpUrl", url); };
+  });
   await help.focus();
   await page.keyboard.press("Enter");
+  await expect.poll(() => l.app.evaluate(() => Reflect.get(globalThis, "toolbarHelpUrl"))).toBe("https://prabinpebam.github.io/focus-notes/documentations/#help/index.md");
+  await expect(menu).toBeHidden();
+  await expect(editor).toBeFocused();
+
+  await page.keyboard.press(`${mod}+.`);
+  await page.keyboard.press("End");
+  await page.keyboard.press("ArrowDown");
   await expect(menu).toBeVisible();
-  await expect(help).toBeFocused();
 
   // An available item runs and closes everything; the panel it opens takes focus.
   await menu.getByRole("menuitem", { name: /^Keyboard shortcuts/ }).focus();
