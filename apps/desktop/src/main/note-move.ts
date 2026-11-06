@@ -10,18 +10,28 @@ const inside = (root: string, path: string): boolean => {
 
 /** Validate referenced local media before making a destination note visible. */
 export async function validateNoteImages(text: string, note: string, boundary: string): Promise<void> {
+  await localNoteImages(text, note, boundary);
+}
+
+export async function localNoteImages(text: string, note: string, boundary: string): Promise<{
+  start: number; end: number; path: string; canonicalPath: string; suffix: string;
+}[]> {
   const canonical = await realpath(boundary);
+  const images: { start: number; end: number; path: string; canonicalPath: string; suffix: string }[] = [];
   for (const destination of imageDestinations(text)) {
     const written = text.slice(destination.start, destination.end).replace(/\\([!-/:-@[-`{-~])/g, "$1");
     if (/^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i.test(written)) continue;
-    const path = resolve(dirname(note), decodeURIComponent(written.split(/[?#]/, 1)[0]!));
+    const cut = written.search(/[?#]/);
+    const path = resolve(dirname(note), decodeURIComponent(cut < 0 ? written : written.slice(0, cut)));
     if (!inside(boundary, path)) throw new Error("invalid");
     const actual = await realpath(path).catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") throw new Error("missingImage");
       throw error;
     });
     if (!inside(canonical, actual) || !(await stat(actual)).isFile()) throw new Error("invalid");
+    images.push({ start: destination.start, end: destination.end, path, canonicalPath: actual, suffix: cut < 0 ? "" : written.slice(cut) });
   }
+  return images;
 }
 
 async function textAt(path: string): Promise<string | undefined> {

@@ -214,6 +214,8 @@ The folder is a media area at its owning repository/local root, not an `assets` 
 
 This slice covers individual note moves within one root, explicit file rename and title-following rename. Existing folder-batch behavior is unchanged. Cross-root asset copies and standalone Save as/copy remain separate pending slices; publishing and encrypted sharing are not part of this implementation. Files move/rename and Undo use the shared task tracker, with [named wait measures](../architecture/perceived-performance.md#image-preserving-note-moves).
 
+**Cross-root foundation only (unlanded follow-up):** a shell helper can copy the exact referenced local media closure into a destination root or standalone sidecar, deduplicate repeated references and rewrite only image destination spans. Public copies use the existing metadata stripper; canonical validation rejects an escaping junction while output paths preserve the caller's root spelling. The original note and assets are never modified, and failures retain any already-created safe copies rather than deleting assets. Helper units cover missing media, collisions, read-only refusal, metadata stripping, reference definitions, junction paths and standalone sidecars. It is not yet connected to Files or a standalone command, and does not claim either copy flow works in the app. No new runtime wait exists until that wiring is added.
+
 Images are written as **standard Markdown images** (D-310), so GitHub and every other viewer still show the picture. The description is the alt text, the caption is the image title, and only non-default display options go in a hidden comment line just before it (D-347, the same convention as `<!-- table: -->`):
 
 ```markdown
