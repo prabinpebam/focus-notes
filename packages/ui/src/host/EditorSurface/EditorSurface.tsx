@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, cancelImageImport, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
-  focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setImageWords, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
 import { captureImageSelection, imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
@@ -32,6 +32,7 @@ export interface EditorSurfaceProps {
   imageLoadingLabel?: string;
   imageRetryLabel?: string;
   imageRetryBusyLabel?: string;
+  imageCaptionLabel?: string;
   onImageRead?: (payload: { src: string; key: string }) => void;
   onImageRetry?: (payload: { src: string; key: string }) => void;
   onImageFailed?: (payload: { src: string; value: string; key: string }) => void;
@@ -176,7 +177,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
-  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageImport, onImageImported,
+  imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", imageCaptionLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageImport, onImageImported,
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
@@ -186,8 +187,8 @@ export function EditorSurface({
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const imageRenders = useRef(new Set<() => void>());
-  const imageOptions = useRef({ documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction });
-  imageOptions.current = { documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction };
+  const imageOptions = useRef({ documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, captionLabel: imageCaptionLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction });
+  imageOptions.current = { documentKey, sources: imageSources, menu: imageMenu, menuLabel: imageMenuLabel, missing: imageMissing, loadingLabel: imageLoadingLabel, retryLabel: imageRetryLabel, retryBusyLabel: imageRetryBusyLabel, captionLabel: imageCaptionLabel, read: onImageRead, retry: onImageRetry, failed: onImageFailed, select: onImageSelect, action: onImageAction };
   const imageEditRef = useRef({ onImageEdited, onImageEditError });
   imageEditRef.current = { onImageEdited, onImageEditError };
   const imageImportRef = useRef({ onImageImport, onImageImported, documentKey });
@@ -745,6 +746,19 @@ export function EditorSurface({
         if (id === "rewrite.abort") stream.abort();
         else if (stream.finish() && window.matchMedia("(prefers-reduced-motion: reduce)").matches) stream.clear();
         editor.view.focus();
+        return;
+      }
+      if (id === "image.words") {
+        setImageWords(editor, { pos: Number(args.pos), src: args.src }, {
+          ...(typeof args.alt === "string" ? { alt: args.alt } : {}),
+          ...(typeof args.title === "string" || args.title === null ? { title: args.title } : {}),
+        });
+        return;
+      }
+      if (id === "image.caption") {
+        const pos = Number(args.pos);
+        const node = Number.isInteger(pos) && pos >= 0 && pos < editor.state.doc.content.size ? editor.state.doc.nodeAt(pos) : undefined;
+        if (editor.isEditable && node?.type.name === "image" && node.attrs.src === args.src) editor.view.nodeDOM(pos)?.dispatchEvent(new Event("image-caption"));
         return;
       }
       if (id === "image.set") {

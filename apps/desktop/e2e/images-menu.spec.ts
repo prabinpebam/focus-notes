@@ -37,6 +37,9 @@ async function close(launched: Awaited<ReturnType<typeof launch>>) {
 }
 
 async function imageMenu(page: Page, image: Locator) {
+  await expect.poll(() => image.evaluate((el) => el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0)).toBe(true);
+  await image.scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const bounds = await image.boundingBox();
   expect(bounds).not.toBeNull();
   const height = await page.evaluate(() => innerHeight);
@@ -84,6 +87,51 @@ test("IMG-11: clicking an image selects its outline; Delete and Backspace remove
     await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
     await expect(selected).toHaveCount(1);
     await expect(page.getByRole("textbox", { name: "Note", exact: true })).toBeFocused();
+  } finally { await close(launched); }
+});
+
+test("IMG.9: description and caption save together, render below the image, Undo, and survive reopen", async () => {
+  const dirs = sample();
+  let launched = await launch(dirs);
+  try {
+    let { page } = launched;
+    const notePath = join(dirs.docs, "Welcome.md");
+    const red = page.getByRole("img", { name: "Red square", exact: true });
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Edit description…", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Image description", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("textbox", { name: "Image description", exact: true }).fill("A red rectangle");
+    await dialog.getByRole("textbox", { name: "Caption", exact: true }).fill('Red "caption" & detail');
+    await dialog.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    const described = page.getByRole("img", { name: "A red rectangle", exact: true });
+    await expect(described).toBeVisible();
+    await expect(page.locator("figcaption[data-image-caption]")).toHaveText('Red "caption" & detail');
+    await expect.poll(() => readFileSync(notePath, "utf8"), PROMPTLY).toContain('![A red rectangle](red.png "Red \\"caption\\" & detail")');
+    await described.click();
+    await page.keyboard.press("Control+z");
+    await expect(red).toBeVisible();
+    await expect(page.locator("figcaption[data-image-caption]")).toHaveCount(0);
+    await expect.poll(() => readFileSync(notePath, "utf8"), PROMPTLY).toBe(original);
+    await imageMenu(page, red);
+    await page.getByRole("menuitem", { name: "Add caption", exact: true }).click();
+    const caption = page.getByRole("textbox", { name: "Caption", exact: true });
+    await expect(caption).toBeFocused();
+    await caption.pressSequentially("Hand written caption");
+    await caption.press("Enter");
+    await expect(page.locator("figcaption[data-image-caption]")).toHaveText("Hand written caption");
+    await expect.poll(() => readFileSync(notePath, "utf8"), PROMPTLY).toContain('![Red square](red.png "Hand written caption")');
+    await close(launched);
+    launched = await launch(dirs);
+    page = launched.page;
+    await expect(page.locator("figcaption[data-image-caption]")).toHaveText("Hand written caption");
+    await imageMenu(page, page.getByRole("img", { name: "Red square", exact: true }));
+    await page.getByRole("menuitem", { name: "Edit caption", exact: true }).click();
+    await page.getByRole("textbox", { name: "Caption", exact: true }).fill("");
+    await page.getByRole("textbox", { name: "Caption", exact: true }).press("Enter");
+    await expect(page.locator("figcaption")).toHaveCount(0);
+    await expect.poll(() => readFileSync(notePath, "utf8"), PROMPTLY).toBe(original);
   } finally { await close(launched); }
 });
 

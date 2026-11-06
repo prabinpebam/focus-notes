@@ -14,6 +14,12 @@ Format with Markdown shortcuts, use focus mode, make tables, find anything, and 
 
 Press <kbd>Ctrl</kbd>+<kbd>/</kbd> (<kbd>⌘/</kbd> on a Mac), type a name and press <kbd>Enter</kbd> to act and close Actions, including toggles and settings. To make repeated adjustments without losing the query or focus, use <kbd>Shift</kbd>+<kbd>Enter</kbd> on a toggle or setting.
 
+## Describe an image
+
+Right-click an image and choose **Edit description…**. **Image description** is its alt text, read to someone who cannot see it. **Caption** is shown below the image. Choose **Save** to change both together; Undo restores both.
+
+Choose **Add caption** or **Edit caption** to type directly below the image. Enter finishes that line. Removing all its words removes the caption; an image without a caption shows no placeholder. Descriptions and captions stay in standard Markdown as `![description](image.png "caption")` and survive reopening.
+
 ## Coming soon
 
 - Write and format with Markdown shortcuts

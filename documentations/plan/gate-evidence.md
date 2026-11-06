@@ -18,6 +18,12 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Inline images: Describe (6 November)
+
+IMG.9 / IMG-10 is locally verified, with exact-head Windows CI, landing and scheduled Preview still pending. `pnpm check`, `pnpm typecheck`, the desktop build, Slate runtime check and `git diff --check` pass. `pnpm exec vitest run packages/core/test/images-menu.test.ts packages/core/test/images-app.test.ts packages/editor/test/images.test.ts packages/markdown/test/roundtrip.test.ts` passes 65 tests. The invisible `images-menu.spec.ts` Describe and mixed right-click journeys pass (2 tests): Save changes alt and caption together, one Undo restores both, Add/Edit caption renders below the pixels, reopening keeps the caption, and emptying it removes it.
+
+The reopen journey exposed an image-only restored TextSelection being mistaken for mixed text: it disabled image pointer events and opened the text menu. Selection capture now checks for actual selected text, preserving real mixed-selection behaviour. The new dialog is appended to the canvas overlay array so existing approved SP-12 exception addresses stay stable; no spacing guard or scroll-dismiss behaviour changed.
+
 ### Owner feedback batch, 6 November (OFB)
 
 The evidence for each row of the [OFB stage](definition-of-done.md#owner-feedback-batch-6-november-ofb). Whoever builds a row records its result here: the commit, the checks run with their counts, the CI run for runtime changes, and the Preview version that shows it. A row is *Met* only when it's on green `main` and visible in Preview. D-368 amends OFB.5–OFB.7: the earlier toolbar Switch conversion was a regression; binary Settings still use Switch, but writing-toolbar mode icons retain `aria-pressed`. OFB.30 records its restoration.

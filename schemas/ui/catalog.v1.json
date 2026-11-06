@@ -3741,6 +3741,18 @@
           "kind": "message",
           "description": "The image description. Without one the image is decorative; nothing is shown in its place (owner, 3 November)."
         },
+        "caption": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The plain-text Markdown title, shown as a figure caption."
+        },
+        "captionEditing": {
+          "kind": "boolean",
+          "default": false
+        },
+        "captionLabel": {
+          "kind": "message"
+        },
         "mode": {
           "kind": "enum",
           "values": [
@@ -3848,7 +3860,14 @@
             "width": "number",
             "height": "number"
           }
-        }
+        },
+        "captionChange": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "caption"
+        },
+        "captionEnd": {}
       },
       "slots": {},
       "states": [
@@ -3874,6 +3893,8 @@
         "rounded, no fit height",
         "selected",
         "in text selection",
+        "caption",
+        "editing caption",
         "crop, rotation 0",
         "crop, rotation 90",
         "crop, rotation 180",
@@ -5848,6 +5869,9 @@
         "imageRetryBusyLabel": {
           "kind": "message"
         },
+        "imageCaptionLabel": {
+          "kind": "message"
+        },
         "documentKey": {
           "kind": "text",
           "required": true
@@ -6001,6 +6025,7 @@
             "pos": "number",
             "src": "text",
             "alt": "text",
+            "title": "text",
             "text": "boolean",
             "announce": "boolean",
             "rounded": "boolean",

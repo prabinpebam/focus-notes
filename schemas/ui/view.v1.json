@@ -8720,6 +8720,42 @@
                 }
               ]
             },
+            "caption": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "captionEditing": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "captionLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "mode": {
               "anyOf": [
                 {
@@ -8993,6 +9029,12 @@
               "$ref": "#/$defs/actions"
             },
             "size": {
+              "$ref": "#/$defs/actions"
+            },
+            "captionChange": {
+              "$ref": "#/$defs/actions"
+            },
+            "captionEnd": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -12559,6 +12601,19 @@
               ]
             },
             "imageRetryBusyLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "imageCaptionLabel": {
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"

@@ -1,4 +1,5 @@
 import type { CSSProperties, MouseEvent, KeyboardEvent } from "react";
+import { useEffect, useRef } from "react";
 import { Icon } from "../Icon/Icon.tsx";
 import { Button } from "../Button/Button.tsx";
 import { Skeleton } from "../Skeleton/Skeleton.tsx";
@@ -9,6 +10,12 @@ export interface ImageFrameProps {
   src: string;
   /** The image description; without one the image is decorative. */
   alt?: string;
+  /** Markdown title, shown below the pixels, separately from accessible alt text. */
+  caption?: string;
+  captionEditing?: boolean;
+  captionLabel?: string;
+  onCaptionChange?: (payload: { value: string }) => void;
+  onCaptionEnd?: () => void;
   mode?: keyof typeof s.mode;
   /** Fit height (D-300), on by default. */
   fitHeight?: boolean;
@@ -41,7 +48,7 @@ export interface ImageFrameProps {
 }
 
 /** An inline image: shown as it is, never stretched, cropped, framed or backed by its frame (IMG, D-300). */
-export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounded = false, selected = false, inSelection = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, intrinsicWidth, intrinsicHeight, loadingLabel, loading = false, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
+export function ImageFrame({ src, alt, caption, captionEditing = false, captionLabel, onCaptionChange, onCaptionEnd, mode = "column", fitHeight = true, rounded = false, selected = false, inSelection = false, broken = false, error, retryLabel, retryBusy, retryBusyLabel, intrinsicWidth, intrinsicHeight, loadingLabel, loading = false, onRetry, onError, crop = false, rotation = "0", cropX, cropY, cropWidth, cropHeight, onSize, onContextMenu }: ImageFrameProps) {
   const safe = !loading && src.startsWith("data:image/") ? src : undefined;
   const sized = Boolean(intrinsicWidth && intrinsicHeight);
   const imageClass = `${s.img} ${fitHeight && mode !== "thumb" ? s.fit : ""} ${s.rotation[rotation]}`;
@@ -57,7 +64,7 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
     tabIndex: selected ? 0 : -1,
   } : {};
   return (
-    <span className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
+    <figure className={`${s.frame} ${s.mode[mode]}`} data-image-mode={mode}>
       <span className={`${s.box}${selected ? ` ${s.selected}` : ""}${inSelection ? ` ${s.inSelection}` : ""}${rounded ? ` ${s.rounded}` : ""}`} data-selected={selected ? "" : undefined} {...menu}>
         {(!safe || broken) && sized ? <svg className={imageClass} width={intrinsicWidth} height={intrinsicHeight} aria-hidden="true" /> : null}
         {broken ? <span className={`${s.broken}${sized ? ` ${s.overImage}` : ""}`} role="group" aria-label={alt}>
@@ -72,6 +79,21 @@ export function ImageFrame({ src, alt, mode = "column", fitHeight = true, rounde
           </span>
         ) : null}
       </span>
-    </span>
+      {captionEditing ? <figcaption className={s.caption}><EditableCaption value={caption ?? ""} label={captionLabel} onChange={(value) => onCaptionChange?.({ value })} onEnd={onCaptionEnd} /></figcaption>
+        : caption ? <figcaption className={s.caption} data-image-caption>{caption}</figcaption> : null}
+    </figure>
   );
+}
+
+function EditableCaption({ value, label, onChange, onEnd }: { value: string; label?: string; onChange?: (value: string) => void; onEnd?: () => void }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (element && element.textContent !== value) element.textContent = value;
+  }, [value]);
+  useEffect(() => { ref.current?.focus(); }, []);
+  return <span ref={ref} className={s.caption} data-image-caption contentEditable role="textbox" aria-label={label} suppressContentEditableWarning
+    onInput={(e) => onChange?.(e.currentTarget.textContent ?? "")}
+    onPaste={(e) => { e.preventDefault(); const selection = getSelection(); const range = selection?.rangeCount ? selection.getRangeAt(0) : undefined; if (range && e.currentTarget.contains(range.commonAncestorContainer)) { range.deleteContents(); const text = document.createTextNode(e.clipboardData.getData("text/plain").replace(/[\r\n]+/g, " ")); range.insertNode(text); range.setStartAfter(text); range.collapse(true); selection?.removeAllRanges(); selection?.addRange(range); onChange?.(e.currentTarget.textContent ?? ""); } }}
+    onBlur={onEnd} onKeyDown={(e) => { if ((e.key === "Enter" && !e.nativeEvent.isComposing) || e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onEnd?.(); } }} />;
 }

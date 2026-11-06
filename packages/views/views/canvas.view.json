@@ -970,6 +970,7 @@
           "imageLoadingLabel": { "t": "image.read.loading" },
           "imageRetryLabel": { "t": "commit.retry" },
           "imageRetryBusyLabel": { "t": "uiStates.recovery.retrying" },
+          "imageCaptionLabel": { "t": "image.describe.caption" },
           "documentKey": {
             "get": "vm.canvas.noteKey"
           },
@@ -1111,7 +1112,7 @@
           "imageFailed": { "run": "image.failed", "args": { "src": { "get": "event.src" }, "value": { "get": "event.value" }, "key": { "get": "event.key" } } },
           "imageSelect": { "run": "image.select", "args": {
             "pos": { "get": "event.pos" }, "src": { "get": "event.src" },
-            "alt": { "get": "event.alt" }, "text": { "get": "event.text" }, "announce": { "get": "event.announce" },
+            "alt": { "get": "event.alt" }, "title": { "get": "event.title" }, "text": { "get": "event.text" }, "announce": { "get": "event.announce" },
             "rounded": { "get": "event.rounded" }, "fitHeight": { "get": "event.fitHeight" }, "mode": { "get": "event.mode" },
             "width": { "get": "event.width" }, "height": { "get": "event.height" },
             "from": { "get": "event.from" }, "to": { "get": "event.to" }, "count": { "get": "event.count" },
@@ -9582,6 +9583,23 @@
       }]
     }]
   }]
+},
+{
+  "type": "DialogPanel",
+  "id": "imageDescription",
+  "props": { "label": { "t": "image.describe.title" }, "open": { "get": "vm.images.describe" }, "size": "s", "height": "content" },
+  "on": { "openChange": { "run": "image.describe.close" } },
+  "slots": {
+    "header": [{ "type": "Heading", "props": { "level": "2", "value": { "t": "image.describe.title" } } }],
+    "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
+      { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "image.describe.close" } } },
+      { "type": "Button", "props": { "label": { "t": "image.describe.save" }, "variant": "primary" }, "on": { "press": { "run": "image.describe.save" } } }
+    ] }]
+  },
+  "children": [{ "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+    { "type": "TextField", "props": { "label": { "t": "image.describe.alt" }, "description": { "t": "image.describe.altHint" }, "value": { "bind": "vm.images.alt" }, "autoFocus": true } },
+    { "type": "TextField", "props": { "label": { "t": "image.describe.caption" }, "description": { "t": "image.describe.captionHint" }, "value": { "bind": "vm.images.caption" } } }
+  ] }]
 }
 ]
 }

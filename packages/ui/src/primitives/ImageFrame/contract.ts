@@ -7,6 +7,9 @@ export const contract = defineContract({
   props: {
     src: { kind: "text", required: true, description: "A data URL the shell made from the managed asset (data:image/…), never an address." },
     alt: { kind: "message", description: "The image description. Without one the image is decorative; nothing is shown in its place (owner, 3 November)." },
+    caption: { kind: "text", bindable: true, description: "The plain-text Markdown title, shown as a figure caption." },
+    captionEditing: { kind: "boolean", default: false },
+    captionLabel: { kind: "message" },
     mode: { kind: "enum", values: ["column", "wide", "actual", "thumb"], default: "column", description: "column: fits the reading column. wide: the column plus imageWideExtra, centred, never past the canvas. actual: its own pixels, no upscaling. thumb: a dialog's thumbnail." },
     fitHeight: { kind: "boolean", default: true, description: "Fit height (D-300): no taller than imageFitMax or imageFitViewport, whichever is smaller." },
     rounded: { kind: "boolean", default: false },
@@ -25,7 +28,7 @@ export const contract = defineContract({
     rotation: { kind: "enum", values: ["0", "90", "180", "270"], default: "0" },
     cropX: { kind: "number" }, cropY: { kind: "number" }, cropWidth: { kind: "number" }, cropHeight: { kind: "number" },
   },
-  events: { contextMenu: { payload: { x: "number", y: "number" } }, retry: {}, error: {}, size: { payload: { width: "number", height: "number" } } },
+  events: { contextMenu: { payload: { x: "number", y: "number" } }, retry: {}, error: {}, size: { payload: { width: "number", height: "number" } }, captionChange: { payload: { value: "text" }, binds: "caption" }, captionEnd: {} },
   slots: {},
   states: ["rest", "selected", "broken", "retrying", "loading"],
   tokens: "cmp.imageFrame.*",
@@ -38,6 +41,8 @@ export const contract = defineContract({
     { name: "rounded, no fit height", props: { src: { get: "vm.gallery.imageSrc" }, rounded: true, fitHeight: false } },
     { name: "selected", props: { src: { get: "vm.gallery.imageSrc" }, selected: true }, covers: ["selected"] },
     { name: "in text selection", props: { src: { get: "vm.gallery.imageSrc" }, inSelection: true } },
+    { name: "caption", props: { src: { get: "vm.gallery.imageSrc" }, alt: { t: "gallery.sample" }, caption: { get: "vm.gallery.query" } } },
+    { name: "editing caption", props: { src: { get: "vm.gallery.imageSrc" }, captionEditing: true, captionLabel: { t: "image.describe.caption" } } },
     ...(["0", "90", "180", "270"] as const).map((rotation) => ({ name: `crop, rotation ${rotation}`, props: { src: { get: "vm.gallery.imageSrc" }, crop: true, rotation, mode: "actual" } })),
   ],
 });

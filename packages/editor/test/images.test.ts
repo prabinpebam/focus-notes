@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
-import { coreExtensions, MarkdownSession, setImageOptions, type PMNode } from "../src/index.ts";
+import { coreExtensions, MarkdownSession, setImageOptions, setImageWords, closeImageTyping, type PMNode } from "../src/index.ts";
 
 const editors: Editor[] = [];
 afterEach(() => { for (const editor of editors.splice(0)) editor.destroy(); });
@@ -53,4 +53,29 @@ it("Escape leaves the image selection at adjacent text", () => {
   expect(editor.view.someProp("handleKeyDown", (handle) => handle(editor.view, event))).toBe(true);
   expect(editor.state.selection.toJSON().type).toBe("text");
   expect(editor.state.selection.from).toBeGreaterThan(images[0]!.pos);
+});
+
+it("edits alt and caption together as one Undo and preserves other image bytes", () => {
+  const { editor, md, markdown, images } = open();
+  expect(setImageWords(editor, images[0]!, { alt: 'Red "square"', title: "A red square" })).toBe(true);
+  expect(md()).toContain('](red.png "A red square")');
+  expect(md()).toContain('<!-- image: rounded -->\n![Blue](blue.png)');
+  editor.commands.undo();
+  expect(md()).toBe(markdown);
+  expect(setImageWords(editor, { ...images[0]!, src: "replaced.png" }, { title: "Wrong image" })).toBe(false);
+  expect(md()).toBe(markdown);
+});
+
+it("caption typing groups as ordinary editing, clears the title, and restores it with Undo", () => {
+  const { editor, md, images } = open();
+  setImageWords(editor, images[0]!, { title: "Before" });
+  const before = md();
+  closeImageTyping(editor);
+  setImageWords(editor, images[0]!, { title: "B" }, true);
+  setImageWords(editor, images[0]!, { title: null }, true);
+  closeImageTyping(editor);
+  expect(md()).toContain("![Red](red.png)");
+  expect(md()).not.toContain('"Before"');
+  editor.commands.undo();
+  expect(md()).toBe(before);
 });

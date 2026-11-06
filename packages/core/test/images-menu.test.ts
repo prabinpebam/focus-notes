@@ -28,7 +28,7 @@ async function started(platform: "windows" | "macos" = "windows") {
   app.onEditorAction((id, args) => actions.push([id, args]));
   const images = () => (app.viewModels.select("vm.images", app.store.state) as { menu: Section[] }).menu;
   const textMenu = () => (app.viewModels.select("vm.textMenu", app.store.state) as { sections: Section[]; request: number }).sections;
-  const select = (p: Partial<{ pos: number; src: string; alt: string; rounded: boolean; fitHeight: boolean; mode: string; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean; text: boolean; announce: boolean }>) =>
+  const select = (p: Partial<{ pos: number; src: string; alt: string; title: string; rounded: boolean; fitHeight: boolean; mode: string; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean; text: boolean; announce: boolean }>) =>
     app.commands.run("image.select", { pos: 5, src: "red.png", alt: "Red square", rounded: false, fitHeight: true, mode: "column", width: 0, height: 0, from: 5, to: 6, count: 1, roundMixed: false, limitMixed: false, ...p });
   return { app, images, textMenu, select, actions, chosen, closed, open: (m: unknown) => open(m) };
 }
@@ -37,10 +37,39 @@ const textEntries = textMenuEntries(params, { platform: "windows" });
 const shape = (sections: Section[]) => sections.map((s) => ({ id: s.id, ...(s.label ? { label: s.label } : {}), items: s.items.map((i) => `${i.label}${i.mixed ? " (mixed)" : i.checked === true ? " (on)" : i.checked === false ? " (off)" : ""}`) }));
 
 describe("one image's menu", () => {
+  it("opens separate alt/caption drafts, saves one edit, and labels an existing caption Edit caption", async () => {
+    const t = await started();
+    await t.select({ title: "Before" });
+    await t.app.commands.run("image.describe");
+    expect(t.app.store.state.ui.images).toMatchObject({ describe: true, alt: "Red square", caption: "Before" });
+    await t.app.commands.run("image.describe.alt", { value: "After alt" });
+    await t.app.commands.run("image.describe.caption", { value: "After caption" });
+    await t.app.commands.run("image.describe.save");
+    expect(t.actions).toEqual([["image.words", { pos: 5, src: "red.png", alt: "After alt", title: "After caption" }]]);
+    expect(t.app.store.state.ui.images.describe).toBe(false);
+    expect(shape(t.images())[0]).toEqual({ id: "words", items: ["Edit description…", "Edit caption"] });
+    await t.app.commands.run("image.caption");
+    expect(t.actions.at(-1)).toEqual(["image.caption", { pos: 5, src: "red.png" }]);
+  });
+
+  it("cancel retains words and changing the note dismisses an obsolete description draft", async () => {
+    const t = await started();
+    await t.select({});
+    await t.app.commands.run("image.describe");
+    await t.app.commands.run("image.describe.alt", { value: "Discard" });
+    await t.app.commands.run("image.describe.close");
+    expect(t.actions).toEqual([]);
+    await t.app.commands.run("image.describe");
+    t.app.store.update(s => ({ ...s, note: { ...s.note, key: `${s.note.key}-new` } }));
+    await t.app.commands.run("image.describe.save");
+    expect(t.actions).toEqual([]);
+    expect(t.app.store.state.ui.images.describe).toBe(false);
+  });
   it("shows Edit image, the Display choices, then Rounded corners and Limit height as on/off items in their own group, as the approved mock does", async () => {
     const t = await started();
     await t.select({});
     expect(shape(t.images())).toEqual([
+      { id: "words", items: ["Edit description…", "Add caption"] },
       { id: "pixels", items: ["Edit image"] },
       { id: "mode", label: "Display", items: ["Column (on)", "Wide (off)", "Actual size (off)"] },
       { id: "look", items: ["Rounded corners (off)", "Limit height (on)"] },
@@ -52,11 +81,11 @@ describe("one image's menu", () => {
     await t.select({ pos: 12, from: 12, to: 13 });
     await t.app.commands.run("image.rounded");
     expect(t.actions).toEqual([["image.set", { pos: 12, src: "red.png", from: 12, to: 13, rounded: true }]]);
-    expect(shape(t.images())[2]).toEqual({ id: "look", items: ["Rounded corners (on)", "Limit height (on)"] });
+    expect(shape(t.images()).at(-1)).toEqual({ id: "look", items: ["Rounded corners (on)", "Limit height (on)"] });
     expect(t.app.store.state.announcement.text).toBe("Rounded corners on");
     await t.app.commands.run("image.fitHeight");
     expect(t.actions[1]).toEqual(["image.set", { pos: 12, src: "red.png", from: 12, to: 13, fitHeight: false }]);
-    expect(shape(t.images())[2]).toEqual({ id: "look", items: ["Rounded corners (on)", "Limit height (off)"] });
+    expect(shape(t.images()).at(-1)).toEqual({ id: "look", items: ["Rounded corners (on)", "Limit height (off)"] });
     expect(t.app.store.state.announcement.text).toBe("Limit height off");
   });
 

@@ -12,7 +12,8 @@ export const broken = style({
 export const loading = style({ display: "grid", alignItems: "center", width: "100%", backgroundColor: t.brokenBackground });
 export const overImage = style({ position: "absolute", inset: 0, minHeight: 0 });
 
-export const frame = style({ display: "flex", flexDirection: "column", alignItems: "center", gap: t.gap, minWidth: 0 });
+export const frame = style({ display: "flex", flexDirection: "column", alignItems: "center", gap: t.gap, minWidth: 0, margin: 0 });
+export const caption = style({ display: "block", minWidth: 0, minHeight: t.brokenSize, maxWidth: "100%", overflowWrap: "anywhere", fontFamily: t.brokenFont, fontSize: t.brokenSize, color: t.brokenText, textAlign: "center", outlineColor: t.selectedOutline });
 export const mode = styleVariants({
   column: { width: "100%" },
   // Wide reaches past the column on both sides, centred; it never exceeds what holds it plus the extra.

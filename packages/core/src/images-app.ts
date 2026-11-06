@@ -7,7 +7,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { noteReadOnly } from "./workspace-app.ts";
 import type { TaskTracker } from "./tasks.ts";
 
-type SelectedImage = { pos: number; src: string; alt?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
+type SelectedImage = { pos: number; src: string; alt?: string; title?: string; text?: boolean; announce?: boolean; rounded: boolean; fitHeight: boolean; mode: string; width: number; height: number; from: number; to: number; count: number; roundMixed: boolean; limitMixed: boolean };
 export interface ImagesState {
   sources: readonly { id: string; value: string; pending: boolean; failed: boolean }[];
   selected?: SelectedImage;
@@ -16,8 +16,11 @@ export interface ImagesState {
   rotation: "0" | "90" | "180" | "270";
   saving: boolean;
   error: string;
+  describe: boolean;
+  alt: string;
+  caption: string;
 }
-export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", saving: false, error: "" };
+export const IMAGES_CLOSED: ImagesState = { sources: [], edit: false, x: "0", y: "0", width: "", height: "", rotation: "0", saving: false, error: "", describe: false, alt: "", caption: "" };
 
 export function registerImages(ctx: {
   store: Store<AppState>; bridge: PlatformBridge; commands: CommandRegistry<AppState>; viewModels: ViewModelRegistry<AppState>; catalog: MessageCatalog;
@@ -41,6 +44,35 @@ export function registerImages(ctx: {
     set(IMAGES_CLOSED);
   });
   const writable = () => (state().selected?.count ?? 0) > 0 && !noteReadOnly(store.state);
+  const single = () => writable() && state().selected?.count === 1 && !state().selected?.text;
+  let descriptionTarget: SelectedImage | undefined;
+  commands.register({
+    id: "image.describe", title: "image.describe.menu", enabled: single,
+    run: () => {
+      descriptionTarget = state().selected;
+      set({ describe: true, alt: descriptionTarget?.alt ?? "", caption: descriptionTarget?.title ?? "" });
+    },
+  });
+  commands.register({ id: "image.describe.close", title: "image.edit.cancel", run: () => { descriptionTarget = undefined; set({ describe: false }); } });
+  for (const field of ["alt", "caption"] as const) commands.register<{ value: string }>({
+    id: `image.describe.${field}`, title: `image.describe.${field}`, run: ({ value }) => set({ [field]: value }),
+  });
+  commands.register({
+    id: "image.describe.save", title: "image.describe.save", enabled: () => state().describe && single(),
+    run: () => {
+      if (!descriptionTarget) return;
+      ctx.editorAction("image.words", { pos: descriptionTarget.pos, src: descriptionTarget.src, alt: state().alt, title: state().caption || null });
+      descriptionTarget = undefined;
+      set({ describe: false });
+    },
+  });
+  commands.register({
+    id: "image.caption", title: "image.caption.add", enabled: single,
+    run: () => {
+      const image = state().selected;
+      if (image) ctx.editorAction("image.caption", { pos: image.pos, src: image.src });
+    },
+  });
   commands.register({
     id: "image.insert", title: "command.image.insert", icon: "image", group: "formatting", layer: "writer",
     enabled: (s) => s.note.status === "ready" && !noteReadOnly(s) && !s.ui.format.inTable && !s.ui.format.codeBlock,
@@ -220,11 +252,12 @@ export function registerImages(ctx: {
   viewModels.register({
     id: "vm.images",
     reads: ["ui.images", "note.path", "workspace"],
-    setters: { x: "image.edit.x", y: "image.edit.y", width: "image.edit.width", height: "image.edit.height" },
+    setters: { x: "image.edit.x", y: "image.edit.y", width: "image.edit.width", height: "image.edit.height", alt: "image.describe.alt", caption: "image.describe.caption" },
     schema: { type: "object", properties: {
       sources: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" }, pending: { type: "boolean" }, failed: { type: "boolean" } } } },
       menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       edit: { type: "boolean" }, saving: { type: "boolean" }, invalid: { type: "boolean" }, error: { type: "string" }, src: { type: "string" }, rotation: { type: "string", enum: ["0", "90", "180", "270"] },
+      describe: { type: "boolean" }, alt: { type: "string" }, caption: { type: "string" },
       x: { type: "string" }, y: { type: "string" }, width: { type: "string" }, height: { type: "string" },
       cropX: { type: "number" }, cropY: { type: "number" }, cropWidth: { type: "number" }, cropHeight: { type: "number" },
       rotations: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, icon: { type: "string" } } } },
@@ -235,6 +268,7 @@ export function registerImages(ctx: {
         cropX: Number(s.x) / (s.selected?.width || 1) * 100, cropY: Number(s.y) / (s.selected?.height || 1) * 100,
         cropWidth: Number(s.width) / (s.selected?.width || 1) * 100, cropHeight: Number(s.height) / (s.selected?.height || 1) * 100,
         menu: s.selected?.count === 1 && !s.selected.text ? [
+          { id: "words", items: [ctx.describeItem("image.describe"), { ...ctx.describeItem("image.caption"), label: catalog.format(s.selected.title ? "image.caption.edit" : "image.caption.add") }] },
           { id: "pixels", items: [ctx.describeItem("image.edit")] },
           { id: "mode", label: catalog.format("image.display"), items: ["image.mode.column", "image.mode.wide", "image.mode.actual"].map(ctx.describeItem) },
           { id: "look", items: imageSection(store.state).items },

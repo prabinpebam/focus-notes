@@ -146,6 +146,22 @@ export function setImageOptions(editor: Editor, image: { pos: number; src: unkno
   editor.view.dispatch(closeHistory(editor.state.tr));
 }
 
+/** Description and title belong to one image, not every image in a text selection. */
+export function setImageWords(editor: Editor, image: { pos: number; src: unknown }, patch: { alt?: string; title?: string | null }, typing = false): boolean {
+  const node = Number.isInteger(image.pos) && image.pos >= 0 && image.pos < editor.state.doc.content.size ? editor.state.doc.nodeAt(image.pos) : undefined;
+  if (!editor.isEditable || node?.type.name !== "image" || node.attrs.src !== image.src) return false;
+  const tr = editor.state.tr;
+  if (!typing) closeHistory(tr);
+  tr.setNodeMarkup(image.pos, undefined, { ...node.attrs, ...patch });
+  editor.view.dispatch(tr);
+  if (!typing) editor.view.dispatch(closeHistory(editor.state.tr));
+  return true;
+}
+
+export function closeImageTyping(editor: Editor): void {
+  editor.view.dispatch(closeHistory(editor.state.tr));
+}
+
 /** Markdown the editor can't represent yet, kept verbatim and read-only (EXT-05). */
 export const RawMarkdown = Node.create({
   name: "rawMarkdown",

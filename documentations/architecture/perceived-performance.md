@@ -153,6 +153,7 @@ The [broken-image evidence](../plan/definition-of-done.md#phase-2-broken-image-r
 | Read/retry one note image | Responsive → waiting; named image task, exact source and document identity | Existing image wrapper; alt and error remain, Retry → Trying again…; other images stay usable | `fn:image.read`; exact 300/500 ms task units and held/refused real-image journey |
 | Browser decode refusal | Responsive/waiting; explicit component failure, no blank success-shaped fallback | Approved broken ImageFrame and scoped Retry | Correctness journey passed; end-to-end native decode duration remains unmeasured |
 | Insert pasted, dropped or chosen images (OFB.17–19) | Responsive → waiting; shell header/caps, asynchronous Chromium decode in the requesting renderer, then atomic copy; mapped insertion target and typing stay available | Named section task: Adding image…; intrinsic aspect box and shimmer during local read; named size/type refusal keeps text | `fn:image.import`; 20 MiB and 40 MP caps before decode, dimensions verified before managed writes, no OS codec or new window. No speed claim; focused importer and built restart/limit journeys |
+| Edit description / type a caption | Instant document edit; normal autosave, no additional operation or spinner | Image alt and caption change together on Save; the caption line remains editable while ordinary note saving runs | Existing note-save measure; one Undo restores the dialog edit, untouched neighbouring images retain exact source |
 
 ## Other image waits (planned)
 

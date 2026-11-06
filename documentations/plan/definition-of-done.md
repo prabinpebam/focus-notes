@@ -939,6 +939,8 @@ MP.7/WP-P.10 has no-name access-code readers, authenticated encrypted authorizat
 
 ## Inline images (planned)
 
+**Owner priority and scope, 6 November 14:17:** “Our original image spec had "Caption with AI" and the UX design was also done.” / “Let's complete the image feature first.” Track A builds the approved UX in separate Describe, Menu, Print, connected-integration AI caption, and moves/copies/standalone-sidecar milestones. Published images, encrypted sharing and the separately redesigned crop/edit dialog remain outside this track.
+
 **Design approved (owner, 3 November 19:39, mock 9).** [Exact source, flows, figures and copy](../experience/images.md) deliver UC-IMG-01 to UC-IMG-06 through WP-9.1 / WP-9.3 to WP-9.5. The evidence below is for future approved implementation, not tests run now.
 
 **Try it (after approval/build):** drop a small picture and a tall one into a private note. Compare Column/Wide/Actual size; right-click the tall one and untick Limit height. Select both with text, right-click, and see Rounded corners mixed; choose it (all on), then Undo. Replace/copy one image, crop/rotate its preview, cancel, then explicitly save and observe the no-pixel-Undo boundary. Generate/review a caption with an existing image-capable integration. Share the illustrated note, verify its images through the authorized reader and inspect public output for plaintext/names; reopen Markdown and a missing-image case.
