@@ -12,6 +12,17 @@ The existing Files pin write now uses a per-row commit target. The acknowledged 
 
 The [Close-hover correction](../plan/definition-of-done.md#phase-2-close-hover-and-files-pin) changes semantic slot spacing only; it introduces no save, load or wait. Every-frame native checks cover all dialog height variants rather than claiming faster tooltips.
 
+## Image-preserving note moves
+
+Same-root note moves validate referenced images and flush a complete destination before the old note is removed (IMG-05). These are asynchronous file operations, not a latency improvement claim. The editor remains mounted; existing pending Files rows and the shared save task own feedback. A failure keeps the original note and image files; a rollback conflict retains both note copies and names recovery in Files.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Move a note or Undo its move/rename | Responsive → waiting; optimistic row plus named save task | Existing Files pending row and shared Saving… status; existing success/Undo notification after acknowledgement | `fn:files.move`; shared 300 ms sign delay, no success before the complete file batch finishes |
+| Explicit note rename | Responsive → waiting; named save task | Existing Files/editor content retained; shared Saving… status, Rename notification with Undo after acknowledgement | `fn:files.rename`; same tracker timing, exact old filename restored by Undo |
+
+Title-following first-save renames remain inside the existing note-save acknowledgement lane; this slice adds no separate competing status.
+
 ## Themes: scope and acknowledgement
 
 The [structural overlay correction at b031948f](../plan/definition-of-done.md#phase-2-structural-overlay-layers-b031948f) changes paint ownership only: no load, save, reload, unmount or new wait is introduced. Dialogs/full-app steps portal above panels; the existing window band remains draggable and notifications keep their top-level role.

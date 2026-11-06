@@ -2,11 +2,20 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { linkDestinations } from "../src/index.ts";
+import { imageDestinations, linkDestinations } from "../src/index.ts";
 
 const dests = (src: string) => linkDestinations(src).map((d) => [src.slice(d.start, d.end), d.angle]);
 
 describe("linkDestinations", () => {
+  it("IMG-05: selects only image resources and their referenced definitions, preserving exact source offsets", () => {
+    const src = '\uFEFF# Images\r\n\r\n![A](<p x.png> "Caption") ![B][ref] [note](note.md)\r\n\r\n[ref]: second.png "Title"\r\n[unused]: missing.png\r\n';
+    expect(imageDestinations(src).map(d => [src.slice(d.start, d.end), d.angle])).toEqual([["p x.png", true], ["second.png", false]]);
+    expect(dests(src)).toHaveLength(4);
+  });
+  it("IMG-05: ignores image syntax in code, HTML and front matter without treating note links as media", () => {
+    const src = '---\nimage: ![f](front.png)\n---\n\n`![c](code.png)`\n\n```\n![b](block.png)\n```\n\n<img src="html.png">\n\n[link](missing.md)\n';
+    expect(imageDestinations(src)).toEqual([]);
+  });
   it("finds inline links, images, and reference definitions with their exact ranges", () => {
     const src = "See [a](../a/b.md) and ![pic](img/p.png \"T\") and [r][id].\n\n[id]: notes/c.md \"Title\"\n";
     expect(dests(src)).toEqual([["../a/b.md", false], ["img/p.png", false], ["notes/c.md", false]]);

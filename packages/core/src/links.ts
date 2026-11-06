@@ -127,7 +127,12 @@ export function rewriteLinks(text: string, from: string, to: string, moves: read
  */
 export const sameRootOf = (tree: WorkspaceTree) => (a: string, b: string): boolean => {
   const r = rootOf(tree, a);
-  return r !== undefined && r === rootOf(tree, b);
+  if (!r) return false;
+  if (r === rootOf(tree, b)) return true;
+  // Managed media are siblings of notes/, within the same visibility boundary.
+  if (r.id === "local" || !/[\\/]notes$/i.test(r.path)) return false;
+  const media = fold(r.path.replace(/notes$/i, "assets") + sepOf(r.path) + "images" + sepOf(r.path));
+  return fold(b).startsWith(media);
 };
 
 /** Whether a note could link to anything moving: its text names one of them, however it's spelled. */

@@ -381,6 +381,26 @@ export function linkDestinations(input: string): LinkDestination[] {
   }
 }
 
+/** Only image destinations, including definitions referenced by images, using the same parser. */
+export function imageDestinations(input: string): LinkDestination[] {
+  const bom = input.startsWith("\uFEFF") ? 1 : 0;
+  const tree = linkProcessor.parse(bom ? input.slice(1) : input);
+  const images: Md.Image[] = [];
+  const definitions: Md.Definition[] = [];
+  const references = new Set<string>();
+  const visit = (node: Md.Nodes): void => {
+    if (node.type === "image") images.push(node);
+    if (node.type === "imageReference") references.add(node.identifier.toUpperCase());
+    if (node.type === "definition") definitions.push(node);
+    if ("children" in node) for (const child of node.children) visit(child);
+  };
+  visit(tree);
+  const spans = [...images, ...definitions.filter(d => references.has(d.identifier.toUpperCase()))];
+  return linkDestinations(input).filter(d => spans.some(n =>
+    n.position?.start.offset !== undefined && n.position.end.offset !== undefined
+    && d.start >= n.position.start.offset + bom && d.end <= n.position.end.offset + bom));
+}
+
 // ---------------- serialize ----------------
 
 const MD_OPTIONS: ToMarkdownOptions = {

@@ -19,7 +19,7 @@ import {
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import {
-  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
+  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, markPublished, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
   visibilityOf, walk, type RefusalReason, type WorkspaceTree,
 } from "./workspace.ts";
 
@@ -113,6 +113,7 @@ interface Ctx {
 const REASONS: Record<RefusalReason | OpErrorCode, string> = {
   notFound: "files.reason.notFound", taken: "files.reason.taken", readOnly: "files.reason.readOnly", invalid: "files.reason.invalid",
   intoItself: "files.reason.intoItself", trash: "files.reason.trash", failed: "files.reason.failed", changed: "files.reason.changed",
+  missingImage: "files.reason.missingImage", recovery: "files.reason.recovery",
 };
 
 export function registerFiles(ctx: Ctx) {
@@ -474,7 +475,7 @@ export function registerFiles(ctx: Ctx) {
         : moves.length ? { selected: moves.map((m) => m.to), anchor: moves[0]!.to, focus: moves[0]!.to } : f.selection,
     }));
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
-    const done = queue.catch(() => {}).then(() => ctx.exclusive(async (): Promise<LinkWrite[]> => {
+    const work = () => ctx.exclusive(async (): Promise<LinkWrite[]> => {
       // Links in other notes, and in the moved notes themselves, change in the same batch (FIL-09).
       const writes = await planLinkWrites(before, moves, readForLinks());
       refusedIfOpen(writes);
@@ -492,7 +493,9 @@ export function registerFiles(ctx: Ctx) {
       }
       followLinks(writes, moves, before);
       return writes;
-    }));
+    });
+    const done = queue.catch(() => {}).then(() => moves.length && ctx.tracker
+      ? ctx.tracker.run("files.move", "task.saving", work, undefined, "fn:files.move", "none") : work());
     queue = done;
     try {
       const writes = await done;
@@ -512,7 +515,7 @@ export function registerFiles(ctx: Ctx) {
       // The screen as it is now: anything else that changed meanwhile is read again.
       const untouched = tree() === next;
       setTree(before);
-      if (!untouched) void rescan();
+      if (!untouched || opErrorCode(e) === "recovery") void rescan();
       setFiles((f) => ({
         pending: f.pending.filter((x) => !o.touched.includes(x)),
         selection: keepShowing(beforeFiles.selection, rowsOf(store.state)),
@@ -1323,8 +1326,9 @@ export function registerFiles(ctx: Ctx) {
    */
   async function renameNote(path: string, title: string): Promise<void> {
     let others: LinkWrite[] = [];
+    let renamed: PathMove | undefined;
     try {
-      await ctx.exclusive(async () => {
+      const work = () => ctx.exclusive(async () => {
         const isOpen = store.state.note.path === path;
         const text = isOpen ? await openText() : await bridge.readNote(path);
         const next = text;
@@ -1338,6 +1342,7 @@ export function registerFiles(ctx: Ctx) {
         const own = writes.find((w) => w.from === path)?.text ?? next;
         others = writes.filter((w) => w.from !== path);
         await ws!.apply!([...moves.map((m) => ({ op: "move" as const, ...m })), { op: "write", path: to, text: own, before: text }, ...writeOps(others)]);
+        renamed = moves[0];
         if (moves.length) ctx.notesMoved?.(moves);
         if (plan?.kind === "renamed") setTree(plan.tree);
         setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
@@ -1348,9 +1353,29 @@ export function registerFiles(ctx: Ctx) {
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
         } else followLinks(others, moves, before);
       });
+      await (ctx.tracker ? ctx.tracker.run("files.rename", "task.saving", work, undefined, "fn:files.rename", "none") : work());
       const done = withLinks(catalog.format("files.renamed", { what: catalog.format("files.quoted", { name: title }) }), others);
       // Other notes changed too: that's said where it's seen.
-      if (others.length) toast(done);
+      if (renamed) {
+        const move = renamed;
+        toast(done, { action: undoAction(async () => {
+          const current = tree();
+          const found = findNode(current, move.to);
+          if (!found || found.node.kind !== "note") return void refused("files.undoFailed", { what: title }, "notFound");
+          if (found.root.readOnly) return void refused("files.undoFailed", { what: title }, "readOnly");
+          if (findNode(current, move.from)) return void refused("files.undoFailed", { what: title }, "taken");
+          const restoredTree = applyChanges(current, [
+            { path: move.to, kind: "note", exists: false },
+            { path: move.from, kind: "note", exists: true, title: found.node.title },
+          ]);
+          const restored = found.node.published ? markPublished(restoredTree, [move.from]) : restoredTree;
+          await perform(restored, [{ op: "move", from: move.to, to: move.from }], {
+            touched: [move.from], moves: [{ from: move.to, to: move.from }],
+            done: catalog.format("files.movedBack", { what: title }),
+            failed: why => catalog.format("files.undoFailed", { what: title, reason: why }),
+          });
+        }) });
+      } else if (others.length) toast(done);
       announce(done);
     } catch (e) {
       void rescan();

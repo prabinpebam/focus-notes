@@ -8,11 +8,86 @@
 import { test, expect } from "./fixtures.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { caret, fileRow, launch, quit, tempDirs } from "./helpers.ts";
 import { picture } from "./fre-fakes.ts";
+import { configure, git } from "./instance.ts";
+import { readHeld, writeHeld } from "@focus-notes/core/held";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const rename = process.platform === "darwin" ? "Enter" : "F2";
+
+test("IMG-05: a same-root move and rename keep managed and sidecar pixels, and Undo restores the original note", async () => {
+  const dirs = tempDirs();
+  mkdirSync(join(dirs.docs, ".focus-notes"));
+  writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{"formatVersion":1}');
+  const notes = join(dirs.docs, "notes");
+  mkdirSync(join(notes, "Shelf"), { recursive: true });
+  mkdirSync(join(dirs.docs, "assets", "images"), { recursive: true });
+  mkdirSync(join(notes, "welcome.md.assets", "images"), { recursive: true });
+  const pixels = Buffer.from(picture().split(",")[1]!, "base64");
+  const managed = join(dirs.docs, "assets", "images", "p.png");
+  const sidecar = join(notes, "welcome.md.assets", "images", "p.png");
+  writeFileSync(managed, pixels);
+  writeFileSync(sidecar, pixels);
+  const original = '# Illustrated\n\n<!-- image: rounded -->\n![Managed](../assets/images/p.png "Caption")\n\n![Sidecar](welcome.md.assets/images/p.png)\n';
+  writeFileSync(join(notes, "welcome.md"), original);
+  git(dirs.docs, "init", "-q", "-b", "main");
+  configure(dirs.docs);
+  const exclude = join(dirs.docs, ".git", "info", "exclude");
+  writeFileSync(exclude, writeHeld("", { waiting: [], local: ["notes/welcome.md"] }));
+  git(dirs.docs, "add", ".");
+  git(dirs.docs, "commit", "-qm", "Initial image fixtures");
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    const editor = page.getByRole("textbox", { name: "Note" });
+    const images = editor.locator("img");
+    const loaded = async () => {
+      await expect(images).toHaveCount(2);
+      await expect.poll(() => images.evaluateAll(nodes => nodes.every(node =>
+        node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0))).toBe(true);
+    };
+    await loaded();
+    await page.keyboard.press(`${mod}+O`);
+    const tree = page.getByRole("tree", { name: "Notes and folders" });
+    await fileRow(tree, "Illustrated").dragTo(fileRow(tree, "Shelf"));
+    const moved = page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Moved “Illustrated” to “Shelf”." });
+    await expect(moved).toBeVisible();
+    await loaded();
+    const movedText = original.replace("(../assets/", "(../../assets/").replace("(welcome.md.assets/", "(../welcome.md.assets/");
+    expect(readFileSync(join(notes, "Shelf", "welcome.md"), "utf8")).toBe(movedText);
+    expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/Shelf/welcome.md"]);
+    expect(git(dirs.docs, "status", "--porcelain", "--untracked-files=all")).not.toContain("welcome.md");
+    await moved.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect.poll(() => existsSync(join(notes, "welcome.md"))).toBe(true);
+    await loaded();
+    expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
+    expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/welcome.md"]);
+    await fileRow(tree, "Illustrated").click();
+    await page.keyboard.press(rename);
+    await tree.getByRole("textbox", { name: "File name" }).fill("Renamed");
+    await page.keyboard.press("Enter");
+    const renamed = page.locator('#toasts [data-surface="toast"]').filter({ hasText: "Renamed to “Renamed”." });
+    await expect(renamed).toBeVisible();
+    await loaded();
+    expect(readFileSync(join(notes, "renamed.md"), "utf8")).toBe(original);
+    expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/renamed.md"]);
+    await renamed.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect.poll(() => existsSync(join(notes, "welcome.md"))).toBe(true);
+    await loaded();
+    expect(readFileSync(join(notes, "welcome.md"), "utf8")).toBe(original);
+    expect(readHeld(readFileSync(exclude, "utf8")).local).toEqual(["notes/welcome.md"]);
+    expect(readFileSync(managed)).toEqual(pixels);
+    expect(readFileSync(sidecar)).toEqual(pixels);
+  } finally {
+    try { await quit(l); }
+    finally {
+      const script = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+      for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", script, "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
 
 test("FIL-09: renames and moves update relative links in other notes on disk, byte for byte, and a refusal puts them back", async () => {
   const dirs = tempDirs();

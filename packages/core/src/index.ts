@@ -23,6 +23,7 @@ export * from "./files.ts";
 export * from "./flat-store.ts";
 export * from "./files-app.ts";
 export * from "./links.ts";
+export { imageDestinations } from "@focus-notes/markdown";
 export * from "./sync-app.ts";
 export * from "./repo-backup.ts";
 export * from "./setup-app.ts";

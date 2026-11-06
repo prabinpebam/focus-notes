@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseMarkdown, serializeMarkdown } from "@focus-notes/markdown";
-import { buildTree, planLinkWrites, rewriteLinks } from "../src/index.ts";
+import { buildTree, planLinkWrites, rewriteLinks, sameRootOf } from "../src/index.ts";
 
 const rw = (text: string, from: string, moves: { from: string; to: string }[], to = from) => rewriteLinks(text, from, to, moves).text;
 
@@ -67,6 +67,33 @@ describe("rewriteLinks (FIL-09)", () => {
 });
 
 describe("planLinkWrites (FIL-09)", () => {
+  it("rebases managed public and private images without crossing visibility, retaining attributes and sidecars (IMG-05)", async () => {
+    const tree = buildTree({
+      folder: "E:\\project",
+      roots: [
+        { id: "public", path: "E:\\project\\notes", readOnly: false },
+        { id: "private", path: "E:\\project\\private\\notes", readOnly: false },
+      ],
+      entries: [
+        { path: "E:\\project\\notes\\a.md", kind: "note" },
+        { path: "E:\\project\\private\\notes\\secret.md", kind: "note" },
+      ],
+    });
+    const publicText = '\uFEFF# A\r\n\r\n![caption](../assets/images/p%20x.png "Title"){width=240 rounded=true}\r\n![sidecar](a.md.assets/images/a.png)\r\n';
+    const privateText = "![private](../assets/images/secret.png)\n";
+    const moves = [
+      { from: "E:\\project\\notes\\a.md", to: "E:\\project\\notes\\Box\\renamed.md" },
+      { from: "E:\\project\\private\\notes\\secret.md", to: "E:\\project\\private\\notes\\Box\\secret.md" },
+    ];
+    const writes = await planLinkWrites(tree, moves, async p => p === moves[0]!.from ? publicText : privateText);
+    expect(writes.find(w => w.from === moves[0]!.from)?.text).toBe(
+      publicText.replace("../assets/images/", "../../assets/images/").replace("(a.md.assets/", "(../a.md.assets/"),
+    );
+    expect(writes.find(w => w.from === moves[1]!.from)?.text).toBe("![private](../../assets/images/secret.png)\n");
+    const reversed = rewriteLinks(writes.find(w => w.from === moves[0]!.from)!.text, moves[0]!.to, moves[0]!.from, [], sameRootOf(tree));
+    expect(reversed.text).toBe(publicText);
+    expect(sameRootOf(tree)(moves[0]!.to, "E:\\project\\private\\assets\\images\\secret.png")).toBe(false);
+  });
   const tree = buildTree({
     folder: "",
     roots: [{ id: "local", path: "", readOnly: false }, { id: "public", path: "public:", readOnly: true }],

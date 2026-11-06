@@ -658,7 +658,7 @@ export type WorkspaceOp =
   | { op: "create"; path: string; text: string };
 
 /** Why a batch was refused. The shell's error message ends with one of these. */
-export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed", "changed"] as const;
+export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed", "changed", "missingImage", "recovery"] as const;
 export type OpErrorCode = (typeof OP_ERROR_CODES)[number];
 /** The code at the end of a shell's error message (Electron prefixes its own words), or "failed". */
 export function opErrorCode(error: unknown): OpErrorCode {

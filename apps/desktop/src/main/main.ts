@@ -21,6 +21,8 @@ import { cliArgv, isStoreBuild, storeAliasPath } from "./store-build.ts";
 import { appIdentity, preparePreviewProfile } from "./app-identity.ts";
 import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
+import { stageNoteMove, validateNoteImages } from "./note-move.ts";
+import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { spawn } from "node:child_process";
@@ -954,7 +956,7 @@ async function renameRetrying(from: string, to: string): Promise<void> {
 
 /** A refusal the renderer explains: the message is the reason's code (OpErrorCode in core). */
 class Refused extends Error {}
-const refuse = (code: "notFound" | "taken" | "readOnly" | "invalid" | "intoItself" | "trash" | "failed" | "changed") => new Refused(code);
+const refuse = (code: ReturnType<typeof opErrorCode>) => new Refused(code);
 /** A path the Files panel may change: absolute, inside a writable root (not the root itself), no dot folders. */
 function opPath(p: unknown): { path: string; root: string } {
   if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
@@ -1001,6 +1003,8 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   // Deletes are checked before anything changes, because the trash can't be undone from here.
   for (const op of ops) if (op.op === "delete" && !existsSync(op.path)) throw refuse("notFound");
   const undo: (() => Promise<unknown>)[] = [];
+  const finishMoves: (() => Promise<void>)[] = [];
+  const consumed = new Set<Op>();
   const held = await heldNotes();
   try {
     for (const op of ops) {
@@ -1026,18 +1030,53 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         }
         if (!(await isDir(dirname(to)))) throw refuse("notFound");
         await writesDone(from);
-        // A held note's line moves first, so its new path is never committed (D-158).
-        if (held) {
+        const safeNoteMove = st.isFile() && !caseOnly && inside(op.root, to);
+        let copiedHold: "waiting" | "local" | undefined;
+        if (held && safeNoteMove) {
+          const state = await held.list();
+          copiedHold = state.local.includes(from) ? "local" : state.waiting.includes(from) ? "waiting" : undefined;
+          if (copiedHold) {
+            // Both complete copies must stay excluded, including after an interrupted staging (D-158).
+            await held.hold(to);
+            if (copiedHold === "local") await held.answer(to, "local");
+            undo.push(async () => { if (!existsSync(to)) await held.removed(to); });
+          }
+        } else if (held) {
           await held.moved(from, to);
           undo.push(() => held.moved(to, from));
         }
-        if (caseOnly && from !== to) {
+        const paired = ops.find((candidate) => candidate.op === "write" && candidate.path === to);
+        let staged = false;
+        if (safeNoteMove) {
+          const before = await readFile(from, "utf8");
+          if (paired?.op === "write" && paired.before !== undefined && paired.before !== before) throw refuse("changed");
+          const boundary = isWorkspace() ? dirname(op.root) : op.root;
+          const canonical = await realpath(boundary);
+          if (!inside(canonical, await realpath(from)) || !inside(canonical, await realpath(dirname(to)))) throw refuse("invalid");
+          await validateNoteImages(before, from, boundary);
+          const noteMove = await stageNoteMove(from, to, paired?.op === "write" ? paired.text : before, before);
+          staged = true;
+          undo.push(async () => {
+            if (copiedHold && held) {
+              await held.hold(from);
+              if (copiedHold === "local") await held.answer(from, "local");
+            }
+            await noteMove.undo();
+          });
+          finishMoves.push(async () => {
+            await noteMove.finish();
+            if (copiedHold) await held?.removed(from);
+          });
+          if (paired) consumed.add(paired);
+        }
+        if (!staged && caseOnly && from !== to) {
           const tmp = `${from}.${process.pid}.move.tmp`;
           await renameRetrying(from, tmp);
           await renameRetrying(tmp, to);
-        } else await renameRetrying(from, to);
-        undo.push(() => renameRetrying(to, from));
+        } else if (!staged) await renameRetrying(from, to);
+        if (!staged) undo.push(() => renameRetrying(to, from));
       } else if (op.op === "write") {
+        if (consumed.has(op)) continue;
         // Only a note that's there (after the batch's moves) is written: never a new file.
         const old = (await isDir(op.path)) ? undefined : await readNow(op.path).catch(() => undefined);
         if (old === undefined) throw refuse("notFound");
@@ -1053,6 +1092,7 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         undo.push(() => rm(op.path, { force: true }));
       }
     }
+    for (const finish of finishMoves) await finish();
     for (const op of ops) {
       if (op.op !== "delete") continue;
       await writesDone(op.path);
@@ -1060,8 +1100,16 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
       await held?.removed(op.path).catch(() => {});
     }
   } catch (error) {
-    for (const u of undo.reverse()) await u().catch(() => {});
-    throw error instanceof Refused ? error : refuse("failed");
+    let recoveryFailed = false;
+    for (const u of undo.reverse()) {
+      try { await u(); }
+      catch {
+        recoveryFailed = true;
+        console.error("Could not roll back a file batch; retained note copies need review in Files.");
+      }
+    }
+    if (recoveryFailed) throw refuse("recovery");
+    throw error instanceof Refused ? error : refuse(opErrorCode(error));
   }
   for (const op of ops) {
     if (op.op === "move") {

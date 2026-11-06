@@ -407,6 +407,21 @@ describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {
     expect(app.store.state.note).toMatchObject({ path: "better-idea.md", initialMarkdown: "# Idea\n\nBody\n" });
     expect(vm(app).items.find((i) => i.id === "better-idea.md")).toMatchObject({ label: "Idea", selected: true });
   });
+  it("IMG-05: rename Undo restores the exact original filename and sidecar Markdown", async () => {
+    const text = '# Idea\n\n<!-- image: rounded -->\n![Alt](My%20Idea.MD.assets/images/p.png "Caption")\n';
+    const f = setup({ notes: { "My Idea.MD": text }, open: "My Idea.MD" });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.rename");
+    await app.commands.run("files.setEditValue", { value: "Better idea" });
+    await app.commands.run("files.commitEdit");
+    expect(f.notes.get("better-idea.md")?.text).toBe(text);
+    const undo = app.store.state.ui.toasts.findLast(t => t.action?.command === "files.undo")!.action!;
+    await app.commands.run(undo.command, undo.args);
+    expect(f.notes.get("My Idea.MD")?.text).toBe(text);
+    expect(f.notes.has("better-idea.md")).toBe(false);
+    expect(app.store.state.note.path).toBe("My Idea.MD");
+  });
   it("renaming a folder moves everything in it, and the open note follows", async () => {
     const f = setup({ notes: { "a/n.md": "# N\n" }, open: "a/n.md" });
     const app = await started(f);
@@ -453,6 +468,20 @@ describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {
 });
 
 describe("multiple selection and moving (FIL-03, FIL-08)", () => {
+  it("IMG-05: a recovery refusal keeps the note and explains retained copies instead of claiming nothing changed", async () => {
+    const f = setup({ notes: { "a.md": "# A\n" }, folders: ["Box"] });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    const gate = f.hold();
+    await app.commands.run("files.drop", { source: "a.md", target: "Box" });
+    await settle();
+    gate.release(new Error("recovery"));
+    await settle();
+    await settle();
+    expect(f.notes.get("a.md")?.text).toBe("# A\n");
+    expect(toasts(app).join(" ")).toContain("Copies were kept; review both folders in Files before retrying");
+    expect(toasts(app).join(" ")).not.toContain("nothing was changed");
+  });
   it("Mod+click, Shift+click, and Mod+A select; the selection moves as one batch, by drag and drop", async () => {
     const f = setup({ notes: { "a.md": "# A\n", "b.md": "# B\n", "c.md": "# C\n" }, folders: ["Box"] });
     const app = await started(f);
