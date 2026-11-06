@@ -2853,7 +2853,7 @@
       "summary": "D-349 images slice 4 (D-348): print and Save as PDF include local images capped to the page, never split, captions below, descriptions for missing images, and the print dialog waits for images to decode.",
       "requirements": ["IMG-12"], "dependsOn": ["WP-9.7", "WP-8.12"],
       "touches": ["core", "desktop", "ui"], "reviews": ["code", "accessibility"],
-      "specs": ["experience/print.md", "experience/images.md"], "lookahead": true, "status": "planned"
+      "specs": ["experience/print.md", "experience/images.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-9.9", "stage": "Later", "title": "Images in published notes",

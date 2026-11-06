@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, MORE_MENU, MENU_BAR, type AppStateFile, type PlatformBridge } from "../src/index.ts";
-import { isPageBreak, printBlocks, PAGE_BREAK } from "../src/print-app.ts";
+import { isPageBreak, printBlocks, preparePrintBlocks, PAGE_BREAK } from "../src/print-app.ts";
 import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
@@ -60,6 +60,25 @@ describe("printBlocks", () => {
   });
   it("keeps a rule, and raw HTML that isn't a page break, as they are", () => {
     expect(printBlocks("One.\n\n***\n\n<!-- aside -->\n").map((b) => b.type)).toEqual(["paragraph", "horizontalRule", "rawMarkdown"]);
+  });
+  it("prepares local images once per source, preserves their modes/captions and exposes missing descriptions", async () => {
+    const blocks = printBlocks('<!-- image: actual unlimited -->\n![A heron](bird.png "At the lake")\n\n![The same heron](bird.png)\n\n![Missing photo](missing.png)\n');
+    const read = vi.fn(async (_note: string, src: string) => {
+      if (src === "missing.png") throw new Error("missing");
+      return "data:image/png;base64,AAAA";
+    });
+    const prepared = await preparePrintBlocks(blocks, NOTE, read);
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenCalledWith(NOTE, "bird.png");
+    expect(prepared[0]?.attrs).toMatchObject({ mode: "actual", fitHeight: false, title: "At the lake", print: true, printSrc: "data:image/png;base64,AAAA" });
+    expect(prepared[2]?.attrs).toMatchObject({ alt: "Missing photo", print: true, printSrc: "" });
+    expect(blocks[0]?.attrs).not.toHaveProperty("printSrc");
+  });
+  it("keeps nested images and supplies a printable fallback when a missing image has no description", async () => {
+    const blocks = [{ type: "blockquote", content: [{ type: "image", attrs: { src: "missing.png", alt: "" } }] }];
+    const prepared = await preparePrintBlocks(blocks, NOTE, undefined, "Image unavailable");
+    expect(prepared[0]?.content?.[0]?.attrs).toMatchObject({ printSrc: "", printDescription: "Image unavailable" });
+    expect(blocks[0]?.content[0]?.attrs).not.toHaveProperty("print");
   });
 });
 
@@ -115,5 +134,50 @@ describe("Print (SHR-12)", () => {
     expect(d.enabled).toBe(false);
     expect(messages[d.disabledReason!]).toBe("Printing isn't available here");
     expect(app.commands.describe("print.pageNumbers").enabled).toBe(false);
+  });
+
+  it("keeps the tracked image-preparation pill until decoding finishes, then prints", async () => {
+    let done!: () => void;
+    const decode = vi.fn(() => new Promise<void>(resolve => { done = resolve; }));
+    const print = vi.fn(async () => {});
+    const app = createApp({
+      ...desktop(print),
+      readNote: async () => '# Images\n\n![Heron](bird.png "Lake")\n',
+      readImage: async () => "data:image/png;base64,AAAA",
+      preparePrintImages: decode,
+    }, messages);
+    await app.start();
+    await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
+    const run = app.commands.run("note.print");
+    await vi.waitFor(() => expect(decode).toHaveBeenCalled());
+    expect(print).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(app.store.state.ui.toasts.at(-1)).toMatchObject({
+      message: "Preparing images for print…", tone: "progress", action: { command: "print.cancel" },
+    }));
+    done();
+    await run;
+    expect(print).toHaveBeenCalledOnce();
+    expect(app.store.state.ui.toasts).toEqual([]);
+    expect(app.store.state.ui.print.open).toBe(false);
+  });
+
+  it("cancels preparation without printing or changing the note, even if decoding finishes later", async () => {
+    let done!: () => void;
+    const decode = vi.fn(() => new Promise<void>(resolve => { done = resolve; }));
+    const print = vi.fn(async () => {});
+    const app = createApp({ ...desktop(print), preparePrintImages: decode }, messages);
+    await app.start();
+    await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
+    const markdown = app.store.state.note.markdown;
+    const run = app.commands.run("note.print");
+    await vi.waitFor(() => expect(decode).toHaveBeenCalled());
+    await app.commands.run("print.cancel");
+    await run;
+    done();
+    await Promise.resolve();
+    expect(print).not.toHaveBeenCalled();
+    expect(app.store.state.note.markdown).toBe(markdown);
+    expect(app.store.state.ui.print.open).toBe(false);
+    expect(app.store.state.ui.toasts).toEqual([]);
   });
 });

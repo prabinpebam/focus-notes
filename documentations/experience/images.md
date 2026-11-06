@@ -216,6 +216,10 @@ Published plaintext images are deliberately public. Strip ancillary location/sou
 
 Printing a note prints its images (D-348, IMG-12), which amends D-230's earlier exclusion. Each image keeps its display mode but is capped to the text width and the page height, is never split across pages, and has its caption below it. A missing image prints its description in muted italic. Before the system's print dialog opens, the bottom pill shows *Preparing images for print…* until every image is decoded, so no page prints with a blank space.
 
+**Built (WP-9.8).** Print snapshots read only the note's local image references through the existing bounded image reader; repeated references are read once, and the note and source files are not rewritten. The hidden print layout renders pixels, caption and description through NoteContent, with proportional page-sized bounds and no page break inside the image group. When a missing or undecodable image has no description, paper says *Image unavailable*. Preparation uses the task tracker and `fn:image.print`; its pill offers **Cancel**, which keeps the note and never opens the print dialog. The system's Print and Save as PDF use the same prepared layout.
+
+The invisible `image-print.spec.ts` journey inspects actual portrait and landscape PDFs: a transparent inline image, an unlimited tall image, a wide captioned image and a missing image. It checks each image's page, raster dimensions, proportional bounds inside the 0.75 in margins, captions and missing description, confirms decoding before PDF submission and verifies unchanged Markdown. Related core, print-rendering and decode-barrier units cover read failure and cancellation; [IMG.12 evidence](../plan/gate-evidence.md#inline-images-print-and-save-as-pdf) records the gate.
+
 ### Size and Git
 
 Images are kept in normal Git, each at most 20 MiB (IMG-01), well under GitHub's 50 MiB warning and 100 MiB block for one file. Git LFS isn't used: it adds a separate storage and bandwidth quota on the owner's account and extra steps for GitHub Pages. Whether to keep it that way is owner question I1 in the [readiness assessment](#readiness-assessment-5-november).

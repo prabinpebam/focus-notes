@@ -35,7 +35,7 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 812a0f7ee465-1 | t("ai.scan.cancelFailed") | packages/core/src/ai-app.ts:473 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 97339fd20f6d-1 | t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter) }) | packages/core/src/ai-app.ts:578 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | eaf52e16a4df-1 | t("rewrite.error.stale") | packages/core/src/ai-app.ts:673 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| d0962c951e39-1 | t(caret ? "rewrite.writing" : "rewrite.running", { name }) | packages/core/src/ai-app.ts:680 | must-read | operation-control: The running rewrite's only Stop control must remain reachable. | "rewrite.cancel" |
+| d0962c951e39-1 | t(caret ? "rewrite.writing" : "rewrite.running", { name }) | packages/core/src/ai-app.ts:680 | must-read | operation-control: The running operation's only Stop or Cancel control must remain reachable. | "rewrite.cancel" |
 | 622621cf4b88-1 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:645 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | e30359ba296c-1 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:663 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | e30359ba296c-2 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:679 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
@@ -126,7 +126,8 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 2034069aed21-1 | catalog.format("history.restoreFailed") | packages/core/src/note-history-app.ts:240 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | cf5cc757d082-1 | catalog.format("history.undoChanged") | packages/core/src/note-history-app.ts:255 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "history.open" |
 | 8220b5d4ba59-1 | catalog.format("history.undoFailed") | packages/core/src/note-history-app.ts:274 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "history.undoRestore" |
-| ed49319dc999-1 | catalog.format("toast.printFailed") | packages/core/src/print-app.ts:90 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| bc8a299daf94-1 | catalog.format(task.message) | packages/core/src/print-app.ts:121 | must-read | operation-control: The running operation's only Stop or Cancel control must remain reachable. | PRINT_CANCEL |
+| ed49319dc999-1 | catalog.format("toast.printFailed") | packages/core/src/print-app.ts:152 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 7d8efa32dffe-1 | catalog.format("project.delete.unavailable") | packages/core/src/project-delete-app.ts:140 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 50f6d9631bb9-1 | catalog.format("project.delete.unsaved") | packages/core/src/project-delete-app.ts:157 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 5542d39128f7-1 | catalog.format("project.delete.exportFailed") | packages/core/src/project-delete-app.ts:216 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |

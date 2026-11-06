@@ -40,5 +40,10 @@
   "tableHeaderWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
   "tableCellBlock": { "$type": "dimension", "$value": "{space.scale.s}" },
   "tableCellInline": { "$type": "dimension", "$value": "{space.scale.m}" },
-  "printLines": { "$type": "number", "$value": "{print.lines}" }
+  "printLines": { "$type": "number", "$value": "{print.lines}" },
+  "printImageText": { "$type": "color", "$value": "{color.textMuted}" },
+  "printImageRadius": { "$type": "dimension", "$value": "{radius.popover}" },
+  "printImageMargin": { "$type": "dimension", "$value": "{print.margin}" },
+  "printImagePageHeight": { "$type": "dimension", "$value": "{print.imagePageHeight}" },
+  "printImageReserve": { "$type": "dimension", "$value": "{print.imageReserve}" }
 } } }

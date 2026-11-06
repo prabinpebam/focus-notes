@@ -1316,7 +1316,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   registerImport({ store, commands, viewModels, catalog, bridge, tracker, toast, menu: extraMenu });
   registerPublicLink({ store, commands, catalog, bridge, toast });
-  registerPrint({ store, commands, viewModels, catalog, bridge, tracker, toast, handOver: () => editorAction(FLUSH_EDITOR), afterPaint, persistAppState });
+  registerPrint({ store, commands, viewModels, catalog, bridge, tracker, toast, dismissToast: id => notifications.dismiss(id), handOver: () => editorAction(FLUSH_EDITOR), afterPaint, persistAppState });
   const conflicts = registerConflicts({
     store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, afterWrites, setNote, flush,
     handOver: () => editorAction(FLUSH_EDITOR),

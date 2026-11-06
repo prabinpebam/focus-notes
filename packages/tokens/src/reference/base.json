@@ -1,5 +1,6 @@
 {
   "ref": {
+    "viewportHeight": { "$type": "dimension", "$value": "100vh" },
     "viewportWidth": { "$type": "dimension", "$value": "100vw" },
     "color": {
       "$type": "color",

@@ -6,6 +6,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import { parsePointerZone, pointerMove } from "./window/pointer-report.ts";
 import { wordAround } from "./spelling/word.ts";
 import type { ProjectCreateProgress } from "@focus-notes/core";
+import { preparePrintImages } from "./print-images.ts";
 
 const params = new URLSearchParams(globalThis.location?.search ?? "");
 const platform = (params.get("platform") ?? "windows") as "macos" | "windows" | "linux";
@@ -161,6 +162,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
   toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),
   // The page's title is the print job's name, and Save as PDF's file name (D-230).
+  preparePrintImages,
   print: async ({ title }: { title: string }) => {
     const before = document.title;
     if (title) document.title = title;

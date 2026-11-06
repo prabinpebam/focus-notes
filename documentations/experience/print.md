@@ -33,7 +33,7 @@ Printing a note is occasional: a page to read away from the screen, something to
 ## How it works
 
 1. ⋯ → *Print…* (or the File menu, or Spotlight's *Print…*). It's unavailable, saying why, when no note is open. To number the pages, turn on *Page numbers when printing* just below it first.
-2. The app lays the note out on a hidden layer that only the printer sees, through the task tracker (*Preparing to print…* past 300 ms). The screen doesn't change.
+2. The app lays the note out on a hidden layer that only the printer sees, through the task tracker (*Preparing to print…* past 300 ms, or *Preparing images for print…* when the note has pictures). Every image is decoded before the dialog opens; **Cancel** keeps the note. The screen doesn't change.
 3. The system's print dialog opens. The note's title names the job, so *Save as PDF* suggests it as the file's name.
 4. Printing, saving or cancelling closes the dialog, and the layer goes away. A failure says "Couldn't print the note. Check the printer and try again."; cancelling says nothing.
 
@@ -49,6 +49,7 @@ On the web, the browser's print dialog does the same.
 | **Margins** | 0.75 in on every side (`cmp.printPage.margin`). The system's dialog can change them. |
 | **Page numbers** | Off by default. With *Page numbers when printing* on, `n / N` in the bottom margin's center of every page, in the interface font and the muted text color. |
 | **Long code** | Wraps instead of running off the page. |
+| **Images** | Local images retain their display mode within the text width and page height, without splitting; captions sit below. A missing image prints its description in muted italic, or *Image unavailable* when no description was supplied (D-348, IMG-12). |
 
 ## Page breaks
 
@@ -72,7 +73,6 @@ To start a new page at a place, put one of these on a line of its own:
 
 - Headers and footers with the note's title, the date or the path.
 - A print preview of the app's own; the system's dialog shows one where it has one.
-- Images: print with images is specified in D-348 and IMG-12 (WP-9.8, after adding images lands); see [Images → Print and Save as PDF](images.md#print-and-save-as-pdf).
 - PDF export with its own paper and margin settings (the system's *Save as PDF* covers most of it).
 - Printing several notes or a folder at once.
 - A break before every top heading (Typora's option).

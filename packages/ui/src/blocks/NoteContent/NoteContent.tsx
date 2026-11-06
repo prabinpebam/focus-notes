@@ -76,9 +76,28 @@ function Block({ node, path, muted = false }: { node: BlockNode; path: string; m
     case "tableRow": return <tr>{kids(node, path)}</tr>;
     case "tableHeader": return <th scope="col" {...align(node)}>{kids(node, path)}</th>;
     case "tableCell": return <td {...align(node)}>{kids(node, path)}</td>;
+    case "image":
+      if (node.attrs?.print === true) return <PrintImage node={node} />;
+      return <pre tabIndex={0} data-raw-markdown="" {...focus}>{String(node.attrs?.source ?? "")}</pre>;
     // UnknownBlock: syntax the editor can't show yet, kept verbatim as text.
     default: return <pre tabIndex={0} data-raw-markdown="" {...focus}>{String(node.attrs?.source ?? (node.content ?? []).map((c) => c.text ?? "").join(""))}</pre>;
   }
+}
+
+function PrintImage({ node }: { node: BlockNode }) {
+  const [failed, setFailed] = useState(false);
+  const attrs = node.attrs ?? {};
+  const src = typeof attrs.printSrc === "string" && /^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(attrs.printSrc) ? attrs.printSrc : "";
+  const alt = typeof attrs.alt === "string" ? attrs.alt : "";
+  const description = typeof attrs.printDescription === "string" ? attrs.printDescription : alt;
+  const caption = typeof attrs.title === "string" ? attrs.title : "";
+  const size = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+  return <figure className={s.printImage} data-print-image="" data-image-mode={attrs.mode === "wide" || attrs.mode === "actual" ? attrs.mode : "column"}>
+    {src && !failed
+      ? <img src={src} alt={alt} width={size(attrs.width)} height={size(attrs.height)} data-rounded={attrs.rounded === true ? "" : undefined} onError={() => setFailed(true)} />
+      : <em>{description}</em>}
+    {caption ? <figcaption>{caption}</figcaption> : null}
+  </figure>;
 }
 
 const align = (node: BlockNode) => (typeof node.attrs?.align === "string" ? { "data-align": node.attrs.align } : {});

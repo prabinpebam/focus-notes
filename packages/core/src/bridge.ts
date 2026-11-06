@@ -59,6 +59,8 @@ export interface PlatformBridge {
    * `title` as the job's name. Resolves when the dialog closes, printed or cancelled. Absent where the shell can't.
    */
   print?(o: { title: string }): Promise<void>;
+  /** Decode the rendered print images; unavailable pixels become their descriptions before printing. */
+  preparePrintImages?(): Promise<void>;
   /** The default note for a first launch, created if missing. */
   /** The workspace's custom theme files (THM-04, D-173): `private/.focus-notes/themes/*.json`, or `.focus-notes/themes/` without a private repository. */
   themes?: {

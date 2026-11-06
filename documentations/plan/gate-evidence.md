@@ -18,6 +18,22 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Inline images: Print and Save as PDF
+
+IMG.12 / IMG-12 (WP-9.8, D-348) is implemented with local evidence; exact-head Windows CI and landing are required before the milestone is reported as landed. The pipeline snapshots the note's bounded local images, paints the print-only NoteContent image groups and waits for every `img.decode()` before using the unchanged native Print/PDF path. Missing or undecodable pixels become muted descriptions, not blanks or broken icons. A tracked, cancellable preparation pill retains the note and source files; `fn:image.print` records the complete preparation wait.
+
+`image-print.spec.ts` reads the actual PDF's image objects, page transforms and text for transparent inline, tall unlimited, wide captioned and missing fixtures in portrait and landscape. It verifies all raster dimensions and placements inside the 0.75 in paper margins, captions on the same page as their image, descriptions, decoded readiness before PDF submission and unchanged Markdown. `wp812-print.spec.ts` retains its text, page-break and page-number checks. `packages/core/test/print.test.ts`, `packages/ui/test/print-images.test.tsx`, and the desktop decode/PDF-parser units cover repeated/nested sources, missing descriptions, delayed decode, cancellation, decode-error replacement and Type3 italic glyph extraction. Skia placement checks allow only one CSS-pixel rounding per dimension.
+
+| Command | Result |
+| --- | --- |
+| `pnpm check` | Passed: boundaries, kits, chain, plan, action proof, licenses, generated files, spacing, notification inventory and UI schemas |
+| `pnpm typecheck` | Passed: every package, including desktop/preload |
+| `pnpm exec vitest run packages/core/test/print.test.ts packages/ui/test/print-images.test.tsx apps/desktop/test/print-images.test.ts apps/desktop/test/pdf-text.test.ts` | Passed: related print, fallback, decode and PDF-parser regressions |
+| `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `FOCUS_NOTES_E2E=1 pnpm --filter @focus-notes/desktop exec playwright test image-print.spec.ts wp812-print.spec.ts --workers=1` | Passed: both journeys; portrait and landscape image PDFs plus existing text/page-number behavior. Owned app instances closed afterwards |
+| `node slate/scripts/runtime-host.mjs check --repo . --host documentations` | Passed; all seven changed pages rendered headlessly with one H1 and fitting figures in light/dark; print-evidence anchor resolved |
+| `git diff --check` | Passed |
+
 ### Inline images: Describe (6 November)
 
 IMG.9 / IMG-10 is locally verified, with exact-head Windows CI, landing and scheduled Preview still pending. `pnpm check`, `pnpm typecheck`, the desktop build, Slate runtime check and `git diff --check` pass. `pnpm exec vitest run packages/core/test/images-menu.test.ts packages/core/test/images-app.test.ts packages/editor/test/images.test.ts packages/markdown/test/roundtrip.test.ts` passes 65 tests. All four invisible `images-menu.spec.ts` journeys pass: Save changes alt and caption together, one Undo restores both, Add/Edit caption renders below the pixels, reopening keeps the caption, and emptying it removes it; selection, mixed menus, display choices and exact saved bytes remain covered.

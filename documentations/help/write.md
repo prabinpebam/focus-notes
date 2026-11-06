@@ -20,6 +20,12 @@ Right-click an image and choose **Edit description…**. **Image description** i
 
 Choose **Add caption** or **Edit caption** to type directly below the image. Enter finishes that line. Removing all its words removes the caption; an image without a caption shows no placeholder. Descriptions and captions stay in standard Markdown as `![description](image.png "caption")` and survive reopening.
 
+## Print images
+
+Open the toolbar, then **More → Print…**. The system's print dialog lets you choose a printer or **Save as PDF**. Pictures fit inside the paper margins, stay on one page and keep their captions below them.
+
+While the pictures are being prepared, **Preparing images for print…** appears at the bottom with **Cancel**. A missing picture prints its description in muted italic, or **Image unavailable** when it has no description. Printing and cancelling leave your note and image files unchanged.
+
 ## Coming soon
 
 - Write and format with Markdown shortcuts

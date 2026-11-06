@@ -5,6 +5,18 @@ import { tokens } from "@focus-notes/tokens";
 // so a published note reads exactly as it does on the canvas (DD-CMP-04).
 const t = tokens.cmp.noteContent;
 
+export const printImage = style({
+  display: "flex", flexDirection: "column", alignItems: "center", gap: t.space.s,
+  minWidth: 0, maxWidth: "100%", margin: 0, breakInside: "avoid",
+  color: t.printImageText,
+});
+globalStyle(`${printImage} img`, {
+  display: "block", maxWidth: "100%", height: "auto", objectFit: "contain",
+  maxHeight: `calc(${t.printImagePageHeight} - ${t.printImageMargin} * 2 - ${t.printImageReserve})`,
+});
+globalStyle(`${printImage} img[data-rounded]`, { borderRadius: t.printImageRadius });
+globalStyle(`${printImage} figcaption`, { maxWidth: "100%", overflowWrap: "anywhere", textAlign: "center" });
+
 export const prose = style({
   fontFamily: t.font,
   fontSize: t.fontSize,

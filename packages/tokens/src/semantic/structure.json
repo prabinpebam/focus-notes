@@ -892,6 +892,8 @@
     }
   },
   "print": {
+    "imagePageHeight": { "$type": "dimension", "$value": "{ref.viewportHeight}", "$description": "The print page viewport; images are bounded to paper, never the writing window." },
+    "imageReserve": { "$type": "dimension", "$value": "{ref.size.72}", "$description": "Space reserved under print pixels for captions and block separation." },
     "$description": "A printed note (SHR-12, D-230): the page's margin (three quarters of an inch), the text size on paper (16 px is 12 pt, whatever the zoom on screen), the page number's size, and the fewest lines a paragraph leaves at the foot or the head of a page.",
     "margin": {
       "$type": "dimension",

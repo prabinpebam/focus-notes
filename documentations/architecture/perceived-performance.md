@@ -168,7 +168,7 @@ IMG-01 to IMG-10 adds no measured performance claim. Use the existing tracker an
 | Save image defaults | Responsive; keep saved default until durable write | Menu/status: Saving image options…; retained old value on error | `fn:image.defaults`; no focus/selection reset |
 | Generate caption | Waiting/long; selected image and editable context retained, Stop | Caption surface: Writing caption…; progress through existing AI task | `fn:image.caption`; only explicit Generate sends; Stop/error changes no caption |
 | Seal/publish referenced media | Long; existing publish task steps, not a second spinner | Share status: Preparing images… → Waiting to publish | `fn:image.publish`; no Ready until full authorized media output succeeds |
-| Prepare images for print (D-348) | Responsive → waiting; the print dialog opens only when every image is decoded | Bottom pill: Preparing images for print…; Cancel keeps the note | `fn:image.print`; no blank image in the printed page |
+| Prepare images for print (D-348, built WP-9.8) | Responsive → waiting; task tracker covers bounded local reads, print paint and `img.decode()` before the dialog | Bottom pill: Preparing images for print…; Cancel keeps the note and prevents the dialog | `fn:image.print`; portrait/landscape PDF journey confirms every image decoded before submission, missing/undecodable pixels print their description |
 
 ## Project and sharing waits (planned)
 

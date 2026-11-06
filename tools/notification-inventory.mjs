@@ -10,7 +10,7 @@ export const END = "<!-- /generated:notification-inventory -->";
 const reasons = {
   "data-at-risk": "Retained note text or recovered drafts need review before they can be safely stored.",
   "recovery-decision": "Conflicting versions need the person's recovery choice.",
-  "operation-control": "The running rewrite's only Stop control must remain reachable.",
+  "operation-control": "The running operation's only Stop or Cancel control must remain reachable.",
   "profile-carry-over": "Preview opened without all its previous settings; the person must know the original is retained and the next launch retries without overwriting new changes.",
 };
 const cell = (text) => text.replace(/\s+/g, " ").replaceAll("|", "&#124;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("`", "&#96;");
