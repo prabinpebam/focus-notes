@@ -194,6 +194,19 @@ describe("ACT-07, ACT-16: the catalogue's own rules", () => {
     expect(sp(app)).toMatchObject({ open: true, query: "Edit this image" });
     expect(items(app).find((i) => i.id.endsWith(":image.edit"))?.disabled).toBe(true);
   });
+  it("keeps the approved image insertion route available from Actions", async () => {
+    const app = await started();
+    await app.commands.run("spotlight.open");
+    await type(app, "> Insert image");
+    const row = items(app).find((i) => i.id.endsWith(":image.insert"));
+    expect(row).toMatchObject({ label: "Insert image" });
+    expect(row!.disabled).not.toBe(true);
+    const editorActions: string[] = [];
+    app.onEditorAction((id) => editorActions.push(id));
+    await app.commands.run("spotlight.choose", { id: row!.id });
+    expect(editorActions).toContain("image.insert");
+    expect(sp(app).open).toBe(false);
+  });
   it("ACT-12 availability at 150 entries includes actual command predicates", async () => {
     const app = await started();
     const scope: ActionScope = {
