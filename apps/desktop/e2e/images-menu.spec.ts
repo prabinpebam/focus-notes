@@ -190,7 +190,7 @@ test("IMG-11: the single-image menu groups its choices at the pointer; both togg
     expect(Math.abs(bounds!.x - point.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(bounds!.y - point.y)).toBeLessThanOrEqual(1);
     const labels = await menu.locator("[role^=menuitem]").allTextContents();
-    expect(labels.map((label) => label.trim())).toEqual(["Edit image", "✓Column", "Wide", "Actual size", "Rounded corners", "✓Limit height"]);
+    expect(labels.map((label) => label.trim())).toEqual(["Edit description…", "Add caption", "Edit image", "✓Column", "Wide", "Actual size", "Rounded corners", "✓Limit height"]);
     await page.getByRole("menuitemcheckbox", { name: "Rounded corners", exact: true }).click();
     const roundedBytes = original.replace("![Red square]", "<!-- image: rounded -->\n![Red square]");
     await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toBe(roundedBytes);

@@ -265,7 +265,10 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable and Help o
   await expect(editor).toBeFocused();
 
   await page.keyboard.press(`${mod}+.`);
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect.poll(() => page.getByRole("toolbar", { name: "Toolbar", exact: true }).evaluate((el) => el.contains(document.activeElement))).toBe(true);
   await page.keyboard.press("End");
+  await expect(more).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(menu).toBeVisible();
 
