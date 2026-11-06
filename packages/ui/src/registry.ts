@@ -70,6 +70,7 @@ import { ProgressBar } from "./primitives/ProgressBar/ProgressBar.tsx";
 import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
 import { ProjectMark } from "./primitives/ProjectMark/ProjectMark.tsx";
 import { ImageFrame } from "./primitives/ImageFrame/ImageFrame.tsx";
+import { ImageCrop } from "./primitives/ImageCrop/ImageCrop.tsx";
 import { FontChoice } from "./primitives/FontChoice/FontChoice.tsx";
 import { ProjectPill } from "./primitives/ProjectPill/ProjectPill.tsx";
 import { OpenItem } from "./primitives/OpenItem/OpenItem.tsx";
@@ -86,7 +87,7 @@ import { ProjectScope } from "./layouts/ProjectScope/ProjectScope.tsx";
 export const registry = defineRegistry({
   EmptyState, NotificationRegion,
   SecureKeyField,
-  OpenItem,
+  OpenItem, ImageCrop,
   ToolbarComposer,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, ScanRadar,
   Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
