@@ -45,6 +45,8 @@ for (const entry of ["slash", "Spotlight", "toolbar"] as const) {
       const table = editor.locator("table");
       await expect(table.locator("tr")).toHaveCount(3);
       await expect(table.locator("th")).toHaveCount(3);
+      await expect(editor).toBeFocused();
+      expect(await table.locator("th").first().evaluate(cell => cell.contains(document.getSelection()?.anchorNode ?? null))).toBe(true);
       for (const [index, value] of ["Task", "Owner", "Status", "Draft", "Me", "Doing", "Edit", "You", "Next"].entries()) {
         await page.keyboard.type(value);
         if (index < 8) await page.keyboard.press("Tab");

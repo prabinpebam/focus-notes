@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { bootTheme } from "../src/behaviors/boot.ts";
+// @vitest-environment happy-dom
+import { describe, expect, it, vi } from "vitest";
+import { afterFirstThemedFrame, bootTheme } from "../src/behaviors/boot.ts";
 
 const fakeHtml = () => ({ dataset: {} as Record<string, string>, style: {} as Record<string, string> });
 const boot = (search: string) => {
@@ -29,5 +30,30 @@ describe("DSK-09, D-148: the page's first frame is in its theme", () => {
     expect(boot(w({ frame: "custom", maximized: true })).dataset.windowFrame).toBe("square");
     expect(boot(w({ frame: "opaque" })).dataset.windowFrame).toBe("square");
     expect(boot("?theme=paper&window=%7Bbroken").dataset.windowFrame).toBeUndefined();
+  });
+  it("waits for two consecutive frames in the requested boot theme, not a temporary app default", async () => {
+    const html = document.documentElement;
+    const before = html.dataset.theme;
+    const root = document.createElement("div");
+    root.setAttribute("data-app-root", "");
+    document.body.append(root);
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(callback => { frames.push(callback); return frames.length; });
+    try {
+      html.dataset.theme = "paper";
+      let drawn = false;
+      void afterFirstThemedFrame(1500, html, "ink").then(() => { drawn = true; });
+      for (const [theme, expected] of [["paper", false], ["ink", false], ["paper", false], ["ink", false], ["ink", true]] as const) {
+        html.dataset.theme = theme;
+        frames.shift()!(performance.now());
+        await Promise.resolve();
+        expect(drawn).toBe(expected);
+      }
+    } finally {
+      raf.mockRestore();
+      root.remove();
+      if (before === undefined) delete html.dataset.theme;
+      else html.dataset.theme = before;
+    }
   });
 });
