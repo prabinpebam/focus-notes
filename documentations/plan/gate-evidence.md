@@ -18,6 +18,17 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Delete and no-remote backup landing: scoped main-red quarantine, 7 November
+
+`fix-delete-backup-7nov` (owner's report, 7 November 17:44; D-pending) failed in [42373281239](https://github.com/prabinpebam/focus-notes/actions/runs/42373281239) on `f18d8ede`. It failed its own unit expectation in `git-repo-backup.test.ts`, since `repos()` now reports `remote`; that's fixed on the next head. It also failed the rows below. Each fails unchanged on `main` `42bc9a30` in [42351409905](https://github.com/prabinpebam/focus-notes/actions/runs/42351409905), which is before this branch, or is the shard 4 GC flake recorded under Milestone B below. These rows change no test, selector, timeout or assertion, and waive nothing else.
+
+| Exact scope | Failure and run | Owner | Expiry | Status and removal evidence |
+| --- | --- | --- | --- | --- |
+| `apps/desktop/e2e/docking.spec.ts`: the five tests at lines 61, 91, 129, 244 and 284 (Open hides docked Files; empty-project Open; dock flush; narrowing; link editor above Files) | `expect(received).toBe(expected)`; red on `main` `42bc9a30` in 42351409905 shard 1 and on this branch | The Open/startup track (`fix-open-startup-7nov`) | 10 November 2026 | Open: fix the D-375 Open regression, show the five passing, remove the row. |
+| `apps/desktop/e2e/ui-states.spec.ts:996`: "New project streams actual setup steps and Cancel keeps the partial folder…" | `toBeInViewport` element not found; red on `main` `42bc9a30` in 42351409905 shard 1 and on this branch | The Open/startup track | 10 November 2026 | Open: as above. |
+| `apps/desktop/e2e/settings-grouping.spec.ts:311`: "Open, Share and Files keep scrollbars at their surface edges…" | Red on `main` `42bc9a30` in 42351409905 shard 2, and on this branch shard 3 | The Open/startup track | 10 November 2026 | Open: as above. |
+| `apps/desktop/e2e/review-feedback.spec.ts:195`, "Close tooltip never changes dialog geometry in light", the `setSize` evaluate only | `electronApplication.evaluate: Resulting promise was garbage collected`, shard 4 of 42373281239; passes locally twice (light and dark) on this head | The Open/startup track | 10 November 2026 | Open: retrieve a plain value as in Milestone B, verify, remove the row. |
+
 ### Image crop landing: scoped first-readiness quarantine, 7 November
 
 The approved D-372 crop landed as `0bb2f1c1` after all seven jobs passed on that exact head in [42268712808](https://github.com/prabinpebam/focus-notes/actions/runs/42268712808), first attempt. The earlier frozen head `6afaa382` also passed all seven jobs in attempt 3 of [42256607087](https://github.com/prabinpebam/focus-notes/actions/runs/42256607087); main advanced to `4c7db417`, so crop was rebased and the combined image-move/copy/provenance implementation gated again before the non-force fast-forward.

@@ -29,8 +29,8 @@ describe("FIL-14: what waits in each repository", () => {
     const { ws } = instance();
     const s = await open(ws);
     expect(await s.repos()).toEqual([
-      { repo: "private", folders: 0, notes: 0, other: 0, commits: 0 },
-      { repo: "public", folders: 0, notes: 0, other: 0, commits: 0 },
+      { repo: "private", folders: 0, notes: 0, other: 0, commits: 0, remote: true },
+      { repo: "public", folders: 0, notes: 0, other: 0, commits: 0, remote: true },
     ]);
     mkdirSync(join(ws, "notes", "Empty", "Inner"), { recursive: true });
     writeFileSync(join(ws, "private", "notes", "outside.md"), "# Outside\n");
