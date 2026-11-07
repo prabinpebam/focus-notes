@@ -11,6 +11,8 @@ Whenever a project window opens with no note to show (just created, existing pro
 
 Never set `initialOpen` on these project-entry paths. An existing ordinary zero-byte Untitled is eligible for verified read-only reopening, not certification; a pre-certificate crash must not produce a numbered duplicate. A nonempty occupied name uses the next available numeric slot.
 
+D-397 supersedes only D-171's rejection of blank remembered public notes. Restoring an existing note does not write, publish or change its audience. New-note defaults still choose Private where available, and existing held-public/consent rules remain unchanged (SHR-01).
+
 **Affects:** AGENTS.md rule 6, [Projects](../experience/projects.md#every-project-entry-lands-in-writing), [Project model](../experience/project-model.md#the-owners-direction), SC-PROJ-01, UC-PROJ-01/02, PRJ-24 / WP-P.4 and [DoD backlog](definition-of-done.md#dod-backlog). Acceptance requires real built-app routes, focused empty editor/caret and measured dialog bounds, not IPC-only assertions.
 
 ## D-393: GitHub repository and account references are real links

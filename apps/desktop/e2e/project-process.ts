@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { emulateFocus } from "./helpers.ts";
 import { CHROMIUM_FOLDERS } from "../../../packages/core/src/inventory.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 /** A real project-manager child, attached only over its disposable loopback inspector. */
 export function projectEntryApp(profile: string): string {
@@ -46,7 +47,7 @@ export async function attachProject(profile: string): Promise<{ browser: Browser
     const page = browser.contexts()[0]!.pages()[0]!;
     await emulateFocus(page);
     await expect.poll(() => existsSync(join(profile, "journey-window-opacity"))).toBe(true);
-    expect(readFileSync(join(profile, "journey-window-opacity"), "utf8")).toBe("0");
+    expect(readFileSync(join(profile, "journey-window-opacity"), "utf8")).toBe(journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? "0" : "1");
     return { browser, page, pid };
   } catch (error) {
     await closeProject({ browser, pid });

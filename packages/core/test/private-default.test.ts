@@ -1,11 +1,11 @@
 /**
  * D-171 (SHR-01): nothing is public unless the person chose it. At launch only the note they last
- * opened, inside this workspace, is reopened, and never an empty public file; otherwise the private
+ * opened, including blank notes (D-397), is reopened without writing; otherwise the private
  * welcome note opens. Every way to create a note defaults to Private, even before the Files tree
  * has been read; only a folder chosen in Files puts it under Public. A workspace without a private
  * repository keeps D-158 (new notes under Public, held).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, titleOfMarkdown, type AppStateFile, type PlatformBridge } from "../src/index.ts";
@@ -23,10 +23,11 @@ function setup(opts: { files?: Record<string, string>; state?: Partial<AppStateF
   let scanned!: () => void;
   const scanGate = opts.scanWaits ? new Promise<void>((r) => (scanned = r)) : Promise.resolve();
   const created: string[] = [];
+  const writeNote = vi.fn(async (p: string, c: string) => { if (!(p in files)) created.push(p); files[p] = c; });
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async (p) => { if (!(p in files)) throw new Error("missing"); return files[p]!; },
-    writeNote: async (p, c) => { if (!(p in files)) created.push(p); files[p] = c; },
+    writeNote,
     chooseNote: async () => undefined,
     // As the desktop does: next to `near`, else in the first root (Private when there is one).
     newNotePath: async (near) => {
@@ -65,7 +66,7 @@ function setup(opts: { files?: Record<string, string>; state?: Partial<AppStateF
   const app = createApp(bridge, messages);
   const path = () => app.store.state.note.path;
   const treeRead = async () => { scanned?.(); await expect.poll(() => app.store.state.workspace.tree.roots.length).toBeGreaterThan(0); };
-  return { app, files, created, path, treeRead, state: () => state };
+  return { app, files, created, path, treeRead, writeNote, state: () => state };
 }
 
 describe("the note at launch (D-171)", () => {
@@ -80,11 +81,15 @@ describe("the note at launch (D-171)", () => {
     await s.app.start();
     expect(s.path()).toBe(`${PUB}/essay.md`);
   });
-  it("never reopens an empty public file: an empty note holds nothing anyone chose to publish", async () => {
+  it("restores a valid blank last note without writing, publishing or creating a replacement (D-397)", async () => {
     const s = setup({ files: { [`${PUB}/exploratory-conversation.md`]: "\n" }, state: { lastNotePath: `${PUB}/exploratory-conversation.md` } });
     await s.app.start();
-    expect(s.path()).toBe(`${PRIV}/welcome.md`);
-    expect(s.state().lastNotePath).toBe(`${PRIV}/welcome.md`);
+    expect(s.path()).toBe(`${PUB}/exploratory-conversation.md`);
+    expect(s.state().lastNotePath).toBe(`${PUB}/exploratory-conversation.md`);
+    expect(s.app.store.state.note).toMatchObject({ markdown: "\n", status: "ready" });
+    expect(s.created).toEqual([]);
+    expect(s.writeNote).not.toHaveBeenCalled();
+    expect(s.files[`${PUB}/exploratory-conversation.md`]).toBe("\n");
   });
   it("opens the private welcome note when the last note is gone (deleted or moved)", async () => {
     const gone = setup({ state: { lastNotePath: `${PUB}/deleted.md` } });

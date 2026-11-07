@@ -5,7 +5,9 @@ import { basename, join } from "node:path";
 import { emulateFocus, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { attachProject, closeProject, projectEntryApp } from "./project-process.ts";
 import { WINDOW_METRICS } from "../../../packages/core/src/window-geometry.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
+const expectedOpacity = journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1;
 const sizes = [
   { width: WINDOW_METRICS.minWidth, height: WINDOW_METRICS.minHeight },
   { width: 640, height: 480 }, { width: 900, height: 640 },
@@ -224,11 +226,11 @@ test(`A linked project reopens its ${content ? "valid" : "empty"} last Untitled 
       const secondOpen = secondary.getByRole("dialog", { name: "Open", exact: true });
       await expect(secondOpen).toBeVisible();
       for (const size of sizes) {
-        await instance.app.evaluate(({ BrowserWindow }, { size, url }) => {
+        await instance.app.evaluate(({ BrowserWindow }, { size, url, opacity }) => {
           const window = BrowserWindow.getAllWindows().find(window => window.webContents.getURL() === url)!;
-          if (window.getOpacity() !== 0) throw new Error("Geometry journeys require an invisible owned window");
+          if (window.getOpacity() !== opacity || (!process.env.CI && opacity !== 0)) throw new Error("Geometry journeys require the expected CI or invisible local window");
           window.setContentSize(size.width, size.height);
-        }, { size, url: secondary.url() });
+        }, { size, url: secondary.url(), opacity: expectedOpacity });
         await assertOpenBounds(secondOpen, { secondary: true, populated: Boolean(content), scheme, size });
       }
       await secondOpen.getByRole("button", { name: "Close", exact: true }).click();
@@ -295,11 +297,11 @@ test(`Open stays centred and unclipped after project cards load: ${populated ? "
     await instance.page.keyboard.press("Control+Alt+O");
     await expect(open.getByRole("button", { name: "Open other-notes-5", exact: true })).toBeVisible();
     for (const size of sizes) {
-      await instance.app.evaluate(({ BrowserWindow }, size) => {
+      await instance.app.evaluate(({ BrowserWindow }, { size, opacity }) => {
         const window = BrowserWindow.getAllWindows()[0]!;
-        if (window.getOpacity() !== 0) throw new Error("Geometry journeys require an invisible owned window");
+        if (window.getOpacity() !== opacity || (!process.env.CI && opacity !== 0)) throw new Error("Geometry journeys require the expected CI or invisible local window");
         window.setContentSize(size.width, size.height);
-      }, size);
+      }, { size, opacity: expectedOpacity });
       await assertOpenBounds(open, { secondary: false, populated, scheme, size });
     }
     if (populated) expect(readFileSync(join(dirs.docs, "notes", "Existing.md"), "utf8")).toBe("# Existing\n\nPreserve this note.\n");
