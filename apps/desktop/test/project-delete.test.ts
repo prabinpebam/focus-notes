@@ -72,6 +72,27 @@ describe("PRJ-23: what deleting would delete", () => {
     expect(deletionGate({ deleted: false, localNotes: true })).toBe("notProject");
     expect(deletionGate({ deleted: true, localNotes: false })).toBe("notProject");
   });
+  it("D-pending (owner, 17:48): a project whose GitHub creation failed still reaches the first confirmation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "fn-delete-failed-"));
+    // Failed before the first commit (no Git identity yet): an unborn main, notes/ and an uncommitted note.
+    const unborn = join(root, "Unborn");
+    mkdirSync(join(unborn, "notes"), { recursive: true });
+    git(unborn, "init", "-q", "-b", "main");
+    writeFileSync(join(unborn, "untitled.md"), "# Untitled\n");
+    expect(await deletionCheck(createRunner(), unborn, {})).toMatchObject({ kind: "offline", name: "Unborn" });
+    expect((await deletionCheck(createRunner(), unborn, {})).problem).toBeUndefined();
+    // Failed after origin was set: the remote names a repository GitHub never made, and nothing was pushed.
+    const linked = join(root, "Never pushed");
+    mkdirSync(join(linked, "notes"), { recursive: true });
+    git(linked, "init", "-q", "-b", "main");
+    git(linked, "commit", "-q", "--allow-empty", "-m", "Start the project");
+    git(linked, "remote", "add", "origin", "https://github.com/ada/never-made.git");
+    writeFileSync(join(linked, "untitled.md"), "# Untitled\n");
+    const c = await deletionCheck(createRunner(), linked, { repo: "ada/never-made" });
+    expect(c.problem).toBeUndefined();
+    expect(c).toMatchObject({ kind: "linked", repo: "ada/never-made" });
+    expect(c.unsynced).toContain("untitled.md");
+  });
   it("a repository name is owner/name, never a path", () => {
     expect(isRepoSlug("ada/field-notes")).toBe(true);
     for (const s of ["ada", "ada/..", "../x/y", "ada/x/y", "ada/a b", 3]) expect(isRepoSlug(s)).toBe(false);
