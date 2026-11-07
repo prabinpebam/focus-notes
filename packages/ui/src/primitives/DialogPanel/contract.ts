@@ -9,7 +9,7 @@ export const contract = defineContract({
     open: { kind: "boolean", default: false },
     size: { kind: "enum", values: ["s", "m", "l", "xl"], default: "l", description: "m is Spotlight's 640 px." },
     placement: { kind: "enum", values: ["center", "top"], default: "center", description: "top: about 20% down, as Spotlight opens." },
-    height: { kind: "enum", values: ["stable", "content", "navigation"], default: "stable", description: "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: clamped 600 px with a fixed body, content supplies its own scroller." },
+    height: { kind: "enum", values: ["stable", "content", "navigation", "adaptive"], default: "stable", description: "stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: content-sized and always centred as async lists change; navigation: clamped 600 px with a fixed body." },
     material: { kind: "enum", values: ["raised", "frosted"], default: "raised", description: "frosted: the theme's frosted surface (Spotlight)." },
     contentInset: { kind: "boolean", default: true, description: "Inset the content layout, never the scroller. False lets edge-to-edge children supply their own immediate inset layouts; navigation always supplies its own." },
   },
@@ -20,6 +20,7 @@ export const contract = defineContract({
   a11y: { pattern: "modal dialog", name: "label" },
   uncovered: { entering: GAP.motion, exiting: GAP.motion },
   fixtures: [
+    { name: "height adaptive", covers: ["open"], props: { label: { t: "shortcuts.title" }, open: true, height: "adaptive" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "full bleed content", covers: ["open"], props: { label: { t: "gallery.sample" }, open: true, contentInset: false }, children: [{ type: "Stack", props: { padding: "insetLg" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] }, { type: "Divider" }] },
     { name: "height navigation", covers: ["open"], props: { label: { t: "settings.title" }, open: true, height: "navigation" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "size s", covers: ["open"], props: { label: { t: "shortcuts.title" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },

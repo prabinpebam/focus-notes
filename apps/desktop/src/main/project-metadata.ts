@@ -26,6 +26,7 @@ export function projectMetadataStore(root: string) {
     db.exec("PRAGMA journal_mode=WAL");
     db.exec("CREATE TABLE IF NOT EXISTS profiles (profile TEXT PRIMARY KEY, generation TEXT NOT NULL, enabled INTEGER NOT NULL)");
     db.exec("CREATE TABLE IF NOT EXISTS first_notes (project TEXT PRIMARY KEY, roots TEXT NOT NULL, file TEXT NOT NULL)");
+    db.exec("CREATE TABLE IF NOT EXISTS first_note_slots (project TEXT PRIMARY KEY, slot INTEGER NOT NULL)");
   });
   // The promise is also awaited by every operation; this prevents an unhandled startup rejection.
   void ready.catch(error => { console.error("Could not initialize project metadata lifecycle:", error instanceof Error ? error.name : "Error"); });
@@ -77,10 +78,12 @@ export function projectMetadataStore(root: string) {
   }
   const firstNoteAdmission: FirstNoteAdmission = (roots, work) => transaction(async () => {
     const project = createHash("sha256").update(JSON.stringify(roots.map(root => process.platform === "win32" ? root.toLowerCase() : root))).digest("hex");
-    const row = db.prepare("SELECT roots, file FROM first_notes WHERE project = ?").get(project);
+    const row = db.prepare("SELECT roots, file, slot FROM first_notes LEFT JOIN first_note_slots USING (project) WHERE project = ?").get(project);
     if (row && (typeof row.roots !== "string" || typeof row.file !== "string")) throw new Error("The first note's certificate is unreadable");
-    return work(row ? { roots: String(row.roots), file: String(row.file) } : undefined, certificate => {
+    if (row && row.slot !== null && (typeof row.slot !== "number" || !Number.isSafeInteger(row.slot) || row.slot < 1 || row.slot > 10_000)) throw new Error("The first note's slot is unreadable");
+    return work(row ? { roots: String(row.roots), file: String(row.file), slot: row.slot === null ? 1 : Number(row.slot) } : undefined, certificate => {
       db.prepare("INSERT INTO first_notes (project, roots, file) VALUES (?, ?, ?) ON CONFLICT(project) DO UPDATE SET roots = excluded.roots, file = excluded.file").run(project, certificate.roots, certificate.file);
+      db.prepare("INSERT INTO first_note_slots (project, slot) VALUES (?, ?) ON CONFLICT(project) DO UPDATE SET slot = excluded.slot").run(project, certificate.slot ?? 1);
     });
   });
   async function dispose(): Promise<void> {

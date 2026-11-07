@@ -1,5 +1,7 @@
 # Implementation plan
 
+**P0 correction, 8 November (D-397):** PRJ-24 stays in MP / WP-P.4. Every project entry without a launch note admits empty Untitled/caret, never initial Open; valid blank notes restore. All-entry native journeys and the approved Open geometry matrix precede one frozen candidate and its exact-final Windows gate. Find and sharing remain parked until this candidate lands; see [P0 evidence](gate-evidence.md#p0-project-entry-8-november).
+
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]

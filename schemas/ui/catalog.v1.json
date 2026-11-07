@@ -1759,10 +1759,11 @@
           "values": [
             "stable",
             "content",
-            "navigation"
+            "navigation",
+            "adaptive"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: clamped 600 px with a fixed body, content supplies its own scroller."
+          "description": "stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: content-sized and always centred as async lists change; navigation: clamped 600 px with a fixed body."
         },
         "material": {
           "kind": "enum",
@@ -1814,6 +1815,7 @@
         "name": "label"
       },
       "fixtures": [
+        "height adaptive",
         "full bleed content",
         "height navigation",
         "size s",
@@ -6885,10 +6887,11 @@
           "values": [
             "stable",
             "content",
-            "navigation"
+            "navigation",
+            "adaptive"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: a clamped 600 px shell with a non-scrolling body and independently scrolling tab content."
+          "description": "stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: content-sized and always centred as async lists change; navigation: clamped 600 px with independently scrolling tab content."
         },
         "size": {
           "kind": "enum",
@@ -6932,6 +6935,7 @@
         "name": "title"
       },
       "fixtures": [
+        "height adaptive",
         "full bleed content",
         "height navigation",
         "size s",

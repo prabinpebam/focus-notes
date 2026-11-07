@@ -4808,10 +4808,11 @@
           "values": [
             "stable",
             "content",
-            "navigation"
+            "navigation",
+            "adaptive"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: clamped 600 px with a fixed body, content supplies its own scroller."
+          "description": "stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: content-sized and always centred as async lists change; navigation: clamped 600 px with a fixed body."
         },
         "material": {
           "kind": "enum",
@@ -4867,6 +4868,29 @@
         "exiting": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
       },
       "fixtures": [
+        {
+          "name": "height adaptive",
+          "covers": [
+            "open"
+          ],
+          "props": {
+            "label": {
+              "t": "shortcuts.title"
+            },
+            "open": true,
+            "height": "adaptive"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "full bleed content",
           "covers": [
@@ -18525,10 +18549,11 @@
           "values": [
             "stable",
             "content",
-            "navigation"
+            "navigation",
+            "adaptive"
           ],
           "default": "stable",
-          "description": "stable: at least 400 px without shrinking; content: natural confirmation height; navigation: a clamped 600 px shell with a non-scrolling body and independently scrolling tab content."
+          "description": "stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: content-sized and always centred as async lists change; navigation: clamped 600 px with independently scrolling tab content."
         },
         "size": {
           "kind": "enum",
@@ -18576,6 +18601,32 @@
         "exiting": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
       },
       "fixtures": [
+        {
+          "name": "height adaptive",
+          "covers": [
+            "open"
+          ],
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "height": "adaptive"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "full bleed content",
           "covers": [

@@ -20,7 +20,7 @@ export interface DialogPanelProps {
   placement?: "center" | "top";
   /** The raised surface, or the theme's frosted one (Spotlight). */
   material?: "raised" | "frosted";
-  /** stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations). */
+  /** stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: naturally sized and always centred. */
   height?: keyof typeof s.height;
   id?: string;
   children?: ReactNode;

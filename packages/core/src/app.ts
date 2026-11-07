@@ -1828,9 +1828,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         files.restoreSort(appState.filesSort);
         files.restoreShortcuts(appState.filesPins, appState.filesRecent);
         files.restorePinned(appState.filesPinned, appState.filesWidth);
-        // Only the note the person last opened, and never an empty public file;
-        // else the app's own note, in the Private root (D-171, SHR-01).
-        const folder = store.state.workspace.folder;
+        // Restore the person's last note, including a blank Markdown note (D-397).
         // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
         let remembered: string | undefined;
         let restoreFailed = false;
@@ -1839,13 +1837,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           catch { restoreFailed = true; toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
         }
         const last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? (appState.lastNotePath || undefined);
-        let reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
+        let reopened = last !== undefined && (await openNote(last));
         // A crash can leave protected metadata behind a completed rename. The saved disk path is
         // still usable; explicit window targets never fall back to a different note.
         if (!reopened && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && remembered && appState.lastNotePath && appState.lastNotePath !== remembered) {
           toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
           const saved = appState.lastNotePath;
-          reopened = await openNote(saved, { accept: (md) => !(folder && publicInWorkspace(saved, folder) && !md.trim()) });
+          reopened = await openNote(saved);
         }
         let startupSuperseded = false;
         if (!reopened && !last && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.secondary

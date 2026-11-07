@@ -18,6 +18,35 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### P0 project entry, 8 November
+
+**Local candidate verified, not landed; coordinator approval and exact-final Windows gate pending.** D-397 supersedes D-376's empty-only admission and blank-public-note rejection. PRJ-24 remains MP / WP-P.4. No real-account writes, owner Preview manipulation or OS input were used.
+
+| Evidence | Result |
+| --- | --- |
+| Unpatched built linked-project restoration with an existing empty public Untitled | Failed: Open appeared instead of the editor. Core rejected the blank remembered note; the remembered path then prevented first-note admission. |
+| Unpatched Open after asynchronous project-card growth | Failed: centre error 26.5 px against a 2 px limit. Content-confirmation anchoring preserved the old top while the chooser grew downward. |
+| Why the earlier creation journey missed the owner's path | It replaced `projects:open` and manually launched a profile, bypassing the actual project manager's child entry. `4ed4ad48` itself only regenerated the notification inventory; the associated first-note delivery is in its ancestry. Current creation journeys attach to the real native child over its disposable loopback inspector. |
+| Current correction | Valid blank notes restore normally. Missing history exclusively admits one collision-safe Untitled beside existing bytes, sharing the existing cross-process certificate lane. An ordinary zero-byte Untitled is verified and reopened without writing or certifying it, including survivors of a pre-certificate crash; nonempty occupied slots remain unchanged. The numeric-slot side table defaults old certificates to slot 1 and commits alongside provenance. Explicit I/O failures remain failures; replacement certificates cannot cause a duplicate or overwrite. |
+| Pre-freeze crash check | Production-mode regression initially failed: a pre-commit crash created a numbered duplicate on retry, both at slot 1 and beside occupied slot 1. Read-only empty-note reuse fixes this without assigning false provenance; changed empty content and redirected/replaced certificates still fail explicitly. |
+| Visible native entry proof | Final combined 16 journeys passed: actual native child local/GitHub creation, cold Projects card/picker/Recent, warm project card, blank and valid launch restoration, actual Spotlight new-window entry, independent startup/winner races and geometry. Entry assertions cover visible focused editor, empty content/caret/no Open where appropriate, unchanged restored bytes and one-file admission/autosave. |
+| Geometry proof | Shared adaptive DialogPanel height keeps Open centred as cards load. Matrix covers primary and actual new-note windows, empty/populated linked projects, light/dark, token minimum 480×360, 640×480, 900×640, 1024×720, 1100×780 and 1440×900: 48 measured combinations. Measures drawn client/dialog bounds, ≤2 px centre error, zero horizontal body overflow, unclipped controls, and reachable Close/Open project actions. Truncated path text is intentional, not control clipping. |
+
+| Final local command | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run build` | Passed on final runtime. |
+| `pnpm typecheck` | Passed across all packages, including final fixtures. |
+| `pnpm check` | Passed: chain/plan, boundaries, kits, licences, generated contracts, spacing, notification inventory and ui:check; includes 69 action-proof and 4 button-geometry tests. |
+| `pnpm exec vitest run apps\desktop\test\first-project-note.test.ts apps\desktop\test\project-metadata.test.ts packages\core\test\project-open.test.ts` | 77 passed, including production crash survivors, legacy certificate slot defaults, contention, changed-content/root refusal and late-choice preservation. |
+| `FOCUS_NOTES_E2E=1`; `pnpm --filter @focus-notes/desktop exec playwright test project-startup.spec.ts project-entry.spec.ts --workers=1` | 16 passed in 2.3 minutes on final runtime; 48 geometry measurements. All app windows were invisible; exact-PID WhatIf/OnlyPid cleanup completed, with no remaining Electron test processes. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed. |
+| Disposable headless loopback Slate probe | Passed: 14 changed pages, exact rendered page titles and one H1 each, light/dark SVG bounds and all newly added local links/anchors. Browser/server closed. |
+| `git diff --check` | Passed. |
+
+**Sources:** [native project-entry and geometry journeys](../../apps/desktop/e2e/project-entry.spec.ts), [actual spawned creation journeys](../../apps/desktop/e2e/project-startup.spec.ts), [admission safety cases](../../apps/desktop/test/first-project-note.test.ts), [legacy metadata compatibility](../../apps/desktop/test/project-metadata.test.ts) and [core restore/recovery/navigation cases](../../packages/core/test/project-open.test.ts). These are fake-data local proofs, not real-account certification.
+
+**Landing gate:** one frozen candidate, coordinator approval before push, exact-final seven-green Windows checks, then non-force fast-forward under the existing exclusive landing lock. Local checks do not claim that gate or owner acceptance.
+
 ### G1 production creation, 7 November
 
 **Landed:** `c15479caf19fc5977e4a574b9483cf3f0a932700`, non-force fast-forward under the landing lock. [Exact-head Windows CI 42396768175](https://github.com/prabinpebam/focus-notes/actions/runs/42396768175) passed **7/7**. Prior D-391 rollback `32e76a43` restored the failing sharing slice; [42396490521](https://github.com/prabinpebam/focus-notes/actions/runs/42396490521) passed **7/7**. Preview reported `ready:89e5eb2` at 23:32: that descendant contains G1 with an identical desktop/runtime tree. W-share owns reintroducing the reverted sharing slice; this evidence does not certify it.

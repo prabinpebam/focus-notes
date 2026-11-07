@@ -7,6 +7,15 @@ A project is the only place notes live together. "Workspace" leaves the app.
 
 ## The owner's direction
 
+**Owner correction, 8 November 2026, 00:40 (verbatim; D-397):**
+
+```text
+- Open dialog is misaligned in the new project.
+- When a new project is opened, do not open the open dialog as the first thing. I want an empty file ready to edit. This is probably the 10th time I'm reiterating this
+```
+
+**Standing entry rule:** whenever a project window opens with no note to show (just created, existing project with no notes, or no last-open note), open an empty Untitled note with caret ready, NEVER Open first or set `initialOpen` on these project-entry paths. All entry paths share this contract: New project local/GitHub, Open Projects card, Open project…, Recent, launch restoration and new project window. Valid last-note restoration wins; admission preserves existing bytes and concurrent later choices, creates no duplicates and reports genuine I/O/auth failures rather than treating them as emptiness. A surviving ordinary empty Untitled is reused read-only, without assigning provenance. Repeated no-project launch behavior is unchanged. Explicit Open uses approved D-375 centring and client bounds in empty and populated windows, all supported sizes and both themes. See [Projects → Every project entry lands in writing](projects.md#every-project-entry-lands-in-writing).
+
 The owner wrote, on 5 November 2026 (verbatim):
 
 ```text

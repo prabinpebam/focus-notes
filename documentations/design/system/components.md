@@ -80,7 +80,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 16 | `focused` |
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible`, `pending`, `confirmed`, `failed` | 9 | `hover`, `focusVisible` |
-| DialogPanel | primitive | `open`, `entering`, `exiting` | 7 | `entering`, `exiting` |
+| DialogPanel | primitive | `open`, `entering`, `exiting` | 8 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
 | CommitMark | primitive | `rest`, `pending`, `confirmed`, `failed` | 5 | None |
 | Skeleton | primitive | `rest` | 9 | None |
@@ -147,7 +147,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SecureKeyField | compound component | `empty`, `pending`, `confirmed`, `failed` | 4 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
-| Dialog | compound component | `open`, `entering`, `exiting` | 8 | `entering`, `exiting` |
+| Dialog | compound component | `open`, `entering`, `exiting` | 9 | `entering`, `exiting` |
 
 <!-- /generated:component-inventory -->
 

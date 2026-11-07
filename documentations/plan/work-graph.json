@@ -127,7 +127,7 @@
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
-      "summary": "G1 / F2+S1 (D-378): choose a Git folder on this computer only or a private GitHub repository created through the signed-in production account; validate name before creation, set origin/marker/local identity, push the first commit, preserve local writing with Continue setup on failure. Project-scoped windows, trusted two-root boundary (D-306) and certified empty-project first note (D-376) remain. Production creation and owner first-real-creation evidence are open; build against G1.1-G1.9, not fake-only success.",
+      "summary": "G1 / F2+S1 (D-378): choose local Git or private GitHub through the production account, preserve local writing with Continue setup on failure. P0 D-397 / PRJ-24: every project entry with no note lands in empty Untitled/caret, NEVER initial Open; preserve valid blank/nonblank restoration and concurrent choices. Real creation/card/picker/Recent/restoration/new-window journeys and centred unclipped Open geometry at all supported sizes/themes required. Trusted-root admission remains exclusive and byte-safe. Production creation and owner first-real evidence remain open; G1.1-G1.9 and P0-entry DoD govern.",
       "requirements": ["PRJ-01", "PRJ-02", "PRJ-03", "PRJ-24"],
       "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
       "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],

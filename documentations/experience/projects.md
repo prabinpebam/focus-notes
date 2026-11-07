@@ -13,6 +13,21 @@ Separate places for separate work, without making every thought choose a project
 
 ## What a project is for
 
+### Every project entry lands in writing
+
+**Owner correction, 8 November 2026, 00:40 (verbatim; D-397):**
+
+```text
+- Open dialog is misaligned in the new project.
+- When a new project is opened, do not open the open dialog as the first thing. I want an empty file ready to edit. This is probably the 10th time I'm reiterating this
+```
+
+Whenever a project window opens with no note to show (just created, existing project with no notes, or no last-open note), open an empty **Untitled** note with caret ready, **NEVER Open first**. This applies to New project on this computer and GitHub, an Open Projects card, Open project…, Recent, launch restoring a project window and a new window for a project. Restore a valid last note instead, preserve existing note bytes and later user choices, and admit no duplicate note during races. A failed read is an explicit recoverable error, never “no notes”. Ordinary repeated no-project launch behavior stays unchanged.
+
+`initialOpen` belongs only to ordinary no-project chooser launches, NEVER these project-entry paths. An existing zero-byte ordinary Untitled can be reopened read-only without certifying it; a pre-certificate crash therefore does not create a numbered duplicate.
+
+Open remains an explicit action, centred and wholly inside the client area at every supported size in both themes (approved D-375 geometry). The owner's screenshot showed the empty linked project with Open low and clipped, beside a populated project's centred Open; source: the read-only attachment `343ee3f0-34a1-462b-a29a-270ab628531f/Pasted Image.png` in the original owner session. [PRJ-24](../product/requirements.md#projects-prj) and [DoD backlog](../plan/definition-of-done.md#dod-backlog) require built-app entry and geometry evidence, not IPC-call proxies.
+
 **Owner correction, 7 November 23:28:** "Stop showing this msg alltogether. Not needed at all." The **Approved terminology, slice 1** notice exception below is superseded: remove "Your workspace is now called a project…" entirely for fresh and upgraded profiles, including trigger, keys, inventory row and notice tests. The terminology migration itself and its data-safety rules stay (PRJ-11 / WP-P.17; [DoD backlog (b)](../plan/definition-of-done.md#backlog-b-remove-the-terminology-notice)).
 
 > [!NOTE]
@@ -217,7 +232,7 @@ Files and projects rank by **exponential-decay frecency** (D-321): each open add
 
 ### Creating and closing
 
-**First note (owner, 7 November; D-376, PRJ-24).** Opening a newly created project, or an existing project positively verified as empty, starts one ordinary Untitled note, with the caret ready for writing and normal autosave/first-save naming. This uses the same note registration and load pipeline as New note. Creation is exclusive and concurrent startup requests share one admission; the current recorded root, access and actual content of every trusted note root are checked again before creation. Any existing file or symbolic link prevents automatic creation. Missing notes, unreadable launch metadata and failed scans never count as empty. Local notes, standalone files and ordinary refresh are unchanged. A failed create reports the problem and keeps Open and Files available; retrying cannot overwrite a file or replay project creation.
+**First note (owner, 8 November; D-397 supersedes D-376 eligibility, PRJ-24).** Every project entry without a recorded launch note starts an empty ordinary Untitled with the caret ready, normal autosave and first-save naming; valid remembered notes, including blank public notes, restore normally. This uses the same registration and load pipeline as New note. Creation is exclusive and concurrent startup requests share one admission; the current recorded root and access are checked again before creation. Existing content is preserved, using Untitled 2.md and subsequent numeric slots if the ordinary name is occupied. Certificates retain hashed root/file identity plus the numeric slot; older certificates use slot 1, with both records committed together. Missing notes, unreadable launch metadata and failed root reads never authorize a replacement. Standalone files and ordinary no-project launches are unchanged. A failed create reports the problem and keeps explicit Open and Files available; retrying cannot overwrite a file or replay project creation.
 
 **After Create project (owner, 7 November at 18:55):** “After new project is created, land on an empty file ready to edit and do not open the "open dialog".” Whether the project is on this computer only or on GitHub, its window opens on one empty Untitled note with the caret in the editor. Open is never shown or listed, neither in the new project's window nor in the window it was created from, which keeps its own note. The journey *Create project … lands on an empty Untitled note with the caret, and Open never shows* proves both variants; with the first-note step removed it fails because the new window shows Open.
 

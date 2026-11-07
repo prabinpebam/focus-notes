@@ -6,6 +6,34 @@ import { join } from "node:path";
 import { expect, it } from "vitest";
 import { DATA_FILES } from "@focus-notes/core/inventory";
 import { projectMetadataStore } from "../src/main/project-metadata.ts";
+import { DatabaseSync } from "node:sqlite";
+
+it("reads legacy first-note certificates as slot one and persists a numbered slot atomically", async () => {
+  const root = await mkdtemp(join(tmpdir(), "fn-metadata-legacy-"));
+  let store: ReturnType<typeof projectMetadataStore> | undefined = projectMetadataStore(root);
+  const roots = ["fixture-root"];
+  try {
+    await store.firstNoteAdmission(roots, async (_proof, certify) => {
+      certify({ roots: "hashed-roots", file: "hashed-file" });
+    });
+    await store.dispose();
+    store = undefined;
+    const legacy = new DatabaseSync(join(root, DATA_FILES.projectMetadata));
+    try { legacy.exec("DROP TABLE first_note_slots"); }
+    finally { legacy.close(); }
+    store = projectMetadataStore(root);
+    await store.firstNoteAdmission(roots, async (proof, certify) => {
+      expect(proof).toEqual({ roots: "hashed-roots", file: "hashed-file", slot: 1 });
+      certify({ roots: "hashed-roots", file: "new-file", slot: 2 });
+    });
+    await store.firstNoteAdmission(roots, async proof => {
+      expect(proof).toEqual({ roots: "hashed-roots", file: "new-file", slot: 2 });
+    });
+  } finally {
+    if (store) await store.dispose();
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 it("yields during cross-process contention and releases a crashed writer's lock", async () => {
   const root = await mkdtemp(join(tmpdir(), "fn-metadata-"));

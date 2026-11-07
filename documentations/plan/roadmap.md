@@ -9,6 +9,8 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 ## Stages at a glance
 
+**P0, 8 November (D-397):** all-entry empty Untitled/caret landing and approved Open centring are the sole next runtime candidate, above parked Find and sharing. PRJ-24 remains MP / WP-P.4; [P0 acceptance rows](definition-of-done.md#dod-backlog) and [same-candidate evidence](gate-evidence.md#p0-project-entry-8-november) require real native entry journeys and measured supported-size/theme bounds. Local proof is not landing: one frozen candidate needs coordinator approval and its exact-final seven-green Windows gate.
+
 **Owner backlog, 7 November evening:** [observable rows and Try it](definition-of-done.md#dod-backlog) retain existing stage ownership: Account mark (FRE-07, M3 / WP-3.6), notice removal (PRJ-11, MP / WP-P.17), Find row/exclusivity (FND-01, M1 / WP-1.10), familiar all-notes candidate (FND-04, M4 / WP-4.3), all GitHub references as links (PRJ-21, MP / WP-P.21), and in-app deletion F4.2 (PRJ-23, MP / WP-P.23). D-394 supersedes the earlier handoff-only deletion direction; its new states and D-395's all-notes layout await owner approval before wiring/tests. The historical handoff is built, not the new in-app flow. [G1 evidence](gate-evidence.md#g1-production-creation-7-november) records the landed 7/7 gate; G1.8 remains repository verified by API, owner view pending.
 
 | Stage | In short | Used by | Delivered as | Requirements |

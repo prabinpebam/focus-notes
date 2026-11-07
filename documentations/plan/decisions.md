@@ -3,6 +3,16 @@
 > [!NOTE]
 > **TL;DR.** Owner corrections D-393–D-395 below govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
 
+## D-397: every project entry opens a note, never Open first
+
+**Decided (owner, 8 November 2026, 00:40).** "- Open dialog is misaligned in the new project." "- When a new project is opened, do not open the open dialog as the first thing. I want an empty file ready to edit. This is probably the 10th time I'm reiterating this"
+
+Whenever a project window opens with no note to show (just created, existing project with no notes, or no last-open note), open an empty Untitled note with caret ready, NEVER Open first. This binds New project local/GitHub, Open Projects card, Open project…, Recent, launch restoration and new project windows. Preserve valid last-note restoration, note bytes and concurrent later choices; no duplicate admission or overwrites. Read/auth failures remain explicit failures, never inferred emptiness. Ordinary repeated no-project launch behavior is unchanged. Explicit Open retains approved D-375 centring and unclipped client bounds at every supported size in both themes.
+
+Never set `initialOpen` on these project-entry paths. An existing ordinary zero-byte Untitled is eligible for verified read-only reopening, not certification; a pre-certificate crash must not produce a numbered duplicate. A nonempty occupied name uses the next available numeric slot.
+
+**Affects:** AGENTS.md rule 6, [Projects](../experience/projects.md#every-project-entry-lands-in-writing), [Project model](../experience/project-model.md#the-owners-direction), SC-PROJ-01, UC-PROJ-01/02, PRJ-24 / WP-P.4 and [DoD backlog](definition-of-done.md#dod-backlog). Acceptance requires real built-app routes, focused empty editor/caret and measured dialog bounds, not IPC-only assertions.
+
 ## D-393: GitHub repository and account references are real links
 
 **Decided (owner, 7 November 2026, 23:33).** "If you show a github link, it should be clickable to open that repo. Add all of these to a DoD backlog". Every repository or account reference opens its repository or profile on github.com in the default browser through the existing external-link policy. It has an accessible name and independent keyboard access, separate from its enclosing card's action. Reuse validated identities and the safe external-link route, never arbitrary URL strings.
@@ -76,6 +86,8 @@ GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/r
 **Affects:** [Feedback → Save and sync status](../design/components/feedback-and-dialogs.md#save-and-sync-status), [Projects → Creating and closing](../experience/projects.md#creating-and-closing), [Project model → Deleting a project](../experience/project-model.md#deleting-a-project), EDT-11, UI-12, PRJ-23.
 
 ## D-376: start writing in a positively verified empty project
+
+**Historical eligibility superseded by D-397, 8 November.** Missing launch history admits an empty collision-safe Untitled beside existing files, and valid blank remembered notes restore normally. The shared admission, provenance, data-safety and explicit-failure requirements below remain binding. Ordinary no-project launches and missing-note recovery remain separate.
 
 **Decided (owner, 7 November 2026; PRJ-24).** New project and an opened existing project with no content start one ordinary empty Untitled note with its caret ready. The existing note pipeline owns file registration, loading, first-save naming and autosave. No sample text, special draft format or replacement note is introduced.
 

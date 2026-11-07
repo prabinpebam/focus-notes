@@ -25,6 +25,33 @@ const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", l
 afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it("restores a blank public last note without writing or first-note admission (D-397)", async () => {
+    const path = "/w/notes/Untitled.md";
+    const firstNote = vi.fn(async () => "/w/notes/Untitled 2.md");
+    const writeNote = vi.fn(async () => {});
+    const renameNote = vi.fn(async () => {});
+    const app = appWith({
+      firstNote, lastNote: async () => path, list: async () => [],
+      position: async () => undefined, remember: async () => {},
+    }, async () => "", {
+      writeNote,
+      workspace: {
+        info: async () => ({ folder: "/w", format: '{"formatVersion":1}' }),
+        scan: async () => ({ folder: "/w", roots: [{ id: "public", path: "/w/notes", readOnly: false }], entries: [{ path, kind: "note" }] }),
+        writeFormat: async () => {},
+        renameNote,
+        onChange: () => () => {},
+      },
+      loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: path }),
+    });
+    await app.start();
+    expect(app.store.state.note).toMatchObject({ path, markdown: "", status: "ready" });
+    expect(firstNote).not.toHaveBeenCalled();
+    expect(writeNote).not.toHaveBeenCalled();
+    expect(renameNote).not.toHaveBeenCalled();
+    expect(vm(app).open).toBe(false);
+  });
+
   it("opens a shell-verified first project note through the ordinary note pipeline", async () => {
     const path = "C:\\Book\\Untitled.md";
     const firstNote = vi.fn(async () => path);

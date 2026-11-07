@@ -6,6 +6,7 @@ import { basename, join } from "node:path";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { journeyUnseen } from "../src/main/window/journey-window.ts";
+import { attachProject, closeProject, projectEntryApp } from "./project-process.ts";
 
 async function close(instance: Launched, dirs: ReturnType<typeof tempDirs>) {
   try { await quit(instance); }
@@ -55,15 +56,19 @@ for (const paired of [false, true]) {
   });
 }
 
-test("A nonempty project with missing launch history never creates a replacement (PRJ-24)", async () => {
+test("A nonempty project with no launch history starts empty writing without replacing existing notes (PRJ-24, D-397)", async () => {
   const { dirs, root } = project(true);
   const kept = join(root, "kept.md");
   writeFileSync(kept, "# Kept\n\nUnchanged.\n");
   const instance = await launch(dirs);
   try {
     expect(await instance.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
-    await expect(instance.page.getByRole("dialog", { name: "Open", exact: true })).toBeVisible();
-    expect(readdirSync(root)).toEqual(["kept.md"]);
+    const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(note).toBeVisible();
+    await expect(note).toBeFocused();
+    await expect(note).toHaveText("");
+    await expect(instance.page.getByRole("dialog", { name: "Open", exact: true })).toBeHidden();
+    expect(readdirSync(root).sort()).toEqual(["Untitled.md", "kept.md"]);
     expect(readFileSync(kept, "utf8")).toBe("# Kept\n\nUnchanged.\n");
   } finally { await close(instance, dirs); }
 });
@@ -126,8 +131,7 @@ test("Separate source startups and a late arriver open the same certified first 
 });
 
 // The owner, 7 November 18:55: "After new project is created, land on an empty file ready to edit and do not
-// open the "open dialog"." The new project's window is started here with exactly the profile and environment
-// projects.open() gives its own process, so this runner owns (and closes) it.
+// open the "open dialog"." Assert the real child projects.open() starts, never a directly launched proxy.
 for (const github of [false, true]) {
   test(`Create project ${github ? "on GitHub" : "on this computer only"} lands on an empty Untitled note with the caret, and Open never shows (PRJ-24)`, async () => {
     const dirs = tempDirs();
@@ -152,11 +156,11 @@ for (const github of [false, true]) {
     const address = server.address();
     if (!address || typeof address === "string") throw new Error("Local project server did not bind");
     const owned: Launched[] = [];
-    const gitconfig = join(dirs.userData, "..", `${basename(dirs.userData)}.gitconfig`);
+    let created: Awaited<ReturnType<typeof attachProject>> | undefined;
     try {
       const origin = await launch(dirs, github
         ? { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes }
-        : { FOCUS_NOTES_GITHUB_API: "" });
+        : { FOCUS_NOTES_GITHUB_API: "" }, { entrypoint: projectEntryApp(dirs.userData) });
       owned.push(origin);
       expect(await origin.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
       await origin.app.evaluate(({ ipcMain }, folder) => {
@@ -164,9 +168,6 @@ for (const github of [false, true]) {
         ipcMain.handle("projects:parent", () => folder);
         ipcMain.removeHandler("firstRun:account");
         ipcMain.handle("firstRun:account", () => ({ account: { login: "local", id: 1, name: "Local" }, gcm: false, gh: false }));
-        // Record the new project's open instead of starting a process this runner couldn't close.
-        ipcMain.removeHandler("projects:open");
-        ipcMain.handle("projects:open", (_event, opened: unknown, note: unknown) => { Reflect.set(globalThis, "openedProject", { opened, note }); });
       }, parent);
       await (await origin.page.context().newCDPSession(origin.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
       await origin.page.keyboard.press("Control+Alt+O");
@@ -185,7 +186,6 @@ for (const github of [false, true]) {
       await wizard.getByRole("button", { name: "Create project", exact: true }).click();
       await expect(wizard).toBeHidden();
       const folder = join(realpathSync.native(parent), "Fresh project");
-      await expect.poll(() => origin.app.evaluate(() => Reflect.get(globalThis, "openedProject"))).toEqual({ opened: folder, note: undefined });
       await expect(open).toBeHidden();
       expect(await listings()).toBe(before);
       expect(creates).toBe(github ? 1 : 0);
@@ -199,20 +199,14 @@ for (const github of [false, true]) {
       const profile = readdirSync(profiles).map(name => join(profiles, name))
         .find(dir => { try { return readFileSync(join(dir, DATA_FILES.projectFolder), "utf8") === folder; } catch { return false; } });
       if (!profile) throw new Error("Create project left no profile for the new project");
-      const adopted = JSON.parse(readFileSync(join(profile, DATA_FILES.state), "utf8"));
-      // The journey launcher fills these when absent; keep their absent meaning.
-      writeFileSync(join(profile, DATA_FILES.state), JSON.stringify({ ...adopted, projectIntroSeen: adopted.projectIntroSeen ?? false }));
-      const created = await launch({ userData: profile, docs: folder }, {
-        FOCUS_NOTES_PROJECTS_PROFILE: dirs.userData, FOCUS_NOTES_LOCAL_NOTES: "", FOCUS_NOTES_PROJECT_NOTE: "", GIT_CONFIG_GLOBAL: gitconfig,
-        ...(github ? { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes } : { FOCUS_NOTES_GITHUB_API: "" }),
-      }, { firstRun: true });
-      owned.push(created);
-      const note = created.page.getByRole("textbox", { name: "Note", exact: true });
+      created = await attachProject(profile);
+      const page = created.page;
+      const note = page.getByRole("textbox", { name: "Note", exact: true });
       await expect(note).toBeVisible();
       await expect(note).toBeFocused();
       await expect(note).toHaveText("");
       await expect(created.page.getByRole("dialog", { name: "Open", exact: true })).toBeHidden();
-      await expect.poll(() => created.page.evaluate(() => performance.getEntriesByName("fn:project.firstNote").length)).toBe(1);
+      await expect.poll(() => page.evaluate(() => performance.getEntriesByName("fn:project.firstNote").length)).toBe(1);
       expect(await created.page.evaluate(() => performance.getEntriesByName("fn:project.list").length)).toBe(0);
       const untitled = readdirSync(folder, { recursive: true, encoding: "utf8" }).filter(file => /\.md$/i.test(file));
       expect(untitled.map(file => basename(file))).toEqual(["Untitled.md"]);
@@ -233,6 +227,7 @@ for (const github of [false, true]) {
         await expect(backup).not.toContainText("Backed up");
       }
     } finally {
+      if (created) await closeProject(created);
       for (const instance of owned.reverse()) {
         try { await quit(instance); }
         finally {

@@ -9,8 +9,8 @@ export interface DialogProps {
   closeLabel: string;
   open?: boolean;
   size?: "s" | "m" | "l" | "xl";
-  /** stable (default): at least 400 px and never shrinking while open; content: as tall as its content (confirmations). */
-  height?: "stable" | "content" | "navigation";
+  /** stable: at least 400 px without shrinking; content: top-anchored confirmation; adaptive: always centred as content changes. */
+  height?: "stable" | "content" | "navigation" | "adaptive";
   /** Controls that stay above the scrolling body. */
   toolbar?: ReactNode;
   /** Actions that stay below the scrolling body. */

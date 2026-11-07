@@ -69,6 +69,10 @@ How every UX and UI decision in Focus Notes is grounded. It's a chain of reasoni
 </table>
 </details>
 
+## Project entry correction, 8 November
+
+D-397 binds CP-SCOPE-01 → SC-PROJ-01 → UC-PROJ-01/UC-PROJ-02 → IA-VIEW-PROJECTS → DD-PROJ-01 → PRJ-24 / WP-P.4. Every project entry without a note to show lands on an empty Untitled editor with caret ready, NEVER initial Open: creation local/GitHub, Projects card, Open project…, Recent, restoration and new project window. Valid last notes (including blank Markdown), later user choices and existing bytes are preserved. Explicit Open retains approved D-375 centring and client bounds; [P0 entry DoD](../../plan/definition-of-done.md#backlog-p0-every-project-entry-starts-writing) requires actual built-app routes and measurements.
+
 ## Project meaning, resolved on 7 November
 
 D-378 applies the owner's 5 November words, "Projects can be completely offline or linked to a GitHub repo." The chain is CP-SCOPE-01 → SC-PROJ-01 → UC-PROJ-01 → IA-VIEW-PROJECTS → DD-PROJ-01 → PRJ-01: a project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it. Git history is always present; a remote is optional; a public site is separately confirmed, never created at setup. The [G1 acceptance rows](../../plan/definition-of-done.md#g1-new-project-on-this-computer-or-on-github) distinguish production creation from fake-only evidence.

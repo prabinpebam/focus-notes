@@ -32,6 +32,88 @@ async function root() {
 }
 
 describe("first project note (PRJ-24)", () => {
+  it("admits one empty note without history in a populated project and preserves existing bytes", async () => {
+    const dir = await root();
+    await writeFile(join(dir, "Untitled.md"), "# Existing\n");
+    await writeFile(join(dir, "kept.txt"), "kept");
+    const second = projectMetadataStore(metadataRoot);
+    const options = { roots: async () => [dir], writable: async () => {}, allowNonempty: true };
+    try {
+      const paths = await Promise.all([
+        helper({ ...options, admit: metadata.firstNoteAdmission })(),
+        helper({ ...options, admit: second.firstNoteAdmission })(),
+      ]);
+      expect(paths).toEqual([join(dir, "Untitled 2.md"), join(dir, "Untitled 2.md")]);
+      expect(await readFile(join(dir, "Untitled.md"), "utf8")).toBe("# Existing\n");
+      expect(await readFile(join(dir, "kept.txt"), "utf8")).toBe("kept");
+      expect(await readFile(paths[0]!, "utf8")).toBe("");
+      expect((await readdir(dir)).sort()).toEqual(["Untitled 2.md", "Untitled.md", "kept.txt"]);
+      const create = helper({ ...options, admit: metadata.firstNoteAdmission });
+      await create.write(paths[0]!, async () => {
+        const temp = join(dir, "replacement");
+        await writeFile(temp, "# Saved\n");
+        await rename(temp, paths[0]!);
+      });
+      expect(await helper({ ...options, admit: second.firstNoteAdmission })()).toBe(paths[0]);
+      expect(await readFile(paths[0]!, "utf8")).toBe("# Saved\n");
+    } finally { await second.dispose(); }
+  });
+
+  it("reports a failed scan even when missing history permits admission beside existing notes", async () => {
+    const dir = await root();
+    await expect(firstProjectNote({ roots: async () => [join(dir, "unavailable")], writable: async () => {}, allowNonempty: true })()).rejects.toThrow();
+    expect(await readdir(dir)).toEqual([]);
+  });
+
+  it("reads an existing empty Untitled without overwriting or acquiring false provenance", async () => {
+    const dir = await root();
+    const path = join(dir, "Untitled.md");
+    await writeFile(path, "");
+    await writeFile(join(dir, "kept.md"), "# Keep this\n");
+    const certified = vi.fn();
+    const create = helper({
+      roots: async () => [dir], writable: async () => {}, allowNonempty: true,
+      admit: (roots, work) => metadata.firstNoteAdmission(roots, (proof, certify) => work(proof, certificate => {
+        certified(certificate);
+        certify(certificate);
+      })),
+    });
+    expect(await create()).toBe(path);
+    expect(certified).not.toHaveBeenCalled();
+    expect((await readdir(dir)).sort()).toEqual(["Untitled.md", "kept.md"]);
+    expect(await readFile(path, "utf8")).toBe("");
+    expect(await readFile(join(dir, "kept.md"), "utf8")).toBe("# Keep this\n");
+  });
+
+  it("reports a formerly empty note changing before read-only reuse without creating another note", async () => {
+    const dir = await root();
+    const path = join(dir, "Untitled.md");
+    await writeFile(path, "");
+    const create = firstProjectNote({
+      roots: async () => [dir], allowNonempty: true,
+      writable: async () => { await writeFile(path, "# Changed externally\n"); },
+    });
+    await expect(create()).rejects.toThrow("empty project note changed");
+    expect(await readdir(dir)).toEqual(["Untitled.md"]);
+    expect(await readFile(path, "utf8")).toBe("# Changed externally\n");
+  });
+
+  it.each(["removed", "replaced"])("reports a %s certified note without creating a duplicate or replacing content", async (change) => {
+    const dir = await root();
+    const options = { roots: async () => [dir], writable: async () => {}, allowNonempty: true };
+    const path = await firstProjectNote(options)();
+    expect(path).toBe(join(dir, "Untitled.md"));
+    if (change === "removed") await rm(path!);
+    else {
+      const replacement = join(dir, "external");
+      await writeFile(replacement, "# External change\n");
+      await rename(replacement, path!);
+    }
+    await expect(firstProjectNote(options)()).rejects.toThrow();
+    expect(await readdir(dir)).toEqual(change === "removed" ? [] : ["Untitled.md"]);
+    if (change === "replaced") expect(await readFile(path!, "utf8")).toBe("# External change\n");
+  });
+
   it("creates one ordinary empty note under concurrent admissions", async () => {
     const dir = await root();
     const create = firstProjectNote({ roots: async () => [dir], writable: async () => {} });
@@ -290,20 +372,27 @@ describe("first project note (PRJ-24)", () => {
     expect(await readFile(join(dir, "Untitled.md"), "utf8")).toBe("");
   });
 
-  it("preserves a closed creation when the admission transaction fails before certification", async () => {
+  it.each([
+    { allowNonempty: false, occupied: false },
+    { allowNonempty: true, occupied: false },
+    { allowNonempty: true, occupied: true },
+  ])("preserves a closed creation when the admission transaction fails before certification (%j)", async ({ allowNonempty, occupied }) => {
     const dir = await root();
+    if (occupied) await writeFile(join(dir, "Untitled.md"), "# Existing content\n");
+    const path = join(dir, occupied ? "Untitled 2.md" : "Untitled.md");
     const create = helper({
-      roots: async () => [dir], writable: async () => {},
+      roots: async () => [dir], writable: async () => {}, allowNonempty,
       admit: (roots, work) => metadata.firstNoteAdmission(roots, async (proof, certify) => {
         await work(proof, certify);
         throw new Error("crash before commit");
       }),
     });
     await expect(create()).rejects.toThrow("crash before commit");
-    const retry = firstProjectNote({ roots: async () => [dir], writable: async () => {} });
-    expect(await retry()).toBeUndefined();
-    expect(await readdir(dir)).toEqual(["Untitled.md"]);
-    expect(await readFile(join(dir, "Untitled.md"), "utf8")).toBe("");
+    const retry = firstProjectNote({ roots: async () => [dir], writable: async () => {}, allowNonempty });
+    expect(await retry()).toBe(allowNonempty ? path : undefined);
+    expect((await readdir(dir)).sort()).toEqual(occupied ? ["Untitled 2.md", "Untitled.md"] : ["Untitled.md"]);
+    expect(await readFile(path, "utf8")).toBe("");
+    if (occupied) expect(await readFile(join(dir, "Untitled.md"), "utf8")).toBe("# Existing content\n");
   });
 
   it("rejects a certified note redirected through a junction or a replaced trusted root", async () => {

@@ -63,6 +63,7 @@ export const height = {
   navigation: style({ height: `min(${t.navigationHeight}, 100%)`, minHeight: `min(${t.navigationHeight}, 100%)` }),
   stable: style({ minHeight: `min(max(${t.minHeight}, ${fallbackVar(grownVar, "0px")}), 100%)` }),
   content: style({}),
+  adaptive: style({}),
 };
 
 /** Centered, or near the top like Spotlight, where results grow downward without the field moving. */

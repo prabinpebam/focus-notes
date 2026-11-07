@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-export type FirstNoteCertificate = { roots: string; file: string };
+export type FirstNoteCertificate = { roots: string; file: string; slot?: number };
 export type FirstNoteAdmission = <T>(roots: readonly string[], work: (
   certificate: FirstNoteCertificate | undefined,
   certify: (certificate: FirstNoteCertificate) => void,
@@ -18,6 +18,8 @@ export function firstProjectNote(options: {
   roots: () => Promise<readonly string[] | undefined>;
   writable: (path: string) => Promise<void>;
   admit: FirstNoteAdmission;
+  /** Missing launch history still admits writing without replacing existing content. */
+  allowNonempty?: boolean;
 }) {
   let admission: Promise<string | undefined> | undefined;
   async function create(): Promise<string | undefined> {
@@ -26,7 +28,10 @@ export function firstProjectNote(options: {
     if (!roots.length) throw new Error("The project has no trusted note root");
     const canonical = await Promise.all(roots.map(root => realpath(root)));
     const rootIdentity = JSON.stringify(await Promise.all(roots.map(identity)));
-    const path = join(roots[0]!, "Untitled.md");
+    const notePath = (slot: number) => join(roots[0]!, slot === 1 ? "Untitled.md" : `Untitled ${slot}.md`);
+    let slot = 1;
+    let path = notePath(slot);
+    let existingBlank: string | undefined;
     let visited = 0;
     async function empty(dir: string, depth = 0, winner = false): Promise<boolean> {
       if (++visited > 10_000 || depth > 64) throw new Error("The project is too large to verify as empty");
@@ -47,43 +52,75 @@ export function firstProjectNote(options: {
       }
     };
     const initiallyEmpty = (await Promise.all(roots.map(root => empty(root)))).every(Boolean);
-    if (initiallyEmpty) {
+    if (!initiallyEmpty && options.allowNonempty) {
+      for (; slot <= 10_000; slot++) {
+        path = notePath(slot);
+        try {
+          const info = await lstat(path);
+          if (info.isFile() && info.size === 0) {
+            existingBlank = await identity(path);
+            break;
+          }
+        }
+        catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT") break;
+          throw error;
+        }
+      }
+      if (slot > 10_000) throw new Error("The project has too many Untitled notes");
+    }
+    if (initiallyEmpty || options.allowNonempty) {
       await options.writable(path);
       await current();
+    }
+    async function readVerified(expected: string, blankOnly = false): Promise<string | undefined> {
+      let file;
+      try { file = await open(path, "r"); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT" && !options.allowNonempty) return undefined;
+        throw error;
+      }
+      try {
+        const info = await file.stat({ bigint: true });
+        const opened = createHash("sha256").update(`${info.dev}:${info.ino}:${info.birthtimeNs}`).digest("hex");
+        const present = await identity(path);
+        if (!info.isFile() || opened !== expected || present !== expected) {
+          if (options.allowNonempty) throw new Error("The admitted project note changed");
+          return undefined;
+        }
+        const { bytesRead } = await file.read(Buffer.alloc(1), 0, 1, 0);
+        if (blankOnly && bytesRead !== 0) throw new Error("The existing empty project note changed");
+        await current();
+        if (await identity(path) !== expected) {
+          if (options.allowNonempty) throw new Error("The admitted project note changed during its read");
+          return undefined;
+        }
+        return path;
+      } finally { await file.close(); }
     }
     // Scan and writable/Git preparation happen before the shared SQLite writer is acquired.
     // Only the final root check/exclusive create (or one-byte winner read) holds admission.
     return options.admit(canonical, async (certificate, certify) => {
       if (certificate) {
+        slot = certificate.slot ?? 1;
+        if (!Number.isSafeInteger(slot) || slot < 1 || slot > 10_000) throw new Error("The first note's slot is invalid");
+        path = notePath(slot);
         await current();
         if (certificate.roots !== rootIdentity) throw new Error("The certified first note's project root changed");
         if (!initiallyEmpty) await options.writable(path);
         await current();
-        let file;
-        try { file = await open(path, "r"); }
-        catch (error) {
-          if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
-          throw error;
-        }
-        try {
-          const info = await file.stat({ bigint: true });
-          const opened = createHash("sha256").update(`${info.dev}:${info.ino}:${info.birthtimeNs}`).digest("hex");
-          const present = await identity(path);
-          if (!info.isFile() || opened !== certificate.file || present !== certificate.file) return undefined;
-          await file.read(Buffer.alloc(1), 0, 1, 0);
-          await current();
-          if (await identity(path) !== certificate.file) return undefined;
-          return path;
-        } finally { await file.close(); }
+        return readVerified(certificate.file);
       }
-      if (!initiallyEmpty) return undefined;
+      if (!initiallyEmpty && !options.allowNonempty) return undefined;
       await current();
+      // Reopen an ordinary blank note, including a pre-commit crash survivor, without certifying it.
+      if (existingBlank) return readVerified(existingBlank, true);
       visited = 0;
-      if (!(await Promise.all(roots.map(root => empty(root)))).every(Boolean)) return undefined;
+      if (!options.allowNonempty && !(await Promise.all(roots.map(root => empty(root)))).every(Boolean)) return undefined;
       let file;
       try { file = await open(path, "wx"); }
       catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "EEXIST") return undefined;
+        if ((error as NodeJS.ErrnoException).code === "EEXIST" && !options.allowNonempty) return undefined;
         throw error;
       }
       let created: string;
@@ -93,12 +130,12 @@ export function firstProjectNote(options: {
       } finally { await file.close(); }
       await current();
       visited = 0;
-      if (!(await Promise.all(roots.map(root => empty(root, 0, true)))).every(Boolean)) throw new Error("The project gained other content during first-note creation");
+      if (!options.allowNonempty && !(await Promise.all(roots.map(root => empty(root, 0, true)))).every(Boolean)) throw new Error("The project gained other content during first-note creation");
       await current();
       if (await identity(path) !== created) throw new Error("The first note changed during creation");
       // Commit only after exclusive creation closes. A crash before this transaction commits
-      // leaves an ordinary uncertified note for the existing Open/recovery flow, never a retry write.
-      certify({ roots: rootIdentity, file: created });
+      // leaves an ordinary uncertified blank note for read-only reuse, never a retry write.
+      certify({ roots: rootIdentity, file: created, slot });
       return path;
     });
   }
@@ -106,13 +143,15 @@ export function firstProjectNote(options: {
   // The ordinary atomic save replaces the inode. Advance only an already-certified identity,
   // in the same admission lane; arbitrary external replacements never acquire a certificate.
   async function write<T>(path: string, save: () => Promise<T>): Promise<T> {
-    if (basename(path) !== "Untitled.md") return save();
+    const name = /^Untitled(?: ([1-9]\d*))?\.md$/.exec(basename(path));
+    if (!name) return save();
+    const slot = name[1] ? Number(name[1]) : 1;
     const roots = await options.roots();
-    if (!roots || path !== join(roots[0]!, "Untitled.md")) return save();
+    if (!roots || path !== join(roots[0]!, basename(path))) return save();
     const canonical = await Promise.all(roots.map(root => realpath(root)));
     const rootIdentity = JSON.stringify(await Promise.all(roots.map(identity)));
     return options.admit(canonical, async (certificate, certify) => {
-      if (!certificate || certificate.roots !== rootIdentity) return save();
+      if (!certificate || certificate.roots !== rootIdentity || (certificate.slot ?? 1) !== slot) return save();
       let previous: string;
       try { previous = await identity(path); }
       catch (error) {
@@ -122,7 +161,7 @@ export function firstProjectNote(options: {
       if (previous !== certificate.file) return save();
       const result = await save();
       if (JSON.stringify(await Promise.all(roots.map(identity))) !== rootIdentity) throw new Error("The project changed during its first note's save");
-      certify({ roots: rootIdentity, file: await identity(path) });
+      certify({ roots: rootIdentity, file: await identity(path), slot });
       return result;
     });
   }

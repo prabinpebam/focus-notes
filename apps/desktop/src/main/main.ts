@@ -806,6 +806,7 @@ const roots = () => isWorkspace()
 /** Where new notes go when there's no note to put them next to. */
 const notesRoot = () => roots()[0]!.path;
 const createFirstProjectNote = firstProjectNote({
+  allowNonempty: true,
   admit: (roots, work) => {
     if (!projectMetadata) throw new Error("Project startup metadata is unavailable");
     return projectMetadata.firstNoteAdmission(roots, work);
