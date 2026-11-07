@@ -29,7 +29,9 @@ test("Repeated no-path launches open distinct Open windows in the same Preview p
   try {
     const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
     await expect(note).toBeVisible();
-    expect(await instance.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
+    const opacity = journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1;
+    const everyWindowAt = () => instance.app.evaluate(({ BrowserWindow }, value) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === value), opacity);
+    expect(await everyWindowAt()).toBe(true);
     await note.press("End");
     await note.pressSequentially(" Kept in the primary window");
     const selection = await note.evaluate(() => {
@@ -55,7 +57,7 @@ test("Repeated no-path launches open distinct Open windows in the same Preview p
       const window = instance.app.waitForEvent("window");
       await relaunch();
       const page = await window;
-      expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+      expect(await everyWindowAt()).toBe(true);
       const open = page.getByRole("dialog", { name: "Open", exact: true });
       await expect(open).toBeVisible();
       await expect(open.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
@@ -66,7 +68,7 @@ test("Repeated no-path launches open distinct Open windows in the same Preview p
     }
     await Promise.all([relaunch(), relaunch()]);
     await expect.poll(() => instance.app.windows().length).toBe(5);
-    expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    expect(await everyWindowAt()).toBe(true);
     const primaryUrl = instance.page.url();
     for (const page of instance.app.windows()) {
       if (page === instance.page) continue;
@@ -80,7 +82,7 @@ test("Repeated no-path launches open distinct Open windows in the same Preview p
       lock: app.hasSingleInstanceLock(),
       recovered: BrowserWindow.getAllWindows()[0]?.isVisible(),
       opacity: BrowserWindow.getAllWindows()[0]?.getOpacity(),
-    }))).toEqual({ launches: 4, windows: 5, lock: true, recovered: true, opacity: 0 });
+    }))).toEqual({ launches: 4, windows: 5, lock: true, recovered: true, opacity });
     expect(await note.textContent()).toBe(before);
     expect(await note.evaluate(() => {
       const s = getSelection();
