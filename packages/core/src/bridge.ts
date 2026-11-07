@@ -176,8 +176,10 @@ export interface PlatformBridge {
     parent(): Promise<string>;
     chooseParent(parent: string): Promise<string | undefined>;
     check(parent: string, name: string): Promise<{ folder: string; problem: string }>;
-    /** github: also a new private repository on the signed-in account; otherwise on this computer only. */
-    create(input: { parent: string; name: string; accent: string; logo: string; request?: string; github?: boolean }): Promise<string>;
+    /** Whether the signed-in account already has a repository by this name; undefined when GitHub can't say. Read-only. */
+    repoTaken?(name: string): Promise<boolean | undefined>;
+    /** github: also a new private repository, named repo, on the signed-in account; otherwise on this computer only. */
+    create(input: { parent: string; name: string; accent: string; logo: string; request?: string; github?: boolean; repo?: string }): Promise<string>;
     onCreateProgress?(listener: (progress: ProjectCreateProgress) => void): () => void;
     cancelCreate?(request: string): Promise<void>;
   };
