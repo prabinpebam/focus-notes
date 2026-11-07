@@ -1,5 +1,16 @@
 # Perceived performance: no frozen waits, no glitches
 
+## Project startup
+
+The 7 November startup batch adds no new visual surface: it reuses the note task and the existing unified Open dialog. Existing windows remain mounted and usable. These are source-build correctness checks, not a claim of faster packaged startup.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Verify an empty project and create/load its first ordinary note | Responsive → waiting; named task, then the ready editor/caret | Existing task status, New note; creation failure uses the existing note-creation error with Open/Files recovery | `fn:project.firstNote`; no acknowledgement before exclusive creation and successful load; source journey requires a usable caret within 5 s |
+| Repeated no-path launch opens another Open window | Responsive → waiting; existing first-themed-frame window presentation and Open list placeholders | Existing unified Open, current windows unchanged; normal delayed list placeholders and failure recovery | Existing `fn:window.firstFrame` and `fn:project.list`; source journey requires the actual chooser within 5 s after its page is available |
+
+Directory verification is asynchronous and bounded (10,000 directories, depth 64), never a synchronous main-process walk. Failure cannot be treated as an empty project. The first note uses normal autosave and first-save naming, so a title-following rename is not a second note.
+
 ## Files item pin acknowledgement
 
 The exact-brief candidate at `26c3bd1f` preserves these timings and adds row-named tooltips plus a visible resting pin. Native proof covers actual persistence/Retry and unchanged row-relative icon alignment, not an asserted latency improvement.

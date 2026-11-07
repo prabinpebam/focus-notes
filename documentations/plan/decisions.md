@@ -6,6 +6,22 @@
 
 **Affects:** [Feedback → Save and sync status](../design/components/feedback-and-dialogs.md#save-and-sync-status), [Projects → Creating and closing](../experience/projects.md#creating-and-closing), [Project model → Deleting a project](../experience/project-model.md#deleting-a-project), EDT-11, UI-12, PRJ-23.
 
+## D-376: start writing in a positively verified empty project
+
+**Decided (owner, 7 November 2026; PRJ-24).** New project and an opened existing project with no content start one ordinary empty Untitled note with its caret ready. The existing note pipeline owns file registration, loading, first-save naming and autosave. No sample text, special draft format or replacement note is introduced.
+
+Eligibility requires the current recorded project, writable access, no requested or remembered note and successful filesystem verification of every trusted note root. Metadata directories are not content; any other file or symbolic link prevents creation. Admissions share one in-flight result, root identity/access/content are rechecked, and the file is created exclusively. A failure is reported and leaves Open and Files available for recovery. Missing-note recovery, unreadable launch metadata, Local notes, standalone files and ordinary refresh never create this first note.
+
+**Affects:** [Projects](../experience/projects.md#creating-and-closing), UC-PROJ-01, SC-PROJ-01, PRJ-24, WP-P.4, [startup waits](../architecture/perceived-performance.md#project-startup).
+
+## D-377: another no-path launch opens another chooser in the same process
+
+**Decided (owner, 7 November 2026; PRJ-25).** While the app is running, each ordinary desktop, Start or taskbar/executable launch without a target opens a new window showing the unified Open dialog. The existing channel/profile singleton remains held. Existing note text, caret and drafts remain unchanged, including under simultaneous launches.
+
+Reuse the existing secondary-window controller and first-themed-frame presentation. A secondary chooser has an explicit initial-Open intent, never restores the primary's note or creates a first note, and cannot replace the primary's remembered launch position. Explicit project-note, file and deep-link targets keep their existing routing. Project processes/profiles are not reorganized; this supersedes only the previous no-path `showMain` behavior audited under D-366.
+
+**Affects:** [Projects → The Open view](../experience/projects.md#the-open-view), UC-PROJ-02, SC-PROJ-07, PRJ-25, WP-P.19, [startup waits](../architecture/perceived-performance.md#project-startup).
+
 ## D-374: wizard actions and proximity belong to the dialog's layouts
 
 **Approved by the owner, 7 November 2026 at 11:24.** No Cancel beside a close ×. Back is secondary, absent on the first step; Next or Create project is primary. These are the only two footer button types, right-aligned at the bottom, outside the scrolling body. The close control uses the existing dismissal command, preserving cancellation of tracked creation rather than silently removing that action.

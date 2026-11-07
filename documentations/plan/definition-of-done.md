@@ -5,6 +5,17 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The owner approved exact d40b78a3 Rewrite/Settings UX and UI on 1 November; its combined runtime/test/config head passed complete Windows CI 41325681712. The **MAI** rows add CP-RWR-01 to the production bar and still retain the explicitly unmeasured renderer, screen-reader, contrast and live-account certification gaps. Runtime hardening proof is not complete stage or release certification. The **OFB** stage below is the owner's 6 November feedback batch: robust button, Switch, loading and notification rules, the "/" block menu and tables, images, Customize toolbar, Actions and the project border Switch, each done only when it can be tried in the owner's Preview.
 
+## Project startup follow-up, 7 November
+
+These bounded rows serve UC-PROJ-01/02 and SC-PROJ-01/07; they do not close the whole MP stage. They require the exact runtime head's Windows gate and scheduled Preview readiness before being called landed.
+
+| Row | Observable outcome | Evidence needed |
+| --- | --- | --- |
+| PRJ-24 / D-376 | A newly created or positively verified empty project opens one ordinary note with a usable caret and normal autosave. Existing files, missing-note recovery and failed scans never become empty-project creation. Concurrent admission cannot overwrite or duplicate the first note, and a later startup completion cannot replace a note the person chose. | Filesystem exclusion/concurrency/failure tests, core recovery/navigation tests and built invisible local/paired/nonempty project journeys |
+| PRJ-25 / D-377 | Each sequential or simultaneous no-path launch adds a usable Open window in the same native singleton process. The original text/caret/draft survives, chooser metadata cannot replace its resume state, and explicit file/project-note/deep-link routes remain routed. | Native singleton/window/chooser journey including original content/caret, unchanged primary saved bytes and an actual explicit-file load; existing targeted routing tests |
+
+**Try it:** in a disposable empty project, start and type into the first note, then reopen its saved file. With an existing note open, launch the same channel several times: each new window has Open; close its × and reopen Open without affecting the first note. Open an existing file explicitly and verify that it loads instead of adding another chooser. The owner's existing Preview is not relaunched by the worker.
+
 ## Owner feedback batch, 6 November (OFB)
 
 **The owner, 6 November 10:39, word for word:** "- To little spacing between Switch toggle and the text label for it.

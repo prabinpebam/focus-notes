@@ -1,8 +1,9 @@
 import { test, expect, _electron as electron } from "./fixtures.ts";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execFile, execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
@@ -21,38 +22,78 @@ async function closeInstances(launched: Launched[], root: string): Promise<void>
   }
 }
 
-test("A repeated Preview launch recovers its existing writing window without another instance (PKG-03, D-366)", async () => {
+test("Repeated no-path launches open distinct Open windows in the same Preview process, preserving the note (PRJ-25, D-377)", async () => {
   test.skip(Boolean(process.env.FOCUS_NOTES_E2E_EXE), "Packaged apps intentionally ignore the invisible journey seam.");
   const dirs = tempDirs();
   const instance = await launch(dirs, { FOCUS_NOTES_CHANNEL: "preview" });
   try {
     const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
     await expect(note).toBeVisible();
+    expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    await note.press("End");
+    await note.pressSequentially(" Kept in the primary window");
+    const selection = await note.evaluate(() => {
+      const s = getSelection();
+      return { offset: s?.anchorOffset, text: s?.anchorNode?.textContent };
+    });
     await expect.poll(() => instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible())).toBe(true);
     const before = await note.textContent();
     const repeated = await instance.app.evaluate(({ app, BrowserWindow }) => {
       Reflect.set(globalThis, "repeatedPreviewLaunches", 0);
-      app.on("second-instance", () => Reflect.set(globalThis, "repeatedPreviewLaunches",
-        Number(Reflect.get(globalThis, "repeatedPreviewLaunches")) + 1));
-      BrowserWindow.getAllWindows()[0]!.hide();
+      app.on("second-instance", () => {
+        Reflect.set(globalThis, "repeatedPreviewLaunches", Number(Reflect.get(globalThis, "repeatedPreviewLaunches")) + 1);
+      });
       return {
         executable: process.execPath,
         env: Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)),
       };
     });
-    await expect(electron.launch({
-      executablePath: repeated.executable,
-      args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
-      env: repeated.env, timeout: 5000,
-    })).rejects.toThrow();
+    const relaunch = () => promisify(execFile)(repeated.executable,
+      [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
+      { env: repeated.env, timeout: 5000 });
+    for (let i = 0; i < 2; i++) {
+      const window = instance.app.waitForEvent("window");
+      await relaunch();
+      const page = await window;
+      expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+      const open = page.getByRole("dialog", { name: "Open", exact: true });
+      await expect(open).toBeVisible();
+      await expect(open.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+      await open.getByRole("button", { name: "Close", exact: true }).click();
+      await expect(open).toBeHidden();
+      await page.keyboard.press("Control+Alt+O");
+      await expect(open).toBeVisible();
+    }
+    await Promise.all([relaunch(), relaunch()]);
+    await expect.poll(() => instance.app.windows().length).toBe(5);
+    expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    const primaryUrl = instance.page.url();
+    for (const page of instance.app.windows()) {
+      if (page === instance.page) continue;
+      expect(new URL(page.url()).searchParams.get("open")).toBe("1");
+      await expect(page.getByRole("dialog", { name: "Open", exact: true })).toBeVisible();
+    }
+    expect(new URL(primaryUrl).searchParams.has("open")).toBe(false);
     await expect.poll(() => instance.app.evaluate(({ app, BrowserWindow }) => ({
       launches: Reflect.get(globalThis, "repeatedPreviewLaunches"),
       windows: BrowserWindow.getAllWindows().length,
       lock: app.hasSingleInstanceLock(),
       recovered: BrowserWindow.getAllWindows()[0]?.isVisible(),
       opacity: BrowserWindow.getAllWindows()[0]?.getOpacity(),
-    }))).toEqual({ launches: 1, windows: 1, lock: true, recovered: true, opacity: journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1 });
+    }))).toEqual({ launches: 4, windows: 5, lock: true, recovered: true, opacity: 0 });
     expect(await note.textContent()).toBe(before);
+    expect(await note.evaluate(() => {
+      const s = getSelection();
+      return { offset: s?.anchorOffset, text: s?.anchorNode?.textContent };
+    })).toEqual(selection);
+    expect(JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).lastNotePath).toBe(join(dirs.docs, "Welcome.md"));
+    const target = join(dirs.docs, "Explicit-target.md");
+    writeFileSync(target, "# Explicit target\n\nExisting file route still works.\n");
+    await instance.app.evaluate(({ app }, path) => app.emit("second-instance", {}, [process.execPath, "--project-note", path], ""), target);
+    await expect.poll(() => instance.app.evaluate(() => Reflect.get(globalThis, "repeatedPreviewLaunches"))).toBe(5);
+    await expect(note).toContainText("Existing file route still works.");
+    expect(instance.app.windows()).toHaveLength(5);
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toContain("Kept in the primary window");
   } finally {
     await closeInstances([instance], dirs.userData);
     rmSync(dirs.docs, { recursive: true, force: true });

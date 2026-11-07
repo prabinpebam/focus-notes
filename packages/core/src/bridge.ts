@@ -165,6 +165,8 @@ export interface PlatformBridge {
     /** Clones a repository into a new project and opens its window. */
     openGitHub?(owner: string, name: string): Promise<void>;
     lastNote(): Promise<string | undefined>;
+    /** Exclusively creates an ordinary first note only in a positively verified empty project. */
+    firstNote?(): Promise<string | undefined>;
     position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
     remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;
     list(): Promise<ProjectEntry[]>;
@@ -780,6 +782,8 @@ export interface WindowsBridge {
   open(path: string): Promise<void>;
   /** The note this window was opened for, if it was opened for one: it opens that note, not the last one. */
   initialNote?: string;
+  /** A repeated no-path launch opens this window's chooser, never the primary's remembered note. */
+  initialOpen?: boolean;
   /** A window opened for a note: what it opens is never remembered as the note to reopen at launch, which is the first window's. */
   secondary: boolean;
 }

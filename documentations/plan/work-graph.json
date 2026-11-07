@@ -127,8 +127,8 @@
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
-      "summary": "One private repository per new project, one window per project in one running app with Open with routing (D-309), and the trusted two-root scope boundary (D-306).",
-      "requirements": ["PRJ-01", "PRJ-02", "PRJ-03"],
+      "summary": "One private repository per new project, project-scoped windows and Open routing, the trusted two-root boundary (D-306), and one ordinary first note only after positive writable-project emptiness verification and exclusive creation (D-376).",
+      "requirements": ["PRJ-01", "PRJ-02", "PRJ-03", "PRJ-24"],
       "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
       "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "architecture/repository-and-publishing.html", "architecture/desktop-and-git.md"],
@@ -241,8 +241,8 @@
     },
     {
       "id": "WP-P.19", "stage": "MP", "title": "Launch where I left off",
-      "summary": "Launch reopens the last-edited note (the last window closed) at its caret, in its project's window; recovery for a missing note; Open when there's nothing to reopen (D-318).",
-      "requirements": ["PRJ-14"], "dependsOn": ["WP-P.4"],
+      "summary": "Cold launch resumes the last-edited note at its caret (D-318); missing-note recovery never creates a replacement. Repeated no-path launches each open a unified Open secondary window in the same singleton process, preserving existing work and targeted routing (D-377).",
+      "requirements": ["PRJ-14", "PRJ-25"], "dependsOn": ["WP-P.4"],
       "touches": ["desktop", "core"], "reviews": ["code"],
       "specs": ["experience/projects.md"], "lookahead": true, "status": "verifying"
     },

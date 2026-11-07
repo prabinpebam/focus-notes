@@ -172,6 +172,11 @@ Owner's 3 November notes; [Projects](../experience/projects.md). All planned, no
 
 ## New writing and sharing direction
 
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| PRJ-24 | New project and opening a positively verified empty existing project start one ordinary Untitled note, loaded with a ready caret and normal first-save naming/autosave (D-376). Verify the current recorded writable project and actual trusted-root emptiness; serialize concurrent admissions, recheck root/access/content and create exclusively. Never overwrite an existing file, replace a missing note, infer emptiness from unreadable metadata/failed scans, or create notes on refresh, Local notes or standalone-file startup. Creation failures expose recovery. | P1 |
+| PRJ-25 | Each repeated no-path launch opens a new window showing unified Open in the same running channel/profile process with its singleton lock retained (D-377). Existing windows, drafts and caret remain untouched; simultaneous launches create distinct choosers. Reuse secondary-window machinery, keep chooser navigation/dismissal usable, never substitute the primary's remembered note, and preserve project-note, file and deep-link routing. Secondary-window metadata never replaces the primary launch record. | P1 |
+
 These extend the areas above/below without reusing retired FIL-16. [Next direction](../plan/next-direction.md) is the source map.
 
 | ID | Requirement | Priority |

@@ -403,7 +403,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.1 | Decisive keyboard actions | SPT-10, RWR-91 | WP-4.2, WP-AI.14 | code, accessibility |
 | WP-P.2 | Write at caret | RWR-92 | WP-AI.14 | code, security, design-system |
 | WP-P.3 | Title and file name apart | FIL-18 | WP-2.3 | code |
-| WP-P.4 | Private projects in their own windows | PRJ-01, PRJ-02, PRJ-03 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
+| WP-P.4 | Private projects in their own windows and a safe first note | PRJ-01, PRJ-02, PRJ-03, PRJ-24 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
 | WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13, PRJ-18, PRJ-19 | WP-P.4 | security, design-system, accessibility |
 | WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07, FIL-19 | WP-P.4, WP-P.3 | code, design-system, accessibility |
 | WP-P.7 | Choose a place before writing (today's workspace, D-338) | FIL-17, KEY-09 | none | code, design-system, accessibility |
@@ -419,7 +419,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.16 | Switch primitive | DSY-15 | none | design-system, accessibility |
 | WP-P.17 | Call it a project | PRJ-11 | none | design-system, accessibility |
 | WP-P.18 | Turn sharing on and off | PRJ-10 | WP-P.4, WP-P.9, WP-P.12, WP-5.1 | code, security, design-system, accessibility |
-| WP-P.19 | Launch where I left off | PRJ-14 | WP-P.4 | code |
+| WP-P.19 | Launch where I left off; another launch opens another chooser | PRJ-14, PRJ-25 | WP-P.4 | code |
 | WP-P.20 | The Open view | PRJ-15, PRJ-16, PRJ-17 | WP-P.6, WP-P.8 | code, design-system, accessibility |
 | WP-P.21 | A project card's GitHub link and size | PRJ-20, PRJ-21, PRJ-22 | WP-P.20 | code, security, design-system, accessibility |
 | WP-P.23 | **Built, verifying with fakes only:** Delete a project; GitHub Danger Zone handoff, safe local cleanup and Open with an in-dialog success pill. First real deletion is the owner's. | PRJ-23 | WP-P.17, WP-P.20 | code, security, design-system, accessibility |

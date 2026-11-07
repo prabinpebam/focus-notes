@@ -27,6 +27,7 @@ import { copyNoteMedia, ownSidecar, removeCopies } from "./note-media.ts";
 import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
+import { firstProjectNote } from "./first-project-note.ts";
 import { spawn } from "node:child_process";
 import { candidateGitHubApi, projectWindows, resumeProjectProfile } from "./projects.ts";
 import { randomBytes } from "node:crypto";
@@ -804,6 +805,23 @@ const roots = () => isWorkspace()
   : [{ id: "local", path: notesHome(), readOnly: false }];
 /** Where new notes go when there's no note to put them next to. */
 const notesRoot = () => roots()[0]!.path;
+const createFirstProjectNote = firstProjectNote({
+  roots: async () => {
+    if (process.env.FOCUS_NOTES_LOCAL_NOTES === "1") return undefined;
+    let project: string;
+    try { project = await readFile(dataFile(DATA_FILES.projectFolder), "utf8"); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+      throw error;
+    }
+    if (!samePath(await realpath(project.trim()), await realpath(notesHome()))) throw new Error("The project root changed");
+    return roots().map(root => root.path);
+  },
+  writable: async path => {
+    await assertWritable(path);
+    if (isWorkspace() && !hasPrivate() && inside(join(notesHome(), "notes"), path)) await (await heldNotes())?.hold(path);
+  },
+});
 const isMarkdown = (p: string) => /\.(md|markdown)$/i.test(p);
 const inside = (base: string, p: string) => {
   const r = relative(base, p);
@@ -1499,6 +1517,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return status;
   };
   handle("projects:list", () => projects.list());
+  handleFrom("projects:firstNote", event => secondaryPages.has(event.sender.id) ? undefined : createFirstProjectNote());
   handle("projects:upload", () => projects.upload());
   handle("projects:localNote", () => projects.localNote());
   handle("projects:importLocal", (path: unknown, folder: unknown, request: unknown) => {
@@ -1518,13 +1537,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (typeof path !== "string") throw new Error("Invalid recent note");
     return projects.position(path);
   });
-  handle("projects:remember", (path: unknown, position: unknown) => {
+  handleFrom("projects:remember", (event, path: unknown, position: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");
-    if (position === undefined) return projects.remember(path);
+    if (position === undefined) return secondaryPages.has(event.sender.id) ? undefined : projects.remember(path);
     if (!position || typeof position !== "object" || !("from" in position) || !("to" in position) || !("scroll" in position)
       || typeof position.from !== "number" || !Number.isInteger(position.from) || position.from < 0
       || typeof position.to !== "number" || !Number.isInteger(position.to) || position.to < 0
       || typeof position.scroll !== "number" || !Number.isFinite(position.scroll) || position.scroll < 0) throw new Error("Invalid note position");
+    if (secondaryPages.has(event.sender.id)) return;
     return projects.remember(path, { from: position.from, to: position.to, scroll: position.scroll });
   });
   handle("projects:choose", () => projects.choose());
@@ -2548,7 +2568,7 @@ function bootTheme(): { scheme: "light" | "dark"; theme: string } {
 /** How long the window waits for the page's first themed frame before it shows anyway. */
 const FIRST_FRAME_TIMEOUT_MS = 4000;
 
-function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?: ReturnType<AppWindowFrame["placementFrom"]> } = {}): BrowserWindow {
+function createWindow(frame: AppWindowFrame, extra: { note?: string; open?: boolean; placement?: ReturnType<AppWindowFrame["placementFrom"]> } = {}): BrowserWindow {
   const boot = bootTheme();
   const win = new BrowserWindow({
     minWidth: 360,
@@ -2725,7 +2745,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(previewCarryOverFailed && !extra.note ? { startupNotice: "preview-carry-over" } : {}), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(previewCarryOverFailed && !extra.note ? { startupNotice: "preview-carry-over" } : {}), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...    (extra.note ? { note: extra.note } : {}), ...(extra.open ? { open: "1" } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.
@@ -3074,9 +3094,16 @@ app.whenReady().then(async () => {
   }
   app.on("second-instance", (_e, argv) => {
     const noteAt = argv.indexOf("--project-note");
-    if (noteAt >= 0 && argv[noteAt + 1]) mainWindow?.webContents.send("projects:note", notePath(argv[noteAt + 1]));
-    linkArrived(argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined));
-    showMain();
+    const link = argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined);
+    if (noteAt >= 0 || link || argv.some(arg => /\.(md|markdown|txt)$/i.test(arg))) {
+      if (noteAt >= 0 && argv[noteAt + 1]) mainWindow?.webContents.send("projects:note", notePath(argv[noteAt + 1]));
+      linkArrived(link);
+      showMain();
+      return;
+    }
+    if (!windowFrame) throw new Error("The app's window controller is unavailable");
+    const window = createWindow(windowFrame, { open: true, placement: windowFrame.placementFrom(mainWindow) });
+    secondaryPages.add(window.webContents.id);
   });
 });
 app.on("window-all-closed", () => {

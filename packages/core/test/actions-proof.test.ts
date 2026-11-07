@@ -60,6 +60,10 @@ function desktop(last = `${PRIV}/welcome.md`) {
         for (const op of ops) {
           if (op.op === "move") for (const p of Object.keys(files)) { if (under(op.from, p)) { files[op.to + p.slice(op.from.length)] = files[p]!; delete files[p]; } }
           else if (op.op === "write") checkingDisk(files).writeOp(op);
+          else if (op.op === "create") {
+            if (op.path in files) throw new Error("Refused: exists");
+            files[op.path] = op.text;
+          }
           else if (op.op === "delete") for (const p of Object.keys(files)) if (under(op.path, p)) delete files[p];
         }
       },
@@ -136,6 +140,17 @@ const OUTCOMES: Record<string, (s: AppState, before: AppState) => boolean> = {
 };
 
 describe("ACT-07, ACT-16: the catalogue's own rules", () => {
+  it("ordinary note creation cannot overwrite a path won by another creator (PRJ-24)", async () => {
+    const d = desktop();
+    const app = createApp(d.bridge, messages);
+    await app.start();
+    const before = { ...d.files };
+    d.bridge.newNotePath = async () => `${PRIV}/welcome.md`;
+    await expect(app.commands.run("note.new")).rejects.toThrow("Refused: exists");
+    expect(d.files).toEqual(before);
+    expect(app.store.state.note.path).toBe(`${PRIV}/welcome.md`);
+  });
+
   it("help.open opens the existing Help home from Actions without changing note bytes", async () => {
     const d = desktop();
     const app = createApp(d.bridge, messages);

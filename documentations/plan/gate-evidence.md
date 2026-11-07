@@ -29,6 +29,26 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | `apps/desktop/e2e/settings-grouping.spec.ts:311`: "Open, Share and Files keep scrollbars at their surface edges…" | Red on `main` `42bc9a30` in 42351409905 shard 2, and on this branch shard 3 | The Open/startup track | 10 November 2026 | Open: as above. |
 | `apps/desktop/e2e/review-feedback.spec.ts:195`, "Close tooltip never changes dialog geometry in light", the `setSize` evaluate only | `electronApplication.evaluate: Resulting promise was garbage collected`, shard 4 of 42373281239; passes locally twice (light and dark) on this head | The Open/startup track | 10 November 2026 | Open: retrieve a plain value as in Milestone B, verify, remove the row. |
 
+### Project startup candidate: first note and another Open window, 7 November
+
+**Locally proven, not landed.** D-376 / PRJ-24 and D-377 / PRJ-25 are one runtime candidate on `fix-open-startup-7nov`, based on landed unified Open `42bc9a30`. The exact-head seven-job Windows gate and scheduled Preview readiness remain pending. No release, account write or packaged startup certification is claimed.
+
+| Exact local command / evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\first-project-note.test.ts packages\core\test\project-open.test.ts packages\core\test\actions-proof.test.ts` | Passed, 123 tests: exclusive/coalesced first creation, existing non-Markdown preservation, metadata-named junction exclusion, access/root/content changes, failed reads, missing-note recovery, delayed creation and load success/failure preserving a later chosen note, initial chooser isolation and ordinary New note refusing an already-owned path |
+| `pnpm --filter @focus-notes/desktop run build` | Passed, final source build |
+| `pnpm --filter @focus-notes/desktop run typecheck`; `pnpm --filter @focus-notes/core run typecheck` | Both passed |
+| `pnpm check` | Passed, including chain/plan, 69 Actions proofs, generated notification inventory, 874 view documents and unchanged component contracts |
+| `pnpm --filter @focus-notes/desktop exec playwright test app-identity.spec.ts project-startup.spec.ts d171-private-default.spec.ts --workers=1 --timeout=45000 --global-timeout=60000 -g 'Repeated no-path\|ordinary first note\|nonempty project\|Mod\+N'` with `FOCUS_NOTES_E2E=1` | Passed, five built source journeys in 43.8 s; exact owned-PID cleanup after every run |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; bounded headless rendering through existing `:8787` with changed Markdown intercepted from this worktree | Runtime passed; all ten changed prose pages had their actual expected heading, one H1 each, in light and dark. Headless browser closed |
+
+First-note journeys verify one actual Markdown file, a usable caret and saved bytes for both local and paired/private roots; normal first-save naming can rename Untitled, and is not a second note. Nonempty roots keep their exact existing file. Initial negative save assertions mistakenly required a permanent Untitled filename; the final assertion checks the ordinary saved file and its bytes.
+
+The singleton journey starts four normal source child processes (two sequential, two simultaneous), each bounded to 5 s. One primary process/lock has five invisible windows; each new chooser's × and reopening work. Original text, caret and persisted launch path remain unchanged. The existing targeted `--project-note` second-instance handler is then driven inside that invisible process and must actually load the existing target without adding a chooser; original saved bytes remain intact. A source child carrying those target flags exited without delivering a targeted event, so that source CLI seam is not claimed as real external-file launch certification. Debugger-attached second launches also hit a tooling protocol failure and were removed, not swallowed.
+
+Ordinary New note now uses the existing exclusive workspace create operation rather than an overwrite-shaped initial write, because it can compete with first-note admission. No UI/token/schema/wizard changes, private content or owner Preview process were included. The worker does not relaunch the owner's Preview; its scheduled updater showed `42bc9a3` ready before this runtime candidate.
+The first-note load also carries its admission identity through asynchronous reads and position lookup: an older startup result cannot replace a later New note, or put its chooser/error over that note. No UI/token/schema/wizard changes, private content or owner Preview process were included. The worker does not relaunch the owner's Preview; its scheduled updater showed `42bc9a3` ready before this runtime candidate.
+
 ### Image crop landing: scoped first-readiness quarantine, 7 November
 
 The approved D-372 crop landed as `0bb2f1c1` after all seven jobs passed on that exact head in [42268712808](https://github.com/prabinpebam/focus-notes/actions/runs/42268712808), first attempt. The earlier frozen head `6afaa382` also passed all seven jobs in attempt 3 of [42256607087](https://github.com/prabinpebam/focus-notes/actions/runs/42256607087); main advanced to `4c7db417`, so crop was rebased and the combined image-move/copy/provenance implementation gated again before the non-force fast-forward.

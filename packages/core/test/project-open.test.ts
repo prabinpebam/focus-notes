@@ -25,6 +25,99 @@ const book: ProjectEntry = { folder: "C:\\Book", name: "Book", accent: "teal", l
 afterEach(() => vi.useRealTimers());
 
 describe("Open", () => {
+  it("opens a shell-verified first project note through the ordinary note pipeline", async () => {
+    const path = "C:\\Book\\Untitled.md";
+    const firstNote = vi.fn(async () => path);
+    const writeNote = vi.fn(async () => {});
+    const app = appWith({
+      firstNote, lastNote: async () => undefined, list: async () => [],
+      position: async () => undefined, remember: async () => {},
+    }, async () => "", { writeNote, loadAppState: async () => ({ version: 1, firstRun: "done" }) });
+    await app.start();
+    expect(firstNote).toHaveBeenCalledOnce();
+    expect(app.store.state.note).toMatchObject({ path, markdown: "", status: "ready", saveState: "saved" });
+    expect(vm(app).open).toBe(false);
+    expect(writeNote).not.toHaveBeenCalled();
+    await app.commands.run("projects.refresh");
+    expect(firstNote).toHaveBeenCalledOnce();
+  });
+
+  it.each(["missing", "unreadable"])("never creates a first note after %s remembered-note recovery", async (failure) => {
+    const firstNote = vi.fn(async () => "C:\\Book\\Untitled.md");
+    const app = appWith({
+      firstNote, lastNote: async () => { if (failure === "unreadable") throw new Error("protected read failed"); return "C:\\Book\\missing.md"; },
+      list: async () => [],
+    }, async () => { throw new Error("missing"); }, { loadAppState: async () => ({ version: 1, firstRun: "done" }) });
+    await app.start();
+    expect(firstNote).not.toHaveBeenCalled();
+    expect(vm(app).open).toBe(true);
+  });
+
+  it("a refused first-note creation shows recovery without inventing success", async () => {
+    const app = appWith({
+      firstNote: async () => { throw new Error("read-only"); },
+      lastNote: async () => undefined, list: async () => [],
+    }, async () => "", { loadAppState: async () => ({ version: 1, firstRun: "done" }) });
+    await app.start();
+    expect(app.store.state.note.path).toBeUndefined();
+    expect(vm(app).open).toBe(true);
+    expect(app.store.state.ui.toasts).toContainEqual(expect.objectContaining({ tone: "error", message: en["newNote.createFailed"] }));
+  });
+
+  it("an initial Open secondary window ignores remembered notes and first-note creation", async () => {
+    const lastNote = vi.fn(async () => "C:\\Book\\primary.md");
+    const firstNote = vi.fn(async () => "C:\\Book\\Untitled.md");
+    const readNote = vi.fn(async () => "# Primary");
+    const app = appWith({ lastNote, firstNote, list: async () => [] }, readNote, {
+      windows: { open: async () => {}, secondary: true, initialOpen: true },
+      loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: "C:\\Book\\primary.md" }),
+    });
+    await app.start();
+    expect(vm(app).open).toBe(true);
+    expect(lastNote).not.toHaveBeenCalled();
+    expect(firstNote).not.toHaveBeenCalled();
+    expect(readNote).not.toHaveBeenCalled();
+  });
+
+  it.each(["created", "failed"])("first-note %s admission never replaces a note chosen while creation is pending", async (outcome) => {
+    let finish!: (path: string) => void;
+    let fail!: (error: Error) => void;
+    const firstNote = vi.fn(() => new Promise<string>((resolve, reject) => { finish = resolve; fail = reject; }));
+    const app = appWith({
+      firstNote, lastNote: async () => undefined, list: async () => [],
+      position: async () => undefined, remember: async () => {},
+    }, async () => "", { loadAppState: async () => ({ version: 1, firstRun: "done" }) });
+    const starting = app.start();
+    await vi.waitFor(() => expect(firstNote).toHaveBeenCalledOnce());
+    await app.commands.run("note.new");
+    expect(app.store.state.note.path).toBe("/n/Untitled.md");
+    if (outcome === "failed") fail(new Error("Creation refused"));
+    else finish("C:\\Book\\Untitled.md");
+    await starting;
+    expect(app.store.state.note.path).toBe("/n/Untitled.md");
+    expect(vm(app).open).toBe(false);
+  });
+
+  it.each(["ready", "failed"])("a superseded %s first-note load cannot open a chooser over a later New note", async (outcome) => {
+    const path = "C:\\Book\\Untitled.md";
+    let finish!: (text: string) => void;
+    let fail!: (error: Error) => void;
+    const app = appWith({
+      firstNote: async () => path, lastNote: async () => undefined, list: async () => [],
+      position: async () => undefined, remember: async () => {},
+    }, async p => p === path ? new Promise<string>((resolve, reject) => { finish = resolve; fail = reject; }) : "",
+    { loadAppState: async () => ({ version: 1, firstRun: "done" }) });
+    const starting = app.start();
+    await vi.waitFor(() => expect(finish).toBeTypeOf("function"));
+    await app.commands.run("note.new");
+    expect(app.store.state.note.path).toBe("/n/Untitled.md");
+    if (outcome === "failed") fail(new Error("Read failed"));
+    else finish("# First\n");
+    await starting;
+    expect(app.store.state.note.path).toBe("/n/Untitled.md");
+    expect(vm(app).open).toBe(false);
+  });
+
   it.each([false, true])("opens the saved disk note when launch metadata is stale or unreadable (unreadable: %s)", async (unreadable) => {
     const target = "C:\\Book\\renamed.md", stale = "C:\\Book\\Untitled.md";
     const writeNote = vi.fn(async () => {});

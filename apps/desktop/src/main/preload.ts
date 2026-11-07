@@ -140,6 +140,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     githubRepos: () => ipcRenderer.invoke("projects:githubRepos"),
     openGitHub: (owner: string, name: string) => ipcRenderer.invoke("projects:openGitHub", owner, name),
     lastNote: () => ipcRenderer.invoke("projects:lastNote"),
+    firstNote: () => ipcRenderer.invoke("projects:firstNote"),
     position: (path: string) => ipcRenderer.invoke("projects:position", path),
     remember: (path: string, position?: { from: number; to: number; scroll: number }) => ipcRenderer.invoke("projects:remember", path, position),
     list: () => ipcRenderer.invoke("projects:list"),
@@ -178,7 +179,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   windows: {
     open: (path: string) => ipcRenderer.invoke("window:open", path),
     ...(params.get("note") ? { initialNote: params.get("note")! } : {}),
-    secondary: params.has("note"),
+    ...(params.has("open") ? { initialOpen: true } : {}),
+    secondary: params.has("note") || params.has("open"),
   },
   defaultNotePath: () => ipcRenderer.invoke("note:default"),
   loadAppState: () => ipcRenderer.invoke("state:load"),
