@@ -117,6 +117,20 @@ The pre-existing test assumed that a controlled radio becomes checked synchronou
 **Source:** W-create2's `2026-11-07-2334-w-create2.md` handoff, with the coordinator's 23:45 correction to the docs brief. Durable test sources: [creation units](../../apps/desktop/test/project-create.test.ts), [core cases](../../packages/core/test/project-open.test.ts), [startup journeys](../../apps/desktop/e2e/project-startup.spec.ts), [streaming journey](../../apps/desktop/e2e/ui-states.spec.ts), [wait inventory](../architecture/perceived-performance.md). These are recorded prior checks, not tests rerun by this docs worker. [G1 DoD](definition-of-done.md#g1-new-project-on-this-computer-or-on-github) retains the owner dependency.
 
 **Documentation increment, W-docs:** D-393–D-395, [DoD backlog](definition-of-done.md#dod-backlog) and this G1 record are docs only. `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and `pnpm check` passed in the isolated pinned-kit worktree (357 requirements, 127 WPs; existing 69 action-proof and 4 button-geometry tests inside check). Headless Chromium rendered all 11 changed documentation pages with exactly one H1 and resolving new links/anchors, including `dod-backlog` and `settings-project-merged`; browser closed. No app launch, owner project mutation, real GitHub write or desktop CI wait was performed.
+### G2 pairing and preservation backend, 7 November
+
+**Verified locally, not wired, landed or CI-certified.** D-388's desktop service persists setup intent and results, recognizes its own lost-response creation, refuses unrelated repositories, and orders private preservation before removal. Its recovery helper verifies actual Markdown and binary-media bytes, rejects junctions/overlapping roots, preserves relative structure and never overwrites existing notes. The production callbacks and write-lane integration remain open.
+
+| Gate | Result |
+| --- | --- |
+| `pnpm exec vitest run apps/desktop/test/sharing-setup.test.ts apps/desktop/test/sharing-preserve.test.ts apps/desktop/test/sharing-people.test.ts packages/github/test/github.test.ts` | Passed, 39 tests: protocol negatives/restart/duplicate checks plus actual temporary-filesystem preservation |
+| `pnpm --filter @focus-notes/desktop run typecheck` | Passed |
+| `pnpm check`; `pnpm --filter @focus-notes/desktop run build` | Passed |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; headless changed-page rendering | Passed; each of the 3 exact pages has one H1 and its new content. Chromium and the ephemeral server closed |
+| New editable-name UI tests | Not run; awaiting owner approval |
+| Runtime bridge, production journey, exact-head Windows gate and landing | Open; no main push or CI start under the coordinator hold |
+| Real-account writes | None; protocol fake and isolated temporary files only |
+
 ### G2 GitHub invitation runtime candidate, 7 November
 
 **Verified locally, not landed or CI-certified.** The desktop resolves the current private GitHub repository and signed-in client, checks admin access/owner type, and sends the confirmed username and supported role through the collaborators API. Core no longer saves invitation drafts as success. The approved dialog shows the exact repository/role and personal-account share-secret warning; failure keeps input with explicit Retry.

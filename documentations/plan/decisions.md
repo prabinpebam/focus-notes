@@ -38,6 +38,21 @@ GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/r
 **Options gap > Switch pair gap (coordinator clarification).** Keep each Switch's track-to-label gap at 8 px and use `inlineGroup` (16 px) between options. Wrapped options use `stackItem`, closer than the stack-token separation above. Never suppress the spacing probe's grouping finding or shrink the pairs to pass it. Opening an all-notes match intentionally transfers that match's query/options into the note's Find. No landing or tests of the familiar all-notes candidate before owner approval; nothing else is added to the writing window.
 
 **Affects:** FND-01 / WP-1.10, FND-04 / WP-4.3, [DoD backlog](definition-of-done.md#dod-backlog), [Find and replace](../experience/find-and-replace.md), [spacing audit](../design/spacing-audit.md), and their geometry/exclusivity journeys. W-find owns implementation; this decision records the correction, not acceptance of the candidate.
+## D-388: sharing setup reconciles its persisted intent
+
+**Decided, 7 November 2026 (G2, PRJ-10).** Before creating a site, persist its confirmed neutral name, private-project target, proposed Pages address and an opaque creation intent. A newly created public site's description carries only that opaque intent, never a private project name or note. After a lost creation response, Retry can recognize that same site; it never adopts an unrelated pre-existing repository merely because it is empty. Persist each completed step before readiness. No site deploy key or Actions secret can read private content.
+
+Turn off first makes and verifies a private recovery copy of the working public notes and media, without replacing existing notes. A copy failure aborts removal. Pending removal survives restart and blocks re-enable until it completes; re-enable reuses the empty site without republishing old items.
+
+**Implementation status:** the desktop pairing service and byte-preservation helper are verified locally with protocol and filesystem fakes. Production UI/bridge integration, artifact removal, exact-head CI and landing remain open; this decision does not certify them.
+
+**Affects:** [new-project sharing](../experience/files-and-sharing.md#turning-on-sharing-for-a-new-project), [G2](definition-of-done.md#g2-turn-on-sharing-and-invite-a-person), PRJ-10, WP-P.18.
+
+## D-387: unavailable sharing says what is missing
+
+**Decided, 7 November 2026 (F3/F27, G2.2).** Until production activation exists, an unconfigured project offers no Share entry in Files, Note, the pinned toolbar, Actions or the native menu. Settings → Sharing says “Turning on sharing isn’t available yet. Your notes stay private.” It does not point back to a setting that cannot solve the problem. Production invitation and publication disabled reasons name the unavailable GitHub capability, not a review build. Configured projects keep their existing sharing paths; no note, grant or remote is changed by this availability repair.
+
+**Affects:** PRJ-10, SHR-13, [Files and sharing](../experience/files-and-sharing.md#turning-on-sharing-for-a-new-project), [G2](definition-of-done.md#g2-turn-on-sharing-and-invite-a-person).
 
 ## D-378: a project always has Git; GitHub is optional
 

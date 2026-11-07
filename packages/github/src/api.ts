@@ -24,6 +24,7 @@ export class GitHubError extends Error {
 export interface Repo {
   owner: string;
   name: string;
+  description?: string;
   defaultBranch: string;
   private: boolean;
   canPush: boolean;
@@ -130,8 +131,8 @@ export class GitHubApi {
   }
 
   async repo(owner: string, name: string): Promise<Repo> {
-    const r = await this.request<{ name: string; owner: { login: string; type?: "User" | "Organization" }; default_branch: string; private: boolean; permissions?: { push?: boolean; admin?: boolean }; pushed_at?: string | null; is_template?: boolean }>("GET", `/repos/${owner}/${name}`);
-    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push), ...(r.owner.type ? { ownerType: r.owner.type } : {}), ...(r.permissions?.admin !== undefined ? { canAdmin: r.permissions.admin } : {}), ...(r.pushed_at ? { pushedAt: r.pushed_at } : {}), ...(r.is_template ? { template: true } : {}) };
+    const r = await this.request<{ name: string; description?: string | null; owner: { login: string; type?: "User" | "Organization" }; default_branch: string; private: boolean; permissions?: { push?: boolean; admin?: boolean }; pushed_at?: string | null; is_template?: boolean }>("GET", `/repos/${owner}/${name}`);
+    return { owner: r.owner.login, name: r.name, ...(r.description ? { description: r.description } : {}), defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push), ...(r.owner.type ? { ownerType: r.owner.type } : {}), ...(r.permissions?.admin !== undefined ? { canAdmin: r.permissions.admin } : {}), ...(r.pushed_at ? { pushedAt: r.pushed_at } : {}), ...(r.is_template ? { template: true } : {}) };
   }
 
   account(login: string) {

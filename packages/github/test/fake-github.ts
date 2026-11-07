@@ -11,6 +11,7 @@ import { base64ToBytes, bytesToBase64, sealNonce } from "../src/secrets.ts";
 export interface FakeRepo {
   owner: string;
   name: string;
+  description?: string;
   private: boolean;
   isTemplate: boolean;
   /** "owner/name" of the template it was made from. */
@@ -140,6 +141,7 @@ export class FakeGitHub {
       const name = String(body?.name);
       if (this.repo(name)) return json(422, { message: "Repository creation failed: name already exists on this account" });
       const repo = this.add({ owner: this.login, name, private: body?.private === true, files: body?.auto_init ? ["README.md"] : [] });
+      if (typeof body?.description === "string") repo.description = body.description;
       this.onCreate?.(repo);
       return json(201, toRepo(repo));
     }
@@ -232,6 +234,7 @@ export class FakeGitHub {
 const json = (status: number, body?: unknown) => new Response(status === 204 ? null : JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const toRepo = (r: FakeRepo) => ({
   name: r.name, owner: { login: r.owner, type: r.ownerType }, default_branch: "main", private: r.private, is_template: r.isTemplate,
+  ...(r.description ? { description: r.description } : {}),
   permissions: { push: r.canPush, admin: r.canPush },
   ...(r.pushedAt ? { pushed_at: r.pushedAt } : {}),
   ...(r.template ? { template_repository: { full_name: r.template } } : {}),

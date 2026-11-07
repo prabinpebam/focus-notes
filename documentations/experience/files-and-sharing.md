@@ -65,6 +65,10 @@ PRJ-10 and [G2.1–G2.3](../plan/definition-of-done.md#g2-turn-on-sharing-and-in
 
 Agents prove these branches only with protocol fakes. The owner's first real activation from Preview is G2.8; it remains an owner dependency, not fake-backed certification.
 
+**Pairing backend (D-388), verified locally but not wired or landed.** Setup persists the confirmed target and an opaque creation intent before its first public write. Retry recognizes that intent after a lost response instead of taking over an unrelated repository. The preservation helper keeps byte-exact copies of working public notes and media together under the private project's `notes/Recovered public/`, preserving their relative structure and never overwriting existing notes. It rejects junctions and source changes during copying. Removal still needs the production write lane and deployment integration; these helpers alone do not close G2.
+
+**Availability repair (D-387).** Unconfigured projects hide Share in Files, Note, a previously pinned toolbar action, Actions and the native menu. Sharing names the current missing capability: “Turning on sharing isn’t available yet. Your notes stay private.” Configured projects retain sharing. Until their production paths land, invitation and publication reasons name unavailable GitHub operations, not a preview; local drafts are not real invitations or publications.
+
 ## Share one item
 
 1. Files row menu → **Share…** on one note or folder.
