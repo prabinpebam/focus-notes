@@ -29,7 +29,8 @@ export function registerProjectNew(ctx: {
   type Step = { id: ProjectCreateStep | "create" | "open"; status: "waiting" | "running" | "done" | "failed" };
   let steps: Step[] = [];
   let request: string | undefined;
-  let recovery: "open" | "folder" | undefined;
+  let recovery: "open" | "folder" | "github" | undefined;
+  let incomplete = false;
   let revision = 0;
   let accountCheck = 0;
   const changed = () => store.update((s) => ({ ...s }));
@@ -42,11 +43,10 @@ export function registerProjectNew(ctx: {
     where.github = where.login ? "signedIn" : status?.problem === "offline" ? "offline" : "signedOut";
     // Signed in, GitHub is the suggested place; the person's own pick always stands.
     if (!where.chosen) where.choice = where.github === "signedIn" ? "github" : "local";
-    if (where.github === "offline" && where.choice === "github") where.choice = "local";
     changed();
     void validateRepo();
   }
-  const blockedByGitHub = () => where.choice === "github" && (where.github !== "signedIn" || Boolean(repo.problem));
+  const blockedByGitHub = () => where.choice === "github" && (where.github !== "signedIn" || !incomplete && Boolean(repo.problem));
   const repoRule = (name: string): RepoProblem => !name ? "empty" : name.length > 100 ? "length"
     : !/^[A-Za-z0-9._-]+$/.test(name) ? "chars" : !isRepoName(name) ? "reserved" : "";
   async function validateRepo() {
@@ -96,6 +96,14 @@ export function registerProjectNew(ctx: {
     id: "projects.new", title: "project.new", icon: "add", layer: "basic", group: "app", enabled: () => Boolean(bridge.projects) && !state.pending,
     run: async () => {
       await commands.run("projects.close");
+      if (incomplete && state.created) { state.open = true; changed(); return; }
+      const unfinished = await bridge.projects?.pendingCreate?.();
+      if (unfinished) {
+        Object.assign(state, { ...unfinished, created: unfinished.folder, open: true, step: 4, pending: false, operation: true, problem: "", error: catalog.format("project.new.githubPartial") });
+        Object.assign(where, { choice: "github", chosen: true });
+        Object.assign(repo, { name: unfinished.repo, edited: true, problem: "" });
+        incomplete = true; recovery = "github"; changed(); void checkAccount(); return;
+      }
       recovery = undefined;
       steps = []; request = undefined;
       Object.assign(state, { open: true, step: 1, name: "", accent: "teal", logo: "book", error: "", problem: "", created: "", pending: true, operation: false, cancelRequested: false, cancelled: false });
@@ -113,14 +121,14 @@ export function registerProjectNew(ctx: {
     state.open = false; revision++; changed();
     if (!store.state.note.path) await commands.run("projects.open");
   } });
-  commands.register({ id: "projects.newBack", title: "project.back", enabled: () => !state.pending && state.step > 1, run: () => { state.step--; repoEditing = false; state.operation = false; steps = []; changed(); } });
+  commands.register({ id: "projects.newBack", title: "project.back", enabled: () => !state.pending && !incomplete && state.step > 1, run: () => { state.step--; repoEditing = false; state.operation = false; steps = []; changed(); } });
   commands.register({
     id: "projects.newNext", title: "project.next", enabled: () => !state.pending && Boolean(state.name.trim()) && !state.problem && !(state.step === 2 && blockedByGitHub()),
     run: async () => { await validate(); if (!state.problem && state.step < 4 && !(state.step === 2 && blockedByGitHub())) { state.step++; changed(); } },
   });
   commands.register<{value: string}>({
     id: "projects.newWhere", title: "project.new.whereTitle", run: ({value}) => {
-      if (state.pending && state.operation) return;
+      if (incomplete || state.pending && state.operation) return;
       if (value !== "github" && value !== "local") return;
       if (value === "github" && where.github === "offline") return;
       where.choice = value; where.chosen = true; state.created = ""; changed();
@@ -129,7 +137,7 @@ export function registerProjectNew(ctx: {
   });
   commands.register<{value: string}>({
     id: "projects.newrepo", title: "project.new.repoLabel", run: async ({value}) => {
-      if (state.pending && state.operation) return;
+      if (incomplete || state.pending && state.operation) return;
       // Kept exactly as typed, even when refused: the step says what's wrong and nothing is lost.
       repo.name = value; repo.edited = value !== repoSlug(state.name); state.created = "";
       await validateRepo();
@@ -150,13 +158,13 @@ export function registerProjectNew(ctx: {
   });
   for (const field of ["name", "accent", "logo"] as const) commands.register<{value: string}>({
     id: `projects.new${field}`, title: "project.new", run: async ({value}) => {
-      if (state.pending && (state.operation || field !== "name")) return;
+      if (incomplete || state.pending && (state.operation || field !== "name")) return;
       state[field] = value; changed();
       if (field === "name") { state.created = ""; void deriveRepo(); await validate(); }
     },
   });
   commands.register({
-    id: "projects.newFolder", title: "project.new.change", enabled: () => !state.pending,
+    id: "projects.newFolder", title: "project.new.change", enabled: () => !state.pending && !incomplete,
     run: async () => {
       try {
         const parent = await bridge.projects!.chooseParent(state.parent);
@@ -184,29 +192,36 @@ export function registerProjectNew(ctx: {
       state.pending = true; state.operation = true; state.cancelRequested = false; state.cancelled = false;
       steps = state.created ? steps.filter(step => step.id !== "open").map(step => ({ ...step, status: "done" })) : [{ id: "create", status: "running" }];
       steps.push({ id: "open", status: "waiting" });
-      request = state.created ? undefined : crypto.randomUUID();
+      request = state.created && !incomplete ? undefined : crypto.randomUUID();
       const previousError = state.retrying ? state.error : "";
       if (!state.retrying) { state.error = ""; recovery = undefined; }
       changed();
       try {
         await tracker.run("project.create", "project.new.creating", async () => {
           try {
-            if (!state.created) state.created = await bridge.projects!.create({parent: state.parent, name: state.name, accent: state.accent, logo: state.logo, request, github: where.choice === "github", ...(where.choice === "github" ? { repo: repo.name } : {})});
+            const result = incomplete
+              ? await bridge.projects!.continueCreate!(state.created, request)
+              : state.created || await bridge.projects!.create({parent: state.parent, name: state.name, accent: state.accent, logo: state.logo, request, github: where.choice === "github", ...(where.choice === "github" ? { repo: repo.name } : {})});
+            state.created = typeof result === "string" ? result : result.folder;
+            incomplete = typeof result !== "string";
           } catch (error) {
-            if (state.cancelRequested) throw new DOMException("Project setup stopped", "AbortError");
+            if (state.cancelRequested && !incomplete) throw new DOMException("Project setup stopped", "AbortError");
             throw error;
           }
-          steps = steps.map(step => step.id === "open" ? step : { ...step, status: "done" });
+          steps = steps.map(step => step.id === "open" ? step : { ...step, status: incomplete && step.status !== "done" ? "failed" : "done" });
           request = undefined;
           if (state.cancelRequested) throw new DOMException("Project setup stopped", "AbortError");
           steps = steps.map(step => step.id === "open" ? { ...step, status: "running" } : step);
           changed();
           await bridge.projects!.open(state.created);
-          steps = steps.map(step => ({ ...step, status: "done" }));
+          steps = steps.map(step => step.id === "open" ? { ...step, status: "done" } : step);
+          if (incomplete) throw new Error("github-partial");
         }, undefined, "fn:project.create", "success");
-        state.open = false; state.error = ""; recovery = undefined;
+        if (incomplete) {
+          state.open = true; state.error = catalog.format("project.new.githubPartial"); recovery = "github";
+        } else { state.open = false; state.error = ""; recovery = undefined; }
       } catch (error) {
-        recovery = state.created ? "open" : "folder";
+        recovery = incomplete ? "github" : state.created ? "open" : "folder";
         if (state.cancelRequested) {
           state.cancelled = true;
           state.problem = state.created ? "" : "stopped";
@@ -215,8 +230,11 @@ export function registerProjectNew(ctx: {
         } else {
           if (!state.created) state.problem = "incomplete";
           steps = steps.map(step => step.status === "running" ? { ...step, status: "failed" } : step);
-          state.error = catalog.format(state.created ? "project.new.openFailed" : "project.new.failed");
+          state.error = catalog.format(incomplete ? "project.new.githubPartial" : state.created ? "project.new.openFailed" : "project.new.failed");
           console.error("New project failed", recovery, opErrorCode(error));
+          if (error instanceof Error && error.message.includes("repository-taken")) {
+            state.problem = ""; state.error = ""; repo.problem = "taken"; state.step = 2; recovery = undefined;
+          }
         }
         if (state.error === previousError) tracker.announceOutcome(state.error);
       }
@@ -228,7 +246,7 @@ export function registerProjectNew(ctx: {
     run: async () => {
       state.retrying = true; changed();
       try {
-        if (recovery === "open") await commands.run("projects.newCreate");
+        if (recovery === "open" || recovery === "github") await commands.run("projects.newCreate");
         else if (recovery === "folder") await commands.run("projects.newFolder");
         else throw new Error("No New project action to recover");
       } finally { state.retrying = false; changed(); }
@@ -247,13 +265,13 @@ export function registerProjectNew(ctx: {
       repoName: text, repoPrefix: text, repoInvalid: { type: "boolean" }, repoError: text, repoChecking: { type: "boolean" }, repoEditing: { type: "boolean" },
     } },
     select: () => ({
-      ...state, cannotNext: state.pending || !state.name.trim() || Boolean(state.problem) || (state.step === 2 && blockedByGitHub()), cannotBack: state.pending || state.step <= 1, confirm: state.step === 4,
+      ...state, cannotNext: state.pending || !state.name.trim() || Boolean(state.problem) || (state.step === 2 && blockedByGitHub()), cannotBack: state.pending || incomplete || state.step <= 1, confirm: state.step === 4,
       cannotCancel: state.operation && state.pending && (!request || state.cancelRequested || !bridge.projects?.cancelCreate),
       cancelLabel: catalog.format(state.cancelRequested && state.pending ? "project.new.stopping" : "project.cancel"),
       cancelReason: catalog.format(state.cancelRequested ? "project.new.stopping" : request ? "project.new.finishingStep" : "project.new.finishingOpen"),
       nextReason: catalog.format(state.pending ? state.operation ? "project.new.creating" : "project.new.checking"
         : (state.step === 2 || state.step === 4) && blockedByGitHub()
-          ? where.github === "checking" ? "project.new.where.github.checking" : where.github !== "signedIn" ? "project.new.signInFirst" : `project.new.repo.${repo.problem}` : "project.new.fixName"),
+          ? where.github === "checking" ? "project.new.where.github.checking" : where.github !== "signedIn" ? "project.new.signInFirst" : `project.new.repo.${repo.problem}` : "project.new.fixName", { name: repo.name }),
       where: where.choice, whereGroup: "projectNewWhere", githubValue: "github", localValue: "local", onGitHub: where.choice === "github",
       githubDetail: catalog.format(where.github === "signedIn" ? "project.new.where.githubAs" : `project.new.where.github.${where.github}`, { login: where.login }),
       githubDisabled: where.github === "offline", githubBusy: where.github === "checking",
@@ -268,7 +286,7 @@ export function registerProjectNew(ctx: {
       elapsed: state.pending && tracker.snapshot().findLast(task => task.target === "project.create")?.elapsed
         ? catalog.format("task.elapsed", { words: catalog.format("project.new.creating"), seconds: tracker.snapshot().findLast(task => task.target === "project.create")!.elapsed }) : "",
       parts: steps.map(step => ({ id: step.id, label: catalog.format(`project.new.part.${step.id}`), icon: step.status === "done" ? "check" : step.status === "failed" ? "error" : "folder", tone: step.status === "done" ? "success" : step.status === "failed" ? "danger" : "neutral", busy: step.status === "running" && state.pending })),
-      recoveryAction: recovery ? catalog.format(recovery === "open" ? "commit.retry" : "project.new.change") : "",
+      recoveryAction: recovery ? catalog.format(recovery === "github" ? "project.new.continueSetup" : recovery === "open" ? "commit.retry" : "project.new.change") : "",
       stepName: ["name", "where", "look", "confirm"][state.step - 1],
       stepLabel: catalog.format("project.new.stepOf", { n: state.step }),
       nextLabel: catalog.format(state.step === 4 ? "project.new.create" : "project.next"),
