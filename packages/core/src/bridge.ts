@@ -14,7 +14,8 @@ import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
 
-export type ProjectCreateStep = "check" | "folder" | "history" | "repository" | "profile";
+export type ProjectCreateStep = "check" | "folder" | "history" | "repository" | "push" | "profile";
+export type ProjectCreateResult = string | { folder: string; problem: "github"; repository: string };
 export interface ProjectCreateProgress {
   request: string;
   steps: ProjectCreateStep[];
@@ -179,7 +180,9 @@ export interface PlatformBridge {
     /** Whether the signed-in account already has a repository by this name; undefined when GitHub can't say. Read-only. */
     repoTaken?(name: string): Promise<boolean | undefined>;
     /** github: also a new private repository, named repo, on the signed-in account; otherwise on this computer only. */
-    create(input: { parent: string; name: string; accent: string; logo: string; request?: string; github?: boolean; repo?: string }): Promise<string>;
+    create(input: { parent: string; name: string; accent: string; logo: string; request?: string; github?: boolean; repo?: string }): Promise<ProjectCreateResult>;
+    continueCreate?(folder: string, request?: string): Promise<ProjectCreateResult>;
+    pendingCreate?(): Promise<{ folder: string; name: string; accent: string; logo: string; repo: string } | undefined>;
     onCreateProgress?(listener: (progress: ProjectCreateProgress) => void): () => void;
     cancelCreate?(request: string): Promise<void>;
   };

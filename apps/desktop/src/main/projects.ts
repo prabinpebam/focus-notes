@@ -5,10 +5,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { access, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateStep, ProjectStats } from "@focus-notes/core";
+import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateResult, ProjectCreateStep, ProjectStats } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
-import { GitHubApi } from "@focus-notes/github";
+import { GitHubApi, GitHubError } from "@focus-notes/github";
+import { isRepoName } from "@focus-notes/core/setup";
+import { suggestIdentity } from "@focus-notes/core/first-run";
 import { parseRecord } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
 import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts";
@@ -83,7 +85,11 @@ export function candidateGitHubApi(origin: string): GitHubApi {
   });
 }
 
-export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner, spawned?: () => void) {
+export async function projectGitHubClient(candidate: string | undefined, accountApi: () => Promise<{ api: GitHubApi } | undefined>, testWithoutApi = false): Promise<GitHubApi | undefined> {
+  return candidate ? candidateGitHubApi(candidate) : testWithoutApi ? undefined : (await accountApi())?.api;
+}
+
+export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner, spawned?: () => void, github?: () => Promise<GitHubApi | undefined>, remoteUrl = (owner: string, repo: string) => `https://github.com/${owner}/${repo}.git`) {
   const userData = app.getPath("userData");
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? userData);
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
@@ -497,23 +503,148 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     catch { return { folder, problem: "access" }; }
     return { folder: join(canonical, safe), problem: "" };
   }
-  async function create(input: { parent: string; name: string; accent: string; logo: string; github?: boolean; repo?: string }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
+  type CreationOperation = { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void };
+  const apiForProject = github ?? (async () => candidateApi ? candidateGitHubApi(candidateApi) : undefined);
+  const receipts = new Map<string, { api: GitHubApi; owner: string; repo: string; accepted: boolean; uncertain: boolean }>();
+  async function saveReceipt(folder: string, receipt: { owner: string; repo: string; accepted: boolean; uncertain: boolean }) {
+    for (const [key, value] of [["owner", receipt.owner], ["repo", receipt.repo], ["state", receipt.accepted ? "accepted" : receipt.uncertain ? "unknown" : "refused"]]) {
+      await gitChecked(folder, ["config", `focusnotes.create${key}`, value!]);
+    }
+  }
+  async function readReceipt(folder: string) {
+    if (!git || !existsSync(join(folder, ".git", "config"))) return;
+    const values: string[] = [];
+    for (const key of ["owner", "repo", "state"]) {
+      const result = await git({ cwd: folder, args: ["config", "--get", `focusnotes.create${key}`], read: true });
+      if (result.code === 1) return;
+      if (result.code !== 0) throw new Error("Could not read unfinished GitHub setup");
+      values.push(result.stdout.trim());
+    }
+    const [owner, repo, state] = values;
+    if (!owner || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || !repo || !isRepoName(repo) || !["accepted", "unknown", "refused"].includes(state!)) throw new Error("Invalid unfinished GitHub setup");
+    return { owner, repo, accepted: state === "accepted", uncertain: state === "unknown" };
+  }
+  async function gitChecked(folder: string, args: string[]) {
+    if (!git) throw new Error("Git is unavailable");
+    const result = await git({ cwd: folder, args });
+    if (result.code !== 0) throw new Error(`Project setup: git ${args[0]} failed`);
+    return result.stdout;
+  }
+  async function finishGitHub(folder: string, operation?: CreationOperation): Promise<ProjectCreateResult> {
+    const receipt = receipts.get(folder);
+    if (!receipt) throw new Error("No GitHub setup to continue");
+    const steps: ProjectCreateStep[] = ["repository", "push"];
+    const progress = (step: ProjectCreateStep, done: boolean) => operation?.progress({ steps, step, done });
+    const timed = async <T>(step: ProjectCreateStep, work: () => Promise<T>) => {
+      progress(step, false);
+      const start = performance.now();
+      try {
+        const result = await work();
+        progress(step, true);
+        return result;
+      } finally { performance.measure(`fn:project.create.${step}`, { start, end: performance.now() }); }
+    };
+    try {
+      operation?.signal.throwIfAborted();
+      await timed("repository", async () => {
+        if (!receipt.accepted) {
+          // Lost responses are checked only after the person's explicit Continue setup action.
+          if (receipt.uncertain) {
+            const existing = await receipt.api.findRepo(receipt.owner, receipt.repo);
+            if (existing) {
+              if (!existing.private || existing.owner !== receipt.owner || existing.name !== receipt.repo) throw new Error("GitHub did not confirm the private repository");
+              receipt.accepted = true;
+            } else receipt.uncertain = false;
+          }
+          if (!receipt.accepted) {
+            if (await receipt.api.findRepo(receipt.owner, receipt.repo)) throw new Error("repository-taken");
+            receipt.uncertain = true;
+            await saveReceipt(folder, receipt);
+            operation?.signal.throwIfAborted();
+            try { await receipt.api.createRepo(receipt.repo, "Private notes for Focus Notes", true, false); }
+            catch (error) {
+              if (error instanceof GitHubError && error.status >= 400 && error.status < 500) receipt.uncertain = false;
+              throw error;
+            }
+            receipt.accepted = true;
+            await saveReceipt(folder, receipt);
+          }
+        }
+        const repository = await receipt.api.repo(receipt.owner, receipt.repo);
+        if (!repository.private || repository.owner !== receipt.owner || repository.name !== receipt.repo) throw new Error("GitHub did not confirm the private repository");
+      });
+      operation?.signal.throwIfAborted();
+      await timed("push", async () => {
+        const url = remoteUrl(receipt.owner, receipt.repo);
+        const existing = await git!({ cwd: folder, args: ["config", "--get", "remote.origin.url"], read: true });
+        if (existing.code === 1) await gitChecked(folder, ["remote", "add", "origin", url]);
+        else if (existing.code !== 0 || existing.stdout.trim() !== url) throw new Error("The project's remote changed; check it before continuing");
+        try {
+          await gitChecked(folder, ["push", "--set-upstream", "origin", "main"]);
+        } catch (error) {
+          // Until an explicit continuation succeeds, autosave remains local and cannot retry the push.
+          await gitChecked(folder, ["remote", "remove", "origin"]);
+          throw error;
+        }
+      });
+      for (const key of ["owner", "repo", "state"]) {
+        const clear = await git!({ cwd: folder, args: ["config", "--unset", `focusnotes.create${key}`] });
+        if (clear.code !== 0 && clear.code !== 5) throw new Error("Could not clear finished GitHub setup");
+      }
+      receipts.delete(folder);
+      return folder;
+    } catch (error) {
+      console.error("GitHub project setup stopped:", error instanceof Error ? error.name : "Error");
+      await saveReceipt(folder, receipt);
+      if (operation?.signal.aborted) throw error;
+      return { folder, problem: "github", repository: `${receipt.owner}/${receipt.repo}` };
+    }
+  }
+  async function continueCreate(folder: string, operation?: CreationOperation): Promise<ProjectCreateResult> {
+    folder = await knownFolder(folder);
+    const saved = receipts.get(folder) ?? await readReceipt(folder);
+    if (!saved) throw new Error("No GitHub setup to continue");
+    const api = await apiForProject();
+    if (!api || (await api.user()).login !== saved.owner) throw new Error("Sign in to the account that started this project");
+    receipts.set(folder, { ...saved, api });
+    return finishGitHub(folder, operation);
+  }
+  async function pendingCreate() {
+    const folder = await realpath(home());
+    const receipt = receipts.get(folder) ?? await readReceipt(folder);
+    if (!receipt) return;
+    await list();
+    const profile = known.get(folder);
+    if (!profile) throw new Error("Unfinished project is not recorded");
+    const look = (await state(profile)).projectSettings?.[folder];
+    return { folder, name: look?.name ?? basename(folder), accent: look?.accent ?? "teal", logo: look?.logo ?? "book", repo: receipt.repo };
+  }
+  function create(input: { parent: string; name: string; accent: string; logo: string; github?: false }, operation?: CreationOperation): Promise<string>;
+  function create(input: { parent: string; name: string; accent: string; logo: string; github?: boolean; repo?: string }, operation?: CreationOperation): Promise<ProjectCreateResult>;
+  async function create(input: { parent: string; name: string; accent: string; logo: string; github?: boolean; repo?: string }, operation?: CreationOperation): Promise<ProjectCreateResult> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
     if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
-    // Never make a project on this computer only when the person chose GitHub: refuse before anything exists.
-    if (input.github && !candidateApi) throw new Error("GitHub project creation isn't available in this build yet.");
-    const remote = Boolean(input.github && candidateApi);
-    const steps: ProjectCreateStep[] = ["check", "folder", ...(git ? ["history" as const] : []), ...(remote ? ["repository" as const] : []), "profile"];
+    if (input.github && (!input.repo || !isRepoName(input.repo))) throw new Error("repository-invalid");
+    const api = input.github ? await apiForProject() : undefined;
+    if (input.github && !api) throw new Error("signedOut");
+    if (input.github && !git) throw new Error("Git is unavailable");
+    const user = api ? await api.user() : undefined;
+    const remote = Boolean(api);
+    const steps: ProjectCreateStep[] = ["check", "folder", ...(git ? ["history" as const] : []), "profile", ...(remote ? ["repository" as const, "push" as const] : [])];
     const step = async <T>(id: ProjectCreateStep, work: () => Promise<T>): Promise<T> => {
       operation?.signal.throwIfAborted();
       operation?.progress({ steps, step: id, done: false });
-      const result = await work();
-      operation?.progress({ steps, step: id, done: true });
-      return result;
+      const start = performance.now();
+      try {
+        const result = await work();
+        operation?.progress({ steps, step: id, done: true });
+        return result;
+      } finally { performance.measure(`fn:project.create.${id}`, { start, end: performance.now() }); }
     };
     const result = await step("check", async () => {
       const result = await check(input.parent, input.name);
       if (result.problem) throw new Error(`Project folder refused: ${result.problem}`);
+      if (api && user && await api.findRepo(user.login, input.repo!)) throw new Error("repository-taken");
       return result;
     });
     await step("folder", async () => {
@@ -528,23 +659,29 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
           const r = await git({ cwd: result.folder, args });
           if (r.code !== 0) throw new Error(`Couldn't start the project's history: git ${args[0]} failed.`);
         }
+        if (user) {
+          const identity = suggestIdentity({}, { login: user.login, id: user.id, name: user.name ?? "" });
+          await gitChecked(result.folder, ["config", "user.name", identity.name]);
+          await gitChecked(result.folder, ["config", "user.email", identity.email]);
+          await mkdir(join(result.folder, ".focus-notes"));
+          await writeFile(join(result.folder, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n', { flag: "wx" });
+          await gitChecked(result.folder, ["add", "--", ".focus-notes/workspace.json"]);
+          await gitChecked(result.folder, ["commit", "--quiet", "-m", "Start the project"]);
+          return;
+        }
         // The first commit needs the person's Git identity; without one, the history starts at their first save.
         await git({ cwd: result.folder, args: ["commit", "--allow-empty", "--quiet", "-m", "Start the project"] });
       });
     }
-    if (remote) {
-      await step("repository", async () => {
-        const api = candidateGitHubApi(candidateApi!);
-        const owner = (await api.user()).login;
-        const name = input.repo ?? "";
-        if (!/^[A-Za-z0-9._-]{1,100}$/.test(name)) throw new Error("Invalid repository name");
-        await api.createRepo(name, "Private notes for Focus Notes", true, false);
-        const repository = await api.repo(owner, name);
-        if (!repository.private || repository.owner !== owner || repository.name !== name) throw new Error("The local GitHub endpoint did not confirm a private repository.");
-      });
-    }
     const folder = await realpath(result.folder);
     await step("profile", () => adopt(folder, { name: input.name, accent: input.accent, logo: input.logo }));
+    if (api && user) {
+      receipts.set(folder, { api, owner: user.login, repo: input.repo!, accepted: false, uncertain: false });
+      const start = performance.now();
+      try {
+        return await finishGitHub(folder, operation && { ...operation, progress: event => operation.progress({ ...event, steps }) });
+      } finally { performance.measure("fn:project.create.github", { start, end: performance.now() }); }
+    }
     return folder;
   }
   /** Makes a folder a known project with its own profile (a clone from GitHub, a new project); an already known one is left as it is. */
@@ -578,5 +715,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed, purge, resume, dispose, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, firstNoteAdmission: metadata.firstNoteAdmission };
 }

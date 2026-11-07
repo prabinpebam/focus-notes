@@ -332,6 +332,55 @@ describe("Open", () => {
     expect(creates).toBe(1); expect(picks).toBe(1);
   });
 
+    it("keeps a taken repository name at its field and the typed project name after the final preflight refuses it", async () => {
+      const app = appWith({
+        parent: async () => "C:\\Projects", check: async () => ({ folder: book.folder, problem: "" }),
+        repoTaken: async () => false,
+        create: async () => { throw new Error("repository-taken"); },
+      }, undefined, { firstRun: { account: async () => ({ account: { login: "writer", name: "Writer", id: 1 }, gcm: false, gh: false }) } as PlatformBridge["firstRun"] });
+      await app.commands.run("projects.new");
+      await app.commands.run("projects.newname", { value: "Book" });
+      await app.commands.run("projects.newrepo", { value: "my-book" });
+      for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+      await app.commands.run("projects.newCreate");
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: true, step: 2, name: "Book", repoName: "my-book", repoInvalid: true, repoError: "You already have a repository called my-book. Choose another name." });
+    });
+
+    it("shows sign-in rather than silently making a local project when GitHub was chosen while signed out", async () => {
+      const create = vi.fn(async () => book.folder);
+      const app = appWith({ parent: async () => "C:\\Projects", check: async () => ({ folder: book.folder, problem: "" }), create });
+      await app.commands.run("projects.new");
+      await app.commands.run("projects.newname", { value: "Book" });
+      await app.commands.run("projects.newNext");
+      await app.commands.run("projects.newWhere", { value: "github" });
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ canSignIn: true, cannotNext: true, onGitHub: true });
+      await app.commands.run("projects.newCreate");
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("opens a preserved local project after a GitHub failure and continues without another Create, keeping its original choices", async () => {
+      const create = vi.fn(async () => ({ folder: book.folder, problem: "github" as const, repository: "writer/book" }));
+      const continuation = vi.fn(async () => book.folder);
+      const open = vi.fn(async () => {});
+      const app = appWith({
+        parent: async () => "C:\\Projects", check: async () => ({ folder: book.folder, problem: "" }), create, continueCreate: continuation, open,
+      });
+      await app.commands.run("projects.new");
+      await app.commands.run("projects.newname", { value: "Book" });
+      for (let i = 0; i < 3; i++) await app.commands.run("projects.newNext");
+      await app.commands.run("projects.newCreate");
+      expect(open).toHaveBeenCalledExactlyOnceWith(book.folder);
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: true, name: "Book", error: en["project.new.githubPartial"], recoveryAction: "Continue setup", cannotBack: true });
+      await app.commands.run("projects.newname", { value: "Changed" });
+      await app.commands.run("projects.newClose");
+      await app.commands.run("projects.new");
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ name: "Book", error: en["project.new.githubPartial"] });
+      await app.commands.run("projects.newRecover");
+      expect(create).toHaveBeenCalledOnce();
+      expect(continuation).toHaveBeenCalledWith(book.folder, expect.any(String));
+      expect(app.viewModels.select("vm.projectNew", app.store.state)).toMatchObject({ open: false, error: "" });
+    });
+
     it("streams only the active creation's actual steps and keeps a completed receipt when Cancel arrives before Open", async () => {
       let progress!: (value: ProjectCreateProgress) => void, finish!: (folder: string) => void, active = "";
       const create = vi.fn(async (input: { request?: string }) => {
