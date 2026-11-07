@@ -57,6 +57,47 @@ async function close(l: Launched) {
   }
 }
 
+test("Open hides docked Files and closing it restores the same dock and note (PRJ-02, D-187)", async () => {
+  const dirs = tempDirs();
+  const l = await start(dirs);
+  try {
+    await l.page.keyboard.press(`${mod}+Alt+P`);
+    await expect(files(l.page)).toHaveAttribute("data-docked", "");
+    await settled(l.page);
+    const before = await files(l.page).boundingBox();
+    const note = l.page.getByRole("textbox", { name: "Note", exact: true });
+    const text = await note.textContent();
+    await l.page.keyboard.press(`${mod}+Alt+O`);
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+    await expect(open).toBeVisible();
+    await expect(files(l.page)).toHaveCount(0);
+    await open.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(open).toBeHidden();
+    await expect(files(l.page)).toHaveAttribute("data-docked", "");
+    await settled(l.page);
+    expect((await files(l.page).boundingBox())?.width).toBe(before?.width);
+    expect(await note.textContent()).toBe(text);
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(NOTE);
+  } finally {
+    await close(l);
+  }
+});
+
+test("Full-window Open hides remembered Files in an empty project (PRJ-02, D-187)", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
+    version: 1, firstRun: "done", lastNotePath: "", filesPinned: true,
+  }));
+  const l = await launch(dirs);
+  try {
+    await expect(l.page.getByRole("region", { name: "Open", exact: true })).toBeVisible();
+    await expect(files(l.page)).toHaveCount(0);
+    await expect(l.page.getByRole("button", { name: "Focus Notes menu", exact: true })).toBeVisible();
+  } finally {
+    await close(l);
+  }
+});
+
 test("D-187: Files and the contents dock flush to the window's edges, the note's area between them; each resizes from its inner edge and keeps its width", async () => {
   const dirs = tempDirs();
   let l = await start(dirs);

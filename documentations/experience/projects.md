@@ -113,6 +113,12 @@ In the approved mock the missing-note recovery reads **“⟨Chapter 1⟩ isn't 
 
 ## The Open view
 
+> **Owner review correction, 7 November (PRJ-02).** Open hides Files while it is open, including when Open fills an empty project's window. Closing the dialog restores the existing Files dock and width without changing the note or its on-disk text. The top-centre red dot is the existing **Focus Notes menu** trigger, not a recording indicator; its normal red tone is distinct from its save-failure danger state. This correction changes no trigger styling.
+>
+> **Review sources:** the original six `Pasted Image*.png` attachments in the owner's 11:24 session (`c903d624-c50a-4f8e-a7cc-9c0fc45dc9aa`), with read-only snapshots at `E:\Projects\side-projects\focus-notes-work\review\owner-11-24\04-open-red-dot.png`, `05-files-red-dot.png` and `06-files-behind-open.png`. These remain outside the published documentation: no note contents or personal paths from the screenshots are reproduced here.
+>
+> **Launch audit, 7 November.** The D-366 Preview/development identity repair is already on main (`d0a1d872`, explicit-profile correction `9d09f257`, carry-over recovery `4b84d540`). Repeated launches of the same channel/profile reuse its existing window; different channels may coexist. As built, each project has its own process/profile and lock, as described below; D-309's proposed single-process wording is not an implemented guarantee.
+
 > [!NOTE]
 > **Working preview, 3 November: Open and Launch.** Ctrl+Alt+O and Spotlight's Open… open the real two-column dialog over a note; without a note, Open fills the window. Search filters known local projects and their last files; a project's Open opens or focuses its own process/profile, so the original window keeps its note and scope. Open project… selects a local folder. The ordinary launcher resumes the last project closed and its most recently opened note, without Open first. Each profile remembers that note through the OS-protected desktop store, including private paths; browser storage still never keeps private paths. A profile with no remembered note shows full-window Open instead of creating a replacement. New project has the local four-step flow below. Frecency/pins, restoring every project/window, GitHub opening and Local notes/standalone actions remain unwired.
 

@@ -4146,7 +4146,12 @@
         "type": "Sheet",
         "id": "files",
         "when": {
-          "get": "vm.files.open"
+          "expr": {
+            "and": [
+              { "get": "vm.files.open" },
+              { "!": { "get": "vm.projects.open" } }
+            ]
+          }
         },
         "props": {
           "label": {

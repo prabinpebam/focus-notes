@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { launch, quit, type Launched } from "./helpers.ts";
+import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 async function closeInstances(launched: Launched[], root: string): Promise<void> {
@@ -20,6 +20,44 @@ async function closeInstances(launched: Launched[], root: string): Promise<void>
     rmSync(root, { recursive: true, force: true });
   }
 }
+
+test("A repeated Preview launch recovers its existing writing window without another instance (PKG-03, D-366)", async () => {
+  test.skip(Boolean(process.env.FOCUS_NOTES_E2E_EXE), "Packaged apps intentionally ignore the invisible journey seam.");
+  const dirs = tempDirs();
+  const instance = await launch(dirs, { FOCUS_NOTES_CHANNEL: "preview" });
+  try {
+    const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(note).toBeVisible();
+    await expect.poll(() => instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible())).toBe(true);
+    const before = await note.textContent();
+    const repeated = await instance.app.evaluate(({ app, BrowserWindow }) => {
+      Reflect.set(globalThis, "repeatedPreviewLaunches", 0);
+      app.on("second-instance", () => Reflect.set(globalThis, "repeatedPreviewLaunches",
+        Number(Reflect.get(globalThis, "repeatedPreviewLaunches")) + 1));
+      BrowserWindow.getAllWindows()[0]!.hide();
+      return {
+        executable: process.execPath,
+        env: Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)),
+      };
+    });
+    await expect(electron.launch({
+      executablePath: repeated.executable,
+      args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
+      env: repeated.env, timeout: 5000,
+    })).rejects.toThrow();
+    await expect.poll(() => instance.app.evaluate(({ app, BrowserWindow }) => ({
+      launches: Reflect.get(globalThis, "repeatedPreviewLaunches"),
+      windows: BrowserWindow.getAllWindows().length,
+      lock: app.hasSingleInstanceLock(),
+      recovered: BrowserWindow.getAllWindows()[0]?.isVisible(),
+      opacity: BrowserWindow.getAllWindows()[0]?.getOpacity(),
+    }))).toEqual({ launches: 1, windows: 1, lock: true, recovered: true, opacity: journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1 });
+    expect(await note.textContent()).toBe(before);
+  } finally {
+    await closeInstances([instance], dirs.userData);
+    rmSync(dirs.docs, { recursive: true, force: true });
+  }
+});
 
 test("Preview and the stable channel keep their native locks and writing windows side by side", async () => {
   test.skip(Boolean(process.env.FOCUS_NOTES_E2E_EXE), "Uses a source-only entrypoint to isolate the synthetic default profile.");
