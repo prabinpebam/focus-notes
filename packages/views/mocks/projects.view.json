@@ -15,7 +15,11 @@
   "accent": "teal",
   "logo": "book",
   "loc": "Documents › Focus Notes",
-  "picking": false
+  "picking": false,
+  "where": "github",
+  "whereGroup": "mockProjectWhere",
+  "githubValue": "github",
+  "localValue": "local"
  },
  "root": {
   "type": "AppRoot",
@@ -2407,7 +2411,7 @@
                      "on": {
                       "press": {
                        "set": "local.np",
-                       "to": "private"
+                       "to": "where"
                       }
                      },
                      "props": {
@@ -2432,7 +2436,7 @@
                     }
                    ]
                   },
-                  "private": {
+                  "where": {
                    "type": "Inline",
                    "props": {
                     "gap": "inlineItem",
@@ -2485,7 +2489,7 @@
                      "on": {
                       "press": {
                        "set": "local.np",
-                       "to": "private"
+                       "to": "where"
                       }
                      },
                      "props": {
@@ -2580,7 +2584,7 @@
                     }
                    }
                   },
-                  "private": {
+                  "where": {
                    "type": "StepDots",
                    "props": {
                     "current": 2,
@@ -2709,7 +2713,7 @@
                    }
                   ]
                  },
-                 "private": {
+                 "where": {
                   "type": "Stack",
                   "props": {
                    "gap": "stackItem"
@@ -2719,7 +2723,7 @@
                     "type": "Heading",
                     "props": {
                      "value": {
-                      "t": "project.new.privateTitle"
+                      "t": "project.new.whereTitle"
                      },
                      "level": "3"
                     }
@@ -2731,132 +2735,137 @@
                     },
                     "children": [
                      {
-                      "type": "Inline",
+                      "type": "ItemCard",
                       "props": {
-                       "gap": "inlineItem",
-                       "align": "center"
-                      },
-                      "children": [
-                       {
-                        "type": "StepMark",
-                        "props": {
-                         "icon": "lock",
-                         "tone": "neutral",
-                         "size": "compact"
+                       "title": {
+                        "t": "project.new.where.github"
+                       },
+                       "detail": {
+                        "t": "project.new.where.githubAs",
+                        "args": {
+                         "login": {
+                          "get": "local.owner"
+                         }
                         }
                        },
-                       {
-                        "type": "Stack",
-                        "props": {
-                         "gap": "stackPair"
-                        },
-                        "children": [
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.privateRepo"
-                           },
-                           "role": "label"
+                       "icon": "github",
+                       "chevron": false,
+                       "choiceGroup": {
+                        "get": "local.whereGroup"
+                       },
+                       "choiceValue": {
+                        "get": "local.githubValue"
+                       },
+                       "selected": {
+                        "expr": {
+                         "==": [
+                          {
+                           "get": "local.where"
+                          },
+                          {
+                           "get": "local.githubValue"
                           }
-                         }
-                        ]
+                         ]
+                        }
                        }
-                      ]
+                      },
+                      "on": {
+                       "choose": {
+                        "set": "local.where",
+                        "to": {
+                         "get": "event.value"
+                        }
+                       }
+                      }
                      },
                      {
-                      "type": "Inline",
+                      "type": "ItemCard",
                       "props": {
-                       "gap": "inlineItem",
-                       "align": "center"
-                      },
-                      "children": [
-                       {
-                        "type": "StepMark",
-                        "props": {
-                         "icon": "globe",
-                         "tone": "neutral",
-                         "size": "compact"
-                        }
+                       "title": {
+                        "t": "project.new.where.local"
                        },
-                       {
-                        "type": "Stack",
-                        "props": {
-                         "gap": "stackPair"
-                        },
-                        "children": [
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.noSite"
-                           },
-                           "role": "label"
+                       "detail": {
+                        "t": "project.new.where.localDetail"
+                       },
+                       "icon": "hardDrive",
+                       "chevron": false,
+                       "choiceGroup": {
+                        "get": "local.whereGroup"
+                       },
+                       "choiceValue": {
+                        "get": "local.localValue"
+                       },
+                       "selected": {
+                        "expr": {
+                         "==": [
+                          {
+                           "get": "local.where"
+                          },
+                          {
+                           "get": "local.localValue"
                           }
-                         },
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.noSiteDetail"
-                           },
-                           "role": "caption",
-                           "tone": "muted"
-                          }
-                         }
-                        ]
+                         ]
+                        }
                        }
-                      ]
+                      },
+                      "on": {
+                       "choose": {
+                        "set": "local.where",
+                        "to": {
+                         "get": "event.value"
+                        }
+                       }
+                      }
+                     }
+                    ]
+                   },
+                   {
+                    "type": "Inline",
+                    "props": {
+                     "gap": "inlineItem",
+                     "align": "center"
+                    },
+                    "children": [
+                     {
+                      "type": "StepMark",
+                      "props": {
+                       "icon": "folder",
+                       "tone": "neutral",
+                       "size": "compact"
+                      }
                      },
                      {
-                      "type": "Inline",
+                      "type": "Stack",
                       "props": {
-                       "gap": "inlineItem",
-                       "align": "center"
+                       "gap": "stackPair"
                       },
                       "children": [
                        {
-                        "type": "StepMark",
+                        "type": "Text",
                         "props": {
-                         "icon": "folder",
-                         "tone": "neutral",
-                         "size": "compact"
+                         "value": {
+                          "t": "project.new.ownFolder"
+                         },
+                         "role": "label"
                         }
                        },
                        {
-                        "type": "Stack",
+                        "type": "Text",
                         "props": {
-                         "gap": "stackPair"
-                        },
-                        "children": [
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.ownFolder"
+                         "value": {
+                          "t": "project.new.folderAt",
+                          "args": {
+                           "loc": {
+                            "get": "local.loc"
                            },
-                           "role": "label"
+                           "name": {
+                            "get": "local.name"
+                           }
                           }
                          },
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.folderAt",
-                            "args": {
-                             "loc": {
-                              "get": "local.loc"
-                             },
-                             "name": {
-                              "get": "local.name"
-                             }
-                            }
-                           },
-                           "role": "caption",
-                           "tone": "muted"
-                          }
-                         }
-                        ]
+                         "role": "caption",
+                         "tone": "muted"
+                        }
                        }
                       ]
                      }
@@ -3222,7 +3231,17 @@
                            }
                           }
                          }
-                        ]
+                        ],
+                        "when": {
+                         "expr": {
+                          "==": [
+                           {
+                            "get": "local.where"
+                           },
+                           "github"
+                          ]
+                         }
+                        }
                        },
                        {
                         "type": "Inline",
@@ -3260,6 +3279,35 @@
                                 "t": "project.new.makesFolder"
                                },
                                "role": "label"
+                              },
+                              "when": {
+                               "expr": {
+                                "==": [
+                                 {
+                                  "get": "local.where"
+                                 },
+                                 "github"
+                                ]
+                               }
+                              }
+                             },
+                             {
+                              "type": "Text",
+                              "props": {
+                               "value": {
+                                "t": "project.new.makesFolderOnly"
+                               },
+                               "role": "label"
+                              },
+                              "when": {
+                               "expr": {
+                                "!=": [
+                                 {
+                                  "get": "local.where"
+                                 },
+                                 "github"
+                                ]
+                               }
                               }
                              },
                              {
