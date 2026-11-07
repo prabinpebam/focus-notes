@@ -1,5 +1,21 @@
 import { expect, it } from "vitest";
-import { sharingLayout } from "../src/main/share/layout.ts";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { projectSharingLayout, sharingLayout } from "../src/main/share/layout.ts";
+
+it("PRJ-10: classifies a real New-project folder as Private and preserves an inaccessible legacy pair", async () => {
+  const root = await mkdtemp(join(tmpdir(), "sharing-layout-"));
+  try {
+    await mkdir(join(root, "notes"));
+    expect(projectSharingLayout(root, true)).toEqual(sharingLayout(root, { workspace: true, legacyPair: false, privateCheckout: false }));
+    await writeFile(join(root, ".gitmodules"), '[submodule "private"]\n\tpath = private\n\turl = https://github.com/example/private.git\n');
+    expect(projectSharingLayout(root, true).roots.map(root => root.id)).toEqual(["public"]);
+    expect(projectSharingLayout(root, true).privateDir).toBeUndefined();
+    await mkdir(join(root, "private", "notes"), { recursive: true });
+    expect(projectSharingLayout(root, true).roots.map(root => root.id)).toEqual(["private", "public"]);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 it("PRJ-10: New project notes are always Private, never a publishable public source", () => {
   const layout = sharingLayout("C:\\Projects\\Book", { workspace: true, legacyPair: false, privateCheckout: false });

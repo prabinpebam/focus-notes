@@ -1,5 +1,16 @@
 # Perceived performance: no frozen waits, no glitches
 
+## New-project sharing confirmation (D-396)
+
+The existing confirmation shows the default site repository and Pages URL read-only. It preserves the writing view and draft, with one busy action and an error in the dialog. Production activation is unavailable before any remote write while G3 is absent; this is not a live publication claim.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Read the signed-in project's default site pairing | Responsive → waiting; named section task | Existing confirmation and Preparing sharing; close leaves the note usable, and late results never reopen the dialog | `fn:sharing.setup.describe`; tracker `sharing.setup.describe`; no guessed site or writable name |
+| Confirm / retry paired site setup | Waiting → long; named task with persisted steps | Existing action busy border and subtle Preparing sharing, Save to GitHub or Turn on GitHub Pages; unavailable error retains the exact target and offers Retry or close | `fn:sharing.setup.enable`; tracker `sharing.setup.enable`; no ready capability before matching successful artifact acknowledgement |
+
+Granular creation/check/preservation/removal copy remains an approved-design dependency for the later live publisher. This slice reuses existing copy, streams typed steps, and does not invent progress percentages or imply a completed deployment. Leaving invalidates UI completion, not the persisted backend operation.
+
 ## GitHub project invitations
 
 The invitation path uses the signed-in desktop GitHub client, not a local draft. These are correctness measures, not a claim of faster network requests. The existing Invite person dialog keeps the username and role, and its Send/Retry button uses the standard own-border pending state. Closing the dialog does not cancel a request already sent or reopen Settings over the writing window.

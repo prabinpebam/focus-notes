@@ -11,6 +11,7 @@ import { generatePasscode } from "@focus-notes/seal/words";
 import type { AccessFile } from "@focus-notes/seal";
 import { createApp, initials, inviteTemplate, inviteText, MessageCatalog, shareables, type AccessListing, type PlatformBridge } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
+import { menuBarModel } from "../src/menu-bar.ts";
 
 const catalog = new MessageCatalog("en", en);
 const SITE = "https://ada.github.io/notes/";
@@ -82,6 +83,93 @@ describe("helpers", () => {
 const settle = () => new Promise((r) => setTimeout(r, 0));
 afterEach(() => vi.useRealTimers());
 
+describe("G2 read-only default site confirmation", () => {
+  const preview = { project: "ada/book", owner: "ada", name: "notes-site", site: "https://ada.github.io/notes-site/", phase: "unconfigured" as const };
+  async function setup() {
+    const t = shell();
+    t.bridge.workspace!.info = async () => ({ folder: "/w", repo: "ada/book" });
+    t.bridge.access!.load = async () => ({ available: true, setupAvailable: true, vault: false, grants: [] });
+    t.bridge.access!.setup = {
+      describe: vi.fn(async () => preview),
+      enable: vi.fn(async () => { throw new Error("sharing:unavailable"); }),
+      disable: vi.fn(async () => { throw new Error("sharing:unavailable"); }),
+    };
+    await t.app.start();
+    await settle();
+    await t.run("share.manage.load");
+    expect(t.vm("vm.sharingSettings").canSetup).toBe(true);
+    return t;
+  }
+  it("shows the default paired public target read-only, retaining it and the note on unavailable Retry", async () => {
+    const t = await setup();
+    const apply = vi.spyOn(t.bridge.access!, "apply");
+    const before = t.app.store.state.note.markdown;
+    await t.run("sharing.firstOpen");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: true, repo: "ada/notes-site", setupSite: preview.site, on: false });
+    await t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: true, busy: false, setupProblem: true, repo: "ada/notes-site", on: false });
+    await t.run("sharing.firstAccept");
+    expect(t.bridge.access!.setup!.enable).toHaveBeenCalledTimes(2);
+    expect(t.bridge.access!.setup!.enable).toHaveBeenCalledWith("notes-site");
+    expect(apply).not.toHaveBeenCalled();
+    expect(t.app.store.state.note.markdown).toBe(before);
+    await t.run("sharing.firstClose");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: false, on: false });
+  });
+  it("enables modern sharing only after the matching ready pairing loads, without an owner vault", async () => {
+    const t = await setup();
+    t.bridge.access!.setup!.enable = async () => ({ phase: "ready", site: preview.site });
+    await t.run("sharing.firstOpen");
+    t.bridge.access!.load = async () => ({ available: true, vault: false, configured: true, site: preview.site, grants: [] });
+    await t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: false, on: true });
+    expect(t.app.store.state.ui.share.listing).toMatchObject({ configured: true, vault: false, grants: [] });
+    expect(t.vm("vm.shareManage").available).toBe(true);
+  });
+  it("refuses mismatched readiness and ignores completion after the person leaves", async () => {
+    const t = await setup();
+    await t.run("sharing.firstOpen");
+    t.bridge.access!.setup!.enable = async () => ({ phase: "ready", site: "https://ada.github.io/wrong/" });
+    await t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: true, on: false, setupProblem: true });
+    let done!: (value: { phase: "ready"; site: string }) => void;
+    t.bridge.access!.setup!.enable = () => new Promise(resolve => { done = resolve; });
+    const accepting = t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings").busy).toBe(true);
+    await t.run("sharing.firstClose");
+    done({ phase: "ready", site: preview.site });
+    await accepting;
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: false, busy: false, on: false });
+    expect(t.app.store.state.ui.settings.open).toBe(true);
+  });
+});
+
+it("hides unconfigured Share in Files, Note, pinned toolbar and the native menu, then restores configured sharing", async () => {
+  const t = shell();
+  const configured = await t.bridge.access!.load();
+  t.bridge.access!.load = async () => ({ available: true, site: SITE, vault: false, grants: [] });
+  await t.app.start();
+  await settle();
+  await t.run("settings.setSection", { value: "sharing" });
+  await t.run("files.reveal");
+  t.app.store.update(s => ({ ...s, toolbarPinned: [...s.toolbarPinned, "note.share"] }));
+  expect(t.app.commands.describe("note.share").enabled).toBe(false);
+  expect(t.app.commands.describe("files.share").enabled).toBe(false);
+  expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).not.toContain("files.share");
+  expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).not.toContain("note.share");
+  expect(t.vm("vm.toolbar").more.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).not.toContain("note.share");
+  expect(menuBarModel(t.app.commands, catalog, "macos").menus.find(m => m.id === "file")!.items).not.toContainEqual(expect.objectContaining({ id: "note.share" }));
+  expect(t.vm("vm.sharingSettings")).toMatchObject({ off: true, localReview: false, offDetail: en["sharing.setup.unavailable"] });
+  expect(String(t.vm("vm.sharingSettings").offDetail)).not.toContain("Settings");
+  expect(t.access().grants).toHaveLength(1);
+  t.bridge.access!.load = async () => configured;
+  await t.run("share.manage.load");
+  expect(t.app.commands.describe("note.share").enabled).toBe(true);
+  expect(t.app.commands.describe("files.share").enabled).toBe(true);
+  expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).toContain("files.share");
+  expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).toContain("note.share");
+});
+
 it("opens Files from a sharing empty state without toggling an already-open panel shut", async () => {
   const t = shell();
   await t.app.start();
@@ -99,6 +187,7 @@ describe("known-empty sharing settings", () => {
     const t = shell();
     await t.app.start();
     await settle();
+    t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: undefined } } }));
     expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: false });
     t.bridge.access!.load = async () => { throw new Error("private-path-and-token"); };
     await t.run("share.manage.load");
@@ -146,6 +235,7 @@ describe("known-empty sharing settings", () => {
     const t = shell();
     await t.app.start();
     await settle();
+    t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: undefined } } }));
     vi.useFakeTimers();
     const measure = vi.spyOn(performance, "measure");
     let reject!: (error: Error) => void;

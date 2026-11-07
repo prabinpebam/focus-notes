@@ -7,6 +7,7 @@ import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.t
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { journeyUnseen } from "../src/main/window/journey-window.ts";
 import { attachProject, closeProject, projectEntryApp } from "./project-process.ts";
+import { configure, git, write } from "./instance.ts";
 
 async function close(instance: Launched, dirs: ReturnType<typeof tempDirs>) {
   try { await quit(instance); }
@@ -55,6 +56,101 @@ for (const paired of [false, true]) {
     } finally { await close(instance, dirs); }
   });
 }
+
+test("PRJ-10: New-project notes start Private, autosave there, and never offer a public source", async () => {
+  const { dirs } = project(false);
+  mkdirSync(join(dirs.docs, ".focus-notes"));
+  writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n');
+  const notes = join(dirs.docs, "notes");
+  mkdirSync(notes);
+  const instance = await launch(dirs);
+  try {
+    const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(note).toBeVisible();
+    await expect(note).toBeFocused();
+    expect(readdirSync(notes)).toEqual(["Untitled.md"]);
+    await instance.page.keyboard.type("Private New-project thought.");
+    const savedNotes = () => readdirSync(notes).filter(file => /\.md$/i.test(file));
+    await expect.poll(() => savedNotes().map(file => readFileSync(join(notes, file), "utf8")).join("")).toContain("Private New-project thought.");
+    expect(savedNotes()).toHaveLength(1);
+    await instance.page.keyboard.press("Control+Shift+E");
+    const files = instance.page.getByRole("complementary", { name: "Files", exact: true });
+    await expect(files.getByText("Private", { exact: true })).toBeVisible();
+    await expect(files.getByText("Public", { exact: true })).toHaveCount(0);
+    await files.getByRole("treeitem", { name: basename(savedNotes()[0]!, ".md"), exact: true }).click({ button: "right" });
+    await expect(instance.page.getByRole("menuitem", { name: /^Rename file…/ })).toBeVisible();
+    await expect(instance.page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    await expect(instance.page.getByRole("menuitem", { name: "Make public", exact: true })).toHaveCount(0);
+  } finally { await close(instance, dirs); }
+});
+
+test("G2.3: default site confirmation is read-only and unavailable activation retains the target without a public write", async () => {
+  const { dirs } = project(false);
+  const remotes = join(dirs.userData, "remotes");
+  mkdirSync(join(remotes, "ada"), { recursive: true });
+  git(dirs.docs, "init", "-q", "-b", "main");
+  configure(dirs.docs);
+  git(dirs.docs, "init", "-q", "--bare", join(remotes, "ada", "book.git"));
+  git(dirs.docs, "remote", "add", "origin", join(remotes, "ada", "book.git"));
+  git(dirs.docs, "remote", "add", "identity", "https://github.com/ada/book.git");
+  write(join(dirs.docs, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n');
+  const draft = join(dirs.docs, "notes", "draft.md");
+  const text = "# Draft\n\nPrivate source stays here.\n";
+  write(draft, text);
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: draft }));
+  git(dirs.docs, "add", "-A");
+  git(dirs.docs, "commit", "-qm", "Private fixture");
+  git(dirs.docs, "push", "-qu", "origin", "main");
+  const calls: string[] = [];
+  const server = createServer((req, res) => {
+    calls.push(`${req.method} ${req.url}`);
+    const send = (body: unknown) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.method === "GET" && req.url === "/user") return send({ login: "ada", id: 1 });
+    if (req.method === "GET" && req.url === "/repos/ada/book") return send({
+      owner: { login: "ada" }, name: "book", private: true, default_branch: "main", permissions: { admin: true, push: true },
+    });
+    res.writeHead(404); res.end();
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Sharing fixture did not bind");
+  let instance: Launched | undefined;
+  try {
+    instance = await launch(dirs, {
+      FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`,
+      FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes, FOCUS_NOTES_CANDIDATE_SITE: "",
+    });
+    const { page } = instance;
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Private source stays here.");
+    expect(await page.evaluate(() => window.focusNotes.workspace!.info())).toMatchObject({ repo: "ada/book" });
+    expect(await page.evaluate(() => window.focusNotes.access!.load())).toMatchObject({ available: true, configured: false, setupAvailable: true, vault: false });
+    expect(await page.evaluate(() => typeof window.focusNotes.access!.setup?.describe)).toBe("function");
+    await page.keyboard.press("Control+,");
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    await settings.getByRole("button", { name: "Turn on sharing", exact: true }).click();
+    const confirmation = page.getByRole("dialog", { name: "Sharing", exact: true });
+    await expect(confirmation).toContainText("ada/notes-site");
+    await expect(confirmation).toContainText("https://ada.github.io/notes-site/");
+    await expect(confirmation.getByRole("textbox")).toHaveCount(0);
+    await expect(confirmation.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+    await confirmation.getByRole("button", { name: "Turn on sharing", exact: true }).click();
+    await expect(confirmation).toContainText("Turning on sharing isn’t available yet. Your notes stay private.");
+    await expect(confirmation).toContainText("ada/notes-site");
+    await confirmation.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(confirmation.getByRole("button", { name: "Retry", exact: true })).toBeEnabled();
+    expect(calls).toContain("GET /repos/ada/book");
+    expect(calls.every(call => call.startsWith("GET "))).toBe(true);
+    expect(readFileSync(draft, "utf8")).toBe(text);
+    expect(readdirSync(join(dirs.docs, ".focus-notes"))).not.toContain("site-pairing.json");
+    expect(readdirSync(dirs.docs)).not.toContain("access.json");
+    await page.keyboard.press("Escape");
+    await expect(settings).toBeVisible();
+  } finally {
+    if (instance) await close(instance, dirs);
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
 
 test("A nonempty project with no launch history starts empty writing without replacing existing notes (PRJ-24, D-397)", async () => {
   const { dirs, root } = project(true);

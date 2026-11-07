@@ -31,6 +31,21 @@ function store(text?: string, site: () => Promise<string> = async () => SITE, op
 }
 const create = (passcode?: unknown) => ({ op: "create", audience: { name: "Asha", link: true, ...(passcode ? { passcode } : {}), scope: { notes: ["a.md"], folders: [] }, expiresAt: null } });
 
+it("D-396: unavailable modern publication refuses authorization changes before writing any grant", async () => {
+  let canMutate = true;
+  const t = store(undefined, undefined, { canMutate: () => canMutate });
+  try {
+    const { id } = await t.s.apply(create());
+    const before = readFileSync(join(t.dir, "access.json"), "utf8"), writes = t.written.length;
+    canMutate = false;
+    for (const change of [{ op: "withdraw", id }, { op: "update", id, expiresAt: null }, create()]) {
+      await expect(t.s.apply(change)).rejects.toThrow("access:site.unavailable");
+      expect(readFileSync(join(t.dir, "access.json"), "utf8")).toBe(before);
+      expect(t.written).toHaveLength(writes);
+    }
+  } finally { rmSync(t.dir, { recursive: true, force: true }); }
+});
+
 describe("the window's view of access.json", () => {
   it.each(["membership", "root", "site"])("cached readiness is bound to %s before a repeated native handoff", async (change) => {
     let currentDir = "", currentSite = SITE;

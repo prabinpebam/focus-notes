@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { isRepoName } from "@focus-notes/core/setup";
+import type { SharingSetupPhase, SharingSetupPreview, SharingSetupStep } from "@focus-notes/core";
+export type { SharingSetupPreview, SharingSetupStep } from "@focus-notes/core";
 
 export interface SitePairing {
   version: 1;
@@ -9,17 +11,9 @@ export interface SitePairing {
   owner: string;
   name: string;
   intent: string;
-  phase: "reserved" | "creating" | "created" | "ready" | "removing" | "off";
+  phase: SharingSetupPhase;
   site: string;
 }
-export interface SharingSetupPreview {
-  project: string;
-  owner: string;
-  name: string;
-  site: string;
-  phase: SitePairing["phase"] | "unconfigured";
-}
-export type SharingSetupStep = "check" | "create" | "prepare" | "push" | "pages" | "preserve" | "remove" | "ready";
 const fail = (code: string) => new Error(`sharing:${code}`);
 const phases: SitePairing["phase"][] = ["reserved", "creating", "created", "ready", "removing", "off"];
 function setupProblem(error: unknown): Error {

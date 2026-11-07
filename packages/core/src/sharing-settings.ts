@@ -5,8 +5,9 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import type { AccessBridge, ShareManageState } from "./share-manage.ts";
+import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
 import { joinPath, findNode } from "./workspace.ts";
+import { opErrorCode } from "./bridge.ts";
 
 export function registerSharingSettings({ store, catalog, commands, viewModels, tracker, access }: {
   store: Store<AppState>; catalog: MessageCatalog; commands: CommandRegistry<AppState>;
@@ -28,23 +29,68 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   const settingsOpen = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
   reg<{ id?: string; kind: string }>("sharing.confirmOpen", ({ id = "", kind }) => { set({ dialog: kind, id, problem: "" }); settingsOpen(false); });
   reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); settingsOpen(true); } });
-  reg<{ resume?: boolean }>("sharing.firstOpen", ({ resume = false }) => {
-    if (!store.state.ui.share.listing?.localReview) throw new Error(catalog.format("share.item.unavailable"));
-    set({ dialog: "first", more: false, resume, problem: "" });
+  let setupGeneration = 0;
+  let setupPending = false;
+  const projectKey = () => `${store.state.workspace.folder ?? ""}:${store.state.workspace.repo ?? ""}`;
+  reg<{ resume?: boolean }>("sharing.firstOpen", async ({ resume = false }) => {
+    if (setupPending) return;
+    const review = store.state.ui.share.listing?.localReview;
+    if (!review && !access?.setup) throw new Error(catalog.format("share.item.unavailable"));
+    const generation = ++setupGeneration, project = projectKey();
+    set({ dialog: "first", more: false, resume, problem: "", setupPreview: undefined, setupStep: "check", busy: !review });
     settingsOpen(false);
     if (resume) store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, item: { ...s.ui.share.item, open: false } } } }));
+    if (review) return;
+    setupPending = true;
+    try {
+      const preview = await tracker.section("sharing.setup.describe", "share.item.preparing", () => access!.setup!.describe(), "fn:sharing.setup.describe", "success");
+      if (generation === setupGeneration && project === projectKey()) set({ setupPreview: preview });
+    } catch (error) {
+      console.error("Sharing setup preview failed", opErrorCode(error));
+      if (generation === setupGeneration && project === projectKey()) set({ problem: catalog.format("sharing.setup.unavailable") });
+    } finally {
+      setupPending = false;
+      if (generation === setupGeneration && project === projectKey()) set({ busy: false });
+    }
   });
   reg<Record<string, never>>("sharing.firstMore", () => set({ more: !state().more }));
   const firstClose = (accepted: boolean) => {
     const resume = state().resume;
-    set({ dialog: "", ...(accepted ? { off: false } : {}) });
+    ++setupGeneration;
+    set({ dialog: "", busy: false, ...(accepted ? { off: false } : {}) });
     if (resume) store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, item: { ...s.ui.share.item, open: accepted } } } }));
     else settingsOpen(true);
   };
   reg<Record<string, never>>("sharing.firstClose", () => firstClose(false));
-  reg<Record<string, never>>("sharing.firstAccept", () => {
-    if (!store.state.ui.share.listing?.localReview) throw new Error(catalog.format("share.item.unavailable"));
-    firstClose(true);
+  reg<Record<string, never>>("sharing.firstAccept", async () => {
+    if (setupPending || state().dialog !== "first") return;
+    if (store.state.ui.share.listing?.localReview) { firstClose(true); return; }
+    const preview = state().setupPreview, setup = access?.setup;
+    if (!setup || !preview) { await commands.run("sharing.firstOpen", { resume: state().resume }); return; }
+    const generation = ++setupGeneration, project = projectKey();
+    const current = () => generation === setupGeneration && project === projectKey();
+    setupPending = true;
+    set({ busy: true, problem: "", setupStep: "check" });
+    const unsubscribe = setup.onStep?.(step => { if (current()) set({ setupStep: step }); });
+    try {
+      await tracker.run("sharing.setup.enable", "share.item.preparing", async () => {
+        const result = await setup.enable(preview.name);
+        if (!current()) return;
+        if (result.phase !== "ready" || result.site !== preview.site) throw new Error("sharing:unacknowledged");
+        const listing = await access.load();
+        if (!current()) return;
+        if (!listing.available || !listing.configured || listing.site !== result.site) throw new Error("sharing:unacknowledged");
+        store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+        firstClose(true);
+      }, undefined, "fn:sharing.setup.enable", "success");
+    } catch (error) {
+      console.error("Sharing setup failed", opErrorCode(error));
+      if (current()) set({ problem: catalog.format("sharing.setup.unavailable") });
+    } finally {
+      unsubscribe?.();
+      setupPending = false;
+      if (current()) set({ busy: false });
+    }
   });
   const work = async (action: () => Promise<void>, status: string) => {
     if (state().busy) return;
@@ -98,10 +144,10 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   viewModels.register({
     id: "vm.sharingSettings",
     schema: { type: "object", properties: {
-      project: str, site: str, on: bool, off: bool, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str,
+      project: str, site: str, on: bool, off: bool, offDetail: str, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str,
       empty: bool, waiting: bool, failed: bool, retrying: bool, emptyTitle: str, emptyDetail: str, emptyAction: str, loadProblem: str,
       filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
-      firstOpen: bool, more: bool, repo: str,
+      firstOpen: bool, more: bool, repo: str, canSetup: bool, setupSite: str, setupProblem: bool, setupStatus: str, firstAcceptLabel: str,
       filters: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
       rows: { type: "array", items: { type: "object", properties: {
         id: str, item: str, detail: str, badge: str, icon: str, live: bool, copyMenu: menuSchema, extendMenu: menuSchema,
@@ -136,7 +182,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       const projectName = viewModels.select("vm.project", s).name;
       return {
         project: s.workspace.repo?.split("/").at(-1) ?? s.workspace.folder?.split(/[\\/]/).at(-1) ?? "",
-        site: listing?.site ?? s.workspace.site ?? "", on: Boolean(listing?.site && !m.off), off: m.off || !listing?.site,
+        site: listing?.site ?? s.workspace.site ?? "", on: sharingAvailable(s), off: !sharingAvailable(s),
+        offDetail: catalog.format(listing?.localReview || listing?.site && (listing.configured || listing.vault) ? "share.settings.offDetail" : "sharing.setup.unavailable"),
         localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
@@ -147,7 +194,13 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         emptyDetail: catalog.format(filtered ? "uiStates.empty.sharesFilteredDetail" : "uiStates.empty.sharesDetail"),
         emptyAction: catalog.format(filtered ? "uiStates.empty.clearFilters" : "uiStates.empty.openFiles"),
         loadProblem: catalog.format("sharing.listFailed"),
-        firstOpen: m.dialog === "first", more: m.more, repo: s.workspace.repo ?? listing?.site ?? "",
+        firstOpen: m.dialog === "first", more: m.more,
+        repo: m.setupPreview ? `${m.setupPreview.owner}/${m.setupPreview.name}` : listing?.localReview ? s.workspace.repo ?? listing.site ?? "" : "",
+        canSetup: Boolean(listing?.localReview || access?.setup && listing?.available && listing.setupAvailable),
+        setupSite: m.setupPreview?.site ?? (listing?.localReview ? listing.site ?? "" : ""),
+        setupProblem: Boolean(m.problem),
+        firstAcceptLabel: catalog.format(m.problem ? "sharing.invite.retry" : "share.first.turnOn"),
+        setupStatus: m.busy ? catalog.format(m.setupStep === "push" ? "setup.step.push" : m.setupStep === "pages" ? "setup.step.pages" : "share.item.preparing") : "",
         confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(`share.${kind}.confirm`),
         filters: filters.map(id => ({ id, label: catalog.format(`sharing.filter.${id}`) })), rows,

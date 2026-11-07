@@ -5,7 +5,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { parsePointerZone, pointerMove } from "./window/pointer-report.ts";
 import { wordAround } from "./spelling/word.ts";
-import type { ProjectCreateProgress } from "@focus-notes/core";
+import type { ProjectCreateProgress, SharingSetupStep } from "@focus-notes/core";
 import { preparePrintImages } from "./print-images.ts";
 
 const params = new URLSearchParams(globalThis.location?.search ?? "");
@@ -278,6 +278,16 @@ contextBridge.exposeInMainWorld("focusNotes", {
     cancelReady: (id: string) => ipcRenderer.invoke("access:cancelReady", id),
     systemShare: (id: string, invite: unknown) => ipcRenderer.invoke("access:systemShare", id, invite),
     setTemplate: (template: string | null) => ipcRenderer.invoke("access:template", template),
+    setup: {
+      describe: () => ipcRenderer.invoke("sharing:setupPreview"),
+      enable: (name: string) => ipcRenderer.invoke("sharing:setupEnable", name),
+      disable: () => ipcRenderer.invoke("sharing:setupDisable"),
+      onStep: (listener: (step: SharingSetupStep) => void) => {
+        const handler = (_event: unknown, step: SharingSetupStep) => listener(step);
+        ipcRenderer.on("sharing:setupStep", handler);
+        return () => ipcRenderer.removeListener("sharing:setupStep", handler);
+      },
+    },
     copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
   },
   // Local diagnostics (QLT-04, D-140): the main process builds and redacts the report; the window sends only its timings.

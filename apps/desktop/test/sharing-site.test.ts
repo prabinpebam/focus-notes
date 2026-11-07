@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { GitHubApi } from "@focus-notes/github";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { configurePublicSite, PUBLIC_SITE_WORKFLOW, publishSealedArtifact, type SealedArtifactPublisher } from "../src/main/share/site.ts";
+import { configurePublicSite, PUBLIC_SITE_WORKFLOW, publishSealedArtifact, requirePublishedArtifact, type SealedArtifactPublisher } from "../src/main/share/site.ts";
 import { sharingSetup, type SitePairing } from "../src/main/share/setup.ts";
 
 it("PRJ-10: pushes only the public Pages workflow, never private-reader credentials or source", async () => {
@@ -55,9 +55,19 @@ it("does not replace a modified workflow on Retry", async () => {
 
 it("the G3 artifact seam is explicit: a fake can confirm it, but absent production wiring never claims a push", async () => {
   const artifact = { directory: "sealed-output", build: "opaque-build" };
-  await expect(publishSealedArtifact("ada/book", artifact)).rejects.toThrow("access:site.unavailable");
+  await expect(publishSealedArtifact("ada/book", artifact)).resolves.toEqual({ status: "unavailable" });
   const calls: string[] = [];
-  const fake: SealedArtifactPublisher = async (project, output) => { calls.push(`${project}:${output.build}`); };
-  await fake("ada/book", artifact);
+  const fake: SealedArtifactPublisher = async (project, output) => {
+    calls.push(`${project}:${output.build}`);
+    return { status: "published", commit: "a".repeat(40), pages: { status: "built", repository: "ada/quiet-site", build: output.build } };
+  };
+  const result = await fake("ada/book", artifact);
+  const pairing: SitePairing = { version: 1, project: "ada/book", owner: "ada", name: "quiet-site", site: "https://ada.github.io/quiet-site/", intent: "11111111-1111-1111-1111-111111111111", phase: "created" };
+  expect(() => requirePublishedArtifact(result, pairing, artifact)).not.toThrow();
+  if (result.status === "published") {
+    expect(() => requirePublishedArtifact({ ...result, commit: "" }, pairing, artifact)).toThrow("sharing:unacknowledged");
+    expect(() => requirePublishedArtifact({ ...result, pages: { ...result.pages, build: "old-build" } }, pairing, artifact)).toThrow("sharing:unacknowledged");
+    expect(() => requirePublishedArtifact({ ...result, pages: { ...result.pages, repository: "ada/book" } }, pairing, artifact)).toThrow("sharing:unacknowledged");
+  }
   expect(calls).toEqual(["ada/book:opaque-build"]);
 });

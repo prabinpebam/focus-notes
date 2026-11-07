@@ -2555,7 +2555,7 @@
                                 "get": "vm.project.name"
                               },
                               "detail": {
-                                "t": "share.settings.offDetail"
+                                "get": "vm.sharingSettings.offDetail"
                               },
                               "badge": {
                                 "t": "share.settings.off"
@@ -2576,7 +2576,7 @@
                                   }
                                 },
                                 "when": {
-                                  "get": "vm.sharingSettings.localReview"
+                                  "get": "vm.sharingSettings.canSetup"
                                 }
                               }
                             ]
@@ -5762,7 +5762,7 @@
                         "t": "share.first.site"
                       },
                       "detail": {
-                        "get": "vm.sharingSettings.site"
+                        "get": "vm.sharingSettings.setupSite"
                       },
                       "icon": "globe"
                     }
@@ -5857,6 +5857,16 @@
                 }
               },
               {
+                "type": "Text",
+                "when": { "get": "vm.sharingSettings.busy" },
+                "props": { "value": { "get": "vm.sharingSettings.setupStatus" }, "tone": "muted", "role": "secondary" }
+              },
+              {
+                "type": "Text",
+                "when": { "get": "vm.sharingSettings.setupProblem" },
+                "props": { "value": { "get": "vm.sharingSettings.problem" }, "tone": "danger" }
+              },
+              {
                 "type": "Inline",
                 "props": {
                   "justify": "end",
@@ -5867,22 +5877,9 @@
                     "type": "Button",
                     "props": {
                       "label": {
-                        "t": "share.cancel"
+                        "get": "vm.sharingSettings.firstAcceptLabel"
                       },
-                      "autoFocus": true
-                    },
-                    "on": {
-                      "press": {
-                        "run": "sharing.firstClose"
-                      }
-                    }
-                  },
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "t": "share.first.turnOn"
-                      },
+                      "busy": { "get": "vm.sharingSettings.busy" },
                       "variant": "primary"
                     },
                     "on": {

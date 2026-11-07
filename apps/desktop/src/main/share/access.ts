@@ -23,6 +23,11 @@ export interface AccessStoreOptions {
   dir: () => string;
   /** The Pages site's address, if setup found it. */
   site: () => Promise<string | undefined>;
+  /** Verified ready pairing; modern projects do not need the retired owner vault. */
+  configured?: () => Promise<boolean>;
+  setupAvailable?: () => Promise<boolean>;
+  /** Refuse modern authorization changes until G3 can acknowledge their deployment. */
+  canMutate?: () => boolean;
   write: (file: string, text: string) => Promise<void>;
   /** The file changed: commit it on the cadence. */
   written: (file: string) => void;
@@ -91,7 +96,9 @@ export function accessStore(o: AccessStoreOptions) {
       })));
       return { ...audience, unsharedNotes: notes.filter((n) => !n.id || !g.scope.ids!.includes(n.id)).map((n) => n.path) };
     }));
-    return { available: true, localReview: Boolean(process.env.FOCUS_NOTES_CANDIDATE_SITE), ...(site ? { site } : {}), ...(t ? { template: t } : {}), vault: hasVault(a), grants };
+    return { available: true, localReview: Boolean(process.env.FOCUS_NOTES_CANDIDATE_SITE), ...(site ? { site } : {}), ...(t ? { template: t } : {}),
+      ...(o.configured ? { configured: await o.configured() } : {}),
+      ...(o.setupAvailable ? { setupAvailable: await o.setupAvailable() } : {}), vault: hasVault(a), grants };
   };
   const grant = async (id: unknown, dir = o.dir()): Promise<Grant> => {
     const g = typeof id === "string" ? shareGrants(await read(dir)).find((x) => x.id === id) : undefined;
@@ -203,6 +210,7 @@ export function accessStore(o: AccessStoreOptions) {
       const run = async () => {
         if (!existsSync(dir) || o.dir() !== dir) throw new Error("access:failed");
         const change = parseAccessChange(raw);
+        if (o.canMutate && !o.canMutate()) throw new Error("access:site.unavailable");
         let prepared: string | undefined;
         let resolvedItemNotes: { grantId?: string; notes: string[]; ids: string[] } | undefined;
         if (change.op === "createItem" && change.wordsId) {

@@ -49,6 +49,8 @@ import { bundleEnv, gitBundle } from "./git/bundle.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { projectPeople } from "./share/people.ts";
+import { projectSharingLayout } from "./share/layout.ts";
+import { sharingRuntime } from "./share/runtime.ts";
 import { githubRepo } from "./project-card.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
@@ -774,23 +776,23 @@ async function takeFolder(folder: string): Promise<RecoverResult> {
 const placeOf = (place: string): RecoverPlace => ({ place, short: shortPath(place, app.getPath("home")), name: nextFree("Focus Notes", (n) => existsSync(join(place, n))) });
 
 // ---- the workspace (WP-2.3) ----
-// The notes folder is the workspace. With .focus-notes/workspace.json it has the repository's
-// layout: public notes in notes/, private ones in private/notes/ (D-84). Before that, it's one
-// root of its own (D-92), as it was through M2.
+// New projects keep notes private at the root; legacy pairs retain their two repositories.
 const formatFile = () => join(notesHome(), ".focus-notes", "workspace.json");
 const isWorkspace = () => existsSync(formatFile());
 // A clone whose account can't reach the private repository has no private root (FRE-06).
-const hasPrivate = () => existsSync(join(notesHome(), "private", "notes")) || existsSync(join(notesHome(), "private", ".git"));
+const projectLayout = () => projectSharingLayout(notesHome(), isWorkspace());
+const hasPrivate = () => projectLayout().privateDir !== undefined;
 /** Where a project note's managed images live: its visibility's `assets/images` (D-365). */
 const imageRoot = (note: string) => {
   if (!isWorkspace()) return undefined;
-  if (hasPrivate() && inside(join(notesHome(), "private", "notes"), note)) return join(notesHome(), "private");
-  if (inside(join(notesHome(), "notes"), note)) return notesHome();
+  const layout = projectLayout();
+  if (layout.privateNotes && inside(layout.privateNotes, note)) return layout.privateDir;
+  if (layout.publicDir && inside(join(layout.publicDir, "notes"), note)) return layout.publicDir;
   return undefined;
 };
 /** Whether images written for this note may be published, so their metadata is stripped (D-365). */
 const publicMedia = (note: string) =>
-  imageRoot(note) !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note);
+  projectLayout().roots.some(root => root.id === "public" && inside(root.path, note)) && record?.kind !== "local" && record?.kind !== "synced";
 // New notes without a private repository (D-158): held out of Git, in the notes repository's
 // info/exclude, until the writer answers Make it public or Keep it on this computer only.
 let heldCache: { home: string; file: HeldFile } | undefined;
@@ -802,9 +804,7 @@ async function heldNotes(): Promise<HeldFile | undefined> {
   heldCache = file ? { home, file: new HeldFile(home, file) } : undefined;
   return heldCache?.file;
 }
-const roots = () => isWorkspace()
-  ? [...(hasPrivate() ? [{ id: "private", path: join(notesHome(), "private", "notes"), readOnly: false }] : []), { id: "public", path: join(notesHome(), "notes"), readOnly: false }]
-  : [{ id: "local", path: notesHome(), readOnly: false }];
+const roots = () => projectLayout().roots;
 /** Where new notes go when there's no note to put them next to. */
 const notesRoot = () => roots()[0]!.path;
 const createFirstProjectNote = firstProjectNote({
@@ -1330,9 +1330,13 @@ async function importBundle(id: unknown, to: unknown): Promise<{ added: number; 
 
 // ---- synced settings (PRV-03, D-46) ----
 // Only where there's a private repository to sync through; while the file exists, syncing is on.
-const privateDir = () => join(notesHome(), "private");
+const privateDir = () => {
+  const dir = projectLayout().privateDir;
+  if (!dir) throw new Error("access:unavailable");
+  return dir;
+};
 const settingsFile = () => join(privateDir(), ".focus-notes", "settings.json");
-const settingsAvailable = () => isWorkspace() && existsSync(privateDir());
+const settingsAvailable = () => isWorkspace() && hasPrivate();
 
 /** The renderer page every IPC request must come from (review issue 4). */
 const appPagePath = join(import.meta.dirname, "..", "renderer", "index.html");
@@ -1926,12 +1930,31 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     }
   });
   // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
-  const pagesSite = async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8"));
+  const sharing = sharingRuntime({
+    root: notesHome, layout: projectLayout, api: projectGitHub, repository: githubRepo,
+    write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
+    written: file => withGit(g => g.written(file)), temporary: app.getPath("userData"),
+    step: step => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sharing:setupStep", step); },
+  });
+  const pagesSite = async () => {
+    if (!settingsAvailable()) return projectLayout().legacy
+      ? (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")) : undefined;
+    const pairing = await sharing.pairing();
+    if (pairing) return pairing.phase === "ready" ? pairing.site : undefined;
+    return projectLayout().legacy
+      ? (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")) : undefined;
+  };
+  handle("sharing:setupPreview", () => sharing.describe());
+  handle("sharing:setupEnable", (name: unknown) => {
+    if (typeof name !== "string") throw new Error("sharing:name");
+    return sharing.enable(name);
+  });
+  handle("sharing:setupDisable", () => sharing.disable());
   // Custom themes (THM-04, D-173): the workspace's theme files, private when it has a private
   // repository. Read only, small files only, never followed out of the folder.
   handle("themes:list", async () => {
     if (!isWorkspace()) return [];
-    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    const dir = join(hasPrivate() ? privateDir() : notesHome(), ".focus-notes", "themes");
     const names = (await readdir(dir).catch(() => [] as string[])).filter((n) => /\.json$/i.test(n) && !n.startsWith(".")).sort().slice(0, THEMES_AT_MOST);
     const out: { file: string; text: string }[] = [];
     for (const name of names) {
@@ -1948,7 +1971,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const m = /^([\p{Ll}\p{Lo}\p{N}][\p{Ll}\p{Lo}\p{N}-]{0,80})\.json$/u.exec(file);
     if (!m) throw new Error("Not a theme file name");
     JSON.parse(text);
-    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    const dir = join(hasPrivate() ? privateDir() : notesHome(), ".focus-notes", "themes");
     await assertWritable(join(dir, file));
     await mkdir(dir, { recursive: true });
     for (let i = 1; i < 1000; i++) {
@@ -1962,7 +1985,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });  // A theme file by its name in the themes folder (D-173): never a path, never outside it.
   const themeFile = (file: unknown): string => {
     if (!isWorkspace() || typeof file !== "string" || !/^[^\\/:*?"<>|]{1,120}\.json$/i.test(file) || file.startsWith(".")) throw new Error("Not a theme file");
-    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    const dir = join(hasPrivate() ? privateDir() : notesHome(), ".focus-notes", "themes");
     return join(dir, file);
   };
   handle("themes:remove", async (file) => {
@@ -2135,6 +2158,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const access = accessStore({
     dir: privateDir,
     site: pagesSite,
+    configured: async () => (await sharing.pairing())?.phase === "ready",
+    setupAvailable: async () => !projectLayout().legacy && Boolean(await githubRepo(privateDir())),
+    canMutate: () => projectLayout().legacy,
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: (file) => withGit((g) => g.written(file)),
     writeNoteId: async (file, text, expected) => {
@@ -2146,6 +2172,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (!g) throw new Error("access:site.unavailable");
       const report = await g.request("save");
       if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
+      if (!projectLayout().legacy) await sharing.publish();
     },
     getSite: (site, signal) => async (path) => {
       const base = new URL(site);

@@ -6,10 +6,23 @@ export interface SealedArtifact {
   directory: string;
   build: string;
 }
-export type SealedArtifactPublisher = (project: string, artifact: SealedArtifact) => Promise<void>;
+export type ArtifactPublication =
+  | { status: "unavailable" }
+  | { status: "published"; commit: string; pages: {
+    status: "built" | "building" | "errored"; repository: string; build: string;
+  } };
+/** Project identifies the private source. G3 must resolve and verify its paired public target. */
+export type SealedArtifactPublisher = (project: string, artifact: SealedArtifact) => Promise<ArtifactPublication>;
 
 /** G3 supplies the live artifact publisher. An absent implementation must never look like a successful push. */
-export const publishSealedArtifact: SealedArtifactPublisher = async () => { throw new Error("access:site.unavailable"); };
+export const publishSealedArtifact: SealedArtifactPublisher = async () => ({ status: "unavailable" });
+
+export function requirePublishedArtifact(result: ArtifactPublication, pairing: SitePairing, artifact: SealedArtifact): void {
+  if (result.status === "unavailable") throw new Error("sharing:unavailable");
+  if (!/^[a-f0-9]{40}$/i.test(result.commit) || result.pages.status !== "built" ||
+    result.pages.repository.toLowerCase() !== `${pairing.owner}/${pairing.name}`.toLowerCase() ||
+    result.pages.build !== artifact.build) throw new Error("sharing:unacknowledged");
+}
 
 export function publicSiteWorkflow(branch = "main"): string {
   if (!branch) throw new Error("sharing:workflow");

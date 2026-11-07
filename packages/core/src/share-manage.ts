@@ -24,6 +24,10 @@ import { ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
   available: boolean;
+  /** Capability from persisted ready pairing, never a guessed address or fake vault grant. */
+  configured?: boolean;
+  /** The shell verified a modern project has a GitHub source repository to describe. */
+  setupAvailable?: boolean;
   localReview?: boolean;
   /** The Pages site's address, once publishing is set up. Links need it. */
   site?: string;
@@ -39,8 +43,19 @@ export interface ProjectPeople {
   roles: ("read" | "triage" | "write" | "maintain" | "admin")[];
   people: { id: number; login: string; role: string }[];
 }
+
+export function sharingAvailable(state: { ui: { share: ShareManageState } }): boolean {
+  const share = state.ui.share;
+  return Boolean(share.listing?.available && (share.listing.localReview || share.listing.site && (share.listing.configured || share.listing.vault)) && !share.settings.off);
+}
 /** The desktop's access.json (D-134). Absent in the browser. */
 export interface AccessBridge {
+  setup?: {
+    describe(): Promise<SharingSetupPreview>;
+    enable(name: string): Promise<{ site: string; phase: SharingSetupPhase }>;
+    disable(): Promise<{ site: string; phase: SharingSetupPhase }>;
+    onStep?(listener: (step: SharingSetupStep) => void): () => void;
+  };
   people?: {
     load(): Promise<ProjectPeople>;
     invite(repository: string, login: string, role: string): Promise<ProjectPeople>;
@@ -64,6 +79,12 @@ export interface AccessBridge {
    * site itself, and clears the clipboard after 90 s (review L1).
    */
   copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues }): Promise<void>;
+}
+
+export type SharingSetupPhase = "reserved" | "creating" | "created" | "ready" | "removing" | "off";
+export type SharingSetupStep = "check" | "create" | "prepare" | "push" | "pages" | "preserve" | "remove" | "ready";
+export interface SharingSetupPreview {
+  project: string; owner: string; name: string; site: string; phase: SharingSetupPhase | "unconfigured";
 }
 
 // ---- the invite (SHR-09) ----
@@ -131,7 +152,8 @@ export interface ShareTemplateEditor {
   busy: boolean;
 }
 export interface ShareManageState {
-  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean };
+  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean;
+    setupPreview?: SharingSetupPreview; setupStep?: SharingSetupStep };
   item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;

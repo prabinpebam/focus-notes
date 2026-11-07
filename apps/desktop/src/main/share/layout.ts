@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 
 export interface SharingLayout {
   legacy: boolean;
@@ -23,4 +24,19 @@ export function sharingLayout(root: string, facts: { workspace: boolean; legacyP
     legacy: false, privateDir: root, privateNotes: join(root, "notes"),
     roots: [{ id: "private", path: join(root, "notes"), readOnly: false }],
   };
+}
+
+export function projectSharingLayout(root: string, workspace: boolean): SharingLayout {
+  const privateCheckout = existsSync(join(root, "private", "notes")) || existsSync(join(root, "private", ".git"));
+  let legacyPair = privateCheckout;
+  if (workspace && !legacyPair) {
+    let modules: string;
+    try { modules = readFileSync(join(root, ".gitmodules"), "utf8"); }
+    catch (error) {
+      if (!error || typeof error !== "object" || !("code" in error) || error.code !== "ENOENT") throw error;
+      modules = "";
+    }
+    legacyPair = /^\s*path\s*=\s*"?private"?\s*$/m.test(modules);
+  }
+  return sharingLayout(root, { workspace, legacyPair, privateCheckout });
 }
