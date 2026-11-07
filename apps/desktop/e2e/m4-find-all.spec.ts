@@ -34,6 +34,7 @@ test("FND-01/FND-04: Find surfaces are exclusive in both shortcut orders, retain
     await page.keyboard.press(`${mod}+Shift+F`);
     await expect(bar).toBeHidden();
     await expect(sheet).toBeVisible();
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await expect(allField).toBeFocused();
     await allField.fill("all notes query");
     for (const shortcut of [`${mod}+F`, mac ? "Meta+Alt+F" : "Control+H", "F3", "Shift+F3"]) {
@@ -44,6 +45,7 @@ test("FND-01/FND-04: Find surfaces are exclusive in both shortcut orders, retain
       await page.keyboard.press(`${mod}+Shift+F`);
       await expect(bar).toBeHidden();
       await expect(sheet).toBeVisible();
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
       await expect(allField).toBeFocused();
       await expect(allField).toHaveValue("all notes query");
     }

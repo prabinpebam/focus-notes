@@ -489,12 +489,18 @@ export function EditorSurface({
   // Closing the find bar puts the caret back in the note, on the current match (VS Code behavior).
   const wasOpen = useRef(false);
   useEffect(() => {
+    let frame: number | undefined;
     if (wasOpen.current && !findOpen && editor && !editor.isDestroyed) {
       // Closing forgets find in selection's scope (FND-03); the next opening takes the selection then.
       clearFindScope(editor);
-      requestAnimationFrame(() => focusNote(editor));
+      frame = requestAnimationFrame(() => {
+        const active = document.activeElement;
+        // A replacement Find surface owns its focus; a delayed close must not take it back.
+        if (!findRef.current.findOpen && (active === document.body || scrollerRef.current?.contains(active))) focusNote(editor);
+      });
     }
     wasOpen.current = Boolean(findOpen);
+    return () => { if (frame !== undefined) cancelAnimationFrame(frame); };
   }, [findOpen, editor]);
 
   // The formatting toolbar and link hover card follow the selection (EDT-12, EDT-13, UI-06).
