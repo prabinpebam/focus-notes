@@ -133,11 +133,19 @@ for (const github of [false, true]) {
     const dirs = tempDirs();
     const parent = join(dirs.userData, "creation-parent");
     mkdirSync(parent);
+    const remotes = join(dirs.userData, "remotes");
+    mkdirSync(join(remotes, "local"), { recursive: true });
+    let creates = 0;
     const server = createServer((req, res) => {
       const send = (body: unknown) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
       if (req.url === "/user") return send({ login: "local", id: 1, name: "Local" });
-      if (req.url === "/user/repos" && req.method === "POST") { req.resume(); return send({}); }
-      if (req.url === "/repos/local/Fresh-project") return send({ owner: { login: "local" }, name: "Fresh-project", private: true, default_branch: "main" });
+      if (req.url === "/user/repos" && req.method === "POST") {
+        creates++;
+        req.resume();
+        execFileSync("git", ["init", "--bare", "--quiet", join(remotes, "local", "fresh-project.git")]);
+        return send({});
+      }
+      if (creates && req.url === "/repos/local/fresh-project") return send({ owner: { login: "local" }, name: "fresh-project", private: true, default_branch: "main" });
       res.writeHead(404); res.end();
     });
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -147,13 +155,15 @@ for (const github of [false, true]) {
     const gitconfig = join(dirs.userData, "..", `${basename(dirs.userData)}.gitconfig`);
     try {
       const origin = await launch(dirs, github
-        ? { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}` }
+        ? { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes }
         : { FOCUS_NOTES_GITHUB_API: "" });
       owned.push(origin);
       expect(await origin.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
       await origin.app.evaluate(({ ipcMain }, folder) => {
         ipcMain.removeHandler("projects:parent");
         ipcMain.handle("projects:parent", () => folder);
+        ipcMain.removeHandler("firstRun:account");
+        ipcMain.handle("firstRun:account", () => ({ account: { login: "local", id: 1, name: "Local" }, gcm: false, gh: false }));
         // Record the new project's open instead of starting a process this runner couldn't close.
         ipcMain.removeHandler("projects:open");
         ipcMain.handle("projects:open", (_event, opened: unknown, note: unknown) => { Reflect.set(globalThis, "openedProject", { opened, note }); });
@@ -164,7 +174,11 @@ for (const github of [false, true]) {
       await open.getByRole("button", { name: "New project…", exact: true }).click();
       const wizard = origin.page.getByRole("dialog", { name: "New project", exact: true });
       await wizard.getByRole("textbox", { name: "Project name", exact: true }).fill("Fresh project");
-      for (let i = 0; i < 3; i++) await wizard.getByRole("button", { name: "Next", exact: true }).click();
+      await wizard.getByRole("button", { name: "Next", exact: true }).click();
+      await expect(wizard).toContainText("Where to keep it");
+      await wizard.getByRole("radio", { name: github ? "On GitHub" : "On this computer only", exact: true }).click();
+      if (github) await expect(wizard.getByRole("textbox", { name: "Repository name", exact: true })).toHaveValue("fresh-project");
+      for (let i = 0; i < 2; i++) await wizard.getByRole("button", { name: "Next", exact: true }).click();
       await expect(open).toBeHidden();
       const listings = () => origin.page.evaluate(() => performance.getEntriesByName("fn:project.list").length);
       const before = await listings();
@@ -174,6 +188,12 @@ for (const github of [false, true]) {
       await expect.poll(() => origin.app.evaluate(() => Reflect.get(globalThis, "openedProject"))).toEqual({ opened: folder, note: undefined });
       await expect(open).toBeHidden();
       expect(await listings()).toBe(before);
+      expect(creates).toBe(github ? 1 : 0);
+      const originRemote = () => {
+        try { return execFileSync("git", ["-C", folder, "remote", "get-url", "origin"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
+        catch { return ""; }
+      };
+      expect(Boolean(originRemote())).toBe(github);
 
       const profiles = join(dirs.userData, DATA_FOLDERS.projectProfiles);
       const profile = readdirSync(profiles).map(name => join(profiles, name))
@@ -184,7 +204,7 @@ for (const github of [false, true]) {
       writeFileSync(join(profile, DATA_FILES.state), JSON.stringify({ ...adopted, projectIntroSeen: adopted.projectIntroSeen ?? false }));
       const created = await launch({ userData: profile, docs: folder }, {
         FOCUS_NOTES_PROJECTS_PROFILE: dirs.userData, FOCUS_NOTES_LOCAL_NOTES: "", FOCUS_NOTES_PROJECT_NOTE: "", GIT_CONFIG_GLOBAL: gitconfig,
-        ...(github ? { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}` } : { FOCUS_NOTES_GITHUB_API: "" }),
+        ...(github ? { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes } : { FOCUS_NOTES_GITHUB_API: "" }),
       }, { firstRun: true });
       owned.push(created);
       const note = created.page.getByRole("textbox", { name: "Note", exact: true });
@@ -202,6 +222,16 @@ for (const github of [false, true]) {
       await expect.poll(() => notes().map(file => readFileSync(join(folder, file), "utf8")).join("")).toContain("Ready to write.");
       expect(notes()).toHaveLength(1);
       expect(await created.page.evaluate(() => performance.getEntriesByName("fn:project.list").length)).toBe(0);
+      const save = created.page.locator("#saveState");
+      await expect(save).toHaveAttribute("data-state", github ? "synced" : "savedLocal");
+      await save.hover();
+      const backup = created.page.getByRole("dialog", { name: "Backup", exact: true });
+      await expect(backup).toBeVisible();
+      if (github) await expect(backup).toContainText("Backed up");
+      else {
+        await expect(backup).toContainText("Saved on this computer");
+        await expect(backup).not.toContainText("Backed up");
+      }
     } finally {
       for (const instance of owned.reverse()) {
         try { await quit(instance); }

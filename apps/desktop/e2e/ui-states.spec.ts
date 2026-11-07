@@ -1011,7 +1011,7 @@ test("New project streams actual setup steps and Close keeps the partial folder 
       release = () => { release = undefined; send({}); };
       return;
     }
-    if (req.url === "/repos/local/Streamed-project") return send({ owner: { login: "local" }, name: "Streamed-project", private: true, default_branch: "main" });
+    if (creates && req.url === "/repos/local/streamed-project") return send({ owner: { login: "local" }, name: "streamed-project", private: true, default_branch: "main" });
     res.writeHead(404); res.end();
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -1024,25 +1024,30 @@ test("New project streams actual setup steps and Close keeps the partial folder 
     await l.app.evaluate(({ ipcMain }, folder) => {
       ipcMain.removeHandler("projects:parent");
       ipcMain.handle("projects:parent", () => folder);
+      ipcMain.removeHandler("firstRun:account");
+      ipcMain.handle("firstRun:account", () => ({ account: { login: "local", id: 1, name: "Local" }, gcm: false, gh: false }));
     }, parent);
     await (await l.page.context().newCDPSession(l.page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+Alt+o" : "Control+Alt+o");
     await l.page.getByRole("dialog", { name: "Open", exact: true }).getByRole("button", { name: "New project…", exact: true }).click();
     const project = l.page.getByRole("dialog", { name: "New project", exact: true });
     await project.getByRole("textbox", { name: "Project name", exact: true }).fill("Streamed project");
-    for (let i = 0; i < 3; i++) await project.getByRole("button", { name: "Next", exact: true }).click();
+    await project.getByRole("button", { name: "Next", exact: true }).click();
+    await project.getByRole("radio", { name: "On GitHub", exact: true }).click();
+    for (let i = 0; i < 2; i++) await project.getByRole("button", { name: "Next", exact: true }).click();
     await project.getByRole("button", { name: "Create project", exact: true }).click();
     const progress = project.getByRole("progressbar");
-    // check, folder and history (the project's Git, project model slice 3) are done; the repository is held.
-    await expect(progress).toHaveAttribute("aria-label", "3 of 6 steps completed");
-    await expect(progress).toHaveAttribute("value", "50");
+    await expect.poll(() => Boolean(release)).toBe(true);
+    // The folder, history and profile are kept before the held repository request.
+    await expect(progress).toHaveAttribute("aria-label", "4 of 7 steps completed");
+    await expect(progress).toHaveAttribute("value", "57");
     await expect(project.locator("[data-step-mark][data-step-mark-size=compact] [data-busy]")).toHaveCount(1);
     const close = project.getByRole("button", { name: "Close", exact: true });
     await expect(project.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
     await expect(close).toBeInViewport();
     await close.click();
     await expect(project).toBeVisible();
-    await expect(progress).toHaveAttribute("value", "50");
+    await expect(progress).toHaveAttribute("value", "57");
     if (!release) throw new Error("Repository creation was not held");
     release();
     await expect(project.locator("[data-status-row=danger]")).toContainText("Completed files and your choices are kept.");
@@ -1050,13 +1055,13 @@ test("New project streams actual setup steps and Close keeps the partial folder 
     await expect(close).toBeInViewport();
     expect(creates).toBe(1);
     const folder = join(parent, "Streamed project");
-    expect(readdirSync(folder).sort()).toEqual([".git", "notes"]);
+    expect(readdirSync(folder).sort()).toEqual([".focus-notes", ".git", "notes"]);
     expect(readFileSync(note, "utf8")).toBe(bytes);
     expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
     await close.click();
     await expect(project).toBeHidden();
     expect(readFileSync(note, "utf8")).toBe(bytes);
-    expect(readdirSync(folder).sort()).toEqual([".git", "notes"]);
+    expect(readdirSync(folder).sort()).toEqual([".focus-notes", ".git", "notes"]);
   } finally {
     release?.();
     if (l) await closeTestApp(l);

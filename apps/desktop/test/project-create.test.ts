@@ -6,7 +6,9 @@ import { DatabaseSync } from "node:sqlite";
 import { join, relative, sep } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ProjectCreateProgress } from "@focus-notes/core";
-import { projectWindows as createProjects } from "../src/main/projects.ts";
+import { projectGitHubClient, projectWindows as createProjects } from "../src/main/projects.ts";
+import { GitHubApi, GitHubError } from "@focus-notes/github";
+import { createRunner } from "../src/main/git/run.ts";
 import { DATA_FILES } from "@focus-notes/core/inventory";
 import { forgetLocalData as removeLocalData } from "../src/main/workspace/remove.ts";
 
@@ -557,6 +559,144 @@ async function setup() {
   await mkdir(paths.profile); await mkdir(home);
   return { root, projects: projectWindows(() => home, writeFile) };
 }
+
+function githubFake() {
+  const api = new GitHubApi("unit-fake", async () => { throw new Error("Unit tests never use the network"); });
+  vi.spyOn(api, "user").mockResolvedValue({ login: "writer", id: 123, name: "Writer" });
+  vi.spyOn(api, "findRepo").mockResolvedValue(undefined);
+  vi.spyOn(api, "createRepo").mockResolvedValue();
+  vi.spyOn(api, "repo").mockResolvedValue({ owner: "writer", name: "my-book", private: true, defaultBranch: "main", canPush: true });
+  return api;
+}
+
+it("production project wiring uses the signed-in account client without a candidate variable; tests without a fake refuse it", async () => {
+  const api = githubFake();
+  const account = vi.fn(async () => ({ api }));
+  expect(await projectGitHubClient(undefined, account)).toBe(api);
+  expect(account).toHaveBeenCalledOnce();
+  account.mockClear();
+  expect(await projectGitHubClient(undefined, account, true)).toBeUndefined();
+  expect(account).not.toHaveBeenCalled();
+  expect(await projectGitHubClient("http://127.0.0.1:12345", account)).toBeInstanceOf(GitHubApi);
+  expect(account).not.toHaveBeenCalled();
+});
+
+it("creates exactly one private named GitHub repository, records identity and marker, sets origin and pushes its first commit", async () => {
+  const { root } = await setup();
+  const api = githubFake();
+  const git = vi.fn(async (call: { cwd: string; args: string[] }) => ({ code: call.args[1] === "--get" ? 1 : 0, stdout: "", stderr: "" }));
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git, undefined, async () => api);
+  const input = { parent: root, name: "My book", repo: "my-book", github: true, accent: "teal", logo: "book" };
+  const events: Omit<ProjectCreateProgress, "request">[] = [];
+  const result = await projects.create(input, { signal: new AbortController().signal, progress: event => events.push(event) });
+  expect(result).toBe(await realpath(join(root, "My book")));
+  expect(api.findRepo).toHaveBeenCalledWith("writer", "my-book");
+  expect(api.createRepo).toHaveBeenCalledExactlyOnceWith("my-book", "Private notes for Focus Notes", true, false);
+  expect(JSON.parse(await readFile(join(String(result), ".focus-notes", "workspace.json"), "utf8"))).toEqual({ formatVersion: 1 });
+  expect(git.mock.calls).toEqual([
+    [{ cwd: result, args: ["init", "--quiet"] }],
+    [{ cwd: result, args: ["symbolic-ref", "HEAD", "refs/heads/main"] }],
+    [{ cwd: result, args: ["config", "user.name", "Writer"] }],
+    [{ cwd: result, args: ["config", "user.email", "123+writer@users.noreply.github.com"] }],
+    [{ cwd: result, args: ["add", "--", ".focus-notes/workspace.json"] }],
+    [{ cwd: result, args: ["commit", "--quiet", "-m", "Start the project"] }],
+    [{ cwd: result, args: ["config", "focusnotes.createowner", "writer"] }],
+    [{ cwd: result, args: ["config", "focusnotes.createrepo", "my-book"] }],
+    [{ cwd: result, args: ["config", "focusnotes.createstate", "unknown"] }],
+    [{ cwd: result, args: ["config", "focusnotes.createowner", "writer"] }],
+    [{ cwd: result, args: ["config", "focusnotes.createrepo", "my-book"] }],
+    [{ cwd: result, args: ["config", "focusnotes.createstate", "accepted"] }],
+    [{ cwd: result, args: ["config", "--get", "remote.origin.url"], read: true }],
+    [{ cwd: result, args: ["remote", "add", "origin", "https://github.com/writer/my-book.git"] }],
+    [{ cwd: result, args: ["push", "--set-upstream", "origin", "main"] }],
+    [{ cwd: result, args: ["config", "--unset", "focusnotes.createowner"] }],
+    [{ cwd: result, args: ["config", "--unset", "focusnotes.createrepo"] }],
+    [{ cwd: result, args: ["config", "--unset", "focusnotes.createstate"] }],
+  ]);
+  expect(events.filter(event => event.step === "push").map(event => event.done)).toEqual([false, true]);
+});
+
+it.each(["taken", "invalid", "signedOut"])("refuses %s before making any folder or repository", async problem => {
+  const { root } = await setup();
+  const api = githubFake();
+  if (problem === "taken") vi.mocked(api.findRepo).mockResolvedValue(await api.repo("writer", "my-book"));
+  const git = vi.fn(async (_call: { cwd: string; args: string[] }) => ({ code: 0, stdout: "", stderr: "" }));
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git, undefined, async () => problem === "signedOut" ? undefined : api);
+  await expect(projects.create({ parent: root, name: "Refused", repo: problem === "invalid" ? ".." : "my-book", github: true, accent: "teal", logo: "book" })).rejects.toThrow(problem === "signedOut" ? "signedOut" : "repository-");
+  expect(await readdir(root)).not.toContain("Refused");
+  expect(api.createRepo).not.toHaveBeenCalled();
+  expect(git).not.toHaveBeenCalled();
+});
+
+it("keeps a project local after GitHub refusal with a resumable receipt, without any automatic creation retry", async () => {
+  const { root } = await setup();
+  const api = githubFake();
+  vi.mocked(api.createRepo).mockRejectedValue(new GitHubError(403, "refused"));
+  const git = vi.fn(async (_call: { cwd: string; args: string[] }) => ({ code: 0, stdout: "", stderr: "" }));
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git, undefined, async () => api);
+  const result = await projects.create({ parent: root, name: "Kept", repo: "my-book", github: true, accent: "teal", logo: "book" });
+  const folder = await realpath(join(root, "Kept"));
+  expect(result).toEqual({ folder, problem: "github", repository: "writer/my-book" });
+  expect((await projects.list()).some(project => project.folder === folder)).toBe(true);
+  expect(git.mock.calls.some(call => call[0]?.args[0] === "remote")).toBe(false);
+  expect(api.createRepo).toHaveBeenCalledOnce();
+  await projects.continueCreate(folder);
+  expect(api.createRepo).toHaveBeenCalledTimes(2);
+});
+
+it("continues a failed first push without another repository creation or losing notes", async () => {
+  const { root } = await setup();
+  const api = githubFake();
+  let refuse = true;
+  const git = vi.fn(async (call: { cwd: string; args: string[] }) => ({ code: call.args[1] === "--get" || call.args[0] === "push" && refuse ? 1 : 0, stdout: "", stderr: "" }));
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git, undefined, async () => api);
+  const result = await projects.create({ parent: root, name: "Kept", repo: "my-book", github: true, accent: "teal", logo: "book" });
+  expect(typeof result).toBe("object");
+  const folder = await realpath(join(root, "Kept"));
+  await writeFile(join(folder, "notes", "kept.md"), "Kept words\n");
+  expect(git).toHaveBeenCalledWith({ cwd: folder, args: ["remote", "remove", "origin"] });
+  refuse = false;
+  expect(await projects.continueCreate(folder)).toBe(folder);
+  expect(api.createRepo).toHaveBeenCalledOnce();
+  expect(await readFile(join(folder, "notes", "kept.md"), "utf8")).toBe("Kept words\n");
+});
+
+it("restores a local-only first-push receipt after restarting without touching a real remote", async () => {
+  const { root } = await setup();
+  const api = githubFake();
+  const config = join(root, "isolated.gitconfig");
+  await writeFile(config, "");
+  const run = createRunner({ env: { ...process.env, GIT_CONFIG_GLOBAL: config, GIT_CONFIG_NOSYSTEM: "1" } });
+  let refuse = true;
+  const git: Parameters<typeof createProjects>[3] = call => call.args[0] === "push"
+    ? Promise.resolve({ code: refuse ? 1 : 0, stdout: "", stderr: "" })
+    : run(call);
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git, undefined, async () => api);
+  const result = await projects.create({ parent: root, name: "Kept", repo: "my-book", github: true, accent: "teal", logo: "book" });
+  expect(typeof result).toBe("object");
+  const folder = await realpath(join(root, "Kept"));
+  expect((await run({ cwd: folder, args: ["remote"], read: true })).stdout).toBe("");
+  const restarted = projectWindows(() => folder, writeFile, undefined, git, undefined, async () => api);
+  expect(await restarted.pendingCreate()).toMatchObject({ folder, name: "Kept", repo: "my-book" });
+  refuse = false;
+  expect(await restarted.continueCreate(folder)).toBe(folder);
+  expect(api.createRepo).toHaveBeenCalledOnce();
+  expect(await restarted.pendingCreate()).toBeUndefined();
+});
+
+it("never repeats a repository write whose response was lost, including on explicit continuation", async () => {
+  const { root } = await setup();
+  const api = githubFake();
+  vi.mocked(api.createRepo).mockRejectedValue(new GitHubError(0, "offline"));
+  const git = async () => ({ code: 0, stdout: "", stderr: "" });
+  const projects = projectWindows(() => join(root, "existing"), writeFile, undefined, git, undefined, async () => api);
+  const input = { parent: root, name: "Unknown", repo: "my-book", github: true, accent: "teal", logo: "book" };
+  const result = await projects.create(input);
+  expect(typeof result).toBe("object");
+  vi.mocked(api.findRepo).mockResolvedValue(await api.repo("writer", "my-book"));
+  await projects.continueCreate(await realpath(join(root, "Unknown")));
+  expect(api.createRepo).toHaveBeenCalledOnce();
+});
 
 it("reports actual local steps and preserves a completed profile receipt when cancelled at its final boundary", async () => {
   const { root, projects } = await setup();

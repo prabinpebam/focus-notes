@@ -29,7 +29,7 @@ import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { firstProjectNote } from "./first-project-note.ts";
 import { spawn } from "node:child_process";
-import { candidateGitHubApi, projectWindows, resumeProjectProfile } from "./projects.ts";
+import { candidateGitHubApi, projectGitHubClient, projectWindows, resumeProjectProfile } from "./projects.ts";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -1509,12 +1509,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     } finally { await rm(temporary, { force: true }); }
     return true;
   });
+  const reviewGitHub = process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API;
+  const reviewRemotes = reviewGitHub ? process.env.FOCUS_NOTES_CANDIDATE_GIT_REMOTES : undefined;
+  const projectGitHub = () => projectGitHubClient(reviewGitHub, () => account.api(), Boolean(journey && !fakeApi));
+  const projectRemote = (owner: string, name: string) => {
+    if (reviewGitHub && !reviewRemotes) throw new Error("This review build has no local remotes.");
+    return reviewRemotes ? `${reviewRemotes.replace(/\\/g, "/")}/${owner}/${name}.git` : remoteUrl(owner, name);
+  };
   const projects = projectWindows(notesHome, async (path, content) => {
     if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
   }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi, setupRunner, () => {
     // A deleted project's window has nothing left to show once another project opens (PRJ-23).
     if (projectDeleted) setTimeout(() => app.quit(), 500);
-  });
+  }, projectGitHub, projectRemote);
   projectMetadata = projects;
   const resumeSignedInProject = async (operation: ReturnType<Account["status"]>) => {
     const status = await operation;
@@ -1554,6 +1561,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("projects:choose", () => projects.choose());
   handle("projects:parent", () => projects.parent());
+  handle("projects:pendingCreate", () => projects.pendingCreate());
   handle("projects:chooseParent", (parent: unknown) => {
     if (typeof parent !== "string") throw new Error("Invalid project parent");
     return projects.chooseParent(parent);
@@ -1563,6 +1571,20 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return projects.check(parent, name);
   });
   const projectCreates = new Map<string, AbortController>();
+  handleFrom("projects:continueCreate", async (event, folder: unknown, request: unknown) => {
+    if (typeof folder !== "string" || typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request)) throw new Error("Invalid project operation");
+    const key = `${event.sender.id}:${request}`;
+    if (projectCreates.has(key)) throw new Error("Project operation already running");
+    const controller = new AbortController();
+    projectCreates.set(key, controller);
+    const abort = () => controller.abort();
+    event.sender.once("destroyed", abort);
+    try {
+      return await projects.continueCreate(folder, { signal: controller.signal, progress: progress => {
+        if (!event.sender.isDestroyed()) event.sender.send("projects:createProgress", { ...progress, request });
+      } });
+    } finally { projectCreates.delete(key); event.sender.removeListener("destroyed", abort); }
+  });
   handleFrom("projects:cancelCreate", (event, request: unknown) => {
     if (typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request)) throw new Error("Invalid project operation");
     projectCreates.get(`${event.sender.id}:${request}`)?.abort();
@@ -1623,9 +1645,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("projects:openFile", () => projects.openFile());
   // Open from GitHub… (owner, 4 November): the account's own repositories, then the first run's clone into
   // a new project window. A review build reads only its local stand-in and clones from its local remotes.
-  const reviewGitHub = process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API;
-  const reviewRemotes = reviewGitHub ? process.env.FOCUS_NOTES_CANDIDATE_GIT_REMOTES : undefined;
-  const projectGitHub = async () => (reviewGitHub ? candidateGitHubApi(reviewGitHub) : (journey && !fakeApi ? undefined : (await account.api())?.api));
   // New project's repository name (the owner, 7 November): a read-only lookup on the signed-in account; nothing is created here.
   handle("projects:repoTaken", async (name: unknown) => {
     if (typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository name");
