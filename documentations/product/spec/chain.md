@@ -69,6 +69,10 @@ How every UX and UI decision in Focus Notes is grounded. It's a chain of reasoni
 </table>
 </details>
 
+## Project meaning, resolved on 7 November
+
+D-378 applies the owner's 5 November words, "Projects can be completely offline or linked to a GitHub repo." The chain is CP-SCOPE-01 → SC-PROJ-01 → UC-PROJ-01 → IA-VIEW-PROJECTS → DD-PROJ-01 → PRJ-01: a project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it. Git history is always present; a remote is optional; a public site is separately confirmed, never created at setup. The [G1 acceptance rows](../../plan/definition-of-done.md#g1-new-project-on-this-computer-or-on-github) distinguish production creation from fake-only evidence.
+
 <h2 data-reader-personas="product design engineering">The six levels</h2>
 
 | Level | Answers | Written as | Owned by | Lives on |

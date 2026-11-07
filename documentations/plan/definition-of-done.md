@@ -5,6 +5,143 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The owner approved exact d40b78a3 Rewrite/Settings UX and UI on 1 November; its combined runtime/test/config head passed complete Windows CI 41325681712. The **MAI** rows add CP-RWR-01 to the production bar and still retain the explicitly unmeasured renderer, screen-reader, contrast and live-account certification gaps. Runtime hardening proof is not complete stage or release certification. The **OFB** stage below is the owner's 6 November feedback batch: robust button, Switch, loading and notification rules, the "/" block menu and tables, images, Customize toolbar, Actions and the project border Switch, each done only when it can be tried in the owner's Preview.
 
+## Gap closure, 7 November (P0 and P1)
+
+**Direction:** the owner, 7 November at 21:10: "Update any gaps and missing detail in the spec also. Let's systematically close all the P0 and P1 gaps. Prepare DoD and start implementation against it." D-378 resolves S1; D-379 sets the programme and real-account boundary. These rows supplement, not replace, MP and M5 certification. Builders record the actual commands, results and exact-head Windows CI in [gate evidence](gate-evidence.md). A runtime slice lands only on its own seven-of-seven green gate; fake-only evidence never closes an owner-dependent row.
+
+| Group | Audit findings | Requirement owner / work package | Promise and user outcome |
+| --- | --- | --- | --- |
+| G0 | S1–S7 and the durable specification of every P0/P1 finding | Spec and plan, across the packages below | A builder can work from the spec and these rows without the audit |
+| Landed fixes | F1; F4 except first real deletion | EDT-11, FIL-14, PRJ-19; PRJ-23 / WP-P.23 | UC-SAFE-01/06 and UC-PROJ-13: honest backup and safe deletion |
+| G1 | F2 + S1 | PRJ-01 / WP-P.4 | CP-SCOPE-01, UC-PROJ-01: choose local or GitHub and start writing |
+| G2 | F3 + F6 | PRJ-10 / WP-P.18; PRJ-12 / WP-P.11; SHR-05–16 in their existing packages | CP-SHARE-01, UC-SHARE-08/09/12: explicitly activate sharing and invite |
+| G3 | F5 + S2 | SHR-25/26, SHR-04, SEC-06 / WP-P.22; SHR-20 in its existing package | CP-SHARE-01, UC-SHARE-02/10: publish for real without leaks |
+| G4 | F7 | PRJ-09 / WP-P.8 | CP-SCOPE-01, UC-PROJ-08: edit a text file in place |
+| G5 | F8 | FRE-11–13 / WP-5.14 | CP-SAFE-01, UC-SAFE-08–10: recover a moved or missing folder |
+| G6 | F10 | SHR-17–19, SHR-23 / WP-P.10 | CP-SHARE-01, UC-SHARE-03–05, UC-READ-02: opaque codes and managed shares |
+| G7 | F11 | PRV-02 / WP-3.6 | CP-SAFE-01: remove local traces across project profiles |
+
+### G0: the specification and plan
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G0.1 | PRJ-01, CP-SCOPE-01, SC-PROJ-01, UC-PROJ-01 and the project-model reconciliation all say Git is always present and GitHub optional, with no public site at setup (S1, D-378). | Changed chain and requirement; `pnpm check` chain/plan checks. |
+| G0.2 | F1–F8, F10 and F11 have durable requirements, failure branches, recovery and named outcome evidence; landed F1/F4 are distinguished from owner-dependent proof. Every G group maps to requirements, one owning WP per requirement, and a roadmap stage. | This section; experience pages; work graph and implementation-plan parity; `pnpm check`. F9 is not a P0/P1 audit row. |
+| G0.3 | S2 gives the live publish package the leak gate; S3 dates macOS/Linux after v1; S4 points to the creation worker's repository-name ruling; S5 settles Spotlight; S6 replaces stale build claims; S7 distinguishes built history from unfinished search/duplicate. | D-382–D-386 and the durable pages/plan; no unowned or duplicate requirement in check-plan. |
+| G0.4 | Changed pages render with exactly one H1 and resolving local links/anchors; runtime is unchanged and checks pass. | `pnpm check`; `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; headless page/link check, with results in gate evidence. |
+
+**Try it:** read New project, Sharing, Publish, opening a text file and folder recovery; each tells you what happens, what can fail and how to continue. Follow its acceptance rows and plan without opening the audit.
+
+### F1 and F4: landed fixes, remaining owner proof
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| F1.1 | A project with Git but no remote says Saved on this computer, with a local mark; neither its window nor Files calls a local commit Backed up (EDT-11, FIL-14, PRJ-19; UC-SAFE-01/06). | **Landed:** `b933b03e`, followed by combined delete/status heads `4ed4ad48`, `6667dc33`; recorded local/no-remote journeys and exact-head gate in [gate evidence](gate-evidence.md). |
+| F4.1 | Delete accepts a New-project folder that is its own repository root, even without the older workspace marker; Local notes and foreign/nested roots stay refused; failure retains notes and recovery (PRJ-23, UC-PROJ-13). | **Landed:** `4ed4ad48`, `6667dc33`; exact-head Windows CI `42381219626`, seven of seven green, as recorded on main. |
+| F4.x | The first real deletion from Preview follows the approved confirmation/handoff and recycles only the approved local folder after remote confirmation, preserving retained private notes (PRJ-23, D-343). **Dependency: the owner.** | Owner's first-real-deletion report in gate evidence. Agents never perform or simulate this certification. |
+
+**Try it:** in Preview, a local-only project says Saved on this computer. The owner alone tries Delete on one disposable real GitHub project and confirms the exact repositories and retained copies.
+
+### G1: New project on this computer or on GitHub
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G1.1 | On this computer only creates a Git folder with no remote; it lands on an empty Untitled note with the caret, Open never shows; its status says it's kept on this computer, never "Backed up". | journey project-startup.spec.ts "Create project on this computer only…" picking the wizard option. |
+| G1.2 | On GitHub, in a production build (no FOCUS_NOTES_CANDIDATE_GITHUB_API), creates exactly one private repository with the chosen repository name under the signed-in account through the app's signed-in GitHub client, sets origin, writes the project marker and Git identity and pushes the first commit; Backup, Delete and Remove then treat it as a GitHub project. | unit project-create.test.ts with the GitHub fake (createRepo once, private, name; origin; marker; identity); a unit proving production wiring uses the account client when no candidate variable is set; journey "Create project on GitHub…" through the loopback fake picking the GitHub option. |
+| G1.3 | A taken or invalid repository name is refused before anything is made, at the repository-name field, keeping what was typed; nothing is created locally or on GitHub. | unit with the fake reporting the name taken. |
+| G1.4 | If GitHub fails after the local folder exists (offline, refused, limit), the project opens as local with one honest status and a way to finish linking later; no blind automatic retries; nothing typed is lost. | unit with a failing fake. |
+| G1.5 | Not signed in: On GitHub leads to sign-in or shows why it's unavailable; never silently local. | unit or journey. |
+| G1.6 | Each wait over 100 ms (creating the repository, first push) has a wait-inventory row with its fn: measure and streams its steps. | perceived-performance.md row; journey "New project streams setup". |
+| G1.7 | No test or agent run touches the real GitHub account. | fakes only in the diff. |
+| G1.8 | The owner's first real creation from Preview succeeds (dependency: the owner). | the owner's report, recorded in gate-evidence.md. |
+| G1.9 | The landed commit's exact-head CI run is seven of seven green. | Exact commit and Windows run recorded in gate evidence. |
+
+**Try it:** In Preview, New project, name it, choose On GitHub, Create: you land on an empty note, the private repository is on your GitHub account, and after the first save the status reads Backed up. Then New project, On this computer only, Create: you land on an empty note and the status says it's kept on this computer.
+
+### G2: turn on sharing and invite a person
+
+PRJ-10/12 and SHR-05–16 deliver UC-SHARE-08/09/12. Setup and invitation are independently landable slices; neither needs a new design of the approved D-335 dialogs.
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G2.1 | A GitHub project made by New project can turn on sharing without a candidate-site variable. Before its first Share/Publish, confirmation names the neutral editable public site repository and Pages URL, sealed versus plaintext output, and indefinite history; Cancel creates/pushes nothing (PRJ-10). | Production-wiring unit with candidate variables absent; setup fake asserts private project unchanged, one public-site creation only after confirmation; built journey from New project to first-share confirmation and Cancel. |
+| G2.2 | Until production setup is available, Share is hidden for an unconfigured project and one honest reason in Sharing names the missing capability, not a Settings dead end. Offline, refused access or partial setup keeps notes and the chosen site name; Retry reconciles existing results, not duplicate repositories. | Availability and offline/refusal/partial-result fake tests; journey verifies reason and recovery, no remote side effect on Cancel. |
+| G2.3 | Confirmed setup creates/reuses the paired public site, sealing stays in the desktop, and no site credential can read the private repository. Turn off preserves working notes/media privately before removal; failed preservation stops removal; re-enable never silently republishes (PRJ-10, UC-SHARE-12). | Protocol fake request/permission assertions; preservation-failure and re-enable tests; production journey proves persisted pairing and unchanged private bytes. |
+| G2.4 | Invite person sends exactly one request through the signed-in GitHub client, not a local draft. Personal accounts offer Collaborator with the exact whole-project read/change/share-secret warning; organizations offer only their supported Read/Triage/Write/Maintain/Admin roles (PRJ-12). | Collaborator API fake asserts target/account/role and one confirmed request; journey confirms warning and pending/success state. |
+| G2.5 | Invalid account, duplicate invitation, offline/refused/rate-limited request preserves the person and role, names the error and recovery, and never claims Invited before GitHub accepts. Cancel sends nothing; repeated activation while pending cannot duplicate the request. | Fake negative cases plus built pending/error/retry journey. |
+| G2.6 | Setup, first push and invitation waits over 100 ms each have a named wait-inventory row, fn: measure and task steps; leaving the dialog keeps writing and task status available without losing input. | Wait-inventory entries; streamed fake journey and task-state assertions. |
+| G2.7 | All agent tests use protocol fakes; the runtime head's exact Windows gate is seven of seven green. | Diff/fake configuration and exact-head run in gate evidence. |
+| G2.8 | First real sharing activation from Preview creates only the confirmed site and no private plaintext. **Dependency: the owner.** | Owner report and repository/Pages outcome in gate evidence, without notes/secrets. |
+| G2.9 | First real invitation from Preview reaches the selected GitHub account with the confirmed role. **Dependency: the owner.** | Owner report of GitHub invitation, not a local draft, in gate evidence. |
+
+**Try it:** in Preview, the owner turns on Sharing for a new GitHub project, checks the named public site and confirms. In People, invite a GitHub user and verify the invitation on GitHub; cancel a second invitation and verify nothing is sent.
+
+### G3: publish and unpublish for real
+
+SHR-20/25/26, SHR-04 and SEC-06 deliver UC-SHARE-02/10. WP-P.22 owns the live leak gate (S2); a retired work package cannot certify it.
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G3.1 | Confirmed Publish saves exactly the selected note/folder as plaintext public content, pushes through the signed-in client and waits for the Pages deployment of that exact commit before Published and Copy link. A local draft never counts as published (SHR-20/25/26). | Production wiring with candidate flags absent; protocol fake checks exact files/commit/deploy; built journey "Publish reaches Pages" through fake queued/building/success states. |
+| G3.2 | Before every commit/deploy, the leak check rejects private plaintext, access secrets, source-derived readable share names and unsealed private media; a failure makes no public push/deploy and identifies recovery without printing sensitive content (SHR-04, SEC-06, SHR-23). | Leak-check fixtures/mutation cases; fake asserts zero push/deploy on rejection; CI gate attached to WP-P.22. |
+| G3.3 | Folder contents are rechecked against the confirmed selection; additions never silently widen it. Missing/unsupported media stops with recovery instead of dropping images or exposing originals. No site is created before PRJ-10 confirmation. | Scope-change and media fake tests; journey cancel/first-site and changed-folder cases. |
+| G3.4 | Unpublish preserves a private working copy and removes current public output after its deployment succeeds; warns honestly that existing Git history/reader copies cannot be withdrawn. Offline/refused/failed deploy keeps honest pending/error state and explicit Retry, never Published. | Fake preservation/push/deploy failures; journey unpublish and retry, exact private bytes retained. |
+| G3.5 | One leavable task streams Saving to GitHub → Publishing → Published, or Removing from your site; waits over 100 ms have inventory rows and fn: measures. Closing a dialog never cancels a committed deploy or blocks writing. | Wait inventory and fake long-task journey, including leave/return and status for the exact commit. |
+| G3.6 | Agent runs touch fakes only; the runtime head's exact Windows CI is seven of seven green. | Fake request assertions, exact-head run and leak-gate result in gate evidence. |
+| G3.7 | First real Publish from Preview serves the confirmed content at the Pages URL; private content stays private. **Dependency: the owner pressing Publish.** | Owner report of public URL/outcome and leak-gate result in gate evidence, no private content. |
+| G3.8 | First real Unpublish removes that item from the current site while preserving the private note. **Dependency: the owner.** | Owner report of current-site removal and retained note in gate evidence. |
+
+**Try it:** the owner publishes one disposable note from Preview, leaves the task and writes elsewhere, then opens Copy link after Published. Unpublish it: the current site loses the note, the private working note stays, and old-history limits are stated plainly.
+
+### G4: open and save a text file on its own
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G4.1 | Open file and Windows Open with accept .txt as well as .md/.markdown. A file outside a project opens its own window, saves plain text at the original path, creates no project/Git/remote and exposes no sharing/backup controls (PRJ-09, UC-PROJ-08). | File-dialog/association and routing units; built standalone .txt journey through Open file, plus Windows association evidence. |
+| G4.2 | Text autosave/reopen preserves encoding, BOM, line endings and literal characters, without adding Markdown/front matter. Images and Markdown-only operations are unavailable with the existing reason; Save as Markdown is explicit, leaving the source intact. | Byte-level text round-trip cases (UTF-8/BOM, supported encodings, CRLF/LF); journey edits/reopens and explicitly converts a copy. |
+| G4.3 | Dirty recovery survives restart; external changes show a conflict instead of overwriting; unreadable/unsupported input reports a recoverable error, and a file inside an open project routes there without an extra standalone copy. | Recovery/conflict/read-error/routing units and built journey asserting saved bytes and recovered text. |
+| G4.4 | Open/save waits over 100 ms use their existing named feedback and fn: inventory measures; the runtime head's exact Windows CI is seven of seven green. | Wait inventory, targeted journey and exact-head run in gate evidence. |
+
+**Try it:** Open file, choose a .txt outside your projects, type, close and reopen: it is still plain text in the same place. Images explain why they need Markdown; Save as Markdown makes a deliberate separate copy.
+
+### G5: recover a missing or moved notes folder
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G5.1 | Before Git, watcher or note access, startup checks the recorded folder; missing/disconnected/moved folders show recovery and create/write/download nothing without a choice (FRE-11, UC-SAFE-08). A missing folder never looks like a verified empty project. | Deterministic startup-order/no-write tests; journey removes or disconnects a disposable folder before launch and asserts no replacement. |
+| G5.2 | Find the folder verifies a moved folder and opens its actual notes; restored folders and recognized Documents moves recover without destructive replacement. Cancel keeps the recovery state (FRE-12, UC-SAFE-09). | Moved/restored-folder fake/filesystem cases; same built journey locates and reopens the original exact content. |
+| G5.3 | Download again, Sign in again and Start with an empty folder name what they do and act only after selection; collisions use a free folder, refusal/offline keeps recovery and credentials safe; starting fresh never destroys the missing project's record/history (FRE-12). | Account/download fakes, collision/cancel/failure units; journey exercises explicit empty-folder choice and preserved old record. |
+| G5.4 | Account/sync trouble never blocks writing in available notes. Its alert names the problem and offers Sync now, Sign in again or Switch account; import verifies every file and retains recovery before recycling; mass external deletion pauses backup (FRE-13, UC-SAFE-10). | Sync-state and verified-copy failure cases; journey keeps typing during fake account failure and recovers without losing bytes. |
+| G5.5 | Locate/download/reconciliation waits over 100 ms have named inventory rows and fn: measures; long work streams progress and permits leaving. Tests use disposable folders/accounts; exact-head Windows CI is seven of seven green. | Wait inventory, removed-and-recovered-folder journey, fake-only diff and exact-head run in gate evidence. |
+| G5.6 | First real recovery download/account reconciliation, if needed, retains the owner's notes and uses only the chosen folder. **Dependency: the owner.** | Owner report from Preview in gate evidence; agents never move/remove the owner's folder or download its private contents for proof. |
+
+**Try it:** using disposable notes, move the folder while the app is closed, reopen and choose Find the folder. The same text opens from its new place; Cancel or an unplugged drive never creates an empty replacement.
+
+### G6: opaque share codes, shares list and information template
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G6.1 | Every new share has a cryptographically random 8-character code and opaque identifiers in URL, public paths, grant files and media; no source title/path/account-readable alias leaks. Collisions are regenerated before committing; existing grants stay usable without new revealing aliases (SHR-17/23, UC-SHARE-03, UC-READ-02). | Randomness/length/alphabet/collision units; leak-check fixtures for title/path/media; built fake share-and-open journey. SHR-23 is implemented first. |
+| G6.2 | Settings → Sharing lists shares by item, not code, with current expiry; Copy again reuses the grant, Extend updates its expiry, Withdraw removes current access after successful deployment. Expired/withdrawn readers get the correct unavailable state, never plaintext (SHR-18, UC-SHARE-04/05). | Fake persisted grants/deploy tests and journey create → copy → extend → withdraw → reopen; no duplicate grant on Copy. |
+| G6.3 | The share-information template substitutes only supported placeholders (title, location, link, code, password, expiry), copies the exact rendered result and keeps secrets out of logs/public source. Invalid placeholders have a field error and preserve the draft (SHR-19). | Template substitution/validation/escaping and secret-redaction units; journey custom template and exact clipboard output. |
+| G6.4 | Offline/refused/failed sealing or deployment never falsely confirms a share/extension/withdrawal; the original grant/draft remains with one recovery action. Pending cannot duplicate work; waits over 100 ms have named inventory rows and fn: measures. | Fake failure cases, streamed pending/retry journey and wait inventory. |
+| G6.5 | Agents use fakes; runtime exact-head Windows CI is seven of seven green. First real code sharing, extension and withdrawal from Preview reaches the site and removes current access as stated. **Real-action dependency: the owner.** | Fake-only diff/exact-head run; separate owner reports for first real share, Extend and Withdraw in gate evidence. |
+
+**Try it:** the owner shares a disposable private note with an 8-character code, copies its information again from Sharing, extends it, then withdraws it. The current reader loses access; neither the link nor the public files reveal the note's name.
+
+### G7: purge local traces across project profiles
+
+| # | Done when | Evidence |
+| --- | --- | --- |
+| G7.1 | Sign out clears that account's local indexes, recents, logs and Files pins across every project profile, not only the current window; no cleared private result returns after restart (PRV-02). | Two-profile cleanup unit and built journey populating/searching/pinning both profiles, signing out, restarting and checking both. |
+| G7.2 | Remove from this computer clears the removed project's index/recents/logs/Files pins wherever cached, including Open, without clearing another project's data or deleting source notes, Git history or the remote. An open related window cannot repopulate stale caches (PRV-02). | Two-project/profile isolation and live-window cleanup tests; journey removes one and verifies other notes/pins remain. |
+| G7.3 | Partial/locked-file cleanup failure is reported with Retry and exact pending scope, never silent success; pending work keeps credentials and private text out of logs. Optional credential removal remains explicit, and sign-out stays separate from project deletion. | Locked-cache/failure/retry units, redaction assertions and built error-recovery journey. |
+| G7.4 | Cleanup waits over 100 ms have named inventory rows and fn: measures and one honest task status; only disposable profiles/fakes are used and runtime exact-head Windows CI is seven of seven green. | Wait inventory, cross-profile journey, fake-only diff and exact-head run in gate evidence. |
+
+**Try it:** with two disposable projects, pin and search notes in each, remove one and check that only its traces disappear. Sign out, restart and verify neither project's private search, Recent or Files pins remain.
+
+**Against the promise, 7 November:** F1 and F4's folder acceptance are landed, but first-real deletion is not certified. G1–G7 close production gaps in that order; real-account rows remain visibly owner-dependent. G0 closes only after the durable spec and plan mappings are checked and on main. Fakes are implementation evidence, never substitutes for the owner's first real action.
+
 ## Project startup follow-up, 7 November
 
 These bounded rows serve UC-PROJ-01/02 and SC-PROJ-01/07; they do not close the whole MP stage. They require the exact runtime head's Windows gate and scheduled Preview readiness before being called landed.

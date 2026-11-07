@@ -57,13 +57,13 @@ The two tabs describe one thing from two sides. A person who named and coloured 
 
 ## Reconciling the existing specs
 
-These pages already say part of this. Below is where they agree, and what contradicts the owner's direction and needs a decision.
+These pages already say part of this. D-378 resolves the project/GitHub contradiction; the remaining proposals below stay explicitly separate decisions.
 
 | # | Where | What it says now | Against the direction | Proposal |
 | --- | --- | --- | --- | --- |
-| 1 | [Projects](projects.md) TL;DR | "A project is one private GitHub repository" | Contradicts: projects can be completely offline | "A project is a folder kept with Git, on this computer only or linked to a private GitHub repository." |
+| 1 | [PRJ-01](../product/requirements.md#projects-prj), CP-SCOPE-01, SC-PROJ-01, UC-PROJ-01 | A project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it | **Resolved by D-378**, applying the owner's 5 November direction | Explicit New project choice; local Git is complete, GitHub uses the signed-in account, no public site at setup. [G1 acceptance](../plan/definition-of-done.md#g1-new-project-on-this-computer-or-on-github). |
 | 2 | [Projects → Local notes](projects.md#local-notes), DD-PROJ-04, UC-PROJ-07, SC-PROJ-04, CP-SCOPE-01 | Local notes are a third scope: no project, no Git | **Contradicts.** Standalone files are the only thing outside a project, and all projects have Git. | **Owner decision.** Recommended: Local notes becomes an ordinary project, **Local notes**, created on first use, on this computer only (local Git). Its quick-jot behaviour stays: one key and no project choice. Alternative: drop Local notes and let quick notes go to the last-used project. |
-| 3 | Today's build | An offline workspace can have no Git ("This folder isn't saved to GitHub"); Remove needs Git | **Contradicts:** all projects have Git | Every project starts Git; offline means "no GitHub remote", not "no Git". |
+| 3 | Project creation and local-only status | Every project starts Git; offline means "no GitHub remote", not "no Git" | **Resolved in the spec by D-378**; production creation proof remains G1 | No remote means Saved on this computer, never Backed up. F1's status fix and F4's folder acceptance have landed; first real deletion remains owner-dependent (D-343). |
 | 4 | [Images → Assets](images.md#assets-markdown-and-encrypted-sharing) | A standalone note's images go in `<full-note-filename>.assets/images/<id>.<ext>` | Partly: the owner says "a folder beside the file with the image file in it" (one folder, the image in it) | Flatten it to `<full-note-filename>.assets/<id>.<ext>`: one folder beside the file, images directly in it. Flagged for the owner, because it changes a built path. |
 | 5 | [Images](images.md), .txt rule | .txt needs Save as Markdown before media | Agrees | Kept. The mock shows the disabled insert and its reason. |
 | 6 | [Projects → Meeting Project](projects.md#meeting-project-for-the-first-time), Settings and words | "Settings: Project replaces Workspace" | Agrees, but the build still has a Workspace tab | The merged Project tab mocked below is that replacement. |

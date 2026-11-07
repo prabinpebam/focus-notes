@@ -141,11 +141,11 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 
 ## Projects (PRJ)
 
-Owner's 3 November notes; [Projects](../experience/projects.md). All planned, not built.
+Owner's 3 November notes, clarified on 5 November; [Projects](../experience/projects.md). Delivery and remaining proof are recorded in the [gap-closure Definition of Done](../plan/definition-of-done.md#gap-closure-7-november-p0-and-p1), not inferred from a designed screen.
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| PRJ-01 | Each new project is its own private GitHub repository, with notes, settings, history and sync isolated. No public site is created at setup. | P1 |
+| PRJ-01 | A project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it (D-378). Notes, settings, history and sync are isolated. New project explicitly chooses where it is kept; no public site is created at setup. | P1 |
 | PRJ-02 | Open projects in their own windows; one project per window. Reopen focuses the existing window; restore last-open windows without losing drafts. | P1 |
 | PRJ-03 | Scope is the trusted private root plus its explicitly paired site/Public root, never sibling repositories. Files/search/history can use that pair; create/import default private, cross-root moves require visibility confirmation, site-write permission is checked independently. Reject traversal, symlink bypass and another project's IDs. Opening another project is an explicit separate-window action. | P1 |
 | PRJ-04 | Project name, 12 token accent presets and 24 preset SVG logos identify the project. In a window its identity is only a subtle outline in its colour, the project pill (logo and name) after Backed up, and an optional logo watermark (Off by default; faint, clear of text); no title band, page heading, tinted Files heading, or tinted dialog or modal header (D-324, D-325). The name stays in the pill's tooltip and the window's accessible name. Store project choices in `.focus-notes/project.json`; contrast-safe in light/dark/contrast. | P1 |

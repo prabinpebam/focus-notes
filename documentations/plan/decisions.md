@@ -1,5 +1,19 @@
 # Decisions
 
+## D-378: a project always has Git; GitHub is optional
+
+**Decided (owner, 5 November; reconciled 7 November 2026).** "Projects can be completely offline or linked to a GitHub repo." PRJ-01 means a project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it. New project makes that choice explicit. A local-only project has history, not a remote backup; choosing GitHub uses the signed-in account in production, never silently the local-only path. No public site is created at setup. This resolves audit S1 without changing the owner's source notes or deciding the separate Local notes proposal.
+
+**Affects:** PRJ-01, CP-SCOPE-01, SC-PROJ-01, UC-PROJ-01, [chain](../product/spec/chain.md#project-meaning-resolved-on-7-november), [project-model reconciliation](../experience/project-model.md#reconciling-the-existing-specs), WP-P.4 and [G1 DoD](definition-of-done.md#g1-new-project-on-this-computer-or-on-github).
+
+## D-379: close P0 and P1 gaps against recorded outcomes
+
+**Decided (owner, 7 November 2026 at 21:10).** "Update any gaps and missing detail in the spec also. Let's systematically close all the P0 and P1 gaps. Prepare DoD and start implementation against it." Close one work package at a time, with its observable DoD rows recorded before building. A fake proves the app's behavior, not a real-account outcome: agents build and test against fakes only and never create, delete, publish or invite on the owner's real GitHub account. The owner performs the first real action of each kind from Preview; its row remains an explicit owner dependency, not a reason to stop safe implementation. Nothing becomes public without the owner pressing the button. D-343's first-real-action boundary is unchanged.
+
+**Audit source:** the read-only audit of `42bc9a30`, retained at `E:\Projects\side-projects\focus-notes-work\review\spec-gap-audit-2026-11-07\report.md`. It is an input, not a builder dependency; the durable requirements, experience pages and [G0–G7 DoD](definition-of-done.md#gap-closure-7-november-p0-and-p1) hold the closure contracts. F1 and F4's folder-acceptance fixes have since landed at `b933b03e`, `4ed4ad48` and `6667dc33`; F4's first real deletion is still the owner's row.
+
+**Affects:** [requirements](../product/requirements.md), [Definition of Done](definition-of-done.md#gap-closure-7-november-p0-and-p1), [work graph](work-graph.json), [implementation plan](implementation-plan.md), [roadmap](roadmap.md), [gate evidence](gate-evidence.md), and the project, sharing, publishing and recovery flows.
+
 ## D-pending: a project without a remote is never "backed up", and is deletable
 
 **Decided (owner's report, 7 November 2026 at 17:44; orchestrator to number).** (1) A project whose branch tracks no remote commits each save as history, but nothing calls that a backup: the shell reports `remote: false`, the save state stays *Saved on this computer* (hard-drive mark), the card says "Not backed up to GitHub", and *Backup to GitHub* is unavailable. (2) Delete project accepts any project that is its own repository's top, with or without `.focus-notes/workspace.json`; Local notes stays refused, and the main process checks the folder again before it moves. (3) New project's first private row says **Kept on this computer, not on GitHub yet**, since creating a repository on the real account isn't wired (only the loopback fake of D-315). Wiring it waits for the owner.

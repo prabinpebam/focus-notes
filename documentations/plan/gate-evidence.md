@@ -18,6 +18,18 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Gap-closure specification, 7 November
+
+D-378 settles local Git versus optional private GitHub; D-379 records the owner's P0/P1 programme. [G0–G7](definition-of-done.md#gap-closure-7-november-p0-and-p1) name the requirements, observable outcomes, negative cases, waits and first-real-action owner dependencies before implementation. G1's agreed rows are unchanged. This first specification slice does not close G0.2/G0.3 until the durable detail and plan mapping follow, nor certify any new runtime or real-account action.
+
+| Command / evidence | Result |
+| --- | --- |
+| `pnpm check` in the isolated docs worktree | Passed: chain (357 requirements), plan (126 packages), kit parity, boundaries, generated files, licences, spacing, notifications and ui:check; included existing 69 action-proof and 4 button-geometry tests. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed; no runtime or kit changes. |
+| Headless Chromium against an ephemeral loopback server, 8 changed pages | Passed: exactly one rendered H1 per page, light/dark SVG fit, newly added/changed local links and anchors, including links into changed pages. Browser and server closed. |
+
+Existing unchanged links outside this slice are not repaired: `decisions.md` already links to the absent `design/system/views-as-data.html`. The headless check compares the previous link set so unrelated historical dead links do not become a false claim of full-site validation. No full runtime suite, app launch, real GitHub write or publishing was needed for this docs-only slice.
+
 ### Delete and no-remote backup landing, 7 November: quarantine closed
 
 `fix-delete-backup-7nov` (owner's report, 7 November 17:44 and 17:48; D-pending) landed `b933b03e` under a scoped quarantine of seven journeys already red on `main` `42bc9a30` ([42351409905](https://github.com/prabinpebam/focus-notes/actions/runs/42351409905)): `docking.spec.ts` (lines 61, 91, 129, 244, 284), `ui-states.spec.ts:996` and `settings-grouping.spec.ts:311`, plus the `review-feedback.spec.ts:195` garbage-collected-promise flake. The quarantine is closed. Its follow-up `6667dc33`, which extends `project-offline.spec.ts` to projects whose GitHub creation failed, passed all seven jobs on that exact head, including every quarantined case, in [42381219626](https://github.com/prabinpebam/focus-notes/actions/runs/42381219626) on top of the Projects batch `4ed4ad48`. Nothing is waived.
