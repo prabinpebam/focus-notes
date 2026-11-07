@@ -16,6 +16,49 @@ const settledAxe = async (page: Page) => {
 };
 const mod = mac ? "Meta" : "Control";
 
+test("FND-01: Find field actions and chevron stay aligned, with helper text below its own switch", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1280, 720));
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    await page.keyboard.press(`${mod}+F`);
+    const bar = page.getByRole("region", { name: "Find in note" });
+    const field = bar.getByRole("searchbox", { name: "Find", exact: true });
+    const chevron = bar.getByRole("button", { name: /replace/i }).first();
+    const actions = [
+      chevron,
+      bar.getByRole("button", { name: /previous match/i }),
+      bar.getByRole("button", { name: /next match/i }),
+      bar.getByRole("button", { name: /close find/i }),
+    ];
+    const fieldBox = (await field.boundingBox())!;
+    const original = (await chevron.boundingBox())!;
+    for (const action of actions) {
+      const box = (await action.boundingBox())!;
+      expect(Math.abs(box.y + box.height / 2 - (fieldBox.y + fieldBox.height / 2))).toBeLessThanOrEqual(1);
+    }
+    const switchBoxes = await Promise.all((await bar.getByRole("switch").all()).map((s) => s.locator("xpath=ancestor::label").boundingBox()));
+    expect(switchBoxes).toHaveLength(4);
+    for (const box of switchBoxes) expect(Math.abs(box!.y - switchBoxes[0]!.y)).toBeLessThanOrEqual(1);
+    expect(await bar.getByRole("switch").first().locator("xpath=ancestor::label").evaluate((label) => {
+      const options = getComputedStyle(label.parentElement!);
+      return { inline: options.columnGap, wrap: options.rowGap };
+    })).toEqual({ inline: "16px", wrap: "8px" });
+    await expect(bar.getByText("Select text in the note, then open find")).toBeVisible();
+    for (let i = 0; i < 2; i++) {
+      await chevron.hover();
+      await chevron.focus();
+      await chevron.click();
+      const box = (await chevron.boundingBox())!;
+      expect(box).toEqual(original);
+      await expect(field).toBeVisible();
+    }
+    await page.screenshot({ path: "../../test-results/screens/find-alignment.png" });
+  } finally { await quit(l); }
+});
+
 test("OFB.6: Find switches wrap inside a minimum writing window without hiding the match", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.docs, "Welcome.md"), "# Needle\n\nA needle to find.\n");
@@ -28,6 +71,13 @@ test("OFB.6: Find switches wrap inside a minimum writing window without hiding t
     await page.keyboard.press(`${mod}+f`);
     const bar = page.getByRole("region", { name: "Find in note" });
     await bar.getByRole("searchbox", { name: "Find", exact: true }).fill("needle");
+    for (const action of await bar.getByRole("button").all()) {
+      expect(await action.evaluate((button) => {
+        const r = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return hit !== null && button.contains(hit) && r.x >= 0 && r.right <= innerWidth && r.y >= 0 && r.bottom <= innerHeight;
+      }), "every Find action is exposed, not covered by its neighbour").toBe(true);
+    }
     await bar.getByRole("button", { name: "Search options", exact: true }).click();
     const options = page.getByRole("dialog", { name: "Search options", exact: true });
     await expect(options.getByRole("switch")).toHaveCount(4);

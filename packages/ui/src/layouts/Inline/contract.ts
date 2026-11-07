@@ -13,6 +13,7 @@ export const contract = defineContract({
     align: { kind: "enum", values: ["start", "center", "end", "stretch"], default: "center" },
     justify: { kind: "enum", values: ["start", "center", "end", "between"], default: "start" },
     wrap: { kind: "boolean", default: false },
+    wrapGap: { kind: "token", group: "space", description: "Space between wrapped lines; defaults to gap when absent. Keep wrapped items closer than the next section." },
     grow: { kind: "boolean", default: false },
   },
   events: {},
@@ -21,6 +22,7 @@ export const contract = defineContract({
   tokens: "space.*",
   a11y: { pattern: "none" },
   fixtures: [
+    { name: "wrapped options", props: { gap: "inlineGroup", wrap: true, wrapGap: "stackItem", align: "start" }, children: [1, 2, 3, 4].map(() => ({ type: "Button", props: { label: { t: "gallery.action" } } })) },
     { name: "related action and explanation", props: { related: true, label: { t: "ai.found.find" } }, children: [{ type: "Button", props: { label: { t: "ai.found.find" } } }, { type: "Text", props: { value: { t: "ai.found.hint" }, role: "caption" } }] },
     ...SPACE.map((gap) => ({ name: `gap ${gap}`, props: { gap }, children: [1, 2].map(() => ({ type: "Button", props: { label: { t: "gallery.action" } } })) })),
     ...["start", "center", "end", "stretch"].map((align) => ({ name: `align ${align}`, props: { align, gap: "inlineItem" }, children: [{ type: "Button", props: { label: { t: "gallery.action" } } }] })),

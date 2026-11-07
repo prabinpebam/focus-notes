@@ -50,7 +50,8 @@ for (const theme of ["light", "dark"] as const) {
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
     // The toast's paste changes the note and its toast stays a while, so it goes last: every other
     // surface is captured on the note as written.
-    for (const s of [...SURFACES.filter((x) => x.name !== "toast"), ...SURFACES.filter((x) => x.name === "toast")]) {
+    const selected = SURFACES.filter((x) => !process.env.VQ_ONLY || process.env.VQ_ONLY.split(",").includes(x.name));
+    for (const s of [...selected.filter((x) => x.name !== "toast"), ...selected.filter((x) => x.name === "toast")]) {
       const base = SURFACE_BASELINES[s.name];
       expect(base, `${s.name} has a baseline ID in baselines.ts`).toBeDefined();
       await s.open(page);

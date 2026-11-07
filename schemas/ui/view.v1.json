@@ -10898,6 +10898,31 @@
                 }
               ]
             },
+            "wrapGap": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "stackPair",
+                    "stackItem",
+                    "stackGroup",
+                    "stackSection",
+                    "stackRegion",
+                    "inlinePair",
+                    "inlineItem",
+                    "inlineGroup",
+                    "insetSm",
+                    "insetMd",
+                    "insetLg",
+                    "gutter",
+                    "marginPage"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
             "grow": {
               "anyOf": [
                 {

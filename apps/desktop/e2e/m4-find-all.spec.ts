@@ -18,6 +18,38 @@ const settledAxe = async (page: Page) => {
   return axeViolations(page);
 };
 
+test("FND-01/FND-04: Find surfaces are exclusive in both shortcut orders, retaining their queries", async () => {
+  const { dirs } = instance();
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    const editor = page.getByRole("textbox", { name: "Note" });
+    const bar = page.getByRole("region", { name: "Find in note" });
+    const sheet = page.getByRole("complementary", { name: "Find in all notes" });
+    const noteField = bar.getByRole("searchbox", { name: "Find", exact: true });
+    const allField = sheet.getByRole("combobox", { name: "Search all notes" });
+    await expect(editor).toBeFocused();
+    await page.keyboard.press(`${mod}+F`);
+    await noteField.fill("note query");
+    await page.keyboard.press(`${mod}+Shift+F`);
+    await expect(bar).toBeHidden();
+    await expect(sheet).toBeVisible();
+    await expect(allField).toBeFocused();
+    await allField.fill("all notes query");
+    for (const shortcut of [`${mod}+F`, mac ? "Meta+Alt+F" : "Control+H", "F3", "Shift+F3"]) {
+      await page.keyboard.press(shortcut);
+      await expect(sheet).toBeHidden();
+      await expect(bar).toBeVisible();
+      await expect(noteField).toHaveValue("note query");
+      await page.keyboard.press(`${mod}+Shift+F`);
+      await expect(bar).toBeHidden();
+      await expect(sheet).toBeVisible();
+      await expect(allField).toBeFocused();
+      await expect(allField).toHaveValue("all notes query");
+    }
+  } finally { await quit(l); }
+});
+
 test("FND-04 (M4 demo, step 4): find in all notes, grouped with snippets, and open a match at exactly that match, from the keyboard", async () => {
   const { dirs } = instance();
   write(join(dirs.docs, "private", "notes", "journal", "garden-diary.md"), "# Garden diary\n\nThe heron came back.\n\nA second heron, then a third Heron by the pond.\n");

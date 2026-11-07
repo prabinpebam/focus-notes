@@ -77,6 +77,22 @@ async function started(files: Record<string, string> = { ...NOTES }) {
 }
 
 describe("opening Find in all notes", () => {
+  it("keeps only one Find surface open and retains each query in both opening orders", async () => {
+    const { app } = await started();
+    await app.commands.run("find.open");
+    await app.commands.run("find.setQuery", { value: "note query" });
+    await app.commands.run("find.allNotes", { query: "project query" });
+    expect(app.store.state.ui.find).toMatchObject({ open: false, query: "note query", inSelection: false, scoped: false });
+    expect(app.store.state.ui.findAll).toMatchObject({ open: true, query: "project query" });
+    for (const command of ["find.open", "find.replace", "find.next", "find.prev"]) {
+      await app.commands.run(command);
+      expect(app.store.state.ui.find.open).toBe(true);
+      expect(app.store.state.ui.findAll).toMatchObject({ open: false, query: "project query" });
+      await app.commands.run("find.allNotes");
+      expect(app.store.state.ui.find).toMatchObject({ open: false, query: "note query" });
+      expect(app.store.state.ui.findAll).toMatchObject({ open: true, query: "project query" });
+    }
+  });
   it("is Mod+Shift+F, in the ⋯ menu's Edit group, and focuses its field", async () => {
     const { app, vm } = await started();
     expect(app.commands.describe("find.allNotes")).toMatchObject({ shortcut: "Mod+Shift+F" });
