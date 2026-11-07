@@ -18,6 +18,34 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### G1 production creation, 7 November
+
+**Landed:** `c15479caf19fc5977e4a574b9483cf3f0a932700`, non-force fast-forward under the landing lock. [Exact-head Windows CI 42396768175](https://github.com/prabinpebam/focus-notes/actions/runs/42396768175) passed **7/7**. Prior D-391 rollback `32e76a43` restored the failing sharing slice; [42396490521](https://github.com/prabinpebam/focus-notes/actions/runs/42396490521) passed **7/7**. Preview reported `ready:89e5eb2` at 23:32: that descendant contains G1 with an identical desktop/runtime tree. W-share owns reintroducing the reverted sharing slice; this evidence does not certify it.
+
+| DoD row | Result / evidence |
+| --- | --- |
+| G1.1 | Passed: computer-only startup journey picks the wizard option, verifies no origin, empty Untitled/caret/no Open and local-only status. |
+| G1.2 | Passed: production uses `account.api()` through the injected client; unit fakes verify one private creation, name, origin, marker, identity and first push. Startup journey uses loopback API/local bare remote, then checks backup after save; existing backup/delete journeys pass. |
+| G1.3 | Passed: taken/invalid names refused before creation; unit/core cases retain the repository-name field. |
+| G1.4 | Passed: failures open locally and retain choices with Continue setup. Non-secret Git-config receipts survive restart; unknown responses reconcile only on explicit continuation. Failed push removes origin to prevent automatic replay. |
+| G1.5 | Passed: signed-out client refused before making a folder; sign-in or an honest unavailable reason. |
+| G1.6 | Passed: repository/push steps stream through the tracker; wait rows use `fn:project.create.repository` and `fn:project.create.push`. Held-request/cancellation journey proves progress and no replay. |
+| G1.7 | Passed: synthetic accounts, loopback API and local remotes only. No automated real creation, deletion or invitation. |
+| G1.8 | **Repository verified by API; owner view pending.** Owner created `prabinpebam/testing-delete` from candidate `8a39752b` at 23:27. Coordinator's read-only API check at 23:39 confirmed private visibility, ownership and first commit. The owner's signed-out browser showed 404; unresolved, not an established app defect. This is not first-real-creation-from-Preview certification. |
+| G1.9 | Passed: exact landed head and 7/7 gate above. |
+
+| Recorded check | Result from W-create2 |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\project-create.test.ts packages\core\test\project-open.test.ts packages\core\test\tasks.test.ts` | 112 passed. |
+| `pnpm typecheck` | Passed on identical source tree; tree identity verified. |
+| `pnpm check`; `pnpm --filter @focus-notes/desktop run build` | Passed, repeated on final candidate. |
+| Six scoped invisible journeys | Passed: both creation choices, streamed cancellation and three offline/delete/backup cases. |
+| Slate runtime and headless changed-page checks | Passed: titles, one H1, anchors and light/dark figure fit; helpers closed. |
+
+**Source:** W-create2's `2026-11-07-2334-w-create2.md` handoff, with the coordinator's 23:45 correction to the docs brief. Durable test sources: [creation units](../../apps/desktop/test/project-create.test.ts), [core cases](../../packages/core/test/project-open.test.ts), [startup journeys](../../apps/desktop/e2e/project-startup.spec.ts), [streaming journey](../../apps/desktop/e2e/ui-states.spec.ts), [wait inventory](../architecture/perceived-performance.md). These are recorded prior checks, not tests rerun by this docs worker. [G1 DoD](definition-of-done.md#g1-new-project-on-this-computer-or-on-github) retains the owner dependency.
+
+**Documentation increment, W-docs:** D-393–D-395, [DoD backlog](definition-of-done.md#dod-backlog) and this G1 record are docs only. `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and `pnpm check` passed in the isolated pinned-kit worktree (357 requirements, 127 WPs; existing 69 action-proof and 4 button-geometry tests inside check). Headless Chromium rendered all 11 changed documentation pages with exactly one H1 and resolving new links/anchors, including `dod-backlog` and `settings-project-merged`; browser closed. No app launch, owner project mutation, real GitHub write or desktop CI wait was performed.
+
 ### Gap-closure specification, 7 November
 
 D-378 settles local Git versus optional private GitHub; D-379 records the owner's P0/P1 programme. [G0–G7](definition-of-done.md#gap-closure-7-november-p0-and-p1) name the requirements, observable outcomes, negative cases, waits and first-real-action owner dependencies before implementation. G1's agreed rows are unchanged. First slice `50e23d3e` landed the chain and DoD; the follow-up durable requirements/flows and plan mapping below close G0's specification scope once landed, never G1–G7 runtime or real-account certification.

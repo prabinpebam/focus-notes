@@ -5,6 +5,88 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested production levels remain unchanged below. The owner approved exact d40b78a3 Rewrite/Settings UX and UI on 1 November; its combined runtime/test/config head passed complete Windows CI 41325681712. The **MAI** rows add CP-RWR-01 to the production bar and still retain the explicitly unmeasured renderer, screen-reader, contrast and live-account certification gaps. Runtime hardening proof is not complete stage or release certification. The **OFB** stage below is the owner's 6 November feedback batch: robust button, Switch, loading and notification rules, the "/" block menu and tables, images, Customize toolbar, Actions and the project border Switch, each done only when it can be tried in the owner's Preview.
 
+## DoD backlog
+
+**Owner backlog, 7 November evening.** These corrections supplement [Gap closure, 7 November (P0 and P1)](#gap-closure-7-november-p0-and-p1), not a replacement or a claim of runtime completion. [Requirements](../product/requirements.md), [work graph](work-graph.json), [implementation plan](implementation-plan.md) and [roadmap](roadmap.md) retain exactly one owning package and stage per requirement. All candidate designs need owner approval before wiring or tests.
+
+### Backlog (a): GitHub mark on Account
+
+**Owner, 23:26:** "This view should have the GIthub Logo…". FRE-07 / WP-3.6 (M3), UC-SETUP-03.
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| OB-a.1 | Settings → Account uses the existing GitHub mark as the account card's icon beside name and @handle, exactly once; no duplicate mark or enclosure. | View-document diff and owner review in light/dark, using signed-in fake data. |
+
+**Try it:** open Settings → Account; the identity card shows one GitHub mark beside the name and @handle.
+
+### Backlog (b): remove the terminology notice
+
+**Owner, 23:28:** "Stop showing this msg alltogether. Not needed at all." This removes "Your workspace is now called a project…" entirely. PRJ-11 / WP-P.17 (MP), UC-PROJ-01.
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| OB-b.1 | The notice never appears for a fresh or upgraded profile. Its trigger, message keys, inventory row and notice tests are removed; Project terminology and all notes/IDs/history remain intact. | Removal diff and fresh/upgraded profile observation; production migration journey preserves data, without retaining notice-specific tests. |
+| OB-b.2 | Projects → Approved terminology, slice 1 records the notice as superseded, not a surviving exception. | Documentation and copy-inventory check. |
+
+**Try it:** start once with a fresh profile and once with an upgraded profile; neither shows the terminology notice.
+
+### Backlog (c): Find alignment
+
+**Owner correction, 23:31 (D-395).** FND-01 / WP-1.10 (M1), UC-FIND-04; W-find owns implementation.
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| OB-c.1 | One field row contains a stable centred chevron, field/count, previous/next and × in that order; count changes and replace expansion do not displace the chevron or end actions. | Owner review of fake-data states at narrow/wide sizes; after approval, scoped geometry/outcome journey. |
+| OB-c.2 | Option switches align at the top when neighbouring labels wrap to extra lines. | Multiline candidate example; after approval, first-line alignment measurement in the built app. |
+
+**Try it:** open Find, expand Replace and use a long option label; the row stays aligned and all end actions stay together.
+
+### Backlog (d): familiar Find in all notes
+
+**Owner correction, 23:31 (D-395).** FND-04 / WP-4.3 (M4), UC-FIND-02; candidate pending owner approval.
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| OB-d.1 | All-notes Find uses the familiar in-note field/options arrangement, adding only its grouped results area; owner approves the candidate before wiring/tests. | Side-by-side view-document candidate and explicit owner approval. |
+| OB-d.2 | A result still opens its note at the matching text; empty/error states retain query and offer recovery. | After approval, scoped all-notes journey asserting the visible result and destination. |
+
+**Try it:** compare Find with Find in all notes, then choose a result; the controls are familiar and the note opens at the match.
+
+### Backlog (e): one Find surface
+
+**Owner correction, 23:31 (D-395).** FND-01 / WP-1.10 (M1), with FND-04 / WP-4.3 (M4); UC-FIND-04/02.
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| OB-e.1 | Opening either Find closes the other; neither shortcut nor result navigation leaves both surfaces visible. Each retains its own query when switching back. | After design approval, one journey asserting visible exclusivity and both restored query values through shortcuts and result navigation. |
+
+**Try it:** type different queries into Find and Find in all notes, switch back and forth; only one is open and neither query is lost.
+
+### Backlog (f): GitHub references are links
+
+**Owner, 23:33:** "If you show a github link, it should be clickable to open that repo. Add all of these to a DoD backlog". D-393; PRJ-21 / WP-P.21 (MP), UC-PROJ-12; [external-links rule](../design/foundations.md#external-links).
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| OB-f.1 | Every shown repository/account reference in Settings → Project and Account, Open cards, Projects, wizard Confirm, Backup, Share and Delete independently opens the exact github.com repository/profile in the default browser through the existing external-link policy, with an accessible name. | Enumerated surface audit; after approval, fake external-link interception verifies exact destinations and keyboard activation on each affected surface, with invalid destinations refused. |
+| OB-f.2 | A card's reference action never opens the project as a side effect, and card opening still works; local-only projects show no fictional GitHub link. | Scoped outcome journey; accessible-name/focus assertions. |
+
+**Try it:** tab to a shown repository or @handle and activate it; its repository/profile opens, without opening the enclosing card.
+
+### Backlog F4.2: delete in the app
+
+**Owner, 23:35:** "Why did dialog, I thought you proposed a design where we delete the rpo from the app itself. Unless GitHub restricts this, we should delete the repo from the app." D-394 supersedes DD-PROJ-12. PRJ-23 / WP-P.23 (MP), SC-PROJ-08 → UC-PROJ-13; [flow](../experience/project-model.md#deleting-a-project).
+
+| # | Done when | Evidence needed |
+| --- | --- | --- |
+| F4.2.1 | Candidate shows step-up needed, deleting, confirmed deleted, partial failure with Retry, refused fallback and step-up declined; uses existing consequences/typed-name steps, untinted dialog, × without duplicate Cancel, right-aligned Back/primary and at most two button types. | View documents/fake data, ui:check, typecheck and static review; **dependency: owner design approval** before runtime work/tests. |
+| F4.2.2 | After preservation and typed confirmation, app deletes exactly the chosen repository; missing permission asks for one-time least-privilege delete_repo step-up, used once and never stored. No unauthorized credential expansion or automatic replay. | After approval, sign-in-compatible ephemeral authorization proof and fake client tests for granted/declined step-up; credential persistence inspection. |
+| F4.2.3 | Policy/no admin/declined step-up/other refusal keeps local notes, names the reason and offers Open on GitHub only as fallback. Partial failure has exact results and Retry. | Fake 403/policy/decline/timeout journeys; no real-account write. |
+| F4.2.4 | A 404 alone never proves deletion; even successful DELETE followed by a read still finding the target stays honest. Recycle only after every selected remote is confirmed deleted, pending writes flushed and retained private/unpushed copies verified; failure keeps recovery. | Fake DELETE/follow-up-read cases, preservation/folder-identity/recycle tests and one built-app outcome journey. |
+| F4.2.5 | First real deletion succeeds from Preview and retains every selected saved copy. | **Dependency: owner only (D-343).** Owner report in gate evidence; agents never perform DELETE or another real-account write. |
+
+**Try it:** first review the six synthetic dialog states. After approval and implementation, the owner alone deletes one disposable GitHub project from Preview; authorization is one-time, local cleanup waits for confirmation, and Open returns with honest success.
+
 ## Gap closure, 7 November (P0 and P1)
 
 **Direction:** the owner, 7 November at 21:10: "Update any gaps and missing detail in the spec also. Let's systematically close all the P0 and P1 gaps. Prepare DoD and start implementation against it." D-378 resolves S1; D-379 sets the programme and real-account boundary. These rows supplement, not replace, MP and M5 certification. Builders record the actual commands, results and exact-head Windows CI in [gate evidence](gate-evidence.md). A runtime slice lands only on its own seven-of-seven green gate; fake-only evidence never closes an owner-dependent row.
@@ -38,7 +120,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 | --- | --- | --- |
 | F1.1 | A project with Git but no remote says Saved on this computer, with a local mark; neither its window nor Files calls a local commit Backed up (EDT-11, FIL-14, PRJ-19; UC-SAFE-01/06). | **Landed:** `b933b03e`, followed by combined delete/status heads `4ed4ad48`, `6667dc33`; recorded local/no-remote journeys and exact-head gate in [gate evidence](gate-evidence.md). |
 | F4.1 | Delete accepts a New-project folder that is its own repository root, even without the older workspace marker; Local notes and foreign/nested roots stay refused; failure retains notes and recovery (PRJ-23, UC-PROJ-13). | **Landed:** `4ed4ad48`, `6667dc33`; exact-head Windows CI `42381219626`, seven of seven green, as recorded on main. |
-| F4.x | The first real deletion from Preview follows the approved confirmation/handoff and recycles only the approved local folder after remote confirmation, preserving retained private notes (PRJ-23, D-343). **Dependency: the owner.** | Owner's first-real-deletion report in gate evidence. Agents never perform or simulate this certification. |
+| F4.x | The first real deletion from Preview follows the approved confirmation and D-394 in-app flow (F4.2; candidate pending approval), recycles only the approved local folder after remote confirmation and preserves retained private notes (PRJ-23, D-343). **Dependency: the owner.** | Owner's first-real-deletion report in gate evidence. Agents never perform or simulate this certification. |
 
 **Try it:** in Preview, a local-only project says Saved on this computer. The owner alone tries Delete on one disposable real GitHub project and confirms the exact repositories and retained copies.
 
@@ -53,7 +135,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 | G1.5 | Not signed in: On GitHub leads to sign-in or shows why it's unavailable; never silently local. | unit or journey. |
 | G1.6 | Each wait over 100 ms (creating the repository, first push) has a wait-inventory row with its fn: measure and streams its steps. | perceived-performance.md row; journey "New project streams setup". |
 | G1.7 | No test or agent run touches the real GitHub account. | fakes only in the diff. |
-| G1.8 | The owner's first real creation from Preview succeeds (dependency: the owner). | the owner's report, recorded in gate-evidence.md. |
+| G1.8 | The owner's first real creation from Preview succeeds (dependency: the owner). | **Repository verified by API; owner view pending.** Owner created from candidate 8a39752b at 23:27; private owned repository with its first commit verified read-only at 23:39. Signed-out browser 404 remains unresolved; see [G1 evidence](gate-evidence.md#g1-production-creation-7-november). |
 | G1.9 | The landed commit's exact-head CI run is seven of seven green. | Exact commit and Windows run recorded in gate evidence. |
 
 **Try it:** In Preview, New project, name it, choose On GitHub, Create: you land on an empty note, the private repository is on your GitHub account, and after the first save the status reads Backed up. Then New project, On this computer only, Create: you land on an empty note and the status says it's kept on this computer.

@@ -227,7 +227,7 @@
     },
     {
       "id": "WP-P.17", "stage": "MP", "title": "Call it a project",
-      "summary": "The terminology move first: upgrade notice, first-run explainer and figure, Settings → Project, Files heading, window titles and Help; no files or repositories move (D-272, D-314).",
+      "summary": "The terminology move first: first-run explainer and figure, Settings → Project, Files heading, window titles and Help; no files or repositories move (D-272, D-314). Owner 7 November 23:28 removes the terminology notice entirely, its trigger, keys, inventory row and notice tests, for fresh and upgraded profiles; DoD backlog (b).",
       "requirements": ["PRJ-11"], "dependsOn": [],
       "touches": ["views", "core"], "reviews": ["design-system", "accessibility"],
       "specs": ["experience/projects.md"], "lookahead": true, "status": "verifying"
@@ -255,14 +255,14 @@
     },
     {
       "id": "WP-P.21", "stage": "MP", "title": "A project card's GitHub link and size",
-      "summary": "Open's project cards show the linked GitHub repository (GitHub mark and owner/repo, read from the local remote) as its own button that opens it in the default browser, and the project's size, files, media files and folders on one line counted asynchronously and cached (owner, 5 November; D-346).",
+      "summary": "Open's project cards show the linked GitHub repository (GitHub mark and owner/repo, read from the local remote) as its own button and the project's cached size/counts (D-346). D-393 / DoD backlog (f): every shown GitHub repository/account is an accessible independent link through the safe external-link policy; audit Settings Project/Account, Open, Projects, wizard Confirm, Backup, Share and Delete.",
       "requirements": ["PRJ-20", "PRJ-21", "PRJ-22"], "dependsOn": ["WP-P.20"],
       "touches": ["core", "views", "ui", "desktop"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
     },
     {
-      "id": "WP-P.23", "stage": "MP", "title": "Delete a project with GitHub handoff",
-      "summary": "F4: production GitHub Danger Zone handoff and local cleanup are built; New-project folders without the older marker are accepted at their own Git root (4ed4ad48/6667dc33), with exact-head seven-job gate 42381219626 green. Preserve unpushed and retained private notes, typed confirmation, never treat 404 as proof, recoverable recycling and honest partial failures. F4.1 landed; F4.x/MP.34 first real deletion remains the owner, D-343. Agents test with fakes only.",
+      "id": "WP-P.23", "stage": "MP", "title": "Delete a project in the app",
+      "summary": "F4.1 handoff/local cleanup and folder acceptance landed (4ed4ad48/6667dc33, seven-job gate 42381219626). D-394 / F4.2 supersedes handoff-only DD-PROJ-12: in-app deletion with one-time least-privilege step-up, never stored; reasoned Open on GitHub fallback only for refusal/decline. New six-state design candidate needs approval before wiring. Preserve unpushed/private notes, typed confirmation, 404 never proof, confirmed remote deletion before recycling, partial results and Retry. F4.x/MP.34 first real deletion remains the owner (D-343); fakes only.",
       "requirements": ["PRJ-23"], "dependsOn": ["WP-P.17", "WP-P.20"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
@@ -858,7 +858,7 @@
       "id": "WP-1.10",
       "stage": "M1",
       "title": "Find and replace in a note",
-      "summary": "The find bar with live count, options, replace, and replace all as one undo step.",
+      "summary": "The find bar with live count, options, replace, and replace all as one undo step. D-395 / DoD backlog (c,e): stable centred chevron, field/count, prev/next and close in one row, top-aligned multiline options; only one Find surface at a time, keeping both queries, with journey proof. W-find implements.",
       "requirements": [
         "FND-01",
         "FND-02"
@@ -1327,7 +1327,7 @@
       "id": "WP-4.3",
       "stage": "M4",
       "title": "Find in all notes",
-      "summary": "Grouped results across the workspace.",
+      "summary": "Grouped results across the project. D-395 / DoD backlog (d,e): owner-review candidate reuses the familiar in-note field/options layout with only a results area added, one Find surface at a time and both queries retained. Candidate approval required; W-find implements.",
       "requirements": [
         "FND-04"
       ],

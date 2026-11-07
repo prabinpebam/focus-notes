@@ -178,6 +178,14 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 
 <h2 data-reader-personas="design product">Words</h2>
 
+### External links
+
+**GitHub references are links (D-393, owner, 7 November 23:33).** "If you show a github link, it should be clickable to open that repo. Add all of these to a DoD backlog". Every displayed GitHub repository or account reference is independently keyboard-accessible and opens its repository or profile on github.com in the default browser through the existing external-link policy. Use an accessible name such as "Open owner/repo on GitHub" or "Open @handle on GitHub"; never nest this action inside a card's own open action. Construct the destination from validated repository/account identity, not arbitrary display text. The same rule covers Settings → Project and Account, Open, Projects, New project's Confirm, Backup, Share and Delete (PRJ-21 / WP-P.21). No extra mark, border or enclosure is needed to make the reference actionable.
+
+### Copy rules
+
+**Notice exception superseded (owner, 7 November 23:28).** The older one-time explanation allowance below no longer applies. Remove the terminology notice entirely; Project is the sole user-facing term (PRJ-11 / WP-P.17).
+
 - **Project, never workspace (D-pending, owner-approved 5 November):** a *project* is a folder of notes whose history is kept with Git, either *on this computer only* or *linked to GitHub*. A *standalone file* is one file opened on its own: "Not in a project", with no version history. "Workspace" isn't a synonym or a heading, and it isn't written in any message, menu, Help page or accessible name. Internal names (`.focus-notes/workspace.json`, message keys) aren't words people read. See [One concept: Project](../experience/project-model.md). Settings has no storage category: **Where it's kept** is the last group of Settings → Project. The one-time migration explanation may name the old word.
 - **Rewrite vocabulary (D-256, D-257):** *prompt* is what the person asks; a *preset* fills the prompt and never sends; the *Writer* is the connection Rewrite uses; a *connection* is one AI service set up in Settings → AI; *On this computer* and *Cloud* say where text goes, not a proof of where a model runs. Say "connect an AI service", never "install" or "start a model": Focus Notes runs none. [Rewrite's words](rewrite-with-ai.md#words) are the register.
 - **Sentence case** everywhere ("Move to…", not "Move To…"). An ellipsis means the action opens something before acting.

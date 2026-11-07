@@ -1,5 +1,30 @@
 # Decisions
 
+> [!NOTE]
+> **TL;DR.** Owner corrections D-393–D-395 below govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+
+## D-393: GitHub repository and account references are real links
+
+**Decided (owner, 7 November 2026, 23:33).** "If you show a github link, it should be clickable to open that repo. Add all of these to a DoD backlog". Every repository or account reference opens its repository or profile on github.com in the default browser through the existing external-link policy. It has an accessible name and independent keyboard access, separate from its enclosing card's action. Reuse validated identities and the safe external-link route, never arbitrary URL strings.
+
+**Affects:** [foundations → External links](../design/foundations.md#external-links), [Settings → Project, merged](../experience/project-model.md#settings-project-merged), AGENTS.md rule 6, PRJ-21 / WP-P.21 and [DoD backlog](definition-of-done.md#dod-backlog).
+
+## D-394: delete the repository in the app, with one-time step-up
+
+**Decided (owner, 7 November 2026, 23:35); supersedes DD-PROJ-12 and the handoff-only portion of PRJ-23.** "Why did dialog, I thought you proposed a design where we delete the rpo from the app itself. Unless GitHub restricts this, we should delete the repo from the app."
+
+GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/repos/repos#delete-a-repository). After consequences review, verified preservation and the typed name, Focus Notes deletes the chosen repository itself. If the current credential lacks permission, request one-time `delete_repo` authorization for this action only, use it once and never store it. Fine-grained credentials instead require Administration: write. Normal GCM and pasted credentials are not silently broadened. Prefer a separate ephemeral browser/device authorization; `gh auth refresh -s delete_repo` is an alternative only where gh is the sign-in and its retained broader scope can be avoided. The exact sign-in-compatible mechanism remains an implementation proof, not a claim that the existing sign-in already supports ephemeral step-up.
+
+**Open on GitHub is fallback only:** organization policy, missing admin rights, declined step-up or another GitHub refusal names the reason and keeps local notes. A 404 is not deletion proof. Recycle only after confirmed deletion of every chosen remote, with verified preservation and folder identity. Partial failure retains local content, exact results and Retry; never recreate a deleted repository as rollback. No new network destination is authorized here. Agents use fakes only; the first real deletion remains the owner's D-343 dependency.
+
+**Affects:** [Deleting a project](../experience/project-model.md#deleting-a-project), SC-PROJ-08, UC-PROJ-13, PRJ-23 / WP-P.23 (MP), [F4.2 backlog](definition-of-done.md#backlog-f42-delete-in-the-app). New dialog states are a strict-design candidate pending approval, not shipped runtime.
+
+## D-395: one familiar Find layout and one surface at a time
+
+**Decided (owner correction, 7 November 2026, 23:31); all-notes candidate pending owner approval.** One field row holds the stable centred chevron, field and count, previous/next, then ×. Options align at the top even when a label has extra lines. Only one Find surface is open at a time, while both the in-note and all-notes queries are kept. Find in all notes uses the familiar in-note layout with only a results area added; that candidate requires the owner's approval.
+
+**Affects:** FND-01 / WP-1.10, FND-04 / WP-4.3, [DoD backlog](definition-of-done.md#dod-backlog). W-find owns implementation; this decision records the correction, not acceptance of the candidate.
+
 ## D-378: a project always has Git; GitHub is optional
 
 **Decided (owner, 5 November; reconciled 7 November 2026).** "Projects can be completely offline or linked to a GitHub repo." PRJ-01 means a project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it. New project makes that choice explicit. A local-only project has history, not a remote backup; choosing GitHub uses the signed-in account in production, never silently the local-only path. No public site is created at setup. This resolves audit S1 without changing the owner's source notes or deciding the separate Local notes proposal.
