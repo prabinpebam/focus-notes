@@ -73,6 +73,13 @@ SQLite uses zero synchronous busy timeout and bounded asynchronous contention re
 Reuse the existing secondary-window controller and first-themed-frame presentation. A secondary chooser has an explicit initial-Open intent, never restores the primary's note or creates a first note, and cannot replace the primary's remembered launch position. Explicit project-note, file and deep-link targets keep their existing routing. Project processes/profiles are not reorganized; this supersedes only the previous no-path `showMain` behavior audited under D-366.
 
 **Affects:** [Projects → The Open view](../experience/projects.md#the-open-view), UC-PROJ-02, SC-PROJ-07, PRJ-25, WP-P.19, [startup waits](../architecture/perceived-performance.md#project-startup).
+## D-pending: New project asks where to keep it
+
+**The owner, 7 November 2026 at 17:54:** “At no step in the creation process, it give me the option to create a local or GitHub (Cloud backed up) project. It bydefaults creates a local only project and the project itself assumes it's cloud backed up project and shows error. Refer spec on what this should be and implement it correctly.”
+
+New project's step 2 becomes **Where to keep it**: option cards **On GitHub** (a private repository, backed up online) and **On this computer only** (local Git, linkable later), replacing **Private only**, whose words implied GitHub. Signed in, GitHub is suggested; signed out, choosing it offers **Sign in…** through the existing account card; offline, it's unavailable with its reason. Confirm shows the repository row only for GitHub. Creation must match the choice: GitHub chosen never falls back to a local-only project. This **supersedes the 4 November slice** ([Projects → Creating and closing](../experience/projects.md#creating-and-closing)) that wired creation only to a local stand-in and kept real-account integration unwired; real creation on the signed-in account follows once the owner approves the screens. Rejected: a silent default with no choice (today's defect); a separate Link step after creation (the owner asked for the choice at creation).
+
+**Affects:** [Projects](../experience/projects.md#creating-and-closing), [One concept: Project](../experience/project-model.md#the-mental-model), IA-VIEW-PROJECTS, D-315.
 
 ## D-374: wizard actions and proximity belong to the dialog's layouts
 

@@ -21,19 +21,16 @@
       "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
         { "switch": { "get": "vm.projectNew.stepName" }, "cases": {
           "name": { "type": "TextField", "id": "projectName", "props": { "label": { "t": "project.new.name" }, "value": { "bind": "vm.projectNew.name" }, "description": { "t": "project.new.nameHint" }, "autoFocus": true } },
-          "private": { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
-            { "type": "Heading", "props": { "value": { "t": "project.new.privateTitle" }, "level": "3" } },
+          "where": { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+            { "type": "Heading", "props": { "value": { "t": "project.new.whereTitle" }, "level": "3" } },
             { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
-            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
-              { "type": "StepMark", "props": { "icon": "lock", "tone": "neutral", "size": "compact" } },
-              { "type": "Text", "props": { "value": { "t": "project.new.privateRepo" }, "role": "label" } }
-            ] },
-            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
-              { "type": "StepMark", "props": { "icon": "globe", "tone": "neutral", "size": "compact" } },
-              { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
-                { "type": "Text", "props": { "value": { "t": "project.new.noSite" }, "role": "label" } },
-                { "type": "Text", "props": { "value": { "t": "project.new.noSiteDetail" }, "role": "caption", "tone": "muted" } }
-              ] }
+              { "type": "ItemCard", "props": { "title": { "t": "project.new.where.github" }, "detail": { "get": "vm.projectNew.githubDetail" }, "icon": "github", "chevron": false, "choiceGroup": { "get": "vm.projectNew.whereGroup" }, "choiceValue": { "get": "vm.projectNew.githubValue" }, "selected": { "get": "vm.projectNew.onGitHub" }, "disabled": { "get": "vm.projectNew.githubDisabled" }, "busy": { "get": "vm.projectNew.githubBusy" } },
+                "on": { "choose": { "run": "projects.newWhere", "args": { "value": { "get": "event.value" } } } },
+                "children": [
+                  { "type": "Button", "when": { "get": "vm.projectNew.canSignIn" }, "props": { "label": { "t": "project.new.signIn" }, "variant": "secondary", "size": "s" }, "on": { "press": { "run": "projects.newSignIn" } } }
+                ] },
+              { "type": "ItemCard", "props": { "title": { "t": "project.new.where.local" }, "detail": { "t": "project.new.where.localDetail" }, "icon": "hardDrive", "chevron": false, "choiceGroup": { "get": "vm.projectNew.whereGroup" }, "choiceValue": { "get": "vm.projectNew.localValue" }, "selected": { "expr": { "!": { "get": "vm.projectNew.onGitHub" } } } },
+                "on": { "choose": { "run": "projects.newWhere", "args": { "value": { "get": "event.value" } } } } }
             ] },
             { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
               { "type": "StepMark", "props": { "icon": "folder", "tone": "neutral", "size": "compact" } },
@@ -42,7 +39,6 @@
                 { "type": "Text", "props": { "value": { "get": "vm.projectNew.folder" }, "role": "caption", "tone": "muted", "personal": true } }
               ] },
               { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }
-            ] }
             ] }
           ] },
           "look": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
@@ -86,10 +82,18 @@
             { "type": "Stack", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "gap": "stackItem" }, "children": [
             { "type": "Text", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "value": { "t": "project.new.willMake" } } },
             { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+            { "type": "Inline", "when": { "get": "vm.projectNew.onGitHub" }, "props": { "gap": "inlineItem", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "icon": "github", "tone": "neutral", "size": "compact" } },
+              { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
+                { "type": "Text", "props": { "value": { "t": "project.new.makesRepo" }, "role": "label" } },
+                { "type": "Text", "props": { "value": { "get": "vm.projectNew.repo" }, "role": "caption", "tone": "muted", "personal": true } }
+              ] }
+            ] },
             { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
               { "type": "StepMark", "props": { "icon": "folder", "tone": "neutral", "size": "compact" } },
               { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
-                { "type": "Text", "props": { "value": { "t": "project.new.makesFolder" }, "role": "label" } },
+                { "type": "Text", "props": { "value": { "t": "project.new.makesFolder" }, "role": "label" }, "when": { "get": "vm.projectNew.onGitHub" } },
+                { "type": "Text", "props": { "value": { "t": "project.new.makesFolderOnly" }, "role": "label" }, "when": { "expr": { "!": { "get": "vm.projectNew.onGitHub" } } } },
                 { "type": "Text", "props": { "value": { "get": "vm.projectNew.folder" }, "role": "caption", "tone": "muted", "personal": true } }
               ] },
               { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }

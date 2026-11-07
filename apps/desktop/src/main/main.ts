@@ -1571,6 +1571,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!input || typeof input !== "object" || !("parent" in input) || typeof input.parent !== "string" || !("name" in input) || typeof input.name !== "string" || !("accent" in input) || typeof input.accent !== "string" || !("logo" in input) || typeof input.logo !== "string") throw new Error("Invalid new project");
     const request = "request" in input ? input.request : undefined;
     if (request !== undefined && (typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request))) throw new Error("Invalid project operation");
+    const github = "github" in input ? input.github : undefined;
+    if (github !== undefined && typeof github !== "boolean") throw new Error("Invalid new project");
     const key = `${event.sender.id}:${request}`;
     if (projectCreates.has(key)) throw new Error("Project operation already running");
     const controller = new AbortController();
@@ -1578,7 +1580,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     event.sender.once("destroyed", abort);
     projectCreates.set(key, controller);
     try {
-      return await projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo }, {
+      return await projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo, github: github === true }, {
         signal: controller.signal,
         progress: progress => {
           if (request && !event.sender.isDestroyed()) event.sender.send("projects:createProgress", { ...progress, request });
