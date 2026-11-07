@@ -64,7 +64,7 @@ import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFo
 import type { ConflictChoice, DeletionResult, NoteRewrite, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
-import { deletionCheck, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
+import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
@@ -529,10 +529,14 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
  * nothing more into the folder, and quits once another project opens.
  */
 let projectDeleted = false;
+/** Delete project's gate: a workspace or a project New project made, never Local notes (D-pending). */
+const deletionRefused = () => deletionGate({ deleted: projectDeleted, localNotes: process.env.FOCUS_NOTES_LOCAL_NOTES === "1" });
 async function deleteLocalProject(keepPrivate: boolean): Promise<DeletionResult> {
   const folder = notesHome();
   const places = { home: app.getPath("home"), userData: app.getPath("userData"), documents: app.getPath("documents"), desktop: app.getPath("desktop") };
-  if (projectDeleted || !isWorkspace() || recycleRefusal(folder, places)) return { state: "refused" };
+  if (deletionRefused() || recycleRefusal(folder, places)) return { state: "refused" };
+  // Only a folder that is its own repository's top is a project, checked again here.
+  if ((await deletionCheck(setupRunner, folder, {})).problem) return { state: "refused" };
   await Promise.allSettled([...writeQueues.values()]);
   watcher?.close();
   watcher = undefined;
@@ -2237,7 +2241,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return ref ? `${ref.owner}/${ref.name}` : undefined;
   };
   const deletion = async () => {
-    if (projectDeleted || !isWorkspace()) return { kind: "offline" as const, problem: "notProject" as const, name: basename(notesHome()), folder: notesHome(), repo: "", privateRepo: "", privateCount: 0, siteNotes: 0, unsynced: [] };
+    if (deletionRefused()) return { kind: "offline" as const, problem: "notProject" as const, name: basename(notesHome()), folder: notesHome(), repo: "", privateRepo: "", privateCount: 0, siteNotes: 0, unsynced: [] };
     const [repo, priv] = await Promise.all([notesRepo().catch(() => undefined), privateRepo().catch(() => undefined)]);
     return deletionCheck(setupRunner, notesHome(), { repo, privateRepo: priv });
   };

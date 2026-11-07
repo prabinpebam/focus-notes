@@ -123,6 +123,17 @@ export async function repoStatus(api: ReadsGitHub | undefined, repo: string, now
 }
 
 /**
+ * Why Delete project mustn't even look at the open folder, or undefined when it may. A project made
+ * with New project is its own Git repository without `.focus-notes/workspace.json`, and is as
+ * deletable as a cloned workspace (owner's report, 7 November; D-pending). Local notes isn't a
+ * project, and a deleted project is gone. `deletionCheck` then requires the folder to be its own
+ * repository's top, and `recycleRefusal` still guards the place itself.
+ */
+export function deletionGate(o: { deleted: boolean; localNotes: boolean }): "notProject" | undefined {
+  return o.deleted || o.localNotes ? "notProject" : undefined;
+}
+
+/**
  * Why a folder must never go to the Recycle Bin as a project, or undefined when it may: a drive's root,
  * the home folder, Documents, Desktop, or a folder holding the app's data.
  */

@@ -184,8 +184,10 @@ The dialog is one shared view part (`project.delete` in `packages/views`). The m
   - **Still to come.** The desktop shell doesn't give the port yet, so nothing is saved between sessions until the main process stores the record on the profile lifecycle the crash work is landing. Until then, opening Delete project again checks GitHub afresh, so a repository already deleted there shows as unavailable and goes the way described above. The progress, restore and resume screens (mocks 11–25, 37 and 38) aren't rendered until the owner approves their design.
 - **One process per project.** Each project runs in its own process, so no other app window holds the same project. The deleted project's other windows close with it, and the "open in another window" state can't happen.
 - **This computer.** Before anything moves, the main process checks again:
-  - the folder is this window's project;
+  - the folder is this window's project: its own Git repository's top, whether or not it has `.focus-notes/workspace.json`, and never Local notes;
   - it isn't a drive's root, the home folder, Documents, Desktop, or a folder holding the app's data.
+
+  **Owner's report, 7 November at 17:44** (D-pending), word for word: "Can't delete project. It doesn't even reach the delete confirmation dialog." The check required `.focus-notes/workspace.json`, which a cloned workspace has but a project made with **New project** doesn't, so Delete showed "Couldn't check this project, so nothing was deleted. Try again." for every new project. Now any project that is its own repository's top reaches the confirmation (offline: the whole folder, no GitHub step), and the main process checks it again before the folder moves.
 
   Then writes finish, the watcher and Git stop, and the folder goes to the Recycle Bin. A kept `private/` moves beside it first, as "⟨name⟩ (private notes)", and is put back if the folder can't go. A locked file leaves the project as it was, with Retry and Show folder.
 - **Afterwards.** The window forgets the project's recent notes and setup (the `deleteProject` row in the data inventory), writes nothing more into the folder, and quits once another project opens.

@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner } from "../src/main/git/run.ts";
-import { deletionCheck, isRepoSlug, keptPrivateFolder, recycleProject, recycleRefusal, repoStatus } from "../src/main/workspace/delete.ts";
+import { deletionCheck, deletionGate, isRepoSlug, keptPrivateFolder, recycleProject, recycleRefusal, repoStatus } from "../src/main/workspace/delete.ts";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@e.st", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
 function project() {
@@ -55,6 +55,22 @@ describe("PRJ-23: what deleting would delete", () => {
     const { folder } = project();
     const c = await deletionCheck(createRunner(), join(folder, "notes"), { repo: "ada/field-notes" });
     expect(c.problem).toBe("notProject");
+  });
+  it("D-pending: a project New project made (no workspace format file) reaches the confirmation; Local notes and a deleted project don't", async () => {
+    // New project's shape (projects.ts create): notes/, Git on main, an empty first commit, no .focus-notes/.
+    const root = mkdtempSync(join(tmpdir(), "fn-delete-new-"));
+    const folder = join(root, "Testing deletion");
+    mkdirSync(join(folder, "notes"), { recursive: true });
+    git(folder, "init", "-q", "-b", "main");
+    git(folder, "commit", "-q", "--allow-empty", "-m", "Start the project");
+    writeFileSync(join(folder, "untitled.md"), "# Untitled\n");
+    expect(existsSync(join(folder, ".focus-notes"))).toBe(false);
+    expect(deletionGate({ deleted: false, localNotes: false })).toBeUndefined();
+    const c = await deletionCheck(createRunner(), folder, {});
+    expect(c.problem).toBeUndefined();
+    expect(c).toMatchObject({ kind: "offline", name: "Testing deletion" });
+    expect(deletionGate({ deleted: false, localNotes: true })).toBe("notProject");
+    expect(deletionGate({ deleted: true, localNotes: false })).toBe("notProject");
   });
   it("a repository name is owner/name, never a path", () => {
     expect(isRepoSlug("ada/field-notes")).toBe(true);
