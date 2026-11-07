@@ -38,6 +38,17 @@ The existing Files pin write now uses a per-row commit target. The acknowledged 
 
 The [Close-hover correction](../plan/definition-of-done.md#phase-2-close-hover-and-files-pin) changes semantic slot spacing only; it introduces no save, load or wait. Every-frame native checks cover all dialog height variants rather than claiming faster tooltips.
 
+## Sharing setup task contract
+
+G2's locally verified desktop backend streams check/create/prepare/push/Pages steps. Confirmation preview reads only metadata; Cancel creates and pushes nothing. The production task-tracker bindings below remain open until the editable-name design is approved and the creation changes are integrated; these are declared waits, not a claim of completed runtime wiring.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Confirm sharing setup | Waiting → long; leavable named task with streamed setup steps | Existing confirmation action and shared task status: Setting up sharing… → Sharing enabled; writing remains usable after closing | `fn:sharing.setup`; immediate acknowledgement, shared tracker delay/minimum and elapsed-time tokens; no ready state before persisted pairing and Pages configuration |
+| Install the public-only Pages workflow (first push) | Waiting → long; step inside setup, never a competing indicator | Existing setup task: Preparing site… → Saving site setup to GitHub… | `fn:sharing.firstPush`; shared tracker timings, no completion before GitHub acknowledgement; Retry reconciles an accepted lost response |
+
+The site has no private-repository deploy key or Actions secret. Real artifact publication remains G3 behind the explicit desktop sealed-artifact interface; an unavailable publisher fails instead of claiming Shared or Published.
+
 ## Image-preserving note moves
 
 Same-root note moves validate referenced images and flush a complete destination before the old note is removed (IMG-05). These are asynchronous file operations, not a latency improvement claim. The editor remains mounted; existing pending Files rows and the shared save task own feedback. A failure keeps the original note and image files; a rollback conflict retains both note copies and names recovery in Files.

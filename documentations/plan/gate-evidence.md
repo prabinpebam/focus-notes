@@ -119,7 +119,7 @@ The pre-existing test assumed that a controlled radio becomes checked synchronou
 **Documentation increment, W-docs:** D-393–D-395, [DoD backlog](definition-of-done.md#dod-backlog) and this G1 record are docs only. `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and `pnpm check` passed in the isolated pinned-kit worktree (357 requirements, 127 WPs; existing 69 action-proof and 4 button-geometry tests inside check). Headless Chromium rendered all 11 changed documentation pages with exactly one H1 and resolving new links/anchors, including `dod-backlog` and `settings-project-merged`; browser closed. No app launch, owner project mutation, real GitHub write or desktop CI wait was performed.
 ### G2 pairing and preservation backend, 7 November
 
-**Verified locally, not wired, landed or CI-certified.** D-388's desktop service persists setup intent and results, recognizes its own lost-response creation, refuses unrelated repositories, and orders private preservation before removal. Its recovery helper verifies actual Markdown and binary-media bytes, rejects junctions/overlapping roots, preserves relative structure and never overwrites existing notes. The production callbacks and write-lane integration remain open.
+**Verified locally, not wired, landed or CI-certified.** D-388's desktop service persists setup intent and results, recognizes its own lost-response creation, refuses unrelated repositories, and orders private preservation before removal. Its recovery helper verifies actual Markdown and binary-media bytes, rejects junctions/dangerous root overlap, preserves relative structure and never overwrites existing notes. A legacy nested private checkout beside public notes is supported without copying private sources. The production callbacks and write-lane integration remain open.
 
 | Gate | Result |
 | --- | --- |
@@ -130,6 +130,10 @@ The pre-existing test assumed that a controlled radio becomes checked synchronou
 | New editable-name UI tests | Not run; awaiting owner approval |
 | Runtime bridge, production journey, exact-head Windows gate and landing | Open; no main push or CI start under the coordinator hold |
 | Real-account writes | None; protocol fake and isolated temporary files only |
+
+**Further backend integration seam (D-390), local only.** `sharing-layout.test.ts` proves New-project notes are never public source and legacy/missing-private layouts remain distinct. `sharing-site.test.ts` proves real-client protocol calls install only the public workflow, lost workflow responses reconcile, and no private-reader key or Actions secret is written. The production artifact publisher deliberately remains unavailable until G3; a fake is injected only in tests. On-disk `sharing.json` resume also retains the accepted site after initialization failure and rejects damaged records instead of starting over.
+
+`pnpm exec vitest run apps/desktop/test/sharing-setup.test.ts apps/desktop/test/sharing-preserve.test.ts apps/desktop/test/sharing-layout.test.ts apps/desktop/test/sharing-site.test.ts apps/desktop/test/sharing-people.test.ts packages/github/test/github.test.ts` passed, 50 tests, including GET-only confirmation/Cancel and nested legacy preservation. Desktop typecheck/build, `pnpm check` and Slate runtime passed. Production bridge/main-root wiring waits for the creation landing; the name field still waits for approval. No main push, gate or landing occurred.
 
 ### G2 GitHub invitation runtime candidate, 7 November
 

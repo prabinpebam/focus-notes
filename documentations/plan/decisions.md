@@ -38,6 +38,14 @@ GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/r
 **Options gap > Switch pair gap (coordinator clarification).** Keep each Switch's track-to-label gap at 8 px and use `inlineGroup` (16 px) between options. Wrapped options use `stackItem`, closer than the stack-token separation above. Never suppress the spacing probe's grouping finding or shrink the pairs to pass it. Opening an all-notes match intentionally transfers that match's query/options into the note's Find. No landing or tests of the familiar all-notes candidate before owner approval; nothing else is added to the writing window.
 
 **Affects:** FND-01 / WP-1.10, FND-04 / WP-4.3, [DoD backlog](definition-of-done.md#dod-backlog), [Find and replace](../experience/find-and-replace.md), [spacing audit](../design/spacing-audit.md), and their geometry/exclusivity journeys. W-find owns implementation; this decision records the correction, not acceptance of the candidate.
+## D-390: sharing setup and live publication have one explicit seam
+
+**Decided, 7 November 2026 (coordinator, G2/G3).** G2 owns persisted pairing and setup, signed-in GitHub calls to create the public site and configure Pages, its public-only Pages workflow, and the narrow `publishSealedArtifact(project, artifact)` interface with a protocol-fake implementation in G2 tests. G3 owns the real artifact push behind that interface, plus Publish UI and status. Never reuse the legacy private-reader deploy key or Actions secret.
+
+**As built locally:** the public workflow checks out only the public repository, with submodules and persisted credentials disabled. It deploys only desktop-produced `site/` output, not private sources. Until G3 supplies the publisher, the production seam explicitly rejects with the unavailable-site problem; it never claims a successful artifact push. Setup readiness means the site is configured, not that an item is already Shared or Published.
+
+**Affects:** PRJ-10, [new-project sharing](../experience/files-and-sharing.md#turning-on-sharing-for-a-new-project), [G2](definition-of-done.md#g2-turn-on-sharing-and-invite-a-person), [production publishing](../experience/published-site.md#production-publishing-contract), WP-P.18 and WP-P.22.
+
 ## D-388: sharing setup reconciles its persisted intent
 
 **Decided, 7 November 2026 (G2, PRJ-10).** Before creating a site, persist its confirmed neutral name, private-project target, proposed Pages address and an opaque creation intent. A newly created public site's description carries only that opaque intent, never a private project name or note. After a lost creation response, Retry can recognize that same site; it never adopts an unrelated pre-existing repository merely because it is empty. Persist each completed step before readiness. No site deploy key or Actions secret can read private content.

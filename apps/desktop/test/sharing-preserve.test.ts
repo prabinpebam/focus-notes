@@ -38,3 +38,18 @@ it("refuses overlapping roots and junctions before giving removal permission", a
     expect(await readdir(join(privateRoot, "notes"))).toEqual([]);
   } finally { await rm(folder, { recursive: true, force: true }); }
 });
+
+it("preserves a legacy pair whose private checkout is nested beside public notes, without copying private source", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "focus-sharing-legacy-"));
+  try {
+    const privateRoot = join(folder, "private");
+    await mkdir(join(folder, "notes"), { recursive: true });
+    await mkdir(join(privateRoot, "notes"), { recursive: true });
+    await writeFile(join(folder, "notes", "public.md"), "# Public draft");
+    await writeFile(join(privateRoot, "notes", "private.md"), "# Private fixture");
+    const copy = await preservePublicSource(folder, privateRoot);
+    expect(await readFile(join(copy, "notes", "public.md"), "utf8")).toBe("# Public draft");
+    expect(await readdir(join(copy, "notes"))).toEqual(["public.md"]);
+    expect(await readFile(join(privateRoot, "notes", "private.md"), "utf8")).toBe("# Private fixture");
+  } finally { await rm(folder, { recursive: true, force: true }); }
+});

@@ -187,6 +187,17 @@ export class GitHubApi {
     }
   }
 
+  async file(owner: string, repo: string, path: string): Promise<{ text: string; sha: string } | undefined> {
+    try {
+      const result = await this.request<{ type: string; content: string; encoding: string; sha: string }>("GET", `/repos/${owner}/${repo}/contents/${encodePath(path)}`);
+      if (result.type !== "file" || result.encoding !== "base64" || typeof result.content !== "string" || typeof result.sha !== "string") throw new Error("GitHub file response is malformed");
+      return { text: base64ToUtf8(result.content), sha: result.sha };
+    } catch (error) {
+      if (error instanceof GitHubError && error.status === 404) return undefined;
+      throw error;
+    }
+  }
+
   /** Makes a repository in the signed-in account from a template repository ("Use this template"). */
   async generate(template: { owner: string; name: string }, owner: string, name: string, description: string): Promise<void> {
     await this.request("POST", `/repos/${template.owner}/${template.name}/generate`, { owner, name, description, private: false, include_all_branches: false });

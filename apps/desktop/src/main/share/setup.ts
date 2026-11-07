@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { isRepoName } from "@focus-notes/core/setup";
 
@@ -11,9 +12,22 @@ export interface SitePairing {
   phase: "reserved" | "creating" | "created" | "ready" | "removing" | "off";
   site: string;
 }
+export interface SharingSetupPreview {
+  project: string;
+  owner: string;
+  name: string;
+  site: string;
+  phase: SitePairing["phase"] | "unconfigured";
+}
 export type SharingSetupStep = "check" | "create" | "prepare" | "push" | "pages" | "preserve" | "remove" | "ready";
 const fail = (code: string) => new Error(`sharing:${code}`);
 const phases: SitePairing["phase"][] = ["reserved", "creating", "created", "ready", "removing", "off"];
+function setupProblem(error: unknown): Error {
+  if (error instanceof Error && /^sharing:[a-z]+$/.test(error.message)) return error;
+  if (error instanceof GitHubError) return fail(error.status === 0 ? "offline" : error.unauthorized ? "signedout" :
+    error.rateLimited ? "ratelimited" : error.status === 403 ? "refused" : "failed");
+  return fail("failed");
+}
 
 export function parseSitePairing(raw: unknown): SitePairing {
   if (!raw || typeof raw !== "object") throw fail("record");
@@ -29,6 +43,26 @@ export function parseSitePairing(raw: unknown): SitePairing {
 export function siteAddress(owner: string, name: string): string {
   const host = owner.toLowerCase();
   return name.toLowerCase() === `${host}.github.io` ? `https://${host}.github.io/` : `https://${host}.github.io/${name}/`;
+}
+
+export function sitePairingStore(file: string, atomicWrite: (file: string, text: string) => Promise<void>) {
+  return {
+    async read(): Promise<SitePairing | undefined> {
+      let text: string;
+      try { text = await readFile(file, "utf8"); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+        throw fail("record");
+      }
+      try {
+        if (text.length > 16_384) throw fail("record");
+        return parseSitePairing(JSON.parse(text));
+      } catch { throw fail("record"); }
+    },
+    async write(pairing: SitePairing): Promise<void> {
+      await atomicWrite(file, `${JSON.stringify(parseSitePairing(pairing), null, 2)}\n`);
+    },
+  };
 }
 
 export function sharingSetup(deps: {
@@ -65,23 +99,28 @@ export function sharingSetup(deps: {
   };
   const run = (key: string, action: () => Promise<SitePairing>) => {
     if (pending) return pending.key === key ? pending.promise : Promise.reject(fail("busy"));
-    const promise = action().catch(error => {
-      if (error instanceof Error && /^sharing:[a-z]+$/.test(error.message)) throw error;
-      if (error instanceof GitHubError) throw fail(error.status === 0 ? "offline" : error.unauthorized ? "signedout" :
-        error.rateLimited ? "ratelimited" : error.status === 403 ? "refused" : "failed");
-      throw fail("failed");
-    }).finally(() => { pending = undefined; });
+    const promise = action().catch(error => { throw setupProblem(error); }).finally(() => { pending = undefined; });
     pending = { key, promise };
     return promise;
   };
   return {
+    async describe(): Promise<SharingSetupPreview> {
+      try {
+        const { project, owner, pairing } = await context();
+        const name = pairing?.name ?? "notes-site";
+        return { project, owner, name, site: pairing?.site ?? siteAddress(owner, name), phase: pairing?.phase ?? "unconfigured" };
+      } catch (error) { throw setupProblem(error); }
+    },
     enable(name: string): Promise<SitePairing> {
       return run(`enable:${name.toLowerCase()}`, async () => {
         if (!isRepoName(name)) throw fail("name");
         const ctx = await context();
         if (name.toLowerCase() === ctx.project.split("/")[1]!.toLowerCase()) throw fail("name");
         let pairing = ctx.pairing;
-        if (pairing && pairing.name !== name) throw fail("changed");
+        if (pairing && pairing.name !== name) {
+          if (pairing.phase !== "reserved") throw fail("changed");
+          pairing = undefined;
+        }
         if (pairing?.phase === "removing") throw fail("removing");
         if (pairing?.phase === "ready") return pairing;
         if (!pairing) {

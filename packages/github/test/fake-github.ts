@@ -7,6 +7,7 @@
 import nacl from "tweetnacl";
 import type { Fetch } from "../src/api.ts";
 import { base64ToBytes, bytesToBase64, sealNonce } from "../src/secrets.ts";
+import { base64ToUtf8, utf8ToBase64 } from "../src/api.ts";
 
 export interface FakeRepo {
   owner: string;
@@ -17,6 +18,7 @@ export interface FakeRepo {
   /** "owner/name" of the template it was made from. */
   template?: string;
   files: Set<string>;
+  fileContents: Map<string, string>;
   keys: { id: number; title: string; key: string; read_only: boolean }[];
   secrets: Map<string, { encrypted_value: string; key_id: string }>;
   actionsKey: nacl.BoxKeyPair;
@@ -78,7 +80,7 @@ export class FakeGitHub {
     const repo: FakeRepo = {
       owner: r.owner, name: r.name, private: r.private ?? false, isTemplate: r.isTemplate ?? false,
       ...(r.template ? { template: r.template } : {}),
-      files: new Set(r.files ?? []), keys: [], secrets: new Map(), actionsKey: nacl.box.keyPair(), canPush: r.canPush ?? true,
+      files: new Set(r.files ?? []), fileContents: new Map(), keys: [], secrets: new Map(), actionsKey: nacl.box.keyPair(), canPush: r.canPush ?? true,
       ownerType: r.ownerType ?? "User", invitations: [], collaborators: new Set(),
     };
     this.repos.set(`${r.owner}/${r.name}`, repo);
@@ -171,8 +173,19 @@ export class FakeGitHub {
     if (method === "GET" && rest === "") return json(200, toRepo(repo));
     if (method === "GET" && rest === "/git/ref/heads/main") return this.filesOf(repo).size ? json(200, { object: { sha: "a".repeat(40) } }) : json(409, { message: "Git Repository is empty." });
     const file = /^\/contents\/(.+)$/.exec(rest);
-    if (method === "GET" && file) return this.filesOf(repo).has(decodeURIComponent(file[1]!)) ? json(200, { type: "file" }) : json(404, { message: "Not Found" });
+    if (method === "GET" && file) {
+      const path = decodeURIComponent(file[1]!);
+      return this.filesOf(repo).has(path) ? json(200, { type: "file", content: utf8ToBase64(repo.fileContents.get(path) ?? ""), encoding: "base64", sha: "a".repeat(40) }) : json(404, { message: "Not Found" });
+    }
     if (!repo.canPush && method !== "GET") return json(403, { message: "Must have admin rights to Repository." });
+    if (method === "PUT" && file) {
+      const path = decodeURIComponent(file[1]!);
+      if (repo.files.has(path)) return json(422, { message: "File already exists" });
+      if (typeof body?.content !== "string") return json(422, { message: "Missing content" });
+      repo.files.add(path);
+      repo.fileContents.set(path, base64ToUtf8(body.content));
+      return json(201, { content: { path, sha: "a".repeat(40) } });
+    }
     if (rest === "/invitations" && method === "GET") {
       const page = Number(query.get("page") ?? 1), size = Number(query.get("per_page") ?? 100);
       return json(200, repo.invitations.slice((page - 1) * size, page * size));

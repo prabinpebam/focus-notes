@@ -8,7 +8,7 @@ export async function preservePublicSource(publicRoot: string, privateRoot: stri
     const rel = relative(root, path);
     return !rel || rel !== ".." && !rel.startsWith(`..${sep}`) && !rel.startsWith(sep) && !/^[A-Za-z]:/.test(rel);
   };
-  if (inside(source, privateFolder) || inside(privateFolder, source)) throw new Error("sharing:preservation");
+  if (inside(privateFolder, source) || inside(join(source, "notes"), privateFolder) || inside(join(source, "assets"), privateFolder)) throw new Error("sharing:preservation");
   const list = async (): Promise<string[]> => {
     const files: string[] = [];
     const walk = async (dir: string, prefix: string) => {

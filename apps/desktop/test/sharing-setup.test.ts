@@ -1,7 +1,10 @@
 import { expect, it } from "vitest";
+import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { GitHubApi } from "@focus-notes/github";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { parseSitePairing, sharingSetup, type SitePairing } from "../src/main/share/setup.ts";
+import { parseSitePairing, sharingSetup, sitePairingStore, type SitePairing } from "../src/main/share/setup.ts";
 
 function fixture() {
   const github = new FakeGitHub();
@@ -21,6 +24,17 @@ function fixture() {
   return { github, privateRepo, api, deps, events, saved: () => saved, service: sharingSetup(deps) };
 }
 const creates = (github: FakeGitHub) => github.calls.filter(call => call.method === "POST" && call.path === "/user/repos");
+
+it("confirmation describes a neutral editable site without persisting or making any public write; Cancel has nothing to undo", async () => {
+  const t = fixture();
+  expect(await t.service.describe()).toEqual({
+    project: "ada/book", owner: "ada", name: "notes-site", site: "https://ada.github.io/notes-site/", phase: "unconfigured",
+  });
+  expect(t.saved()).toBeUndefined();
+  expect(t.github.calls.every(call => call.method === "GET")).toBe(true);
+  expect(creates(t.github)).toHaveLength(0);
+  expect(t.events).not.toContain("initialize");
+});
 
 it("does not create until confirmed; persists one public pairing before readiness without private-reader credentials", async () => {
   const t = fixture();
@@ -72,6 +86,9 @@ it("never adopts an unrelated public repository, even when it is empty", async (
   await expect(t.service.enable("quiet-site")).rejects.toThrow("sharing:taken");
   expect(creates(t.github)).toHaveLength(0);
   expect(t.events).not.toContain("initialize");
+  expect((await t.service.enable("another-site")).phase).toBe("ready");
+  expect(creates(t.github)).toHaveLength(1);
+  expect(t.github.repo("quiet-site")?.fileContents.size).toBe(0);
 });
 
 it.each([
@@ -134,4 +151,22 @@ it("failed removal remains pending across restart and cannot be bypassed by re-e
 
 it("rejects malformed pairing records instead of silently starting fresh", () => {
   expect(() => parseSitePairing({ version: 1, phase: "ready" })).toThrow("sharing:record");
+});
+
+it("persists partial setup on disk and resumes with a fresh store without a duplicate repository", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "focus-sharing-pairing-"));
+  try {
+    const t = fixture(), file = join(folder, "sharing.json");
+    const atomicWrite = async (file: string, text: string) => { await writeFile(`${file}.tmp`, text); await rename(`${file}.tmp`, file); };
+    const disk = sitePairingStore(file, atomicWrite);
+    expect(await disk.read()).toBeUndefined();
+    await expect(sharingSetup({ ...t.deps, ...disk, initialize: async () => { throw new Error("stopped"); } }).enable("quiet-site")).rejects.toThrow("sharing:failed");
+    expect(await sitePairingStore(file, atomicWrite).read()).toMatchObject({ name: "quiet-site", phase: "created" });
+    expect((await sharingSetup({ ...t.deps, ...sitePairingStore(file, atomicWrite) }).enable("quiet-site")).phase).toBe("ready");
+    expect(creates(t.github)).toHaveLength(1);
+    expect(await readFile(file, "utf8")).not.toContain("notes/");
+    await writeFile(file, "{broken");
+    await expect(disk.read()).rejects.toThrow("sharing:record");
+    expect(creates(t.github)).toHaveLength(1);
+  } finally { await rm(folder, { recursive: true, force: true }); }
 });
