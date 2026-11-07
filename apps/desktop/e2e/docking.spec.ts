@@ -22,6 +22,7 @@ async function start(dirs = tempDirs(), state: Record<string, unknown> = {}): Pr
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", ...state }));
   writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: 1200, height: 800 } }));
   const l = await launch(dirs);
+  expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every((w) => w.getOpacity() === 0))).toBe(true);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
   // As on CI's 1024 px screen.
   await size(l, 1024, 720);
@@ -67,6 +68,7 @@ test("Open hides docked Files and closing it restores the same dock and note (PR
     const before = await files(l.page).boundingBox();
     const note = l.page.getByRole("textbox", { name: "Note", exact: true });
     const text = await note.textContent();
+    await note.focus();
     await l.page.keyboard.press(`${mod}+Alt+O`);
     const open = l.page.getByRole("dialog", { name: "Open", exact: true });
     await expect(open).toBeVisible();
@@ -74,6 +76,8 @@ test("Open hides docked Files and closing it restores the same dock and note (PR
     await expect(files(l.page)).toHaveCount(0);
     await open.getByRole("button", { name: "Close", exact: true }).click();
     await expect(open).toBeHidden();
+    await expect(files(l.page).locator(":focus")).toHaveCount(1);
+    await expect(l.page.locator("[data-scrim]")).toHaveCount(0);
     await expect(files(l.page)).toHaveAttribute("data-docked", "");
     await settled(l.page);
     expect((await files(l.page).boundingBox())?.width).toBe(before?.width);
@@ -91,12 +95,32 @@ test("Empty-project Open uses the same dialog and close action, with no Files or
   }));
   const l = await launch(dirs);
   try {
+    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every((w) => w.getOpacity() === 0))).toBe(true);
     const open = l.page.getByRole("dialog", { name: "Open", exact: true });
     await expect(open).toBeVisible();
     await expect(open.getByRole("button", { name: "Close", exact: true })).toBeVisible();
     await expect(open.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
     await expect(l.page.getByRole("heading", { name: "Open", exact: true })).toHaveCount(1);
     await expect(files(l.page)).toHaveCount(0);
+    await l.page.keyboard.press("Tab");
+    expect(await open.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+    await open.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(open).toBeHidden();
+    await expect(l.page.locator("[data-scrim]")).toHaveCount(0);
+    const menu = l.page.getByRole("button", { name: "Focus Notes menu", exact: true });
+    await expect(menu).toBeVisible();
+    await menu.click();
+    const toolbar = l.page.getByRole("toolbar", { name: "Toolbar", exact: true });
+    await expect(toolbar).toBeVisible();
+    await l.page.keyboard.press("Escape");
+    await expect(toolbar).toBeHidden();
+    await l.page.keyboard.press(`${mod}+Alt+O`);
+    await expect(open).toBeVisible();
+    await l.page.keyboard.press("Escape");
+    await expect(open).toBeHidden();
+    await expect(l.page.locator("[data-scrim]")).toHaveCount(0);
+    await l.page.keyboard.press(`${mod}+Alt+O`);
+    await expect(open).toBeVisible();
   } finally {
     await close(l);
   }

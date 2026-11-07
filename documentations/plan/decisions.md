@@ -8,6 +8,16 @@ Labels and controls are the closest pair, items are next, sections are furthest 
 
 **Affects:** [New project](../experience/projects.md#creating-and-closing), IA-VIEW-PROJECTS, the project mock, Dialog's optional footer slot, and the wizard rule in AGENTS.md. Owner screenshot references are retained on the project page.
 
+## D-375: one standard Open dialog in every window state
+
+**Decided (owner, 7 November 2026; PRJ-02, PRJ-05).** Open uses the same existing standard, untinted dialog and shared `open-body.json` whether a note is open, the project is empty, or launch has nothing to restore. Its existing **×** is the only dismissal action; there is no duplicate Cancel or separate full-window layer. Closing it leaves the window's toolbar and navigation usable, restores focus, and restores any existing Files dock without changing the note or its saved text. Files stays hidden while Open is shown.
+
+This supersedes PRJ-05's conditional dialog/full-window presentation, not the card design or project/file routing. It does not create a replacement for a missing note. The Open mock approval is recorded in [Projects → The Open view](../experience/projects.md#the-open-view); D-335 approves Sharing, not Open.
+
+**Review source:** the owner's seventh screenshot in session `c903d624-c50a-4f8e-a7cc-9c0fc45dc9aa`, retained outside the published site at `E:\Projects\side-projects\focus-notes-work\review\owner-11-24\7-two-open-views.png`. No screenshot note contents or personal paths are reproduced.
+
+**Affects:** [Projects → The Open view](../experience/projects.md#the-open-view), PRJ-02, PRJ-05.
+
 ## D-371: captions use only confirmed image-capable connected integrations
 
 **Decided (implementation, 6 November 2026; IMG-09).** Caption capability is explicit server metadata, never a model-name guess: Ollama's saved endpoint reports `vision` through `/api/show`; OpenAI-compatible model lists report `image` in the selected model's `architecture.input_modalities` or `input_modalities`. Missing metadata is unsupported, not a silent fallback. This initially covers Ollama and compatible services such as OpenRouter that publish modality metadata; other integrations remain available for rewriting. The caption choice never changes the Writer.
