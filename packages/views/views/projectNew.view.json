@@ -9,25 +9,51 @@
     "type": "Dialog",
     "when": { "get": "vm.projectNew.open" },
     "props": { "title": { "t": "project.new.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.projectNew.open" }, "size": "m" },
-    "on": { "openChange": { "run": "projects.newClose" } },
-    "slots": { "toolbar": [{ "type": "StepDots", "props": { "current": { "get": "vm.projectNew.step" }, "total": 4, "label": { "get": "vm.projectNew.stepLabel" } } }] },
+    "on": { "openChange": { "run": "projects.newDismiss" } },
+    "slots": {
+      "toolbar": [{ "type": "StepDots", "props": { "current": { "get": "vm.projectNew.step" }, "total": 4, "label": { "get": "vm.projectNew.stepLabel" } } }],
+      "footer": [{ "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true }, "children": [
+        { "type": "Button", "when": { "expr": { ">": [{ "get": "vm.projectNew.step" }, 1] } }, "props": { "label": { "t": "project.back" }, "variant": "secondary", "disabled": { "get": "vm.projectNew.cannotBack" }, "disabledReason": { "t": "project.new.stepOf", "args": { "n": { "get": "vm.projectNew.step" } } } }, "on": { "press": { "run": "projects.newBack" } } },
+        { "type": "Button", "props": { "label": { "get": "vm.projectNew.nextLabel" }, "variant": "primary", "disabled": { "get": "vm.projectNew.cannotNext" }, "disabledReason": { "get": "vm.projectNew.nextReason" } }, "on": { "press": { "run": "projects.newContinue" } } }
+      ] }]
+    },
     "children": [{
       "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
         { "switch": { "get": "vm.projectNew.stepName" }, "cases": {
           "name": { "type": "TextField", "id": "projectName", "props": { "label": { "t": "project.new.name" }, "value": { "bind": "vm.projectNew.name" }, "description": { "t": "project.new.nameHint" }, "autoFocus": true } },
           "private": { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "Heading", "props": { "value": { "t": "project.new.privateTitle" }, "level": "3" } },
-            { "type": "ItemCard", "props": { "title": { "t": "project.new.privateRepo" }, "icon": "lock" } },
-            { "type": "ItemCard", "props": { "title": { "t": "project.new.noSite" }, "detail": { "t": "project.new.noSiteDetail" }, "icon": "globe" } },
-            { "type": "ItemCard", "props": { "title": { "t": "project.new.ownFolder" }, "detail": { "get": "vm.projectNew.folder" }, "icon": "folder", "personal": "all" }, "children": [
+            { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "icon": "lock", "tone": "neutral", "size": "compact" } },
+              { "type": "Text", "props": { "value": { "t": "project.new.privateRepo" }, "role": "label" } }
+            ] },
+            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "icon": "globe", "tone": "neutral", "size": "compact" } },
+              { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
+                { "type": "Text", "props": { "value": { "t": "project.new.noSite" }, "role": "label" } },
+                { "type": "Text", "props": { "value": { "t": "project.new.noSiteDetail" }, "role": "caption", "tone": "muted" } }
+              ] }
+            ] },
+            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "icon": "folder", "tone": "neutral", "size": "compact" } },
+              { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
+                { "type": "Text", "props": { "value": { "t": "project.new.ownFolder" }, "role": "label" } },
+                { "type": "Text", "props": { "value": { "get": "vm.projectNew.folder" }, "role": "caption", "tone": "muted", "personal": true } }
+              ] },
               { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }
             ] }
+            ] }
           ] },
-          "look": { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+          "look": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
+              { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
               { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
               { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
+              ] }
             ] },
+            { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+            { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "Field", "props": { "label": { "t": "project.settings.colour" } }, "children": [
               { "type": "Inline", "props": { "gap": "inlinePair", "wrap": true }, "children": [
                 { "each": { "get": "vm.project.accents" }, "as": "a", "key": "a.id", "empty": { "type": "Text", "props": { "value": { "t": "project.settings.colour" } } }, "render": {
@@ -45,19 +71,38 @@
                   } }
                 ] }
               ] }
+            ] }
             ] },
-            { "type": "Text", "props": { "value": { "t": "project.new.lookHint" }, "tone": "muted" } }
+            { "type": "Text", "props": { "value": { "t": "project.new.lookHint" }, "role": "caption", "tone": "muted" } }
+            ] }
           ] },
-          "confirm": { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+          "confirm": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
+              { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
               { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
               { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
+              ] }
             ] },
+            { "type": "Stack", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "gap": "stackItem" }, "children": [
             { "type": "Text", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "value": { "t": "project.new.willMake" } } },
-            { "type": "ItemCard", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "title": { "t": "project.new.makesFolder" }, "detail": { "get": "vm.projectNew.folder" }, "icon": "folder", "personal": "all" }, "children": [
+            { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "icon": "folder", "tone": "neutral", "size": "compact" } },
+              { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
+                { "type": "Text", "props": { "value": { "t": "project.new.makesFolder" }, "role": "label" } },
+                { "type": "Text", "props": { "value": { "get": "vm.projectNew.folder" }, "role": "caption", "tone": "muted", "personal": true } }
+              ] },
               { "type": "Button", "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newFolder" } } }
             ] },
-            { "type": "ItemCard", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "title": { "t": "project.new.makesNoSite" }, "detail": { "t": "project.new.makesNoSiteDetail" }, "icon": "globe" } }
+            { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+              { "type": "StepMark", "props": { "icon": "globe", "tone": "neutral", "size": "compact" } },
+              { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
+                { "type": "Text", "props": { "value": { "t": "project.new.makesNoSite" }, "role": "label" } },
+                { "type": "Text", "props": { "value": { "t": "project.new.makesNoSiteDetail" }, "role": "caption", "tone": "muted" } }
+              ] }
+            ] }
+            ] }
+            ] }
           ] }
         } },
         { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.projectNew.error" }, ""] } }, "props": { "message": { "get": "vm.projectNew.error" }, "tone": "danger", "actionLabel": { "get": "vm.projectNew.recoveryAction" }, "actionBusy": { "get": "vm.projectNew.retrying" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" } }, "on": { "action": { "run": "projects.newRecover" } } },
@@ -70,11 +115,6 @@
           } },
           { "type": "ProgressBar", "props": { "value": { "get": "vm.projectNew.progress" }, "label": { "get": "vm.projectNew.progressLabel" } } },
           { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.projectNew.elapsed" }, ""] } }, "props": { "value": { "get": "vm.projectNew.elapsed" }, "role": "caption", "tone": "muted" } }
-        ] },
-        { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
-          { "type": "Button", "props": { "label": { "get": "vm.projectNew.cancelLabel" }, "variant": "secondary", "disabled": { "get": "vm.projectNew.cannotCancel" }, "disabledReason": { "get": "vm.projectNew.cancelReason" } }, "on": { "press": { "run": "projects.newDismiss" } } },
-          { "type": "Button", "props": { "label": { "t": "project.back" }, "variant": "subtle", "disabled": { "get": "vm.projectNew.cannotBack" }, "disabledReason": { "t": "project.new.stepOf", "args": { "n": { "get": "vm.projectNew.step" } } } }, "on": { "press": { "run": "projects.newBack" } } },
-          { "type": "Button", "props": { "label": { "get": "vm.projectNew.nextLabel" }, "variant": "primary", "disabled": { "get": "vm.projectNew.cannotNext" }, "disabledReason": { "get": "vm.projectNew.nextReason" } }, "on": { "press": { "run": "projects.newContinue" } } }
         ] }
       ]
     }]

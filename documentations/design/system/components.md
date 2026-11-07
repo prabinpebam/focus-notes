@@ -147,7 +147,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SecureKeyField | compound component | `empty`, `pending`, `confirmed`, `failed` | 4 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
-| Dialog | compound component | `open`, `entering`, `exiting` | 7 | `entering`, `exiting` |
+| Dialog | compound component | `open`, `entering`, `exiting` | 8 | `entering`, `exiting` |
 
 <!-- /generated:component-inventory -->
 

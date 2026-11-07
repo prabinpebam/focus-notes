@@ -2374,7 +2374,7 @@
               ]
              },
              {
-              "type": "DialogPanel",
+              "type": "Dialog",
               "on": {
                "openChange": [
                 {
@@ -2388,86 +2388,6 @@
                ]
               },
               "slots": {
-               "header": [
-                {
-                 "type": "Inline",
-                 "props": {
-                  "gap": "inlineItem",
-                  "align": "center",
-                  "justify": "between"
-                 },
-                 "children": [
-                  {
-                   "type": "Heading",
-                   "props": {
-                    "value": {
-                     "t": "project.new.title"
-                    },
-                    "level": "2"
-                   }
-                  },
-                  {
-                   "switch": {
-                    "get": "local.np"
-                   },
-                   "cases": {
-                    "name": {
-                     "type": "StepDots",
-                     "props": {
-                      "current": 1,
-                      "total": 4,
-                      "label": {
-                       "t": "project.new.stepOf",
-                       "args": {
-                        "n": 1
-                       }
-                      }
-                     }
-                    },
-                    "private": {
-                     "type": "StepDots",
-                     "props": {
-                      "current": 2,
-                      "total": 4,
-                      "label": {
-                       "t": "project.new.stepOf",
-                       "args": {
-                        "n": 2
-                       }
-                      }
-                     }
-                    },
-                    "look": {
-                     "type": "StepDots",
-                     "props": {
-                      "current": 3,
-                      "total": 4,
-                      "label": {
-                       "t": "project.new.stepOf",
-                       "args": {
-                        "n": 3
-                       }
-                      }
-                     }
-                    },
-                    "confirm": {
-                     "type": "StepDots",
-                     "props": {
-                      "current": 4,
-                      "total": 4,
-                      "label": {
-                       "t": "project.new.stepOf",
-                       "args": {
-                        "n": 4
-                       }
-                      }
-                     }
-                    }
-                   }
-                  }
-                 ]
-                }
-               ],
                "footer": [
                 {
                  "switch": {
@@ -2478,30 +2398,10 @@
                    "type": "Inline",
                    "props": {
                     "gap": "inlineItem",
-                    "justify": "end"
+                    "justify": "end",
+                    "wrap": true
                    },
                    "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": [
-                       {
-                        "set": "local.np",
-                        "to": "name"
-                       },
-                       {
-                        "set": "local.screen",
-                        "to": "window"
-                       }
-                      ]
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.cancel"
-                      },
-                      "variant": "secondary"
-                     }
-                    },
                     {
                      "type": "Button",
                      "on": {
@@ -2536,30 +2436,10 @@
                    "type": "Inline",
                    "props": {
                     "gap": "inlineItem",
-                    "justify": "end"
+                    "justify": "end",
+                    "wrap": true
                    },
                    "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": [
-                       {
-                        "set": "local.np",
-                        "to": "name"
-                       },
-                       {
-                        "set": "local.screen",
-                        "to": "window"
-                       }
-                      ]
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.cancel"
-                      },
-                      "variant": "secondary"
-                     }
-                    },
                     {
                      "type": "Button",
                      "on": {
@@ -2572,7 +2452,7 @@
                       "label": {
                        "t": "project.back"
                       },
-                      "variant": "subtle"
+                      "variant": "secondary"
                      }
                     },
                     {
@@ -2596,30 +2476,10 @@
                    "type": "Inline",
                    "props": {
                     "gap": "inlineItem",
-                    "justify": "end"
+                    "justify": "end",
+                    "wrap": true
                    },
                    "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": [
-                       {
-                        "set": "local.np",
-                        "to": "name"
-                       },
-                       {
-                        "set": "local.screen",
-                        "to": "window"
-                       }
-                      ]
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.cancel"
-                      },
-                      "variant": "secondary"
-                     }
-                    },
                     {
                      "type": "Button",
                      "on": {
@@ -2632,7 +2492,7 @@
                       "label": {
                        "t": "project.back"
                       },
-                      "variant": "subtle"
+                      "variant": "secondary"
                      }
                     },
                     {
@@ -2656,30 +2516,10 @@
                    "type": "Inline",
                    "props": {
                     "gap": "inlineItem",
-                    "justify": "end"
+                    "justify": "end",
+                    "wrap": true
                    },
                    "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": [
-                       {
-                        "set": "local.np",
-                        "to": "name"
-                       },
-                       {
-                        "set": "local.screen",
-                        "to": "window"
-                       }
-                      ]
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.cancel"
-                      },
-                      "variant": "secondary"
-                     }
-                    },
                     {
                      "type": "Button",
                      "on": {
@@ -2692,7 +2532,7 @@
                       "label": {
                        "t": "project.back"
                       },
-                      "variant": "subtle"
+                      "variant": "secondary"
                      }
                     },
                     {
@@ -2720,15 +2560,79 @@
                   }
                  }
                 }
+               ],
+               "toolbar": [
+                {
+                 "switch": {
+                  "get": "local.np"
+                 },
+                 "cases": {
+                  "name": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 1,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 1
+                     }
+                    }
+                   }
+                  },
+                  "private": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 2,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 2
+                     }
+                    }
+                   }
+                  },
+                  "look": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 3,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 3
+                     }
+                    }
+                   }
+                  },
+                  "confirm": {
+                   "type": "StepDots",
+                   "props": {
+                    "current": 4,
+                    "total": 4,
+                    "label": {
+                     "t": "project.new.stepOf",
+                     "args": {
+                      "n": 4
+                     }
+                    }
+                   }
+                  }
+                 }
+                }
                ]
               },
               "props": {
-               "label": {
-                "t": "project.new.title"
-               },
                "open": true,
                "size": "m",
-               "height": "stable"
+               "height": "stable",
+               "title": {
+                "t": "project.new.title"
+               },
+               "closeLabel": {
+                "t": "dialog.close"
+               }
               },
               "children": [
                {
@@ -2808,7 +2712,7 @@
                  "private": {
                   "type": "Stack",
                   "props": {
-                   "gap": "stackGroup"
+                   "gap": "stackItem"
                   },
                   "children": [
                    {
@@ -2821,130 +2725,138 @@
                     }
                    },
                    {
-                    "type": "Inline",
+                    "type": "Stack",
                     "props": {
-                     "gap": "inlineGroup",
-                     "align": "center"
+                     "gap": "stackItem"
                     },
                     "children": [
                      {
-                      "type": "StepMark",
+                      "type": "Inline",
                       "props": {
-                       "icon": "lock",
-                       "tone": "neutral",
-                       "size": "compact"
-                      }
-                     },
-                     {
-                      "type": "Stack",
-                      "props": {
-                       "gap": "none"
+                       "gap": "inlineItem",
+                       "align": "center"
                       },
                       "children": [
                        {
-                        "type": "Text",
+                        "type": "StepMark",
                         "props": {
-                         "value": {
-                          "t": "project.new.privateRepo"
-                         },
-                         "role": "label"
-                        }
-                       }
-                      ]
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "inlineGroup",
-                     "align": "center"
-                    },
-                    "children": [
-                     {
-                      "type": "StepMark",
-                      "props": {
-                       "icon": "globe",
-                       "tone": "neutral",
-                       "size": "compact"
-                      }
-                     },
-                     {
-                      "type": "Stack",
-                      "props": {
-                       "gap": "none"
-                      },
-                      "children": [
-                       {
-                        "type": "Text",
-                        "props": {
-                         "value": {
-                          "t": "project.new.noSite"
-                         },
-                         "role": "label"
+                         "icon": "lock",
+                         "tone": "neutral",
+                         "size": "compact"
                         }
                        },
                        {
-                        "type": "Text",
+                        "type": "Stack",
                         "props": {
-                         "value": {
-                          "t": "project.new.noSiteDetail"
-                         },
-                         "role": "caption",
-                         "tone": "muted"
-                        }
-                       }
-                      ]
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "inlineGroup",
-                     "align": "center"
-                    },
-                    "children": [
-                     {
-                      "type": "StepMark",
-                      "props": {
-                       "icon": "folder",
-                       "tone": "neutral",
-                       "size": "compact"
-                      }
-                     },
-                     {
-                      "type": "Stack",
-                      "props": {
-                       "gap": "none"
-                      },
-                      "children": [
-                       {
-                        "type": "Text",
-                        "props": {
-                         "value": {
-                          "t": "project.new.ownFolder"
-                         },
-                         "role": "label"
-                        }
-                       },
-                       {
-                        "type": "Text",
-                        "props": {
-                         "value": {
-                          "t": "project.new.folderAt",
-                          "args": {
-                           "loc": {
-                            "get": "local.loc"
+                         "gap": "stackPair"
+                        },
+                        "children": [
+                         {
+                          "type": "Text",
+                          "props": {
+                           "value": {
+                            "t": "project.new.privateRepo"
                            },
-                           "name": {
-                            "get": "local.name"
-                           }
+                           "role": "label"
+                          }
+                         }
+                        ]
+                       }
+                      ]
+                     },
+                     {
+                      "type": "Inline",
+                      "props": {
+                       "gap": "inlineItem",
+                       "align": "center"
+                      },
+                      "children": [
+                       {
+                        "type": "StepMark",
+                        "props": {
+                         "icon": "globe",
+                         "tone": "neutral",
+                         "size": "compact"
+                        }
+                       },
+                       {
+                        "type": "Stack",
+                        "props": {
+                         "gap": "stackPair"
+                        },
+                        "children": [
+                         {
+                          "type": "Text",
+                          "props": {
+                           "value": {
+                            "t": "project.new.noSite"
+                           },
+                           "role": "label"
                           }
                          },
-                         "role": "caption",
-                         "tone": "muted"
+                         {
+                          "type": "Text",
+                          "props": {
+                           "value": {
+                            "t": "project.new.noSiteDetail"
+                           },
+                           "role": "caption",
+                           "tone": "muted"
+                          }
+                         }
+                        ]
+                       }
+                      ]
+                     },
+                     {
+                      "type": "Inline",
+                      "props": {
+                       "gap": "inlineItem",
+                       "align": "center"
+                      },
+                      "children": [
+                       {
+                        "type": "StepMark",
+                        "props": {
+                         "icon": "folder",
+                         "tone": "neutral",
+                         "size": "compact"
                         }
+                       },
+                       {
+                        "type": "Stack",
+                        "props": {
+                         "gap": "stackPair"
+                        },
+                        "children": [
+                         {
+                          "type": "Text",
+                          "props": {
+                           "value": {
+                            "t": "project.new.ownFolder"
+                           },
+                           "role": "label"
+                          }
+                         },
+                         {
+                          "type": "Text",
+                          "props": {
+                           "value": {
+                            "t": "project.new.folderAt",
+                            "args": {
+                             "loc": {
+                              "get": "local.loc"
+                             },
+                             "name": {
+                              "get": "local.name"
+                             }
+                            }
+                           },
+                           "role": "caption",
+                           "tone": "muted"
+                          }
+                         }
+                        ]
                        }
                       ]
                      }
@@ -2989,150 +2901,166 @@
                     ]
                    },
                    {
-                    "type": "Field",
+                    "type": "Stack",
                     "props": {
-                     "label": {
-                      "t": "project.settings.colour"
-                     }
+                     "gap": "stackItem"
                     },
                     "children": [
                      {
-                      "type": "Inline",
+                      "type": "Stack",
                       "props": {
-                       "gap": "inlinePair",
-                       "wrap": true
+                       "gap": "stackItem"
                       },
                       "children": [
                        {
-                        "each": {
-                         "get": "vm.mocks.accents"
+                        "type": "Field",
+                        "props": {
+                         "label": {
+                          "t": "project.settings.colour"
+                         }
                         },
-                        "as": "a",
-                        "key": "a.id",
-                        "render": {
-                         "type": "ProjectMark",
-                         "on": {
-                          "press": {
-                           "set": "local.accent",
-                           "to": {
-                            "get": "a.id"
-                           }
-                          }
-                         },
-                         "props": {
-                          "accent": {
-                           "get": "a.id"
+                        "children": [
+                         {
+                          "type": "Inline",
+                          "props": {
+                           "gap": "inlinePair",
+                           "wrap": true
                           },
-                          "plate": "solid",
-                          "size": "m",
-                          "label": {
-                           "get": "a.label"
-                          },
-                          "selected": {
-                           "expr": {
-                            "==": [
-                             {
-                              "get": "local.accent"
+                          "children": [
+                           {
+                            "each": {
+                             "get": "vm.mocks.accents"
+                            },
+                            "as": "a",
+                            "key": "a.id",
+                            "render": {
+                             "type": "ProjectMark",
+                             "on": {
+                              "press": {
+                               "set": "local.accent",
+                               "to": {
+                                "get": "a.id"
+                               }
+                              }
                              },
-                             {
-                              "get": "a.id"
+                             "props": {
+                              "accent": {
+                               "get": "a.id"
+                              },
+                              "plate": "solid",
+                              "size": "m",
+                              "label": {
+                               "get": "a.label"
+                              },
+                              "selected": {
+                               "expr": {
+                                "==": [
+                                 {
+                                  "get": "local.accent"
+                                 },
+                                 {
+                                  "get": "a.id"
+                                 }
+                                ]
+                               }
+                              }
                              }
-                            ]
+                            },
+                            "empty": {
+                             "type": "Text",
+                             "props": {
+                              "value": {
+                               "t": "project.mock.none"
+                              }
+                             }
+                            }
                            }
-                          }
+                          ]
                          }
-                        },
-                        "empty": {
-                         "type": "Text",
-                         "props": {
-                          "value": {
-                           "t": "project.mock.none"
-                          }
-                         }
-                        }
-                       }
-                      ]
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Field",
-                    "props": {
-                     "label": {
-                      "t": "project.settings.logo"
-                     }
-                    },
-                    "children": [
-                     {
-                      "type": "Inline",
-                      "props": {
-                       "gap": "inlinePair",
-                       "wrap": true
-                      },
-                      "children": [
+                        ]
+                       },
                        {
-                        "each": {
-                         "get": "vm.mocks.logos"
+                        "type": "Field",
+                        "props": {
+                         "label": {
+                          "t": "project.settings.logo"
+                         }
                         },
-                        "as": "l",
-                        "key": "l.id",
-                        "render": {
-                         "type": "ProjectMark",
-                         "on": {
-                          "press": {
-                           "set": "local.logo",
-                           "to": {
-                            "get": "l.id"
-                           }
-                          }
-                         },
-                         "props": {
-                          "logo": {
-                           "get": "l.id"
+                        "children": [
+                         {
+                          "type": "Inline",
+                          "props": {
+                           "gap": "inlinePair",
+                           "wrap": true
                           },
-                          "accent": {
-                           "get": "local.accent"
-                          },
-                          "size": "m",
-                          "label": {
-                           "get": "l.label"
-                          },
-                          "selected": {
-                           "expr": {
-                            "==": [
-                             {
-                              "get": "local.logo"
+                          "children": [
+                           {
+                            "each": {
+                             "get": "vm.mocks.logos"
+                            },
+                            "as": "l",
+                            "key": "l.id",
+                            "render": {
+                             "type": "ProjectMark",
+                             "on": {
+                              "press": {
+                               "set": "local.logo",
+                               "to": {
+                                "get": "l.id"
+                               }
+                              }
                              },
-                             {
-                              "get": "l.id"
+                             "props": {
+                              "logo": {
+                               "get": "l.id"
+                              },
+                              "accent": {
+                               "get": "local.accent"
+                              },
+                              "size": "m",
+                              "label": {
+                               "get": "l.label"
+                              },
+                              "selected": {
+                               "expr": {
+                                "==": [
+                                 {
+                                  "get": "local.logo"
+                                 },
+                                 {
+                                  "get": "l.id"
+                                 }
+                                ]
+                               }
+                              }
                              }
-                            ]
+                            },
+                            "empty": {
+                             "type": "Text",
+                             "props": {
+                              "value": {
+                               "t": "project.mock.none"
+                              }
+                             }
+                            }
                            }
-                          }
+                          ]
                          }
-                        },
-                        "empty": {
-                         "type": "Text",
-                         "props": {
-                          "value": {
-                           "t": "project.mock.none"
-                          }
-                         }
-                        }
+                        ]
                        }
                       ]
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.new.lookHint"
                      },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "project.new.lookHint"
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
                    }
                   ]
                  },
@@ -3145,7 +3073,7 @@
                    {
                     "type": "Inline",
                     "props": {
-                     "gap": "inlineGroup",
+                     "gap": "inlineItem",
                      "align": "center"
                     },
                     "children": [
@@ -3164,7 +3092,7 @@
                      {
                       "type": "Stack",
                       "props": {
-                       "gap": "none"
+                       "gap": "stackPair"
                       },
                       "children": [
                        {
@@ -3191,297 +3119,313 @@
                     ]
                    },
                    {
-                    "type": "Text",
+                    "type": "Stack",
                     "props": {
-                     "value": {
-                      "t": "project.new.willMake"
-                     },
-                     "role": "label"
-                    }
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "inlineGroup",
-                     "align": "center",
-                     "justify": "between"
+                     "gap": "stackItem"
                     },
                     "children": [
                      {
-                      "type": "Inline",
+                      "type": "Text",
                       "props": {
-                       "gap": "inlineGroup",
-                       "align": "center"
-                      },
-                      "children": [
-                       {
-                        "type": "StepMark",
-                        "props": {
-                         "icon": "github",
-                         "tone": "neutral",
-                         "size": "compact"
-                        }
+                       "value": {
+                        "t": "project.new.willMake"
                        },
-                       {
-                        "type": "Stack",
-                        "props": {
-                         "gap": "none"
-                        },
-                        "children": [
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.makesRepo"
-                           },
-                           "role": "label"
-                          }
-                         },
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.repoName",
-                            "args": {
-                             "owner": {
-                              "get": "local.owner"
-                             },
-                             "name": {
-                              "get": "local.name"
-                             }
-                            }
-                           },
-                           "role": "caption",
-                           "tone": "muted"
-                          }
-                         }
-                        ]
-                       }
-                      ]
-                     },
-                     {
-                      "type": "MenuButton",
-                      "on": {
-                       "action": {
-                        "set": "local.owner",
-                        "to": {
-                         "get": "event.id"
-                        }
-                       }
-                      },
-                      "props": {
-                       "label": {
-                        "t": "project.new.changeOwner"
-                       },
-                       "variant": "text",
-                       "text": {
-                        "get": "vm.mocks.changeLabel"
-                       },
-                       "sections": {
-                        "get": "vm.mocks.owners"
-                       }
+                       "role": "label"
                       }
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "inlineGroup",
-                     "align": "center",
-                     "justify": "between"
-                    },
-                    "children": [
-                     {
-                      "type": "Inline",
-                      "props": {
-                       "gap": "inlineGroup",
-                       "align": "center"
-                      },
-                      "children": [
-                       {
-                        "type": "StepMark",
-                        "props": {
-                         "icon": "folder",
-                         "tone": "neutral",
-                         "size": "compact"
-                        }
-                       },
-                       {
-                        "type": "Stack",
-                        "props": {
-                         "gap": "none"
-                        },
-                        "children": [
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.makesFolder"
-                           },
-                           "role": "label"
-                          }
-                         },
-                         {
-                          "type": "Text",
-                          "props": {
-                           "value": {
-                            "t": "project.new.folderAt",
-                            "args": {
-                             "loc": {
-                              "get": "local.loc"
-                             },
-                             "name": {
-                              "get": "local.name"
-                             }
-                            }
-                           },
-                           "role": "caption",
-                           "tone": "muted"
-                          }
-                         }
-                        ]
-                       }
-                      ]
                      },
-                     {
-                      "type": "Button",
-                      "on": {
-                       "press": {
-                        "set": "local.picking",
-                        "to": true
-                       }
-                      },
-                      "props": {
-                       "label": {
-                        "t": "project.new.change"
-                       },
-                       "variant": "subtle",
-                       "size": "s"
-                      }
-                     }
-                    ]
-                   },
-                   {
-                    "type": "Surface",
-                    "props": {
-                     "variant": "sunken",
-                     "shape": "popover",
-                     "padding": "insetSm"
-                    },
-                    "children": [
                      {
                       "type": "Stack",
                       "props": {
-                       "gap": "stackPair"
+                       "gap": "stackItem"
                       },
                       "children": [
                        {
-                        "type": "Text",
+                        "type": "Inline",
                         "props": {
-                         "value": {
-                          "t": "project.new.pickerMock"
+                         "gap": "inlineItem",
+                         "align": "center",
+                         "justify": "between"
+                        },
+                        "children": [
+                         {
+                          "type": "Inline",
+                          "props": {
+                           "gap": "inlineItem",
+                           "align": "center"
+                          },
+                          "children": [
+                           {
+                            "type": "StepMark",
+                            "props": {
+                             "icon": "github",
+                             "tone": "neutral",
+                             "size": "compact"
+                            }
+                           },
+                           {
+                            "type": "Stack",
+                            "props": {
+                             "gap": "stackPair"
+                            },
+                            "children": [
+                             {
+                              "type": "Text",
+                              "props": {
+                               "value": {
+                                "t": "project.new.makesRepo"
+                               },
+                               "role": "label"
+                              }
+                             },
+                             {
+                              "type": "Text",
+                              "props": {
+                               "value": {
+                                "t": "project.new.repoName",
+                                "args": {
+                                 "owner": {
+                                  "get": "local.owner"
+                                 },
+                                 "name": {
+                                  "get": "local.name"
+                                 }
+                                }
+                               },
+                               "role": "caption",
+                               "tone": "muted"
+                              }
+                             }
+                            ]
+                           }
+                          ]
                          },
-                         "role": "caption",
-                         "tone": "muted"
-                        }
-                       },
-                       {
-                        "type": "ResultList",
-                        "id": "pickLocation",
-                        "on": {
-                         "action": [
-                          {
-                           "set": "local.loc",
-                           "to": {
-                            "get": "event.id"
+                         {
+                          "type": "MenuButton",
+                          "on": {
+                           "action": {
+                            "set": "local.owner",
+                            "to": {
+                             "get": "event.id"
+                            }
                            }
                           },
-                          {
-                           "set": "local.picking",
-                           "to": false
+                          "props": {
+                           "label": {
+                            "t": "project.new.changeOwner"
+                           },
+                           "variant": "text",
+                           "text": {
+                            "get": "vm.mocks.changeLabel"
+                           },
+                           "sections": {
+                            "get": "vm.mocks.owners"
+                           }
                           }
-                         ]
-                        },
-                        "props": {
-                         "label": {
-                          "t": "project.new.chooseFolder"
-                         },
-                         "items": {
-                          "get": "vm.mocks.locations"
                          }
-                        }
+                        ]
                        },
                        {
                         "type": "Inline",
                         "props": {
-                         "justify": "end"
+                         "gap": "inlineItem",
+                         "align": "center",
+                         "justify": "between"
                         },
                         "children": [
+                         {
+                          "type": "Inline",
+                          "props": {
+                           "gap": "inlineItem",
+                           "align": "center"
+                          },
+                          "children": [
+                           {
+                            "type": "StepMark",
+                            "props": {
+                             "icon": "folder",
+                             "tone": "neutral",
+                             "size": "compact"
+                            }
+                           },
+                           {
+                            "type": "Stack",
+                            "props": {
+                             "gap": "stackPair"
+                            },
+                            "children": [
+                             {
+                              "type": "Text",
+                              "props": {
+                               "value": {
+                                "t": "project.new.makesFolder"
+                               },
+                               "role": "label"
+                              }
+                             },
+                             {
+                              "type": "Text",
+                              "props": {
+                               "value": {
+                                "t": "project.new.folderAt",
+                                "args": {
+                                 "loc": {
+                                  "get": "local.loc"
+                                 },
+                                 "name": {
+                                  "get": "local.name"
+                                 }
+                                }
+                               },
+                               "role": "caption",
+                               "tone": "muted"
+                              }
+                             }
+                            ]
+                           }
+                          ]
+                         },
                          {
                           "type": "Button",
                           "on": {
                            "press": {
                             "set": "local.picking",
-                            "to": false
+                            "to": true
                            }
                           },
                           "props": {
                            "label": {
-                            "t": "project.cancel"
+                            "t": "project.new.change"
                            },
                            "variant": "subtle",
                            "size": "s"
                           }
                          }
                         ]
-                       }
-                      ]
-                     }
-                    ],
-                    "when": {
-                     "get": "local.picking"
-                    }
-                   },
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "inlineGroup",
-                     "align": "center"
-                    },
-                    "children": [
-                     {
-                      "type": "StepMark",
-                      "props": {
-                       "icon": "globe",
-                       "tone": "neutral",
-                       "size": "compact"
-                      }
-                     },
-                     {
-                      "type": "Stack",
-                      "props": {
-                       "gap": "none"
-                      },
-                      "children": [
+                       },
                        {
-                        "type": "Text",
+                        "type": "Surface",
                         "props": {
-                         "value": {
-                          "t": "project.new.makesNoSite"
-                         },
-                         "role": "label"
+                         "variant": "sunken",
+                         "shape": "popover",
+                         "padding": "insetSm"
+                        },
+                        "children": [
+                         {
+                          "type": "Stack",
+                          "props": {
+                           "gap": "stackPair"
+                          },
+                          "children": [
+                           {
+                            "type": "Text",
+                            "props": {
+                             "value": {
+                              "t": "project.new.pickerMock"
+                             },
+                             "role": "caption",
+                             "tone": "muted"
+                            }
+                           },
+                           {
+                            "type": "ResultList",
+                            "id": "pickLocation",
+                            "on": {
+                             "action": [
+                              {
+                               "set": "local.loc",
+                               "to": {
+                                "get": "event.id"
+                               }
+                              },
+                              {
+                               "set": "local.picking",
+                               "to": false
+                              }
+                             ]
+                            },
+                            "props": {
+                             "label": {
+                              "t": "project.new.chooseFolder"
+                             },
+                             "items": {
+                              "get": "vm.mocks.locations"
+                             }
+                            }
+                           },
+                           {
+                            "type": "Inline",
+                            "props": {
+                             "justify": "end"
+                            },
+                            "children": [
+                             {
+                              "type": "Button",
+                              "on": {
+                               "press": {
+                                "set": "local.picking",
+                                "to": false
+                               }
+                              },
+                              "props": {
+                               "label": {
+                                "t": "project.cancel"
+                               },
+                               "variant": "subtle",
+                               "size": "s"
+                              }
+                             }
+                            ]
+                           }
+                          ]
+                         }
+                        ],
+                        "when": {
+                         "get": "local.picking"
                         }
                        },
                        {
-                        "type": "Text",
+                        "type": "Inline",
                         "props": {
-                         "value": {
-                          "t": "project.new.makesNoSiteDetail"
+                         "gap": "inlineItem",
+                         "align": "center"
+                        },
+                        "children": [
+                         {
+                          "type": "StepMark",
+                          "props": {
+                           "icon": "globe",
+                           "tone": "neutral",
+                           "size": "compact"
+                          }
                          },
-                         "role": "caption",
-                         "tone": "muted"
-                        }
+                         {
+                          "type": "Stack",
+                          "props": {
+                           "gap": "stackPair"
+                          },
+                          "children": [
+                           {
+                            "type": "Text",
+                            "props": {
+                             "value": {
+                              "t": "project.new.makesNoSite"
+                             },
+                             "role": "label"
+                            }
+                           },
+                           {
+                            "type": "Text",
+                            "props": {
+                             "value": {
+                              "t": "project.new.makesNoSiteDetail"
+                             },
+                             "role": "caption",
+                             "tone": "muted"
+                            }
+                           }
+                          ]
+                         }
+                        ]
                        }
                       ]
                      }

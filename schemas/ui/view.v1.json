@@ -14282,7 +14282,7 @@
     },
     "c_Dialog": {
       "type": "object",
-      "description": "A titled modal dialog with a close button, optional fixed controls, and a scrolling body.",
+      "description": "A titled modal dialog with a close button, optional fixed controls and footer actions, and a scrolling body.",
       "required": [
         "type",
         "props"
@@ -14426,6 +14426,12 @@
           "additionalProperties": false,
           "properties": {
             "toolbar": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "footer": {
               "type": "array",
               "items": {
                 "$ref": "#/$defs/node"

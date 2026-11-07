@@ -1,5 +1,13 @@
 # Decisions
 
+## D-374: wizard actions and proximity belong to the dialog's layouts
+
+**Approved by the owner, 7 November 2026 at 11:24.** No Cancel beside a close ×. Back is secondary, absent on the first step; Next or Create project is primary. These are the only two footer button types, right-aligned at the bottom, outside the scrolling body. The close control uses the existing dismissal command, preserving cancellation of tracked creation rather than silently removing that action.
+
+Labels and controls are the closest pair, items are next, sections are furthest apart. The dialog owns one content inset across heading, body and footer; parent Inline and Stack layouts own the gaps. The project mark and title use the approved mock's aligned row, never directly stacked without space. No button geometry or unrelated component styling changes.
+
+**Affects:** [New project](../experience/projects.md#creating-and-closing), IA-VIEW-PROJECTS, the project mock, Dialog's optional footer slot, and the wizard rule in AGENTS.md. Owner screenshot references are retained on the project page.
+
 ## D-371: captions use only confirmed image-capable connected integrations
 
 **Decided (implementation, 6 November 2026; IMG-09).** Caption capability is explicit server metadata, never a model-name guess: Ollama's saved endpoint reports `vision` through `/api/show`; OpenAI-compatible model lists report `image` in the selected model's `architecture.input_modalities` or `input_modalities`. Missing metadata is unsupported, not a silent fallback. This initially covers Ollama and compatible services such as OpenRouter that publish modality metadata; other integrations remain available for rewriting. The caption choice never changes the Writer.

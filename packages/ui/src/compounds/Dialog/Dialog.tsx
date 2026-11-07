@@ -13,6 +13,8 @@ export interface DialogProps {
   height?: "stable" | "content" | "navigation";
   /** Controls that stay above the scrolling body. */
   toolbar?: ReactNode;
+  /** Actions that stay below the scrolling body. */
+  footer?: ReactNode;
   id?: string;
   children?: ReactNode;
   /** False for full-bleed body regions whose immediate child layouts own their insets. */
@@ -21,7 +23,7 @@ export interface DialogProps {
 }
 
 /** A titled modal dialog with a close button (IA-CMP-DIALOG). */
-export function Dialog({ title, closeLabel, open, size = "l", height = "stable", contentInset = true, toolbar, id, children, onOpenChange }: DialogProps) {
+export function Dialog({ title, closeLabel, open, size = "l", height = "stable", contentInset = true, toolbar, footer, id, children, onOpenChange }: DialogProps) {
   return (
     <DialogPanel
       label={title}
@@ -38,6 +40,7 @@ export function Dialog({ title, closeLabel, open, size = "l", height = "stable",
         </Inline>
       }
       {...(toolbar ? { fixed: toolbar } : {})}
+      {...(footer ? { footer } : {})}
     >
       {children}
     </DialogPanel>
