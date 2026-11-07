@@ -569,6 +569,15 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (s.firstRun.busy || (!workspaceMade(s.setup.report) && !s.firstRun.workspace.result?.ok)) return;
     // The window starts again in the workspace: at Ready, or writing when Your notes was shown alone.
     const alone = s.firstRun.scope === "workspace";
+    if (alone) {
+      const account = await busy("account", () => fr!.account());
+      applyAccount(account);
+      const writer = account?.account;
+      if (!writer || account.signedOut || !await busy("identity", () => fr!.setIdentity(notesIdentity(writer), "workspace"))) {
+        setWs({ error: "firstRun.workspace.problem.failed" });
+        return;
+      }
+    }
     await persistAppState({ firstRun: alone ? "done" : "ready" });
     const r = await busy("open", () => fr!.openWorkspace());
     if (!r?.ok) {

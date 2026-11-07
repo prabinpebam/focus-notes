@@ -154,18 +154,21 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     await settle(page);
     scheme = "dark";
 
+    // Require Sync now even when the first clone's backup finished before the second clone.
+    const privateRoot = join(folderNow(), "private");
+    w.git(privateRoot, "commit", "--allow-empty", "-m", "Fixture private pointer");
+    w.git(privateRoot, "push", "--quiet", "origin", "main");
+    w.git(folderNow(), "add", "private");
     await mark("removing the workspace");
     await openWorkspaceSettings(page);
     await settings(page).getByRole("button", { name: "Remove from this computer…" }).click();
     const dialog = page.getByRole("dialog", { name: "Remove this project?" });
     const remove = dialog.getByRole("button", { name: "Remove", exact: true });
     const sync = dialog.getByRole("button", { name: "Sync now", exact: true });
-    await expect.poll(async () => await remove.isVisible() || await sync.isVisible()).toBe(true);
-    if (await sync.isVisible()) {
-      await expect(dialog).toContainText("on GitHub yet");
-      await expect(remove).toBeHidden();
-      await sync.click();
-    }
+    await expect(sync).toBeVisible();
+    await expect(dialog).toContainText("on GitHub yet");
+    await expect(remove).toBeHidden();
+    await sync.click();
     const removedFolder = folderNow();
     await remove.click({ timeout: 30_000 });
     await heading(page, "We found your notes");

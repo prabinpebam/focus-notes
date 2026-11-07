@@ -107,6 +107,8 @@ The shell refuses to open the `git`, `gcm` and `gh` pages in the Store package, 
 
 Continuing sets the name and email Git puts on every saved change (FRE-05) without a step: the account's name and GitHub's private `ID+login@users.noreply.github.com` address, for the notes only (the workspace's own settings and `private/`'s; setup's own commits use them before that). Git's global settings are never changed, so other projects keep theirs.
 
+Opening another project from GitHub prepares the same account identity for that project's two repositories before switching, even though this route skips Connect. A failed identity preparation reports the failed open and keeps the current project; cancelling before opening changes no identity.
+
 ### Where the sign-in lives
 
 In one place: **Git's credential helper**, owned by the user (the OS keychain, Windows Credential Manager, or the GitHub CLI's secure storage). The app reads it when it needs to call the GitHub API, keeps it in memory only, and never stores a copy. The terminal's `git push` uses the same credential. The details are in [Desktop and Git → Sign-in](../architecture/desktop-and-git.md#sign-in).

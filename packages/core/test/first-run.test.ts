@@ -674,6 +674,38 @@ describe("FRE-06, FRE-08: Your notes", () => {
     // The window starts again in it, writing: not at Ready.
     expect(t.last()?.firstRun).toBe("done");
   });
+  it("FRE-05: opening another project prepares its own account identity before switching", async () => {
+    const t = shell({ state: { version: 1, firstRun: "done", lastNotePath: "/n/a.md" }, account: { account: ADA, gcm: true, gh: false } });
+    await t.app.start();
+    await settle();
+    await settle();
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    await t.run("firstRun.back");
+    expect(t.calls.filter(call => call.startsWith("identity:"))).toEqual([]);
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    const identity = "identity:Ada Lovelace:583231+ada@users.noreply.github.com:workspace";
+    expect(t.calls.filter(call => call.startsWith("identity:"))).toEqual([identity]);
+    expect(t.calls.indexOf("openWorkspace")).toBeGreaterThan(t.calls.indexOf(identity));
+    expect(t.last()?.firstRun).toBe("done");
+  });
+  it("FRE-05: a refused project identity keeps the current project and reports the failed open", async () => {
+    const t = shell({ state: { version: 1, firstRun: "done", lastNotePath: "/n/a.md" }, account: { account: ADA, gcm: true, gh: false } });
+    t.bridge.firstRun!.setIdentity = async () => false;
+    await t.app.start();
+    await settle();
+    await settle();
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.calls).not.toContain("openWorkspace");
+    expect(t.vm().error).toBe(en["firstRun.workspace.problem.failed"]);
+    expect(t.app.store.state.note.path).toBe("/n/a.md");
+    await t.run("firstRun.back");
+    expect(t.app.store.state.note.path).toBe("/n/a.md");
+  });
 });
 
 describe("FRE-01: Ready", () => {
