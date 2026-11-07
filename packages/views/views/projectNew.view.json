@@ -32,6 +32,7 @@
               { "type": "ItemCard", "props": { "title": { "t": "project.new.where.local" }, "detail": { "t": "project.new.where.localDetail" }, "icon": "hardDrive", "chevron": false, "choiceGroup": { "get": "vm.projectNew.whereGroup" }, "choiceValue": { "get": "vm.projectNew.localValue" }, "selected": { "expr": { "!": { "get": "vm.projectNew.onGitHub" } } } },
                 "on": { "choose": { "run": "projects.newWhere", "args": { "value": { "get": "event.value" } } } } }
             ] },
+            { "type": "TextField", "id": "projectRepo", "when": { "get": "vm.projectNew.onGitHub" }, "props": { "label": { "t": "project.new.repoLabel" }, "prefix": { "get": "vm.projectNew.repoPrefix" }, "value": { "bind": "vm.projectNew.repoName" }, "description": { "t": "project.new.repoHint" }, "invalid": { "get": "vm.projectNew.repoInvalid" }, "error": { "get": "vm.projectNew.repoError" } } },
             { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
               { "type": "StepMark", "props": { "icon": "folder", "tone": "neutral", "size": "compact" } },
               { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
@@ -87,8 +88,10 @@
               { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
                 { "type": "Text", "props": { "value": { "t": "project.new.makesRepo" }, "role": "label" } },
                 { "type": "Text", "props": { "value": { "get": "vm.projectNew.repo" }, "role": "caption", "tone": "muted", "personal": true } }
-              ] }
+              ] },
+              { "type": "Button", "when": { "expr": { "!": { "get": "vm.projectNew.repoEditing" } } }, "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newChangeRepo" } } }
             ] },
+            { "type": "TextField", "id": "projectRepoConfirm", "when": { "get": "vm.projectNew.repoEditing" }, "props": { "label": { "t": "project.new.repoLabel" }, "prefix": { "get": "vm.projectNew.repoPrefix" }, "value": { "bind": "vm.projectNew.repoName" }, "description": { "t": "project.new.repoHint" }, "invalid": { "get": "vm.projectNew.repoInvalid" }, "error": { "get": "vm.projectNew.repoError" } } },
             { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
               { "type": "StepMark", "props": { "icon": "folder", "tone": "neutral", "size": "compact" } },
               { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
