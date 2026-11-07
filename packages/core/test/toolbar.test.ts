@@ -9,7 +9,8 @@ import { createApp, DEFAULT_TOOLBAR, type Platform, type PlatformBridge } from "
 interface Item { id: string; label: string; shortcut?: string; disabled?: boolean; reason?: string; checked?: boolean; items?: Item[] }
 interface ToolbarVm { open: boolean; items: Item[]; more: { id: string; label: string; items: Item[] }[]; triggerShortcut: string }
 
-function appFor(platform: Platform) {
+function appFor(platform: Platform, configuredSharing = false) {
+  const listing = { available: true, site: "https://sharing.test/", vault: true, grants: [] };
   const bridge: PlatformBridge = {
     platform,
     readNote: async () => "",
@@ -23,8 +24,17 @@ function appFor(platform: Platform) {
     onSystemSchemeChange: () => () => {},
     toggleFullScreen: () => {},
     openLink: () => {},
+    ...(configuredSharing ? { access: {
+      load: async () => listing,
+      apply: async () => { throw new Error("Toolbar tests must not mutate shares"); },
+      setTemplate: async () => listing,
+      reveal: async () => ({}),
+      copy: async () => {},
+    } } : {}),
   };
-  return createApp(bridge, en);
+  const app = createApp(bridge, en);
+  if (configuredSharing) app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+  return app;
 }
 const vmOf = (app: ReturnType<typeof appFor>) => app.viewModels.select("vm.toolbar", app.store.state) as unknown as ToolbarVm;
 const flat = (vm: ToolbarVm) => vm.more.flatMap((g) => g.items.flatMap((i) => [i, ...(i.items ?? [])]));
@@ -46,7 +56,7 @@ describe("the toolbar (UI-04, UI-07)", () => {
   });
 
   it("UI-07: ⋯ holds font size, full screen, find, find and replace, share and visibility, settings, keyboard shortcuts, and help", () => {
-    const vm = vmOf(appFor("windows"));
+    const vm = vmOf(appFor("windows", true));
     const ids = flat(vm).map((i) => i.id);
     for (const id of ["font.smaller", "font.larger", "font.reset", "window.fullScreen", "find.open", "find.replace", "note.share", "settings.open", "shortcuts.open", "help.open"]) {
       expect(ids, id).toContain(id);
@@ -63,7 +73,7 @@ describe("the toolbar (UI-04, UI-07)", () => {
   it("UI-07: items whose feature arrives later are present, unavailable, and say why", async () => {
     const app = appFor("macos");
     const byId = new Map(flat(vmOf(app)).map((i) => [i.id, i]));
-    expect(byId.get("note.share")).toMatchObject({ label: "Share…", disabled: true, reason: "Sharing is in the desktop app's Settings" });
+    expect(byId.has("note.share")).toBe(false);
     expect(byId.get("settings.open")).toMatchObject({ label: "Settings…", disabled: true, reason: "Settings manage your GitHub account, so they're in the desktop app", shortcut: "⌘," });
     expect(byId.get("help.open")).toMatchObject({ label: "Help and docs" });
     expect(byId.get("help.open")?.disabled).not.toBe(true);
@@ -76,6 +86,14 @@ describe("the toolbar (UI-04, UI-07)", () => {
     expect(app.commands.match({ key: ",", code: "Comma", metaKey: true, ctrlKey: false, shiftKey: false, altKey: false })).toBe("settings.open");
     const sheet = app.viewModels.select("vm.shortcuts", app.store.state) as { groups: { rows: { id: string }[] }[] };
     expect(sheet.groups.flatMap((g) => g.rows.map((r) => r.id))).not.toContain("settings.open");
+  });
+
+  it("UI-07, G2.2: an unconfigured project has no Share entry, including when it was pinned", () => {
+    const app = appFor("windows");
+    app.store.update(s => ({ ...s, toolbarPinned: [...s.toolbarPinned, "note.share"] }));
+    expect(vmOf(app).items.map(i => i.id)).not.toContain("note.share");
+    expect(flat(vmOf(app)).map(i => i.id)).not.toContain("note.share");
+    expect(app.commands.describe("note.share").enabled).toBe(false);
   });
 
   it("UI-07: a setting keeps its feedback visible; other actions close the toolbar", async () => {

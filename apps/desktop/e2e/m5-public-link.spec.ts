@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { launch, quit, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
-import { instance, write } from "./instance.ts";
+import { configureSharing, instance, write } from "./instance.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const SITE = "https://ada.github.io/notes/";
@@ -49,6 +49,7 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
   write(join(dirs.docs, "notes", "Guides", "Launch plan.md"), "# Launch plan\n\nWhat ships, and when.\n");
   // Setup found the Pages site (D-124): public links are made for it.
   writeFileSync(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site: SITE, steps: {} }));
+  await configureSharing(dirs, SITE);
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
   const { page } = l;
   try {

@@ -1,5 +1,5 @@
 import { _electron as electron, expect, type ElectronApplication, type Locator, type Page } from "@playwright/test";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { flipFuses, FuseV1Options, FuseVersion } from "@electron/fuses";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -211,6 +211,7 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     }
   }
   running.set(app, pid);
+  if (process.env.FOCUS_NOTES_E2E_PID_LOG) appendFileSync(process.env.FOCUS_NOTES_E2E_PID_LOG, `${pid}\n`);
   // Every window the journey uses; one that closes at once (a page that went away) needs none.
   app.on("window", (p) => void emulateFocus(p).catch(() => {}));
   const page = await app.firstWindow();

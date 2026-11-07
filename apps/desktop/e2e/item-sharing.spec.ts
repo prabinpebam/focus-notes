@@ -9,7 +9,7 @@ import { publish } from "../../../packages/seal/src/publish.ts";
 import { SiteReader } from "../../../packages/seal/src/reader.ts";
 import type { AccessFile } from "../../../packages/seal/src/grants.ts";
 import { launch, quit } from "./helpers.ts";
-import { git, instance, write } from "./instance.ts";
+import { configureSharing, git, instance, write } from "./instance.ts";
 import { pointerModality } from "./visual-quality.ts";
 
 test("Share New words is icon-only, aligned and keeps pending feedback on its own border", async () => {
@@ -110,6 +110,7 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
   const origin = `http://127.0.0.1:${address.port}/`;
   const site = "https://sharing.test/";
   write(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site, steps: {} }));
+  await configureSharing(dirs, site);
   const l = await launch(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1", FOCUS_NOTES_POINTER_GAP_MS: "0", FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
   const copied = () => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
   const access = (): AccessFile => JSON.parse(readFileSync(join(priv, "access.json"), "utf8"));
@@ -210,6 +211,7 @@ test("SHR-13/14/15/24: Share… opens a fixed item, reviews contents and preserv
   write(join(privateDir, "notes", "trips", "ideas", "travel.md"), "# Travel\n");
   git(privateDir, "add", "-A");
   git(privateDir, "commit", "-qm", "Add test folder");
+  await configureSharing(dirs);
   const file = join(privateDir, "access.json");
   const before = existsSync(file) ? readFileSync(file, "utf8") : undefined;
   const l = await launch(dirs);

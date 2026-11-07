@@ -13,7 +13,7 @@ import { test, expect, type Locator } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
-import { instance } from "./instance.ts";
+import { configureSharing, instance } from "./instance.ts";
 import { moreMenu, reset, spotlight } from "./surfaces.ts";
 import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
@@ -312,6 +312,7 @@ test("Settings: the scroll panel reaches the dialog edges and never clips a fiel
 test("Open, Share and Files keep scrollbars at their surface edges and focus rings inside their clips", async () => {
   test.setTimeout(120_000);
   const { dirs } = instance();
+  await configureSharing(dirs);
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
     version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(dirs.docs, "private", "notes", "welcome.md"),
   }));

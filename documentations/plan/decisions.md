@@ -38,6 +38,14 @@ GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/r
 **Options gap > Switch pair gap (coordinator clarification).** Keep each Switch's track-to-label gap at 8 px and use `inlineGroup` (16 px) between options. Wrapped options use `stackItem`, closer than the stack-token separation above. Never suppress the spacing probe's grouping finding or shrink the pairs to pass it. Opening an all-notes match intentionally transfers that match's query/options into the note's Find. No landing or tests of the familiar all-notes candidate before owner approval; nothing else is added to the writing window.
 
 **Affects:** FND-01 / WP-1.10, FND-04 / WP-4.3, [DoD backlog](definition-of-done.md#dod-backlog), [Find and replace](../experience/find-and-replace.md), [spacing audit](../design/spacing-audit.md), and their geometry/exclusivity journeys. W-find owns implementation; this decision records the correction, not acceptance of the candidate.
+## D-391: every gap-closure runtime landing needs its exact seven-check gate
+
+**Decided, 7 November 2026 (owner, coordinator).** Restore green main and Preview before any further landing. For this programme, the D-255 low-risk shortcut is suspended: every runtime change, including core-only visibility changes, needs seven of seven checks green on its exact head before a non-force landing. The unavailable-Share slice `9a1d2a76` was reverted after CI found configured-sharing fixtures without a vault/site. Re-apply it with repaired fixtures inside G2, not as another ungated availability landing.
+
+Configured-sharing fixtures create private access and a site before startup reads; unconfigured/standalone contracts explicitly require absent Share. Preserve the complete user-visible outcomes, failure/Retry and no-write assertions. A genuine component defect exposed by corrected copy is not hidden by weakening its paint assertion.
+
+**Affects:** [G2](definition-of-done.md#g2-turn-on-sharing-and-invite-a-person), [gate evidence](gate-evidence.md#g2-configured-sharing-fixture-repair-d-391-7-november), PRJ-10, SHR-13 and the gap-closure landing rules.
+
 ## D-390: sharing setup and live publication have one explicit seam
 
 **Decided, 7 November 2026 (coordinator, G2/G3).** G2 owns persisted pairing and setup, signed-in GitHub calls to create the public site and configure Pages, its public-only Pages workflow, and the narrow `publishSealedArtifact(project, artifact)` interface with a protocol-fake implementation in G2 tests. G3 owns the real artifact push behind that interface, plus Publish UI and status. Never reuse the legacy private-reader deploy key or Actions secret.

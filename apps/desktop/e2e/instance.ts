@@ -3,9 +3,22 @@
  * submodule, each with a local bare remote, cloned as the workspace, so nothing touches the network.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { withVaultGrant } from "../../../packages/seal/src/vault.ts";
+import { validateAccess } from "../../../packages/seal/src/publish.ts";
+import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
+
+/** Configure actual private access and a site before launch, without a candidate capability bypass. */
+export async function configureSharing(dirs: { docs: string; userData: string }, site = "https://sharing.test/"): Promise<void> {
+  const privateDir = join(dirs.docs, "private");
+  if (!existsSync(join(dirs.docs, ".focus-notes", "workspace.json")) || !existsSync(join(privateDir, "notes"))) throw new Error("Sharing fixtures require a private project checkout");
+  const accessFile = join(privateDir, "access.json");
+  const access = existsSync(accessFile) ? validateAccess(JSON.parse(readFileSync(accessFile, "utf8"))) : { version: 1 as const, grants: [] };
+  write(accessFile, `${JSON.stringify(await withVaultGrant(access, "cedar-silver-meadow-stone-orbit"), null, 2)}\n`);
+  write(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site, steps: {} }));
+}
 
 export const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", ["-c", "protocol.file.allow=always", "-c", "core.autocrlf=false", ...(cwd.endsWith(".git") ? [`--git-dir=${cwd}`] : []), ...args], {

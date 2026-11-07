@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { DATA_FILES, DATA_FOLDERS } from "../../../packages/core/src/inventory.ts";
 import { test, expect } from "./fixtures.ts";
 import { fileRow, launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";
-import { git, instance, write } from "./instance.ts";
+import { configureSharing, git, instance, write } from "./instance.ts";
 import { picture } from "./fre-fakes.ts";
 import { card, existingInstance, start as startFirstRun, world } from "./github-world.ts";
 import { frameProblems } from "./frames.ts";
@@ -682,28 +682,36 @@ test("Sharing settings distinguish failed and filtered lists, retain rows and ro
   const { dirs } = instance();
   const note = join(dirs.docs, "private", "notes", "welcome.md"), before = readFileSync(note, "utf8");
   writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
-  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  const entrypoint = join(dirs.userData, "sharing-list-fixture.cjs");
+  const main = pathToFileURL(fileURLToPath(new URL("../out/main/main.mjs", import.meta.url))).href;
+  writeFileSync(entrypoint, `
+const { ipcMain } = require("electron");
+const register = ipcMain.handle.bind(ipcMain);
+let reads = 0;
+globalThis.uiStatesSharingWrites = 0;
+const firstRead = new Promise(resolve => { globalThis.releaseSharingFirstRead = resolve; });
+ipcMain.handle = (channel, listener) => {
+  if (channel === "access:apply") return register(channel, () => {
+    globalThis.uiStatesSharingWrites++;
+    throw new Error("Listing must not change grants");
+  });
+  if (channel !== "access:load") return register(channel, listener);
+  return register(channel, async () => {
+    const request = ++reads;
+    if (request === 1) await firstRead;
+    else await new Promise(resolve => setTimeout(resolve, 900));
+    if (request === 1 || request === 4) throw new Error("private-path-and-token");
+    return { available: true, localReview: false, site: "https://sharing.test/", vault: true, grants: request === 2 ? [] : [{
+      id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
+      createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
+      item: { path: "welcome.md", label: "Welcome", folder: false, includeLater: false },
+    }] };
+  });
+};
+import(${JSON.stringify(main)});
+`);
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" }, { entrypoint });
   try {
-    await l.app.evaluate(({ ipcMain }) => {
-      let reads = 0;
-      Reflect.set(globalThis, "uiStatesSharingWrites", 0);
-      ipcMain.removeHandler("access:apply");
-      ipcMain.handle("access:apply", () => {
-        Reflect.set(globalThis, "uiStatesSharingWrites", Number(Reflect.get(globalThis, "uiStatesSharingWrites")) + 1);
-        throw new Error("Listing must not change grants");
-      });
-      ipcMain.removeHandler("access:load");
-      ipcMain.handle("access:load", async () => {
-        const request = ++reads;
-        await new Promise(resolve => setTimeout(resolve, 900));
-        if (request === 1 || request === 4) throw new Error("private-path-and-token");
-        return { available: true, localReview: false, site: "https://sharing.test/", vault: true, grants: request === 2 ? [] : [{
-          id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
-          createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
-          item: { path: "welcome.md", label: "Welcome", folder: false, includeLater: false },
-        }] };
-      });
-    });
     await l.page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
     const settings = l.page.getByRole("dialog", { name: "Settings", exact: true });
     await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
@@ -717,6 +725,11 @@ test("Sharing settings distinguish failed and filtered lists, retain rows and ro
     expect(await shapes.first().evaluate(el => getComputedStyle(el, "::after").animationName)).toBe("none");
     const empty = settings.getByText("Nothing shared yet", { exact: true });
     await expect(empty).toHaveCount(0);
+    await l.app.evaluate(() => {
+      const release: unknown = Reflect.get(globalThis, "releaseSharingFirstRead");
+      if (typeof release !== "function") throw new Error("Sharing fixture read is unavailable");
+      release();
+    });
     const error = settings.locator("[data-status-row=danger]");
     await expect(error).toContainText("Your notes and shares weren't changed.");
     await expect(error).not.toContainText("private-path-and-token");
@@ -762,6 +775,7 @@ test("Sharing settings distinguish failed and filtered lists, retain rows and ro
 
 test("Share item delays its own section, retains choices and history through failed reads and scoped Retry", async () => {
   const { dirs } = instance();
+  await configureSharing(dirs);
   const note = join(dirs.docs, "private", "notes", "welcome.md");
   const before = readFileSync(note, "utf8");
   writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: note }));
@@ -788,7 +802,7 @@ test("Share item delays its own section, retains choices and history through fai
         await new Promise(resolve => setTimeout(resolve, 1100));
         if ([1, 2, 4, 5].includes(request)) throw new Error("private-path-and-token");
         const listing = await original(event, ...args);
-        return { ...listing, available: true, localReview: false, site: "https://sharing.test/", grants: [{
+        return { ...listing, available: true, localReview: false, site: "https://sharing.test/", vault: true, grants: [{
           id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
           createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
           item: { path: "welcome.md", label: "Welcome", folder: false, includeLater: false },
@@ -810,10 +824,10 @@ test("Share item delays its own section, retains choices and history through fai
     const expiry = share.getByRole("radiogroup", { name: "Expires in", exact: true });
     await expiry.getByText("7 days", { exact: true }).click();
     const error = share.locator("[data-status-row=danger]");
-    await expect(error).toContainText("Sharing couldn't be loaded.");
+    const failure = "Sharing isn’t ready for this project. Your notes weren’t changed. Try again.";
+    await expect(error).toContainText(failure);
     await expect(shapes).toHaveCount(0);
     await expect(error).not.toContainText("private-path-and-token");
-    const failure = "Sharing couldn't be loaded. Check the project in Settings and try again.";
     await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(1);
     expect(await outcomes()).not.toContain("Didn't finish");
     await error.evaluate(el => Reflect.set(globalThis, "uiStatesRetainedShareError", el));
@@ -833,7 +847,7 @@ test("Share item delays its own section, retains choices and history through fai
     await open();
     await expect(history).toBeVisible();
     await expect(shapes).toHaveCount(0);
-    await expect(error).toContainText("Sharing couldn't be loaded.");
+    await expect(error).toContainText(failure);
     await expect.poll(async () => (await outcomes()).filter(text => text === failure)).toHaveLength(3);
     await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error.getByRole("button")).toHaveAttribute("aria-busy", "true");

@@ -6,7 +6,7 @@ import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { MessageCatalog } from "../../../packages/core/src/messages.ts";
 import { test, expect, type Page } from "./fixtures.ts";
 import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
-import { git, instance, write } from "./instance.ts";
+import { configureSharing, git, instance, write } from "./instance.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../../packages/views/messages/en.json"), "utf8")) as Record<string, string>;
@@ -301,6 +301,7 @@ for (const [id, outcome] of Object.entries(outcomes)) {
     const entry = CATALOG.find((e) => e.id === id);
     expect(entry, "each native proof belongs to the catalogue").toBeDefined();
     const inst = instance();
+    if (id === "note.share") await configureSharing(inst.dirs);
     const root = outcome.publicNote ? join(inst.dirs.docs, "notes") : join(inst.dirs.docs, "private", "notes");
     write(join(root, "welcome.md"), "# Welcome\n\n## Scope\n\nNative outcome proof.\n");
     write(join(inst.dirs.docs, "private", "notes", "archive", ".keep"), "");

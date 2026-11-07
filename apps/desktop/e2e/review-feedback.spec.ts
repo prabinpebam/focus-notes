@@ -9,7 +9,7 @@ import { makeFakes } from "../test/fakes/fakes.ts";
 import { pointerModality, scrollbarClearOfCorners, settled } from "./visual-quality.ts";
 import { LONG_NOTE } from "./surfaces.ts";
 import type { Locator } from "@playwright/test";
-import { configure, git, instance } from "./instance.ts";
+import { configure, configureSharing, git, instance } from "./instance.ts";
 
 for (const appearance of ["light", "dark"]) test(`Project outline is solid and 2 px without moving the writing surface in ${appearance}`, async () => {
   const dirs = tempDirs();
@@ -195,6 +195,7 @@ for (const appearance of ["light", "dark"]) test(`Files pin swaps in-place and p
 for (const appearance of ["light", "dark"]) test(`Close tooltip never changes dialog geometry in ${appearance}`, async () => {
   test.setTimeout(120_000);
   const { dirs, notesRemote } = instance();
+  await configureSharing(dirs);
   const note = join(dirs.docs, "private", "notes", "welcome.md");
   const text = "# Close hover\n\nKeep these exact bytes.\n";
   writeFileSync(note, text);
@@ -575,7 +576,7 @@ test("menu explanations are accessible descriptions and hover or focus tooltips 
       return { inline: popover.style.zIndex, computed: getComputedStyle(popover).zIndex, token: getComputedStyle(document.documentElement).getPropertyValue("--fn-layer-popover").trim() };
     })).toEqual({ inline: "", computed: "8", token: "8" });
     const item = l.page.getByRole("menuitem", { name: "Publish…", exact: true });
-    const reason = "Publishing is local only in this preview.";
+    const reason = "Publishing to GitHub isn’t available yet. Nothing will be published.";
     const tip = l.page.getByRole("tooltip", { name: reason, exact: true });
     await expect(item).toHaveAccessibleDescription(reason);
     await expect(item).toHaveAttribute("aria-disabled", "true");

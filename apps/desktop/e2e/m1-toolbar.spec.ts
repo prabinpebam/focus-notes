@@ -7,6 +7,7 @@ import { test, expect, type Page } from "./fixtures.ts";
 import { readdirSync } from "node:fs";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
+import { configureSharing, instance } from "./instance.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 /** Every animation and transition has finished: a panel has opened or closed all the way. */
@@ -202,7 +203,9 @@ test("UI-03: click, Enter, Space, Mod+. and F10 open the toolbar; Esc and a clic
 });
 
 test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable and Help opens its documentation home", async () => {
-  const l = await launch(tempDirs());
+  const { dirs } = instance();
+  await configureSharing(dirs);
+  const l = await launch(dirs);
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toBeFocused();
