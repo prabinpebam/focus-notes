@@ -23,7 +23,7 @@ const catalog = new MessageCatalog("en", {
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
   "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline · will back up when you're back", "save.state.error": "Couldn't back up · Try again",
   "save.backup.unknown": "No backup recorded in this session", "save.backup.last": "Last backup: {time}",
-  "save.backup.progress": "Backing up your changes to GitHub", "save.backup.current": "No changes waiting for backup", "save.backup.local": "Connect a GitHub workspace to back up your notes",
+  "save.backup.progress": "Backing up your changes to GitHub", "save.backup.current": "No changes waiting for backup", "save.backup.local": "Connect a GitHub workspace to back up your notes", "save.backup.none": "Not backed up to GitHub",
   "sync.problem.offline": "Couldn't back up: you're offline.", "sync.problem.failed": "Couldn't back up.",
 });
 
@@ -71,6 +71,18 @@ describe("a repository's backup state", () => {
     expect(w.canBackUp).toBe(true);
     expect(repoBackupView("public", undefined, GIT, catalog).visible).toBe(false);
     expect(repoBackupView("public", { report: report("public") }, NO_SYNC, catalog).visible).toBe(false);
+  });
+  it("D-pending: a repository with no remote is saved on this computer, never backed up, and offers no backup", () => {
+    const at = new Date(2026, 9, 18, 10, 36).getTime();
+    const local = { report: report("public", { remote: false }), backedUpAt: at };
+    expect(repoStateOf(local, GIT)).toBe("savedLocal");
+    expect(repoStateOf({ ...local, problem: "failed" }, GIT)).toBe("error");
+    const v = repoBackupView("public", local, GIT, catalog);
+    expect(v.label).toBe("Public notes backup: Saved on this computer");
+    expect(v.icon).not.toBe("cloudCheck");
+    expect(v.canBackUp).toBe(false);
+    expect(v.waitingText).toBe("Connect a GitHub workspace to back up your notes");
+    expect(JSON.stringify(v)).not.toMatch(/Backed up|Last backup/);
   });
 });
 

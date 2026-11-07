@@ -83,6 +83,28 @@ describe("EDT-11: save and sync", () => {
     expect(t.save()).toMatchObject({ state: "savedLocal", backupTime: "No backup recorded in this session" });
   });
 
+  it("D-pending: a project with Git but no remote shows Saved on this computer, never Backed up or the cloud check", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    t.report({ git: true, state: "syncing", waiting: 1, remote: false });
+    t.report({ git: true, state: "idle", waiting: 0, remote: false });
+    expect(t.app.store.state.sync.backedUpAt).toBeUndefined();
+    t.willReturn({ git: true, state: "idle", waiting: 0, remote: false });
+    await t.app.commands.run("note.save");
+    expect(t.app.store.state.sync.backedUpAt).toBeUndefined();
+    expect(t.app.store.state.sync.asked).toBeUndefined();
+    const card = t.save() as ReturnType<typeof t.save> & { icon: string; tone: string; backupReason: string };
+    expect(card).toMatchObject({ state: "savedLocal", label: "Saved on this computer", canBackUp: false, icon: "hardDrive", tone: "neutral" });
+    expect(card.backupTime).toBe(en["save.backup.none"]);
+    expect(card.waitingText).toBe(messages["save.backup.local"]);
+    expect(card.backupReason).toBe(messages["save.backup.local"]);
+    expect(JSON.stringify(card)).not.toMatch(/Backed up|Last backup|cloudCheck/);
+    // Linked again (a remote added): backups count from then on.
+    t.report({ git: true, state: "idle", waiting: 0, remote: true });
+    expect(t.save()).toMatchObject({ state: "synced", canBackUp: true });
+  });
+
   it("the details card distinguishes unknown backup time, waiting changes, retries in progress and a completed backup", async () => {
     const t = setup();
     await t.app.start();

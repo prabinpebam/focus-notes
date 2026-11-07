@@ -269,7 +269,7 @@ export class GitSync {
         const d = await this.#git(repo, ["diff", "--name-only", "--no-renames", "-z", `${st.upstream}...HEAD`]);
         if (d.code === 0) for (const p of d.stdout.split("\0")) if (p) add(p);
       }
-      out.push({ repo: id, ...(await this.#nameOf(repo)), folders: folders.size, notes: notes.size, other: other.size, commits });
+      out.push({ repo: id, ...(await this.#nameOf(repo)), folders: folders.size, notes: notes.size, other: other.size, commits, remote: Boolean(st.upstream) });
     }
     return out;
   }
@@ -719,7 +719,10 @@ export class GitSync {
   #emit(patch: Partial<SyncReport>): void {
     const next: SyncReport = { ...this.#report, ...patch };
     if (next.state !== "problem") delete next.problem;
-    const same = next.state === this.#report.state && next.problem === this.#report.problem && next.waiting === this.#report.waiting;
+    // A branch that tracks no remote never pushes: its commits aren't a backup (D-pending).
+    const tracked = this.notes.last;
+    if (tracked) next.remote = Boolean(tracked.upstream);
+    const same = next.state === this.#report.state && next.problem === this.#report.problem && next.waiting === this.#report.waiting && next.remote === this.#report.remote;
     this.#report = next;
     if (same) return;
     try {

@@ -1,5 +1,11 @@
 # Decisions
 
+## D-pending: a project without a remote is never "backed up", and is deletable
+
+**Decided (owner's report, 7 November 2026 at 17:44; orchestrator to number).** (1) A project whose branch tracks no remote commits each save as history, but nothing calls that a backup: the shell reports `remote: false`, the save state stays *Saved on this computer* (hard-drive mark), the card says "Not backed up to GitHub", and *Backup to GitHub* is unavailable. (2) Delete project accepts any project that is its own repository's top, with or without `.focus-notes/workspace.json`; Local notes stays refused, and the main process checks the folder again before it moves. (3) New project's first private row says **Kept on this computer, not on GitHub yet**, since creating a repository on the real account isn't wired (only the loopback fake of D-315). Wiring it waits for the owner.
+
+**Affects:** [Feedback → Save and sync status](../design/components/feedback-and-dialogs.md#save-and-sync-status), [Projects → Creating and closing](../experience/projects.md#creating-and-closing), [Project model → Deleting a project](../experience/project-model.md#deleting-a-project), EDT-11, UI-12, PRJ-23.
+
 ## D-374: wizard actions and proximity belong to the dialog's layouts
 
 **Approved by the owner, 7 November 2026 at 11:24.** No Cancel beside a close ×. Back is secondary, absent on the first step; Next or Create project is primary. These are the only two footer button types, right-aligned at the bottom, outside the scrolling body. The close control uses the existing dismissal command, preserving cancellation of tracked creation rather than silently removing that action.

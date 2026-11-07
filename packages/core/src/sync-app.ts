@@ -23,6 +23,11 @@ export interface SyncState {
   asked?: "syncing" | "done";
   /** The person changed a note since the last backup: written here, not backed up yet. */
   edited?: boolean;
+  /**
+   * False when the project's repository has no remote (a project kept on this computer): commits are
+   * history here, never a backup, so nothing may say "Backed up" (D-pending). Absent means unknown.
+   */
+  remote?: boolean;
 }
 export const NO_SYNC: SyncState = { git: false };
 
@@ -34,6 +39,8 @@ export type SaveStateKind = "savedLocal" | "pending" | "syncing" | "synced" | "o
 /** Where saving stands, from the note's own save and the shell's report. */
 export function saveStateOf(sync: SyncState, noteSaving: boolean): SaveStateKind {
   if (!sync.git) return "savedLocal";
+  // Nowhere to back up to: saved here is the whole truth, unless committing here failed.
+  if (sync.remote === false) return sync.problem ? "error" : "savedLocal";
   if (sync.syncing || sync.asked === "syncing") return "syncing";
   if (sync.problem === "offline") return "offline";
   if (sync.problem) return "error";
@@ -78,10 +85,16 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     // A problem stays shown until a sync ends without one.
     const keep = r.state === "syncing" && before;
     const syncing = r.state === "syncing" && waiting > 0;
-    const backedUp = r.state === "idle" && waiting === 0 && r.git && (was.syncing || Boolean(was.waiting) || Boolean(before));
+    const remote = r.remote;
+    const backedUp = r.state === "idle" && waiting === 0 && r.git && remote !== false && (was.syncing || Boolean(was.waiting) || Boolean(before));
     const nextProblem = keep ? before : problem;
-    if (was.git === r.git && before === nextProblem && (was.waiting ?? 0) === waiting && Boolean(was.syncing) === syncing && !backedUp) return;
-    set({ git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, ...(backedUp ? { backedUpAt: now(), edited: undefined } : {}) });
+    if (was.git === r.git && before === nextProblem && (was.waiting ?? 0) === waiting && Boolean(was.syncing) === syncing && was.remote === remote && !backedUp) return;
+    set({
+      git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, remote,
+      ...(backedUp ? { backedUpAt: now(), edited: undefined } : {}),
+      // A time recorded before the remote went away isn't a backup of what's here now.
+      ...(remote === false ? { backedUpAt: undefined } : {}),
+    });
     // Problems show when they first appear (EDT-11).
     // A conflict offers the resolver instead of Retry (Feedback → Save and sync status).
     if (problem && problem !== before && !quiet && !asked) toast(describe(problem), {
@@ -122,8 +135,9 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
         set({ asked: undefined });
         throw new SyncFailed(describe(r.problem ?? "failed"), r.problem ?? "failed");
       }
-      if (!r.git) {
-        set({ asked: undefined });
+      // Committed here with nowhere to push: never announce a backup (D-pending).
+      if (!r.git || r.remote === false) {
+        set({ asked: undefined, ...(r.git ? { edited: undefined } : {}) });
         return;
       }
       // The label says it's done for a moment, and screen readers hear it once (D-132).

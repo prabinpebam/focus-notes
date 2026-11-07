@@ -394,6 +394,11 @@ export interface SyncReport {
   problem?: SyncProblem;
   /** Changes not yet on GitHub: notes not committed, and commits not pushed. */
   waiting: number;
+  /**
+   * False when the notes repository's branch tracks no remote (a project kept on this computer, D-pending):
+   * its commits are history here, never a backup, so nothing may say "Backed up". Absent: not known.
+   */
+  remote?: boolean;
 }
 /**
  * Save and sync (Desktop and Git → Save and sync, D-23). The shell commits on its own after 60 s
@@ -440,6 +445,8 @@ export interface RepoBackupReport {
   other: number;
   /** Commits made here and not pushed yet. */
   commits: number;
+  /** False when the repository's branch tracks no remote: nothing here can be backed up (D-pending). */
+  remote?: boolean;
 }
 
 /** A note changed both on this computer and elsewhere since they last synced (FIL-12). */

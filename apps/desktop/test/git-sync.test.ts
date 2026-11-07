@@ -350,6 +350,29 @@ describe("D-157: never pushes notes to a template repository", () => {
 });
 
 describe("Repositories, the lock, the status cache, and credentials", () => {
+  it("D-pending: a project kept on this computer (no remote) commits here but never reports a backup", async () => {
+    const ws = mkdtempSync(join(tmpdir(), "fn-offline-"));
+    git(ws, "init", "-q", "-b", "main");
+    configure(ws);
+    mkdirSync(join(ws, "notes"));
+    git(ws, "commit", "-q", "--allow-empty", "-m", "Start the project");
+    const s = await open(ws);
+    expect(s.report.remote, "nowhere to back up to").toBe(false);
+    const note = join(ws, "untitled.md");
+    writeFileSync(note, "# Untitled\n");
+    s.written(note);
+    const r = await s.request("save");
+    expect(r.problem).toBeUndefined();
+    expect(r.waiting).toBe(0);
+    expect(r.remote, "a local commit is history here, never a backup").toBe(false);
+    expect(subject(ws)).toBe("Create untitled.md");
+    expect((await s.repos()).find((x) => x.repo === "public")?.remote).toBe(false);
+
+    const linked = await open(instance().ws);
+    expect(linked.report.remote).toBe(true);
+    expect((await linked.repos()).every((x) => x.remote === true)).toBe(true);
+  });
+
   it("isn't a repository unless the workspace folder is one (saving stays local)", async () => {
     const plain = mkdtempSync(join(tmpdir(), "fn-plain-"));
     expect(await GitSync.open({ folder: plain })).toBeUndefined();

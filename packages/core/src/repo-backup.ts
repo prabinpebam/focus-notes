@@ -45,6 +45,8 @@ export function waitingText(r: RepoBackupReport | undefined, catalog: MessageCat
 /** The section's icon, with the per-note icon's looks (D-132). */
 export function repoStateOf(entry: RepoBackupEntry | undefined, sync: SyncState): SaveStateKind {
   if (!sync.git || !entry?.report) return "savedLocal";
+  // No remote: its commits stay here, so it's never backed up, only saved (D-pending).
+  if (entry.report.remote === false) return entry.problem ? "error" : "savedLocal";
   const waiting = waitingOf(entry.report);
   if (entry.backingUp || (sync.syncing && waiting > 0)) return "syncing";
   const problem = entry.problem ?? (waiting > 0 ? sync.problem : undefined);
@@ -64,6 +66,7 @@ export function repoBackupView(repo: RepoId, entry: RepoBackupEntry | undefined,
   const stateText = state === "synced" ? (at !== undefined ? catalog.format("save.state.synced", { time: timeOfDay.format(at) }) : catalog.format("save.state.syncedNow"))
     : catalog.format(`save.state.${state}`);
   const backingUp = state === "syncing";
+  const noRemote = entry?.report?.remote === false;
   return {
     visible: sync.git && Boolean(entry?.report),
     state, name, stateText,
@@ -71,11 +74,12 @@ export function repoBackupView(repo: RepoId, entry: RepoBackupEntry | undefined,
     repository: entry?.report?.name ?? "",
     hasRepository: Boolean(entry?.report?.name),
     backingUp,
-    canBackUp: sync.git && !backingUp && Boolean(entry?.report),
-    backupTime: at === undefined ? catalog.format("save.backup.unknown") : catalog.format("save.backup.last", { time: backupDate.format(at) }),
-    waitingText: backingUp ? catalog.format("save.backup.progress") : waitingText(entry?.report, catalog),
+    canBackUp: sync.git && !noRemote && !backingUp && Boolean(entry?.report),
+    backupTime: noRemote ? catalog.format("save.backup.none")
+      : at === undefined ? catalog.format("save.backup.unknown") : catalog.format("save.backup.last", { time: backupDate.format(at) }),
+    waitingText: noRemote ? catalog.format("save.backup.local") : backingUp ? catalog.format("save.backup.progress") : waitingText(entry?.report, catalog),
     backupReason: catalog.format(backingUp ? "save.backup.progress" : "save.backup.local"),
-    icon: state === "error" ? "warning" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
+    icon: state === "error" ? "warning" : noRemote ? "hardDrive" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
     tone: state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",
   };
 }

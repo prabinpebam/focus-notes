@@ -733,7 +733,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // A new public note that waits is asked about; the rest is backed up as usual (D-158).
       await heldNotes.backingUp(store.state.note.path);
       await sync.saveNow();
-    }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
+    }, store.state.sync.git && store.state.sync.remote !== false ? "task.synced" : "task.saved")).catch((e: unknown) => {
       const conflict = e instanceof SyncFailed && e.problem === "conflict";
       const special = e instanceof SyncFailed ? syncProblemAction(e.problem, catalog) : undefined;
       const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : special ?? { command: "note.save", label: catalog.format("toast.retry") };
@@ -1707,16 +1707,20 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const folder = dirOf(s.note.path ?? "");
       const location = /^[A-Za-z]:[\\/]|^\//.test(folder) ? folder : joinPath(s.workspace.folder ?? "", folder);
       const backupVisible = !local && Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready";
+      // A repository with no remote keeps history here only: never a backup time or a cloud (D-pending).
+      const noRemote = s.sync.git && s.sync.remote === false;
       return {
         visible: local || backupVisible, backupVisible, local, location,
         locationLabel: catalog.format("local.location.label", { location, action: catalog.format(`command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`) }),
         interactive: Boolean(bridge.sync), state, label, text,
-        backingUp, canBackUp: s.sync.git && !backingUp,
-        backupTime: s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
-          : catalog.format("save.backup.last", { time: backupDate.format(s.sync.backedUpAt) }),
-        waitingText: catalog.format(backingUp ? "save.backup.progress" : s.sync.waiting ? "save.backup.waiting" : "save.backup.current", { count: s.sync.waiting ?? 0 }),
+        backingUp, canBackUp: s.sync.git && !noRemote && !backingUp,
+        backupTime: noRemote ? catalog.format("save.backup.none")
+          : s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
+            : catalog.format("save.backup.last", { time: backupDate.format(s.sync.backedUpAt) }),
+        waitingText: noRemote ? catalog.format("save.backup.local")
+          : catalog.format(backingUp ? "save.backup.progress" : s.sync.waiting ? "save.backup.waiting" : "save.backup.current", { count: s.sync.waiting ?? 0 }),
         backupReason: catalog.format(backingUp ? "save.backup.progress" : "save.backup.local"),
-        icon: state === "error" ? "warning" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
+        icon: state === "error" ? "warning" : noRemote ? "hardDrive" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
         tone: state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",
       };
     },
