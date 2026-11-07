@@ -589,6 +589,7 @@ test("menu explanations are accessible descriptions and hover or focus tooltips 
     // Keyboard focus shows it at once, painted over the menu, and moving on hides it.
     await item.focus();
     await expect(tip).toBeVisible();
+    expect(await tip.evaluate(el => Boolean(el.closest('[data-surface="popover"]')))).toBe(false);
     expect(await paintedOnTop(tip)).toEqual({ opacity: "1", covered: [] });
     await l.page.keyboard.press("ArrowDown");
     await expect(tip).toHaveCount(0);

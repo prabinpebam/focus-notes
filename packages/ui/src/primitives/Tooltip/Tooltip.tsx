@@ -32,6 +32,14 @@ export function landmarkOf(el: Element | null): HTMLElement | undefined {
   return found;
 }
 
+export function tooltipContainer(trigger: HTMLElement | null, overlay?: Element | null): Element {
+  const popover = trigger?.closest('[data-surface="popover"]') ?? overlay?.closest('[data-surface="popover"]');
+  const outside = popover ? trigger?.closest("[data-app-root]") ?? overlay?.closest("[data-app-root]") ?? document.body : overlay;
+  const landmark = landmarkOf(trigger);
+  const outerLandmark = landmark?.closest('[data-surface="popover"]') ? undefined : landmark;
+  return trigger?.closest("[data-dialog-modal]") ? outside ?? outerLandmark ?? document.body : outerLandmark ?? outside ?? document.body;
+}
+
 /**
  * Whether a control is there to be named: a tooltip never names one that's gone (it would float on
  * its own, in a corner). Fading in (the toolbar opening, its focus already inside) counts as there.
@@ -76,9 +84,8 @@ function PositionedBubble({ placement, children, open, triggerRef, tooltipProps,
       return;
     }
     const overlay = portal.getContainer?.();
-    const landmark = landmarkOf(trigger);
     // Dialog tooltips stay outside the modal's sizing and scrolling box.
-    setContainer(trigger.closest("[data-dialog-modal]") ? overlay ?? landmark ?? document.body : landmark ?? overlay ?? document.body);
+    setContainer(tooltipContainer(trigger, overlay));
     return () => {
       setContainer(null);
       setPlaced(false);

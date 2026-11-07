@@ -18,6 +18,8 @@ import { conflictFlow, firstRunFlow } from "./flows.ts";
 import { EXTRA_BASELINES, FLOW_BASELINES, SURFACE_BASELINES, candidatesDir, isApproved, type Baseline } from "./baselines.ts";
 
 test.skip(process.env.FOCUS_NOTES_CAPTURE_BASELINES !== "1", "Opt in with FOCUS_NOTES_CAPTURE_BASELINES=1");
+const selectedSurfaces = process.env.FOCUS_NOTES_BASELINE_SURFACES?.split(",");
+if (selectedSurfaces?.some(name => !SURFACES.some(surface => surface.name === name))) throw new Error("Unknown baseline surface selection");
 
 type Theme = "light" | "dark";
 
@@ -43,11 +45,13 @@ for (const theme of ["light", "dark"] as const) {
     await scheme(page, theme);
     await reset(page);
     // Focus mode on: everything but the line being written dims.
-    await page.keyboard.press("F8");
-    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeDefined();
-    await capture(page, EXTRA_BASELINES.focusMode, theme);
-    await page.keyboard.press("F8");
-    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
+    if (!selectedSurfaces) {
+      await page.keyboard.press("F8");
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeDefined();
+      await capture(page, EXTRA_BASELINES.focusMode, theme);
+      await page.keyboard.press("F8");
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
+    }
     // The toast's paste changes the note and its toast stays a while, so it goes last: every other
     // surface is captured on the note as written.
     const selected = SURFACES.filter((x) => !process.env.VQ_ONLY || process.env.VQ_ONLY.split(",").includes(x.name));
