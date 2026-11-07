@@ -120,7 +120,7 @@ export interface AccountState {
 }
 export const NO_ACCOUNT: AccountState = { login: "" };
 
-interface S { firstRun: FirstRunState; account: AccountState; setup: SetupState; sync: { git: boolean; problem?: string }; appearance: { mode: "system" | "light" | "dark"; contentFont: string }; focusMode: boolean; tasks: TaskView[] }
+interface S { firstRun: FirstRunState; account: AccountState; setup: SetupState; workspace: { folder?: string }; sync: { git: boolean; problem?: string }; appearance: { mode: "system" | "light" | "dark"; contentFont: string }; focusMode: boolean; tasks: TaskView[] }
 
 interface Ctx<St extends S> {
   store: Store<St>;
@@ -569,16 +569,22 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (s.firstRun.busy || (!workspaceMade(s.setup.report) && !s.firstRun.workspace.result?.ok)) return;
     // The window starts again in the workspace: at Ready, or writing when Your notes was shown alone.
     const alone = s.firstRun.scope === "workspace";
-    if (alone) {
+    const current = () => state().active && state().scope === s.firstRun.scope && state().step === s.firstRun.step
+      && state().workspace.result === s.firstRun.workspace.result && store.state.workspace.folder === s.workspace.folder;
+    if (alone && s.firstRun.workspace.mode !== "local") {
       const account = await busy("account", () => fr!.account());
+      if (!current()) return;
       applyAccount(account);
       const writer = account?.account;
-      if (!writer || account.signedOut || !await busy("identity", () => fr!.setIdentity(notesIdentity(writer), "workspace"))) {
+      const prepared = writer && !account.signedOut && await busy("identity", () => fr!.setIdentity(notesIdentity(writer), "workspace"));
+      if (!current()) return;
+      if (!prepared) {
         setWs({ error: "firstRun.workspace.problem.failed" });
         return;
       }
     }
     await persistAppState({ firstRun: alone ? "done" : "ready" });
+    if (alone && !current()) return;
     const r = await busy("open", () => fr!.openWorkspace());
     if (!r?.ok) {
       await persistAppState({ firstRun: alone ? "done" : "notes" });

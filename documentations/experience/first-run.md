@@ -108,6 +108,7 @@ The shell refuses to open the `git`, `gcm` and `gh` pages in the Store package, 
 Continuing sets the name and email Git puts on every saved change (FRE-05) without a step: the account's name and GitHub's private `ID+login@users.noreply.github.com` address, for the notes only (the workspace's own settings and `private/`'s; setup's own commits use them before that). Git's global settings are never changed, so other projects keep theirs.
 
 Opening another project from GitHub prepares the same account identity for that project's two repositories before switching, even though this route skips Connect. A failed identity preparation reports the failed open and keeps the current project; cancelling before opening changes no identity.
+After each asynchronous preparation, the request, current project root and owning first-run step must still match before switching. A superseded result cannot open another project or overwrite its error. Opening a local project skips account and identity preparation, so offline local opens need neither sign-in nor an invented Git identity.
 
 ### Where the sign-in lives
 

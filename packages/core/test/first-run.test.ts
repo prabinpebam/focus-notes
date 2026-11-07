@@ -706,6 +706,51 @@ describe("FRE-06, FRE-08: Your notes", () => {
     await t.run("firstRun.back");
     expect(t.app.store.state.note.path).toBe("/n/a.md");
   });
+  for (const wait of ["account", "identity"] as const) for (const changed of ["root", "request"] as const) it(`FRE-05: a late ${wait} result cannot switch after the ${changed} changes`, async () => {
+    const t = shell({ state: { version: 1, firstRun: "done", lastNotePath: "/n/a.md" }, account: { account: ADA, gcm: true, gh: false } });
+    await t.app.start();
+    await settle();
+    await settle();
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    let resume!: () => void;
+    const held = new Promise<void>(resolve => { resume = resolve; });
+    if (wait === "account") t.bridge.firstRun!.account = async () => {
+      await held;
+      return { account: ADA, gcm: true, gh: false };
+    };
+    else t.bridge.firstRun!.setIdentity = async () => { await held; return true; };
+    const opening = t.run("firstRun.clone", { id: "ada/notes" });
+    await settle();
+    expect(t.app.store.state.firstRun.wait).toBe(wait);
+    const previousRoot = t.app.store.state.workspace.folder;
+    const previousRequest = t.app.store.state.firstRun.workspace.result;
+    t.app.store.update(s => ({
+      ...s,
+      ...(changed === "root" ? { workspace: { ...s.workspace, folder: "/newer-project" } }
+        : { firstRun: { ...s.firstRun, workspace: { ...s.firstRun.workspace, result: { ok: true, folder: "/newer-project" } } } }),
+    }));
+    resume();
+    await opening;
+    expect(t.calls).not.toContain("openWorkspace");
+    expect(t.app.store.state.workspace.folder).toBe(changed === "root" ? "/newer-project" : previousRoot);
+    expect(t.app.store.state.firstRun.workspace.result).toEqual(changed === "request" ? { ok: true, folder: "/newer-project" } : previousRequest);
+    expect(t.app.store.state.firstRun.workspace.error).toBe("");
+  });
+  it("FRE-05: opening a local project offline does not request account identity", async () => {
+    const t = shell({ state: { version: 1, firstRun: "done", lastNotePath: "/n/a.md" }, account: { account: ADA, gcm: true, gh: false } });
+    await t.app.start();
+    await settle();
+    await settle();
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    await t.run("firstRun.setMode", { value: "local" });
+    t.bridge.firstRun!.account = async () => { throw new Error("offline"); };
+    t.bridge.firstRun!.openFolder = async () => ({ ok: true, folder: "/offline-project" });
+    await t.run("firstRun.openFolder");
+    expect(t.calls).toContain("openWorkspace");
+    expect(t.calls.filter(call => call.startsWith("identity:"))).toEqual([]);
+  });
 });
 
 describe("FRE-01: Ready", () => {
