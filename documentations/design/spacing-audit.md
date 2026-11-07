@@ -15,6 +15,8 @@
 
 ## How Focus Notes spaces today
 
+The 7 November Find audit traced the reported defects to the view's enclosing `Inline`, not to the Switch primitive: centring whole controls aligned single-line switches against the two-line disabled selection control, and centring the chevron against every row moved it on expansion. Find now owns explicit field, top-aligned options and replace rows; previous/next and × end the field row. Geometry and minimum-window journeys enforce stable boxes and containment. No other writing-window surface changes.
+
 The 6 November Switch conversion adds a responsive toolbar correction: MorphPanel bounds its content to the viewport using component tokens, ToolbarRow uses `inlineItem` between controls and the panel owns one `insetSm` inset. Find's search group uses `inlineGroup`, with `inlineItem` between its options. Wrapped toolbar rows may have a ragged end; the visual-quality probe measures their full layout frame for the surface inset and still measures every control for clipping and containment. A deliberately missing end inset remains a failing fixture. The app frame itself uses non-scrollable clipping, preventing focus on small-dialog controls from scrolling the entire window while preserving the note and dialog's own scroll regions.
 
 | Layer | What it has | What the skill asks |

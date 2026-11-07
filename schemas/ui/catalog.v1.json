@@ -4837,6 +4837,11 @@
           "kind": "boolean",
           "default": false
         },
+        "wrapGap": {
+          "kind": "token",
+          "group": "space",
+          "description": "Space between wrapped lines; defaults to gap when absent. Keep wrapped items closer than the next section."
+        },
         "grow": {
           "kind": "boolean",
           "default": false
@@ -4856,6 +4861,7 @@
         "pattern": "none"
       },
       "fixtures": [
+        "wrapped options",
         "related action and explanation",
         "gap none",
         "gap stackPair",

@@ -80,7 +80,10 @@ function rowsOf(r: FindResults | undefined): { id: string; note: FindNote; match
 export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): void } {
   const { store, commands, viewModels, catalog, bridge } = ctx;
   const state = () => store.state.ui.findAll;
-  const set = (patch: Partial<FindAllState>) => store.update((s) => ({ ...s, ui: { ...s.ui, findAll: { ...s.ui.findAll, ...patch } } }));
+  const set = (patch: Partial<FindAllState>) => store.update((s) => ({ ...s, ui: {
+    ...s.ui, findAll: { ...s.ui.findAll, ...patch },
+    ...(patch.open ? { find: { ...s.ui.find, open: false, notice: "", inSelection: false, scoped: false } } : {}),
+  } }));
   let service: SearchService | undefined;
   let asked = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;

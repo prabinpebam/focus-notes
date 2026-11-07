@@ -12438,6 +12438,11 @@
           "kind": "boolean",
           "default": false
         },
+        "wrapGap": {
+          "kind": "token",
+          "group": "space",
+          "description": "Space between wrapped lines; defaults to gap when absent. Keep wrapped items closer than the next section."
+        },
         "grow": {
           "kind": "boolean",
           "default": false
@@ -12457,6 +12462,49 @@
         "pattern": "none"
       },
       "fixtures": [
+        {
+          "name": "wrapped options",
+          "props": {
+            "gap": "inlineGroup",
+            "wrap": true,
+            "wrapGap": "stackItem",
+            "align": "start"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "related action and explanation",
           "props": {

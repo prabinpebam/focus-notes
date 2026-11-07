@@ -35,7 +35,9 @@ GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/r
 
 **Decided (owner correction, 7 November 2026, 23:31); all-notes candidate pending owner approval.** One field row holds the stable centred chevron, field and count, previous/next, then ×. Options align at the top even when a label has extra lines. Only one Find surface is open at a time, while both the in-note and all-notes queries are kept. Find in all notes uses the familiar in-note layout with only a results area added; that candidate requires the owner's approval.
 
-**Affects:** FND-01 / WP-1.10, FND-04 / WP-4.3, [DoD backlog](definition-of-done.md#dod-backlog). W-find owns implementation; this decision records the correction, not acceptance of the candidate.
+**Options gap > Switch pair gap (coordinator clarification).** Keep each Switch's track-to-label gap at 8 px and use `inlineGroup` (16 px) between options. Wrapped options use `stackItem`, closer than the stack-token separation above. Never suppress the spacing probe's grouping finding or shrink the pairs to pass it. Opening an all-notes match intentionally transfers that match's query/options into the note's Find. No landing or tests of the familiar all-notes candidate before owner approval; nothing else is added to the writing window.
+
+**Affects:** FND-01 / WP-1.10, FND-04 / WP-4.3, [DoD backlog](definition-of-done.md#dod-backlog), [Find and replace](../experience/find-and-replace.md), [spacing audit](../design/spacing-audit.md), and their geometry/exclusivity journeys. W-find owns implementation; this decision records the correction, not acceptance of the candidate.
 
 ## D-378: a project always has Git; GitHub is optional
 

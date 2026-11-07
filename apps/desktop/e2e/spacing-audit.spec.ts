@@ -40,7 +40,7 @@ const ON = process.env.SPACING_AUDIT === "1";
 const CORE = ["canvas", "trigger toolbar", "more menu", "find and replace", "cheat sheet", "files", "spotlight", "spotlight commands", "settings appearance", "slash menu"];
 const OUT = process.env.SPACING_AUDIT_OUT ?? resolve("../../test-results/spacing-audit");
 const PROBE = process.env.SPACING_PROBE ?? resolve("../../agentic-craft/tools/spacing-probe.mjs");
-const ROOT = "body";
+const ROOT = process.env.SPACING_ROOT ?? "body";
 // Markup the system didn't write follows the prose rules, not the component rules.
 const IGNORE = '[data-editor], [class*="prose"]';
 
@@ -218,8 +218,8 @@ for (const { name: sizeName, size } of SIZES) {
         await reset(page).catch(() => {});
       }
       // Everything the More menu opens (Share, Theme, Customize toolbar, New project, Help…).
-      const more = ON ? await moreItems(page) : [];
-      if (ON) expect(more.length, "the More menu lists the surfaces it opens").toBeGreaterThan(0);
+      const more = ON && !process.env.VQ_ONLY ? await moreItems(page) : [];
+      if (ON && !process.env.VQ_ONLY) expect(more.length, "the More menu lists the surfaces it opens").toBeGreaterThan(0);
       for (const item of more) {
         console.log(`[spacing] more item: ${item}`);
         // Items that open the system's own dialogs (a file picker, printing) are outside the app's design system.
@@ -238,7 +238,8 @@ for (const { name: sizeName, size } of SIZES) {
       // 200 % text and WCAG 1.4.12 text spacing on the plain canvas and Settings: only losses count.
       await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
       await page.evaluate(() => { const s = new CSSStyleSheet(); s.replaceSync("* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-block-end: 2em !important; }"); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; });
-      for (const [label, open] of [["canvas", async () => {}], ["settings", async () => { await page.keyboard.press(`${mod}+,`); await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible(); }]] as const) {
+      const largeTextSurfaces = process.env.VQ_ONLY ? [] : [["canvas", async () => {}], ["settings", async () => { await page.keyboard.press(`${mod}+,`); await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible(); }]] as const;
+      for (const [label, open] of largeTextSurfaces) {
         try {
           await open();
           await geometrySettled(page);

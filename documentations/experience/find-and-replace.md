@@ -18,7 +18,11 @@ Find and replace text in the open note, or across every note in the workspace. I
 | **Navigate** | <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd>, <kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> (Apple), <kbd>F3</kbd> / <kbd>Shift+F3</kbd> (Windows). Searching wraps around the end of the note, with a short "Wrapped to top" notice. |
 | **Close** | <kbd>Esc</kbd>. The caret goes to the current match with it selected, so typing replaces it (VS Code behavior). |
 
-**Layout (D-111).** The bar is one frosted surface with uniform 8 px padding. On the start edge, the chevron that shows and hides replace spans both rows. The find row has three groups, 16 px apart: the **search group** (the find field, the count, and previous and next, 8 px apart, with previous and next 4 px apart as a pair), the **options** (match case, whole word, regular expression, 4 px apart), and **close** at the end. The replace row lines up under the find row: the replace field, 8 px from **Replace** and **Replace all**. Every control in the bar is 32 px tall, so the fields, buttons, and text share a center line. The fields have no clear button of their own (<kbd>Esc</kbd> clears them, and the bar has its close): the bar has one ×. The fields start at 200 px and give up the room first as the window narrows, down to 96 px, so the bar fits at the smallest window (480 px).
+**Layout (D-111, D-395; owner correction, 7 November).** The bar is one frosted surface with one layout-owned `insetMd` content inset. Its first row is the chevron, find field, count, previous/next pair, and × at the end. The chevron shares the field's centre line and stays in the same box when replace expands or collapses, on hover and on focus. The options occupy their own row below, aligned at the top of each Switch's control/label line: help text stays below its own label, never vertically centring the other switches against that taller control. The replace row follows below. Section separation uses `stackSection`; options use `inlineGroup` (16 px), larger than the Switch's own track-to-label gap (8 px). Wrapped option lines use `stackItem` (8 px), closer than the section above. At compact widths the existing Search options popover moves below the field row, leaving both navigation arrows and × exposed. In a short window the stack uses its `shortGap` token, keeping the current match on screen. The popover is anchored beside its trigger so all four controls fit. The field gives up room first, down to its token-defined minimum. Every binary option is a Switch; the bar has one × and no field clear button. The all-notes sheet likewise keeps × on its field row and top-aligns its Switch options; its heading/results structure is unchanged in this defect slice.
+
+**One Find surface at a time.** Opening Find in the note (including Replace and next/previous shortcuts) closes Find in all notes in the same state update. Opening Find in all notes closes the note's Find bar and releases its selection scope. Each surface remembers its own query and matching options; a match chosen from all-notes results still explicitly transfers that result's query/options to the note's Find bar. No close/open frame shows both surfaces.
+
+The owner's correction was: "Alignment and layout is all messed up, audit and fix" — switches with extra lines, a jumping chevron, misplaced close, a different all-notes interface, and both Find surfaces open together. References: [in-note Find screenshot](file:///C:/Users/Prabin%20Pebam/AppData/Roaming/Code/agentSessionData/e9c027a6-6c25-4505-b29d-2adc43c241f3/attachments/e2306550-8d33-45e3-af83-9bd311ad66ad/Pasted%20Image.png), [all-notes screenshot](file:///C:/Users/Prabin%20Pebam/AppData/Roaming/Code/agentSessionData/e9c027a6-6c25-4505-b29d-2adc43c241f3/attachments/40c2975a-5d2a-4f78-85f0-f6ce99bb90eb/Pasted%20Image%202.png), [overlapping surfaces screenshot](file:///C:/Users/Prabin%20Pebam/AppData/Roaming/Code/agentSessionData/e9c027a6-6c25-4505-b29d-2adc43c241f3/attachments/f2f4a644-3dae-4fcd-bf73-af60f24ba8ce/Pasted%20Image%203.png). The familiar all-notes layout is a separate candidate requiring approval before it lands.
 
 ### What counts as a match
 
@@ -60,7 +64,7 @@ Find and replace text in the open note, or across every note in the workspace. I
 | **Edits** | The scope follows edits: replacing inside it, or typing elsewhere, moves its ends with the text. |
 | **Turning it off, closing** | Turning it off searches the whole note again, keeping the scope for turning it back on. Closing the bar forgets the scope; the next opening takes the selection then. |
 
-The toggle sits with Match case, Whole word, and Regular expression, is announced as a pressed or unpressed button with its shortcut, and works from the keyboard like them.
+The Switch sits with Match case, Whole word, and Regular expression, is announced as on or off with its shortcut, and works from the keyboard like them.
 
 ## Find in all notes
 
@@ -90,6 +94,8 @@ The toggle sits with Match case, Whole word, and Regular expression, is announce
 | Matching that ignores accents | Unicode NFD normalization with combining marks removed, for both the text and the query | Not applicable |
 
 ## Acceptance checks
+
+- **Alignment and exclusivity:** the field, chevron, previous/next and close share a centre line; the chevron's exact box does not change through hover, focus or replace expansion; all four Switch rows share their top edge despite selection help. Both shortcut opening orders show exactly one Find surface and retain their respective queries (`m1-find` and `m4-find-all` journeys).
 
 - **FND-01:** <kbd>Mod</kbd>+<kbd>F</kbd> with "focus" selected opens the bar pre-filled, shows the right count, and <kbd>Enter</kbd> steps through every match and wraps around.
 - **FND-02:** Replace-all of 100 matches is undone by a single <kbd>Mod</kbd>+<kbd>Z</kbd>, and bold or links on the replaced text are kept.

@@ -11,14 +11,16 @@ export interface InlineProps {
   align?: keyof typeof s.align;
   justify?: keyof typeof s.justify;
   wrap?: boolean;
+  /** Space between wrapped lines, independently of the inline space between items. */
+  wrapGap?: Space;
   grow?: boolean;
   id?: string;
   children?: ReactNode;
 }
 
-export function Inline({ gap = "none", related, label, padding = "none", align = "center", justify = "start", wrap, grow, id, children }: InlineProps) {
+export function Inline({ gap = "none", related, label, padding = "none", align = "center", justify = "start", wrap, wrapGap, grow, id, children }: InlineProps) {
   return (
-    <div id={id} role={related ? "group" : undefined} aria-label={related ? label : undefined} data-related={related ? "" : undefined} className={[s.base, s.gap[related ? "inlineItem" : gap], s.padding[padding], s.align[align], s.justify[justify], (wrap ?? related) ? s.wrap : "", grow ? s.grow : ""].join(" ")}>
+    <div id={id} role={related ? "group" : undefined} aria-label={related ? label : undefined} data-related={related ? "" : undefined} className={[s.base, s.gap[related ? "inlineItem" : gap], s.padding[padding], s.align[align], s.justify[justify], (wrap ?? related) ? s.wrap : "", wrapGap ? s.wrapGap[wrapGap] : "", grow ? s.grow : ""].join(" ")}>
       {children}
     </div>
   );
