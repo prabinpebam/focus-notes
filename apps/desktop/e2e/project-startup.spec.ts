@@ -128,7 +128,7 @@ test("G2.3: default site confirmation is read-only and unavailable activation re
     await page.keyboard.press("Control+,");
     const settings = page.getByRole("dialog", { name: "Settings", exact: true });
     await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
-    await settings.getByRole("button", { name: "Turn on sharing", exact: true }).click();
+    await settings.getByRole("button", { name: "Turn on sharing…", exact: true }).click();
     const confirmation = page.getByRole("dialog", { name: "Sharing", exact: true });
     await expect(confirmation).toContainText("ada/notes-site");
     await expect(confirmation).toContainText("https://ada.github.io/notes-site/");
