@@ -1239,7 +1239,7 @@
       "id": "WP-3.6",
       "stage": "M3",
       "title": "Account settings and data inventory",
-      "summary": "G7 / F11: sign out purges the account's indexes, recents, logs and Files pins across all project profiles; Remove from this computer purges the removed project's traces wherever cached, never unrelated notes/remote/history. Invalidate/drain pending writers so live windows/restart cannot repopulate traces; locked/partial failures expose Retry. Current-profile cleanup is built; cross-profile PRV-02 proof remains open. Build against G7.1-G7.4.",
+      "summary": "G7 / F11: sign out purges the account's indexes, recents, logs and Files pins across all project profiles; Remove from this computer purges the removed project's traces wherever cached, never unrelated notes/remote/history. Invalidate/drain pending writers so live windows/restart cannot repopulate traces; locked/partial failures expose Retry. Current-profile cleanup is built; cross-profile PRV-02 proof remains open. Build against G7.1-G7.4. Pending owner feedback (7 November 23:26, \"This view should have the GIthub Logo\"): Settings → Account's identity gets the existing GitHub mark (the icon on Settings → Project's Linked to GitHub card) as the account card's icon beside the name and @handle, once only (one mark per meaning); a view-document change scheduled into the next free slot.",
       "requirements": [
         "FRE-07",
         "PRV-02"
