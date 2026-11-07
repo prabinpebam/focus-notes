@@ -2770,20 +2770,20 @@
       "id": "WP-9.3",
       "stage": "Later",
       "title": "Managed image assets",
-      "summary": "Root-owned assets/images with random names, relative references, local sidecars, atomic copy/move/recovery (D-301). Inline images don't wait for sharing (D-314). 6 November: managed assets and metadata stripping before public Git writes are built; link rebasing on moves and copies remains open.",
+      "summary": "IMG-05 complete on main: root-owned assets/images with random names, relative references, explicit standalone sidecars and asset-before-note copy/move/recovery (D-301). Same-root moves/renames landed c8ff5865; cross-root note moves and Duplicate landed 4c7db417; encoded original= closure preservation landed 0bb2f1c1 (D-372). Exact-head Windows runs 42235765232, 42262901563 and 42268712808 passed all seven jobs; 67 related units and four built-app crop/move/Duplicate/Make public journeys passed on the combined implementation. Save as remains an owner decision, not a new command; whole-folder cross-root moves, publishing and encrypted sharing are outside this package.",
       "requirements": ["IMG-05"],
       "dependsOn": ["WP-2.3"],
       "touches": ["core", "desktop", "seal", "markdown", "schemas"],
       "reviews": ["code", "security"],
       "specs": ["experience/images.md", "architecture/content-model.md", "architecture/repository-and-publishing.html"],
       "lookahead": true,
-      "status": "building"
+      "status": "done"
     },
     {
       "id": "WP-9.4",
       "stage": "Later",
       "title": "Crop and rotate images",
-      "summary": "Preview-only accessible crop/rotate dialog, explicit destructive/no-pixel-Undo save, guarded atomic encode and shared-reference isolation. Conditional existing Git recovery only. Built on main (candidate slice, 3 November): the Edit image dialog, preview and PNG/JPEG/WebP save with an original-bytes guard. Remaining: shared-reference isolation, crop and save tests (IMG.4).",
+      "summary": "D-372 supersedes destructive editing: approved image-only crop/rotate dialog stages a new bounded managed copy, preserves the original and changes the note reference as one Undo. Restore original works without Git; other references retain their pixels. Landed 0bb2f1c1 with all seven exact-head Windows jobs green in 42268712808; 67 related units and four built-app crop/move/Duplicate/Make public journeys verify pixels and retained originals. Formal stage acceptance and separate first-readiness follow-up remain outside this scoped evidence.",
       "requirements": ["IMG-07", "IMG-08"],
       "dependsOn": ["WP-9.1"],
       "touches": ["editor", "core", "desktop", "ui", "views"],

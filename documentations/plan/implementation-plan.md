@@ -473,10 +473,10 @@ These are independently reviewable slices; lookahead permits design without unre
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-9.3 | **Managed image assets.** Relative/root-owned files, local sidecars, atomic copy/move/recovery. | IMG-05 | WP-2.3 | code, security |
+| WP-9.3 | **Managed image assets (done).** Relative/root-owned files, local sidecars, atomic copy/move/recovery; same-root and cross-root note moves, Duplicate and encoded kept originals are on green `main`. [Closure evidence](gate-evidence.md#inline-images-managed-asset-closure-7-november). Standalone Save as remains an owner decision, not a command in this package. | IMG-05 | WP-2.3 | code, security |
 | WP-9.7 | **Add an image.** Paste, drop, Insert image…, /image and Spotlight into managed assets, with WP-9.3's storage core (D-349 slice 1). | IMG-01 | WP-9.3 | code, security, design-system, accessibility |
 | WP-9.1 | **Inline image block and actions.** Three modes, remembered/bulk switches, description and caption, clipboard/replace/save and portable shared renderer. Display, menu and missing state built (building). | EXT-03, IMG-02, IMG-03, IMG-04, IMG-10, IMG-11 | WP-1.1, WP-9.3 | code, design-system, accessibility |
-| WP-9.4 | **Crop and rotate.** Preview dialog, keyboard crop, explicit destructive atomic save and conditional Git recovery. | IMG-07, IMG-08 | WP-9.1 | code, security, design-system, accessibility |
+| WP-9.4 | **Crop and rotate.** D-372's approved preview dialog, keyboard crop, guarded new-copy save, reference Undo and Restore original without Git; landed `0bb2f1c1`, with [combined media evidence](gate-evidence.md#inline-images-managed-asset-closure-7-november). | IMG-07, IMG-08 | WP-9.1 | code, security, design-system, accessibility |
 | WP-9.5 | **Optional captions.** Existing image-capable integration, image-only payload and reviewed plain-text caption. | IMG-09 | WP-9.1, WP-AI.14 | code, security, design-system, accessibility |
 | WP-9.2 | **Gallery block**. A gallery block registration. | EXT-04 | WP-9.1 | code, design-system, accessibility |
 | WP-9.8 | **Print images.** Print and Save as PDF with images inside the page (D-348). | IMG-12 | WP-9.7, WP-8.12 | code, accessibility |
@@ -487,4 +487,4 @@ These are independently reviewable slices; lookahead permits design without unre
 
 - Round-trip and the block registry contract hold for both components.
 - [IMG.1 to IMG.13](definition-of-done.md#inline-images-planned) supply scoped future evidence; [the readiness assessment](../experience/images.md#readiness-assessment-5-november) gives the slice order (D-349).
-- Highest-risk proofs: encrypted media closure, atomic/destructive saves and image-only provider payloads. Stage stays planned; design lookahead permits JSON views/figures only, not implementation/tests/packages before approval.
+- Highest-risk proofs: encrypted media closure, guarded new-copy saves and image-only provider payloads. Scoped approved image milestones have landed; the whole stage is not accepted by this package closure. Unapproved future surfaces remain design lookahead only.
