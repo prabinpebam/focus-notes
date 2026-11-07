@@ -148,7 +148,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     parent: () => ipcRenderer.invoke("projects:parent"),
     chooseParent: (parent: string) => ipcRenderer.invoke("projects:chooseParent", parent),
     check: (parent: string, name: string) => ipcRenderer.invoke("projects:check", parent, name),
-    create: (input: { parent: string; name: string; accent: string; logo: string; request?: string }) => ipcRenderer.invoke("projects:create", input),
+    create: (input: { parent: string; name: string; accent: string; logo: string; request?: string; github?: boolean }) => ipcRenderer.invoke("projects:create", input),
     cancelCreate: (request: string) => ipcRenderer.invoke("projects:cancelCreate", request),
     onCreateProgress: (listener: (progress: ProjectCreateProgress) => void) => {
       const handler = (_event: unknown, progress: ProjectCreateProgress) => listener(progress);

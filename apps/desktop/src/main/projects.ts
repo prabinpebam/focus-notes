@@ -485,10 +485,13 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     catch { return { folder, problem: "access" }; }
     return { folder: join(canonical, name), problem: "" };
   }
-  async function create(input: { parent: string; name: string; accent: string; logo: string }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
+  async function create(input: { parent: string; name: string; accent: string; logo: string; github?: boolean }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
     if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
-    const steps: ProjectCreateStep[] = ["check", "folder", ...(git ? ["history" as const] : []), ...(candidateApi ? ["repository" as const] : []), "profile"];
+    // Never make a project on this computer only when the person chose GitHub: refuse before anything exists.
+    if (input.github && !candidateApi) throw new Error("GitHub project creation isn't available in this build yet.");
+    const remote = Boolean(input.github && candidateApi);
+    const steps: ProjectCreateStep[] = ["check", "folder", ...(git ? ["history" as const] : []), ...(remote ? ["repository" as const] : []), "profile"];
     const step = async <T>(id: ProjectCreateStep, work: () => Promise<T>): Promise<T> => {
       operation?.signal.throwIfAborted();
       operation?.progress({ steps, step: id, done: false });
@@ -517,9 +520,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
         await git({ cwd: result.folder, args: ["commit", "--allow-empty", "--quiet", "-m", "Start the project"] });
       });
     }
-    if (candidateApi) {
+    if (remote) {
       await step("repository", async () => {
-        const api = candidateGitHubApi(candidateApi);
+        const api = candidateGitHubApi(candidateApi!);
         const owner = (await api.user()).login;
         const name = input.name.replace(/[^A-Za-z0-9._-]/g, "-");
         await api.createRepo(name, "Private notes for Focus Notes", true, false);
