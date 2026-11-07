@@ -20,7 +20,6 @@ import type { TaskTracker, TaskView, CommitView } from "./tasks.ts";
 import { UI_SCALES, themeById } from "./themes.ts";
 import { customOf } from "./theme-manager-app.ts";
 import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
-import { sharingAvailable, type ShareManageState } from "./share-manage.ts";
 
 /** Settings' categories, in order, as built so far. Where the project is kept is part of Project: one concept (owner, 5 November). A standalone file's window shows This file instead. */
 // Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
@@ -51,7 +50,7 @@ export const SETTINGS_CLOSED: SettingsState = {
 
 interface S {
   note: { path?: string };
-  ui: { settings: SettingsState; toolbarOpen: boolean; share: ShareManageState };
+  ui: { settings: SettingsState; toolbarOpen: boolean };
   account: AccountState;
   sync: SyncState;
   workspace: { folder?: string; repo?: string };
@@ -129,8 +128,8 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   // Item sharing starts at the note, never at a recipient or visibility interstitial.
   commands.register({
     id: "note.share", title: "command.note.share", icon: "share",
-    enabled: (s) => Boolean(bridge.access && s.note.path) && sharingAvailable(s),
-    disabledReason: (s) => !bridge.access || sharingAvailable(s) ? "command.note.share.reason" : "share.item.unavailable",
+    enabled: (s) => Boolean(bridge.access && s.note.path),
+    disabledReason: "command.note.share.reason",
     run: async () => {
       await commands.run("share.item.open");
     },

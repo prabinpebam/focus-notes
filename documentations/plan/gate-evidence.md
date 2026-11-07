@@ -18,22 +18,6 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
-### G2 availability repair, 7 November
-
-**Verified locally; activation and invitations remain open.** D-387 hides Share for unconfigured projects, including an unconfirmed guessed Pages URL, and keeps configured sharing reachable after startup. The real app names unavailable setup/invitation/publication capabilities without review-only wording.
-
-| Gate | Result |
-| --- | --- |
-| `pnpm check` | Passed, including regenerated notification inventory and UI contract verification |
-| `pnpm --filter @focus-notes/core run typecheck` | Passed |
-| `pnpm exec vitest run packages/core/test/share-manage.test.ts packages/core/test/sharing-preview.test.ts packages/core/test/actions-proof.test.ts packages/core/test/menu-bar.test.ts` | Passed, 125 tests |
-| `pnpm --filter @focus-notes/desktop run build` | Passed |
-| `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/item-sharing.spec.ts --workers=1 -g "G2.2\|Share New words"` | Passed, 2 journeys; each app closed by PID with WhatIf then cleanup |
-| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed |
-| Real account writes | None; local fixtures only. G2.8/G2.9 remain the owner's |
-
-This is the low-risk availability/copy slice under D-255, not the runtime setup/invitation gate. G2.2's offline/refusal/partial-result reconciliation evidence remains open; G2.1 and G2.3–G2.7 are not certified by this slice.
-
 ### Gap-closure specification, 7 November
 
 D-378 settles local Git versus optional private GitHub; D-379 records the owner's P0/P1 programme. [G0–G7](definition-of-done.md#gap-closure-7-november-p0-and-p1) name the requirements, observable outcomes, negative cases, waits and first-real-action owner dependencies before implementation. G1's agreed rows are unchanged. First slice `50e23d3e` landed the chain and DoD; the follow-up durable requirements/flows and plan mapping below close G0's specification scope once landed, never G1–G7 runtime or real-account certification.

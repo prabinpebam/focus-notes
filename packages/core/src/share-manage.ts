@@ -33,11 +33,6 @@ export interface AccessListing {
   vault: boolean;
   grants: Audience[];
 }
-
-export function sharingAvailable(state: { ui: { share: ShareManageState } }): boolean {
-  const share = state.ui.share;
-  return Boolean(share.listing?.available && (share.listing.localReview || share.listing.vault && share.listing.site) && !share.settings.off);
-}
 /** The desktop's access.json (D-134). Absent in the browser. */
 export interface AccessBridge {
   load(): Promise<AccessListing>;

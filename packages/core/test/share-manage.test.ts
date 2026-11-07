@@ -11,7 +11,6 @@ import { generatePasscode } from "@focus-notes/seal/words";
 import type { AccessFile } from "@focus-notes/seal";
 import { createApp, initials, inviteTemplate, inviteText, MessageCatalog, shareables, type AccessListing, type PlatformBridge } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
-import { menuBarModel } from "../src/menu-bar.ts";
 
 const catalog = new MessageCatalog("en", en);
 const SITE = "https://ada.github.io/notes/";
@@ -83,32 +82,6 @@ describe("helpers", () => {
 const settle = () => new Promise((r) => setTimeout(r, 0));
 afterEach(() => vi.useRealTimers());
 
-it("hides unconfigured Share in Files, Note, pinned toolbar and the native menu, then restores configured sharing", async () => {
-  const t = shell();
-  const configured = await t.bridge.access!.load();
-  t.bridge.access!.load = async () => ({ available: true, site: SITE, vault: false, grants: [] });
-  await t.app.start();
-  await settle();
-  await t.run("settings.setSection", { value: "sharing" });
-  await t.run("files.reveal");
-  t.app.store.update(s => ({ ...s, toolbarPinned: [...s.toolbarPinned, "note.share"] }));
-  expect(t.app.commands.describe("note.share").enabled).toBe(false);
-  expect(t.app.commands.describe("files.share").enabled).toBe(false);
-  expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).not.toContain("files.share");
-  expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).not.toContain("note.share");
-  expect(t.vm("vm.toolbar").more.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).not.toContain("note.share");
-  expect(menuBarModel(t.app.commands, catalog, "macos").menus.find(m => m.id === "file")!.items).not.toContainEqual(expect.objectContaining({ id: "note.share" }));
-  expect(t.vm("vm.sharingSettings")).toMatchObject({ off: true, localReview: false, offDetail: en["sharing.setup.unavailable"] });
-  expect(String(t.vm("vm.sharingSettings").offDetail)).not.toContain("Settings");
-  expect(t.access().grants).toHaveLength(1);
-  t.bridge.access!.load = async () => configured;
-  await t.run("share.manage.load");
-  expect(t.app.commands.describe("note.share").enabled).toBe(true);
-  expect(t.app.commands.describe("files.share").enabled).toBe(true);
-  expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).toContain("files.share");
-  expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).toContain("note.share");
-});
-
 it("opens Files from a sharing empty state without toggling an already-open panel shut", async () => {
   const t = shell();
   await t.app.start();
@@ -126,7 +99,6 @@ describe("known-empty sharing settings", () => {
     const t = shell();
     await t.app.start();
     await settle();
-    t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: undefined } } }));
     expect(t.vm("vm.sharingSettings")).toMatchObject({ empty: false });
     t.bridge.access!.load = async () => { throw new Error("private-path-and-token"); };
     await t.run("share.manage.load");
@@ -174,7 +146,6 @@ describe("known-empty sharing settings", () => {
     const t = shell();
     await t.app.start();
     await settle();
-    t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: undefined } } }));
     vi.useFakeTimers();
     const measure = vi.spyOn(performance, "measure");
     let reject!: (error: Error) => void;

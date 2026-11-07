@@ -1,11 +1,5 @@
 # Decisions
 
-## D-387: unavailable sharing says what is missing
-
-**Decided, 7 November 2026 (F3/F27, G2.2).** Until production activation exists, an unconfigured project offers no Share entry in Files, Note, the pinned toolbar, Actions or the native menu. Settings → Sharing says “Turning on sharing isn’t available yet. Your notes stay private.” It does not point back to a setting that cannot solve the problem. Production invitation and publication disabled reasons name the unavailable GitHub capability, not a review build. Configured projects keep their existing sharing paths; no note, grant or remote is changed by this availability repair.
-
-**Affects:** PRJ-10, SHR-13, [Files and sharing](../experience/files-and-sharing.md#turning-on-sharing-for-a-new-project), [G2](definition-of-done.md#g2-turn-on-sharing-and-invite-a-person).
-
 ## D-378: a project always has Git; GitHub is optional
 
 **Decided (owner, 5 November; reconciled 7 November 2026).** "Projects can be completely offline or linked to a GitHub repo." PRJ-01 means a project is a folder kept with Git, on this computer only or linked to a private GitHub repository the app creates for it. New project makes that choice explicit. A local-only project has history, not a remote backup; choosing GitHub uses the signed-in account in production, never silently the local-only path. No public site is created at setup. This resolves audit S1 without changing the owner's source notes or deciding the separate Local notes proposal.

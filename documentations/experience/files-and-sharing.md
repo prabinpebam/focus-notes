@@ -65,8 +65,6 @@ PRJ-10 and [G2.1–G2.3](../plan/definition-of-done.md#g2-turn-on-sharing-and-in
 
 Agents prove these branches only with protocol fakes. The owner's first real activation from Preview is G2.8; it remains an owner dependency, not fake-backed certification.
 
-**Availability repair (D-387).** Unconfigured projects hide Share in Files, Note, a previously pinned toolbar action, Actions and the native menu. Sharing names the current missing capability: “Turning on sharing isn’t available yet. Your notes stay private.” Configured projects retain sharing. Until their production paths land, invitation and publication reasons name unavailable GitHub operations, not a preview; local drafts are not real invitations or publications.
-
 ## Share one item
 
 1. Files row menu → **Share…** on one note or folder.

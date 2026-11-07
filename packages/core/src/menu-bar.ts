@@ -146,7 +146,6 @@ export function menuBarModel(commands: CommandRegistry<AppState>, catalog: Messa
   const item = (id: string, radio?: true): MenuBarItem | undefined => {
     if (!commands.has(id)) return undefined;
     const d = commands.describe(id);
-    if (id === "note.share" && d.disabledReason === "share.item.unavailable") return undefined;
     const chord = shortcutFor(commands.shortcut(id), platform);
     return {
       kind: "command", id, label: catalog.format(d.title), enabled: d.enabled,
