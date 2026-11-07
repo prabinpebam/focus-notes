@@ -100,6 +100,9 @@ test("Separate source startups and a late arriver open the same certified first 
     for (const profile of [first, second, late]) {
       await expect.poll(() => JSON.parse(readFileSync(join(profile.dirs.userData, "state.json"), "utf8")).lastNotePath).toBe(path);
     }
+    for (const instance of [...initial, arriving]) {
+      await expect.poll(() => instance.page.evaluate(() => performance.getEntriesByName("fn:project.firstNote").some(entry => Number.isFinite(entry.duration) && entry.duration >= 0))).toBe(true);
+    }
     expect(readdirSync(first.root)).toEqual(["Untitled.md"]);
     expect(readFileSync(path, "utf8")).toBe("");
     await arriving.page.keyboard.type("Winner is writable.");

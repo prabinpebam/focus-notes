@@ -27,6 +27,13 @@ it("yields during cross-process contention and releases a crashed writer's lock"
     const writing = store.change(root, false).then(() => { committed = true; });
     await new Promise<void>(resolve => setImmediate(resolve));
     expect(committed).toBe(false);
+    let ticks = 0;
+    const heartbeat = setInterval(() => { ticks++; }, 10);
+    try {
+      await new Promise<void>(resolve => setTimeout(resolve, 75));
+      expect(ticks).toBeGreaterThanOrEqual(2);
+      expect(committed).toBe(false);
+    } finally { clearInterval(heartbeat); }
     // WAL readers still capture the pre-purge generation while its writer is waiting.
     expect(await store.ticket(root)).toEqual(initial);
     const exited = once(child, "exit");

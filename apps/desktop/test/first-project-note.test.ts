@@ -193,6 +193,26 @@ describe("first project note (PRJ-24)", () => {
     expect(await readFile(path, "utf8")).toBe("Unrelated replacement");
   });
 
+  it("preserves certificate, saved bytes and external-edit refusal when an ordinary save fails", async () => {
+    const dir = await root();
+    const create = firstProjectNote({ roots: async () => [dir], writable: async () => {} });
+    const path = (await create())!;
+    await expect(create.write(path, async () => { throw new Error("save failed"); })).rejects.toThrow("save failed");
+    expect(await create()).toBe(path);
+    expect(await readFile(path, "utf8")).toBe("");
+    const writer = new NoteWriter({
+      ready: vi.fn().mockRejectedValueOnce(new Error("read-only")).mockResolvedValue(undefined),
+      replace: (path, write) => create.write(path, write),
+    });
+    await expect(writer.write(path, "Unsaved input", "")).rejects.toThrow("read-only");
+    expect(await readFile(path, "utf8")).toBe("");
+    expect(await create()).toBe(path);
+    await writeFile(path, "External edit");
+    expect(await writer.write(path, "Unsaved input", "")).toEqual({ outside: "External edit" });
+    expect(await readFile(path, "utf8")).toBe("External edit");
+    expect(await create()).toBe(path);
+  });
+
   it("does not hold unrelated roots behind slow writable preparation or a save's Git wait", async () => {
     const first = await root();
     const second = await root();
