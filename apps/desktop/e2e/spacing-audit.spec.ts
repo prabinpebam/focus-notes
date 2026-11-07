@@ -267,7 +267,7 @@ test("spacing audit: Open view, New project and its location choice", async () =
     const l = await launch(dirs);
     const { page } = l;
     await page.emulateMedia({ colorScheme: want });
-    await expect(page.getByRole("heading", { name: "Open", level: 1 })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: "Open", level: 2 })).toBeVisible({ timeout: 15_000 });
     await audit(page, p, `Open view (${want})`, out, want === "light");
     done.push("Open view");
     for (const name of ["New project…", "Open from GitHub…"]) {

@@ -9577,24 +9577,6 @@
   }]
 },
 {
-  "type": "Layer",
-  "when": { "expr": { "and": [{ "get": "vm.projects.open" }, { "get": "vm.projects.full" }] } },
-  "props": { "layer": "panel", "position": "window", "landmark": "region", "label": { "t": "project.open.title" } },
-  "children": [{
-    "type": "Surface", "props": { "variant": "canvas", "scroll": true, "padding": "insetLg" },
-    "children": [{
-      "type": "Center", "props": { "maxWidth": "wideContent" },
-      "children": [{
-        "type": "Stack", "props": { "gap": "stackSection" },
-        "children": [
-          { "type": "Heading", "props": { "value": { "t": "project.open.title" }, "level": "1" } },
-          { "use": "open.body" }
-        ]
-      }]
-    }]
-  }]
-},
-{
   "type": "DialogPanel",
   "id": "imageDescription",
   "props": { "label": { "t": "image.describe.title" }, "open": { "get": "vm.images.describe" }, "size": "s", "height": "content" },

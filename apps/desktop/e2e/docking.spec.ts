@@ -70,6 +70,7 @@ test("Open hides docked Files and closing it restores the same dock and note (PR
     await l.page.keyboard.press(`${mod}+Alt+O`);
     const open = l.page.getByRole("dialog", { name: "Open", exact: true });
     await expect(open).toBeVisible();
+    await expect(open.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
     await expect(files(l.page)).toHaveCount(0);
     await open.getByRole("button", { name: "Close", exact: true }).click();
     await expect(open).toBeHidden();
@@ -83,16 +84,19 @@ test("Open hides docked Files and closing it restores the same dock and note (PR
   }
 });
 
-test("Full-window Open hides remembered Files in an empty project (PRJ-02, D-187)", async () => {
+test("Empty-project Open uses the same dialog and close action, with no Files or duplicate Cancel (PRJ-02, D-187, D-375)", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
     version: 1, firstRun: "done", lastNotePath: "", filesPinned: true,
   }));
   const l = await launch(dirs);
   try {
-    await expect(l.page.getByRole("region", { name: "Open", exact: true })).toBeVisible();
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+    await expect(open).toBeVisible();
+    await expect(open.getByRole("button", { name: "Close", exact: true })).toBeVisible();
+    await expect(open.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+    await expect(l.page.getByRole("heading", { name: "Open", exact: true })).toHaveCount(1);
     await expect(files(l.page)).toHaveCount(0);
-    await expect(l.page.getByRole("button", { name: "Focus Notes menu", exact: true })).toBeVisible();
   } finally {
     await close(l);
   }

@@ -17,7 +17,7 @@
      "expr": {
       "and": [
        {
-        "get": "vm.projects.dialog"
+        "get": "vm.projects.open"
        },
        {
         "!": [
@@ -49,37 +49,7 @@
     },
     "children": [
      {
-      "type": "Stack",
-      "props": {
-       "gap": "stackSection"
-      },
-      "children": [
-       {
-        "use": "open.body"
-       },
-       {
-        "type": "Inline",
-        "props": {
-         "align": "end"
-        },
-        "children": [
-         {
-          "type": "Button",
-          "props": {
-           "label": {
-            "t": "project.cancel"
-           },
-           "variant": "secondary"
-          },
-          "on": {
-           "press": {
-            "run": "projects.close"
-           }
-          }
-         }
-        ]
-       }
-      ]
+      "use": "open.body"
      }
     ],
     "slots": {}
