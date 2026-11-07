@@ -48,6 +48,8 @@ import { createRunner, whenGitIdle, type GitRunner } from "./git/run.ts";
 import { bundleEnv, gitBundle } from "./git/bundle.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
+import { projectPeople } from "./share/people.ts";
+import { githubRepo } from "./project-card.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { feedbackMain } from "./feedback.ts";
@@ -2109,6 +2111,27 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     withGit((g) => g.written(settingsFile()));
   });
   // Share audiences (WP-5.3, D-134): only this process writes access.json and makes its secrets.
+  const people = projectPeople({
+    api: async () => (await account.api())?.api,
+    repository: () => githubRepo(hasPrivate() ? privateDir() : notesHome()),
+    step: step => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sharing:inviteStep", step);
+    },
+  });
+  handle("sharing:people", () => people.load());
+  handle("sharing:invite", (repository: unknown, login: unknown, role: unknown) => {
+    if (typeof repository !== "string" || typeof login !== "string" || typeof role !== "string") throw new Error("invite:invalid");
+    return people.invite(repository, login, role);
+  });
+  handle("sharing:cancelInvite", (repository: unknown, id: unknown) => {
+    if (typeof repository !== "string" || typeof id !== "number") throw new Error("invite:invalid");
+    return people.cancel(repository, id);
+  });
+  handle("sharing:managePeople", async (repository: unknown) => {
+    const current = await people.load();
+    if (repository !== current.repository) throw new Error("invite:changed");
+    await shell.openExternal(`https://github.com/${current.repository}/settings/access`);
+  });
   const access = accessStore({
     dir: privateDir,
     site: pagesSite,

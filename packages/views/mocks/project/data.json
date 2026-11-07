@@ -364,6 +364,9 @@
   },
   "people": {
     "available": false,
+    "ready": true,
+    "canOpen": true,
+    "detail": "People you invite can open the whole project on GitHub. To let someone read one note or folder, use Share… instead.",
     "busy": false,
     "people": [
       {

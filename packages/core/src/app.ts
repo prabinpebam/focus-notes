@@ -500,7 +500,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels, tracker });
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
-  registerSharingPeople({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState });
+  registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, tracker, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),

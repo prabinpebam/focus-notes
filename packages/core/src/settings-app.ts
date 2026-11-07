@@ -145,7 +145,10 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     if (v === "about") await commands.run("diagnostics.load");
     if (v === "agents") await commands.run("agents.load");
     if (v === "ai") await commands.run("ai.load");
-    if (v === "project") prefetchRepos?.();
+    if (v === "project") {
+      prefetchRepos?.();
+      await commands.run("sharing.peopleLoad");
+    }
   });
   registerDiagnostics({ store, bridge, catalog, commands, viewModels, toast });
 

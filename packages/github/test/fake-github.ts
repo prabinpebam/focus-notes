@@ -21,6 +21,9 @@ export interface FakeRepo {
   actionsKey: nacl.BoxKeyPair;
   pages?: { build_type: "workflow" | "legacy"; html_url: string };
   canPush: boolean;
+  ownerType: "User" | "Organization";
+  invitations: { id: number; invitee: { login: string }; permissions: string }[];
+  collaborators: Set<string>;
   /** When it was last pushed to (ISO 8601), if known. */
   pushedAt?: string;
 }
@@ -39,9 +42,11 @@ export class FakeGitHub {
   id = 583231;
   readonly repos = new Map<string, FakeRepo>();
   readonly calls: Call[] = [];
+  readonly users = new Set(["ada", "octocat"]);
   /** Every request as sent, headers included, for checking where the token went. */
   readonly raw: { url: string; init?: RequestInit }[] = [];
   offline = false;
+  beforeRequest?: (method: string, path: string) => Promise<void>;
   /** Other accounts, by token: they can only ask who they are (`GET /user`), for switching account. */
   readonly others = new Map<string, { login: string; id: number; name: string }>();
   /** "POST /repos/ada/notes-private/keys" → answers to give instead, one per matching call. */
@@ -68,11 +73,12 @@ export class FakeGitHub {
     this.others.set(token, account);
   }
 
-  add(r: { owner: string; name: string; private?: boolean; isTemplate?: boolean; template?: string; files?: string[]; canPush?: boolean }): FakeRepo {
+  add(r: { owner: string; name: string; private?: boolean; isTemplate?: boolean; template?: string; files?: string[]; canPush?: boolean; ownerType?: "User" | "Organization" }): FakeRepo {
     const repo: FakeRepo = {
       owner: r.owner, name: r.name, private: r.private ?? false, isTemplate: r.isTemplate ?? false,
       ...(r.template ? { template: r.template } : {}),
       files: new Set(r.files ?? []), keys: [], secrets: new Map(), actionsKey: nacl.box.keyPair(), canPush: r.canPush ?? true,
+      ownerType: r.ownerType ?? "User", invitations: [], collaborators: new Set(),
     };
     this.repos.set(`${r.owner}/${r.name}`, repo);
     return repo;
@@ -114,7 +120,8 @@ export class FakeGitHub {
     if (other) return method === "GET" && path === "/user" ? json(200, other) : json(403, { message: "Resource not accessible" });
     const planned = this.failures.get(`${method} ${path}`)?.shift();
     if (planned) return json(planned.status, { message: planned.message });
-    const res = this.route(method, path, body);
+    await this.beforeRequest?.(method, path);
+    const res = this.route(method, path, body, url.searchParams);
     if (this.scopes) res.headers.set("X-OAuth-Scopes", this.scopes.join(", "));
     return res;
   };
@@ -124,9 +131,11 @@ export class FakeGitHub {
     return live ? new Set(live) : repo.files;
   }
 
-  private route(method: string, path: string, body: Record<string, unknown> | undefined): Response {
+  private route(method: string, path: string, body: Record<string, unknown> | undefined, query: URLSearchParams): Response {
     if (method === "GET" && path === "/user") return json(200, { login: this.login, id: this.id, name: "Ada" });
     if (method === "GET" && path === "/user/repos") return json(200, [...this.repos.values()].filter((r) => r.owner === this.login).map(toRepo));
+    const user = /^\/users\/([^/]+)$/.exec(path);
+    if (method === "GET" && user) return this.users.has(user[1]!) ? json(200, { login: user[1], type: "User" }) : json(404, { message: "Not Found" });
     if (method === "POST" && path === "/user/repos") {
       const name = String(body?.name);
       if (this.repo(name)) return json(422, { message: "Repository creation failed: name already exists on this account" });
@@ -155,13 +164,30 @@ export class FakeGitHub {
     r = /^\/repos\/([^/]+)\/([^/]+)(\/.*)?$/.exec(path);
     if (!r) return json(404, { message: "Not Found" });
     const repo = this.repo(r[2]!, r[1]!);
-    if (!repo || (repo.private && repo.owner !== this.login)) return json(404, { message: "Not Found" });
+    if (!repo || (repo.private && repo.owner !== this.login && repo.ownerType !== "Organization")) return json(404, { message: "Not Found" });
     const rest = r[3] ?? "";
     if (method === "GET" && rest === "") return json(200, toRepo(repo));
     if (method === "GET" && rest === "/git/ref/heads/main") return this.filesOf(repo).size ? json(200, { object: { sha: "a".repeat(40) } }) : json(409, { message: "Git Repository is empty." });
     const file = /^\/contents\/(.+)$/.exec(rest);
     if (method === "GET" && file) return this.filesOf(repo).has(decodeURIComponent(file[1]!)) ? json(200, { type: "file" }) : json(404, { message: "Not Found" });
     if (!repo.canPush && method !== "GET") return json(403, { message: "Must have admin rights to Repository." });
+    if (rest === "/invitations" && method === "GET") {
+      const page = Number(query.get("page") ?? 1), size = Number(query.get("per_page") ?? 100);
+      return json(200, repo.invitations.slice((page - 1) * size, page * size));
+    }
+    const collaborator = /^\/collaborators\/([^/]+)$/.exec(rest);
+    if (collaborator && method === "GET") return repo.collaborators.has(collaborator[1]!) ? json(204) : json(404, { message: "Not Found" });
+    if (collaborator && method === "PUT") {
+      const login = decodeURIComponent(collaborator[1]!);
+      if (!this.users.has(login)) return json(404, { message: "Not Found" });
+      if (repo.collaborators.has(login)) return json(204);
+      const invitation = repo.invitations.find(person => person.invitee.login === login)
+        ?? { id: nextId++, invitee: { login }, permissions: String(body?.permission) };
+      if (!repo.invitations.includes(invitation)) repo.invitations.push(invitation);
+      return json(201, invitation);
+    }
+    const invitation = /^\/invitations\/(\d+)$/.exec(rest);
+    if (invitation && method === "DELETE") { repo.invitations = repo.invitations.filter(person => person.id !== Number(invitation[1])); return json(204); }
     if (rest.startsWith("/keys?") || rest === "/keys") {
       if (method === "GET") return json(200, repo.keys);
       if (method === "POST") {
@@ -203,9 +229,9 @@ export class FakeGitHub {
   }
 }
 
-const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+const json = (status: number, body?: unknown) => new Response(status === 204 ? null : JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const toRepo = (r: FakeRepo) => ({
-  name: r.name, owner: { login: r.owner }, default_branch: "main", private: r.private, is_template: r.isTemplate,
+  name: r.name, owner: { login: r.owner, type: r.ownerType }, default_branch: "main", private: r.private, is_template: r.isTemplate,
   permissions: { push: r.canPush, admin: r.canPush },
   ...(r.pushedAt ? { pushed_at: r.pushedAt } : {}),
   ...(r.template ? { template_repository: { full_name: r.template } } : {}),

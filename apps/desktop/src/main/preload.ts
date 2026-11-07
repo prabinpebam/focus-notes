@@ -259,6 +259,17 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   // Share audiences (WP-5.3, D-134): changes as data; the main process makes the secrets and writes access.json.
   access: {
+    people: {
+      load: () => ipcRenderer.invoke("sharing:people"),
+      invite: (repository: string, login: string, role: string) => ipcRenderer.invoke("sharing:invite", repository, login, role),
+      cancel: (repository: string, id: number) => ipcRenderer.invoke("sharing:cancelInvite", repository, id),
+      manage: (repository: string) => ipcRenderer.invoke("sharing:managePeople", repository),
+      onStep: (listener: (step: string) => void) => {
+        const handler = (_event: unknown, step: unknown) => { if (typeof step === "string") listener(step); };
+        ipcRenderer.on("sharing:inviteStep", handler);
+        return () => ipcRenderer.removeListener("sharing:inviteStep", handler);
+      },
+    },
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),

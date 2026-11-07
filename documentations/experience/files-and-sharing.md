@@ -93,12 +93,14 @@ The G6 journey proves create → Copy again → Extend → Withdraw → reopen u
 
 PRJ-12 and [G2.4–G2.9](../plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person) govern People. This is not an encrypted per-item share: the invite gives project-wide GitHub access.
 
-1. Enter a GitHub account. A personal repository offers **Collaborator**, never read-only; its warning says the person can read and change everything, including private notes and sharing settings. An organization repository offers only supported Read/Triage/Write/Maintain/Admin roles.
+1. Enter a GitHub account. A personal repository offers **Collaborator**, never read-only; its warning says the person can read and change the whole private repository, including every note, sharing setting and share secret stored there. An organization repository offers only supported Read/Triage/Write/Maintain/Admin roles.
 2. Confirm the exact repository, person, role and whole-project/private-note/share-secret access. Cancel sends nothing.
 3. Send one request through the signed-in GitHub client in production. Pending prevents duplicate submissions. **Invited** means GitHub accepted the invitation, not that a local draft was saved or that the person has accepted.
 4. Invalid account, duplicate invitation, offline, refused permission or rate limit keeps the person and role, reports the cause and offers correction or explicit Retry. Never report success after a failed request or offer an unavailable invite route without its reason.
 
 The operation streams its named task status, permits leaving, and has a wait-inventory row/fn: measure above 100 ms. Units/journeys use API fakes; the first real invite is the owner's G2.9 row.
+
+**Local runtime candidate, not yet landed.** The signed-in client checks the private repository/admin permission and GitHub account, reads every page of pending invitations, and sends one collaborators request for the confirmed role. Duplicate invitations and existing members are named recovery states. After a lost response, Retry checks whether GitHub already accepted the same invitation before another write. Leaving keeps the task and draft; completion never reopens a dismissed dialog over writing. [Gate evidence](../plan/gate-evidence.md#g2-github-invitation-runtime-candidate-7-november) records local protocol/built-app checks separately from the still-open exact-head Windows gate.
 
 <h2 id="conflicts-and-offline">Offline, conflicts and recovery</h2>
 

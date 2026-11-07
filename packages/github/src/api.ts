@@ -27,10 +27,19 @@ export interface Repo {
   defaultBranch: string;
   private: boolean;
   canPush: boolean;
+  ownerType?: "User" | "Organization";
+  canAdmin?: boolean;
   /** When it was last pushed to (ISO 8601), if GitHub says. */
   pushedAt?: string;
   /** A template repository (GitHub's `is_template`): something to copy, never someone's notes (D-147). */
   template?: boolean;
+}
+
+export type CollaboratorRole = "read" | "triage" | "write" | "maintain" | "admin";
+export interface RepositoryInvitation {
+  id: number;
+  login: string;
+  role: string;
 }
 
 /** A repository's deploy key, as GitHub lists it. */
@@ -121,8 +130,39 @@ export class GitHubApi {
   }
 
   async repo(owner: string, name: string): Promise<Repo> {
-    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; pushed_at?: string | null; is_template?: boolean }>("GET", `/repos/${owner}/${name}`);
-    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push), ...(r.pushed_at ? { pushedAt: r.pushed_at } : {}), ...(r.is_template ? { template: true } : {}) };
+    const r = await this.request<{ name: string; owner: { login: string; type?: "User" | "Organization" }; default_branch: string; private: boolean; permissions?: { push?: boolean; admin?: boolean }; pushed_at?: string | null; is_template?: boolean }>("GET", `/repos/${owner}/${name}`);
+    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push), ...(r.owner.type ? { ownerType: r.owner.type } : {}), ...(r.permissions?.admin !== undefined ? { canAdmin: r.permissions.admin } : {}), ...(r.pushed_at ? { pushedAt: r.pushed_at } : {}), ...(r.is_template ? { template: true } : {}) };
+  }
+
+  account(login: string) {
+    return this.request<{ login: string; type: string }>("GET", `/users/${encodeURIComponent(login)}`);
+  }
+
+  async invitations(owner: string, repo: string): Promise<RepositoryInvitation[]> {
+    const result: RepositoryInvitation[] = [];
+    for (let page = 1; ; page++) {
+      const batch = await this.request<{ id: number; invitee: { login: string }; permissions: string }[]>("GET", `/repos/${owner}/${repo}/invitations?per_page=100&page=${page}`);
+      for (const invitation of batch) result.push({
+        id: invitation.id, login: invitation.invitee.login,
+        role: invitation.permissions === "pull" ? "read" : invitation.permissions === "push" ? "write" : invitation.permissions,
+      });
+      if (batch.length < 100) return result;
+    }
+  }
+
+  async isCollaborator(owner: string, repo: string, login: string): Promise<boolean> {
+    try { await this.request("GET", `/repos/${owner}/${repo}/collaborators/${encodeURIComponent(login)}`); return true; }
+    catch (error) { if (error instanceof GitHubError && error.status === 404) return false; throw error; }
+  }
+
+  async inviteCollaborator(owner: string, repo: string, login: string, role: CollaboratorRole): Promise<RepositoryInvitation | undefined> {
+    const permission = role === "read" ? "pull" : role === "write" ? "push" : role;
+    const invitation = await this.request<{ id: number; invitee: { login: string }; permissions: string } | undefined>("PUT", `/repos/${owner}/${repo}/collaborators/${encodeURIComponent(login)}`, { permission });
+    return invitation ? { id: invitation.id, login: invitation.invitee.login, role } : undefined;
+  }
+
+  cancelInvitation(owner: string, repo: string, id: number): Promise<void> {
+    return this.request("DELETE", `/repos/${owner}/${repo}/invitations/${id}`);
   }
 
   /** A repository, or undefined if there's none by that name (or it isn't visible to this token). */

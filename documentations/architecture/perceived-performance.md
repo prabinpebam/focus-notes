@@ -1,5 +1,17 @@
 # Perceived performance: no frozen waits, no glitches
 
+## GitHub project invitations
+
+The invitation path uses the signed-in desktop GitHub client, not a local draft. These are correctness measures, not a claim of faster network requests. The existing Invite person dialog keeps the username and role, and its Send/Retry button uses the standard own-border pending state. Closing the dialog does not cancel a request already sent or reopen Settings over the writing window.
+
+| Operation | Class / pattern | Place and words | Measure / target |
+| --- | --- | --- | --- |
+| Load repository ownership, supported roles and pending invitations | Responsive → waiting; named section task | Existing People description: Checking project access on GitHub; unavailable/private-project/sign-in/permission errors replace the description, not a guessed empty list | `fn:sharing.people`, tracker `sharing.people`; no roles or invitation controls enabled before the checked response |
+| Invite one GitHub account | Responsive → waiting; named task with desktop steps check → send → accepted | Existing dialog feedback and People description: Checking the person and project access, Sending the invitation to GitHub, then GitHub accepted the access request; retained username/role and explicit Retry on failure | `fn:sharing.invite`, tracker `sharing.invite`; no acknowledged invitation before GitHub accepts; concurrent submits share one request; Retry checks existing invitations before sending |
+| Cancel a pending GitHub invitation | Responsive → waiting; same invitation task | Existing pending invitation button; Cancelling the invitation on GitHub, then Invitation cancelled on GitHub | `fn:sharing.invite`; the row remains until GitHub acknowledges deletion |
+
+The editor remains mounted while the request runs. The shared task status remains available after leaving; completion never brings a dismissed dialog back. A lost response is reconciled against GitHub's pending invitations before Retry writes anything again. Tests use the protocol/loopback fake only; the owner's first real invitation remains a separate dependency.
+
 ## Project startup
 
 The 7 November startup batch adds no new visual surface: it reuses the note task and the existing unified Open dialog. Existing windows remain mounted and usable. These are source-build correctness checks, not a claim of faster packaged startup.

@@ -811,7 +811,9 @@
                                       "t": "share.invite.open"
                                     },
                                     "variant": "primary",
-                                    "icon": "add"
+                                    "icon": "add",
+                                    "disabled": { "expr": { "!": { "get": "vm.sharingPeople.canOpen" } } },
+                                    "disabledReason": { "get": "vm.sharingPeople.detail" }
                                   },
                                   "on": {
                                     "press": {
@@ -828,13 +830,14 @@
                             "type": "Text",
                             "props": {
                               "value": {
-                                "t": "share.invite.notShare"
+                                "get": "vm.sharingPeople.detail"
                               },
                               "tone": "muted"
                             }
                           },
                           {
                             "type": "Stack",
+                            "when": { "get": "vm.sharingPeople.ready" },
                             "props": {
                               "gap": "stackItem"
                             },
@@ -5945,6 +5948,7 @@
                   "value": {
                     "bind": "vm.sharingPeople.user"
                   },
+                  "readOnly": { "get": "vm.sharingPeople.busy" },
                   "autoFocus": true
                 }
               },
@@ -5966,7 +5970,7 @@
                   },
                   "titleLabel": { "t": "command.github.reference", "args": { "reference": { "get": "vm.sharingPeople.user" } } },
                   "detail": {
-                    "t": "share.invite.account"
+                    "get": "vm.sharingPeople.target"
                   },
                   "icon": "github",
                   "personal": "title"
@@ -6000,7 +6004,8 @@
                       },
                       "value": {
                         "bind": "vm.sharingPeople.role"
-                      }
+                      },
+                      "readOnly": { "get": "vm.sharingPeople.busy" }
                     }
                   },
                   {
@@ -6076,13 +6081,13 @@
               {
                 "type": "Text",
                 "when": {
-                  "expr": { "!=": [{ "get": "vm.sharingPeople.problem" }, ""] }
+                  "expr": { "!=": [{ "get": "vm.sharingPeople.feedback" }, ""] }
                 },
                 "props": {
                   "value": {
-                    "get": "vm.sharingPeople.problem"
+                    "get": "vm.sharingPeople.feedback"
                   },
-                  "tone": "danger",
+                  "tone": { "get": "vm.sharingPeople.feedbackTone" },
                   "announce": true
                 }
               },
@@ -6134,7 +6139,7 @@
                         "type": "Button",
                         "props": {
                           "label": {
-                            "t": "share.invite.send"
+                            "get": "vm.sharingPeople.sendLabel"
                           },
                           "variant": "primary",
                           "disabled": {

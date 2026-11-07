@@ -33,8 +33,21 @@ export interface AccessListing {
   vault: boolean;
   grants: Audience[];
 }
+export interface ProjectPeople {
+  repository: string;
+  owner: "org" | "personal";
+  roles: ("read" | "triage" | "write" | "maintain" | "admin")[];
+  people: { id: number; login: string; role: string }[];
+}
 /** The desktop's access.json (D-134). Absent in the browser. */
 export interface AccessBridge {
+  people?: {
+    load(): Promise<ProjectPeople>;
+    invite(repository: string, login: string, role: string): Promise<ProjectPeople>;
+    cancel(repository: string, id: number): Promise<ProjectPeople>;
+    manage(repository: string): Promise<void>;
+    onStep?(listener: (step: string) => void): () => void;
+  };
   load(): Promise<AccessListing>;
   /** Makes one change and commits it. Rejects with a message containing `access:<problem>` when it can't. */
   apply(change: AccessChange): Promise<AccessListing & { id: string }>;
