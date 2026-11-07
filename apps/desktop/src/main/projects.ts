@@ -63,6 +63,16 @@ export function resumeProjectProfile(root: string): { profile: string; folder: s
   }
 }
 
+/** A folder name Windows, macOS and Linux all accept, kept as close to the project's display name as they allow. */
+export function projectFolderName(name: string): string {
+  let safe = name.trim().replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "-").replace(/-{2,}/g, "-").replace(/^-+/, "");
+  const chars = Array.from(safe);
+  if (chars.length > 100) safe = chars.slice(0, 100).join("");
+  safe = safe.replace(/[-. ]+$/, "");
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(safe)) safe = `${safe}-notes`;
+  return safe;
+}
+
 /** A review build's local GitHub stand-in: loopback only, never the account vault, never a redirect out of it. */
 export function candidateGitHubApi(origin: string): GitHubApi {
   if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) throw new Error("Review builds use a loopback GitHub endpoint only.");
@@ -468,8 +478,10 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     return result.canceled || !result.filePaths[0] ? undefined : realpath(result.filePaths[0]);
   }
   async function check(parent: string, name: string): Promise<{ folder: string; problem: string }> {
-    const folder = join(parent, name);
-    if (!name.trim() || name !== name.trim() || /[\\/:*?"<>|\u0000-\u001f]/.test(name) || /[. ]$/.test(name) || name.length > 100 || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(name)) return { folder, problem: "name" };
+    // The display name is free text (the owner, 7 November); the folder takes a safe form of it on every platform.
+    const safe = projectFolderName(name);
+    const folder = join(parent, safe);
+    if (!name.trim() || !safe) return { folder, problem: "name" };
     const canonical = await realpath(parent);
     for (let ancestor = canonical; ; ancestor = dirname(ancestor)) {
       if (existsSync(join(ancestor, ".focus-notes", "workspace.json"))) return { folder, problem: "nested" };
@@ -483,9 +495,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (existsSync(folder)) return { folder, problem: "exists" };
     try { await access(canonical, constants.W_OK); }
     catch { return { folder, problem: "access" }; }
-    return { folder: join(canonical, name), problem: "" };
+    return { folder: join(canonical, safe), problem: "" };
   }
-  async function create(input: { parent: string; name: string; accent: string; logo: string; github?: boolean }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
+  async function create(input: { parent: string; name: string; accent: string; logo: string; github?: boolean; repo?: string }, operation?: { signal: AbortSignal; progress: (progress: Omit<ProjectCreateProgress, "request">) => void }): Promise<string> {
     if (!PROJECT_ACCENTS.includes(input.accent) || !PROJECT_LOGOS.includes(input.logo)) throw new Error("Invalid project look");
     if (candidateApi && !/^http:\/\/127\.0\.0\.1:\d+$/.test(candidateApi)) throw new Error("Project creation requires a loopback GitHub endpoint.");
     // Never make a project on this computer only when the person chose GitHub: refuse before anything exists.
@@ -524,7 +536,8 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await step("repository", async () => {
         const api = candidateGitHubApi(candidateApi!);
         const owner = (await api.user()).login;
-        const name = input.name.replace(/[^A-Za-z0-9._-]/g, "-");
+        const name = input.repo ?? "";
+        if (!/^[A-Za-z0-9._-]{1,100}$/.test(name)) throw new Error("Invalid repository name");
         await api.createRepo(name, "Private notes for Focus Notes", true, false);
         const repository = await api.repo(owner, name);
         if (!repository.private || repository.owner !== owner || repository.name !== name) throw new Error("The local GitHub endpoint did not confirm a private repository.");

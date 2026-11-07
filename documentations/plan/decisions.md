@@ -67,6 +67,14 @@ SQLite uses zero synchronous busy timeout and bounded asynchronous contention re
 Reuse the existing secondary-window controller and first-themed-frame presentation. A secondary chooser has an explicit initial-Open intent, never restores the primary's note or creates a first note, and cannot replace the primary's remembered launch position. Explicit project-note, file and deep-link targets keep their existing routing. Project processes/profiles are not reorganized; this supersedes only the previous no-path `showMain` behavior audited under D-366.
 
 **Affects:** [Projects → The Open view](../experience/projects.md#the-open-view), UC-PROJ-02, SC-PROJ-07, PRJ-25, WP-P.19, [startup waits](../architecture/perceived-performance.md#project-startup).
+## D-pending: New project names its repository separately
+
+**The owner, 7 November 2026 at 17:55:** “We should also have repo friendly name where we can let users name their project anything they want.”
+
+The project name stays free text (any characters, spaces, emoji). With GitHub chosen, **Repository name** is a separate field on step 2, prefixed with the owner, made from the project name in GitHub's form (lowercase, hyphens, allowed characters, at most 100) and following it until the person edits it. It's validated on the step (characters, length, reserved names, already taken for the owner through a read-only lookup), keeping all input on refusal. Confirm shows owner/repository with **Change…**, which edits the name in place. The local folder uses a safe form of the project name where Windows forbids characters. This fills the open line “Renaming the repository itself on this screen is the next step, not yet specified”. Rejected: deriving the repository name silently with no way to change it (the owner asked for a friendly name); restricting the project name to repository characters.
+
+**Affects:** [Projects → The repository's own name](../experience/projects.md#the-repositorys-own-name), IA-VIEW-PROJECTS, the D-pending entry below.
+
 ## D-pending: New project asks where to keep it
 
 **The owner, 7 November 2026 at 17:54:** “At no step in the creation process, it give me the option to create a local or GitHub (Cloud backed up) project. It bydefaults creates a local only project and the project itself assumes it's cloud backed up project and shows error. Refer spec on what this should be and implement it correctly.”

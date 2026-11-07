@@ -1573,6 +1573,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (request !== undefined && (typeof request !== "string" || !/^[0-9a-f-]{36}$/i.test(request))) throw new Error("Invalid project operation");
     const github = "github" in input ? input.github : undefined;
     if (github !== undefined && typeof github !== "boolean") throw new Error("Invalid new project");
+    const repo = "repo" in input ? input.repo : undefined;
+    if (github === true ? typeof repo !== "string" || !isRepoName(repo) : repo !== undefined) throw new Error("Invalid new project");
     const key = `${event.sender.id}:${request}`;
     if (projectCreates.has(key)) throw new Error("Project operation already running");
     const controller = new AbortController();
@@ -1580,7 +1582,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     event.sender.once("destroyed", abort);
     projectCreates.set(key, controller);
     try {
-      return await projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo, github: github === true }, {
+      return await projects.create({ parent: input.parent, name: input.name, accent: input.accent, logo: input.logo, github: github === true, ...(github === true ? { repo: repo as string } : {}) }, {
         signal: controller.signal,
         progress: progress => {
           if (request && !event.sender.isDestroyed()) event.sender.send("projects:createProgress", { ...progress, request });
@@ -1624,6 +1626,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const reviewGitHub = process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API;
   const reviewRemotes = reviewGitHub ? process.env.FOCUS_NOTES_CANDIDATE_GIT_REMOTES : undefined;
   const projectGitHub = async () => (reviewGitHub ? candidateGitHubApi(reviewGitHub) : (journey && !fakeApi ? undefined : (await account.api())?.api));
+  // New project's repository name (the owner, 7 November): a read-only lookup on the signed-in account; nothing is created here.
+  handle("projects:repoTaken", async (name: unknown) => {
+    if (typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository name");
+    const api = await projectGitHub();
+    if (!api) return undefined;
+    return Boolean(await api.findRepo((await api.user()).login, name));
+  });
   handle("projects:githubRepos", async () => {
     const api = await projectGitHub();
     if (!api) throw new Error("signedOut");
