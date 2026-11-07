@@ -10,6 +10,7 @@ import { git, instance, write } from "./instance.ts";
 import { picture } from "./fre-fakes.ts";
 import { card, existingInstance, start as startFirstRun, world } from "./github-world.ts";
 import { frameProblems } from "./frames.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 async function closeTestApp(l: Launched) {
   try {
@@ -993,7 +994,7 @@ test("Broken images keep their alt and scoped Retry, coalesce notices and recove
   } finally { await closeTestApp(l); }
 });
 
-test("New project streams actual setup steps and Cancel keeps the partial folder without opening or replaying it", async () => {
+test("New project streams actual setup steps and Close keeps the partial folder without opening or replaying it", async () => {
   const dirs = tempDirs(), note = join(dirs.docs, "Welcome.md");
   const parent = join(dirs.userData, "creation-parent");
   mkdirSync(parent);
@@ -1019,6 +1020,7 @@ test("New project streams actual setup steps and Cancel keeps the partial folder
   let l: Launched | undefined;
   try {
     l = await launch(dirs, { FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}` });
+    expect(await l.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(window => window.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
     await l.app.evaluate(({ ipcMain }, folder) => {
       ipcMain.removeHandler("projects:parent");
       ipcMain.handle("projects:parent", () => folder);
@@ -1035,19 +1037,26 @@ test("New project streams actual setup steps and Cancel keeps the partial folder
     await expect(progress).toHaveAttribute("aria-label", "3 of 6 steps completed");
     await expect(progress).toHaveAttribute("value", "50");
     await expect(project.locator("[data-step-mark][data-step-mark-size=compact] [data-busy]")).toHaveCount(1);
-    await expect(project.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
-    await project.getByRole("button", { name: "Cancel", exact: true }).click();
-    await expect(project.getByRole("button", { name: "Stopping after this step…", exact: true })).toBeDisabled();
+    const close = project.getByRole("button", { name: "Close", exact: true });
+    await expect(project.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+    await expect(close).toBeInViewport();
+    await close.click();
+    await expect(project).toBeVisible();
+    await expect(progress).toHaveAttribute("value", "50");
     if (!release) throw new Error("Repository creation was not held");
     release();
     await expect(project.locator("[data-status-row=danger]")).toContainText("Completed files and your choices are kept.");
     await expect(project.getByRole("button", { name: "Create project", exact: true })).toBeDisabled();
-    await expect(project.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
+    await expect(close).toBeInViewport();
     expect(creates).toBe(1);
     const folder = join(parent, "Streamed project");
     expect(readdirSync(folder).sort()).toEqual([".git", "notes"]);
     expect(readFileSync(note, "utf8")).toBe(bytes);
     expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+    await close.click();
+    await expect(project).toBeHidden();
+    expect(readFileSync(note, "utf8")).toBe(bytes);
+    expect(readdirSync(folder).sort()).toEqual([".git", "notes"]);
   } finally {
     release?.();
     if (l) await closeTestApp(l);

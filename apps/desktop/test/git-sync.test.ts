@@ -54,6 +54,25 @@ describe("EDT-11 and D-07: save, commit, and push, private first", () => {
     expect(pushes).toEqual([join(ws, "private"), ws]);
   });
 
+  it("backs up an already staged private pointer only after its child commit is on the remote", async () => {
+    const { ws, notesRemote, privateRemote } = instance();
+    const privateFolder = join(ws, "private");
+    writeFileSync(join(privateFolder, "notes", "welcome.md"), "# Welcome\n\nAlready backed up.\n");
+    git(privateFolder, "add", "--", "notes/welcome.md");
+    git(privateFolder, "commit", "-qm", "Back up private note");
+    git(privateFolder, "push", "-q", "origin", "main");
+    const child = git(privateRemote, "rev-parse", "main");
+    git(ws, "add", "--", "private");
+    writeFileSync(join(ws, "notes", "outside.md"), "# Not mine\n");
+    expect(git(ws, "status", "--porcelain", "--", "private")).toBe("M  private");
+    const sync = await open(ws);
+    expect((await sync.request("save")).problem).toBeUndefined();
+    expect(git(notesRemote, "ls-tree", "main", "private").split(/\s+/)[2]).toBe(child);
+    expect(git(ws, "status", "--porcelain", "--", "private")).toBe("");
+    expect(git(ws, "status", "--porcelain", "--", "notes/outside.md")).toBe("?? notes/outside.md");
+    expect(readFileSync(join(ws, "notes", "outside.md"), "utf8")).toBe("# Not mine\n");
+  });
+
   it("moves the pointer at most once per gap in a writing session, and on quit whatever the gap", async () => {
     const { ws, notesRemote, privateRemote } = instance();
     const clock = new FakeClock();

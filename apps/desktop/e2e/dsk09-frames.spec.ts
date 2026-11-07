@@ -15,6 +15,7 @@ import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { quit, windowBox, type Launched } from "./helpers.ts";
 import { card, existingInstance, heading, openAccountSettings, press, start, world } from "./github-world.ts";
 import { frameProblems, recordFrames, watchMotion, watchShifts, type Frame } from "./frames.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
@@ -72,6 +73,7 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
   w.fakes.store(w.gh.token);
   writeFileSync(join(w.dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, appearance: "dark" }));
   const l = await start(w);
+  expect(await l.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(window => window.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
   const { page } = l;
   const navs = navigations(page);
   // Reduced motion: swaps are instant, and no frame is caught mid-transition (D-148).
@@ -156,8 +158,18 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     await openWorkspaceSettings(page);
     await settings(page).getByRole("button", { name: "Remove from this computer…" }).click();
     const dialog = page.getByRole("dialog", { name: "Remove this project?" });
-    await dialog.getByRole("button", { name: "Remove", exact: true }).click({ timeout: 30_000 });
+    const remove = dialog.getByRole("button", { name: "Remove", exact: true });
+    const sync = dialog.getByRole("button", { name: "Sync now", exact: true });
+    await expect.poll(async () => await remove.isVisible() || await sync.isVisible()).toBe(true);
+    if (await sync.isVisible()) {
+      await expect(dialog).toContainText("on GitHub yet");
+      await expect(remove).toBeHidden();
+      await sync.click();
+    }
+    const removedFolder = folderNow();
+    await remove.click({ timeout: 30_000 });
     await heading(page, "We found your notes");
+    expect(existsSync(removedFolder)).toBe(false);
     await settle(page);
 
     const frames = await rec.stop();

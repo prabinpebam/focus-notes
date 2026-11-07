@@ -157,6 +157,7 @@ export const MEASURE_NAMES: readonly string[] = [
   "fn:note.open", "fn:spotlight.open", "fn:actions.ai", "fn:image.print",
   "fn:image.caption.open", "fn:image.caption.generate", "fn:image.edit.save",
   "fn:files.move", "fn:files.rename",
+  "fn:project.firstNote", "focus-notes:project.firstNote",
   "focus-notes:files.move", "focus-notes:files.rename",
   "focus-notes:image.caption.open", "focus-notes:image.caption.generate",
   // Deleting a project (PRJ-23): the copy of the notes not on GitHub, and the Recycle Bin.

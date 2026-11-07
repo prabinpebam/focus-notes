@@ -8,6 +8,11 @@ export function checkingDisk(files: Record<string, string>, onWrite?: (path: str
   const differs = (path: string, expected: string | undefined, text: string) =>
     expected !== undefined && path in files && files[path] !== expected && files[path] !== text;
   return {
+    createOp: (op: { path: string; text: string }): void => {
+      if (op.path in files) throw new Error("Refused: exists");
+      files[op.path] = op.text;
+      onWrite?.(op.path, op.text);
+    },
     writeNote: async (path: string, text: string, expected?: string): Promise<void | { outside: string }> => {
       if (differs(path, expected, text)) return { outside: files[path]! };
       files[path] = text;

@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 async function close(instance: Launched, dirs: ReturnType<typeof tempDirs>) {
   try { await quit(instance); }
@@ -33,7 +34,7 @@ for (const paired of [false, true]) {
     const { dirs, root } = project(paired);
     const instance = await launch(dirs);
     try {
-      expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+      expect(await instance.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
       const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
       await expect(note).toBeVisible();
       await expect(note).toBeFocused();
@@ -58,7 +59,7 @@ test("A nonempty project with missing launch history never creates a replacement
   writeFileSync(kept, "# Kept\n\nUnchanged.\n");
   const instance = await launch(dirs);
   try {
-    expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    expect(await instance.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
     await expect(instance.page.getByRole("dialog", { name: "Open", exact: true })).toBeVisible();
     expect(readdirSync(root)).toEqual(["kept.md"]);
     expect(readFileSync(kept, "utf8")).toBe("# Kept\n\nUnchanged.\n");
@@ -84,7 +85,7 @@ test("Separate source startups and a late arriver open the same certified first 
     const initial = await Promise.all([start(first), start(second)]);
     expect(initial[0]!.pid).not.toBe(initial[1]!.pid);
     for (const instance of initial) {
-      expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+      expect(await instance.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
       const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
       await expect(note).toBeVisible();
       await expect(note).toBeFocused();
@@ -93,7 +94,7 @@ test("Separate source startups and a late arriver open the same certified first 
     }
     const arriving = await start(late);
     expect(initial.map(instance => instance.pid)).not.toContain(arriving.pid);
-    expect(await arriving.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    expect(await arriving.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
     const note = arriving.page.getByRole("textbox", { name: "Note", exact: true });
     await expect(note).toBeFocused();
     await expect(note).toHaveText("");

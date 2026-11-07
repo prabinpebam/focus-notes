@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { instance } from "./instance.ts";
 import { moreMenu, reset, spotlight } from "./surfaces.ts";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const OUT = resolve("../../test-results/settings-grouping");
@@ -316,6 +317,7 @@ test("Open, Share and Files keep scrollbars at their surface edges and focus rin
   }));
   const l = await launch(dirs);
   const problems: string[] = [];
+  expect(await l.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
   const inspect = async (surface: Locator, body: string) => {
     await expect(surface).toBeVisible();
     await l.page.waitForFunction(() => document.getAnimations().every(a => a.playState !== "running"));
@@ -337,13 +339,20 @@ test("Open, Share and Files keep scrollbars at their surface edges and focus rin
   try {
     await expect(l.page.getByRole("textbox", { name: "Note", exact: true })).toContainText("First line.");
     await l.page.keyboard.press(`${mod}+Alt+o`);
-    await inspect(l.page.getByRole("dialog", { name: "Open", exact: true }), "[data-dialog-body]");
-    await l.page.keyboard.press("Escape");
+    const open = l.page.getByRole("dialog", { name: "Open", exact: true });
+    await inspect(open, "[data-dialog-body]");
+    // The focus audit leaves a Pin tooltip owning Escape; close its dialog explicitly.
+    await open.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(open).toBeHidden();
+    await expect(l.page.locator("[data-scrim]")).toHaveCount(0);
     await l.page.keyboard.press(`${mod}+.`);
     await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
     await l.page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-    await inspect(l.page.getByRole("dialog", { name: "Share “Welcome”", exact: true }), "[data-dialog-body]");
-    await l.page.keyboard.press("Escape");
+    const share = l.page.getByRole("dialog", { name: "Share “Welcome”", exact: true });
+    await inspect(share, "[data-dialog-body]");
+    await share.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(share).toBeHidden();
+    await expect(l.page.locator("[data-scrim]")).toHaveCount(0);
     await l.page.keyboard.press(`${mod}+o`);
     const files = l.page.getByRole("complementary", { name: "Files", exact: true });
     await inspect(files, "[data-sheet-body]");

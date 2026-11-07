@@ -61,6 +61,7 @@ function setup(opts: { files?: Record<string, string>; folders?: string[]; open?
             for (const p of Object.keys(files)) if (under(op.from, p)) { files[op.to + p.slice(op.from.length)] = files[p]!; delete files[p]; }
             for (const d of [...folders]) if (under(op.from, d)) { folders.delete(d); folders.add(op.to + d.slice(op.from.length)); }
           } else if (op.op === "write") checkingDisk(files).writeOp(op);
+          else if (op.op === "create") checkingDisk(files).createOp(op);
         }
       },
       chooseBundle: async () => ({ id: "b1", name: "focus-notes-export-2026-10-14.json", notes: 2 }),

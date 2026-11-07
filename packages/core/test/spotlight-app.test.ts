@@ -64,6 +64,7 @@ function desktop(platform: PlatformBridge["platform"] = "windows", extra: Record
           if (op.op === "move") {
             for (const p of Object.keys(files)) if (under(op.from, p)) { files[op.to + p.slice(op.from.length)] = files[p]!; delete files[p]; }
           } else if (op.op === "write") checkingDisk(files).writeOp(op);
+          else if (op.op === "create") checkingDisk(files).createOp(op);
           else if (op.op === "delete") for (const p of Object.keys(files)) if (under(op.path, p)) delete files[p];
         }
       },

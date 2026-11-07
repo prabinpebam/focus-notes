@@ -228,6 +228,20 @@ describe("QLT-04: timings, settings, the preview, and the log", () => {
     expect(parseTimings([{ name: "fn:note.open", count: 2, p50: 1.4, p95: 9 }, { name: "note.open", count: 1, p50: 1, p95: 1 }, { name: "/home/ada", count: 1, p50: 1, p95: 1 }, { name: "fn:spotlight.open", count: -1, p50: 1, p95: 1 }, "x"])).toEqual([{ name: "fn:note.open", count: 2, p50: 1, p95: 9 }]);
     expect(buildReport(facts({ timings: [{ name: "Diary 2026", count: 1, p50: 1, p95: 1 }] }))).not.toContain("Diary");
   });
+  it("keeps first-note startup timings in the standard summary and diagnostic report", () => {
+    const timings = summarizeTimings([
+      { name: "fn:project.firstNote", duration: 20 },
+      { name: "focus-notes:project.firstNote", duration: 35 },
+    ]);
+    expect(timings).toEqual([
+      { name: "fn:project.firstNote", count: 1, p50: 20, p95: 20 },
+      { name: "focus-notes:project.firstNote", count: 1, p50: 35, p95: 35 },
+    ]);
+    expect(parseTimings(timings)).toEqual(timings);
+    const report = buildReport(facts({ timings }));
+    expect(report).toContain("| fn:project.firstNote | 1 | 20 | 20 |");
+    expect(report).toContain("| focus-notes:project.firstNote | 1 | 35 | 35 |");
+  });
   it("summarizes each part for the preview", () => {
     expect(previewOf(facts())).toEqual({ version: "0.5.0", os: "Windows", electron: "38", git: "2.47.1", helper: "gcm", repositories: 2, ahead: 1, behind: 3, conflicts: 1, journal: 1, compositing: "software", problems: 1 });
   });

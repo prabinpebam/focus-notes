@@ -6,11 +6,12 @@
  * the contents (back to the rail); widening docks them again. Screenshots go to test-results/screens.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, railFrom, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { execFileSync } from "node:child_process";
+import { journeyUnseen } from "../src/main/window/journey-window.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const shots = "../../test-results/screens";
@@ -19,10 +20,10 @@ const NOTE = ["# Launch plan", para(1), "## Why now", para(2), para(3), "## Audi
 
 async function start(dirs = tempDirs(), state: Record<string, unknown> = {}): Promise<Launched> {
   writeFileSync(join(dirs.docs, "Welcome.md"), NOTE);
-  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", ...state }));
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "Welcome.md"), ...state }));
   writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: 1200, height: 800 } }));
   const l = await launch(dirs);
-  expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every((w) => w.getOpacity() === 0))).toBe(true);
+  expect(await l.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every((w) => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
   // As on CI's 1024 px screen.
   await size(l, 1024, 720);
@@ -88,20 +89,21 @@ test("Open hides docked Files and closing it restores the same dock and note (PR
   }
 });
 
-test("Empty-project Open uses the same dialog and close action, with no Files or duplicate Cancel (PRJ-02, D-187, D-375)", async () => {
+test("Missing-note startup Open uses the same dialog and close action, with no Files or duplicate Cancel (PRJ-02, D-187, D-375)", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({
-    version: 1, firstRun: "done", lastNotePath: "", filesPinned: true,
+    version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "Missing.md"), filesPinned: true,
   }));
   const l = await launch(dirs);
   try {
-    expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every((w) => w.getOpacity() === 0))).toBe(true);
+    expect(await l.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every((w) => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
     const open = l.page.getByRole("dialog", { name: "Open", exact: true });
     await expect(open).toBeVisible();
     await expect(open.getByRole("button", { name: "Close", exact: true })).toBeVisible();
     await expect(open.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
     await expect(l.page.getByRole("heading", { name: "Open", exact: true })).toHaveCount(1);
     await expect(files(l.page)).toHaveCount(0);
+    expect(readdirSync(dirs.docs)).toEqual([]);
     await l.page.keyboard.press("Tab");
     expect(await open.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
     await open.getByRole("button", { name: "Close", exact: true }).click();

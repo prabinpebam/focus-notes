@@ -89,7 +89,7 @@ export function parseStatus(out: string): RepoStatus {
 export const covers = (path: string, entry: string) => entry === path || entry.startsWith(path.endsWith("/") ? path : `${path}/`);
 
 /** Whether the submodule at a path is at another commit than the one recorded (its pointer moved). */
-export const pointerMoved = (s: RepoStatus, path: string) => s.entries.some((e) => e.path === path && e.sub.startsWith("S") && e.sub[1] === "C");
+export const pointerMoved = (s: RepoStatus, path: string) => s.entries.some((e) => e.path === path && e.sub.startsWith("S") && (e.sub[1] === "C" || e.xy[0] === "M"));
 
 /** Tracked files with changes, not counting a submodule: a rebase needs none of these. */
 export const trackedChanges = (s: RepoStatus) => s.entries.filter((e) => (e.kind === "changed" || e.kind === "renamed" || e.kind === "unmerged") && !e.sub.startsWith("S"));

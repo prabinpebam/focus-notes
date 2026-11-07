@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, titleOfMarkdown, type AppStateFile, type PlatformBridge } from "../src/index.ts";
+import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PRIV = "/w/private/notes";
@@ -51,7 +52,14 @@ function setup(opts: { files?: Record<string, string>; state?: Partial<AppStateF
       },
       writeFormat: async () => {},
       renameNote: async () => {},
-      apply: async () => {},
+      apply: async (ops) => {
+        for (const op of ops) {
+          if (op.op === "create") {
+            checkingDisk(files).createOp(op);
+            created.push(op.path);
+          }
+        }
+      },
     },
   } as PlatformBridge;
   const app = createApp(bridge, messages);

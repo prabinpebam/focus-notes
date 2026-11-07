@@ -29,7 +29,7 @@ test("Repeated no-path launches open distinct Open windows in the same Preview p
   try {
     const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
     await expect(note).toBeVisible();
-    expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    expect(await instance.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
     await note.press("End");
     await note.pressSequentially(" Kept in the primary window");
     const selection = await note.evaluate(() => {
