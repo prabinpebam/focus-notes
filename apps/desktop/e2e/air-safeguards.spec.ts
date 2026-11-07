@@ -343,6 +343,7 @@ test("AIS-16: Settings Default is one list shared with Rewrite", async () => {
         await page.keyboard.press("ArrowDown");
         await expect(radios.nth(1)).toBeChecked();
         await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c1");
+        await expect(radios.nth(1)).not.toHaveAttribute("aria-disabled", "true", PROMPTLY);
         await expect(radios.nth(1)).toBeFocused();
         for (const identity of identities) {
           expect(await identity!.evaluate((node) => node.isConnected)).toBe(true);
@@ -351,8 +352,13 @@ test("AIS-16: Settings Default is one list shared with Rewrite", async () => {
         await radios.first().focus();
         await page.keyboard.press("Space");
         await expect(radios.first()).toBeChecked();
-        await radios.nth(1).check();
+        await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c0");
+        await expect(radios.first()).not.toHaveAttribute("aria-disabled", "true", PROMPTLY);
+        // Controlled radios keep the persisted choice until the save is acknowledged.
+        await radios.nth(1).click();
         await expect.poll(() => JSON.parse(readFileSync(aiFile, "utf8")).writer, PROMPTLY).toBe("c1");
+        await expect(radios.nth(1)).toBeChecked();
+        await expect(radios.nth(1)).not.toHaveAttribute("aria-disabled", "true", PROMPTLY);
         const row = settings.locator("[data-item-card]").filter({ has: page.getByRole("radio", { name: "Default: Connection 0", exact: true }) });
         await row.getByRole("button", { name: "Change", exact: true }).click();
         expect(JSON.parse(readFileSync(aiFile, "utf8")).writer).toBe("c1");
