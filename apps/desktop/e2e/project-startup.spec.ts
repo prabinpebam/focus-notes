@@ -64,3 +64,57 @@ test("A nonempty project with missing launch history never creates a replacement
     expect(readFileSync(kept, "utf8")).toBe("# Kept\n\nUnchanged.\n");
   } finally { await close(instance, dirs); }
 });
+
+test("Separate source startups and a late arriver open the same certified first note with a usable caret (PRJ-24)", async () => {
+  const first = project(false);
+  const second = project(false);
+  const late = project(false);
+  const owned: { instance: Launched; dirs: ReturnType<typeof tempDirs> }[] = [];
+  for (const profile of [second, late]) {
+    writeFileSync(join(profile.dirs.userData, "project-folder.txt"), first.dirs.docs);
+    writeFileSync(join(profile.dirs.userData, "workspace.json"), JSON.stringify({ version: 1, folder: first.dirs.docs, kind: "local" }));
+  }
+  const start = async (profile: typeof first) => {
+    const instance = await launch({ userData: profile.dirs.userData, docs: first.dirs.docs }, { FOCUS_NOTES_PROJECTS_PROFILE: first.dirs.userData });
+    owned.push({ instance, dirs: profile.dirs });
+    return instance;
+  };
+  const path = join(first.root, "Untitled.md");
+  try {
+    const initial = await Promise.all([start(first), start(second)]);
+    expect(initial[0]!.pid).not.toBe(initial[1]!.pid);
+    for (const instance of initial) {
+      expect(await instance.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+      const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
+      await expect(note).toBeVisible();
+      await expect(note).toBeFocused();
+      await expect(note).toHaveText("");
+      await expect(instance.page.getByRole("dialog", { name: "Open", exact: true })).toBeHidden();
+    }
+    const arriving = await start(late);
+    expect(initial.map(instance => instance.pid)).not.toContain(arriving.pid);
+    expect(await arriving.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().every(w => w.getOpacity() === 0))).toBe(true);
+    const note = arriving.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(note).toBeFocused();
+    await expect(note).toHaveText("");
+    for (const profile of [first, second, late]) {
+      await expect.poll(() => JSON.parse(readFileSync(join(profile.dirs.userData, "state.json"), "utf8")).lastNotePath).toBe(path);
+    }
+    expect(readdirSync(first.root)).toEqual(["Untitled.md"]);
+    expect(readFileSync(path, "utf8")).toBe("");
+    await arriving.page.keyboard.type("Winner is writable.");
+    await expect(note).toContainText("Winner is writable.");
+    await expect.poll(() => readdirSync(first.root).filter(file => /\.md$/i.test(file)).map(file => readFileSync(join(first.root, file), "utf8")).join("")).toContain("Winner is writable.");
+    expect(readdirSync(first.root).filter(file => /\.md$/i.test(file))).toHaveLength(1);
+  } finally {
+    // Quit other profiles before the root-owning fixture removes the shared temporary notes.
+    owned.sort((a, b) => Number(a.dirs === first.dirs) - Number(b.dirs === first.dirs));
+    for (const entry of owned) await close(entry.instance, entry.dirs);
+    for (const profile of [first, second, late]) {
+      if (!owned.some(entry => entry.dirs === profile.dirs)) {
+        rmSync(profile.dirs.userData, { recursive: true, force: true });
+        rmSync(profile.dirs.docs, { recursive: true, force: true });
+      }
+    }
+  }
+});

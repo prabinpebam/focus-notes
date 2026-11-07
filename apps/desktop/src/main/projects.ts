@@ -562,5 +562,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed, purge, resume, dispose };
+  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, lastNote, position, remember, closed, purge, resume, dispose, firstNoteAdmission: metadata.firstNoteAdmission };
 }

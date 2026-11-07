@@ -806,6 +806,10 @@ const roots = () => isWorkspace()
 /** Where new notes go when there's no note to put them next to. */
 const notesRoot = () => roots()[0]!.path;
 const createFirstProjectNote = firstProjectNote({
+  admit: (roots, work) => {
+    if (!projectMetadata) throw new Error("Project startup metadata is unavailable");
+    return projectMetadata.firstNoteAdmission(roots, work);
+  },
   roots: async () => {
     if (process.env.FOCUS_NOTES_LOCAL_NOTES === "1") return undefined;
     let project: string;
@@ -957,6 +961,7 @@ function notePath(p: unknown): string {
  * before the rename: another program's change is never written over (D-92, DEF-26).
  */
 const writer = new NoteWriter({
+  replace: (path, write) => createFirstProjectNote.write(path, write),
   ready: async (path) => {
     await assertWritable(path);
     // A pull rewriting files finishes first, so a save never lands in the middle of it.
@@ -1381,7 +1386,7 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
-let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume"> | undefined;
+let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume" | "firstNoteAdmission"> | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
   const imageBatches = new Map<string, string[]>();
   handleFrom("image:import", async (event, path, inputs, replace) => {

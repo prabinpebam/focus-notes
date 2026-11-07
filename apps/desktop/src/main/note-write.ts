@@ -59,6 +59,8 @@ export async function changedOutside(path: string, content: string, expected: st
 export interface NoteWriterHooks {
   /** Waits until the path may be written: a writable workspace, no Git pull rewriting files. */
   ready?(path: string): Promise<void>;
+  /** Keeps an admitted first note's identity with its atomic replacement, after writable/Git waits. */
+  replace?<T>(path: string, write: () => Promise<T>): Promise<T>;
   /** After a write landed (the parsed-note snapshot, PRF-10). */
   written?(path: string, content: string): Promise<void> | void;
 }
@@ -86,6 +88,12 @@ export class NoteWriter {
 
   async #now(path: string, content: string, expected: string | undefined): Promise<{ outside: string } | undefined> {
     await this.#hooks.ready?.(path);
+    return this.#hooks.replace
+      ? this.#hooks.replace(path, () => this.#replace(path, content, expected))
+      : this.#replace(path, content, expected);
+  }
+
+  async #replace(path: string, content: string, expected: string | undefined): Promise<{ outside: string } | undefined> {
     await mkdir(dirname(path), { recursive: true });
     // Checked now that it's this write's turn: what a pull or an earlier write left is what counts.
     const found = await changedOutside(path, content, expected);

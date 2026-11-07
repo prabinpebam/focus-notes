@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { setTimeout as delay } from "node:timers/promises";
 import { DATA_FILES } from "@focus-notes/core/inventory";
+import type { FirstNoteAdmission } from "./first-project-note.ts";
 
 export type MetadataTicket = { generation: string; enabled: boolean };
 
@@ -24,6 +25,7 @@ export function projectMetadataStore(root: string) {
   const ready = attempt(() => {
     db.exec("PRAGMA journal_mode=WAL");
     db.exec("CREATE TABLE IF NOT EXISTS profiles (profile TEXT PRIMARY KEY, generation TEXT NOT NULL, enabled INTEGER NOT NULL)");
+    db.exec("CREATE TABLE IF NOT EXISTS first_notes (project TEXT PRIMARY KEY, roots TEXT NOT NULL, file TEXT NOT NULL)");
   });
   // The promise is also awaited by every operation; this prevents an unhandled startup rejection.
   void ready.catch(error => { console.error("Could not initialize project metadata lifecycle:", error instanceof Error ? error.name : "Error"); });
@@ -73,10 +75,18 @@ export function projectMetadataStore(root: string) {
       return work();
     });
   }
+  const firstNoteAdmission: FirstNoteAdmission = (roots, work) => transaction(async () => {
+    const project = createHash("sha256").update(JSON.stringify(roots.map(root => process.platform === "win32" ? root.toLowerCase() : root))).digest("hex");
+    const row = db.prepare("SELECT roots, file FROM first_notes WHERE project = ?").get(project);
+    if (row && (typeof row.roots !== "string" || typeof row.file !== "string")) throw new Error("The first note's certificate is unreadable");
+    return work(row ? { roots: String(row.roots), file: String(row.file) } : undefined, certificate => {
+      db.prepare("INSERT INTO first_notes (project, roots, file) VALUES (?, ?, ?) ON CONFLICT(project) DO UPDATE SET roots = excluded.roots, file = excluded.file").run(project, certificate.roots, certificate.file);
+    });
+  });
   async function dispose(): Promise<void> {
     await ready.catch(() => {});
     await queue;
     db.close();
   }
-  return { initialize, ticket, change, commit, transaction, dispose };
+  return { initialize, ticket, change, commit, firstNoteAdmission, transaction, dispose };
 }
