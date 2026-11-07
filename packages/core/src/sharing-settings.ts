@@ -5,7 +5,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import type { AccessBridge, ShareManageState } from "./share-manage.ts";
+import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
 import { joinPath, findNode } from "./workspace.ts";
 
 export function registerSharingSettings({ store, catalog, commands, viewModels, tracker, access }: {
@@ -98,7 +98,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   viewModels.register({
     id: "vm.sharingSettings",
     schema: { type: "object", properties: {
-      project: str, site: str, on: bool, off: bool, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str,
+      project: str, site: str, on: bool, off: bool, offDetail: str, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str,
       empty: bool, waiting: bool, failed: bool, retrying: bool, emptyTitle: str, emptyDetail: str, emptyAction: str, loadProblem: str,
       filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
       firstOpen: bool, more: bool, repo: str,
@@ -136,7 +136,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       const projectName = viewModels.select("vm.project", s).name;
       return {
         project: s.workspace.repo?.split("/").at(-1) ?? s.workspace.folder?.split(/[\\/]/).at(-1) ?? "",
-        site: listing?.site ?? s.workspace.site ?? "", on: Boolean(listing?.site && !m.off), off: m.off || !listing?.site,
+        site: listing?.site ?? s.workspace.site ?? "", on: sharingAvailable(s), off: !sharingAvailable(s),
+        offDetail: catalog.format(listing?.localReview || listing?.vault && listing.site ? "share.settings.offDetail" : "sharing.setup.unavailable"),
         localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),

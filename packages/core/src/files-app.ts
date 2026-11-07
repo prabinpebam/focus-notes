@@ -18,6 +18,7 @@ import {
   topLevel, visibleRows, withoutNoteId, type FileRow, type FilesSort, type Selection,
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
+import { sharingAvailable } from "./share-manage.ts";
 import {
   applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, markPublished, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
   visibilityOf, walk, type RefusalReason, type WorkspaceTree,
@@ -383,7 +384,7 @@ export function registerFiles(ctx: Ctx) {
   });
   commands.register({
     id: "files.share", title: "command.note.share", icon: "share",
-    enabled: (s) => Boolean(bridge.access) && Boolean(rowById(s.ui.files.selection.focus)) && !isRootRow(s.ui.files.selection.focus),
+    enabled: (s) => Boolean(bridge.access) && sharingAvailable(s) && Boolean(rowById(s.ui.files.selection.focus)) && !isRootRow(s.ui.files.selection.focus),
     disabledReason: "command.note.share.reason",
     run: async () => {
       const row = rowById(files().selection.focus);
@@ -1475,7 +1476,7 @@ export function registerFiles(ctx: Ctx) {
       both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     });
-    if (bridge.access && focus.kind !== "root") sections.splice(1, 0, ["files.share"]);
+    if (bridge.access && sharingAvailable(s) && focus.kind !== "root") sections.splice(1, 0, ["files.share"]);
     if (focus.kind !== "root" && commands.describe("files.publish").enabled) sections.splice(2, 0, ["files.publish"]);
     const menu = sections.map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));

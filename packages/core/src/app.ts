@@ -40,7 +40,7 @@ import { registerProjectDelete } from "./project-delete-app.ts";
 import { registerProjectNew } from "./project-new-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerAi } from "./ai-app.ts";
-import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
+import { registerShareManage, sharingAvailable, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerItemShare } from "./share-item.ts";
 import { registerSharingSettings } from "./sharing-settings.ts";
 import { registerSharingPeople } from "./sharing-people.ts";
@@ -1375,7 +1375,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   // The actions that can be pinned (UI-08, D-170): the six defaults, then ⋯'s own commands.
-  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id));
+  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && (id !== "note.share" || sharingAvailable(store.state)));
   registerToolbarCustomize({
     store, commands, viewModels, catalog, persistAppState, announce, toast, pinnable, defaults: DEFAULT_TOOLBAR,
     describeItem,
@@ -1469,14 +1469,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => ({
       open: s.ui.toolbarOpen,
       // The six the writer pinned (UI-08, D-170); a pinned action leaves ⋯, and an unpinned default joins it.
-      items: s.toolbarPinned.map(describeItem),
+      items: s.toolbarPinned.filter(id => id !== "note.share" || sharingAvailable(s)).map(describeItem),
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
       more: [
         ...(DEFAULT_TOOLBAR.some((d) => !s.toolbarPinned.includes(d)) ? [{ id: "actions", label: "menu.actions", items: DEFAULT_TOOLBAR.filter((d) => !s.toolbarPinned.includes(d)) as MenuEntry[] }] : []),
         ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
           ...g,
           items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
-            .filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)),
+            .filter((e) => typeof e !== "string" || (!s.toolbarPinned.includes(e) && (e !== "note.share" || sharingAvailable(s)))),
         })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
@@ -1882,6 +1882,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         setup.start();
       }
       await browser.start();
+      if (!missing && bridge.access) await commands.run("share.manage.load");
       // Once every command is registered and the first note is open: the menu bar never delays the caret (PRF-02).
       menuBar.start();
       if (bridge.startupNotice === "preview-carry-over") {

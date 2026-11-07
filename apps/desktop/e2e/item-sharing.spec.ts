@@ -12,13 +12,40 @@ import { launch, quit } from "./helpers.ts";
 import { git, instance, write } from "./instance.ts";
 import { pointerModality } from "./visual-quality.ts";
 
+test("G2.2: an unconfigured project hides Share and explains unavailable setup without changing notes", async () => {
+  const { dirs } = instance();
+  const note = join(dirs.docs, "private", "notes", "welcome.md");
+  const before = readFileSync(note, "utf8");
+  const l = await launch(dirs, { FOCUS_NOTES_CANDIDATE_SITE: "" });
+  try {
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    await expect(settings.getByText("Turning on sharing isn’t available yet. Your notes stay private.", { exact: true })).toBeVisible();
+    await expect(settings.getByRole("button", { name: "Turn on sharing", exact: true })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+    await page.getByRole("treeitem", { name: "Welcome welcome.md", exact: true }).click({ button: "right" });
+    await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    expect(readFileSync(note, "utf8")).toBe(before);
+    expect(existsSync(join(dirs.docs, "private", "access.json"))).toBe(false);
+  } finally {
+    try { await quit(l); } finally {
+      if (process.platform === "win32") for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-File", join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1"), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+    }
+  }
+});
+
 test("Share New words is icon-only, aligned and keeps pending feedback on its own border", async () => {
   const { dirs } = instance();
   const privateDir = join(dirs.docs, "private");
   write(join(privateDir, "notes", "trips", "rome.md"), "# Rome\n\nTrip plan.\n");
   git(privateDir, "add", "-A");
   git(privateDir, "commit", "-qm", "Add test folder");
-  const l = await launch(dirs);
+  write(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site: "https://sharing.test/", steps: {} }));
+  const l = await launch(dirs, { FOCUS_NOTES_CANDIDATE_SITE: "https://sharing.test/" });
   try {
     const { page } = l;
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();

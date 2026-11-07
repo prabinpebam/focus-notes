@@ -2449,7 +2449,7 @@
                                 "get": "vm.project.name"
                               },
                               "detail": {
-                                "t": "share.settings.offDetail"
+                                "get": "vm.sharingSettings.offDetail"
                               },
                               "badge": {
                                 "t": "share.settings.off"
