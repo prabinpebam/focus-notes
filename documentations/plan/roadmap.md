@@ -13,7 +13,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | --- | --- | --- | --- | --- |
 | **M0: Walking skeleton** | It runs. | The team, on their own computers | Preview 0.0.x on GitHub Releases (pre-release, unsigned) | 29 |
 | **M1: Writing** | Write a real document. | The owner, for real documents | Preview 0.1.x | 56 |
-| **MW: Your Focus Notes on GitHub Pages** | Your notes in any browser, from your own site. | The owner, then anyone | Preview 0.2.x | 22 |
+| **MW: Your Focus Notes on GitHub Pages** | Historical browser-writing scope, retired by D-292. | The owner, then anyone | Preview 0.2.x | 20 |
 | **M3: Desktop sign-in and Git** | Your instance on your computer. | The owner, then invited testers | Preview 0.3.x | 21 |
 | **M2: The desktop app** | A dedicated desktop experience. | The owner, then invited testers | Preview 0.3.x | 9 |
 | **M4: Find anything, make it yours** | Everything is one keystroke away. | Invited testers | Preview 0.4.x | 13 |
@@ -21,7 +21,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
 | **MAI: Rewrite with AI** (before Later) | Select text, give a prompt, and the answer from the AI service you chose streams in place as one undo step; Settings → AI connects 26 kinds of local or cloud service. Built in the owner's review build (D-256, D-257). | Owner, then desktop writers | Desktop 1.x | 46 |
-| **MP: Projects and simpler sharing** | Desktop slices built and verifying; real invitations/publishing and browser retirement remain open (D-292). | Desktop writers and website readers | Preview; partial 1.x | 35 |
+| **MP: Projects and simpler sharing** | Desktop slices built and verifying; G1–G7 close production gaps, including the transferred live leak gate (D-382). | Desktop writers and website readers | Preview; partial 1.x | 37 |
 | **MACT: Actions you can trust** (built, verifying) | Spotlight becomes Actions, *Find and act*: files and folders, and only proven, distinct actions grouped by what they act on. Own actions deferred. | The owner, then desktop writers | Preview 1.x | 16 |
 | **Later: Components** | Inline images, safe media assets/sharing, crop/rotate and optional captions; gallery separately. | Writers and readers | Later releases | 14 |
 
@@ -43,7 +43,7 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 
 ### Current state (16 October, evening)
 
-**Updated 6 November, evening.** This heading stays unchanged so existing links keep working. The assessment uses `main` at `42cb1ed8` for landed image printing and retains the final OFB Preview `ca6ae17`, ready at 13:12; image printing's scheduled Preview refresh has not been independently inspected. Statuses live in [`work-graph.json`](work-graph.json): delivered packages are **verifying**, not a claim of formal stage sign-off. The stage-by-stage history below is historical.
+**Updated 7 November, evening.** This heading stays unchanged so existing links keep working. The read-only audit at `42bc9a30` found production gaps behind fake-only paths; F1's no-remote backup status and F4's New-project folder acceptance have since landed (`b933b03e`, `4ed4ad48`, `6667dc33`, exact-head CI `42381219626` seven of seven green). D-378/G0–G7 DoD landed in `50e23d3e`. This is a main/spec assessment, not a new inspection of the scheduled Preview or real-account certification. Statuses live in [`work-graph.json`](work-graph.json); verifying is not formal stage sign-off. The stage-by-stage history below is historical.
 
 #### Built and in Preview
 
@@ -52,7 +52,7 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 | M0 to M4 | The writing editor, blocks, tables, slash menu, focus mode, themes, font size, find/replace, shortcut layers, desktop window, isolated crash recovery, sign-in and Git sync, private/public notes, Recently deleted, Spotlight and theme manager. Built and verifying; no formal stage sign-off recorded. |
 | M5 | Public/private notes, public pages, sealed link/passcode shares with expiry, Extend/Withdraw, diagnostics, Send feedback (WP-5.12) and close to tray. Release qualification and remaining first-run work are still open. |
 | M7 | MCP server, agent permissions (Switches), CLI and deep links. |
-| M8 | Custom/generated themes, Customize toolbar (wired 6 November), Files sort, note history, replace across notes, Spotlight filters/preview, Open in new window, minimap, per-repository backup, Import files and Print. Remaining platform/lifecycle and distribution work is not closed. |
+| M8 | Customize toolbar, note history (FIL-13, separately verifying WP-8.8), Open in new window, minimap, per-repository backup, Import files and Print. Custom/generated themes, sort/duplicate, replace across notes and Spotlight filters/preview retain partial scope; their complete outcome proof is not claimed. |
 | MAI | Settings → AI with 26 service kinds, inline prompt, streaming rewrite with formatting and one Undo, Ctrl+Shift+R, Ctrl+Enter to send, and writing at the caret without a selection. The full MAI gate remains open. |
 | MP | Item-first Files Share dialog, first-share confirmation, Project wording, distinct project windows/profiles and scope, 2 px colour outline with Switch, pill/watermark, preset/uploaded logos, project font/theme, Open with recent/project cards (GitHub link and size), pins, caret restoration, New note in…, Rename file, Local notes/location pill and in-app Open file. Delete project is built with fake-account tests only. Preview site is full-window but local only. |
 | OFB | Every allocated row is met: shared button geometry/padding, Settings Switches, one pending pattern, auto-dismiss notifications, slash blocks/Table insertion, images slice 1, Customize toolbar, Actions A.2 to A.6, project border, restored toolbar icons, code tint, table-wide focus and disabled-section fade. [Evidence](gate-evidence.md#owner-feedback-batch-6-november-ofb) records final Preview `ca6ae17`. |
@@ -68,6 +68,24 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 | Faster reopen | `fix-reopen-residual` is paused after red CI on 5 November (shards 2 and 3); resume or drop. |
 | Your own actions | WP-A.7 / MACT.9 is deferred by D-364 until a week using the starter set. |
 | MAI acceptance | Full gate and owner acceptance remain open; real providers beyond connected ones require approval (WP-AI.7, WP-AI.8). |
+
+### Gap closure: what's next
+
+The owner chose systematic P0/P1 closure on 7 November at 21:10 (D-379). Each slice has its [DoD before implementation](definition-of-done.md#gap-closure-7-november-p0-and-p1), requirements and an owning WP in the [implementation plan](implementation-plan.md#gap-closure-execution-order-7-november). Existing dependencies still apply; the order is the visible delivery priority, not a reason to duplicate ownership or serialize independent safe preparation.
+
+| Order | A person gains | Requirement / stage / package | Remaining dependency |
+| --- | --- | --- | --- |
+| G1 | Choose On this computer only or On GitHub and start an empty note, with real production creation and honest backup | PRJ-01, UC-PROJ-01 / MP / WP-P.4; D-378 resolves S1 | Fake-backed runtime evidence and exact-head gate; owner first real creation |
+| G2 | Turn on sharing for a new project with named public-site confirmation; invite a GitHub account with an honest role | PRJ-10/12, SHR-05–16, UC-SHARE-08/09/12 / MP WP-P.18/11/9, M5 WP-5.1–5.4 and M8 WP-8.12 | Owner first real site activation/invite; no public effect before confirmation |
+| G3 | Publish/Unpublish reaches Pages, with a live leak gate and exact-commit status | SHR-20/25/26, SHR-04, SEC-06, UC-SHARE-02/10 / MP WP-P.22/12 | Owner first real Publish/Unpublish and target; agents use fakes |
+| G4 | Open .txt on its own and save plain text without conversion or Git | PRJ-09, UC-PROJ-08 / MP / WP-P.8 | Standalone byte/recovery/Windows association journey |
+| G5 | Recover missing/moved notes without an empty replacement | FRE-11–13, UC-SAFE-08–10 / M5 / WP-5.14 | Disposable removed/recovered-folder journey; owner real account recovery if needed |
+| G6 | Use opaque random codes, Copy again, Extend/Withdraw and the exact share template | SHR-17–19/23, UC-SHARE-03–05, UC-READ-02 / MP / WP-P.10 | SHR-23 first; owner first real share/Extend/Withdraw |
+| G7 | Sign out/remove a project without leaving private traces in other profiles | PRV-02 / M3 / WP-3.6 | Cross-profile/live-writer cleanup proof; source notes/remotes untouched |
+
+**Spec closure G0:** S1 is D-378; S2 transfers SHR-04/SEC-06 to live WP-P.22 (D-382); S3 makes macOS/Linux installers and desktop matrix after v1 in the Store (D-211/D-383); S4 is W-create2's separate D-381 repository-rename ruling, not a new feature; S5 defers undesigned Spotlight Share (D-384); S6 uses current build assessments (D-385); S7 separates built FIL-13 into verifying M8 WP-8.8 (D-386). Every finding has a durable flow and negative-case evidence; first-real rows remain owner-dependent. F4.x is still the owner's first deletion.
+
+No agent creates/deletes/invites/publishes on a real account. D-379 authorizes safe implementation, not real output or a release. Nothing becomes public without the owner pressing the button. Windows is the desktop delivery target until v1 is in the Store; non-Windows parts of DST-03/QLT-02 follow afterward.
 
 #### Specced but missing or partial
 
@@ -123,7 +141,7 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MW: Your Focus Notes on GitHub Pages (Your notes in any browser, from your own site)</p>
-<p>Your instance (made from the template, or the project repository for its owner) deploys the app to its own GitHub Pages site. Write at once with no account: notes written in the browser stay in that browser and work offline. Read your site's public notes, unlock your private notes read-only with your passphrase, copy any note into your browser notes to edit it, and export your browser notes for the desktop app. Visitors see only public notes and *Use this app for yourself*. Create, rename, delete, and move notes and folders in the Files panel. The browser never signs in to GitHub (D-90). <a href="implementation-plan.md#mw">Details</a>. DST-01, DST-02, DST-05, FIL-01 to FIL-03, FIL-07 to FIL-09, FRE-09, PKG-05, PKG-07 to PKG-11, PRF-09, PRF-11, SEC-06, SEC-08, SHR-04, UI-12.</p>
+<p>Historical browser-writing stage, retired by D-292: local browser notes, public reading, owner Unlock and the export ease-in remain descriptions of the old runtime, not future delivery promises. Safe recovery of existing browser drafts belongs to WEB-01. <a href="implementation-plan.md#mw">Details</a>. DST-01, DST-02, DST-05, FIL-01 to FIL-03, FIL-07 to FIL-09, FRE-09, PKG-05, PKG-07 to PKG-11, PRF-09, PRF-11, SEC-08, UI-12. Active leak requirements SHR-04 and SEC-06 belong to MP / WP-P.22 (D-382), not this retired stage.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M3: Desktop sign-in and Git (Your instance on your computer)</p>
@@ -161,7 +179,7 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MP: Projects and simpler sharing (planned)</p>
-<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, personal-account collaborators and a public website/preview. All six follow-up owner choices are accepted. Existing workspace migration is mostly on-screen terminology with no disk move. Browser retirement is approved to plan with one-click local export of the owner's drafts, if any; no heavy migration/retention gates. Earlier MW/browser clauses are historical, superseded by D-292. <a href="implementation-plan.md#mp">23 work packages</a>, smallest visible slices first: the share-dialog fixes and the terminology move don't wait for projects (D-314); <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-25 (PRJ-24 in WP-P.4, PRJ-25 in WP-P.19), FIL-17 to FIL-19, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-26, DSY-15, WEB-01. Publishing on today's workspace (WP-P.22, SHR-25, SHR-26) is ready to build once the owner answers [the publishing questions](../experience/published-site.md#readiness-assessment-5-november) (D-349). <strong>Sharing and publishing UX approved, 3 November 19:39 (D-335):</strong> WP-P.9 to WP-P.12, WP-P.15, WP-P.16 and WP-P.18 build to the gallery mocks on <code>vq-share-mocks</code>; nothing is added to the writing window (D-336). <strong>WP-P.23 / PRJ-23, deliberate project deletion:</strong> planned, waiting for separate owner approval of <a href="../experience/project-model.md#deleting-a-project">the GitHub handoff, safeguards and recovery screens</a>; not part of the approved terminology implementation.</p>
+<p>The <a href="next-direction.md">3 November direction</a> adds project windows, safe SVG logos, pins, local capture, opaque names-free item sharing, account collaborators and a read-only website/preview. A project is a Git folder on this computer only or linked to a private GitHub repository (D-378). Existing terminology migration moves no files; browser retirement preserves existing drafts and leaves ordinary import independent. <a href="implementation-plan.md#mp">23 work packages</a>; <a href="definition-of-done.md#projects-and-simpler-sharing">Try it and GATE-MP</a>. PRJ-01 to PRJ-25 (PRJ-24 in WP-P.4, PRJ-25 in WP-P.19), FIL-17 to FIL-19, KEY-09, RWR-91, RWR-92, SPT-10, SHR-13 to SHR-26, SHR-04, SEC-06, DSY-15, WEB-01. D-382 transfers the active leak gate to WP-P.22. <a href="definition-of-done.md#gap-closure-7-november-p0-and-p1">G1–G7</a> supplies production and failure evidence before safe fake-backed implementation; real Publish/Unpublish and target choice remain the owner's. <strong>Sharing UX approved (D-335):</strong> build the existing gallery dialogs, add nothing to the writing window (D-336). <strong>WP-P.23 / PRJ-23:</strong> approved and production handoff/folder acceptance landed; <a href="../experience/project-model.md#deleting-a-project">first real deletion</a> remains the owner's F4.x/MP.34, never an agent action.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MACT: Actions you can trust (approved 6 November, building)</p>

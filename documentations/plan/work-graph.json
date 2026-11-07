@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-11-06",
+  "updated": "2026-11-07",
   "stages": [
     {
       "id": "M0",
@@ -127,12 +127,12 @@
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
-      "summary": "One private repository per new project, project-scoped windows and Open routing, the trusted two-root boundary (D-306), and one ordinary first note only after positive writable-project emptiness verification and exclusive creation (D-376).",
+      "summary": "G1 / F2+S1 (D-378): choose a Git folder on this computer only or a private GitHub repository created through the signed-in production account; validate name before creation, set origin/marker/local identity, push the first commit, preserve local writing with Continue setup on failure. Project-scoped windows, trusted two-root boundary (D-306) and certified empty-project first note (D-376) remain. Production creation and owner first-real-creation evidence are open; build against G1.1-G1.9, not fake-only success.",
       "requirements": ["PRJ-01", "PRJ-02", "PRJ-03", "PRJ-24"],
       "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
       "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "architecture/repository-and-publishing.html", "architecture/desktop-and-git.md"],
-      "lookahead": true, "status": "verifying"
+      "specs": ["experience/projects.md", "experience/first-run.md", "experience/project-model.md", "plan/definition-of-done.md#g1-new-project-on-this-computer-or-on-github", "architecture/repository-and-publishing.html", "architecture/desktop-and-git.md"],
+      "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.5", "stage": "MP", "title": "Recognizable project windows",
@@ -157,10 +157,10 @@
     },
     {
       "id": "WP-P.8", "stage": "MP", "title": "Local notes and standalone files",
-      "summary": "Local-only capture and Open with, autosave/recovery/conflicts without implicit project import. 6 November: Local notes, location pill and in-app Open file are built; Explorer file associations remain missing.",
+      "summary": "G4 / F7: Open file and Windows Open with accept .txt/.md/.markdown, save text bytes/encoding/line endings in place, preserve dirty recovery and conflicts, no implicit project/Git/upload/conversion. Local notes/location pill and standalone Markdown are built; .txt and Windows association outcome proof remain open. Build against G4.1-G4.4.",
       "requirements": ["PRJ-08", "PRJ-09"], "dependsOn": ["WP-P.6"],
       "touches": ["desktop", "core", "views"], "reviews": ["code", "security", "accessibility"],
-      "specs": ["experience/projects.md", "experience/notes-folder.md"], "lookahead": true, "status": "building"
+      "specs": ["experience/projects.md", "experience/notes-folder.md", "experience/project-model.md#standalone-file-contract", "plan/definition-of-done.md#g4-open-and-save-a-text-file-on-its-own"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.9", "stage": "MP", "title": "Item-first share dialog",
@@ -171,31 +171,31 @@
     },
     {
       "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
-      "summary": "Opaque random share/access identifiers, item-based history and template; no source-name-derived links/paths/files, including media. Extend pre-commit/deploy leak checks; preserve old grants without new revealing aliases. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 2 and 12. 6 November: current opaque shares are built; media leak-check extension and MP.14 evidence remain open.",
+      "summary": "G6 / F10: SHR-23 opaque identifier/privacy gate first, then random 8-character collision-checked codes, item-based All shares with Copy again/Extend/Withdraw and the exact SHR-19 template. Preserve existing grants; no source-derived aliases, false live state or secret logs. Existing controls are partial; identifier/media/template and first-real-share/Extend/Withdraw proof remain open. UX approved D-335; build against G6.1-G6.5.",
       "requirements": ["SHR-17", "SHR-18", "SHR-19", "SHR-23"], "dependsOn": ["WP-P.9", "WP-5.4"],
       "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
-      "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
+      "specs": ["design/views/sharing.md", "experience/files-and-sharing.md#codes-history-and-share-information", "plan/definition-of-done.md#g6-opaque-share-codes-shares-list-and-information-template", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.11", "stage": "MP", "title": "GitHub collaborators",
-      "summary": "Account-backed invites with real personal/organization roles, full-scope warning and safe pending/failure states. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 13 and 14. 6 November: Invite dialog and roles save a local draft only; sending invitations to GitHub and real-account MP.8 proof remain open.",
+      "summary": "G2 / F6: send a confirmed invitation exactly once through the signed-in GitHub client, with personal Collaborator or supported organization roles and whole-project/private-note/share-secret warning. A local Invite draft is not sent; preserve fields on invalid/duplicate/offline/refused/rate-limited requests. Approved D-335 dialogs; build against G2.4-G2.9, with first real invite reserved for the owner.",
       "requirements": ["PRJ-12"], "dependsOn": ["WP-P.4"],
       "touches": ["github", "core", "views"], "reviews": ["code", "security", "design-system"],
-      "specs": ["experience/projects.md"], "lookahead": true, "status": "building"
+      "specs": ["experience/projects.md", "experience/files-and-sharing.md#invite-a-github-account", "plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.12", "stage": "MP", "title": "A website with its own theme",
-      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 11. 6 November: local site appearance is built; the theme on the live website and real publishing remain open pending P1 to P4.",
+      "summary": "Plain read-only published pages, independent site theme and explicit plaintext confirmation. UX approved D-335; local appearance is built, live site theme remains open. G3 / D-379/D-382 gives safe fake-backed publication wiring; first actual output/target is owner-dependent, not a blanket hold on implementation.",
       "requirements": ["SHR-20"], "dependsOn": ["WP-5.1", "WP-P.4", "WP-P.13"],
       "touches": ["web", "views", "tokens"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["design/views/sharing.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.22", "stage": "MP", "title": "Publish and unpublish on today's workspace",
-      "summary": "D-349 publishing slice 2: the approved Publish... dialog does the real visibility move and save to GitHub on today's workspace (no projects needed), Unpublish moves the note back, and the deploy is one honest long task (D-351): Publishing... until GitHub reports the Pages deployment for that commit succeeded, Copy link, Retry, Removing from your site.... Publishing slice 1 (gallery mocks for these states and the site's empty, missing and failure pages) goes first. Waits for the owner's yes to publishing on today's workspace; agents test against protocol fakes only (D-343). 6 November: Publish saves a local preview draft only; real Publish/Unpublish and deploy status wait on the owner's P1 to P4 answers.",
-      "requirements": ["SHR-25", "SHR-26"], "dependsOn": ["WP-5.1"],
+      "summary": "G3 / F5+S2 (D-379/D-382): approved Publish/Unpublish through the signed-in production client, leak gate before public commit/push/deploy, exact-commit Pages deployment and page response before Published, one leavable streamed task and recovery. Existing pairs use today's site; new projects require explicit PRJ-10 pairing. Local drafts are not live; safe wiring runs against protocol fakes, and first real Publish/Unpublish and target choice remain owner-dependent. Build against G3.1-G3.8.",
+      "requirements": ["SHR-25", "SHR-26", "SHR-04", "SEC-06"], "dependsOn": ["WP-5.1"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/published-site.md", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
+      "specs": ["experience/published-site.md#production-publishing-contract", "plan/definition-of-done.md#g3-publish-and-unpublish-for-real", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
@@ -234,10 +234,10 @@
     },
     {
       "id": "WP-P.18", "stage": "MP", "title": "Turn sharing on and off",
-      "summary": "First-share step that creates the site with a neutral name (D-312), local sealing with no private key on the site (D-305), and Turn off that withdraws content and removes legacy keys. UX approved 3 November (D-335): build to the gallery mocks on vq-share-mocks (packages/views/mocks/share), entries 5 and 12. 6 November: today's Turn off sharing confirmation exists; the separate-site-repository model and full turn-off flow remain open.",
+      "summary": "G2 / F3: New-project folders can explicitly turn on sharing through the production account client; confirmation names neutral editable public site repo/Pages URL and sealed/plaintext/history consequences. Until available, hide Share with one honest reason. Preserve/reconcile failed setup, seal locally, keep private working notes before Turn off, remove legacy site secrets and never silently republish. Approved D-335; G2.1-G2.3/G2.6-G2.8; owner first activation remains open.",
       "requirements": ["PRJ-10"], "dependsOn": ["WP-P.4", "WP-P.9", "WP-P.12", "WP-5.1"],
       "touches": ["core", "desktop", "seal"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
+      "specs": ["experience/projects.md", "experience/files-and-sharing.md#turning-on-sharing-for-a-new-project", "plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.19", "stage": "MP", "title": "Launch where I left off",
@@ -262,7 +262,7 @@
     },
     {
       "id": "WP-P.23", "stage": "MP", "title": "Delete a project with GitHub handoff",
-      "summary": "Approved by the owner on 5 November 2026 and built with fakes only. PRJ-23: consequences, a copy of the notes not on GitHub, typed confirmation, the GitHub settings Danger Zone handoff, status checks that never treat a 404 as proof, the person's explicit I deleted it, recoverable recycling to the Recycle Bin with private notes kept beside it, a precise locked-file failure, then Open with one success pill. No real repository is deleted by an agent. 6 November: built and tested with fakes; the first real deletion is reserved for the owner (D-343), so MP.34 acceptance remains open.",
+      "summary": "F4: production GitHub Danger Zone handoff and local cleanup are built; New-project folders without the older marker are accepted at their own Git root (4ed4ad48/6667dc33), with exact-head seven-job gate 42381219626 green. Preserve unpushed and retained private notes, typed confirmation, never treat 404 as proof, recoverable recycling and honest partial failures. F4.1 landed; F4.x/MP.34 first real deletion remains the owner, D-343. Agents test with fakes only.",
       "requirements": ["PRJ-23"], "dependsOn": ["WP-P.17", "WP-P.20"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
@@ -1239,7 +1239,7 @@
       "id": "WP-3.6",
       "stage": "M3",
       "title": "Account settings and data inventory",
-      "summary": "Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists.",
+      "summary": "G7 / F11: sign out purges the account's indexes, recents, logs and Files pins across all project profiles; Remove from this computer purges the removed project's traces wherever cached, never unrelated notes/remote/history. Invalidate/drain pending writers so live windows/restart cannot repopulate traces; locked/partial failures expose Retry. Current-profile cleanup is built; cross-profile PRV-02 proof remains open. Build against G7.1-G7.4.",
       "requirements": [
         "FRE-07",
         "PRV-02"
@@ -1257,10 +1257,12 @@
       ],
       "specs": [
         "architecture/security-and-privacy.md",
+        "experience/first-run.md#sign-out-and-local-project-removal",
+        "plan/definition-of-done.md#g7-purge-local-traces-across-project-profiles",
         "design/views/secondary-views.md"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "building"
     },
     {
       "id": "WP-4.1",
@@ -1793,7 +1795,7 @@
       "id": "WP-5.14",
       "stage": "M5",
       "title": "Notes folder recovery and sync status",
-      "summary": "The start check before anything else, with no silent re-creation; the recovery view (download again, sign in again, find the folder, start an empty folder offline); the workspace record's kind, notes on GitHub, account and last backup; the out-of-sync alert and card with Sync now, automatic sync when nothing could be lost, and the mass-deletion pause; offline mode in the corner; Settings showing the account Git signs in with (DEF-33). 6 November: recovery and sync status are partial; the complete notes-folder recovery flow remains open.",
+      "summary": "G5 / F8: recorded-folder check before Git/watcher/load; missing/moved/disconnected means recovery, never an empty-project startup. Find/restored/download/sign-in/explicit fresh-folder branches preserve records and bytes; verified private reconciliation and mass-deletion pause keep writing safe. Partial today; build against G5.1-G5.6 and a journey that removes then recovers a disposable folder. Real-account recovery remains owner-dependent if needed.",
       "requirements": [
         "FRE-11",
         "FRE-12",
@@ -1817,6 +1819,7 @@
       ],
       "specs": [
         "experience/notes-folder.md",
+        "plan/definition-of-done.md#g5-recover-a-missing-or-moved-notes-folder",
         "design/components/feedback-and-dialogs.md",
         "architecture/desktop-and-git.md",
         "architecture/perceived-performance.md"
@@ -2004,12 +2007,10 @@
       "id": "WP-6.4",
       "stage": "MW",
       "title": "The vault: private notes sealed at deploy, unlocked in the browser",
-      "summary": "The sealing format and sealer (packages/seal), the owner's grant, the leak check in the Deploy app workflow, and the browser's Unlock, Remember on this browser, Lock, and the account pill. Retired by D-292 (browser writing, owner vault and demo dropped); WP-P.13 removes the runtime.",
+      "summary": "Historical sealing format, owner grant, browser Unlock/Remember/Lock and account pill, retired by D-292; WP-P.13 removes the runtime. Active private-plaintext and deploy leak requirements SHR-04/SEC-06 moved to WP-P.22 by D-382; their privacy gate is not retired.",
       "requirements": [
         "PKG-10",
         "SEC-08",
-        "SHR-04",
-        "SEC-06",
         "UI-12"
       ],
       "dependsOn": [
@@ -2428,12 +2429,11 @@
       "id": "WP-8.4",
       "stage": "M8",
       "title": "Workspace pro",
-      "summary": "Replace across notes, Spotlight filters and preview, sorting and duplicating, and note history. 6 November: Files sort, history, replace across notes and Spotlight filters/preview are in Preview; remaining pro scope is not formally closed.",
+      "summary": "Replace across notes, Spotlight filters/preview, sorting and duplicating retain partial scope and outcome proof. D-386 moves production-built note history FIL-13 to separate verifying WP-8.8 so this building status does not misclassify it.",
       "requirements": [
         "FND-05",
         "SPT-06",
-        "FIL-11",
-        "FIL-13"
+        "FIL-11"
       ],
       "dependsOn": [
         "WP-4.3",
@@ -2455,6 +2455,14 @@
       ],
       "lookahead": false,
       "status": "building"
+    },
+    {
+      "id": "WP-8.8", "stage": "M8", "title": "Note history",
+      "summary": "D-386 / S7: production-built FIL-13 versions, author/time, comparison and restore as a new commit, with later versions retained. Separated from incomplete WP-8.4; verifying is not formal acceptance. UC-SAFE-05 remains in M8.",
+      "requirements": ["FIL-13"], "dependsOn": ["WP-3.3"],
+      "touches": ["views", "git", "core"], "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["design/views/secondary-views.md#note-history", "plan/definition-of-done.md#g0-the-specification-and-plan"],
+      "lookahead": false, "status": "verifying"
     },
     {
       "id": "WP-8.5",

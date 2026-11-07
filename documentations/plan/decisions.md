@@ -14,6 +14,36 @@
 
 **Affects:** [requirements](../product/requirements.md), [Definition of Done](definition-of-done.md#gap-closure-7-november-p0-and-p1), [work graph](work-graph.json), [implementation plan](implementation-plan.md), [roadmap](roadmap.md), [gate evidence](gate-evidence.md), and the project, sharing, publishing and recovery flows.
 
+## D-382: the live publishing package owns the leak gate
+
+**Decided, 7 November 2026 (audit S2, D-379).** Move SHR-04 and SEC-06 from retired WP-6.4 to WP-P.22 (MP). Private plaintext must never be public merely because the browser vault was retired. Before any public commit/push/deploy, reject private text, secrets and readable private/share identifiers, including media provenance, without printing the offending private content. Failed checks make no public write and expose a recoverable error. Local draft and fake-deployment success are not Published. Safe production wiring can proceed against protocol fakes; the first actual publication and its target are the owner's decision from Preview, with PRJ-10 confirmation.
+
+**Affects:** SHR-04, SEC-06, SHR-25/26, [publishing](../experience/published-site.md#production-publishing-contract), [work graph](work-graph.json), [implementation plan](implementation-plan.md), [roadmap](roadmap.md), G3.
+
+## D-383: platform promises follow Windows-first delivery
+
+**Decided, 7 November 2026 (audit S3; applies D-211).** DST-03 and QLT-02 deliver Windows installers and the Windows support matrix before v1 is in the Microsoft Store. Their macOS/Linux installer and desktop support-matrix portions are after v1, not missing Windows release gates. Existing portable file formats and read-only web behavior do not become Windows-only. Do not claim non-Windows release testing happened.
+
+**Affects:** DST-03, QLT-02, [requirements](../product/requirements.md), [roadmap](roadmap.md), release and quality work packages.
+
+## D-384: item-first Share has only its approved entry points
+
+**Decided, 7 November 2026 (audit S5; applies D-335).** SHR-13 delivers Files row menu and ⋯ → Note. Remove the unapproved Spotlight Share entry from this delivery promise rather than implement an undesigned route. Spotlight/Actions can continue to open a file; sharing from a dedicated search result needs a later owner-approved design, not a dead-end command. The item's target stays fixed, with no recipient or multi-item interstitial.
+
+**Affects:** SHR-13, [Files and sharing](../experience/files-and-sharing.md#share-one-item), WP-P.9, G2. This does not restyle or remove approved Share dialogs.
+
+## D-385: one current build assessment replaces stale preview claims
+
+**Decided, 7 November 2026 (audit S6; applies D-379).** Keep historical review evidence where useful, but a section's current What's built line distinguishes production-reachable behavior, fake-only behavior and remaining evidence. Replace dated "remain unwired" statements when newer landed scope contradicts them. Verifying is not stage acceptance; first-real-action rows remain owner-dependent. Do not use a candidate README limitation as a substitute for an honest production state.
+
+**Affects:** [Projects → Open](../experience/projects.md#the-open-view), [published website](../experience/published-site.md), [roadmap current state](roadmap.md#current-state-16-october-evening), [implementation plan](implementation-plan.md), G0.
+
+## D-386: built note history has its own work package
+
+**Decided, 7 November 2026 (audit S7).** Move FIL-13 from building WP-8.4 to WP-8.8, Note history, in the same M8 stage and with the same Git dependency. Mark it verifying, not done: production note versions, comparison and restore are present, while formal acceptance remains its own evidence. WP-8.4 retains replace across notes, search filters/preview, sort and duplicate; its incomplete status no longer misclassifies note history.
+
+**Affects:** FIL-13, UC-SAFE-05, [work graph](work-graph.json), [implementation plan](implementation-plan.md#m8), [roadmap](roadmap.md), G0.
+
 ## D-pending: a project without a remote is never "backed up", and is deletable
 
 **Decided (owner's report, 7 November 2026 at 17:44; orchestrator to number).** (1) A project whose branch tracks no remote commits each save as history, but nothing calls that a backup: the shell reports `remote: false`, the save state stays *Saved on this computer* (hard-drive mark), the card says "Not backed up to GitHub", and *Backup to GitHub* is unavailable. (2) Delete project accepts any project that is its own repository's top, with or without `.focus-notes/workspace.json`; Local notes stays refused, and the main process checks the folder again before it moves. (3) New project's first private row says **Kept on this computer, not on GitHub yet**, since creating a repository on the real account isn't wired (only the loopback fake of D-315). Wiring it waits for the owner.

@@ -3,7 +3,25 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. As of 6 November, most MP desktop slices are built and verifying; file associations, real invitations, live publishing and browser retirement remain partial or planned. No formal MP stage acceptance is claimed. Earlier release-path examples remain historical where superseded.
+> **TL;DR.** The work graph assigns every requirement exactly once, with dependencies, areas, reviewers and spec pages. **7 November:** [G0–G7 gap closure](definition-of-done.md#gap-closure-7-november-p0-and-p1) is the owner's next programme: production creation, sharing/invites, publishing with the leak gate, text files, folder recovery, opaque shares and cross-profile cleanup. F1 and F4's folder acceptance have landed; real-account actions remain owner-dependent. No formal MP stage acceptance is claimed. Earlier release-path examples remain historical where superseded.
+
+## Gap-closure execution order, 7 November
+
+Read each linked DoD before building. This is an execution overlay, not duplicate requirement ownership. Requirements below stay with exactly one package in the graph and their existing stage, except the explicit D-382 transfer and D-386 split.
+
+| Order / audit | Owning work package and stage | Build against / open proof |
+| --- | --- | --- |
+| G0 / S1–S7 | Spec across the packages below | D-378, D-379, D-382–D-386; S4 uses creation's separate D-381 ruling. Chain, durable flows, mappings and docs checks before declaring G0 met. |
+| F1 and F4 | EDT-11 / WP-3.3 (M3); FIL-14 / WP-8.10 (M8); PRJ-19 / WP-P.5 (MP); PRJ-23 / WP-P.23 (MP) | Status/folder fixes landed at `b933b03e`, `4ed4ad48`, `6667dc33`; owner first real deletion is F4.x, not an agent task. |
+| G1 / F2 + S1 | WP-P.4 (MP), PRJ-01 with PRJ-02/03/24 unchanged | G1.1–G1.9: explicit local/GitHub choice, production client, validation, first commit/push, honest failure; owner first real creation. |
+| G2 / F3 + F6 | WP-P.18 (MP), PRJ-10; WP-P.11 (MP), PRJ-12; WP-P.9 plus existing M5 sharing packages | G2.1–G2.9: first-site confirmation and setup, honest availability, confirmed real API invite; owner first setup/invite. |
+| G3 / F5 + S2 | WP-P.22 (MP), SHR-25/26 **and SHR-04/SEC-06 transferred from retired WP-6.4**; WP-P.12 retains SHR-20 | G3.1–G3.8: leak gate before public writes, exact-commit Pages outcome, leavable waits and Unpublish; owner first Publish/Unpublish. |
+| G4 / F7 | WP-P.8 (MP), PRJ-09 with PRJ-08 unchanged | G4.1–G4.4: .txt Open file/Windows association, plain-text bytes, recovery/conflicts, no implicit conversion/Git. |
+| G5 / F8 | WP-5.14 (M5), FRE-11/12/13 | G5.1–G5.6: startup before writes, missing/moved/download/fresh branches, verified recovery; disposable removed/recovered-folder journey, owner real recovery if needed. |
+| G6 / F10 | WP-P.10 (MP), SHR-17/18/19/23 | G6.1–G6.5: SHR-23 first, then opaque 8-character codes, list, Copy/Extend/Withdraw and exact template; owner first real share/Extend/Withdraw. |
+| G7 / F11 | WP-3.6 (M3), PRV-02 with FRE-07 unchanged | G7.1–G7.4: account-wide/project-specific cross-profile purge, live-writer invalidation, Retry; no source-note deletion. |
+
+Runtime workers use fakes only, record outcome evidence and the exact-head seven-job Windows gate, then land a reviewable slice. The owner performs first-real-action rows from Preview (D-343/D-379). Safe implementation is not held for that manual proof; a fake never marks it met. [Roadmap](roadmap.md#gap-closure-whats-next) records the same order.
 
 ## How to read a work package
 
@@ -122,7 +140,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-6.1 | **Web app on your own Pages, local first**. The web build deployed by each instance to its own GitHub Pages; notes written in the browser kept in IndexedDB, offline, with persistent storage; export and import bundles. No GitHub sign-in in the browser. | PKG-05, PKG-07, PKG-11 | WP-1.4 | code, security |
 | WP-6.2 | **Start in the browser, the visitor view, and Use this app for yourself**. Make your instance from the template; the web first run; the visitor view with public notes only; and the Use this app for yourself dialog. | DST-01, DST-02, FRE-09, PKG-09 | WP-6.3 | code, security, accessibility |
 | WP-6.3 | **The instance's notes in the browser**. The *Deploy app* workflow publishes `notes/` with an index and a site manifest; the browser lists and opens public notes (and, with WP-6.4, private ones) read-only, with *Copy to my notes*. | PKG-08 | WP-6.1 | code, security, accessibility |
-| WP-6.4 | **The vault: private notes sealed at deploy, unlocked in the browser**. The sealing format and sealer (`packages/seal`), the owner's grant, the leak check in the *Deploy app* workflow, and the browser's *Unlock*, *Remember on this browser*, *Lock*, and the account pill. | PKG-10, SEC-08, SHR-04, SEC-06, UI-12 | WP-6.3 | code, security, accessibility |
+| WP-6.4 | **Historical browser vault, retired by D-292**. The sealing format, owner's grant and browser Unlock/Remember/Lock are historical; WP-P.13 removes that runtime. Active private-plaintext and leak-gate requirements moved to WP-P.22 (D-382), not retired. | PKG-10, SEC-08, UI-12 | WP-6.3 | code, security, accessibility |
 | WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
 | WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
 | WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |
@@ -231,7 +249,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for. | EDT-11, FIL-05, PRF-07 | WP-2.3 | code |
 | WP-3.4 | **Public and private roots**. The private repository as a separately synced submodule, visibility per note, private by default, private settings, and importing a browser export bundle. | FIL-06, SHR-01, SHR-02, PRV-03, FRE-10 | WP-3.3 | code, design-system, accessibility, security |
 | WP-3.5 | **Conflicts and Recently deleted**. The conflict resolver and restoring from Git history. | FIL-10, FIL-12 | WP-3.3, WP-2.4 | code, design-system, accessibility |
-| WP-3.6 | **Account settings and data inventory**. Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists. | FRE-07, PRV-02 | WP-3.2 | code, security |
+| WP-3.6 | **Account settings and data inventory, partial (G7)**. Sign-out clears all the account's project-profile indexes/recents/logs/Files pins; removal clears only the removed project's traces wherever cached. Drain/invalidate live writers, report partial failure with Retry, preserve notes/history/remotes and unrelated profiles. Current-profile cleanup exists; cross-profile proof is open. | FRE-07, PRV-02 | WP-3.2 | code, security |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
@@ -346,7 +364,8 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-8.1 | **Editor pro**. The block handle, column alignment, sorting, the Pro layer, and find in selection. | EDT-07, TBL-04, TBL-09, KEY-04, FND-03 | WP-1.5, WP-4.4 | code, design-system, accessibility |
 | WP-8.2 | **Custom and generated themes**. Custom themes, sync, named schemes, import, generation from a seed color, and shuffle. | THM-04, THM-05, THM-09 to THM-12 | WP-4.5 | code, design-system, accessibility |
 | WP-8.3 | **Toolbar and keybinding customization**. Choosing the six toolbar actions, and `keybindings.json` with conflict warnings (D-170). Acceptance: the toolbar is customized by keyboard alone (pin, unpin, reorder, reset), never holds more than six, and an unpinned action is in ⋯; the choice persists across starts; a binding from `keybindings.json` takes effect, wins over a default on the same key, and a change to the file applies without a restart; conflicts show in Settings → Keyboard and the cheat sheet; invalid entries are reported by position and never stop the rest; the schema accepts exactly what the app applies; no axe violations. | UI-08, KEY-07 | WP-4.2 | code, design-system, accessibility |
-| WP-8.4 | **Workspace pro**. Replace across notes, Spotlight filters and preview, sorting and duplicating, and note history. | FIL-11, FIL-13, FND-05, SPT-06 | WP-4.3, WP-3.3 | code, design-system, accessibility |
+| WP-8.4 | **Workspace pro, partial**. Replace across notes, Spotlight filters/preview, sorting and duplicating retain their remaining scope. Built note history is separately verifying under WP-8.8 (D-386). | FIL-11, FND-05, SPT-06 | WP-4.3, WP-3.3 | code, design-system, accessibility |
+| WP-8.8 | **Note history, built and verifying (D-386)**. Production versions with time/author, comparison and restore as a new commit, retaining later versions; UC-SAFE-05. Formal acceptance remains open, no new implementation inferred from WP-8.4's status. | FIL-13 | WP-3.3 | code, design-system, accessibility |
 | WP-8.5 | **Multiple windows**. One note per window, with state kept per window. | DSK-06 | WP-2.2 | code |
 | WP-8.6 | **Signing, updates, channels, and stores** *(lookahead)*. Code signing and notarization, automatic updates, Stable and Beta, winget, and Homebrew. Getting a certificate starts early. | DSK-07, DST-04, DST-07 | WP-5.5 | code, security |
 | WP-8.7 | **More interface languages**. Translations through the externalized messages, with pseudo-localization checks. | I18N-03 | WP-0.5 | code, design-system, accessibility |
@@ -392,9 +411,9 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 
 <h2 id="mp" data-reader-personas="product design engineering">MP: Projects and simpler sharing</h2>
 
-**Current authorization and status, 6 November:** the owner approved the designs on 3 November at 19:39. WP-P.1 to WP-P.7, WP-P.9, WP-P.15 to WP-P.17 and WP-P.19 to WP-P.21 are built on `main` and verifying in Preview. WP-P.23 is built with fakes only. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates.
+**Current authorization and status, 7 November:** the owner approved the designs on 3 November at 19:39. Many desktop slices are built, but WP-P.4's production GitHub creation remains G1, so its graph status is building, not complete. WP-P.23's production handoff and New-project folder acceptance are landed; first real deletion is the owner's F4.x. Existing-pair migration is UX-led naming with no disk moves; browser retirement needs only one-click owner-draft export when drafts exist, not heavy inventory/export/retention gates. D-379 starts safe fake-backed G1–G7 implementation without claiming real-account success.
 
-**Remaining scope:** WP-P.8 has Local notes and in-app Open file, but not Explorer associations; WP-P.10 needs extended media leak proof; WP-P.11 only saves an Invite draft; WP-P.12/WP-P.22 have local preview/drafts, not live publish/unpublish or deploy status; WP-P.14's home sections/counts are not built. WP-P.18 needs the full separate-site-repository sharing model. WP-P.13 is still planned: the browser app, demo and IndexedDB runtime remain. The [3 November direction](next-direction.md) supersedes browser writing and named sharing; D-292 retires that product direction, not its code yet. Ordinary file import remains, not a browser ease-in plan. [Current state](roadmap.md#current-state-16-october-evening) and each package's graph summary distinguish delivered slices from open scope.
+**Remaining scope:** WP-P.8 has standalone Markdown but lacks .txt and Windows association outcome proof (G4); WP-P.10 needs complete identifiers/media/template evidence (G6); WP-P.11 only saves an Invite draft (G2); WP-P.12/WP-P.22 have local preview/drafts, not live publish/unpublish or deploy status (G3); WP-P.14's home sections/counts are not built. WP-P.18 needs production first-site activation for New-project folders and the complete safe Turn off model (G2). WP-5.14 recovery (G5) and WP-3.6 cross-profile privacy cleanup (G7) remain partial. WP-P.13 is still planned: browser retirement is a product decision, not yet removed runtime. Ordinary import remains independent. [Current state](roadmap.md#current-state-16-october-evening) and each package's graph summary distinguish delivered slices from open scope.
 
 **You can:** keep unrelated projects in distinct windows, find recent files by place, pin folders/projects, jot locally or edit a stray file, share one item without recipients and publish a clean website. Delivers UC-PROJ-01 to UC-PROJ-08, UC-FILE-12, UC-RWR-12 and UC-SHARE-07 to UC-SHARE-10, plus the revised existing writing/sharing capabilities.
 
@@ -403,22 +422,22 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.1 | Decisive keyboard actions | SPT-10, RWR-91 | WP-4.2, WP-AI.14 | code, accessibility |
 | WP-P.2 | Write at caret | RWR-92 | WP-AI.14 | code, security, design-system |
 | WP-P.3 | Title and file name apart | FIL-18 | WP-2.3 | code |
-| WP-P.4 | Private projects in their own windows and a safe first note | PRJ-01, PRJ-02, PRJ-03, PRJ-24 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
+| WP-P.4 | **G1, building:** local Git or private GitHub creation in production, isolated windows and safe first note; G1.1–G1.9 | PRJ-01, PRJ-02, PRJ-03, PRJ-24 | WP-8.5, WP-3.1, WP-3.2, WP-3.3 | code, security, design-system, accessibility |
 | WP-P.5 | Recognizable project windows and safe uploaded logos | PRJ-04, PRJ-13, PRJ-18, PRJ-19 | WP-P.4 | security, design-system, accessibility |
 | WP-P.6 | Projects, recent and pins | PRJ-05, PRJ-06, PRJ-07, FIL-19 | WP-P.4, WP-P.3 | code, design-system, accessibility |
 | WP-P.7 | Choose a place before writing (today's workspace, D-338) | FIL-17, KEY-09 | none | code, design-system, accessibility |
-| WP-P.8 | Local notes and standalone files | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
+| WP-P.8 | Local notes and standalone files; G4 .txt/Windows Open with, plain-text round-trip and recovery remain open | PRJ-08, PRJ-09 | WP-P.6 | code, security, accessibility |
 | WP-P.9 | Item-first share dialog | SHR-13, SHR-14, SHR-15, SHR-16 | WP-5.3, WP-P.16 | code, security, design-system, accessibility |
-| WP-P.10 | Shares without names or revealing identifiers | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |
-| WP-P.11 | GitHub collaborators | PRJ-12 | WP-P.4 | code, security, design-system |
+| WP-P.10 | G6: opaque identifiers first, random codes, All shares and exact information template; first real share/Extend/Withdraw are the owner's | SHR-17, SHR-18, SHR-19, SHR-23 | WP-P.9, WP-5.4 | code, security, accessibility |
+| WP-P.11 | G2: GitHub collaborators through the signed-in client, not local Invite drafts; first real invite is the owner's | PRJ-12 | WP-P.4 | code, security, design-system |
 | WP-P.12 | A website with its own theme | SHR-20 | WP-5.1, WP-P.4, WP-P.13 | code, security, design-system, accessibility |
-| WP-P.22 | Publish and unpublish on today's workspace, with the deploy as one honest wait (D-349, D-351) | SHR-25, SHR-26 | WP-5.1 | code, security, design-system, accessibility |
+| WP-P.22 | G3: production Publish/Unpublish, live leak gate and exact-commit Pages outcome as one honest wait (D-382); first real publication is the owner's | SHR-25, SHR-26, SHR-04, SEC-06 | WP-5.1 | code, security, design-system, accessibility |
 | WP-P.14 | Public home, sections and reading controls | SHR-21 | WP-P.12, WP-P.5, WP-P.9 | code, security, design-system, accessibility |
 | WP-P.15 | Preview site appearance locally | SHR-22 | WP-P.14 | code, security, design-system, accessibility |
 | WP-P.13 | Retire browser writing safely | WEB-01 | WP-5.1 | code, security, accessibility |
 | WP-P.16 | Switch primitive | DSY-15 | none | design-system, accessibility |
 | WP-P.17 | Call it a project | PRJ-11 | none | design-system, accessibility |
-| WP-P.18 | Turn sharing on and off | PRJ-10 | WP-P.4, WP-P.9, WP-P.12, WP-5.1 | code, security, design-system, accessibility |
+| WP-P.18 | G2: explicit first-share confirmation and production setup for new projects, safe Turn off and no silent republishing; first real activation is the owner's | PRJ-10 | WP-P.4, WP-P.9, WP-P.12, WP-5.1 | code, security, design-system, accessibility |
 | WP-P.19 | Launch where I left off; another launch opens another chooser | PRJ-14, PRJ-25 | WP-P.4 | code |
 | WP-P.20 | The Open view | PRJ-15, PRJ-16, PRJ-17 | WP-P.6, WP-P.8 | code, design-system, accessibility |
 | WP-P.21 | A project card's GitHub link and size | PRJ-20, PRJ-21, PRJ-22 | WP-P.20 | code, security, design-system, accessibility |

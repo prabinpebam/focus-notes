@@ -3,7 +3,7 @@
 A public home, sections and articles, not the writing app on the web.
 
 > [!NOTE]
-> **TL;DR.** Published notes are discoverable plaintext pages; shared notes remain encrypted and absent from the public index. Folders become sections, files become articles. A minimal top bar offers sections, optional project logo, theme and paragraph focus. **Preview site…** in the desktop app shows that same website and changes its theme, fonts and default size without publishing. This is planned, not built: D-295 to D-297 / D-299, UC-SHARE-10 / UC-SHARE-11, SHR-20 to SHR-22. **Status, 5 November:** Make public, the `/n/<path>/` page renderer, Pages setup and the local Preview site are built; real Publish, unpublish, the site theme on the live site and the deploy status are not. [Publishing a note](#publishing-a-note) and the [readiness assessment](#readiness-assessment-5-november) bring it to execution readiness, pending four owner answers.
+> **TL;DR.** Published notes are discoverable plaintext pages; shared notes remain encrypted and absent from the public index. Folders become sections, files become articles. A minimal top bar offers sections, optional project logo, theme and paragraph focus. **Preview site…** changes the local website preview without publishing. **What's built, 7 November:** visibility moves, the `/n/<path>/` renderer, Pages API setup and local preview/drafts exist. Production Publish/Unpublish, exact-commit deployment status, live site theme and public home remain partial. [G3](../plan/definition-of-done.md#g3-publish-and-unpublish-for-real) and the production contract below govern safe fake-backed implementation (D-379/D-382); the owner performs the first actual publication. A draft is never a live page.
 
 ## What belongs on the site
 
@@ -16,6 +16,23 @@ Turning sharing off removes current shared and published content at the next suc
 | Private unshared note | Private project only | No output at all |
 
 Public Git history retains earlier plaintext and encrypted builds. A later unpublish/withdraw cannot recall copies, old ciphertext or keys someone already has. Explain this before first publication; do not imply that hiding an item from home withdraws an existing share.
+
+## Production publishing contract
+
+SHR-20/25/26, SHR-04 and SEC-06 deliver UC-SHARE-02/10. WP-P.22 owns both live publication and its leak gate (D-382); WP-P.12/14 retain the independent site theme and home. This is the durable F5/S2 contract, not permission for an agent to press Publish.
+
+| Step / case | Required behavior |
+| --- | --- |
+| Availability | Without a working production publish path, say Publishing isn't available yet, never "local only in this preview" or fake success. Local Preview site remains explicitly non-publishing. |
+| First publication | Use the approved item-first dialog. Confirm the exact public site repository/Pages URL, Will be public, plaintext versus sealed output and retained history. Cancel creates or pushes nothing. New-project folders use PRJ-10 pairing; existing paired projects may use their current site without storage migration. |
+| Preflight and leak gate | Recheck the confirmed note/folder contents; new contents never silently widen the selection. Before public commit/push/deploy, reject private plaintext, access secrets, source-derived private/share names and unsealed media. Use normalized/encoded/Unicode provenance checks, report a recoverable cause without quoting private content, and make no public write on failure. |
+| Save and deploy | Use the signed-in GitHub client with candidate variables absent. Commit/push only approved public output; track that exact commit's Pages deployment. Published requires deployment success and the page answering, not draft persistence, a timer, or a successful push alone. `/n/<path>/` remains the existing published-note route; links to unpublished notes become plain text. |
+| Images | Only exactly referenced, supported media may publish; missing images require Locate image. Do not publish unstripped originals or silently omit images. The remaining IMG-13 media implementation stays its own work package; until ready, refuse affected publication honestly. |
+| Unpublish | Preserve the private working note/media first, then deploy removal of current public output. Failed preservation stops removal. Past Git history, copied notes and reader-held keys remain; no promise of erasing them. |
+| Offline / denied / rate limit / failed deployment | Notes remain, no automatic duplicate commits/deploys or false Live state. One task names Not live yet and explicit Retry, reconciling the actual commit/deployment; leave the dialog and continue writing. Honor the service's wait rather than blindly retrying a write. |
+| Wait and completion | Saving to GitHub → Publishing → Published with Copy link, or Removing from your site → Removed. Above 100 ms, a wait-inventory row names the step, feedback, fn: measure and leavable progress. Above 10 minutes, say Still publishing and keep tracking the real deployment, never time out into success. |
+
+Units and a built journey exercise production selection, leak rejection with zero push/deploy, exact-commit queued/failed/succeeded Pages responses, leave/return, retry and Unpublish against loopback fakes. The runtime head's seven-job gate and leak check are recorded before landing. The owner's first real Publish/Unpublish from Preview are G3.7/G3.8; the owner alone chooses the actual first target and presses the button. No private note is copied into public evidence.
 
 <!-- Visual thesis: a public folder becomes a section, and each public file becomes an article. The reader controls persist, but no editor controls appear. -->
 <figure class="slate-figure">
@@ -186,7 +203,7 @@ The owner asked (5 November) what is done and pending for publishing notes as pu
 
 **Gaps found and filled here:** the approved project model (D-312, a separate `notes-site` repository per project, WP-P.4) conflicts with the built instance model, so nothing could ship until projects land; this page now proposes publishing on today's workspace first (D-349, SHR-25, P1). There was no deploy status (D-351, SHR-26), no unpublish flow, no rule for links to unpublished notes (D-350) and no Definition of Done rows with a Try it (MP.32, MP.33). The risk that matters is real accounts: an agent never publishes to the owner's real site (D-343); every agent test uses GitHub protocol fakes.
 
-**Verdict: specified enough to build once the owner answers P1 to P4.** Before this review it was not: the model conflict and the missing status and unpublish flow blocked any build.
+**Current verdict, 7 November (D-379/D-382):** specified enough for production wiring and negative-case proof against protocol fakes, using [G3](../plan/definition-of-done.md#g3-publish-and-unpublish-for-real). The prior P1–P4 proposals below remain historical context, not a blanket implementation hold. This does not choose the owner's first real site, approve broader media publication, or authorize an agent to publish. First real output remains owner-dependent and explicitly confirmed.
 
 **Slices, smallest visible first (D-349):**
 
@@ -196,7 +213,7 @@ The owner asked (5 November) what is done and pending for publishing notes as pu
 4. **The public home with sections and counts** (WP-P.14). About a day.
 5. **Images in published notes** (WP-9.9, IMG-13). About a day.
 
-**Owner questions:**
+**Historical owner questions, 5 November:** the actual first site remains the owner's dependency; the existing `/n/` renderer and missing-media safeguards govern fake-backed work in the meantime.
 
 - **P1.** Publish on today's workspace now (this repository's Pages site, through the built Make public move), rather than wait for projects and a separate `notes-site` repository? Recommended: yes. If yes, WP-P.12 and WP-P.14 no longer wait for WP-P.4.
 - **P2.** Published notes live under `/n/` (the product site keeps the root), or should the notes take the root? Recommended: `/n/`.

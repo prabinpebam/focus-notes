@@ -110,7 +110,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 
 | Field | Value |
 | --- | --- |
-| Customer promise | Your notes are plain Markdown in your own GitHub repository, running on nothing but your own account; you can leave any time and take everything. |
+| Customer promise | Your notes are plain Markdown in your own folder, with Git history and, if you choose, your own private GitHub repository; you can leave any time and take everything. |
 | Why it matters | Notes outlive apps. Lock-in is a hidden cost people resent later. |
 | Breaks when | The app writes anything a plain Markdown viewer can't show, rewrites files it didn't need to touch, or depends on any service other than the user's own GitHub account. |
 | Signals | Round-trip test corpus passes. Notes render the same on GitHub. The notes folder lives wherever the person chooses. |

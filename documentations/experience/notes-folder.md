@@ -27,6 +27,22 @@ It serves [UC-SAFE-08, UC-SAFE-09, UC-SAFE-10, UC-OWN-02 and UC-OWN-03](../produ
 
 ## What it replaces
 
+**What's built, 7 November:** missing-folder detection and portions of sync status exist; complete choice/recovery and removed-and-recovered-folder journey are still [G5 / WP-5.14](../plan/definition-of-done.md#g5-recover-a-missing-or-moved-notes-folder). A missing or disconnected folder never qualifies as the positively verified empty project of PRJ-24. Local Git with no remote is Saved on this computer, never Backed up (F1 landed); Git presence alone does not mean GitHub backup.
+
+### Recovery contract and proof
+
+| Branch | Required result (FRE-11–13, UC-SAFE-08–10) |
+| --- | --- |
+| Start before any access | Read the recorded folder and check it before Git, watchers or note loads. Missing/moved/disconnected means recovery, with no mkdir, empty replacement, write, download or first-note creation. Preserve the record, draft and last backup. |
+| Find / restore | Validate the chosen folder and actual notes before updating the record. A restored same folder or recognized Documents relocation can reopen its original notes; another folder needs the explicit existing confirmation. Cancel keeps recovery, never resets setup. |
+| Download / sign in | Only a chosen Download uses the recorded notes/account or explicit repository list. Sign in returns to the same recovery intent. A collision uses a verified free sibling folder; offline/refusal/failed download leaves the original record and recoverable partial result, never overwrites or claims success. |
+| Start empty | The person chooses a free name and place. Preserve the old project's identity/history for later recovery; make a deliberate new local Git project, with an ordinary empty note under PRJ-24, not a replacement for the missing one or a welcome-note restore. |
+| Account/sync problem with available notes | Keep writing. The shared alert/card names mismatch, lost sign-in, access refusal, remote disappearance, failed inbound sync or mass external deletion and offers Sync now, Sign in again or Switch account. Unknown remote access is not proof that the notes were deleted. |
+| Reconcile locally written notes | Bring them in privately only after the explicit Sync now choice; account for every file, keep both on collision, verify copies before recycling the old folder and stop on failed verification. Mass deletion pauses backup instead of pushing a destructive empty tree. |
+| Long work / leave | Locate, download and reconciliation above 100 ms have inventory/fn: rows and one named streamed task. Preserve input, permit leaving and show the actual pending/error result on return. |
+
+**Required journey:** remove or move a disposable notes folder with the app closed, launch into recovery, assert no replacement/write, choose Find the folder and verify the original exact text reopens. Exercise Cancel, free-name collision, restored/disconnected drive, refused/offline fake download and typing through account failure. It uses disposable profiles and loopback accounts, never the owner's folders. First actual account recovery, if needed, is the owner's G5.6 row.
+
 The owner deleted the notes folder while the app was closed, then opened the app again (24 October). Three things went wrong:
 
 - **The folder came back empty, with no warning.** Start-up made the folder again (a `mkdir` in `app.whenReady`) and wrote a welcome note into it, so the app looked like a fresh install with the notes gone.
@@ -43,7 +59,7 @@ The owner deleted the notes folder while the app was closed, then opened the app
 
 **The kind is worked out again at every start, in this order:**
 
-1. **GitHub**, if the record names notes on GitHub or the folder is a Git clone.
+1. **GitHub**, if the record names notes on GitHub or the folder has the corresponding GitHub remote. Local Git without a remote stays on this computer only.
 2. **Synced by another service**, if the folder is inside one that a service syncs.
 3. **Offline mode** otherwise.
 
@@ -71,7 +87,7 @@ A folder the record says is GitHub but that isn't a clone of those notes stays G
   - when the folder is chosen, moved or recovered;
   - `lastBackup` after a backup that sent changes to GitHub, at most once a minute.
 - **Records from before D-212 have no `kind`.** It's filled in at the first start, in this order:
-  1. A clone becomes `github`, with its `origin`.
+  1. A clone with a GitHub remote becomes `github`, with its `origin`; local Git without a remote remains `local`.
   2. A folder that isn't a clone becomes that set of notes, [not connected](#out-of-sync), when you're signed in and its name is the name of one of your account's sets of Focus Notes. This was the owner's case on 24 October: `Documents\prabins-notes`, re-made with only the welcome note.
   3. Anything else becomes `local`, or `synced` in a synced folder.
 - **What it holds.** No secret and no note's name or text: only the names of the notes on GitHub, the account and a time. The [data inventory](../architecture/security-and-privacy.md#data-inventory) lists the new fields.
@@ -160,7 +176,7 @@ It's assembled from the first run's components (`StepMark`, the option cards, `F
 | **Choose your notes** | No notes are recorded but you're signed in, or *Choose other notes…* was pressed. | "Choose which of your notes to download." | Opens setup's *Your notes* step on its own: *We found your notes* with *Open* on each, or *Create my notes*. |
 | **Sign in to GitHub again** | The account check failed: there's no sign-in, it was rejected, Focus Notes is signed out, or the account can't reach the notes. | "Connect your GitHub account, then download your notes. It takes about a minute." | Opens setup's *Connect* step on its own, then comes back here with *Download your notes again* (or the list) as the primary card. |
 | **Find the folder…** | Always. | "Moved or renamed it? Choose the folder, and Focus Notes will use it from now on." | Opens the system's folder dialog at the old folder's parent. It takes:<br>- a clone of the recorded notes, with any name, anywhere;<br>- for offline mode, a folder of notes, as it is.<br><br>Different notes ask "These are different notes (you/work-notes). Open them instead?" |
-| **Start with an empty folder** | Always. | "Makes a new, empty folder on this computer. Nothing is backed up until you connect to GitHub." | Opens in place to show:<br>- *Name*: `Focus Notes`, or the next free `Focus Notes 2` in that place;<br>- *Place*: the old folder's parent if it's there, else Documents, with *Change…*.<br><br>*Create folder* makes the folder, writes the welcome note, switches to offline mode, and keeps the old notes' name in the record, so *Connect to GitHub…* offers them first. |
+| **Start with an empty folder** | Always. | "Makes a new, empty folder on this computer. Nothing is backed up until you connect to GitHub." | Opens in place to show:<br>- *Name*: `Focus Notes`, or the next free `Focus Notes 2` in that place;<br>- *Place*: the old folder's parent if it's there, else Documents, with *Change…*.<br><br>*Create folder* deliberately makes a new local Git project with one ordinary empty note (PRJ-24), switches to on-this-computer-only status, and preserves the old notes' identity/record for explicit later recovery. It never overwrites the missing project or fabricates a restored welcome note. |
 
 **Card order:** *Use this folder*, then *Download* (or *Choose your notes*), then *Sign in again*, *Find the folder…* and *Start with an empty folder*.
 

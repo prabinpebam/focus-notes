@@ -115,6 +115,19 @@ The [image source/experience](../experience/images.md) is owner-requested; forma
 | A-ACT-06: one parametrized journey can prove every catalogued action within a normal CI shard. | Feasibility / medium / journeys take 5 to 8 minutes per shard today | After approval, time a spike proving five actions; extrapolate to 50. | Prove some actions with core-level outcome units instead of journeys |
 | A-ACT-07: actions that leave the app (GitHub, browser, Explorer, printing) can be proven at that boundary. | Feasibility / high / Q5 assumes every outcome is observable | The WP-A.2 spike proves *Show this note in Explorer* and *Sign in to GitHub…* with a fake system shell and a fake GitHub, asserting the exact path and request. | Rows that can't be proven this way stay Candidates |
 
+## Gap-closure validation priorities, 7 November
+
+The audit of `42bc9a30` showed that fake-backed success did not establish production behavior. D-379 starts [G1–G7](definition-of-done.md#gap-closure-7-november-p0-and-p1) while preserving real-account and private-content boundaries. These are refinements of existing risks, not new product promises.
+
+| Existing risk / evidence | Highest-impact assumption | Cheapest decisive check / decision changed |
+| --- | --- | --- |
+| R-07/R-08, F1/F2 | A created Git project is really backed up when the app says so | Production-wiring unit without candidate variables, fake create/first-push journey and no-remote status assertion (G1). Failure keeps local writing honest; first actual repository creation is the owner's row. |
+| R-09/R-11, F3/F5/F10 and S2 | Activating/publishing cannot expose private text or readable share identifiers | Leak fixtures prove zero public push/deploy on private text/name/secret/media rejection; first-site Cancel makes nothing (G2/G3/G6). A failing gate blocks that publication, never ordinary writing. |
+| R-07, F7/F8 | Recovery and standalone text edit preserve exact saved bytes | Disposable .txt round-trip/conflict and removed-folder → Find → original-text journey (G4/G5). Failure retains source/record and recovery, not conversion or empty replacement. |
+| R-09, F11 | Signing out/removing actually clears every affected profile | Two-profile index/Recent/Files-pin test with a live writer and restart (G7). A remaining trace means incomplete cleanup with Retry, not a successful purge. |
+
+Owner first-real creation, activation, invitation, publication, sharing and deletion remain explicit DoD dependencies; fake evidence neither certifies them nor authorizes an agent to perform them. No new telemetry is collected.
+
 ## Rewrite assumptions to validate
 
 These are hypotheses unless an evidence boundary is explicitly resolved below. The 30 October history-bounds hypothesis was dropped with D-256. See [decisions](decisions.md#rewrite-with-ai-as-built-31-october-2026) and the [owner-testable stage](definition-of-done.md#owner-testable-rewrite-ux-stage).

@@ -20,15 +20,19 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ### Gap-closure specification, 7 November
 
-D-378 settles local Git versus optional private GitHub; D-379 records the owner's P0/P1 programme. [G0–G7](definition-of-done.md#gap-closure-7-november-p0-and-p1) name the requirements, observable outcomes, negative cases, waits and first-real-action owner dependencies before implementation. G1's agreed rows are unchanged. This first specification slice does not close G0.2/G0.3 until the durable detail and plan mapping follow, nor certify any new runtime or real-account action.
+D-378 settles local Git versus optional private GitHub; D-379 records the owner's P0/P1 programme. [G0–G7](definition-of-done.md#gap-closure-7-november-p0-and-p1) name the requirements, observable outcomes, negative cases, waits and first-real-action owner dependencies before implementation. G1's agreed rows are unchanged. First slice `50e23d3e` landed the chain and DoD; the follow-up durable requirements/flows and plan mapping below close G0's specification scope once landed, never G1–G7 runtime or real-account certification.
 
 | Command / evidence | Result |
 | --- | --- |
 | `pnpm check` in the isolated docs worktree | Passed: chain (357 requirements), plan (126 packages), kit parity, boundaries, generated files, licences, spacing, notifications and ui:check; included existing 69 action-proof and 4 button-geometry tests. |
 | `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed; no runtime or kit changes. |
-| Headless Chromium against an ephemeral loopback server, 8 changed pages | Passed: exactly one rendered H1 per page, light/dark SVG fit, newly added/changed local links and anchors, including links into changed pages. Browser and server closed. |
+| Headless Chromium against an ephemeral loopback server, 9 changed pages in `50e23d3e` | Passed: exactly one rendered H1 per page, light/dark SVG fit, newly added/changed local links and anchors, including links into changed pages. Browser and server closed. |
 
-Existing unchanged links outside this slice are not repaired: `decisions.md` already links to the absent `design/system/views-as-data.html`. The headless check compares the previous link set so unrelated historical dead links do not become a false claim of full-site validation. No full runtime suite, app launch, real GitHub write or publishing was needed for this docs-only slice.
+**Durable closure detail:** F1's honest state is now explicit in EDT-11/FIL-14/PRJ-19 and the safety chain; F4's landed folder acceptance and owner-only first deletion are separate. F2/F3/F5/F6/F7/F8/F10/F11 each have a durable flow with failure, recovery and wait rules, not an audit-only brief. D-382 assigns SHR-04/SEC-06 to WP-P.22; D-383 marks non-Windows installer/matrix work after v1; S4 points to W-create2's D-381 rather than inventing a repository-rename feature; D-384 excludes undesigned Spotlight Share; D-385 replaces stale Open/build claims; D-386 moves FIL-13 to verifying WP-8.8. The graph and implementation plan have one owning WP for each of 357 requirements (127 WPs); the roadmap carries the same G1→G7 order and stage ownership.
+
+The follow-up `pnpm check` and Slate runtime check passed again (357 requirements, 127 WPs). Headless Chromium passed all 15 changed pages: exactly one H1, light/dark SVG fit and new/changed links and anchors. The new S4 link was corrected to the existing Creating and closing heading. Browser and temporary server closed; `git diff --check` and `node tools\check-plan.mjs` also passed. No new page, generated runtime, code or test was added.
+
+Existing unchanged links outside this slice are not repaired: `decisions.md` already links to the absent `design/system/views-as-data.html`, and the previous `project-model.md#settings--project-merged` anchor is absent. The headless check compares previous links and rendered anchor sets, so unchanged historical dead links are distinguished from new failures or regressions. This is not full-site validation. No full runtime suite, app launch, real GitHub write or publishing was needed for this docs-only slice.
 
 ### Delete and no-remote backup landing, 7 November: quarantine closed
 

@@ -55,6 +55,21 @@ The two tabs describe one thing from two sides. A person who named and coloured 
 - **Standalone means "not in a project".** Its card says so plainly ("Not in a project · Edited in place. No version history."). The person learns from the absence what a project would add.
 - **The file type decides what's possible.** A .txt file shows **Insert image…** disabled, with its reason ("Images need a Markdown file. Save as Markdown to add them.") and **Save as Markdown…** beside it. A Markdown file says where its images go before the first insert.
 
+### Standalone file contract
+
+PRJ-09 / UC-PROJ-08 and [G4](../plan/definition-of-done.md#g4-open-and-save-a-text-file-on-its-own) cover `.md`, `.markdown` and `.txt` through both Open file and Windows Open with. This closes the owner's explicit request to open a text file without importing it.
+
+| Case | Required result |
+| --- | --- |
+| A file outside a project | Open one standalone window over that actual file; save in place. Never create Git, a project, a remote, an upload or project/share controls. Its local location signal never claims Backed up. |
+| A file inside an open project | Route to that project's existing window, preserving its scope and the other windows' drafts. Do not open a second standalone copy. |
+| Plain text | Save literal text back, with its supported encoding, BOM and line endings preserved. No front matter, Markdown serialization or implicit format conversion. Unsupported/unreadable encodings fail explicitly with the source unchanged. |
+| Markdown-only features and images in .txt | Unavailable with the reason they require Markdown; no image asset or Markdown syntax written. Save as Markdown is explicit and creates a separate copy, preserving the source. Compatible Markdown images keep the existing asset convention until the separate owner decision in the reconciliation table. |
+| Crash / external edit / disk failure | Dirty recovery survives restart. Compare external changes before replacement and show conflict choices; never silently overwrite. Keep text and a recovery action on a write/read failure. |
+| Open/save takes over 100 ms | Existing local save/open feedback names the wait and its fn: measure; input remains usable and no remote task exists. |
+
+The built journey opens a disposable .txt, edits, closes and reopens, asserts its exact saved bytes, then exercises external conflict and explicit conversion. It is not a proof that Markdown import happens to accept text.
+
 ## Reconciling the existing specs
 
 These pages already say part of this. D-378 resolves the project/GitHub contradiction; the remaining proposals below stay explicitly separate decisions.
@@ -131,6 +146,8 @@ While 'remove from this computer' is available, we also need 'Delete the project
 | Stop / return later | Stop polling and retain local files. If GitHub deletion already happened, state that it cannot be reversed here. | Persist only target identities and completed steps, never credentials or private note content. On return revalidate, do not restart deletion automatically. | `deleteCancelled`, `deleteErrExpired` |
 
 **Offline project.** Skip the GitHub step. Review the folder and Git history, offer export, type the name, then move the explicitly selected folder to the Recycle Bin and return to Open. No remote request or promise that a cloud copy exists.
+
+**What's built, 7 November:** Delete's production handoff/local cleanup and New-project folder acceptance have landed (`4ed4ad48`, `6667dc33`); it accepts a repository's own root without requiring the older workspace marker, rechecking folder identity before moving it. Local notes, foreign and nested roots remain refused. The exact-head seven-job gate is recorded in [gate evidence](../plan/gate-evidence.md#delete-and-no-remote-backup-landing-7-november-quarantine-closed). The first real GitHub deletion remains the owner's [F4.x](../plan/definition-of-done.md#f1-and-f4-landed-fixes-remaining-owner-proof), under D-343, not a missing permission for agents to delete.
 
 **What stays.** Copies on other computers, public forks, downloaded notes and a separately retained private repository do not disappear. Existing links to a deleted repository/site cease to be served there; do not promise a particular message on a site the app no longer controls. Retained private notes keep their keys and history, and the Open dialog does not lose unrelated projects.
 

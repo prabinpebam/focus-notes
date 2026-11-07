@@ -13,9 +13,25 @@ The desktop app is where writing starts. Planned D-272/D-274/D-292 replaces brow
 
 Welcome offers **Create project**, **Open project…** and **Local notes**. Local notes starts in its local Documents folder without sign-in or a public site. A standalone file can open directly with no setup.
 
-Create/Open uses existing Git/credential detection and plain-language account steps. Creating a project creates one **private** repository, explains backup, picks a safe local folder and opens the project window; no Pages, deploy key, public repo or vault passphrase. Existing projects open in their own windows. Ready offers ordinary desktop import, not a browser-writing funnel. First Share/Publish confirms the optional public site separately. Existing-workspace mapping remains an owner decision, never automatic conversion. See [Projects](projects.md#the-open-view).
+Create/Open uses existing Git/credential detection and plain-language account steps. New project explicitly chooses **On this computer only** (a Git folder with no remote) or **On GitHub** (one private repository created through the signed-in account client, with its chosen name, origin, project marker, local identity and first push; D-378). Neither creates Pages, a deploy key, public repository or vault passphrase. Both start an ordinary empty note with a caret. A taken/invalid repository name is refused before any local/remote creation; signed-out leads to sign-in or an honest unavailable state, never silently local. A failure after the folder exists preserves it and opens writing locally with Continue setup, no blind automatic retry. [G1](../plan/definition-of-done.md#g1-new-project-on-this-computer-or-on-github) is the production contract; repository renaming is W-create2's separate D-381 ruling in [Projects → Creating and closing](projects.md#creating-and-closing).
+
+Existing projects open in their own windows. Ready offers ordinary desktop import, not a browser-writing funnel. First Share/Publish confirms the optional public site separately; the accepted Project/site terminology transition moves no files. See [Projects](projects.md#the-open-view).
 
 The old TL;DR/desktop screenshots below are historical where they mention publishing/vault/browser import; these clauses are superseded, while sign-in, resumable errors, folder safety and keyboard rules remain.
+
+## Sign out and local project removal
+
+PRV-02 / WP-3.6 and [G7](../plan/definition-of-done.md#g7-purge-local-traces-across-project-profiles) define the local cleanup, separately from PRJ-23 Delete project.
+
+| Action / state | What must disappear / what stays |
+| --- | --- |
+| Sign out | Purge that account's indexes, Recent, logs and Files pins in **all** its project profiles, including Open caches, not merely this window. Restart must not expose a cleared private result. Remove Git's saved credential only if explicitly chosen. |
+| Remove from this computer | Purge the removed project's traces everywhere cached, including other profiles' Recent/Open and Files pins referring to it. Another project's own notes/index/pins remain. This cleanup never deletes source notes, Git history or the GitHub repository. |
+| Pending and open windows | Invalidate admissions and drain already-started atomic writes before purge. Late cursor/edit/pin/close/index callbacks cannot recreate cleared data. Resume admissions only after explicit sign-in/open and completed cleanup. |
+| Locked/partial failure | Report the remaining cleanup scope and Retry; never say removed/signed-out cleanup succeeded while traces remain. Keep private text, paths and credentials out of diagnostic messages/logs. |
+| A wait over 100 ms | A named cleanup task, one honest status and inventory/fn: measure. No unnamed busy state or frozen writing. |
+
+**What's built, 7 November:** current-profile launch/Recent cleanup exists; cross-profile indexes, recents and Files pins remain G7, so verifying WP-3.6 is not full PRV-02 completion. Prove cleanup with two disposable profiles and a live related window; agents never purge the owner's profiles for a test.
 
 ## Principles of the desktop first run
 
