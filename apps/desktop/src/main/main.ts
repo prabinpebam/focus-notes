@@ -792,7 +792,7 @@ const imageRoot = (note: string) => {
 };
 /** Whether images written for this note may be published, so their metadata is stripped (D-365). */
 const publicMedia = (note: string) =>
-  projectLayout().roots.some(root => root.id === "public" && inside(root.path, note)) && record?.kind !== "local" && record?.kind !== "synced";
+  imageRoot(note) !== undefined && record?.kind !== "local" && record?.kind !== "synced" && !inside(join(notesHome(), "private"), note);
 // New notes without a private repository (D-158): held out of Git, in the notes repository's
 // info/exclude, until the writer answers Make it public or Keep it on this computer only.
 let heldCache: { home: string; file: HeldFile } | undefined;

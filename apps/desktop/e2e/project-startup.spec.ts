@@ -120,6 +120,11 @@ test("G2.3: default site confirmation is read-only and unavailable activation re
       FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`,
       FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes, FOCUS_NOTES_CANDIDATE_SITE: "",
     });
+    await instance.app.evaluate(({ shell }) => {
+      const links: string[] = [];
+      Reflect.set(globalThis, "sharingSetupLinks", links);
+      shell.openExternal = async (url: string) => { links.push(url); };
+    });
     const { page } = instance;
     await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Private source stays here.");
     expect(await page.evaluate(() => window.focusNotes.workspace!.info())).toMatchObject({ repo: "ada/book" });
@@ -134,6 +139,15 @@ test("G2.3: default site confirmation is read-only and unavailable activation re
     await expect(confirmation).toContainText("https://ada.github.io/notes-site/");
     await expect(confirmation.getByRole("textbox")).toHaveCount(0);
     await expect(confirmation.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+    const repository = confirmation.getByRole("button", { name: "Open ada/notes-site on GitHub", exact: true });
+    await expect(repository).toBeVisible();
+    await repository.focus();
+    await expect(repository).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => instance!.app.evaluate(() => Reflect.get(globalThis, "sharingSetupLinks"))).toEqual(["https://github.com/ada/notes-site"]);
+    await expect(confirmation).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Private source stays here.");
+    expect(readFileSync(draft, "utf8")).toBe(text);
     await confirmation.getByRole("button", { name: "Turn on sharing", exact: true }).click();
     await expect(confirmation).toContainText("Turning on sharing isn’t available yet. Your notes stay private.");
     await expect(confirmation).toContainText("ada/notes-site");
@@ -310,7 +324,7 @@ for (const github of [false, true]) {
       await expect(note).toHaveText("Ready to write.");
       const notes = () => readdirSync(folder, { recursive: true, encoding: "utf8" }).filter(file => /\.md$/i.test(file));
       await expect.poll(() => notes().map(file => readFileSync(join(folder, file), "utf8")).join("")).toContain("Ready to write.");
-      expect(notes()).toHaveLength(1);
+      await expect.poll(notes).toHaveLength(1);
       expect(await created.page.evaluate(() => performance.getEntriesByName("fn:project.list").length)).toBe(0);
       const save = created.page.locator("#saveState");
       await expect(save).toHaveAttribute("data-state", github ? "synced" : "savedLocal");

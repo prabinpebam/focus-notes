@@ -13,11 +13,12 @@ test("GitHub references independently open exact destinations across landed surf
   w.fakes.store(w.gh.token);
   w.git(w.root, "clone", "--quiet", "--recurse-submodules", notes, w.dirs.docs);
   w.git(join(w.dirs.docs, "private"), "checkout", "--quiet", "main");
+  w.git(join(w.dirs.docs, "private"), "remote", "add", "github", "https://github.com/ada/notes-private.git");
+  w.gh.repo("notes-private")!.invitations.push({ id: 1, invitee: { login: "grace" }, permissions: "push" });
   const note = join(w.dirs.docs, "private", "notes", "secret.md");
   const before = readFileSync(note, "utf8");
   writeFileSync(join(w.dirs.userData, "state.json"), JSON.stringify({
     version: 1, firstRun: "done", lastNotePath: note,
-    sharingDrafts: { [w.dirs.docs]: { owner: "personal", people: [{ login: "grace", role: "write" }] } },
   }));
   writeFileSync(join(w.dirs.userData, "workspace.json"), JSON.stringify({ version: 1, folder: w.dirs.docs }));
   const sibling = join(w.root, "Sibling");
@@ -52,8 +53,6 @@ test("GitHub references independently open exact destinations across landed surf
       ipcMain.handle("sync:repos", () => ["private", "public"].map(repo => ({
         repo, name: repo === "private" ? "ada/notes-private" : "ada/notes", folders: 0, notes: 0, other: 0, commits: 0, remote: true,
       })));
-      ipcMain.removeHandler("access:load");
-      ipcMain.handle("access:load", () => ({ available: true, localReview: true, site: "", vault: true, grants: [] }));
       ipcMain.removeHandler("workspace:deletion");
       ipcMain.handle("workspace:deletion", () => ({
         kind: "linked", name: "Review project", folder: "", repo: "ada/notes", privateRepo: "ada/notes-private",
@@ -74,10 +73,7 @@ test("GitHub references independently open exact destinations across landed surf
     await activate(settings.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }), "https://github.com/ada/notes");
     await activate(settings.getByRole("button", { name: "Open grace on GitHub", exact: true }), "https://github.com/grace");
     await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
-    await page.getByRole("button", { name: "Turn on sharing…", exact: true }).click();
-    const firstShare = page.getByRole("dialog", { name: "Sharing", exact: true });
-    await activate(firstShare.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }), "https://github.com/ada/notes");
-    await firstShare.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(settings.getByRole("button", { name: "Turn on sharing…", exact: true })).toHaveCount(0);
     await settings.getByRole("button", { name: "Close", exact: true }).click();
 
     await page.keyboard.press("Control+o");

@@ -158,6 +158,8 @@ export const MEASURE_NAMES: readonly string[] = [
   "fn:image.caption.open", "fn:image.caption.generate", "fn:image.edit.save",
   "fn:files.move", "fn:files.rename",
   "fn:sharing.invite", "fn:sharing.people", "focus-notes:sharing.people",
+  "fn:sharing.setup.describe", "fn:sharing.setup.enable",
+  "focus-notes:sharing.setup.describe", "focus-notes:sharing.setup.enable",
   "fn:project.firstNote", "focus-notes:project.firstNote",
   "focus-notes:files.move", "focus-notes:files.rename",
   "focus-notes:image.caption.open", "focus-notes:image.caption.generate",
