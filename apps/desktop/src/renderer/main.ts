@@ -1,5 +1,5 @@
 /** The renderer entry: connects the preload bridge to the app core and mounts the canvas view. */
-import { createApp, type App, type PlatformBridge } from "@focus-notes/core";
+import { createApp, type App, type AppOptions, type PlatformBridge } from "@focus-notes/core";
 import { mountApp, swapApp, flushApp } from "@focus-notes/ui-runtime";
 import { afterFirstThemedFrame, bootTheme, htmlToMarkdown, sanitizeSvgLogo } from "@focus-notes/ui";
 import { views, messages } from "@focus-notes/views";
@@ -28,6 +28,9 @@ declare global {
 // The first frame is the theme's canvas, never Chromium's white (DSK-09, D-148).
 bootTheme(location.search);
 const firstTheme = document.documentElement.dataset.theme;
+const firstScheme = document.documentElement.style.colorScheme;
+const initialAppearance: AppOptions["initialAppearance"] = firstTheme && (firstScheme === "light" || firstScheme === "dark")
+  ? { scheme: firstScheme, theme: firstTheme } : undefined;
 
 const raw = window.focusNotes;
 const base = {
@@ -123,7 +126,7 @@ function attachSearch(r: Running): void {
 let running: Running;
 {
   const scoped = scopedBridge(base);
-  const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
+  const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown, initialAppearance });
   const abort = new AbortController();
   // Settings and the theme manager are view documents of their own, hosted beside the canvas (IA-VIEW-SETTINGS, IA-VIEW-THEME).
   const react = mountApp(root, { app, views, overlays: OVERLAYS, signal: abort.signal });

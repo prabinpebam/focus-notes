@@ -304,6 +304,8 @@ export const resolvedTheme = (s: AppState): string =>
   resolvedScheme(s) === "dark" ? s.appearance.darkTheme : s.appearance.lightTheme;
 
 export interface AppOptions {
+  /** The shell's resolved boot appearance, kept until stored settings are loaded (DSK-09). */
+  initialAppearance?: { scheme: Scheme; theme: string };
   /** A clock for the task tracker and toasts; tests pass a fake one. */
   clock?: Clock;
   /** The workspace format and its migrations; tests pass their own (DST-05). */
@@ -316,8 +318,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const store = new Store<AppState>({
     note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" },
     appearance: {
-      mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE,
-      lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
+      mode: options.initialAppearance?.scheme ?? "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE,
+      lightTheme: options.initialAppearance?.scheme === "light" ? options.initialAppearance.theme : DEFAULT_THEMES.light,
+      darkTheme: options.initialAppearance?.scheme === "dark" ? options.initialAppearance.theme : DEFAULT_THEMES.dark,
+      contentFont: "mono", uiScale: 1,
       lineHeight: LINE_HEIGHT.default, measure: MEASURE.default, paragraphSpacing: "comfortable",
     },
     focusMode: false,
@@ -1793,11 +1797,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         ...s,
         appearance: {
           ...s.appearance,
-          ...(appState.appearance ? { mode: appState.appearance } : {}),
+          mode: appState.appearance ?? "system",
           ...(appState.fontSize ? { fontSize: appState.fontSize } : {}),
           // Unknown or removed themes fall back to the defaults rather than failing.
-          ...(kindOf({ customThemes }, appState.lightTheme) === "light" ? { lightTheme: appState.lightTheme! } : {}),
-          ...(kindOf({ customThemes }, appState.darkTheme) === "dark" ? { darkTheme: appState.darkTheme! } : {}),
+          lightTheme: kindOf({ customThemes }, appState.lightTheme) === "light" ? appState.lightTheme! : DEFAULT_THEMES.light,
+          darkTheme: kindOf({ customThemes }, appState.darkTheme) === "dark" ? appState.darkTheme! : DEFAULT_THEMES.dark,
           ...((CONTENT_FONTS as readonly string[]).includes(appState.contentFont ?? "") ? { contentFont: appState.contentFont as ContentFont } : {}),
           ...((UI_SCALES as readonly number[]).includes(appState.uiScale ?? 0) ? { uiScale: appState.uiScale! } : {}),
           ...(onSteps(appState.lineHeight, LINE_HEIGHT) !== undefined ? { lineHeight: onSteps(appState.lineHeight, LINE_HEIGHT)! } : {}),

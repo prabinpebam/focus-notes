@@ -33,6 +33,34 @@ function fakeBridge(files: Record<string, string> = {}, overrides: Partial<Platf
 const messages = { "command.note.open": "Open", "command.note.save": "Save", "command.note.setContent": "Set", "command.appearance.toggle": "Theme", "command.trigger.activate": "Menu", "command.app.ready": "Ready" };
 
 describe("app start", () => {
+  it.each([
+    { scheme: "dark", theme: "dusk", system: "light" },
+    { scheme: "light", theme: "sepia", system: "dark" },
+  ] as const)("keeps the shell's $scheme/$theme appearance while device settings load", async ({ scheme, theme, system }) => {
+    let release!: (state: AppStateFile) => void;
+    const pending = new Promise<AppStateFile>(resolve => { release = resolve; });
+    const f = fakeBridge({}, { systemScheme: () => system, loadAppState: () => pending });
+    const app = createApp(f.bridge, en, "en", { initialAppearance: { scheme, theme } });
+    const appearance = () => app.viewModels.select("vm.app", app.store.state);
+    expect(appearance()).toMatchObject({ scheme, theme });
+    const starting = app.start();
+    expect(appearance()).toMatchObject({ scheme, theme });
+    release({ version: 1, appearance: scheme, ...(scheme === "dark" ? { darkTheme: theme } : { lightTheme: theme }) });
+    await starting;
+    expect(appearance()).toMatchObject({ scheme, theme });
+    expect(app.store.state.appearance.system).toBe(system);
+  });
+
+  it("returns to system appearance after a boot snapshot when no explicit mode is saved", async () => {
+    const f = fakeBridge({}, { systemScheme: () => "dark" });
+    const app = createApp(f.bridge, en, "en", { initialAppearance: { scheme: "light", theme: "sepia" } });
+    expect(app.viewModels.select("vm.app", app.store.state).scheme).toBe("light");
+    await app.start();
+    expect(app.store.state.appearance.mode).toBe("system");
+    expect(app.viewModels.select("vm.app", app.store.state).scheme).toBe("dark");
+    expect(app.store.state.appearance.lightTheme).toBe("paper");
+  });
+
   it("starts normally with one must-read Preview carry-over notice and no persisted error flag", async () => {
     const f = fakeBridge({}, { startupNotice: "preview-carry-over" });
     const app = createApp(f.bridge, en);
